@@ -3,8 +3,10 @@
 // before any other request, then the start of the storage on the device (R16; section 3.2), and the
 // app only once both are done. A failed preload after a rollout, or a database a newer build has
 // opened, offers a reload over whatever is shown; storage erased or unreadable while app is open
-// is a screen of its own. The language of the screens is the device's: the choice kept in the
-// device's settings, which are no part of the account's storage and are read beside the request
+// is a screen of its own. Below it the app has the client of api for the file's api (R18): an
+// account that is gone it signs out of and erases, on no access it erases what is left of the
+// account before, and when api no longer has a method it offers the reload. The language of the
+// screens is the device's: the choice kept in the device's settings, which are no part of the account's storage and are read beside the request
 // for the file, before the first screen and for a second at most, else navigator.languages (R10,
 // R17; section 3.8); a choice made in another tab comes by BroadcastChannel. In a frame,
 // navigator.languages alone.
@@ -19,13 +21,16 @@ import {
   useRef,
   useState,
 } from "react";
+import { ApiProvider } from "../api/ApiContext.tsx";
+import { createApi } from "../api/client.ts";
+import { NO_TOKENS, type Tokens } from "../api/tokens.ts";
 import type { Deployment } from "../config/deployment.ts";
 import { type Loaded, loadDeployment } from "../config/load.ts";
 import { LanguageProvider, type LanguageState } from "../i18n/LanguageContext.tsx";
 import { deviceLanguage, type Language, lookup } from "../i18n/language.ts";
 import { WORDS } from "../i18n/words.ts";
 import type { Device } from "../storage/device.ts";
-import type { SignInCheck } from "../storage/erase.ts";
+import { eraseAccount, noAccess, type SignInCheck } from "../storage/erase.ts";
 import { readLanguage, writeLanguage } from "../storage/settings.ts";
 import { startStorage } from "../storage/start.ts";
 import { Framed, Offline, ReloadOffer, StorageGone, Unconfigured } from "./Screens.tsx";
@@ -86,6 +91,10 @@ export interface BootProps {
   /** The storage on the device; nothing of it opens in a frame. */
   readonly device: Device;
   readonly fetcher?: typeof fetch;
+  /** The ID tokens of the sign-in service: none until the sign-in of T22 gives them. */
+  readonly tokens?: Tokens;
+  /** fetch for the calls of api; the browser's when left out. */
+  readonly apiFetch?: typeof fetch;
   /** How long the first screen waits for the device's settings, ms: an open that hangs gets no more. */
   readonly settingsWait?: number;
   readonly children: ReactNode;
@@ -101,6 +110,8 @@ export function Boot({
   device,
   fetcher,
   settingsWait = SETTINGS_WAIT_MS,
+  tokens = NO_TOKENS,
+  apiFetch,
   children,
 }: BootProps) {
   const [chosen, setChosen] = useState<Language | undefined>(undefined);
@@ -161,6 +172,42 @@ export function Boot({
     },
     [device],
   );
+
+  // The client of api, once the file names it (R18): its refusals reach the device here.
+  // The client is made once for the file's api: the tokens and fetch given are read at each call, so
+  // that a parent that gives new objects of them makes no new client and asks nothing again.
+  const given = useRef({ tokens, apiFetch });
+  given.current = { tokens, apiFetch };
+  const apiOrigin = loaded?.kind === "ready" ? loaded.deployment.api : undefined;
+  const api = useMemo(() => {
+    if (apiOrigin === undefined) return undefined;
+    const current: Tokens = {
+      token: (refresh) => given.current.tokens.token(refresh),
+      signOut: () => given.current.tokens.signOut(),
+    };
+    // Two requests that meet the account gone at once erase it once.
+    let leaving: Promise<void> | undefined;
+    return createApi({
+      baseUrl: apiOrigin,
+      tokens: current,
+      fetch: (input, init) => (given.current.apiFetch ?? globalThis.fetch)(input, init),
+      on: {
+        stale: () => setStale(true),
+        accountGone: () => {
+          // Signed out first, as erase.ts has it; what is not erased, the next start erases.
+          leaving ??= current
+            .signOut()
+            .catch(() => {})
+            .then(() => eraseAccount(device))
+            .then(() => {});
+          return leaving;
+        },
+        noAccess: async () => {
+          await noAccess(device);
+        },
+      },
+    });
+  }, [apiOrigin, device]);
 
   const state = useMemo<LanguageState>(
     () => ({ language, words: WORDS[language], choose }),
@@ -250,8 +297,10 @@ export function Boot({
         return (
           <DeploymentContext.Provider value={loaded.deployment}>
             {offer}
-            {storage === undefined ? null : (
-              <StorageContext.Provider value={storage}>{children}</StorageContext.Provider>
+            {storage === undefined || api === undefined ? null : (
+              <StorageContext.Provider value={storage}>
+                <ApiProvider value={api}>{children}</ApiProvider>
+              </StorageContext.Provider>
             )}
           </DeploymentContext.Provider>
         );
