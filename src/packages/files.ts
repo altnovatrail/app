@@ -23,6 +23,13 @@ export class FileError extends Error {
 
 const DIGEST = /^sha256:[0-9a-f]{64}$/;
 
+/** The origin without the slashes it may end in; a loop, as a pattern for it could backtrack. */
+function withoutTrailingSlashes(origin: string): string {
+  let end = origin.length;
+  while (end > 0 && origin[end - 1] === "/") end -= 1;
+  return origin.slice(0, end);
+}
+
 /** The address of a file of a package's device part on api; a path that would leave it is none. */
 export function fileUrl(api: string, digest: string, path: string): string {
   if (!DIGEST.test(digest)) throw new FileError("unknown", `not a package digest: ${digest}`);
@@ -31,7 +38,7 @@ export function fileUrl(api: string, digest: string, path: string): string {
     throw new FileError("missing", `not a path of the device part: ${path}`);
   }
   const segments = parts.map((segment) => encodeURIComponent(segment));
-  return `${api.replace(/\/+$/, "")}/packages/${digest.replace(":", "-")}/device/${segments.join("/")}`;
+  return `${withoutTrailingSlashes(api)}/packages/${digest.replace(":", "-")}/device/${segments.join("/")}`;
 }
 
 export interface FilesOptions {
