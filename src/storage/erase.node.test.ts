@@ -189,15 +189,18 @@ describe("versions withdrawn", () => {
   it("take their open views from the cache and from every profile", async () => {
     const setup = await signedIn();
     const cache = await openCache(setup.device);
-    await cache?.put("d1", "manifest", new Uint8Array([1]));
-    await cache?.put("d2", "manifest", new Uint8Array([2]));
+    await cache?.put("d1", "manifest", { json: new Uint8Array([1]), version: "0.4" });
+    await cache?.put("d2", "manifest", { json: new Uint8Array([2]), version: "0.4" });
     for (const id of ["p1", "p2"]) {
       const profile = await addProfile(setup.device, id);
       await profile?.beginAttempt({ attemptId: `a-${id}`, digest: "d1", task: TASK });
     }
     await versionsWithdrawn(setup.device, ["d1"]);
     expect(await cache?.get("d1", "manifest")).toBeUndefined();
-    expect(await cache?.get("d2", "manifest")).toEqual(new Uint8Array([2]));
+    expect(await cache?.get("d2", "manifest")).toEqual({
+      json: new Uint8Array([2]),
+      version: "0.4",
+    });
     for (const id of ["p1", "p2"]) {
       const profile = await addProfile(setup.device, id);
       expect((await profile?.readAttempt(`a-${id}`))?.attempt.task).toBeUndefined();

@@ -46,6 +46,8 @@ export interface Transaction {
   /** The records in the order of the query's keys, and, by an index, of their own keys next. */
   entries(store: string, query?: Query): Promise<readonly Entry[]>;
   count(store: string, query?: Query): Promise<number>;
+  /** The keys of the records, in order, without their records. */
+  keys(store: string, query?: Query): Promise<readonly Key[]>;
   put(store: string, key: Key, value: unknown): Promise<void>;
   delete(store: string, keys: Key | Range): Promise<void>;
 }

@@ -1,6 +1,8 @@
 // The shared cache of the open views of packages, by package digest (section 3.2 of
 // docs/architecture.md; R62 in spec): content of modules, not a learner's data, written with
-// relaxed durability. A view untouched for 30 days goes, and a withdrawn version goes at once.
+// relaxed durability. A view untouched for 30 days goes, and a withdrawn version goes at once. A
+// view is kept as api gave it — the bytes of its JSON and the version of the module format they
+// are in, and beside a skill graph its tiers — or as a part the module does not have (T21).
 import { type Connection, within } from "./backend.ts";
 import type { Device } from "./device.ts";
 import { addDatabase, readRegistry } from "./registry.ts";
@@ -9,8 +11,16 @@ import { CACHE, CACHE_SCHEMA } from "./schema.ts";
 /** The open views of a package app keeps (R99 in spec). */
 export type ViewKind = "manifest" | "skill-graph" | "techniques" | "solving-steps";
 
-interface View {
-  readonly bytes: Uint8Array;
+/** A view as api gave it; without `json`, a part the module does not have. */
+export interface CachedView {
+  readonly json?: Uint8Array;
+  /** The version of the module format of `json`, MAJOR.MINOR. */
+  readonly version?: string;
+  /** Beside a skill graph: the tier of each skill, by its local ID. */
+  readonly skillTiers?: Readonly<Record<string, number>>;
+}
+
+interface View extends CachedView {
   readonly usedAt: number;
 }
 
@@ -26,8 +36,8 @@ export class Cache {
     this.now = now;
   }
 
-  /** The bytes of a view, as `api` gave them; marked used, at most once a day. */
-  async get(digest: string, kind: ViewKind): Promise<Uint8Array | undefined> {
+  /** A view, as `api` gave it; marked used, at most once a day. */
+  async get(digest: string, kind: ViewKind): Promise<CachedView | undefined> {
     const view = (await this.connection.read(["views"], (tx) => tx.get("views", [digest, kind]))) as
       | View
       | undefined;
@@ -42,17 +52,31 @@ export class Cache {
         )
         .catch(() => undefined);
     }
-    return view.bytes;
+    const { usedAt: _, ...kept } = view;
+    return kept;
+  }
+
+  /** The digests of the packages whose views the cache keeps. */
+  async digests(): Promise<string[]> {
+    const keys = await this.connection.read(["views"], (tx) => tx.keys("views"));
+    return [...new Set(keys.map((key) => (key as [string, string])[0]))];
   }
 
   /** Keeps a view; a cache that cannot keep it asks `api` again next time. */
-  async put(digest: string, kind: ViewKind, bytes: Uint8Array): Promise<void> {
+  async put(digest: string, kind: ViewKind, view: CachedView): Promise<void> {
     await this.connection
       .write(
         ["views"],
-        (tx) => tx.put("views", [digest, kind], { bytes, usedAt: this.now() }),
+        (tx) => tx.put("views", [digest, kind], { ...view, usedAt: this.now() }),
         "relaxed",
       )
+      .catch(() => undefined);
+  }
+
+  /** One view goes: one in a version of the format the build no longer reads. */
+  async forget(digest: string, kind: ViewKind): Promise<void> {
+    await this.connection
+      .write(["views"], (tx) => tx.delete("views", [digest, kind]), "relaxed")
       .catch(() => undefined);
   }
 

@@ -251,6 +251,20 @@ export class Profile {
     });
   }
 
+  /** The digests of the packages of the attempts and the lessons this profile keeps. */
+  async digests(): Promise<string[]> {
+    return this.connection.read(["attempts", "lessons"], async (tx) => {
+      const found = new Set<string>();
+      // An attempt whose task's view a withdrawal took keeps no view of its package.
+      for (const { value } of await tx.entries("attempts")) {
+        const attempt = value as Attempt;
+        if (attempt.task !== undefined) found.add(attempt.digest);
+      }
+      for (const { value } of await tx.entries("lessons")) found.add((value as LessonState).digest);
+      return [...found];
+    });
+  }
+
   /** Attempts and lessons last changed at a time or before go, with all of an attempt's work. */
   async expire(cutoff: number): Promise<void> {
     const range = { upper: cutoff };

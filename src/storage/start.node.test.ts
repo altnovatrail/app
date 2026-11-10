@@ -101,13 +101,13 @@ describe("startStorage", () => {
     await setAccount(device, "account-1");
     const profile = await addProfile(device, "p1");
     const cache = await openCache(device);
-    await cache?.put("d-old", "manifest", new Uint8Array([1]));
+    await cache?.put("d-old", "manifest", { json: new Uint8Array([1]), version: "0.4" });
     await profile?.beginAttempt({ attemptId: "old", digest: "d1", task: TASK });
     await profile?.beginAttempt({ attemptId: "done", digest: "d1", task: TASK });
     await profile?.addSubmission("done", work, 0);
     await profile?.attemptEnded("done", 0);
     state.time += KEEP_MS - DAY;
-    await cache?.put("d-new", "manifest", new Uint8Array([2]));
+    await cache?.put("d-new", "manifest", { json: new Uint8Array([2]), version: "0.4" });
     await profile?.beginAttempt({ attemptId: "new", digest: "d1", task: TASK });
     state.time += DAY;
     await startStorage(device, SIGN_IN);
@@ -115,7 +115,10 @@ describe("startStorage", () => {
     expect(await profile?.readAttempt("old")).toBeUndefined();
     expect(await profile?.readAttempt("new")).toBeDefined();
     expect(await cache?.get("d-old", "manifest")).toBeUndefined();
-    expect(await cache?.get("d-new", "manifest")).toEqual(new Uint8Array([2]));
+    expect(await cache?.get("d-new", "manifest")).toEqual({
+      json: new Uint8Array([2]),
+      version: "0.4",
+    });
   });
 
   it("goes on past a step that fails, and past a registry it cannot read", async () => {

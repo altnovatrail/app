@@ -21,6 +21,8 @@ export interface ApiEvents {
   readonly accountGone: () => Promise<void>;
   /** The user has no account: what is left of the one the registry names is erased (R04). */
   readonly noAccess: () => Promise<void>;
+  /** api no longer gives a package's version: CheckPackages is asked (section 15; T21). */
+  readonly withdrawn?: () => void;
 }
 
 /** The methods that go without a token: the four open views and the legal texts. */
@@ -41,9 +43,9 @@ export const PAUSES = [500, 1000, 2000, 4000] as const;
  */
 export const STILL_GOING_MS = 30_000;
 
-/** The pause `Retry-After` asks for, ms, from the seconds api sends. */
-function retryAfter(error: ConnectError): number | undefined {
-  const seconds = Number(error.metadata.get("Retry-After"));
+/** The pause `Retry-After` asks for, ms, from the seconds api sends; none when it names none. */
+export function retryAfter(headers: Pick<Headers, "get">): number | undefined {
+  const seconds = Number(headers.get("Retry-After"));
   return Number.isFinite(seconds) && seconds > 0 ? seconds * 1000 : undefined;
 }
 
@@ -59,6 +61,7 @@ export function effects(on: ApiEvents): Interceptor {
       if (error.code === Code.Unimplemented) on.stale();
       else if (cause === Cause.ACCOUNT_GONE) await on.accountGone().catch(() => {});
       else if (cause === Cause.NO_ACCESS) await on.noAccess().catch(() => {});
+      else if (cause === Cause.VERSION_NOT_GIVEN) on.withdrawn?.();
       throw error;
     }
   };
@@ -101,7 +104,7 @@ export function repeat(sleep: (ms: number) => Promise<void>): Interceptor {
         if (error.code !== Code.Unavailable || request.signal.aborted) throw error;
         const going = refusalOf(error)?.cause === Cause.STILL_GOING;
         const last = PAUSES[PAUSES.length - 1] as number;
-        const pause = going ? (retryAfter(error) ?? PAUSES[tried] ?? last) : PAUSES[tried];
+        const pause = going ? (retryAfter(error.metadata) ?? PAUSES[tried] ?? last) : PAUSES[tried];
         if (pause === undefined || (going && waited + pause > STILL_GOING_MS)) throw error;
         waited += pause;
         await sleep(pause);

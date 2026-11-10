@@ -62,6 +62,8 @@ function transaction(tx: IDBTransaction): Transaction {
           cursor.continue();
         };
       }),
+    keys: (store, query = {}) =>
+      done(source(tx, store, query).getAllKeys(keyRange(query.range))) as Promise<readonly Key[]>,
     count: (store, query = {}) => done(source(tx, store, query).count(keyRange(query.range))),
     put: async (store, key, value) => {
       await done(tx.objectStore(store).put(value, key as IDBValidKey));

@@ -8,12 +8,16 @@ import { deployment } from "./scripts/deployment-plugin.ts";
 // the local deployment configuration names the origin (section 3.7).
 const port = 5173;
 
-// The paths of api's services, which a local run sends to a local api: in deployment.local.json
-// api is app's own origin, so that both layers of the CSP let them through as 'self' (section
-// 3.7). Where the local api is, NOVATRAIL_API says; how app's container reaches it is T22's.
+// The paths of api — its services and the files of packages' device parts — which a local run
+// sends to a local api: in deployment.local.json api is app's own origin, so that both layers of
+// the CSP let them through as 'self' (section 3.7). Where the local api is, NOVATRAIL_API says; how
+// app's container reaches it is T22's.
 const apiTarget = process.env.NOVATRAIL_API;
 const proxy = apiTarget
-  ? { "^/novatrail\\.": { target: apiTarget, changeOrigin: true } }
+  ? {
+      "^/novatrail\\.": { target: apiTarget, changeOrigin: true },
+      "^/packages/": { target: apiTarget, changeOrigin: true },
+    }
   : undefined;
 
 export default defineConfig(({ command, isPreview }) => {

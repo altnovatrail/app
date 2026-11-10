@@ -107,6 +107,10 @@ class MemoryTransaction implements Transaction {
       .map((row) => structuredClone(row.entry));
   }
 
+  async keys(store: string, query?: Query): Promise<readonly Key[]> {
+    return (await this.entries(store, query)).map((entry) => entry.key);
+  }
+
   async count(store: string, query?: Query): Promise<number> {
     return (await this.entries(store, query)).length;
   }
