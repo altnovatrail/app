@@ -8,11 +8,16 @@ import { render, screen } from "@testing-library/react";
 import { useCallback } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
+import { AccountGate } from "../account/AccountGate.tsx";
 import { Boot } from "../boot/Boot.tsx";
 import { usePackages } from "../packages/PackagesContext.tsx";
 import { memoryDevice } from "../test/device.ts";
+import { fakeSignIn } from "../test/signin.ts";
 import { ApiProvider, useApi, useRequest } from "./ApiContext.tsx";
 import { type Api, createApi } from "./client.ts";
+
+/** A sign-in service with nobody signed in, in place of Firebase Auth. */
+const signedOut = () => fakeSignIn();
 
 const FILE = {
   format: 1,
@@ -128,7 +133,7 @@ describe("useApi", () => {
 });
 
 describe("Boot and the packages", () => {
-  it("asks about the packages the device keeps when app starts, and erases one no longer given", async () => {
+  it("asks about the packages the device keeps once the account is there, and erases one no longer given", async () => {
     const { device } = memoryDevice();
     const { setAccount } = await import("../storage/registry.ts");
     const { openCache } = await import("../storage/cache.ts");
@@ -139,32 +144,51 @@ describe("Boot and the packages", () => {
     const digest = `sha256:${"1".repeat(64)}`;
     const cache = await openCache(device);
     await cache?.put(digest, "manifest", { json: new Uint8Array([123, 125]), version: "0.4" });
-    const apiFetch = vi.fn<typeof fetch>(async () => {
-      const answer = create(CheckPackagesResponseSchema, {
-        packages: [{ packageDigest: digest, status: PackageStatus.NOT_GIVEN }],
-      });
-      return new Response(toBinary(CheckPackagesResponseSchema, answer), {
-        headers: { "content-type": "application/proto" },
-      });
+    const { GetAccountResponseSchema } = await import(
+      "@altnovatrail/contracts/novatrail/api/v1/account_pb.js"
+    );
+    const apiFetch = vi.fn<typeof fetch>(async (input) => {
+      const body = String(input).endsWith("/GetAccount")
+        ? toBinary(
+            GetAccountResponseSchema,
+            create(GetAccountResponseSchema, {
+              account: {
+                accountId: "account-1",
+                profiles: [{ profileId: "p1", owner: true, pseudonym: "Ёжик" }],
+              },
+            }),
+          )
+        : toBinary(
+            CheckPackagesResponseSchema,
+            create(CheckPackagesResponseSchema, {
+              packages: [{ packageDigest: digest, status: PackageStatus.NOT_GIVEN }],
+            }),
+          );
+      return new Response(body, { headers: { "content-type": "application/proto" } });
     });
     const fetcher = async () =>
       new Response(JSON.stringify(FILE), { headers: { "content-type": "application/json" } });
     render(
       <Boot
+        signIn={() => fakeSignIn("uid-1")}
         framed={false}
         origin="https://app.example.org"
         languages={["en"]}
         device={device}
         fetcher={fetcher}
         apiFetch={apiFetch}
-        tokens={{ token: async () => "t", signOut: async () => {} }}
       >
-        <Packaged />
+        <AccountGate>
+          <Packaged />
+        </AccountGate>
       </Boot>,
     );
-    expect(await screen.findByText("packages")).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: "Who is learning?" })).toBeTruthy();
     await vi.waitFor(async () => expect(await cache?.get(digest, "manifest")).toBeUndefined());
-    expect(String(apiFetch.mock.calls[0]?.[0])).toMatch(/PackageService\/CheckPackages$/);
+    expect(apiFetch.mock.calls.map(([input]) => String(input).split("/").at(-1))).toEqual([
+      "GetAccount",
+      "CheckPackages",
+    ]);
   });
 
   it("are there only below Boot", () => {
@@ -185,6 +209,7 @@ describe("Boot and the client", () => {
       new Response(JSON.stringify(FILE), { headers: { "content-type": "application/json" } });
     render(
       <Boot
+        signIn={signedOut}
         framed={false}
         origin="https://app.example.org"
         languages={["en"]}
@@ -204,7 +229,7 @@ describe("Boot and the client", () => {
     const { device } = memoryDevice();
     const { setAccount, readRegistry } = await import("../storage/registry.ts");
     await setAccount(device, "account-1");
-    const signOut = vi.fn(async () => {});
+    const service = fakeSignIn("uid-1");
     const { RefusalSchema, Cause } = await import(
       "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js"
     );
@@ -225,19 +250,25 @@ describe("Boot and the client", () => {
       new Response(JSON.stringify(FILE), { headers: { "content-type": "application/json" } });
     render(
       <Boot
+        signIn={() => service}
         framed={false}
         origin="https://app.example.org"
         languages={["en"]}
         device={device}
         fetcher={fetcher}
         apiFetch={apiFetch}
-        tokens={{ token: async () => "t", signOut }}
       >
         <Account />
       </Boot>,
     );
     expect(await screen.findByText("failed account-gone")).toBeTruthy();
-    await vi.waitFor(() => expect(signOut).toHaveBeenCalledOnce());
+    await vi.waitFor(() => expect(service.calls.signOut).toBe(1));
     expect(await readRegistry(device)).toBeUndefined();
+    // Another account signs in on the same page and is gone too: it is erased again.
+    service.set("uid-2");
+    await setAccount(device, "account-2");
+    await userEvent.click(screen.getByRole("button", { name: "again" }));
+    await vi.waitFor(() => expect(service.calls.signOut).toBe(2));
+    await vi.waitFor(async () => expect(await readRegistry(device)).toBeUndefined());
   });
 });

@@ -23,6 +23,15 @@ Detailing is done: the first epic of [RUN.md](RUN.md) decided what the component
 
 Run the four checks of the TypeScript code with `just ci` and the check of the documents with `just -f spec/justfile docs-check-repo` — CI runs both — the app with `just dev` — with a working copy of canvas, built, by `just dev-canvas <folder>` — and its build with `just preview`, all inside the devcontainer.
 
+### Run locally with api
+
+The first app runs against a local api, in api's own devcontainer, with the dev project of Firebase (section 3.7 of [docs/architecture.md](docs/architecture.md)):
+
+1. In the dev project of Firebase, put `127.0.0.1` among the authorized domains of Authentication.
+2. Copy `deployment.example.json` to `deployment.local.json` and fill in the project's parameters; `api` stays `http://127.0.0.1:5173`, app's own origin, whose paths of api the development server sends on.
+3. In api's container: `just dev migrate`, `just dev countries allow <XX>` for the owner's country, `just dev invite` for an invite code, then `just dev serve`, and `hostname -i` for the address of the container.
+4. In this container, which is on api's network too: `NOVATRAIL_API=http://<that address>:8080 just dev`, then open `http://127.0.0.1:5173`.
+
 ## Documents
 
 The documents are in Russian.

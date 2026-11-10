@@ -1,7 +1,9 @@
-// The test of the built page (section 3.7 of docs/architecture.md; Д9 in RUN.md, in Chromium):
-// `vite preview` serves build/ — ci-test builds it first — with app's own plugin, and Chrome
-// Headless Shell, from the image the toolchain stage takes it from, opens it. A violation of
-// either layer of the CSP fails the test, and so does any request before /deployment.json.
+// The test of the built page (section 3.7 of docs/architecture.md; Д8 and Д9 in RUN.md, in
+// Chromium): `vite preview` serves build/ — ci-test builds it first — with app's own plugin, and
+// Chrome Headless Shell, from the image the toolchain stage takes it from, opens it. A violation of
+// either layer of the CSP fails the test, and so does any request before /deployment.json. The
+// sign-in window goes under the header too, with what Google would answer stubbed, and a request to
+// a host section 3.7 does not name fails it.
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -87,6 +89,44 @@ async function open(locale = "en-US"): Promise<{
   return { page, violations, requests };
 }
 
+/** The hosts of Google that section 3.7 names for the sign-in, beside app's own origin. */
+const GOOGLE = [
+  "apis.google.com",
+  "example-project.firebaseapp.com",
+  "identitytoolkit.googleapis.com",
+  "securetoken.googleapis.com",
+];
+
+/**
+ * The script of gapi in place of Google's, which is closed to reading: it gives the SDK what it
+ * calls — the loader, and a context that puts the hidden iframe of the sign-in pages in the page
+ * and says it is there once it has loaded — and calls the SDK back by the name in its address.
+ */
+const GAPI = `(() => {
+  const frames = {
+    CROSS_ORIGIN_IFRAMES_FILTER: {},
+    Iframe: function Iframe() {},
+    getContext: () => ({
+      open(options, ready) {
+        const frame = document.createElement("iframe");
+        frame.src = options.url;
+        frame.setAttribute("aria-hidden", "true");
+        const loaded = new Promise((resolve) => frame.addEventListener("load", resolve, { once: true }));
+        options.where.appendChild(frame);
+        return ready({
+          restyle: async () => {},
+          ping: () => loaded,
+          register() {},
+          send() {},
+        });
+      },
+    }),
+  };
+  window.gapi = { load: (_, options) => options.callback(), iframes: frames };
+  const onload = new URL(document.currentScript.src).searchParams.get("onload");
+  if (onload) window[onload]();
+})();`;
+
 describe("the built page", () => {
   it("has the lower layer first in <head>, and no deployment.json of its own", () => {
     expect(layerIsFirst(readFileSync("build/index.html", "utf8"))).toBe(true);
@@ -104,7 +144,8 @@ describe("the built page", () => {
     expect(response?.headers()["content-security-policy"]).toContain(
       `connect-src 'self' ${ORIGIN}`,
     );
-    await page.getByRole("heading", { name: "NovaTrail" }).waitFor();
+    // Nobody has signed in: the first screen is the sign-in's.
+    await page.getByRole("heading", { name: "Sign in" }).waitFor();
     const own = requests.filter((path) => !path.startsWith("/assets/") && path !== "/");
     expect(own).toEqual(["/deployment.json"]);
     // The theme came with the build, under the lower layer's style-src 'self' (section 3.9).
@@ -113,10 +154,64 @@ describe("the built page", () => {
         "getComputedStyle(document.documentElement).getPropertyValue('--nt-primary').trim()",
       ),
     ).toBe("#1d4ed8");
-    // The storage started without making a database: nobody has signed in (section 3.2).
+    // The storage started without making a database of its own: nobody has signed in (section
+    // 3.2). The two there are Firebase's: Auth's persistence, which it opens to see that it can,
+    // and the heartbeats of @firebase/app — its versions and the day, sent in X-Firebase-Client
+    // with the requests to Firebase Auth (section 3.7).
     expect(
-      await page.evaluate("indexedDB.databases().then((all) => all.map((db) => db.name))"),
-    ).toEqual([]);
+      await page.evaluate("indexedDB.databases().then((all) => all.map((db) => db.name).sort())"),
+    ).toEqual(["firebase-heartbeat-database", "firebaseLocalStorageDb"]);
+    expect(violations).toEqual([]);
+    await page.context().close();
+  }, 60_000);
+
+  it("opens the sign-in window under the header, asking only the hosts section 3.7 names (Д8)", async () => {
+    writeFileSync(local, JSON.stringify(file(ORIGIN)));
+    const { page, violations } = await open();
+    // Every request off app's origin, page and window alike, by its host, in its order.
+    const google: string[] = [];
+    await page.context().route(
+      (url) => url.origin !== ORIGIN,
+      async (route) => {
+        const url = new URL(route.request().url());
+        google.push(url.host);
+        if (url.host === "apis.google.com") {
+          await route.fulfill({ contentType: "text/javascript", body: GAPI });
+        } else if (url.host === "identitytoolkit.googleapis.com") {
+          await route.fulfill({
+            contentType: "application/json",
+            headers: { "access-control-allow-origin": "*", "access-control-allow-headers": "*" },
+            body: JSON.stringify({ projectId: "example-project", authorizedDomains: [HOST] }),
+          });
+        } else {
+          await route.fulfill({
+            contentType: "text/html",
+            body: "<!doctype html><title>auth</title>",
+          });
+        }
+      },
+    );
+    await page.goto(`${ORIGIN}/`);
+    const button = page.getByRole("button", { name: "Sign in with Google" });
+    await button.waitFor();
+    // On a computer the SDK asks Google nothing before the window (section 4).
+    expect(google).toEqual([]);
+    const opened = page.waitForEvent("popup");
+    await button.click();
+    const popup = await opened;
+    expect(new URL(popup.url()).origin + new URL(popup.url()).pathname).toBe(
+      "https://example-project.firebaseapp.com/__/auth/handler",
+    );
+    // The hidden iframe of the sign-in pages is in the page, under frame-src.
+    await page
+      .locator('iframe[src^="https://example-project.firebaseapp.com/__/auth/iframe"]')
+      .waitFor({ state: "attached" });
+    await expect.poll(() => google.includes("identitytoolkit.googleapis.com")).toBe(true);
+    expect(
+      google.every((host) => GOOGLE.includes(host)),
+      google.join(", "),
+    ).toBe(true);
+    expect(google.slice(0, 2)).toEqual(["apis.google.com", "example-project.firebaseapp.com"]);
     expect(violations).toEqual([]);
     await page.context().close();
   }, 60_000);

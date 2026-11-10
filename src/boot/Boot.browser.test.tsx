@@ -4,11 +4,15 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 import { LanguageButtons } from "../i18n/LanguageButtons.tsx";
 import { addProfile } from "../storage/profile.ts";
-import { setAccount } from "../storage/registry.ts";
-import { profileDatabase, REGISTRY, SETTINGS } from "../storage/schema.ts";
+import { setAccount, setSignIn } from "../storage/registry.ts";
+import { FIREBASE_AUTH, profileDatabase, REGISTRY, SETTINGS } from "../storage/schema.ts";
 import { readLanguage, writeLanguage } from "../storage/settings.ts";
 import { memoryDevice } from "../test/device.ts";
+import { fakeSignIn } from "../test/signin.ts";
 import { Boot, useDeployment, useStorage } from "./Boot.tsx";
+
+/** A sign-in service with nobody signed in, in place of Firebase Auth. */
+const signedOut = () => fakeSignIn();
 
 const ORIGIN = "https://app.example.org";
 const FILE = {
@@ -51,7 +55,14 @@ describe("Boot", () => {
   it("in a frame shows its own screen and asks nothing of the network", () => {
     const fetcher = vi.fn<typeof fetch>();
     render(
-      <Boot framed origin={ORIGIN} languages={["en-GB"]} device={device()} fetcher={fetcher}>
+      <Boot
+        signIn={signedOut}
+        framed
+        origin={ORIGIN}
+        languages={["en-GB"]}
+        device={device()}
+        fetcher={fetcher}
+      >
         <Shell />
       </Boot>,
     );
@@ -65,7 +76,14 @@ describe("Boot", () => {
     let answer: (response: Response) => void = () => {};
     const fetcher = vi.fn<typeof fetch>(() => new Promise((resolve) => (answer = resolve)));
     render(
-      <Boot framed={false} origin={ORIGIN} languages={[]} device={device()} fetcher={fetcher}>
+      <Boot
+        signIn={signedOut}
+        framed={false}
+        origin={ORIGIN}
+        languages={[]}
+        device={device()}
+        fetcher={fetcher}
+      >
         <Shell />
       </Boot>,
     );
@@ -80,7 +98,14 @@ describe("Boot", () => {
       .mockRejectedValueOnce(new TypeError("Failed to fetch"))
       .mockResolvedValueOnce(json(FILE));
     render(
-      <Boot framed={false} origin={ORIGIN} languages={["en"]} device={device()} fetcher={fetcher}>
+      <Boot
+        signIn={signedOut}
+        framed={false}
+        origin={ORIGIN}
+        languages={["en"]}
+        device={device()}
+        fetcher={fetcher}
+      >
         <Shell />
       </Boot>,
     );
@@ -97,7 +122,14 @@ describe("Boot", () => {
       .mockRejectedValueOnce(new TypeError("Failed to fetch"))
       .mockImplementationOnce(() => new Promise((resolve) => (answer = resolve)));
     render(
-      <Boot framed={false} origin={ORIGIN} languages={["en"]} device={device()} fetcher={fetcher}>
+      <Boot
+        signIn={signedOut}
+        framed={false}
+        origin={ORIGIN}
+        languages={["en"]}
+        device={device()}
+        fetcher={fetcher}
+      >
         <Shell />
       </Boot>,
     );
@@ -118,7 +150,14 @@ describe("Boot", () => {
     } as unknown as Response;
     const fetcher = vi.fn<typeof fetch>(async () => odd);
     render(
-      <Boot framed={false} origin={ORIGIN} languages={["en"]} device={device()} fetcher={fetcher}>
+      <Boot
+        signIn={signedOut}
+        framed={false}
+        origin={ORIGIN}
+        languages={["en"]}
+        device={device()}
+        fetcher={fetcher}
+      >
         <Shell />
       </Boot>,
     );
@@ -129,6 +168,7 @@ describe("Boot", () => {
     const fetcher = vi.fn<typeof fetch>(async () => json({ ...FILE, measurementId: "G-1" }));
     render(
       <Boot
+        signIn={signedOut}
         framed={false}
         origin={ORIGIN}
         languages={["ru-RU", "en"]}
@@ -151,7 +191,14 @@ describe("Boot", () => {
   it("offers a reload when a module of the build is gone, over what it shows, and reloads on a tap", async () => {
     const fetcher = vi.fn<typeof fetch>(async () => json(FILE));
     render(
-      <Boot framed={false} origin={ORIGIN} languages={["en"]} device={device()} fetcher={fetcher}>
+      <Boot
+        signIn={signedOut}
+        framed={false}
+        origin={ORIGIN}
+        languages={["en"]}
+        device={device()}
+        fetcher={fetcher}
+      >
         <Shell />
       </Boot>,
     );
@@ -171,7 +218,14 @@ describe("Boot", () => {
       .mockResolvedValueOnce(json({}, 404))
       .mockRejectedValueOnce(new TypeError("Failed to fetch"));
     const { unmount } = render(
-      <Boot framed={false} origin={ORIGIN} languages={["en"]} device={device()} fetcher={fetcher}>
+      <Boot
+        signIn={signedOut}
+        framed={false}
+        origin={ORIGIN}
+        languages={["en"]}
+        device={device()}
+        fetcher={fetcher}
+      >
         <Shell />
       </Boot>,
     );
@@ -183,7 +237,14 @@ describe("Boot", () => {
     expect(screen.getByRole("status")).toBeTruthy();
     unmount();
     render(
-      <Boot framed={false} origin={ORIGIN} languages={["en"]} device={device()} fetcher={fetcher}>
+      <Boot
+        signIn={signedOut}
+        framed={false}
+        origin={ORIGIN}
+        languages={["en"]}
+        device={device()}
+        fetcher={fetcher}
+      >
         <Shell />
       </Boot>,
     );
@@ -197,7 +258,7 @@ describe("Boot and the storage", () => {
     const open = vi.spyOn(backend, "open");
     const remove = vi.spyOn(backend, "remove");
     render(
-      <Boot framed origin={ORIGIN} languages={["en"]} device={device}>
+      <Boot signIn={signedOut} framed origin={ORIGIN} languages={["en"]} device={device}>
         <Stored />
       </Boot>,
     );
@@ -215,6 +276,7 @@ describe("Boot and the storage", () => {
     backend.failing.clear();
     render(
       <Boot
+        signIn={signedOut}
         framed={false}
         origin={ORIGIN}
         languages={["en"]}
@@ -228,12 +290,13 @@ describe("Boot and the storage", () => {
     expect(backend.databases.size).toBe(0);
   });
 
-  it("starts the app even when the start of the storage failed", async () => {
+  it("starts no sign-in when the start of the storage failed, and says the data can't be read", async () => {
     const { device } = memoryDevice();
     await setAccount(device, "account-1");
     vi.spyOn(device, "now").mockImplementation(() => {
       throw new Error("no clock");
     });
+    const made = vi.fn(() => fakeSignIn());
     render(
       <Boot
         framed={false}
@@ -241,11 +304,69 @@ describe("Boot and the storage", () => {
         languages={["en"]}
         device={device}
         fetcher={async () => json(FILE)}
+        signIn={made}
       >
         <Stored />
       </Boot>,
     );
-    expect(await screen.findByText("sign-in failed")).toBeTruthy();
+    expect(
+      await screen.findByRole("heading", { name: "The data on this device can't be read" }),
+    ).toBeTruthy();
+    expect(screen.queryByText(/^sign-in /)).toBeNull();
+    expect(made).not.toHaveBeenCalled();
+  });
+
+  it("starts no sign-in while another tab holds the previous project's, and says so", async () => {
+    const { device, backend } = memoryDevice();
+    await setAccount(device, "account-1");
+    await setSignIn(device, { projectId: "previous-project", apiKey: "previous-key" });
+    backend.blocked.add(FIREBASE_AUTH);
+    const made = vi.fn(() => fakeSignIn());
+    render(
+      <Boot
+        framed={false}
+        origin={ORIGIN}
+        languages={["en"]}
+        device={device}
+        fetcher={async () => json(FILE)}
+        signIn={made}
+      >
+        <Stored />
+      </Boot>,
+    );
+    expect(
+      await screen.findByRole("heading", {
+        name: "The app is open in another tab with the previous sign-in. Close that tab and try again",
+      }),
+    ).toBeTruthy();
+    expect(made).not.toHaveBeenCalled();
+  });
+
+  it("makes the sign-in service once the project is compared, once, and sets its window's language", async () => {
+    const { device } = memoryDevice();
+    const service = fakeSignIn();
+    const made = vi.fn((_: unknown) => service);
+    render(
+      <StrictMode>
+        <Boot
+          framed={false}
+          origin={ORIGIN}
+          languages={["ru"]}
+          device={device}
+          fetcher={async () => json(FILE)}
+          signIn={made}
+        >
+          <LanguageButtons />
+          <Stored />
+        </Boot>
+      </StrictMode>,
+    );
+    expect(await screen.findByText("sign-in same")).toBeTruthy();
+    expect(made).toHaveBeenCalledOnce();
+    expect(made.mock.calls[0]?.[0]).toEqual(FILE.signIn);
+    await vi.waitFor(() => expect(service.languages.at(-1)).toBe("ru"));
+    await userEvent.click(screen.getByRole("button", { name: "English" }));
+    await vi.waitFor(() => expect(service.languages.at(-1)).toBe("en"));
   });
 
   it("says the data was erased when the browser erased the origin, in the device's language", async () => {
@@ -253,6 +374,7 @@ describe("Boot and the storage", () => {
     await setAccount(device, "account-1");
     render(
       <Boot
+        signIn={signedOut}
         framed={false}
         origin={ORIGIN}
         languages={["ru"]}
@@ -276,6 +398,7 @@ describe("Boot and the storage", () => {
     await setAccount(device, "account-1");
     render(
       <Boot
+        signIn={signedOut}
         framed={false}
         origin={ORIGIN}
         languages={["en"]}
@@ -305,6 +428,7 @@ describe("Boot and the storage", () => {
     render(
       <StrictMode>
         <Boot
+          signIn={signedOut}
           framed={false}
           origin={ORIGIN}
           languages={["en"]}
@@ -326,6 +450,7 @@ describe("Boot and the storage", () => {
     await addProfile(device, "p1");
     render(
       <Boot
+        signIn={signedOut}
         framed={false}
         origin={ORIGIN}
         languages={["en"]}
@@ -349,6 +474,7 @@ describe("Boot and the storage", () => {
     await setAccount(device, "account-1");
     render(
       <Boot
+        signIn={signedOut}
         framed={false}
         origin={ORIGIN}
         languages={["en"]}
@@ -373,6 +499,7 @@ describe("Boot and the storage", () => {
     await addProfile(device, "p1");
     render(
       <Boot
+        signIn={signedOut}
         framed={false}
         origin={ORIGIN}
         languages={["en"]}
@@ -403,6 +530,7 @@ describe("Boot and the device's language", () => {
     await writeLanguage(device, "ru");
     render(
       <Boot
+        signIn={signedOut}
         framed={false}
         origin={ORIGIN}
         languages={["en"]}
@@ -425,6 +553,7 @@ describe("Boot and the device's language", () => {
     await backend.open(SETTINGS, { version: 9, stores: {} }, { create: true, onLost: () => {} });
     const { unmount } = render(
       <Boot
+        signIn={signedOut}
         framed={false}
         origin={ORIGIN}
         languages={["ru-RU"]}
@@ -440,6 +569,7 @@ describe("Boot and the device's language", () => {
     await writeLanguage(other.device, "kk");
     render(
       <Boot
+        signIn={signedOut}
         framed={false}
         origin={ORIGIN}
         languages={["en"]}
@@ -460,6 +590,7 @@ describe("Boot and the device's language", () => {
     );
     render(
       <Boot
+        signIn={signedOut}
         framed={false}
         origin={ORIGIN}
         languages={["ru"]}
@@ -478,6 +609,7 @@ describe("Boot and the device's language", () => {
     await backend.open(SETTINGS, { version: 9, stores: {} }, { create: true, onLost: () => {} });
     const tab = (tabDevice = device) => (
       <Boot
+        signIn={signedOut}
         framed={false}
         origin={ORIGIN}
         languages={["en"]}
@@ -506,7 +638,7 @@ describe("Boot and the device's language", () => {
     const { device } = memoryDevice();
     await writeLanguage(device, "ru");
     render(
-      <Boot framed origin={ORIGIN} languages={["en"]} device={device}>
+      <Boot signIn={signedOut} framed origin={ORIGIN} languages={["en"]} device={device}>
         <Shell />
       </Boot>,
     );
@@ -519,6 +651,7 @@ describe("Boot and the device's language", () => {
     const { device, backend } = memoryDevice();
     const tab = (tabDevice = device) => (
       <Boot
+        signIn={signedOut}
         framed={false}
         origin={ORIGIN}
         languages={["en"]}

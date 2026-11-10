@@ -1,0 +1,492 @@
+// The way into the app (sections 3.2, 3.6 and 3.10 of docs/architecture.md; R19 in
+// docs/decisions.md): the sign-in, the invite code of a user with no account, the owner's own
+// profile, the choice of the learner and the sign-out, each a screen of its own in the language of
+// the device. The app below it opens only once a learner is chosen, so that nothing of it opens
+// before the device has erased what an account other than the one api names left there.
+import type { Profile } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
+import {
+  createContext,
+  type FormEvent,
+  type ReactNode,
+  useContext,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
+import { useApi } from "../api/ApiContext.tsx";
+import type { Failure } from "../api/failure.ts";
+import { failureText } from "../api/words.ts";
+import { Screen } from "../app/Screen.tsx";
+import { useDeployment, useStorage } from "../boot/Boot.tsx";
+import { Offline, StorageGone } from "../boot/Screens.tsx";
+import { useLanguage } from "../i18n/LanguageContext.tsx";
+import { usePackages } from "../packages/PackagesContext.tsx";
+import { useSignIn } from "../signin/SignInContext.tsx";
+import { SignInScreen } from "../signin/SignInScreen.tsx";
+import type { Device } from "../storage/device.ts";
+import { countryNames } from "./countries.ts";
+import { pseudonymOf, Session, type Unfinished, unfinishedWork } from "./session.ts";
+
+/** The learner chosen, and what the bar above the learner's screens does. */
+export interface Learner {
+  readonly learner: Profile;
+  readonly switchLearner: () => void;
+  readonly signOut: () => void;
+}
+
+const LearnerContext = createContext<Learner | undefined>(undefined);
+
+export const LearnerProvider = LearnerContext.Provider;
+
+/** The learner chosen; none outside the gate, as in a screen's own test. */
+export function useLearner(): Learner | undefined {
+  return useContext(LearnerContext);
+}
+
+export function AccountGate({ children }: { readonly children: ReactNode }) {
+  const api = useApi();
+  const { device } = useStorage();
+  const service = useSignIn();
+  const { checks } = usePackages();
+  const { signIn } = useDeployment();
+  const { projectId, apiKey } = signIn;
+  const session = useMemo(
+    () => new Session({ api, device, service, project: { projectId, apiKey }, checks }),
+    [api, device, service, projectId, apiKey, checks],
+  );
+  useEffect(() => {
+    session.start();
+    return () => session.stop();
+  }, [session]);
+  const state = useSyncExternalStore(session.subscribe, session.snapshot);
+  const [leaving, setLeaving] = useState(false);
+  const [left, setLeft] = useState(false);
+  const { words } = useLanguage();
+  const open = state.step === "choose" || state.step === "learning";
+  // The sign-out screen is for the account open when it was asked: once that has gone some other
+  // way — another tab signed out, the account is gone — the next account does not open on it.
+  useEffect(() => {
+    if (!open) setLeaving(false);
+  }, [open]);
+
+  if (leaving && open) {
+    return (
+      <SignOutScreen
+        device={device}
+        profiles={state.account.profiles}
+        onCancel={() => setLeaving(false)}
+        onConfirm={async () => {
+          const done = await session.signOut();
+          if (done === "failed") return "failed";
+          setLeft(done === "left");
+          setLeaving(false);
+          return done;
+        }}
+      />
+    );
+  }
+  switch (state.step) {
+    case "starting":
+    case "loading":
+      return null;
+    case "signed-out":
+      return (
+        <SignInScreen
+          onSignIn={async () => {
+            setLeft(false);
+            return session.signIn();
+          }}
+          {...(state.result === undefined ? {} : { result: state.result })}
+          left={left}
+        />
+      );
+    case "offline":
+      return <Offline onRetry={() => void session.load()} />;
+    case "unreadable":
+      return <StorageGone trouble="unreadable" />;
+    case "held":
+      return (
+        <Screen title={words.text("account.held")}>
+          <button type="button" onClick={() => void session.load()}>
+            {words.text("boot.retry")}
+          </button>
+        </Screen>
+      );
+    case "failed":
+      return (
+        <Screen title={failureText(state.failure, words)}>
+          <button type="button" onClick={() => void session.load()}>
+            {words.text("boot.retry")}
+          </button>
+        </Screen>
+      );
+    case "invite":
+      return <InviteScreen onCreate={(code) => session.createAccount(code)} />;
+    case "owner-profile":
+      return (
+        <OwnerProfileScreen
+          onCreate={(pseudonym, country) => session.createOwnerProfile(pseudonym, country)}
+        />
+      );
+    case "choose":
+      return (
+        <ChooseScreen
+          profiles={[state.owner]}
+          first={state.first}
+          onChoose={() => session.choose()}
+          onSignOut={() => setLeaving(true)}
+        />
+      );
+    case "learning":
+      return (
+        <LearnerProvider
+          value={{
+            learner: state.learner,
+            switchLearner: () => session.switchLearner(),
+            signOut: () => setLeaving(true),
+          }}
+        >
+          {children}
+        </LearnerProvider>
+      );
+  }
+}
+
+/** A failure a form shows below its button. */
+function FormFailure({ failure }: { readonly failure: Failure | undefined }) {
+  const { words } = useLanguage();
+  return failure === undefined ? null : (
+    <p role="alert" className="nt-error">
+      {failureText(failure, words)}
+    </p>
+  );
+}
+
+/** The ID of a field's hint and error, as `aria-describedby` names them. */
+function described(...ids: (string | false)[]): string | undefined {
+  const named = ids.filter((id): id is string => id !== false);
+  return named.length === 0 ? undefined : named.join(" ");
+}
+
+/** The invite code and the owner's statement of being 18 or older (R118 in spec). */
+export function InviteScreen({
+  onCreate,
+}: {
+  readonly onCreate: (code: string) => Promise<"done" | "code-not-accepted" | Failure>;
+}) {
+  const { words } = useLanguage();
+  const id = useId();
+  const codeField = useRef<HTMLInputElement>(null);
+  const adultField = useRef<HTMLInputElement>(null);
+  const [code, setCode] = useState("");
+  const [adult, setAdult] = useState(false);
+  const [codeError, setCodeError] = useState<string | undefined>(undefined);
+  const [adultError, setAdultError] = useState(false);
+  const [failure, setFailure] = useState<Failure | undefined>(undefined);
+  const [pending, setPending] = useState(false);
+
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    const noCode = code.trim() === "" ? words.text("account.code-needed") : undefined;
+    setCodeError(noCode);
+    setAdultError(!adult);
+    setFailure(undefined);
+    if (noCode !== undefined) return codeField.current?.focus();
+    if (!adult) return adultField.current?.focus();
+    setPending(true);
+    const result = await onCreate(code.trim());
+    setPending(false);
+    if (result === "code-not-accepted") {
+      setCodeError(words.text("account.code-not-accepted"));
+      codeField.current?.focus();
+    } else if (result !== "done") {
+      setFailure(result);
+    }
+  }
+
+  return (
+    <Screen title={words.text("account.invite-title")}>
+      <p>{words.text("account.invite-intro")}</p>
+      <form noValidate onSubmit={(event) => void submit(event)}>
+        <div className="nt-field">
+          <label htmlFor={`${id}-code`}>{words.text("account.invite-title")}</label>
+          <input
+            ref={codeField}
+            id={`${id}-code`}
+            type="text"
+            autoComplete="off"
+            autoCapitalize="characters"
+            spellCheck={false}
+            value={code}
+            aria-invalid={codeError !== undefined}
+            aria-describedby={described(codeError !== undefined && `${id}-code-error`)}
+            onChange={(event) => setCode(event.target.value)}
+          />
+          {codeError === undefined ? null : (
+            <p id={`${id}-code-error`} className="nt-error">
+              {codeError}
+            </p>
+          )}
+        </div>
+        <div className="nt-field">
+          <div className="nt-check">
+            <input
+              ref={adultField}
+              id={`${id}-adult`}
+              type="checkbox"
+              checked={adult}
+              aria-invalid={adultError}
+              aria-describedby={described(adultError && `${id}-adult-error`)}
+              onChange={(event) => setAdult(event.target.checked)}
+            />
+            <label htmlFor={`${id}-adult`}>{words.text("account.adult")}</label>
+          </div>
+          {adultError ? (
+            <p id={`${id}-adult-error`} className="nt-error">
+              {words.text("account.adult-needed")}
+            </p>
+          ) : null}
+        </div>
+        <button type="submit" disabled={pending}>
+          {words.text("account.create")}
+        </button>
+        <FormFailure failure={failure} />
+      </form>
+    </Screen>
+  );
+}
+
+/** The owner's own profile as a learner: a pseudonym and the country, of the category `adult`. */
+export function OwnerProfileScreen({
+  onCreate,
+}: {
+  readonly onCreate: (
+    pseudonym: string,
+    country: string,
+  ) => Promise<"done" | "country-not-accepted" | Failure>;
+}) {
+  const { language, words } = useLanguage();
+  const id = useId();
+  const pseudonymField = useRef<HTMLInputElement>(null);
+  const countryField = useRef<HTMLSelectElement>(null);
+  const countries = useMemo(() => countryNames(language), [language]);
+  const [pseudonym, setPseudonym] = useState("");
+  const [country, setCountry] = useState("");
+  const [pseudonymError, setPseudonymError] = useState(false);
+  const [countryError, setCountryError] = useState<string | undefined>(undefined);
+  const [failure, setFailure] = useState<Failure | undefined>(undefined);
+  const [pending, setPending] = useState(false);
+
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    const name = pseudonymOf(pseudonym);
+    const noCountry = country === "" ? words.text("profile.country-choose") : undefined;
+    setPseudonymError(name === undefined);
+    setCountryError(noCountry);
+    setFailure(undefined);
+    if (name === undefined) return pseudonymField.current?.focus();
+    if (noCountry !== undefined) return countryField.current?.focus();
+    setPending(true);
+    const result = await onCreate(name, country);
+    setPending(false);
+    if (result === "country-not-accepted") {
+      setCountryError(words.text("profile.country-not-accepted"));
+      countryField.current?.focus();
+    } else if (result !== "done") {
+      setFailure(result);
+    }
+  }
+
+  return (
+    <Screen title={words.text("profile.title")}>
+      <form noValidate onSubmit={(event) => void submit(event)}>
+        <div className="nt-field">
+          <label htmlFor={`${id}-pseudonym`}>{words.text("profile.pseudonym")}</label>
+          <input
+            ref={pseudonymField}
+            id={`${id}-pseudonym`}
+            type="text"
+            autoComplete="off"
+            value={pseudonym}
+            aria-invalid={pseudonymError}
+            aria-describedby={described(
+              `${id}-pseudonym-hint`,
+              pseudonymError && `${id}-pseudonym-error`,
+            )}
+            onChange={(event) => setPseudonym(event.target.value)}
+          />
+          <p id={`${id}-pseudonym-hint`} className="nt-hint">
+            {words.text("profile.pseudonym-hint")}
+          </p>
+          {pseudonymError ? (
+            <p id={`${id}-pseudonym-error`} className="nt-error">
+              {words.text("profile.pseudonym-length")}
+            </p>
+          ) : null}
+        </div>
+        <div className="nt-field">
+          <label htmlFor={`${id}-country`}>{words.text("profile.country")}</label>
+          <select
+            ref={countryField}
+            id={`${id}-country`}
+            value={country}
+            aria-invalid={countryError !== undefined}
+            aria-describedby={described(countryError !== undefined && `${id}-country-error`)}
+            onChange={(event) => setCountry(event.target.value)}
+          >
+            <option value="">{words.text("profile.country-choose")}</option>
+            {countries.map(({ code, name }) => (
+              <option key={code} value={code}>
+                {name}
+              </option>
+            ))}
+          </select>
+          {countryError === undefined ? null : (
+            <p id={`${id}-country-error`} className="nt-error">
+              {countryError}
+            </p>
+          )}
+        </div>
+        <button type="submit" disabled={pending}>
+          {words.text("profile.create")}
+        </button>
+        <FormFailure failure={failure} />
+      </form>
+    </Screen>
+  );
+}
+
+/** What the browser said of keeping the site's data. */
+type Kept = "granted" | "refused";
+
+/** Asks the browser to keep the site's data: no browser that cannot is asked. */
+async function persist(): Promise<Kept> {
+  try {
+    return (await navigator.storage?.persist?.()) === true ? "granted" : "refused";
+  } catch {
+    return "refused";
+  }
+}
+
+/**
+ * The choice of the learner: the owner's profile with no PIN while the account has no child
+ * (section 3.6), and on the first sign-in the line that learners' work is kept here (section 3.2).
+ */
+export function ChooseScreen({
+  profiles,
+  first,
+  onChoose,
+  onSignOut,
+}: {
+  readonly profiles: readonly Profile[];
+  readonly first: boolean;
+  readonly onChoose: (profile: Profile) => void;
+  readonly onSignOut: () => void;
+}) {
+  const { words } = useLanguage();
+  const [kept, setKept] = useState<Kept | undefined>(undefined);
+  return (
+    <Screen title={words.text("choose.title")}>
+      <ul className="nt-buttons">
+        {profiles.map((profile) => (
+          <li key={profile.profileId}>
+            <button type="button" onClick={() => onChoose(profile)}>
+              {profile.pseudonym}
+            </button>
+          </li>
+        ))}
+      </ul>
+      {first ? (
+        <section>
+          <p>{words.text("persist.line")}</p>
+          {kept === undefined ? (
+            <button
+              type="button"
+              className="nt-secondary"
+              onClick={() => void persist().then(setKept)}
+            >
+              {words.text("persist.ask")}
+            </button>
+          ) : null}
+          <p role="status">{kept === undefined ? null : words.text(`persist.${kept}`)}</p>
+        </section>
+      ) : null}
+      <p>
+        <button type="button" className="nt-secondary" onClick={onSignOut}>
+          {words.text("signout.button")}
+        </button>
+      </p>
+    </Screen>
+  );
+}
+
+/** Before the sign-out: what it takes from this device (section 3.2), and a way back. */
+export function SignOutScreen({
+  device,
+  profiles,
+  onConfirm,
+  onCancel,
+}: {
+  readonly device: Device;
+  readonly profiles: readonly Profile[];
+  readonly onConfirm: () => Promise<"erased" | "left" | "failed">;
+  readonly onCancel: () => void;
+}) {
+  const { words } = useLanguage();
+  const [work, setWork] = useState<Unfinished[] | undefined>(undefined);
+  const [pending, setPending] = useState(false);
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    let current = true;
+    void unfinishedWork(device, profiles)
+      .catch((): Unfinished[] => [])
+      .then((found) => {
+        if (current) setWork(found);
+      });
+    return () => {
+      current = false;
+    };
+  }, [device, profiles]);
+  return (
+    <Screen title={words.text("signout.title")}>
+      <p>{words.text("signout.erases")}</p>
+      {work === undefined ? null : work.length === 0 ? (
+        <p>{words.text("signout.nothing")}</p>
+      ) : (
+        <ul>
+          {work.map(({ profileId, pseudonym, count }) => (
+            <li key={profileId}>{words.text("signout.unfinished", { pseudonym, count })}</li>
+          ))}
+        </ul>
+      )}
+      <div className="nt-buttons">
+        <button
+          type="button"
+          disabled={pending}
+          onClick={() => {
+            setPending(true);
+            setFailed(false);
+            void onConfirm().then((done) => {
+              if (done !== "failed") return;
+              setPending(false);
+              setFailed(true);
+            });
+          }}
+        >
+          {words.text("signout.confirm")}
+        </button>
+        <button type="button" className="nt-secondary" onClick={onCancel}>
+          {words.text("common.cancel")}
+        </button>
+      </div>
+      {failed ? (
+        <p role="alert" className="nt-error">
+          {words.text("signout.failed")}
+        </p>
+      ) : null}
+    </Screen>
+  );
+}

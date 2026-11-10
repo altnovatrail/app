@@ -73,3 +73,16 @@ export function ReloadOffer() {
     </div>
   );
 }
+
+/**
+ * Another tab holds Firebase Auth's database of the copy's previous project, which this start could
+ * not erase: no sign-in starts in this tab until that tab is closed (section 3.7).
+ */
+export function OtherTab() {
+  const { words } = useLanguage();
+  return (
+    <Screen title={words.text("signin.other-tab")}>
+      <ReloadButton />
+    </Screen>
+  );
+}

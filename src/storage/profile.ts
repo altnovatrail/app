@@ -265,6 +265,14 @@ export class Profile {
     });
   }
 
+  /**
+   * How many attempts the profile keeps unfinished: each one ended is erased, so every attempt kept
+   * is one the sign-out would take (section 3.2). They are counted, not read.
+   */
+  async unfinished(): Promise<number> {
+    return this.connection.read(["attempts"], (tx) => tx.count("attempts"));
+  }
+
   /** Attempts and lessons last changed at a time or before go, with all of an attempt's work. */
   async expire(cutoff: number): Promise<void> {
     const range = { upper: cutoff };
