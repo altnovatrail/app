@@ -1,4 +1,5 @@
-// The start of app's storage, before anything of it opens (section 3.2 of docs/architecture.md;
+// The start of app's storage of the account — the registry and the databases it names — before
+// anything of it opens; the device's settings are none of it (section 3.2 of docs/architecture.md;
 // R16 in docs/decisions.md): first the erasures the browser did not finish, then the project of the
 // sign-in service against the registry's, then what app closed before it went — the work of a
 // correct submission whose words never came — and last the term of 30 days, in every profile's

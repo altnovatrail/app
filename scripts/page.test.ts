@@ -107,6 +107,12 @@ describe("the built page", () => {
     await page.getByRole("heading", { name: "NovaTrail" }).waitFor();
     const own = requests.filter((path) => !path.startsWith("/assets/") && path !== "/");
     expect(own).toEqual(["/deployment.json"]);
+    // The theme came with the build, under the lower layer's style-src 'self' (section 3.9).
+    expect(
+      await page.evaluate(
+        "getComputedStyle(document.documentElement).getPropertyValue('--nt-primary').trim()",
+      ),
+    ).toBe("#1d4ed8");
     // The storage started without making a database: nobody has signed in (section 3.2).
     expect(
       await page.evaluate("indexedDB.databases().then((all) => all.map((db) => db.name))"),

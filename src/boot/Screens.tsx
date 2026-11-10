@@ -1,46 +1,43 @@
-// The failure screens (sections 3.2 and 3.7 of docs/architecture.md): static, from the build itself, in the
-// language of the device, before any profile or sign-in. Each is a page of its own, with its
-// heading (section 3.9).
-import type { Language } from "./language.ts";
-import { operatorLine, WORDS } from "./words.ts";
+// The failure screens (sections 3.2 and 3.7 of docs/architecture.md): static, from the build itself,
+// in the language of the device, before any profile or sign-in. Each is a screen of its own, with
+// its heading (section 3.9); their words are the dictionaries' (section 3.8), and the line for
+// whoever deployed the copy is English on every screen (the 2026-11-02 amendment to R09).
+import { Screen } from "../app/Screen.tsx";
+import { useLanguage } from "../i18n/LanguageContext.tsx";
 
-interface ScreenProps {
-  readonly language: Language;
+/** The line for whoever deployed the copy, in English, with what is wrong. */
+export function operatorLine(detail: string): string {
+  return `For whoever deployed this copy: ${detail}.`;
 }
 
 /** app open in a frame of another page: nothing of the interface and no data. */
-export function Framed({ language }: ScreenProps) {
-  return (
-    <main lang={language}>
-      <h1>{WORDS[language].framed}</h1>
-    </main>
-  );
+export function Framed() {
+  const { words } = useLanguage();
+  return <Screen title={words.text("boot.framed")} />;
 }
 
 /** The file did not come: the network, or a hosting that answered 5xx. */
-export function Offline({ language, onRetry }: ScreenProps & { readonly onRetry: () => void }) {
-  const words = WORDS[language];
+export function Offline({ onRetry }: { readonly onRetry: () => void }) {
+  const { words } = useLanguage();
   return (
-    <main lang={language}>
-      <h1>{words.offline}</h1>
+    <Screen title={words.text("boot.offline")}>
       <button type="button" onClick={onRetry}>
-        {words.retry}
+        {words.text("boot.retry")}
       </button>
-    </main>
+    </Screen>
   );
 }
 
 /** No file, or not the right one: a grown-up's help, and below what whoever deployed it needs. */
-export function Unconfigured({ language, detail }: ScreenProps & { readonly detail: string }) {
-  const words = WORDS[language];
+export function Unconfigured({ detail }: { readonly detail: string }) {
+  const { words } = useLanguage();
   return (
-    <main lang={language}>
-      <h1>{words.unconfigured}</h1>
-      <p>{words.grownUp}</p>
+    <Screen title={words.text("boot.unconfigured")}>
+      <p>{words.text("boot.grown-up")}</p>
       <p lang="en" data-operator="">
         {operatorLine(detail)}
       </p>
-    </main>
+    </Screen>
   );
 }
 
@@ -48,33 +45,31 @@ export function Unconfigured({ language, detail }: ScreenProps & { readonly deta
  * The storage taken away while app was open (section 3.2): the browser erased this origin's data,
  * or the data is there but could not be read, and nothing of it was erased.
  */
-export function StorageGone({
-  language,
-  trouble,
-}: ScreenProps & { readonly trouble: "erased" | "unreadable" }) {
+export function StorageGone({ trouble }: { readonly trouble: "erased" | "unreadable" }) {
+  const { words } = useLanguage();
   return (
-    <main lang={language}>
-      <h1>{WORDS[language][trouble]}</h1>
-      <ReloadButton language={language} />
-    </main>
+    <Screen title={words.text(trouble === "erased" ? "boot.erased" : "boot.unreadable")}>
+      <ReloadButton />
+    </Screen>
   );
 }
 
-function ReloadButton({ language }: ScreenProps) {
+function ReloadButton() {
+  const { words } = useLanguage();
   return (
     <button type="button" onClick={() => window.location.reload()}>
-      {WORDS[language].reload}
+      {words.text("boot.reload")}
     </button>
   );
 }
 
 /** The offer to reload, over the screen: app never reloads by itself. */
-export function ReloadOffer({ language }: ScreenProps) {
-  const words = WORDS[language];
+export function ReloadOffer() {
+  const { language, words } = useLanguage();
   return (
-    <div role="status" lang={language}>
-      <p>{words.newVersion}</p>
-      <ReloadButton language={language} />
+    <div role="status" lang={language} className="nt-offer">
+      <p>{words.text("boot.new-version")}</p>
+      <ReloadButton />
     </div>
   );
 }
