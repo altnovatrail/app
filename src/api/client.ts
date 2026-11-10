@@ -1,7 +1,9 @@
 // The one client of api the screens call (section 15 of the text of the contracts; R18 in
 // docs/decisions.md): connect-es over Connect, the wire binary protobuf (section 9), each call with
-// api's own limit of 30 s, behind the interceptors of the contract's rules. A call that does not
-// answer throws an ApiError that says what it came to. No DOM beyond fetch.
+// api's own limit of 30 s, behind the interceptors of the contract's rules. The four open views of a
+// package go by a transport of their own, Connect GET with no token, no deadline and no header, so
+// that a request is simple, needs no preflight and an HTTP cache may keep its answer (T21). A call
+// that does not answer throws an ApiError that says what it came to. No DOM beyond fetch.
 import { AccountService } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import { AttemptService } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
 import { LearningService } from "@altnovatrail/contracts/novatrail/api/v1/learning_pb.js";
@@ -34,7 +36,7 @@ export interface ApiOptions {
   readonly fetch?: typeof globalThis.fetch;
   readonly sleep?: (ms: number) => Promise<void>;
   /** A transport in place of the browser's, made with the interceptors: the tests' router. */
-  readonly transport?: (interceptors: Interceptor[]) => Transport;
+  readonly transport?: (interceptors: Interceptor[], method: "POST" | "GET") => Transport;
 }
 
 export interface Api {
@@ -42,7 +44,10 @@ export interface Api {
   readonly attempt: Client<typeof AttemptService>;
   readonly learning: Client<typeof LearningService>;
   readonly module: Client<typeof ModuleService>;
+  /** `CheckPackages`, with the token. */
   readonly package: Client<typeof PackageService>;
+  /** The four open views, by Connect GET with no token: `GetManifest` and the others. */
+  readonly views: Client<typeof PackageService>;
   readonly progress: Client<typeof ProgressService>;
   readonly legal: Client<typeof LegalService>;
 }
@@ -90,15 +95,28 @@ function guarded<S extends DescService>(client: Client<S>): Client<S> {
 const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 export function createApi(options: ApiOptions): Api {
-  const interceptors = [effects(options.on), signIn(options.tokens), repeat(options.sleep ?? wait)];
+  const sleep = options.sleep ?? wait;
+  const fetcher = networked(options.fetch ?? globalThis.fetch.bind(globalThis));
+  const interceptors = [effects(options.on), signIn(options.tokens), repeat(sleep)];
   const transport =
-    options.transport?.(interceptors) ??
+    options.transport?.(interceptors, "POST") ??
     createConnectTransport({
       baseUrl: options.baseUrl,
       useBinaryFormat: true,
       defaultTimeoutMs: TIMEOUT_MS,
-      fetch: networked(options.fetch ?? globalThis.fetch.bind(globalThis)),
+      fetch: fetcher,
       interceptors,
+    });
+  // No sign-in and no deadline: Connect-Timeout-Ms would make the request one with a preflight.
+  const open = [effects(options.on), repeat(sleep)];
+  const viewsTransport =
+    options.transport?.(open, "GET") ??
+    createConnectTransport({
+      baseUrl: options.baseUrl,
+      useBinaryFormat: true,
+      useHttpGet: true,
+      fetch: fetcher,
+      interceptors: open,
     });
   const client = <S extends DescService>(service: S) => guarded(createClient(service, transport));
   return {
@@ -107,6 +125,7 @@ export function createApi(options: ApiOptions): Api {
     learning: client(LearningService),
     module: client(ModuleService),
     package: client(PackageService),
+    views: guarded(createClient(PackageService, viewsTransport)),
     progress: client(ProgressService),
     legal: client(LegalService),
   };

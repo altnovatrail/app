@@ -29,6 +29,10 @@ import { type Loaded, loadDeployment } from "../config/load.ts";
 import { LanguageProvider, type LanguageState } from "../i18n/LanguageContext.tsx";
 import { deviceLanguage, type Language, lookup } from "../i18n/language.ts";
 import { WORDS } from "../i18n/words.ts";
+import { PackageChecks } from "../packages/checks.ts";
+import { DeviceFiles } from "../packages/files.ts";
+import { type Packages, PackagesProvider } from "../packages/PackagesContext.tsx";
+import { OpenViews } from "../packages/views.ts";
 import type { Device } from "../storage/device.ts";
 import { eraseAccount, noAccess, type SignInCheck } from "../storage/erase.ts";
 import { readLanguage, writeLanguage } from "../storage/settings.ts";
@@ -174,6 +178,8 @@ export function Boot({
   );
 
   // The client of api, once the file names it (R18): its refusals reach the device here.
+  // The checks of packages, which the client's refusals reach before the packages are made.
+  const checking = useRef<PackageChecks | undefined>(undefined);
   // The client is made once for the file's api: the tokens and fetch given are read at each call, so
   // that a parent that gives new objects of them makes no new client and asks nothing again.
   const given = useRef({ tokens, apiFetch });
@@ -205,9 +211,42 @@ export function Boot({
         noAccess: async () => {
           await noAccess(device);
         },
+        // CAUSE_VERSION_NOT_GIVEN from any service asks CheckPackages (T21).
+        withdrawn: () => void checking.current?.check(),
       },
     });
   }, [apiOrigin, device]);
+
+  // The packages, once the client is there: their open views, the files of their device parts and
+  // the check of what api no longer gives (T21).
+  const packages = useMemo<Packages | undefined>(() => {
+    if (api === undefined || apiOrigin === undefined) return undefined;
+    const checks = new PackageChecks(api, device);
+    checking.current = checks;
+    const withdrawn = () => void checks.check();
+    return {
+      checks,
+      views: new OpenViews({
+        api,
+        device,
+        stale: () => setStale(true),
+        withdrawn: (digest) => checks.withdrawn.has(digest),
+      }),
+      files: new DeviceFiles({
+        api: apiOrigin,
+        withdrawn,
+        fetch: (input, init) => (given.current.apiFetch ?? globalThis.fetch)(input, init),
+      }),
+    };
+  }, [api, apiOrigin, device]);
+
+  // When app starts, once its storage has started: about every package whose views it keeps.
+  useEffect(() => {
+    if (packages === undefined || storage === undefined) return;
+    packages.checks.start();
+    void packages.checks.check();
+    return () => packages.checks.stop();
+  }, [packages, storage]);
 
   const state = useMemo<LanguageState>(
     () => ({ language, words: WORDS[language], choose }),
@@ -297,9 +336,11 @@ export function Boot({
         return (
           <DeploymentContext.Provider value={loaded.deployment}>
             {offer}
-            {storage === undefined || api === undefined ? null : (
+            {storage === undefined || api === undefined || packages === undefined ? null : (
               <StorageContext.Provider value={storage}>
-                <ApiProvider value={api}>{children}</ApiProvider>
+                <ApiProvider value={api}>
+                  <PackagesProvider value={packages}>{children}</PackagesProvider>
+                </ApiProvider>
               </StorageContext.Provider>
             )}
           </DeploymentContext.Provider>

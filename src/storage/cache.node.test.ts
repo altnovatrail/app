@@ -4,7 +4,8 @@ import { openCache, openCacheDatabase } from "./cache.ts";
 import { eraseDatabases, readRegistry, setAccount } from "./registry.ts";
 import { CACHE } from "./schema.ts";
 
-const bytes = (text: string) => new TextEncoder().encode(text);
+/** A view of the module format 0.4 whose JSON is the text given. */
+const bytes = (text: string) => ({ json: new TextEncoder().encode(text), version: "0.4" });
 
 async function setUp() {
   const setup = memoryDevice();

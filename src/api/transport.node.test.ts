@@ -6,6 +6,7 @@ import {
   GetAccountRequestSchema,
   GetAccountResponseSchema,
 } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
+import { GetManifestResponseSchema } from "@altnovatrail/contracts/novatrail/api/v1/package_pb.js";
 import { create, fromBinary, toBinary } from "@bufbuild/protobuf";
 import { describe, expect, it, vi } from "vitest";
 import { createApi, TIMEOUT_MS } from "./client.ts";
@@ -39,6 +40,21 @@ describe("the browser's transport", () => {
       await new Response(init.body as ConstructorParameters<typeof Response>[0]).arrayBuffer(),
     );
     expect(fromBinary(GetAccountRequestSchema, sent)).toBeDefined();
+  });
+
+  it("asks an open view by Connect GET with no header at all, the digest in the address", async () => {
+    const fetcher = vi.fn<typeof fetch>(async () => {
+      const body = toBinary(GetManifestResponseSchema, create(GetManifestResponseSchema, {}));
+      return new Response(body, { status: 200, headers: { "content-type": "application/proto" } });
+    });
+    const api = createApi({ baseUrl: "https://api.example.org", tokens, on, fetch: fetcher });
+    await api.views.getManifest({ packageDigest: "sha256:ab" });
+    const [url, init] = fetcher.mock.calls[0] as [string, RequestInit];
+    expect(init.method).toBe("GET");
+    expect(url).toMatch(
+      /^https:\/\/api\.example\.org\/novatrail\.api\.v1\.PackageService\/GetManifest\?connect=v1&/,
+    );
+    expect([...new Headers(init.headers).keys()]).toEqual([]);
   });
 
   it("takes a network that fails as no connection once the repeats are over", async () => {

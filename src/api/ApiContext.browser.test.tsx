@@ -9,6 +9,7 @@ import { useCallback } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 import { Boot } from "../boot/Boot.tsx";
+import { usePackages } from "../packages/PackagesContext.tsx";
 import { memoryDevice } from "../test/device.ts";
 import { ApiProvider, useApi, useRequest } from "./ApiContext.tsx";
 import { type Api, createApi } from "./client.ts";
@@ -39,6 +40,12 @@ function Account() {
       </button>
     </>
   );
+}
+
+/** A screen that has the packages. */
+function Packaged() {
+  usePackages();
+  return <p>packages</p>;
 }
 
 /** A screen that wants the client and has no provider of it. */
@@ -116,6 +123,53 @@ describe("useApi", () => {
   it("is there only below its provider", () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
     expect(() => render(<Bare />)).toThrow("useApi outside ApiProvider");
+    vi.restoreAllMocks();
+  });
+});
+
+describe("Boot and the packages", () => {
+  it("asks about the packages the device keeps when app starts, and erases one no longer given", async () => {
+    const { device } = memoryDevice();
+    const { setAccount } = await import("../storage/registry.ts");
+    const { openCache } = await import("../storage/cache.ts");
+    const { PackageStatus, CheckPackagesResponseSchema } = await import(
+      "@altnovatrail/contracts/novatrail/api/v1/package_pb.js"
+    );
+    await setAccount(device, "account-1");
+    const digest = `sha256:${"1".repeat(64)}`;
+    const cache = await openCache(device);
+    await cache?.put(digest, "manifest", { json: new Uint8Array([123, 125]), version: "0.4" });
+    const apiFetch = vi.fn<typeof fetch>(async () => {
+      const answer = create(CheckPackagesResponseSchema, {
+        packages: [{ packageDigest: digest, status: PackageStatus.NOT_GIVEN }],
+      });
+      return new Response(toBinary(CheckPackagesResponseSchema, answer), {
+        headers: { "content-type": "application/proto" },
+      });
+    });
+    const fetcher = async () =>
+      new Response(JSON.stringify(FILE), { headers: { "content-type": "application/json" } });
+    render(
+      <Boot
+        framed={false}
+        origin="https://app.example.org"
+        languages={["en"]}
+        device={device}
+        fetcher={fetcher}
+        apiFetch={apiFetch}
+        tokens={{ token: async () => "t", signOut: async () => {} }}
+      >
+        <Packaged />
+      </Boot>,
+    );
+    expect(await screen.findByText("packages")).toBeTruthy();
+    await vi.waitFor(async () => expect(await cache?.get(digest, "manifest")).toBeUndefined());
+    expect(String(apiFetch.mock.calls[0]?.[0])).toMatch(/PackageService\/CheckPackages$/);
+  });
+
+  it("are there only below Boot", () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    expect(() => render(<Packaged />)).toThrow("usePackages outside PackagesProvider");
     vi.restoreAllMocks();
   });
 });
