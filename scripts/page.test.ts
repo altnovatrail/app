@@ -274,6 +274,60 @@ describe("the built page", () => {
     await page.context().close();
   }, 60_000);
 
+  it("measures the history of writing an answer by mouse (Д4)", async () => {
+    writeFileSync(local, JSON.stringify(file(ORIGIN)));
+    const { page, violations } = await open();
+    await page.goto(`${ORIGIN}/`);
+    await page.getByRole("heading", { name: "Sign in" }).waitFor();
+    await page.evaluate(`(() => {
+      const sheet = document.createElement("novatrail-canvas");
+      sheet.lang = "en";
+      sheet.style.blockSize = "40rem";
+      document.body.append(sheet);
+      sheet.task = {
+        id: "rungs",
+        statement: [{ text: "How many rungs?" }],
+        canvas: { kind: "handwriting_sheet", grid: "squares" },
+        items: [{ answer_slots: [{ binding: "anywhere" }] }],
+      };
+    })()`);
+    const ink = page.locator("novatrail-canvas").locator("canvas");
+    await ink.scrollIntoViewIfNeeded();
+    const box = await ink.boundingBox();
+    if (box === null) throw new Error("the sheet has no box");
+    // "180 : 30 = 6, 6 + 1 = 7": twenty strokes of a digit's size, at the pace of a hand — a move
+    // every 8 ms, about 40 px a stroke —, two lines of it.
+    const top = Math.max(box.y, 0) + 200;
+    for (let n = 0; n < 20; n++) {
+      const x = box.x + 40 + (n % 10) * 60;
+      const y = top + Math.floor(n / 10) * 80;
+      await page.mouse.move(x, y);
+      await page.mouse.down();
+      for (let i = 1; i <= 16; i++) {
+        await page.mouse.move(x + Math.sin(i / 3) * 12 + i, y + i * 2.5);
+        await page.waitForTimeout(8);
+      }
+      await page.mouse.up();
+      await page.waitForTimeout(150);
+    }
+    const measured = JSON.parse(
+      await page.evaluate(`(() => {
+        const history = document.querySelector("novatrail-canvas").history;
+        const strokes = history.filter((event) => event.kind === "write");
+        const points = strokes.reduce((sum, event) => sum + event.stroke.points.length, 0);
+        return JSON.stringify({ bytes: JSON.stringify(history).length, strokes: strokes.length, points });
+      })()`),
+    ) as { bytes: number; strokes: number; points: number };
+    // Measured 2026-11-10: 20 strokes, 360 points, 23 199 bytes of JSON — about 64 bytes a point,
+    // within the estimate of section 3.2. The bounds leave room for the hand's pace.
+    expect(measured.strokes).toBe(20);
+    expect(measured.points).toBeGreaterThan(20 * 4);
+    expect(measured.bytes / measured.points).toBeLessThan(100);
+    expect(measured.bytes).toBeLessThan(60_000);
+    expect(violations).toEqual([]);
+    await page.context().close();
+  }, 120_000);
+
   it("says the app is not set up without the file, in the device's language", async () => {
     rmSync(local, { force: true });
     const { page, violations } = await open("ru-RU");

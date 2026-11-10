@@ -127,12 +127,12 @@ describe("the profile's database", () => {
 
   it("keeps each submission's context unrounded, the history's length then, and its work", async () => {
     const { profile } = await setUp();
-    expect(await profile.addSubmission("a1", work("first"), 3)).toBe("saved");
+    expect(await profile.addSubmission("a1", work("first"), 3)).toBe(0);
     const cells: ExportedWork = {
       cells: [{ item: 1, slot: 1, png: new Blob(["box"]) }],
       submission: { boxes: [{ item: 1, slot: 1, ids: [1] }], digest: "fedcba9876543210" },
     };
-    expect(await profile.addSubmission("a1", cells, 5)).toBe("saved");
+    expect(await profile.addSubmission("a1", cells, 5)).toBe(1);
     const [sheet, workbook] = (await profile.readAttempt("a1"))?.submissions ?? [];
     expect(sheet?.context).toEqual(CONTEXT);
     expect(sheet?.historyLength).toBe(3);

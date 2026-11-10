@@ -2,11 +2,13 @@
 // section 14 of the text of the format): what each asks, and the options of each answer slot bound
 // `choice`, which the sheet does not show. A tap only chooses; Check sends (section 3.3). The
 // verdict stands beside the option tapped and beside the item, in a word and a sign, not in colour
-// alone (section 3.9). A workbook's lines the canvas shows: it has no items here.
+// alone (section 3.9), and below an item answered on the sheet what was read, "Read: 6", or why it
+// could not be (R21). A workbook's lines the canvas shows: once checked, a list below the canvas
+// gives each line's verdict and what was read in its boxes.
 import type * as open from "@altnovatrail/spec/formatv0/open";
 import { type ReactNode, useId } from "react";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
-import { type Verdicts, verdictKey } from "./attempt.ts";
+import { type Reading, reasonKey, type Verdicts, verdictKey } from "./attempt.ts";
 import { slotKey, slotsOf } from "./steps.ts";
 
 /** A verdict in a word, with a sign that does not lean on colour. */
@@ -18,6 +20,52 @@ export function Verdict({ verdict, id }: { readonly verdict: string; readonly id
       <span aria-hidden="true">{correct ? "✓ " : "• "}</span>
       {words.text(verdictKey(verdict))}
     </span>
+  );
+}
+
+/** What was read in a slot, or why it could not be, in the screen's words. */
+export function ReadingLine({ reading }: { readonly reading: Reading }) {
+  const { words } = useLanguage();
+  return (
+    <p className="nt-reading">
+      {"value" in reading
+        ? words.text("task.read", { text: reading.value })
+        : words.text(reasonKey(reading.reason))}
+    </p>
+  );
+}
+
+/** The readings of an item's slots that are no choice, in their order. */
+function readingsOf(verdicts: Verdicts, item: number, slots: number): Reading[] {
+  const found: Reading[] = [];
+  for (let s = 1; s <= slots; s++) {
+    const reading = verdicts.readings.get(slotKey(item, s));
+    if (reading !== undefined) found.push(reading);
+  }
+  return found;
+}
+
+/** A workbook's lines once checked: each line's verdict and what was read in its boxes. */
+function Lines({ task, verdicts }: { readonly task: open.Task; readonly verdicts: Verdicts }) {
+  const { words } = useLanguage();
+  if (verdicts.items.size === 0) return null;
+  return (
+    <ul className="nt-lines">
+      {task.items.map((item, i) => {
+        const verdict = verdicts.items.get(i + 1);
+        if (verdict === undefined) return null;
+        return (
+          // biome-ignore lint/suspicious/noArrayIndexKey: the lines of a task never move.
+          <li key={i}>
+            {words.text("task.line", { n: i + 1 })} <Verdict verdict={verdict} />
+            {readingsOf(verdicts, i + 1, slotsOf(item).length).map((reading, r) => (
+              // biome-ignore lint/suspicious/noArrayIndexKey: the boxes of a line never move.
+              <ReadingLine key={r} reading={reading} />
+            ))}
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 
@@ -80,7 +128,7 @@ export interface ItemsProps {
 export function Items({ task, choices, verdicts, language, locked, onChoose }: ItemsProps) {
   const { words } = useLanguage();
   const name = useId();
-  if (task.canvas.kind !== "handwriting_sheet") return null;
+  if (task.canvas.kind !== "handwriting_sheet") return <Lines task={task} verdicts={verdicts} />;
   const lang = language === undefined ? {} : { lang: language };
   return (
     <div className="nt-items">
@@ -119,14 +167,25 @@ export function Items({ task, choices, verdicts, language, locked, onChoose }: I
           );
         };
         // biome-ignore-start lint/suspicious/noArrayIndexKey: the items of a task never move.
+        // The slots of an item never move: each reading is its place.
+        const readings = readingsOf(verdicts, i + 1, slotsOf(item).length).map((reading, r) => (
+          <ReadingLine key={r} reading={reading} />
+        ));
         if (at.length === 0) {
-          // An item answered on the sheet: what it asks stands beside it.
-          return item.text === undefined ? null : <p key={i}>{heading}</p>;
+          // An item answered on the sheet: what it asks stands beside it, and then what was read.
+          if (item.text === undefined && verdict === undefined) return null;
+          return (
+            <div key={i} className="nt-item">
+              <p className="nt-item-text">{heading}</p>
+              {readings}
+            </div>
+          );
         }
         if (at.length === 1 && item.answer_slots?.length === 1) {
           return (
             <div key={i} className="nt-item">
               {choicesOf(at[0] as number, heading)}
+              {readings}
             </div>
           );
         }
@@ -134,6 +193,7 @@ export function Items({ task, choices, verdicts, language, locked, onChoose }: I
           <fieldset key={i} className="nt-item">
             <legend>{heading}</legend>
             {at.map((s) => choicesOf(s, words.text("task.slot", { n: s + 1 })))}
+            {readings}
           </fieldset>
         );
         // biome-ignore-end lint/suspicious/noArrayIndexKey: the items of a task never move.

@@ -1,9 +1,11 @@
-// The task screen as the author laid it out (section 3.3 of docs/architecture.md; R20 in
-// docs/decisions.md): the canvas and below it the items with their options, the tutor's panel
-// beside it from 64rem and above it on a narrower screen, and Check in a row of its own below them. The mode's two buttons stand by the heading. Once the
-// task is solved, the panel gives way to its result: "Correct", the solution, "Try it again" and the
-// way back to My subjects; the options take no tap, and the canvas stays as it was. What it shows
-// it takes from its container, Task.tsx.
+// The task screen as the author laid it out (section 3.3 of docs/architecture.md; R20, R21 in
+// docs/decisions.md): the canvas and below it the items with their options and what was read, the
+// tutor's panel beside it from 64rem and above it on a narrower screen, and Check in a row of its
+// own below them. The mode's two buttons stand by the heading. The tutor's words stand at the top
+// of the panel, which comes for them on my own too. Once the task is solved, the panel gives way to
+// its result: "Correct", the words after a correct answer if any came, the solution, "Try it again"
+// and the way back to My subjects; the options take no tap, and the canvas stays as it was. What it
+// shows it takes from its container, Task.tsx, which also gives the canvas the tutor's marks.
 import type {
   CanvasElement,
   HistoryChangeEvent,
@@ -20,7 +22,8 @@ import { notYet, type Verdicts } from "./attempt.ts";
 import { Items, Verdict } from "./Items.tsx";
 import { Solution } from "./Solution.tsx";
 import { StepsPanel } from "./StepsPanel.tsx";
-import { choicesOnly, type Mode, type StepsState, slotsFilled } from "./steps.ts";
+import { choicesOnly, type Mode, type StepsState, slotsFilled, writingFilled } from "./steps.ts";
+import { TutorWords } from "./TutorWords.tsx";
 
 export interface TaskScreenProps {
   readonly task: open.Task;
@@ -47,6 +50,14 @@ export interface TaskScreenProps {
   readonly againFailure?: Failure;
   /** Check blinks once on a pause (section 3.3). */
   readonly blink: boolean;
+  /** The tutor's words of the rung, or after the correct answer; none while none came. */
+  readonly tutorWords?: string;
+  /** What the request of the tutor's words came to, when it gave none. */
+  readonly wordsFailure?: string;
+  /** The words came since the last check: a screen reader is told. */
+  readonly wordsCame?: boolean;
+  /** The outcome of AI at the last check, in words: a failure of AI, a quota, a limit. */
+  readonly outcome?: string;
   readonly canvasRef?: Ref<CanvasElement>;
   readonly onHistoryChange: (event: HistoryChangeEvent) => void;
   readonly onMode: (mode: Mode) => void;
@@ -65,8 +76,13 @@ export function TaskScreen(props: TaskScreenProps) {
   const lockedId = useId();
   const explanation = manifest?.languages.explanation;
   const solved = solution !== undefined;
-  const sendable = choicesOnly(task);
-  const open = !solved && sendable && slotsFilled(task, state.choices, filled);
+  const open = !solved && slotsFilled(task, state.choices, filled);
+  // What locks Check: the sheet first, then the options.
+  const locked = open
+    ? undefined
+    : !choicesOnly(task) && !writingFilled(task, filled)
+      ? "task.check-write"
+      : "task.check-locked";
   const notRight = notYet(verdicts);
   const summary = solved
     ? words.text("task.correct")
@@ -115,13 +131,17 @@ export function TaskScreen(props: TaskScreenProps) {
             onChoose={props.onChoose}
           />
         </div>
-        {solved || mode === "steps" ? (
+        {solved ||
+        mode === "steps" ||
+        props.tutorWords !== undefined ||
+        props.wordsFailure !== undefined ? (
           <aside className="nt-task-panel" aria-label={words.text("task.tutor")}>
             {solved ? (
               <>
                 <p className="nt-result">
                   <Verdict verdict="correct" />
                 </p>
+                <TutorWords words={props.tutorWords} language={explanation} />
                 <Solution parts={solution} language={explanation} media={props.media} />
                 {props.againFailure === undefined ? null : (
                   <p role="alert" className="nt-error">
@@ -143,7 +163,14 @@ export function TaskScreen(props: TaskScreenProps) {
                   </button>
                 </div>
               </>
-            ) : mode === "steps" ? (
+            ) : (
+              <TutorWords
+                words={props.tutorWords}
+                language={explanation}
+                {...(props.wordsFailure === undefined ? {} : { failure: props.wordsFailure })}
+              />
+            )}
+            {!solved && mode === "steps" ? (
               <StepsPanel
                 task={task}
                 steps={steps}
@@ -171,21 +198,23 @@ export function TaskScreen(props: TaskScreenProps) {
                 type="button"
                 className={props.blink && open ? "nt-blink" : undefined}
                 aria-disabled={!open || pending}
-                {...(sendable && !open ? { "aria-describedby": lockedId } : {})}
+                {...(locked === undefined ? {} : { "aria-describedby": lockedId })}
                 onClick={() => {
                   if (open && !pending) props.onCheck();
                 }}
               >
                 {words.text("task.check")}
               </button>
-              {sendable && !open ? (
+              {locked === undefined ? null : (
                 <span id={lockedId} className="nt-hint">
-                  {words.text("task.check-locked")}
+                  {words.text(locked)}
                 </span>
-              ) : null}
+              )}
             </div>
           )}
+          {props.outcome === undefined ? null : <p className="nt-hint">{props.outcome}</p>}
           <p role="status">{summary}</p>
+          <p role="status">{props.wordsCame === true ? words.text("task.words-came") : ""}</p>
         </div>
       </div>
     </Screen>

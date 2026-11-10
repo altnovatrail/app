@@ -78,7 +78,7 @@ describe("the history and the context through IndexedDB", () => {
     expect(await profile?.appendHistory("a1", changes[0] as HistoryChange)).toBe("saved");
     const work = await first.exportWork();
     if (work === null || !("png" in work)) throw new Error("no work of a sheet");
-    expect(await profile?.addSubmission("a1", work, first.history.length)).toBe("saved");
+    expect(await profile?.addSubmission("a1", work, first.history.length)).toBe(0);
 
     const stored = await profile?.readAttempt("a1");
     expect(stored?.history).toEqual(first.history);

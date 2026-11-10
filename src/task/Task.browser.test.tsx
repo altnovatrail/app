@@ -8,7 +8,13 @@ import "@altnovatrail/canvas";
 import { Mode } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import {
   AttemptService,
+  type GetCorrectAnswerWordsRequest,
+  type GetCorrectAnswerWordsResponseSchema,
+  type GetRungWordsRequest,
+  type GetRungWordsResponseSchema,
+  MarkKind,
   type SubmitWorkRequest,
+  type SubmitWorkResponseSchema,
 } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
 import {
   Cause,
@@ -22,7 +28,7 @@ import {
 import { PackageService } from "@altnovatrail/contracts/novatrail/api/v1/package_pb.js";
 import type { CanvasElement, HistoryEvent } from "@altnovatrail/spec/canvas";
 import type * as open from "@altnovatrail/spec/formatv0/open";
-import { create } from "@bufbuild/protobuf";
+import { create, type MessageInitShape } from "@bufbuild/protobuf";
 import { Code, ConnectError, type ConnectRouter, createRouterTransport } from "@connectrpc/connect";
 import { render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -113,6 +119,26 @@ interface Setup {
   device?: Device;
   /** The profile's database does not open. */
   noDatabase?: boolean;
+  /** The task of the attempt; the one with options when left out. */
+  task?: open.Task;
+  /** The history of writing this device kept of the attempt. */
+  history?: readonly HistoryEvent[];
+  /** The answer to a submission, in place of the verdicts of the options. */
+  answer?: (request: SubmitWorkRequest) => MessageInitShape<typeof SubmitWorkResponseSchema>;
+  /** The words of a rung. */
+  rung?: (
+    request: GetRungWordsRequest,
+  ) =>
+    | MessageInitShape<typeof GetRungWordsResponseSchema>
+    | Promise<MessageInitShape<typeof GetRungWordsResponseSchema>>;
+  /** The words after a correct answer. */
+  correct?: (
+    request: GetCorrectAnswerWordsRequest,
+  ) =>
+    | MessageInitShape<typeof GetCorrectAnswerWordsResponseSchema>
+    | Promise<MessageInitShape<typeof GetCorrectAnswerWordsResponseSchema>>;
+  /** The words of the rung an open attempt keeps. */
+  kept?: { rung: number; words: string };
 }
 
 /** The verdicts of the options tapped, against the key. */
@@ -139,9 +165,17 @@ async function renderTask(setup: Setup = {}) {
         ? Promise.resolve(undefined)
         : connect(name, schema, create);
   }
+  if (setup.history !== undefined) {
+    const profile = await addProfile(device, "p1");
+    await profile?.beginAttempt({ attemptId: "a1", digest: D1, task: setup.task ?? TASK });
+    await profile?.replaceHistory("a1", setup.history);
+  }
   const asked: string[] = [];
   const keys: string[] = [];
   const begun: BeginAttemptRequest[] = [];
+  const submitted: SubmitWorkRequest[] = [];
+  const rungs: GetRungWordsRequest[] = [];
+  const corrects: GetCorrectAnswerWordsRequest[] = [];
   let wrong = setup.wrongAnswers ?? 0;
   const routes = (router: ConnectRouter) => {
     router.service(LearningService, {
@@ -153,7 +187,7 @@ async function renderTask(setup: Setup = {}) {
           attempt: {
             start: {
               attemptId: request.attemptId,
-              task: { json: encode(TASK), moduleFormatVersion: "0.4" },
+              task: { json: encode(setup.task ?? TASK), moduleFormatVersion: "0.4" },
               packageDigest: D1,
             },
             items: (setup.items ?? []).map((v) => ({
@@ -164,6 +198,7 @@ async function renderTask(setup: Setup = {}) {
             })),
             wrongAnswers: wrong,
             stepTechniqueIds: setup.stepTechniqueIds ?? [],
+            ...(setup.kept === undefined ? {} : { rung: setup.kept }),
           },
         };
       },
@@ -176,7 +211,13 @@ async function renderTask(setup: Setup = {}) {
     router.service(AttemptService, {
       submitWork(request) {
         keys.push(request.idempotencyKey);
+        submitted.push(request);
         setup.submit?.(request);
+        if (setup.answer !== undefined) {
+          const given = setup.answer(request);
+          wrong = given.wrongAnswers ?? wrong;
+          return given;
+        }
         const items = judged(request);
         const right = items.every((item) => item.verdict === "correct");
         if (!right) wrong += 1;
@@ -185,6 +226,20 @@ async function renderTask(setup: Setup = {}) {
           wrongAnswers: wrong,
           ...(right ? { solved: { solution: encode(SOLUTION), moduleFormatVersion: "0.4" } } : {}),
         };
+      },
+      getRungWords(request) {
+        rungs.push(request);
+        return (
+          setup.rung?.(request) ?? {
+            rung: request.wrongAnswers ?? 1,
+            words: "Count the gaps between the rungs.",
+            outcome: { cause: Cause.NOT_ADMITTED },
+          }
+        );
+      },
+      getCorrectAnswerWords(request) {
+        corrects.push(request);
+        return setup.correct?.(request) ?? { outcome: { cause: Cause.NOT_ADMITTED } };
       },
       beginStep(request) {
         asked.push(`step ${request.step}`);
@@ -247,7 +302,18 @@ async function renderTask(setup: Setup = {}) {
       </ApiProvider>,
     ),
   );
-  return { device, asked, keys, begun, check, attempts, unmount: rendered.unmount };
+  return {
+    device,
+    asked,
+    keys,
+    begun,
+    submitted,
+    rungs,
+    corrects,
+    check,
+    attempts,
+    unmount: rendered.unmount,
+  };
 }
 
 const panel = () => within(screen.getByRole("complementary", { name: "Tutor" }));
@@ -647,5 +713,353 @@ describe("the task screen", () => {
     await screen.findByRole("radio", { name: "4" });
     expect(screen.queryByRole("button", { name: "Step by step" })).toBeNull();
     expect(screen.queryByRole("complementary", { name: "Tutor" })).toBeNull();
+  });
+});
+
+/** The task of the ladder's rungs, answered on the sheet. */
+const SHEET_TASK: open.Task = {
+  id: "rungs",
+  statement: [{ text: "The rungs are 30 cm apart, 180 cm from the lowest to the highest." }],
+  canvas: { kind: "handwriting_sheet", grid: "squares" },
+  items: [{ text: "How many rungs?", answer_slots: [{ binding: "anywhere" }] }],
+};
+
+/** A stroke the sheet could have written: points apart, in time, a third of a unit off the grid. */
+function stroke(id: number, x: number, t: number): HistoryEvent {
+  const points = [0, 1, 2, 3].map((i) => ({
+    x: x + i * 7.3333,
+    y: 100 + i * 3.1111,
+    t: t + i * 16,
+    p: 0.5,
+  }));
+  return { kind: "write", t: t + 48, stroke: { id, kind: "mouse", points } };
+}
+
+const WRITTEN = [stroke(1, 100, 0), stroke(2, 160, 5000)];
+
+/** The answer of a submission of the sheet: its one slot's verdict, and what came of it. */
+function sheetAnswer(
+  verdict: string,
+  more: { value?: string; reason?: string; wrong?: number } = {},
+) {
+  return {
+    items: [
+      {
+        verdict,
+        answerSlots: [
+          {
+            answerSlot: { item: 1, slot: 1 },
+            verdict,
+            ...(more.value === undefined ? {} : { value: more.value }),
+            ...(more.reason === undefined ? {} : { reason: more.reason }),
+          },
+        ],
+      },
+    ],
+    wrongAnswers: more.wrong ?? 0,
+  };
+}
+
+const PNG = [0x89, 0x50, 0x4e, 0x47];
+
+describe("the task screen with handwriting", () => {
+  it("sends the crop, keeps the submission, shows what was read and asks the words of its rung", async () => {
+    const { submitted, rungs, device } = await renderTask({
+      task: SHEET_TASK,
+      history: WRITTEN,
+      mode: Mode.SELF,
+      answer: () => sheetAnswer("not_yet", { value: "5", wrong: 1 }),
+      rung: () => ({
+        rung: 1,
+        words: "How many gaps are there between the rungs?",
+        marks: [
+          {
+            kind: MarkKind.FRAME,
+            place: { case: "cropBox", value: { ymin: 0, xmin: 0, ymax: 1000, xmax: 1000 } },
+          },
+        ],
+      }),
+    });
+    await vi.waitFor(() => expect(check()).toHaveAttribute("aria-disabled", "false"));
+    await userEvent.click(check());
+    expect(await screen.findByText("Read: 5")).toBeVisible();
+    const sent = submitted[0];
+    if (sent?.work?.surface.case !== "sheet") throw new Error("no crop of the sheet");
+    expect([...sent.work.surface.value.crop.slice(0, 4)]).toEqual(PNG);
+    expect(sent.clockOffsetMinutes).toBeDefined();
+    // The words of the rung: in the panel, in the module's language, told by a line of status.
+    const words = await panel().findByText("How many gaps are there between the rungs?");
+    expect(words).toHaveAttribute("lang", "en");
+    expect(panel().getByRole("heading", { name: "Tutor", level: 2 })).toBeVisible();
+    expect(screen.getAllByRole("status").map((line) => line.textContent)).toContain(
+      "The tutor's words came",
+    );
+    expect(rungs[0]?.wrongAnswers).toBe(1);
+    expect(rungs[0]?.work).toEqual(sent.work);
+    // The mark goes on the canvas with the context of the submission it is of, named.
+    const sheet = document.querySelector("novatrail-canvas") as CanvasElement;
+    await vi.waitFor(() => expect(sheet.marks?.marks[0]?.name).toBe("Tutor's mark 1 of 1"));
+    const profile = await addProfile(device, "p1");
+    const kept = await profile?.readAttempt("a1");
+    expect(kept?.submissions.length).toBe(1);
+    expect(sheet.marks?.submission).toEqual(kept?.submissions[0]?.context);
+  });
+
+  it("says why a slot could not be read, for every reason, and an outcome of AI in neutral words", async () => {
+    const reasons = [
+      ["blank", "Nothing is written"],
+      ["notation", "Write it the way the task asks"],
+      ["illegible", "It can't be made out"],
+      ["ambiguous", "It can be read two ways"],
+      ["no_final_answer", "There is no final answer"],
+      ["several_final_answers", "There is more than one final answer"],
+      ["smudged", "This version of the app doesn't know this yet"],
+    ] as const;
+    let n = 0;
+    const { rungs } = await renderTask({
+      task: SHEET_TASK,
+      history: WRITTEN,
+      mode: Mode.SELF,
+      answer: () => sheetAnswer("unreadable", { reason: reasons[n++]?.[0] ?? "blank" }),
+    });
+    for (const [, line] of reasons) {
+      await vi.waitFor(() => expect(check()).toHaveAttribute("aria-disabled", "false"));
+      await userEvent.click(check());
+      expect(await screen.findByText(line)).toBeVisible();
+    }
+    // Not reading raises no rung: no words are asked.
+    expect(rungs).toEqual([]);
+  });
+
+  it("words an outcome of AI neutrally, with every slot unchecked", async () => {
+    await renderTask({
+      task: SHEET_TASK,
+      history: WRITTEN,
+      mode: Mode.SELF,
+      answer: () => ({ ...sheetAnswer("unchecked"), outcome: { cause: Cause.AI_FAILURE } }),
+    });
+    await vi.waitFor(() => expect(check()).toHaveAttribute("aria-disabled", "false"));
+    await userEvent.click(check());
+    expect(await screen.findByText("The tutor can't answer right now")).toBeVisible();
+    expect(screen.getAllByText("Not checked").length).toBeGreaterThan(0);
+  });
+
+  it("keeps Check closed with a line until the sheet holds an answer", async () => {
+    await renderTask({ task: SHEET_TASK, mode: Mode.SELF });
+    await screen.findByText("How many rungs?");
+    expect(check()).toHaveAttribute("aria-disabled", "true");
+    expect(check()).toHaveAccessibleDescription("Write an answer on the sheet");
+  });
+
+  it("sends a check again with the same key and work, and a new stroke with a new key", async () => {
+    let down = true;
+    const { keys, submitted } = await renderTask({
+      task: SHEET_TASK,
+      history: WRITTEN,
+      mode: Mode.SELF,
+      submit: () => {
+        if (down) throw new ConnectError("down", Code.Unavailable);
+      },
+      answer: () => sheetAnswer("not_yet", { value: "5", wrong: 1 }),
+    });
+    await vi.waitFor(() => expect(check()).toHaveAttribute("aria-disabled", "false"));
+    await userEvent.click(check());
+    expect(await screen.findByRole("alert")).toHaveTextContent("No connection");
+    const tried = keys.length;
+    await userEvent.click(check());
+    await vi.waitFor(() => expect(keys.length).toBeGreaterThan(tried));
+    await vi.waitFor(() => expect(check()).toHaveAttribute("aria-disabled", "false"));
+    // The learner's repeat of a check that did not answer: the same key, the same work.
+    const first = keys[0];
+    expect(keys.every((key) => key === first)).toBe(true);
+    expect(submitted.at(-1)?.work).toEqual(submitted[0]?.work);
+    // A new stroke is another action, even after a check that did not answer.
+    const sheet = document.querySelector("novatrail-canvas") as CanvasElement & { undo(): boolean };
+    expect(sheet.undo()).toBe(true);
+    down = false;
+    await vi.waitFor(() => expect(check()).toHaveAttribute("aria-disabled", "false"));
+    await userEvent.click(check());
+    await screen.findByText("Read: 5");
+    expect(keys.at(-1)).not.toBe(first);
+    expect(submitted.at(-1)?.work).not.toEqual(submitted[0]?.work);
+  });
+
+  it("keeps the work of the correct submission until the words after it, then lets it go", async () => {
+    let answer: () => void = () => {};
+    const { corrects, device } = await renderTask({
+      task: SHEET_TASK,
+      history: WRITTEN,
+      mode: Mode.SELF,
+      answer: () => ({
+        ...sheetAnswer("correct", { value: "7" }),
+        solved: { solution: encode(SOLUTION), moduleFormatVersion: "0.4" },
+      }),
+      correct: () =>
+        new Promise((resolve) => {
+          answer = () => resolve({ words: "The gaps were the key: well found." });
+        }),
+    });
+    await vi.waitFor(() => expect(check()).toHaveAttribute("aria-disabled", "false"));
+    await userEvent.click(check());
+    await screen.findByRole("region", { name: "Solution" });
+    const profile = await addProfile(device, "p1");
+    await vi.waitFor(() => expect(corrects.length).toBe(1));
+    expect(corrects[0]?.work?.surface.case).toBe("sheet");
+    expect(await profile?.correctWork("a1")).toBeDefined();
+    answer();
+    expect(await panel().findByText("The gaps were the key: well found.")).toHaveAttribute(
+      "lang",
+      "en",
+    );
+    await vi.waitFor(async () => expect(await profile?.correctWork("a1")).toBeUndefined());
+  });
+
+  it("goes on with the words of the rung the attempt keeps, on my own too", async () => {
+    await renderTask({
+      task: SHEET_TASK,
+      mode: Mode.SELF,
+      kept: { rung: 1, words: "Look at the gaps." },
+    });
+    expect(await screen.findByText("Look at the gaps.")).toBeVisible();
+    expect(panel().getByRole("heading", { name: "Tutor", level: 2 })).toBeVisible();
+  });
+
+  it("shows no words of a rung that is not this answer's, and words a failure of their request", async () => {
+    let refusal = refused(Code.FailedPrecondition, Cause.NOT_CURRENT);
+    const { rungs } = await renderTask({
+      task: SHEET_TASK,
+      history: WRITTEN,
+      mode: Mode.SELF,
+      answer: () => sheetAnswer("not_yet", { value: "5", wrong: rungs.length + 1 }),
+      rung: () => {
+        throw refusal;
+      },
+    });
+    await vi.waitFor(() => expect(check()).toHaveAttribute("aria-disabled", "false"));
+    await userEvent.click(check());
+    await vi.waitFor(() => expect(rungs.length).toBe(1));
+    expect(screen.queryByRole("complementary", { name: "Tutor" })).toBeNull();
+    refusal = refused(Code.FailedPrecondition, Cause.NO_CONSENT);
+    await userEvent.click(check());
+    expect(await screen.findByText("A grown-up's consent is needed first")).toBeVisible();
+  });
+
+  it("drops marks the canvas refuses, and words a request of words that gave none", async () => {
+    await renderTask({
+      task: SHEET_TASK,
+      history: WRITTEN,
+      mode: Mode.SELF,
+      answer: () => sheetAnswer("not_yet", { value: "5", wrong: 1 }),
+      rung: () => ({
+        rung: 1,
+        words: "",
+        outcome: { cause: Cause.AI_FAILURE },
+        // A box upside down: the canvas takes no such mark.
+        marks: [
+          {
+            kind: MarkKind.FRAME,
+            place: { case: "cropBox", value: { ymin: 900, xmin: 0, ymax: 100, xmax: 1000 } },
+          },
+        ],
+      }),
+    });
+    await vi.waitFor(() => expect(check()).toHaveAttribute("aria-disabled", "false"));
+    await userEvent.click(check());
+    expect(await screen.findByText("The tutor can't answer right now")).toBeVisible();
+    const sheet = document.querySelector("novatrail-canvas") as CanvasElement;
+    expect(sheet.marks).toBeUndefined();
+    expect(screen.getByText("Read: 5")).toBeVisible();
+  });
+
+  it("closes the screen when the words of the rung find the attempt over", async () => {
+    await renderTask({
+      task: SHEET_TASK,
+      history: WRITTEN,
+      mode: Mode.SELF,
+      answer: () => sheetAnswer("not_yet", { value: "5", wrong: 1 }),
+      rung: () => {
+        throw refused(Code.FailedPrecondition, Cause.ATTEMPT_CLOSED, CloseReason.ABANDONED);
+      },
+    });
+    await vi.waitFor(() => expect(check()).toHaveAttribute("aria-disabled", "false"));
+    await userEvent.click(check());
+    await screen.findByRole("heading", { name: "This task is already over", level: 1 });
+  });
+
+  it("checks the handwriting when the profile's database cannot be had, and says it is not saved", async () => {
+    const { submitted } = await renderTask({
+      task: SHEET_TASK,
+      noDatabase: true,
+      mode: Mode.SELF,
+      answer: () => sheetAnswer("not_yet", { value: "5" }),
+    });
+    await screen.findByText("How many rungs?");
+    const sheet = document.querySelector("novatrail-canvas") as CanvasElement & { undo(): boolean };
+    sheet.history = [...WRITTEN, stroke(3, 220, 9000)];
+    // An undo tells the screen of the sheet, as a stroke would.
+    expect(sheet.undo()).toBe(true);
+    await vi.waitFor(() => expect(check()).toHaveAttribute("aria-disabled", "false"));
+    await userEvent.click(check());
+    await screen.findByText("Read: 5");
+    expect(submitted[0]?.work?.surface.case).toBe("sheet");
+    expect(screen.getByText("Your work isn't saved on this device")).toBeVisible();
+  });
+
+  it("drops the words of a rung that come after a newer check has solved the task", async () => {
+    let words: () => void = () => {};
+    let n = 0;
+    await renderTask({
+      task: SHEET_TASK,
+      history: WRITTEN,
+      mode: Mode.SELF,
+      answer: () =>
+        n++ === 0
+          ? sheetAnswer("not_yet", { value: "5", wrong: 1 })
+          : {
+              ...sheetAnswer("correct", { value: "7", wrong: 1 }),
+              solved: { solution: encode(SOLUTION), moduleFormatVersion: "0.4" },
+            },
+      rung: () =>
+        new Promise((resolve) => {
+          words = () => resolve({ rung: 1, words: "A hint for the wrong answer." });
+        }),
+    });
+    await vi.waitFor(() => expect(check()).toHaveAttribute("aria-disabled", "false"));
+    await userEvent.click(check());
+    await screen.findByText("Read: 5");
+    await vi.waitFor(() => expect(check()).toHaveAttribute("aria-disabled", "false"));
+    await userEvent.click(check());
+    await screen.findByRole("region", { name: "Solution" });
+    words();
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(screen.queryByText("A hint for the wrong answer.")).toBeNull();
+  });
+
+  it("says a check that could not even begin did not, rather than nothing", async () => {
+    await renderTask({ task: SHEET_TASK, history: WRITTEN, mode: Mode.SELF });
+    await vi.waitFor(() => expect(check()).toHaveAttribute("aria-disabled", "false"));
+    const sheet = document.querySelector("novatrail-canvas") as CanvasElement;
+    sheet.exportWork = () => Promise.reject(new Error("the crop failed"));
+    await userEvent.click(check());
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "This version of the app doesn't know this yet",
+    );
+    expect(check()).toHaveAttribute("aria-disabled", "false");
+  });
+
+  it("takes what was read off the item once the sheet changes", async () => {
+    await renderTask({
+      task: SHEET_TASK,
+      history: WRITTEN,
+      mode: Mode.SELF,
+      answer: () => sheetAnswer("not_yet", { value: "5", wrong: 1 }),
+    });
+    await vi.waitFor(() => expect(check()).toHaveAttribute("aria-disabled", "false"));
+    await userEvent.click(check());
+    await screen.findByText("Read: 5");
+    const sheet = document.querySelector("novatrail-canvas") as CanvasElement & { undo(): boolean };
+    expect(sheet.undo()).toBe(true);
+    await vi.waitFor(() => expect(screen.queryByText("Read: 5")).toBeNull());
+    expect(screen.queryByText("Not yet")).toBeNull();
   });
 });

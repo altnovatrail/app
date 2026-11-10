@@ -172,6 +172,26 @@ export const en = {
   "task.closed-abandoned": "Nothing was done on it for 7 days",
   "task.closed-not-suitable": "It doesn't suit this profile any more",
   "task.closed-done": "It was finished with Done",
+  /** What was read in a slot written by hand: the reading, as the learner sees it. */
+  "task.read": "Read: {text}",
+  /** Why a slot could not be read: nothing is written in it. */
+  "task.reason-blank": "Nothing is written",
+  /** The answer is not written in the form the task asks for. */
+  "task.reason-notation": "Write it the way the task asks",
+  "task.reason-illegible": "It can't be made out",
+  "task.reason-ambiguous": "It can be read two ways",
+  "task.reason-no_final_answer": "There is no final answer",
+  "task.reason-several_final_answers": "There is more than one final answer",
+  /** Beside Check while the sheet holds no answer. */
+  "task.check-write": "Write an answer on the sheet",
+  /** Told to a screen reader when the tutor's words have come; the words themselves are not. */
+  "task.words-came": "The tutor's words came",
+  /** The name of a tutor's mark on a handwriting sheet, by its number and the count. */
+  "task.mark": "Tutor's mark {n} of {total}",
+  /** The name of a tutor's mark on a workbook, with its line and its box. */
+  "task.mark-box": "Tutor's mark {n} of {total}: line {line}, box {box}",
+  /** A line of a workbook, by its place from 1, beside its verdict. */
+  "task.line": "Line {n}",
   /** The heading of the panel of the solving steps. */
   "steps.title": "Steps",
   /** Leads to the next step; it reads no work. */

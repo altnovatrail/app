@@ -121,14 +121,42 @@ export function slotsFilled(
   choices: Readonly<Record<string, string>>,
   filled: readonly (readonly boolean[])[] | null,
 ): boolean {
-  return task.items.every((item, i) =>
-    slotsOf(item).every((slot, s) => {
-      if (slot === "choice") return choices[slotKey(i + 1, s + 1)] !== undefined;
-      if (slot === "box") return filled?.[i]?.[s] === true;
-      // The canvas takes no zone: a slot in one is never filled.
-      return slot === "sheet" && filled?.[0]?.[0] === true;
-    }),
+  return everySlot(task, (slot, item, s) =>
+    slot === "choice" ? choices[slotKey(item, s)] !== undefined : writtenIn(slot, item, s, filled),
   );
+}
+
+/** Whether every answer slot written by hand holds something: the options aside. */
+export function writingFilled(
+  task: open.Task,
+  filled: readonly (readonly boolean[])[] | null,
+): boolean {
+  return everySlot(task, (slot, item, s) => slot === "choice" || writtenIn(slot, item, s, filled));
+}
+
+type SlotKind = ReturnType<typeof slotsOf>[number];
+
+/** Whether a test holds of every answer slot, by its kind and its item and slot from 1. */
+function everySlot(
+  task: open.Task,
+  holds: (kind: SlotKind, item: number, slot: number) => boolean,
+): boolean {
+  return task.items.every((item, i) => slotsOf(item).every((slot, s) => holds(slot, i + 1, s + 1)));
+}
+
+/**
+ * Whether a slot written by hand holds something, by the canvas's `filled`: a workbook's box by
+ * its item and slot, a sheet's one answer anywhere on it by its first (the second 2026-11-01
+ * amendment to R36 in spec). The canvas takes no zone: a slot in one is never filled.
+ */
+function writtenIn(
+  slot: SlotKind,
+  item: number,
+  s: number,
+  filled: readonly (readonly boolean[])[] | null,
+): boolean {
+  if (slot === "box") return filled?.[item - 1]?.[s - 1] === true;
+  return slot === "sheet" && filled?.[0]?.[0] === true;
 }
 
 /** Whether the task's chips are all ticked; a task without chips has nothing to tick. */

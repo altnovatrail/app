@@ -155,19 +155,30 @@ export class Profile {
     });
   }
 
-  /** A submission, with its context and work from `exportWork()` and the history's length. */
-  addSubmission(attemptId: string, work: ExportedWork, historyLength: number): Promise<Saved> {
+  /**
+   * A submission, with its context and work from `exportWork()` and the history's length: its
+   * number among the attempt's submissions, from 0, which `attemptEnded` takes for the correct one.
+   */
+  async addSubmission(
+    attemptId: string,
+    work: ExportedWork,
+    historyLength: number,
+  ): Promise<number | "unsaved"> {
     const record: SubmissionRecord = {
       context: work.submission,
       historyLength,
       work: "png" in work ? { png: work.png } : { cells: work.cells },
     };
-    return this.save(["attempts", "submissions"], async (tx) => {
-      if (!(await this.touch(tx, attemptId))) return "unsaved";
-      const n = await tx.count("submissions", { range: within(attemptId) });
-      await tx.put("submissions", [attemptId, n], record);
-      return "saved";
-    });
+    try {
+      return await this.connection.write(["attempts", "submissions"], async (tx) => {
+        if (!(await this.touch(tx, attemptId))) return "unsaved" as const;
+        const n = await tx.count("submissions", { range: within(attemptId) });
+        await tx.put("submissions", [attemptId, n], record);
+        return n;
+      });
+    } catch {
+      return "unsaved";
+    }
   }
 
   /**
