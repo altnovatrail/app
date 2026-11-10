@@ -1,4 +1,4 @@
-// The failure screens (section 3.7 of docs/architecture.md): static, from the build itself, in the
+// The failure screens (sections 3.2 and 3.7 of docs/architecture.md): static, from the build itself, in the
 // language of the device, before any profile or sign-in. Each is a page of its own, with its
 // heading (section 3.9).
 import type { Language } from "./language.ts";
@@ -44,15 +44,37 @@ export function Unconfigured({ language, detail }: ScreenProps & { readonly deta
   );
 }
 
+/**
+ * The storage taken away while app was open (section 3.2): the browser erased this origin's data,
+ * or the data is there but could not be read, and nothing of it was erased.
+ */
+export function StorageGone({
+  language,
+  trouble,
+}: ScreenProps & { readonly trouble: "erased" | "unreadable" }) {
+  return (
+    <main lang={language}>
+      <h1>{WORDS[language][trouble]}</h1>
+      <ReloadButton language={language} />
+    </main>
+  );
+}
+
+function ReloadButton({ language }: ScreenProps) {
+  return (
+    <button type="button" onClick={() => window.location.reload()}>
+      {WORDS[language].reload}
+    </button>
+  );
+}
+
 /** The offer to reload, over the screen: app never reloads by itself. */
 export function ReloadOffer({ language }: ScreenProps) {
   const words = WORDS[language];
   return (
     <div role="status" lang={language}>
       <p>{words.newVersion}</p>
-      <button type="button" onClick={() => window.location.reload()}>
-        {words.reload}
-      </button>
+      <ReloadButton language={language} />
     </div>
   );
 }

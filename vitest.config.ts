@@ -28,7 +28,7 @@ export default defineConfig({
         plugins: [react()],
         test: {
           name: "browser",
-          include: ["src/**/*.browser.test.tsx"],
+          include: ["src/**/*.browser.test.{ts,tsx}"],
           setupFiles: ["src/test/browser.setup.ts"],
           browser: {
             enabled: true,

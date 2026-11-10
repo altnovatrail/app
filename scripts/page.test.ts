@@ -107,6 +107,10 @@ describe("the built page", () => {
     await page.getByRole("heading", { name: "NovaTrail" }).waitFor();
     const own = requests.filter((path) => !path.startsWith("/assets/") && path !== "/");
     expect(own).toEqual(["/deployment.json"]);
+    // The storage started without making a database: nobody has signed in (section 3.2).
+    expect(
+      await page.evaluate("indexedDB.databases().then((all) => all.map((db) => db.name))"),
+    ).toEqual([]);
     expect(violations).toEqual([]);
     await page.context().close();
   }, 60_000);
