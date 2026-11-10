@@ -150,14 +150,24 @@ export class OpenViews {
       if (!kept) await this.keep(cache, digest, kind, view);
       return undefined;
     }
-    if (!FORMATS.includes(view.version ?? "")) {
+    const read = this.parseView(view.json, view.version ?? "");
+    if (!kept) await this.keep(cache, digest, kind, view);
+    return { view: read as Views[K], skillTiers: view.skillTiers ?? {} };
+  }
+
+  /**
+   * An open view that came in an answer of another service — the task of an attempt, its solution —
+   * read by the same window of versions: one in a version the build does not read offers a reload,
+   * and bytes that are no JSON are a fault of the answer.
+   */
+  parseView(json: Uint8Array, version: string): unknown {
+    if (!FORMATS.includes(version)) {
       this.options.stale();
       throw new ApiError({ kind: "stale" });
     }
-    const read = parsed(view.json);
+    const read = parsed(json);
     if (read === undefined) throw new ApiError({ kind: "invalid" });
-    if (!kept) await this.keep(cache, digest, kind, view);
-    return { view: read as Views[K], skillTiers: view.skillTiers ?? {} };
+    return read;
   }
 
   /**

@@ -219,6 +219,61 @@ describe("the built page", () => {
     await page.context().close();
   }, 60_000);
 
+  it("takes the canvas element under the header: its styles, a picture by blob: and a stroke (Д9)", async () => {
+    writeFileSync(local, JSON.stringify(file(ORIGIN)));
+    const { page, violations } = await open();
+    await page.goto(`${ORIGIN}/`);
+    await page.getByRole("heading", { name: "Sign in" }).waitFor();
+    // The build registered the element before its first render (section 3.1); the test puts one on
+    // the page as the task screen does, with a task whose statement has a picture from media.
+    await page.evaluate(`(async () => {
+      const sheet = document.createElement("novatrail-canvas");
+      sheet.lang = "en";
+      sheet.style.blockSize = "30rem";
+      document.body.append(sheet);
+      const drawn = new OffscreenCanvas(2, 2);
+      drawn.getContext("2d").fillRect(0, 0, 2, 2);
+      const picture = await drawn.convertToBlob({ type: "image/png" });
+      sheet.manifest = {
+        module_format_version: "0.4",
+        id: "example/probe",
+        version: "1.0.0",
+        title: "Probe",
+        languages: { explanation: "en" },
+      };
+      sheet.media = async () => picture;
+      sheet.task = {
+        id: "probe",
+        statement: [{ text: "Count." }, { picture: "probe.png", alt: "Dots", width: 40, height: 40 }],
+        canvas: { kind: "handwriting_sheet", grid: "squares" },
+        items: [{ answer_slots: [{ binding: "anywhere" }] }],
+      };
+    })()`);
+    const sheet = page.locator("novatrail-canvas");
+    await sheet.locator("img[src^='blob:']").waitFor();
+    expect(
+      await page.evaluate(
+        `document.querySelector("novatrail-canvas").shadowRoot.adoptedStyleSheets.length`,
+      ),
+    ).toBeGreaterThan(0);
+    // Below the sign-in screen: in sight first, for the mouse writes only where it can reach.
+    const ink = sheet.locator("canvas");
+    await ink.scrollIntoViewIfNeeded();
+    const box = await ink.boundingBox();
+    if (box === null) throw new Error("the sheet has no box");
+    // Below the element's own row of buttons, which stands over the top of the sheet.
+    const y = Math.max(box.y, 0) + 300;
+    await page.mouse.move(box.x + 40, y);
+    await page.mouse.down();
+    for (let i = 1; i <= 5; i++) await page.mouse.move(box.x + 40 + i * 10, y + i * 5);
+    await page.mouse.up();
+    expect(await page.evaluate(`document.querySelector("novatrail-canvas").history.length`)).toBe(
+      1,
+    );
+    expect(violations).toEqual([]);
+    await page.context().close();
+  }, 60_000);
+
   it("says the app is not set up without the file, in the device's language", async () => {
     rmSync(local, { force: true });
     const { page, violations } = await open("ru-RU");
