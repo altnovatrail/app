@@ -33,6 +33,7 @@ export function blinkingCheck() {
       onDone={() => {}}
       onChoose={() => {}}
       onCheck={() => {}}
+      onHint={() => {}}
       onAgain={() => {}}
       onHome={() => {}}
     />

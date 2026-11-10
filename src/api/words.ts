@@ -25,6 +25,11 @@ export const CAUSE_KEYS = {
   [Cause.NOT_FOUND]: "api.not-found",
   [Cause.NO_PROFILE]: "api.not-found",
   [Cause.ATTEMPT_CLOSED]: "api.attempt-closed",
+  // The causes of the hint and the solution (T26; R22): the same words wherever they come.
+  [Cause.NO_OTHER_WORDS]: "task.no-other-words",
+  [Cause.ADULT_NEEDED]: "boot.grown-up",
+  [Cause.LADDER_NOT_PASSED]: "task.ladder-not-passed",
+  [Cause.NO_SHOWING]: "task.no-showing",
 } as const;
 
 /** The words of a cause; the quota with when it comes back, in the screen's language. */

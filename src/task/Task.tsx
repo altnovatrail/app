@@ -11,8 +11,13 @@
 // closes the attempt: its work on the device goes but the correct one's, which goes with the request
 // of the words after a correct answer and is erased once it ends, and the solution comes. An attempt
 // api closed meanwhile is a screen of its own, and one closed unchecked asks CheckPackages (T21).
+// Hint asks api, with no work and no AI: before the first wrong answer the task's techniques and its
+// leading question, after it the words of the current rung again; "Explain differently" asks the
+// same rung in other words, once on a rung; "Show the solution" — the learner's from the start of
+// the attempt if an adult, from the fourth wrong answer if a child — ends the attempt with its
+// solution (R82 in spec; R22).
 import { Mode as ProfileMode } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
-import type { WorkSchema } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
+import { Action, type WorkSchema } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
 import { Cause, CloseReason } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import type { OpenAttempt } from "@altnovatrail/contracts/novatrail/api/v1/learning_pb.js";
 import type {
@@ -50,6 +55,7 @@ import {
   withoutWriting,
   workOf,
 } from "./attempt.ts";
+import type { HintGiven } from "./Hint.tsx";
 import { Pause } from "./pause.ts";
 import {
   choicesOnly,
@@ -93,6 +99,10 @@ interface Opened {
   readonly unsaved: boolean;
   /** The words of the current rung the attempt keeps, for an attempt gone on with. */
   readonly rung?: string;
+  /** The hint asked for before the first wrong answer, as the attempt keeps it. */
+  readonly hint?: HintGiven;
+  /** "Explain differently" was asked for on the current rung. */
+  readonly explained: boolean;
 }
 
 type Read =
@@ -113,11 +123,13 @@ export interface TaskProps {
   /** The profile's default mode, which each attempt starts in. */
   readonly defaultMode: ProfileMode;
   readonly device: Device;
+  /** Whether the learner is of the category `adult`: the solution is theirs to ask from the start. */
+  readonly adult: boolean;
   /** The learner's open attempt changed: a new one began, or this one ended. */
   readonly onAttempt: (attemptId: string | undefined) => void;
 }
 
-export function Task({ profileId, attemptId, defaultMode, device, onAttempt }: TaskProps) {
+export function Task({ profileId, attemptId, defaultMode, device, adult, onAttempt }: TaskProps) {
   const api = useApi();
   const { views, checks } = usePackages();
   const { words } = useLanguage();
@@ -195,6 +207,18 @@ export function Task({ profileId, attemptId, defaultMode, device, onAttempt }: T
         verdicts,
         unsaved,
         ...(answer.rung === undefined ? {} : { rung: answer.rung.words }),
+        ...(answer.wrongAnswers === 0 &&
+        (answer.requestedTechniqueIds.length > 0 || answer.requestedLeadingQuestion !== "")
+          ? {
+              hint: {
+                techniques: answer.requestedTechniqueIds,
+                ...(answer.requestedLeadingQuestion === ""
+                  ? {}
+                  : { question: answer.requestedLeadingQuestion }),
+              },
+            }
+          : {}),
+        explained: answer.explainedDifferently,
       };
     }
   }, [api, views, device, profileId, attemptId, attempt]);
@@ -260,6 +284,7 @@ export function Task({ profileId, attemptId, defaultMode, device, onAttempt }: T
       key={read.opened.digest}
       profileId={profileId}
       attemptId={attemptId}
+      adult={adult}
       opened={read.opened}
       again={again}
       onEnded={ended}
@@ -306,6 +331,7 @@ function useAgain(
 interface OpenTaskProps {
   readonly profileId: string;
   readonly attemptId: string;
+  readonly adult: boolean;
   readonly opened: Opened;
   readonly again: ReturnType<typeof useAgain>;
   readonly onEnded: (reason: CloseReason, held?: Profile, correct?: number) => Promise<void>;
@@ -322,7 +348,15 @@ interface Sent {
 }
 
 /** The screen of an attempt read: what the learner does on it, written as it is done. */
-function OpenTask({ profileId, attemptId, opened, again, onEnded, onClosed }: OpenTaskProps) {
+function OpenTask({
+  profileId,
+  attemptId,
+  adult,
+  opened,
+  again,
+  onEnded,
+  onClosed,
+}: OpenTaskProps) {
   const api = useApi();
   const { views, files } = usePackages();
   const { words } = useLanguage();
@@ -341,6 +375,15 @@ function OpenTask({ profileId, attemptId, opened, again, onEnded, onClosed }: Op
   const [wordsCame, setWordsCame] = useState(false);
   const [outcome, setOutcome] = useState<string | undefined>(undefined);
   const [marks, setMarks] = useState<Marks | undefined>(undefined);
+  const [hint, setHint] = useState<HintGiven | undefined>(opened.hint);
+  const [explained, setExplained] = useState(opened.explained);
+  const [explaining, setExplaining] = useState(false);
+  const [explainNote, setExplainNote] = useState<string | undefined>(undefined);
+  const [showNote, setShowNote] = useState<string | undefined>(undefined);
+  const [shown, setShown] = useState(false);
+  // The keys of "Explain differently" and "Show the solution": each the same with its repeats.
+  const explainKey = useRef<string | undefined>(undefined);
+  const showKey = useRef<string | undefined>(undefined);
   // One key for a check of this work, the same with every repeat of it (section 3.3): a new
   // stroke or a new option is a new action.
   const sent = useRef<Sent | undefined>(undefined);
@@ -590,7 +633,16 @@ function OpenTask({ profileId, attemptId, opened, again, onEnded, onClosed }: Op
         if (read !== undefined) setOutcome(outcomeText(read, words));
         if (answer.solved === undefined) {
           save({ ...latest.current.state, wrongAnswers: answer.wrongAnswers });
-          if (answer.wrongAnswers > before) rungWords(answer.wrongAnswers, of);
+          if (answer.wrongAnswers > before) {
+            // A new rung: "Explain differently" is its own once more.
+            setExplained(false);
+            setExplainNote(undefined);
+            explainKey.current = undefined;
+            // The words of the rung before, and the hint before the first wrong answer, are past.
+            setTutorWords(undefined);
+            setHint(undefined);
+            rungWords(answer.wrongAnswers, of);
+          }
         } else {
           over.current = true;
           let parts: readonly open.StatementPart[] = [];
@@ -631,6 +683,147 @@ function OpenTask({ profileId, attemptId, opened, again, onEnded, onClosed }: Op
     onClosed,
   ]);
 
+  /** "Hint": api gives the task's techniques and question, or the words of the rung again. */
+  const askHint = useCallback(() => {
+    setFailure(undefined);
+    setPending(true);
+    void api.attempt
+      .getHint({ profileId, attemptId })
+      .then(
+        (answer) => {
+          if (over.current) return;
+          if (answer.hint.case === "techniques") {
+            setHint({
+              techniques: answer.hint.value.techniqueIds,
+              ...(answer.leadingQuestion === "" ? {} : { question: answer.leadingQuestion }),
+            });
+          } else if (answer.hint.case === "rung") {
+            setTutorWords(answer.hint.value.words);
+            setWordsCame(true);
+          }
+        },
+        (reason: unknown) => {
+          const found = parseFailure(reason);
+          const closed = closedBy(found);
+          if (closed === undefined) setFailure(found);
+          else {
+            over.current = true;
+            onClosed(closed);
+          }
+        },
+      )
+      .finally(() => setPending(false));
+  }, [api, profileId, attemptId, onClosed]);
+
+  /** "Explain differently": the same rung in other words, one call of AI on a rung. */
+  const explain = useCallback(() => {
+    explainKey.current ??= idempotencyKey();
+    setExplaining(true);
+    setExplainNote(undefined);
+    // An answer that comes once a newer check began is of a rung that is no more the current.
+    const asked = checks.current;
+    const late = () => asked !== checks.current || over.current;
+    void api.attempt
+      .explainDifferently({
+        profileId,
+        attemptId,
+        idempotencyKey: explainKey.current,
+        wrongAnswers: latest.current.state.wrongAnswers,
+        ...aiFields(),
+      })
+      .then(
+        (answer) => {
+          explainKey.current = undefined;
+          if (late()) return;
+          // The right to it on this rung is spent, whatever the words.
+          setExplained(true);
+          const read = outcomeOf(answer.outcome);
+          if (read !== undefined) setExplainNote(outcomeText(read, words));
+          if (answer.words !== "" && read?.cause !== Cause.NO_OTHER_WORDS) {
+            setTutorWords(answer.words);
+            setWordsCame(true);
+          }
+        },
+        (reason: unknown) => {
+          if (late()) return;
+          const found = parseFailure(reason);
+          const closed = closedBy(found);
+          if (closed !== undefined) {
+            over.current = true;
+            onClosed(closed);
+            return;
+          }
+          // A refusal is the end of the action; anything else may have reached api, and goes again
+          // with its key, which gets what was done.
+          if (found.kind === "refused") explainKey.current = undefined;
+          const spent =
+            found.kind === "refused" &&
+            (found.cause === Cause.ALREADY_ASKED ||
+              found.cause === Cause.NOT_CURRENT ||
+              found.cause === Cause.NO_RUNG);
+          if (spent) setExplained(true);
+          else setExplainNote(failureText(found, words));
+        },
+      )
+      .finally(() => setExplaining(false));
+  }, [api, profileId, attemptId, words, onClosed]);
+
+  /** "Show the solution": the attempt ends with the solution shown (R82 in spec). */
+  const showSolution = useCallback(() => {
+    showKey.current ??= idempotencyKey();
+    setPending(true);
+    setShowNote(undefined);
+    pause.stop();
+    void api.attempt
+      .showSolution({
+        profileId,
+        attemptId,
+        idempotencyKey: showKey.current,
+        action: Action.LEARNING,
+      })
+      .then(
+        async (answer) => {
+          showKey.current = undefined;
+          over.current = true;
+          let parts: readonly open.StatementPart[] = [];
+          try {
+            if (answer.solved !== undefined) parts = solutionOf(views, answer.solved);
+          } catch {
+            // A solution the build cannot read is no reason to hide that the attempt is over.
+          }
+          setTutorWords(undefined);
+          setHint(undefined);
+          setMarks(undefined);
+          setFailure(undefined);
+          setOutcome(undefined);
+          setWordsFailure(undefined);
+          setExplainNote(undefined);
+          await onEnded(CloseReason.SOLUTION_SHOWN, profile);
+          setShown(true);
+          setSolution(parts);
+        },
+        (reason: unknown) => {
+          const found = parseFailure(reason);
+          const closed = closedBy(found);
+          if (closed !== undefined) {
+            over.current = true;
+            onClosed(closed);
+            return;
+          }
+          // A refusal is the end of the action; anything else may have shown the solution already,
+          // and goes again with its key, which gets the solution again.
+          if (found.kind === "refused") showKey.current = undefined;
+          setShowNote(failureText(found, words));
+        },
+      )
+      .finally(() => setPending(false));
+  }, [api, views, profileId, attemptId, profile, words, pause, onEnded, onClosed]);
+
+  // An adult may ask for the solution from the start of the attempt, a child from the fourth wrong
+  // answer, once the ladder of hints is passed (R82 in spec).
+  const mayShow = adult || state.wrongAnswers >= 4;
+  const mayExplain = !explained && state.wrongAnswers > 0 && tutorWords !== undefined;
+
   return (
     <TaskScreen
       task={task}
@@ -652,6 +845,14 @@ function OpenTask({ profileId, attemptId, opened, again, onEnded, onClosed }: Op
       {...(wordsFailure === undefined ? {} : { wordsFailure })}
       {...(outcome === undefined ? {} : { outcome })}
       wordsCame={wordsCame}
+      {...(hint === undefined ? {} : { hint })}
+      onHint={askHint}
+      {...(mayExplain ? { onExplain: explain } : {})}
+      explaining={explaining}
+      {...(explainNote === undefined ? {} : { explainNote })}
+      {...(mayShow ? { onShow: showSolution } : {})}
+      {...(showNote === undefined ? {} : { showNote })}
+      shown={shown}
       blink={blink}
       canvasRef={element}
       onHistoryChange={onHistoryChange}

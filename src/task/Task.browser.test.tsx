@@ -7,12 +7,18 @@
 import "@altnovatrail/canvas";
 import { Mode } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import {
+  Action,
   AttemptService,
+  type ExplainDifferentlyRequest,
+  type ExplainDifferentlyResponseSchema,
   type GetCorrectAnswerWordsRequest,
   type GetCorrectAnswerWordsResponseSchema,
+  type GetHintResponseSchema,
   type GetRungWordsRequest,
   type GetRungWordsResponseSchema,
   MarkKind,
+  type ShowSolutionRequest,
+  type ShowSolutionResponseSchema,
   type SubmitWorkRequest,
   type SubmitWorkResponseSchema,
 } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
@@ -139,6 +145,22 @@ interface Setup {
     | Promise<MessageInitShape<typeof GetCorrectAnswerWordsResponseSchema>>;
   /** The words of the rung an open attempt keeps. */
   kept?: { rung: number; words: string };
+  /** The learner is of the category `adult`. */
+  adult?: boolean;
+  /** What a hint gives. */
+  hint?: () => MessageInitShape<typeof GetHintResponseSchema>;
+  /** What "Explain differently" gives. */
+  explain?: (
+    request: ExplainDifferentlyRequest,
+  ) =>
+    | MessageInitShape<typeof ExplainDifferentlyResponseSchema>
+    | Promise<MessageInitShape<typeof ExplainDifferentlyResponseSchema>>;
+  /** What showing the solution gives. */
+  show?: (request: ShowSolutionRequest) => MessageInitShape<typeof ShowSolutionResponseSchema>;
+  /** "Explain differently" was asked on the current rung, as the open attempt says. */
+  explained?: boolean;
+  /** The hint asked for that the open attempt keeps. */
+  openHint?: { techniques: string[]; question?: string };
 }
 
 /** The verdicts of the options tapped, against the key. */
@@ -176,6 +198,8 @@ async function renderTask(setup: Setup = {}) {
   const submitted: SubmitWorkRequest[] = [];
   const rungs: GetRungWordsRequest[] = [];
   const corrects: GetCorrectAnswerWordsRequest[] = [];
+  const explains: ExplainDifferentlyRequest[] = [];
+  const shows: ShowSolutionRequest[] = [];
   let wrong = setup.wrongAnswers ?? 0;
   const routes = (router: ConnectRouter) => {
     router.service(LearningService, {
@@ -199,6 +223,9 @@ async function renderTask(setup: Setup = {}) {
             wrongAnswers: wrong,
             stepTechniqueIds: setup.stepTechniqueIds ?? [],
             ...(setup.kept === undefined ? {} : { rung: setup.kept }),
+            explainedDifferently: setup.explained ?? false,
+            requestedTechniqueIds: setup.openHint?.techniques ?? [],
+            requestedLeadingQuestion: setup.openHint?.question ?? "",
           },
         };
       },
@@ -240,6 +267,29 @@ async function renderTask(setup: Setup = {}) {
       getCorrectAnswerWords(request) {
         corrects.push(request);
         return setup.correct?.(request) ?? { outcome: { cause: Cause.NOT_ADMITTED } };
+      },
+      getHint() {
+        asked.push("hint");
+        return (
+          setup.hint?.() ?? {
+            hint: { case: "techniques", value: { techniqueIds: ["draw"] } },
+            leadingQuestion: "What if there were only two pears?",
+          }
+        );
+      },
+      explainDifferently(request) {
+        explains.push(request);
+        return (
+          setup.explain?.(request) ?? { words: "In other words: count the fruits one by one." }
+        );
+      },
+      showSolution(request) {
+        shows.push(request);
+        return (
+          setup.show?.(request) ?? {
+            solved: { solution: encode(SOLUTION), moduleFormatVersion: "0.4" },
+          }
+        );
       },
       beginStep(request) {
         asked.push(`step ${request.step}`);
@@ -296,6 +346,7 @@ async function renderTask(setup: Setup = {}) {
             attemptId="a1"
             defaultMode={setup.mode ?? Mode.BY_STEPS}
             device={device}
+            adult={setup.adult ?? false}
             onAttempt={(id) => attempts.push(id)}
           />
         </PackagesProvider>
@@ -310,6 +361,8 @@ async function renderTask(setup: Setup = {}) {
     submitted,
     rungs,
     corrects,
+    explains,
+    shows,
     check,
     attempts,
     unmount: rendered.unmount,
@@ -1061,5 +1114,317 @@ describe("the task screen with handwriting", () => {
     expect(sheet.undo()).toBe(true);
     await vi.waitFor(() => expect(screen.queryByText("Read: 5")).toBeNull());
     expect(screen.queryByText("Not yet")).toBeNull();
+  });
+});
+
+describe("the hint, Explain differently and the solution", () => {
+  const hintButton = () => screen.getByRole("button", { name: "Hint" });
+
+  it("gives before a wrong answer what the task gives and asks, its technique and its question", async () => {
+    const { asked } = await renderTask({ mode: Mode.SELF });
+    await screen.findByRole("radio", { name: "4" });
+    await userEvent.click(hintButton());
+    const hint = await screen.findByRole("region", { name: "Hint" });
+    expect(within(hint).getByText("Two apples")).toHaveAttribute("lang", "en");
+    expect(within(hint).getByText("How many fruits")).toBeVisible();
+    expect(within(hint).getByText("Draw the problem")).toBeVisible();
+    expect(within(hint).getByText("What if there were only two pears?")).toHaveAttribute(
+      "lang",
+      "en",
+    );
+    expect(asked).toEqual(["open a1", "hint"]);
+  });
+
+  it("says when the task has nothing more to hint", async () => {
+    await renderTask({
+      mode: Mode.SELF,
+      hint: () => ({ hint: { case: "techniques", value: { techniqueIds: [] } } }),
+    });
+    await screen.findByRole("radio", { name: "4" });
+    await userEvent.click(hintButton());
+    expect(await screen.findByText("This task has nothing more to hint")).toBeVisible();
+  });
+
+  it("gives after a wrong answer the words of the rung again", async () => {
+    await renderTask({
+      mode: Mode.SELF,
+      wrongAnswers: 1,
+      hint: () => ({
+        hint: { case: "rung", value: { rung: 1, words: "Look at the pears again." } },
+      }),
+    });
+    await screen.findByRole("radio", { name: "4" });
+    await userEvent.click(hintButton());
+    expect(await screen.findByText("Look at the pears again.")).toHaveAttribute("lang", "en");
+  });
+
+  it("goes on with the hint the attempt keeps", async () => {
+    const { asked } = await renderTask({
+      mode: Mode.SELF,
+      openHint: { techniques: ["draw"], question: "What if there were only two pears?" },
+    });
+    expect(await screen.findByText("What if there were only two pears?")).toBeVisible();
+    expect(asked).toEqual(["open a1"]);
+  });
+
+  it("names a hint that did not come, and closes the screen on an attempt over", async () => {
+    let refusal: ConnectError = new ConnectError("down", Code.Unavailable);
+    await renderTask({
+      mode: Mode.SELF,
+      hint: () => {
+        throw refusal;
+      },
+    });
+    await screen.findByRole("radio", { name: "4" });
+    await userEvent.click(hintButton());
+    expect(await screen.findByRole("alert")).toHaveTextContent("No connection");
+    refusal = refused(Code.FailedPrecondition, Cause.ATTEMPT_CLOSED, CloseReason.LEFT);
+    await userEvent.click(hintButton());
+    await screen.findByRole("heading", { name: "This task is already over", level: 1 });
+  });
+
+  it("explains the rung differently once, with its wrong answer and its key", async () => {
+    const { explains } = await renderTask({ mode: Mode.SELF });
+    await userEvent.click(await screen.findByRole("radio", { name: "4" }));
+    await userEvent.click(screen.getByRole("radio", { name: "No" }));
+    await userEvent.click(check());
+    await screen.findByText("Count the gaps between the rungs.");
+    await userEvent.click(panel().getByRole("button", { name: "Explain differently" }));
+    expect(await screen.findByText("In other words: count the fruits one by one.")).toBeVisible();
+    expect(explains[0]?.wrongAnswers).toBe(1);
+    expect(explains[0]?.idempotencyKey).not.toBe("");
+    expect(explains[0]?.clockOffsetMinutes).toBeDefined();
+    expect(screen.queryByRole("button", { name: "Explain differently" })).toBeNull();
+    // A new wrong answer is a new rung: its own "Explain differently" once more.
+    await userEvent.click(screen.getByRole("radio", { name: "5" }));
+    await userEvent.click(check());
+    expect(await screen.findByRole("button", { name: "Explain differently" })).toBeVisible();
+  });
+
+  it("says when there are no other words, and keeps the right through a refusal of the limit", async () => {
+    let n = 0;
+    await renderTask({
+      mode: Mode.SELF,
+      kept: { rung: 1, words: "Count the gaps." },
+      wrongAnswers: 1,
+      explain: () => {
+        if (n++ === 0) throw refused(Code.ResourceExhausted, Cause.PLATFORM_LIMIT);
+        return { words: "Count the gaps.", outcome: { cause: Cause.NO_OTHER_WORDS } };
+      },
+    });
+    await userEvent.click(await screen.findByRole("button", { name: "Explain differently" }));
+    expect(await screen.findByText("The tutor can't answer right now")).toBeVisible();
+    await userEvent.click(screen.getByRole("button", { name: "Explain differently" }));
+    expect(await screen.findByText("The tutor has no other words for this")).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Explain differently" })).toBeNull();
+  });
+
+  it("offers no Explain differently on a rung that had it, nor after a refusal that it did", async () => {
+    const first = await renderTask({
+      mode: Mode.SELF,
+      kept: { rung: 1, words: "Count the gaps." },
+      wrongAnswers: 1,
+      explained: true,
+    });
+    await screen.findByText("Count the gaps.");
+    expect(screen.queryByRole("button", { name: "Explain differently" })).toBeNull();
+    first.unmount();
+    await renderTask({
+      mode: Mode.SELF,
+      kept: { rung: 1, words: "Count the gaps." },
+      wrongAnswers: 1,
+      explain: () => {
+        throw refused(Code.FailedPrecondition, Cause.ALREADY_ASKED);
+      },
+    });
+    await userEvent.click(await screen.findByRole("button", { name: "Explain differently" }));
+    await vi.waitFor(() =>
+      expect(screen.queryByRole("button", { name: "Explain differently" })).toBeNull(),
+    );
+  });
+
+  it("shows the solution to an adult from the start, once confirmed, and ends the attempt", async () => {
+    const { shows, attempts } = await renderTask({ mode: Mode.SELF, adult: true });
+    await screen.findByRole("radio", { name: "4" });
+    await userEvent.click(screen.getByRole("button", { name: "Show the solution" }));
+    const question = screen.getByRole("group", {
+      name: "Once the solution is shown, the task is over",
+    });
+    // The button that asked has gone: the focus is on the answer, and back after Cancel.
+    expect(document.activeElement).toBe(within(question).getByRole("button", { name: "Show it" }));
+    await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(shows).toEqual([]);
+    await vi.waitFor(() =>
+      expect(document.activeElement).toBe(
+        screen.getByRole("button", { name: "Show the solution" }),
+      ),
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Show the solution" }));
+    await userEvent.click(screen.getByRole("button", { name: "Show it" }));
+    expect(await panel().findByText("Solution shown")).toBeVisible();
+    expect(panel().getByText("Two and three make five.")).toBeVisible();
+    expect(shows[0]?.action).toBe(Action.LEARNING);
+    expect(attempts).toEqual([undefined]);
+    expect(screen.queryByRole("button", { name: "Hint" })).toBeNull();
+  });
+
+  it("offers a child the solution from the fourth wrong answer, and says why it was not shown", async () => {
+    const before = await renderTask({ mode: Mode.SELF, wrongAnswers: 3 });
+    await screen.findByRole("radio", { name: "4" });
+    expect(screen.queryByRole("button", { name: "Show the solution" })).toBeNull();
+    before.unmount();
+    let refusal = refused(Code.PermissionDenied, Cause.ADULT_NEEDED);
+    await renderTask({
+      mode: Mode.SELF,
+      wrongAnswers: 4,
+      show: () => {
+        throw refusal;
+      },
+    });
+    const show = async () => {
+      await userEvent.click(await screen.findByRole("button", { name: "Show the solution" }));
+      await userEvent.click(screen.getByRole("button", { name: "Show it" }));
+    };
+    await show();
+    expect(await screen.findByText("A grown-up needs to help")).toBeVisible();
+    refusal = refused(Code.FailedPrecondition, Cause.LADDER_NOT_PASSED);
+    await show();
+    expect(
+      await screen.findByText("The solution can be shown after a few more answers"),
+    ).toBeVisible();
+    refusal = refused(Code.FailedPrecondition, Cause.ATTEMPT_CLOSED, CloseReason.CORRECT);
+    await show();
+    await screen.findByRole("heading", { name: "This task is already over", level: 1 });
+  });
+});
+
+describe("the hint and the solution, against late answers and lost replies", () => {
+  it("drops an answer of Explain differently that comes once the next rung began", async () => {
+    let late: () => void = () => {};
+    let n = 0;
+    await renderTask({
+      mode: Mode.SELF,
+      rung: (request) => ({
+        rung: request.wrongAnswers ?? 1,
+        words: `Rung ${request.wrongAnswers}.`,
+      }),
+      explain: () =>
+        n++ === 0
+          ? new Promise((resolve) => {
+              late = () => resolve({ words: "Rung 1 in other words." });
+            })
+          : { words: "Rung 2 in other words." },
+    });
+    await userEvent.click(await screen.findByRole("radio", { name: "4" }));
+    await userEvent.click(screen.getByRole("radio", { name: "No" }));
+    await userEvent.click(check());
+    await userEvent.click(await screen.findByRole("button", { name: "Explain differently" }));
+    // The next wrong answer, while the first explanation is still under way.
+    await userEvent.click(screen.getByRole("radio", { name: "Yes" }));
+    await vi.waitFor(() => expect(check()).toHaveAttribute("aria-disabled", "false"));
+    await userEvent.click(check());
+    expect(await screen.findByText("Rung 2.")).toBeVisible();
+    late();
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(screen.queryByText("Rung 1 in other words.")).toBeNull();
+    expect(screen.getByText("Rung 2.")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Explain differently" })).toBeVisible();
+  });
+
+  it("asks to show the solution again with the same key after a reply that did not come back", async () => {
+    let n = 0;
+    const { shows } = await renderTask({
+      mode: Mode.SELF,
+      adult: true,
+      show: () => {
+        if (n++ === 0) throw new ConnectError("lost", Code.Internal);
+        return { solved: { solution: encode(SOLUTION), moduleFormatVersion: "0.4" } };
+      },
+    });
+    const show = async () => {
+      await userEvent.click(await screen.findByRole("button", { name: "Show the solution" }));
+      await userEvent.click(screen.getByRole("button", { name: "Show it" }));
+    };
+    await show();
+    expect(await screen.findByText("This version of the app doesn't know this yet")).toBeVisible();
+    await show();
+    expect(await screen.findByText("Solution shown", { selector: ".nt-result" })).toBeVisible();
+    expect(shows[1]?.idempotencyKey).toBe(shows[0]?.idempotencyKey);
+    // What came before the solution does not stay on its result.
+    expect(screen.queryByText("This version of the app doesn't know this yet")).toBeNull();
+  });
+
+  it("takes the hint off once a wrong answer begins the ladder", async () => {
+    await renderTask({ mode: Mode.SELF });
+    await userEvent.click(await screen.findByRole("radio", { name: "4" }));
+    await userEvent.click(screen.getByRole("button", { name: "Hint" }));
+    await screen.findByRole("region", { name: "Hint" });
+    await userEvent.click(screen.getByRole("radio", { name: "No" }));
+    await userEvent.click(check());
+    await screen.findByText("Count the gaps between the rungs.");
+    expect(screen.queryByRole("region", { name: "Hint" })).toBeNull();
+  });
+
+  it("does not say there is nothing to hint when api gave a technique the catalog does not name", async () => {
+    await renderTask({
+      mode: Mode.SELF,
+      hint: () => ({ hint: { case: "techniques", value: { techniqueIds: ["lost"] } } }),
+    });
+    await userEvent.click(await screen.findByRole("button", { name: "Hint" }));
+    await screen.findByRole("region", { name: "Hint" });
+    expect(screen.queryByText("This task has nothing more to hint")).toBeNull();
+  });
+});
+
+describe("the hint and the solution on their edges", () => {
+  it("closes the screen when Explain differently finds the attempt over, and repeats a lost one by its key", async () => {
+    let refusal: ConnectError = new ConnectError("down", Code.Unavailable);
+    const { explains } = await renderTask({
+      mode: Mode.SELF,
+      kept: { rung: 1, words: "Count the gaps." },
+      wrongAnswers: 1,
+      explain: () => {
+        throw refusal;
+      },
+    });
+    await userEvent.click(await screen.findByRole("button", { name: "Explain differently" }));
+    expect(await screen.findByText("No connection")).toBeVisible();
+    refusal = refused(Code.FailedPrecondition, Cause.ATTEMPT_CLOSED, CloseReason.ABANDONED);
+    await userEvent.click(screen.getByRole("button", { name: "Explain differently" }));
+    await screen.findByRole("heading", { name: "This task is already over", level: 1 });
+    expect(new Set(explains.map((request) => request.idempotencyKey)).size).toBe(1);
+  });
+
+  it("takes no second press while Explain differently, Hint or the solution is under way", async () => {
+    let answer: () => void = () => {};
+    const { explains, asked, shows } = await renderTask({
+      mode: Mode.SELF,
+      adult: true,
+      kept: { rung: 1, words: "Count the gaps." },
+      wrongAnswers: 1,
+      explain: () =>
+        new Promise((resolve) => {
+          answer = () => resolve({ words: "Other words." });
+        }),
+      hint: () => ({}),
+      show: () => ({}),
+    });
+    const explain = await screen.findByRole("button", { name: "Explain differently" });
+    await userEvent.click(explain);
+    // A press the browser lets through, as a screen reader's would: aria-disabled does not stop it.
+    explain.click();
+    answer();
+    await screen.findByText("Other words.");
+    expect(explains.length).toBe(1);
+    // A hint that gives neither techniques nor words changes nothing.
+    await userEvent.click(screen.getByRole("button", { name: "Hint" }));
+    await vi.waitFor(() => expect(asked).toContain("hint"));
+    expect(screen.queryByRole("region", { name: "Hint" })).toBeNull();
+    // The solution shown with nothing to show is still the end of the attempt.
+    await userEvent.click(screen.getByRole("button", { name: "Show the solution" }));
+    await userEvent.click(screen.getByRole("button", { name: "Show it" }));
+    expect(await screen.findByText("Solution shown", { selector: ".nt-result" })).toBeVisible();
+    expect(shows.length).toBe(1);
+    expect(screen.queryByRole("region", { name: "Solution" })).toBeNull();
   });
 });

@@ -123,6 +123,7 @@ function taskScreen(props: Partial<TaskScreenProps> = {}) {
       onDone={() => {}}
       onChoose={() => {}}
       onCheck={() => {}}
+      onHint={() => {}}
       onAgain={() => {}}
       onHome={() => {}}
       {...props}
@@ -339,6 +340,42 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
           ],
           WORKBOOK,
         ),
+      }),
+  ],
+  [
+    "task screen with the hint asked for, the words of a rung and Explain differently",
+    () =>
+      taskScreen({
+        mode: "self",
+        hint: { techniques: ["draw"], question: "What if there were only two pears?" },
+        tutorWords: "Count the gaps.",
+        onExplain: () => {},
+        explainNote: "The tutor has no other words for this",
+        onShow: () => {},
+        showNote: "A grown-up needs to help",
+      }),
+  ],
+  [
+    "task screen asking whether to show the solution",
+    () => taskScreen({ onShow: () => {} }),
+    async () => {
+      // The button by its words in each language of the test: none found is a failure, not a skip.
+      const names = [WORDS.en, WORDS.ru, wordsOf(PSEUDO, "en")].map((each) =>
+        each.text("task.show-solution"),
+      );
+      const button = [...document.querySelectorAll<HTMLButtonElement>("button")].find((each) =>
+        names.includes(each.textContent ?? ""),
+      );
+      if (button === undefined) throw new Error("no button to show the solution");
+      await userEvent.click(button);
+    },
+  ],
+  [
+    "task screen with the solution shown",
+    () =>
+      taskScreen({
+        shown: true,
+        solution: [{ text: "Two and three make five." }],
       }),
   ],
   [

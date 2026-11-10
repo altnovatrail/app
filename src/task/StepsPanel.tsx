@@ -8,6 +8,7 @@ import type * as open from "@altnovatrail/spec/formatv0/open";
 import { useEffect, useId, useRef } from "react";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { exitMet, givesChips, givesTechniques, type StepsState } from "./steps.ts";
+import { TechniqueCards } from "./TechniqueCards.tsx";
 
 /** The line of what opens "Step done", by the exit condition; none for `none`. */
 const EXIT_LINES = {
@@ -62,13 +63,7 @@ export function StepsPanel({
   const last = state.place === steps.length;
   const met = exitMet(step, task, state, filled);
   const lineKey = exitLine(step.exit_condition);
-  // The techniques api gave that the catalog names: an ID it does not name has nothing to show.
-  const techniques = (givesTechniques(step) ? (state.techniques[state.place] ?? []) : []).flatMap(
-    (id) => {
-      const technique = catalog?.techniques[id];
-      return technique === undefined ? [] : [{ id, technique }];
-    },
-  );
+  const techniques = givesTechniques(step) ? (state.techniques[state.place] ?? []) : [];
 
   return (
     <div className="nt-steps">
@@ -138,16 +133,7 @@ export function StepsPanel({
           )}
         </div>
       ) : null}
-      {techniques.length === 0 ? null : (
-        <ul className="nt-techniques" aria-label={words.text("steps.techniques")}>
-          {techniques.map(({ id, technique }) => (
-            <li key={id} className="nt-card" {...lang}>
-              <p className="nt-technique-title">{technique.title}</p>
-              {technique.description === undefined ? null : <p>{technique.description}</p>}
-            </li>
-          ))}
-        </ul>
-      )}
+      <TechniqueCards ids={techniques} catalog={catalog} language={language} />
       {lineKey === undefined ? null : (
         <p id={lineId} className="nt-hint">
           {words.text(lineKey)}

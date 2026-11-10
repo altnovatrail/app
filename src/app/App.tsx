@@ -46,6 +46,7 @@ export function App() {
               <TaskRoute
                 profileId={chosen.learner.profileId}
                 defaultMode={chosen.learner.defaultMode}
+                adult={chosen.learner.ageCategory === "adult"}
               />
             ) : (
               <MySubjects profileId={chosen.learner.profileId} />
