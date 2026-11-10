@@ -200,6 +200,43 @@ describe("OpenViews", () => {
   });
 });
 
+describe("OpenViews.keptManifests", () => {
+  it("finds the latest manifest the cache keeps of each module, with no request, in a version the build reads", async () => {
+    const { views, device } = await harness(() => {});
+    const cache = await openCache(device);
+    const keep = (digest: string, json: unknown, version = "0.4") =>
+      cache?.put(digest, "manifest", {
+        json: new TextEncoder().encode(JSON.stringify(json)),
+        version,
+      });
+    await keep(D1, { ...MANIFEST, version: "1.2.0", title: "Older" });
+    await keep(D2, { ...MANIFEST, version: "1.10.0", title: "Newer" });
+    await keep(D3, { ...MANIFEST, version: "9.0.0", title: "Unread" }, "0.5");
+    await keep(`sha256:${"4".repeat(64)}`, { ...MANIFEST, id: "other", version: "9.0.0" });
+    await cache?.put(`sha256:${"5".repeat(64)}`, "manifest", {});
+    await keep(`sha256:${"6".repeat(64)}`, { id: "probe", title: "No version" });
+    await cache?.put(`sha256:${"7".repeat(64)}`, "manifest", {
+      json: new TextEncoder().encode("null"),
+      version: "0.4",
+    });
+    const kept = await views.keptManifests();
+    expect(kept.get("probe")?.title).toBe("Newer");
+    expect(kept.get("other")?.version).toBe("9.0.0");
+    expect(kept.has("absent")).toBe(false);
+  });
+
+  it("finds none before sign-in, with no cache", async () => {
+    const setup = memoryDevice();
+    const { views } = await harness(() => {});
+    const bare = new OpenViews({
+      api: views["options"].api,
+      device: setup.device,
+      stale: () => {},
+    });
+    expect((await bare.keptManifests()).size).toBe(0);
+  });
+});
+
 describe("OpenViews and what the cache keeps", () => {
   it("asks api anew for a view kept in a version the build no longer reads", async () => {
     const { views, device } = await harness(({ service }) =>

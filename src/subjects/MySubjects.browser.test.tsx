@@ -1,0 +1,280 @@
+// "My subjects" in Chromium (section 3.10 of docs/architecture.md; R99 in spec): the cards by role
+// and name, connecting and disconnecting, a module with no current version, an empty catalog and
+// the refusals, with api on connect-es's router and the open views on the device's memory.
+import { ProfileSchema } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
+import { Cause, RefusalSchema } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
+import {
+  type ConnectedModuleSchema,
+  ModuleService,
+} from "@altnovatrail/contracts/novatrail/api/v1/module_pb.js";
+import {
+  GetManifestResponseSchema,
+  PackageService,
+} from "@altnovatrail/contracts/novatrail/api/v1/package_pb.js";
+import { create, type MessageInitShape } from "@bufbuild/protobuf";
+import { Code, ConnectError, type ConnectRouter, createRouterTransport } from "@connectrpc/connect";
+import { render, screen, within } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
+import { userEvent } from "vitest/browser";
+import { LearnerProvider } from "../account/AccountGate.tsx";
+import { ApiProvider } from "../api/ApiContext.tsx";
+import { createApi } from "../api/client.ts";
+import { PackageChecks } from "../packages/checks.ts";
+import { DeviceFiles } from "../packages/files.ts";
+import { PackagesProvider } from "../packages/PackagesContext.tsx";
+import { OpenViews } from "../packages/views.ts";
+import { openCache } from "../storage/cache.ts";
+import { setAccount } from "../storage/registry.ts";
+import { memoryDevice } from "../test/device.ts";
+import { inLanguage } from "../test/language.tsx";
+import { MySubjects } from "./MySubjects.tsx";
+
+const MATH = "novatrail/olympiad-math";
+const PHYSICS = "novatrail/physics";
+const D1 = `sha256:${"1".repeat(64)}`;
+const D2 = `sha256:${"2".repeat(64)}`;
+const D0 = `sha256:${"0".repeat(64)}`;
+
+const LEARNER = create(ProfileSchema, { profileId: "p1", owner: true, pseudonym: "Ёжик" });
+
+function manifest(id: string, title: string, explanation: string) {
+  const json = {
+    module_format_version: "0.4",
+    id,
+    version: "1.0.0",
+    title,
+    languages: { explanation },
+  };
+  return { json: new TextEncoder().encode(JSON.stringify(json)), moduleFormatVersion: "0.4" };
+}
+
+const MANIFESTS: Readonly<Record<string, ReturnType<typeof manifest>>> = {
+  [D1]: manifest(MATH, "Olympiad maths", "en"),
+  [D2]: manifest(PHYSICS, "Физика", "ru"),
+};
+
+function refused(code: Code, cause: Cause): ConnectError {
+  return new ConnectError("refused", code, undefined, [
+    { desc: RefusalSchema, value: create(RefusalSchema, { cause }) },
+  ]);
+}
+
+type Connected = MessageInitShape<typeof ConnectedModuleSchema>;
+
+interface Setup {
+  connected?: Connected[];
+  catalog?: { moduleId: string; packageDigest: string }[];
+  list?: () => void;
+  connect?: (moduleId: string) => void;
+  /** Called on each manifest asked for; throwing makes it fail. */
+  manifest?: (digest: string) => void;
+  /** What the cache keeps before the screen opens. */
+  seed?: (device: ReturnType<typeof memoryDevice>["device"]) => Promise<void>;
+}
+
+async function renderSubjects(setup: Setup, language: "en" | "ru" = "en") {
+  const { device } = memoryDevice();
+  await setAccount(device, "account-1");
+  await setup.seed?.(device);
+  let connected = setup.connected ?? [];
+  const asked: string[] = [];
+  const routes = (router: ConnectRouter) => {
+    router.service(ModuleService, {
+      listConnectedModules(request) {
+        asked.push(`list ${request.profileId}`);
+        setup.list?.();
+        return { modules: connected };
+      },
+      listCatalog(request) {
+        asked.push(`catalog ${request.profileId}`);
+        return { modules: setup.catalog ?? [] };
+      },
+      connectModule(request) {
+        asked.push(`connect ${request.moduleId}`);
+        setup.connect?.(request.moduleId);
+        const digest = setup.catalog?.find((m) => m.moduleId === request.moduleId)?.packageDigest;
+        connected = [...connected, { moduleId: request.moduleId, packageDigest: digest ?? "" }];
+        return { modules: connected };
+      },
+      disconnectModule(request) {
+        asked.push(`disconnect ${request.moduleId}`);
+        connected = connected.filter((m) => m.moduleId !== request.moduleId);
+        return { modules: connected };
+      },
+    });
+    router.service(PackageService, {
+      getManifest(request) {
+        setup.manifest?.(request.packageDigest);
+        return create(GetManifestResponseSchema, {
+          ...(MANIFESTS[request.packageDigest]
+            ? { manifest: MANIFESTS[request.packageDigest] }
+            : {}),
+        });
+      },
+    });
+  };
+  const api = createApi({
+    baseUrl: "https://api.example.org",
+    tokens: { token: async () => "t", signOut: async () => {} },
+    on: { stale: () => {}, accountGone: async () => {}, noAccess: async () => {} },
+    sleep: async () => {},
+    transport: (interceptors) => createRouterTransport(routes, { transport: { interceptors } }),
+  });
+  const views = new OpenViews({ api, device, stale: () => {} });
+  const packages = {
+    views,
+    checks: new PackageChecks(api, device),
+    files: new DeviceFiles({ api: "https://api.example.org", withdrawn: () => {} }),
+  };
+  render(
+    inLanguage(
+      <ApiProvider value={api}>
+        <PackagesProvider value={packages}>
+          <LearnerProvider value={{ learner: LEARNER, switchLearner: () => {}, signOut: () => {} }}>
+            <MySubjects />
+          </LearnerProvider>
+        </PackagesProvider>
+      </ApiProvider>,
+      language,
+    ),
+  );
+  return { asked, device };
+}
+
+/** The card of a module, by the title it is labelled by. */
+async function card(title: string) {
+  return within(await screen.findByRole("article", { name: title }));
+}
+
+describe("My subjects", () => {
+  it("names a module by its ID when its manifest did not come, and asks again on a retry", async () => {
+    let fail = true;
+    let asked = 0;
+    await renderSubjects({
+      catalog: [{ moduleId: MATH, packageDigest: D1 }],
+      manifest: () => {
+        asked += 1;
+        if (fail) throw new ConnectError("down", Code.Unavailable);
+      },
+    });
+    expect(await screen.findByRole("article", { name: MATH })).toBeTruthy();
+    expect(screen.getByRole("status").textContent).toContain(
+      "The names of some modules didn't come",
+    );
+    fail = false;
+    await userEvent.click(screen.getByRole("button", { name: "Try again" }));
+    expect(await screen.findByRole("article", { name: "Olympiad maths" })).toBeTruthy();
+    expect(screen.queryByRole("status")).toBeNull();
+    expect(asked).toBeGreaterThan(1);
+  });
+
+  it("shows a language tag Intl cannot read as it is, rather than falling over", async () => {
+    const bad = `sha256:${"9".repeat(64)}`;
+    await renderSubjects({
+      catalog: [{ moduleId: "novatrail/odd", packageDigest: bad }],
+      seed: async (device) => {
+        const cache = await openCache(device);
+        await cache?.put(bad, "manifest", {
+          json: manifest("novatrail/odd", "Odd", "en_US").json,
+          version: "0.4",
+        });
+      },
+    });
+    expect((await card("Odd")).getByText("Explanation language: en_US")).toBeTruthy();
+  });
+
+  it("connects a module from the catalog, and disconnects it", async () => {
+    const { asked } = await renderSubjects({
+      catalog: [
+        { moduleId: MATH, packageDigest: D1 },
+        { moduleId: PHYSICS, packageDigest: D2 },
+      ],
+    });
+    expect(await screen.findByRole("heading", { level: 1, name: "My subjects" })).toBeTruthy();
+    expect(await screen.findByText("No subjects are connected yet")).toBeTruthy();
+    const catalog = within(screen.getByRole("region", { name: "Catalog" }));
+    // The card in Russian says so to an English screen; the English one does not.
+    const physics = await card("Физика");
+    expect(physics.getByRole("heading", { level: 3 })).toHaveAttribute("lang", "ru");
+    expect(physics.getByText("Explanation language: Russian")).toBeTruthy();
+    const maths = await card("Olympiad maths");
+    expect(maths.queryByText(/Explanation language/)).toBeNull();
+    const connect = maths.getByRole("button", { name: "Connect" });
+    expect(connect).toHaveAccessibleDescription("Olympiad maths");
+    // Titles in the order of the language: Latin before Cyrillic in English.
+    expect(catalog.getAllByRole("heading", { level: 3 }).map((h) => h.textContent)).toEqual([
+      "Olympiad maths",
+      "Физика",
+    ]);
+
+    await userEvent.click(connect);
+    const connected = await card("Olympiad maths");
+    const disconnect = connected.getByRole("button", { name: "Disconnect" });
+    // The focus went with the card to its new place.
+    await vi.waitFor(() => expect(document.activeElement).toBe(disconnect));
+    expect(screen.queryByText("No subjects are connected yet")).toBeNull();
+    expect(catalog.queryByRole("article", { name: "Olympiad maths" })).toBeNull();
+
+    await userEvent.click(disconnect);
+    expect(await screen.findByText("No subjects are connected yet")).toBeTruthy();
+    const back = (await card("Olympiad maths")).getByRole("button", { name: "Connect" });
+    await vi.waitFor(() => expect(document.activeElement).toBe(back));
+    expect(asked).toEqual(["list p1", "catalog p1", `connect ${MATH}`, `disconnect ${MATH}`]);
+  });
+
+  it("names a module with no current version by the manifest kept of an earlier one, or by its ID", async () => {
+    await renderSubjects(
+      {
+        connected: [
+          { moduleId: MATH, packageDigest: "" },
+          { moduleId: "novatrail/gone", packageDigest: "" },
+        ],
+        seed: async (device) => {
+          const cache = await openCache(device);
+          await cache?.put(D0, "manifest", { json: MANIFESTS[D1]?.json, version: "0.4" });
+        },
+      },
+      "ru",
+    );
+    const maths = await card("Olympiad maths");
+    expect(maths.getByText("Язык объяснений: английский")).toBeTruthy();
+    expect(maths.getByText("Сейчас недоступен")).toBeTruthy();
+    expect((await card("novatrail/gone")).getByText("Сейчас недоступен")).toBeTruthy();
+    expect(await screen.findByText("В каталоге пока нет модулей для этого профиля")).toBeTruthy();
+    expect((await card("novatrail/gone")).getByRole("button", { name: "Отключить" })).toBeTruthy();
+  });
+
+  it("tells a connection api refused, and offers to try again when it does not answer", async () => {
+    let down = true;
+    await renderSubjects({
+      catalog: [{ moduleId: MATH, packageDigest: D1 }],
+      list: () => {
+        if (down) throw new ConnectError("down", Code.Unavailable);
+      },
+      connect: () => {
+        throw refused(Code.FailedPrecondition, Cause.NO_CURRENT_VERSION);
+      },
+    });
+    expect(
+      await screen.findByRole("heading", { level: 1, name: "No connection" }, { timeout: 15_000 }),
+    ).toBeTruthy();
+    down = false;
+    await userEvent.click(screen.getByRole("button", { name: "Try again" }));
+    await userEvent.click((await card("Olympiad maths")).getByRole("button", { name: "Connect" }));
+    expect((await screen.findByRole("alert")).textContent).toBe(
+      "This version of the module is no longer given",
+    );
+  }, 30_000);
+
+  it("shows a failure no screen words otherwise, with a retry", async () => {
+    await renderSubjects({
+      list: () => {
+        throw new ConnectError("gone", Code.Unimplemented);
+      },
+    });
+    expect(
+      await screen.findByRole("heading", { level: 1, name: "There is a new version of the app" }),
+    ).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Try again" })).toBeTruthy();
+  });
+});

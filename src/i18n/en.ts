@@ -114,6 +114,22 @@ export const en = {
   /** After a sign-out whose erasure the browser did not finish. */
   "signout.left": "Not all of it was erased. The app finishes at the next start",
   "common.cancel": "Cancel",
+  /** The heading of the learner's home: the modules connected to the profile (product 4 spec). */
+  "subjects.title": "My subjects",
+  /** The heading of the modules connected to the profile. */
+  "subjects.connected": "Connected",
+  "subjects.none": "No subjects are connected yet",
+  /** Some modules are named by their IDs: their manifests did not come. */
+  "subjects.unnamed": "The names of some modules didn't come",
+  /** The heading of the modules the profile may connect. */
+  "subjects.catalog": "Catalog",
+  "subjects.catalog-empty": "The catalog has no modules for this profile yet",
+  /** On a module's card when its explanation language is not the screen's; {language} is its name. */
+  "subjects.explanation-language": "Explanation language: {language}",
+  /** A module connected that has no current version for the learner. */
+  "subjects.unavailable": "Not available now",
+  "subjects.connect": "Connect",
+  "subjects.disconnect": "Disconnect",
   /** In place of the words of a code from api this build does not know: a newer api sent it. */
   "common.unknown": "This version of the app doesn't know this yet",
 } as const satisfies Dictionary;

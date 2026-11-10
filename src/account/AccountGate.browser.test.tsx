@@ -222,12 +222,13 @@ describe("the way in", () => {
     await userEvent.click(screen.getByRole("button", { name: "Ёжик" }));
 
     // The learner's screens, below the bar.
-    expect(await screen.findByRole("heading", { level: 1, name: "NovaTrail" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { level: 1, name: "My subjects" })).toBeTruthy();
     expect(screen.getByRole("banner").textContent).toContain("Ёжик");
     await userEvent.click(screen.getByRole("button", { name: "Switch learner" }));
     expect(await screen.findByRole("heading", { level: 1, name: "Who is learning?" })).toBeTruthy();
     expect(screen.queryByText("Learners' work is kept on this device")).toBeNull();
-    // Each request of the way in, and no other: CheckPackages has no package to ask about.
+    // Each request of the way in, then the learner's home, and no other: CheckPackages has no
+    // package to ask about.
     expect(asked).toEqual([
       "GetAccount",
       "CreateAccount",
@@ -235,6 +236,8 @@ describe("the way in", () => {
       "CreateOwnerProfile",
       "CreateOwnerProfile",
       "GetAccount",
+      "ListConnectedModules",
+      "ListCatalog",
     ]);
   });
 
@@ -282,7 +285,7 @@ describe("the way in", () => {
     expect(await screen.findByRole("heading", { level: 1, name: "Sign out?" })).toBeTruthy();
     expect(await screen.findByText("Ёжик: 1 unfinished task")).toBeTruthy();
     await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
-    expect(await screen.findByRole("heading", { level: 1, name: "NovaTrail" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { level: 1, name: "My subjects" })).toBeTruthy();
 
     await userEvent.click(screen.getByRole("button", { name: "Sign out" }));
     await userEvent.click(await screen.findByRole("button", { name: "Sign out and erase" }));
