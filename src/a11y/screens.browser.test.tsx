@@ -17,7 +17,7 @@ import {
   OwnerProfileScreen,
   SignOutScreen,
 } from "../account/AccountGate.tsx";
-import { App } from "../app/App.tsx";
+import { App, LearnerBar } from "../app/App.tsx";
 import {
   Framed,
   Offline,
@@ -29,6 +29,7 @@ import {
 import type { Language } from "../i18n/language.ts";
 import { WORDS, wordsOf } from "../i18n/words.ts";
 import { SignInScreen } from "../signin/SignInScreen.tsx";
+import { SubjectsScreen } from "../subjects/MySubjects.tsx";
 import { axeViolations, overflows, smallTargets } from "../test/a11y.ts";
 import { memoryDevice } from "../test/device.ts";
 import { inLanguage } from "../test/language.tsx";
@@ -101,11 +102,34 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
     ),
   ],
   [
-    "home of the learner, below the bar",
+    "My subjects, below the bar, with a card of each kind",
     () => (
       <LearnerProvider value={{ learner: OWNER, switchLearner: () => {}, signOut: () => {} }}>
-        <App />
+        <LearnerBar />
+        <SubjectsScreen
+          connected={[
+            {
+              moduleId: "novatrail/olympiad-math",
+              digest: "sha256:1",
+              title: "Olympiad maths",
+              language: "en",
+            },
+            { moduleId: "novatrail/gone", title: "novatrail/gone" },
+          ]}
+          catalog={[
+            { moduleId: "novatrail/physics", digest: "sha256:2", title: "Физика", language: "ru" },
+          ]}
+          failure={{ kind: "offline" }}
+          onConnect={() => {}}
+          onDisconnect={() => {}}
+        />
       </LearnerProvider>
+    ),
+  ],
+  [
+    "My subjects with none connected and an empty catalog",
+    () => (
+      <SubjectsScreen connected={[]} catalog={[]} onConnect={() => {}} onDisconnect={() => {}} />
     ),
   ],
 ];

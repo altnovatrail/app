@@ -75,6 +75,16 @@ export const ru = {
   "signout.failed": "Выйти не получилось, и ничего не стёрто. Нужно попробовать снова",
   "signout.left": "Стёрто не всё. Остальное приложение сотрёт при следующем запуске",
   "common.cancel": "Отмена",
+  "subjects.title": "Мои предметы",
+  "subjects.connected": "Подключённые",
+  "subjects.none": "Подключённых предметов пока нет",
+  "subjects.unnamed": "Названия некоторых модулей не пришли",
+  "subjects.catalog": "Каталог",
+  "subjects.catalog-empty": "В каталоге пока нет модулей для этого профиля",
+  "subjects.explanation-language": "Язык объяснений: {language}",
+  "subjects.unavailable": "Сейчас недоступен",
+  "subjects.connect": "Подключить",
+  "subjects.disconnect": "Отключить",
   "common.unknown": "Эта версия приложения этого ещё не знает",
 } as const satisfies Translation<typeof en, "ru">;
 

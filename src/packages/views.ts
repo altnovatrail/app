@@ -84,6 +84,18 @@ async function askInTime(api: Api, kind: ViewKind, digest: string, ms: number) {
   }
 }
 
+/** Whether a version X.Y.Z of a module is later than another, by its three numbers. */
+function newer(version: string, than: string): boolean {
+  const a = version.split(".").map(Number);
+  const b = than.split(".").map(Number);
+  for (let i = 0; i < 3; i++) {
+    const x = a[i] ?? 0;
+    const y = b[i] ?? 0;
+    if (x !== y) return x > y;
+  }
+  return false;
+}
+
 /** The JSON of a view, read; `undefined` for bytes that are no JSON. */
 function parsed(json: Uint8Array): unknown {
   try {
@@ -99,6 +111,8 @@ export class OpenViews {
   private cache: Promise<Cache | undefined> | undefined;
   /** How long a call waits, ms; the tests make it shorter. */
   timeoutMs = TIMEOUT_MS;
+  /** The reads under way: a view asked for twice at once is asked of api once. */
+  private readonly going = new Map<string, Promise<unknown>>();
 
   constructor(options: OpenViewsOptions) {
     this.options = options;
@@ -112,7 +126,17 @@ export class OpenViews {
   }
 
   /** A view of a package, or `undefined` when the module has no such part. */
-  async get<K extends ViewKind>(digest: string, kind: K): Promise<Opened<K> | undefined> {
+  get<K extends ViewKind>(digest: string, kind: K): Promise<Opened<K> | undefined> {
+    const key = `${digest} ${kind}`;
+    let read = this.going.get(key) as Promise<Opened<K> | undefined> | undefined;
+    if (read === undefined) {
+      read = this.read(digest, kind).finally(() => this.going.delete(key));
+      this.going.set(key, read);
+    }
+    return read;
+  }
+
+  private async read<K extends ViewKind>(digest: string, kind: K): Promise<Opened<K> | undefined> {
     const cache = await this.opened();
     let view = await cache?.get(digest, kind).catch(() => undefined);
     // A view kept in a version this build does not read is one api may give anew in another.
@@ -134,6 +158,29 @@ export class OpenViews {
     if (read === undefined) throw new ApiError({ kind: "invalid" });
     if (!kept) await this.keep(cache, digest, kind, view);
     return { view: read as Views[K], skillTiers: view.skillTiers ?? {} };
+  }
+
+  /**
+   * The manifests the cache keeps, by module, each of its latest version there, in one pass and with
+   * no request: how a module with no current version for the learner is named (ModuleService in the
+   * contract). None before sign-in, and none in a version this build does not read or without a
+   * module ID and version to go by.
+   */
+  async keptManifests(): Promise<ReadonlyMap<string, open.Manifest>> {
+    const found = new Map<string, open.Manifest>();
+    const cache = await this.opened();
+    if (cache === undefined) return found;
+    for (const digest of await cache.digests().catch((): string[] => [])) {
+      const view = await cache.get(digest, "manifest").catch(() => undefined);
+      if (view?.json === undefined || !FORMATS.includes(view.version ?? "")) continue;
+      const manifest = parsed(view.json) as Partial<open.Manifest> | null | undefined;
+      if (typeof manifest?.id !== "string" || typeof manifest.version !== "string") continue;
+      const held = found.get(manifest.id);
+      if (held === undefined || newer(manifest.version, held.version)) {
+        found.set(manifest.id, manifest as open.Manifest);
+      }
+    }
+    return found;
   }
 
   /** Keeps a view read, unless this tab has learnt meanwhile that its package is withdrawn. */
