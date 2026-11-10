@@ -192,6 +192,24 @@ export const en = {
   "task.mark-box": "Tutor's mark {n} of {total}: line {line}, box {box}",
   /** A line of a workbook, by its place from 1, beside its verdict. */
   "task.line": "Line {n}",
+  /** Asks for a hint: what the task gives and asks, its technique and question, or the rung again. */
+  "task.hint": "Hint",
+  /** The task has no technique and no question to hint before a wrong answer. */
+  "task.hint-none": "This task has nothing more to hint",
+  /** The same rung in other words: one call of AI on a rung (R82 spec). */
+  "task.explain": "Explain differently",
+  /** "Explain differently" gave the words the learner reads already. */
+  "task.no-other-words": "The tutor has no other words for this",
+  /** Shows the solution, which ends the attempt. */
+  "task.show-solution": "Show the solution",
+  "task.show-confirm": "Once the solution is shown, the task is over",
+  "task.show-it": "Show it",
+  /** The result of an attempt ended by the solution shown. */
+  "task.solution-shown": "Solution shown",
+  /** A task with a rubric has no solution to show: "Done" ends it. */
+  "task.no-showing": "This task has no solution to show",
+  /** A child asks for the solution before the hint ladder is passed. */
+  "task.ladder-not-passed": "The solution can be shown after a few more answers",
   /** The heading of the panel of the solving steps. */
   "steps.title": "Steps",
   /** Leads to the next step; it reads no work. */

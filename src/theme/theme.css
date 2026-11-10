@@ -397,3 +397,12 @@ novatrail-canvas {
 .nt-lines > li {
   margin-block-end: 0.5rem;
 }
+/* The hint asked for: what the task gives and asks, its techniques and its question (R22). */
+.nt-hint-label {
+  margin: 0;
+  font-weight: 700;
+}
+.nt-hint-list {
+  margin: 0 0 0.5rem;
+  padding-inline-start: 1.25rem;
+}

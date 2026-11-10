@@ -13,9 +13,12 @@ import { Task } from "./Task.tsx";
 export function TaskRoute({
   profileId,
   defaultMode,
+  adult,
 }: {
   readonly profileId: string;
   readonly defaultMode: Mode;
+  /** Whether the learner is of the category `adult`: the solution is theirs to ask from the start. */
+  readonly adult: boolean;
 }) {
   const { device } = useStorage();
   const held = useAttempt();
@@ -38,6 +41,7 @@ export function TaskRoute({
       profileId={profileId}
       attemptId={shown}
       defaultMode={defaultMode}
+      adult={adult}
       device={device}
       onAttempt={onAttempt}
     />

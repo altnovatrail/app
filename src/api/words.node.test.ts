@@ -77,7 +77,7 @@ describe("the words of what a call came to", () => {
       "The AI service didn't accept your key",
     );
     expect(outcomeText({ cause: Cause.NO_OTHER_WORDS }, WORDS.en)).toBe(
-      "This version of the app doesn't know this yet",
+      "The tutor has no other words for this",
     );
   });
 

@@ -7,6 +7,7 @@ import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { inLanguage } from "../test/language.tsx";
 import { NO_VERDICTS, verdictsOf } from "./attempt.ts";
+import { Hint } from "./Hint.tsx";
 import { Items } from "./Items.tsx";
 import { Solution } from "./Solution.tsx";
 import { StepsPanel } from "./StepsPanel.tsx";
@@ -186,5 +187,25 @@ describe("the items", () => {
       ),
     );
     expect(container.textContent).toBe("");
+  });
+});
+
+describe("the hint", () => {
+  it("shows the question alone of a task with no givens, in a module with no language", () => {
+    render(
+      inLanguage(
+        <Hint
+          hint={{ techniques: [], question: "What comes first?" }}
+          task={{ ...TASK, unknown: undefined }}
+          catalog={undefined}
+          language={undefined}
+        />,
+      ),
+    );
+    const hint = screen.getByRole("region", { name: "Hint" });
+    expect(within(hint).getByText("What comes first?")).not.toHaveAttribute("lang");
+    expect(within(hint).queryByText("What we know")).toBeNull();
+    expect(within(hint).queryByText("What to find")).toBeNull();
+    expect(within(hint).queryByText("This task has nothing more to hint")).toBeNull();
   });
 });
