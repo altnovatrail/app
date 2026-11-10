@@ -2,7 +2,7 @@
 // is the screen's word, a dot, then what the string is; its places are `{name}`, and the forms of
 // a number are `plural({ one, other })`. A note to the translator is the key's JSDoc. The words
 // that every screen takes alike are the glossary of section 3.8.
-import type { Dictionary } from "./types.ts";
+import { type Dictionary, plural } from "./types.ts";
 
 export const en = {
   /** The title of the document, in the browser's tab: the screen's heading, then the app's name. */
@@ -49,6 +49,71 @@ export const en = {
   "api.sign-in": "Sign in again",
   /** The action needs a sign-in just made. */
   "api.fresh-sign-in": "Sign in again to do this",
+  /** The heading of the sign-in screen. */
+  "signin.title": "Sign in",
+  /** The button that opens Google's sign-in window. */
+  "signin.google": "Sign in with Google",
+  /** The browser did not open the sign-in window. */
+  "signin.blocked":
+    "The browser didn't open the sign-in window. Allow pop-ups for this site and try again",
+  /** The sign-in failed for a reason app cannot name. */
+  "signin.failed": "The sign-in didn't go through. Try again",
+  /** Another tab still holds the sign-in of the copy's previous project (section 3.7). */
+  "signin.other-tab":
+    "The app is open in another tab with the previous sign-in. Close that tab and try again",
+  /** The heading of the screen that asks for the invite code. */
+  "account.invite-title": "Invite code",
+  "account.invite-intro": "NovaTrail is open by invitation for now",
+  /** The owner's statement, a checkbox: kept by api with its date (R118 spec). */
+  "account.adult": "I am 18 or older",
+  /** Below the checkbox when it is not ticked. */
+  "account.adult-needed": "Only someone 18 or older can create an account",
+  "account.create": "Create account",
+  /** What another account left on this device cannot be erased yet: another tab of the app holds it. */
+  "account.held":
+    "Another account's data on this device can't be erased yet. Close the app's other tabs and try again",
+  /** api did not take the invite code. */
+  "account.code-not-accepted": "This code isn't valid or has been used",
+  /** Below the field when it is empty. */
+  "account.code-needed": "Enter the invite code",
+  /** The heading of the screen that makes the owner's own profile as a learner. */
+  "profile.title": "Your learner profile",
+  /** The name a learner goes by: never a real one. */
+  "profile.pseudonym": "Pseudonym",
+  "profile.pseudonym-hint": "Not a real name, up to 30 characters",
+  "profile.pseudonym-length": "From 1 to 30 characters",
+  "profile.country": "Country",
+  /** The first choice of the list of countries, before one is chosen. */
+  "profile.country-choose": "Choose a country",
+  /** api does not take learners from the country chosen. */
+  "profile.country-not-accepted": "NovaTrail doesn't take learners from this country yet",
+  "profile.create": "Continue",
+  /** The heading of the choice of the learner. */
+  "choose.title": "Who is learning?",
+  /** On the first sign-in of an account on this device (section 3.2). */
+  "persist.line": "Learners' work is kept on this device",
+  /** Asks the browser to keep the site's data: navigator.storage.persist(). */
+  "persist.ask": "Ask the browser to keep it",
+  "persist.granted": "The browser will keep it",
+  "persist.refused": "The browser may still erase it when space runs low",
+  /** Switches to the choice of the learner. */
+  "learner.switch": "Switch learner",
+  "signout.button": "Sign out",
+  /** The heading of the screen before the sign-out. */
+  "signout.title": "Sign out?",
+  "signout.erases": "Signing out erases everything of this account on this device",
+  /** One line for each profile with unfinished tasks on this device. */
+  "signout.unfinished": plural({
+    one: "{pseudonym}: {count} unfinished task",
+    other: "{pseudonym}: {count} unfinished tasks",
+  }),
+  "signout.nothing": "No unfinished work is on this device",
+  "signout.confirm": "Sign out and erase",
+  /** The sign-in service did not sign out: nothing was erased. */
+  "signout.failed": "The sign-out didn't go through. Nothing was erased. Try again",
+  /** After a sign-out whose erasure the browser did not finish. */
+  "signout.left": "Not all of it was erased. The app finishes at the next start",
+  "common.cancel": "Cancel",
   /** In place of the words of a code from api this build does not know: a newer api sent it. */
   "common.unknown": "This version of the app doesn't know this yet",
 } as const satisfies Dictionary;

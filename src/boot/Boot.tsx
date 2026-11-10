@@ -5,7 +5,10 @@
 // opened, offers a reload over whatever is shown; storage erased or unreadable while app is open
 // is a screen of its own. Below it the app has the client of api for the file's api (R18): an
 // account that is gone it signs out of and erases, on no access it erases what is left of the
-// account before, and when api no longer has a method it offers the reload. The language of the
+// account before, and when api no longer has a method it offers the reload. The sign-in service is
+// made only once the storage's start has compared its project with the registry's, and never while
+// another tab holds the previous project's session (R19; section 3.7); its window is in the language
+// of the screens. The language of the
 // screens is the device's: the choice kept in the device's settings, which are no part of the account's storage and are read beside the request
 // for the file, before the first screen and for a second at most, else navigator.languages (R10,
 // R17; section 3.8); a choice made in another tab comes by BroadcastChannel. In a frame,
@@ -23,7 +26,7 @@ import {
 } from "react";
 import { ApiProvider } from "../api/ApiContext.tsx";
 import { createApi } from "../api/client.ts";
-import { NO_TOKENS, type Tokens } from "../api/tokens.ts";
+import type { Tokens } from "../api/tokens.ts";
 import type { Deployment } from "../config/deployment.ts";
 import { type Loaded, loadDeployment } from "../config/load.ts";
 import { LanguageProvider, type LanguageState } from "../i18n/LanguageContext.tsx";
@@ -33,11 +36,14 @@ import { PackageChecks } from "../packages/checks.ts";
 import { DeviceFiles } from "../packages/files.ts";
 import { type Packages, PackagesProvider } from "../packages/PackagesContext.tsx";
 import { OpenViews } from "../packages/views.ts";
+import { firebaseSignIn } from "../signin/firebase.ts";
+import { SignInProvider } from "../signin/SignInContext.tsx";
+import type { SignInService } from "../signin/service.ts";
 import type { Device } from "../storage/device.ts";
 import { eraseAccount, noAccess, type SignInCheck } from "../storage/erase.ts";
 import { readLanguage, writeLanguage } from "../storage/settings.ts";
 import { startStorage } from "../storage/start.ts";
-import { Framed, Offline, ReloadOffer, StorageGone, Unconfigured } from "./Screens.tsx";
+import { Framed, Offline, OtherTab, ReloadOffer, StorageGone, Unconfigured } from "./Screens.tsx";
 import { type Trouble, troubleOf } from "./storage.ts";
 
 const DeploymentContext = createContext<Deployment | undefined>(undefined);
@@ -71,6 +77,12 @@ function start(device: Device, signIn: Deployment["signIn"]): Promise<SignInChec
   return started;
 }
 
+/** The sign-in service of a device's page: one, however often React runs the effect. */
+const services = new WeakMap<Device, SignInService>();
+
+/** Makes the sign-in service of a deployment: Firebase Auth in the browser. */
+export type SignInFactory = (signIn: Deployment["signIn"]) => SignInService;
+
 /** The storage the start started; only the app below Boot has it. */
 export function useStorage(): DeviceStorage {
   const storage = useContext(StorageContext);
@@ -95,8 +107,8 @@ export interface BootProps {
   /** The storage on the device; nothing of it opens in a frame. */
   readonly device: Device;
   readonly fetcher?: typeof fetch;
-  /** The ID tokens of the sign-in service: none until the sign-in of T22 gives them. */
-  readonly tokens?: Tokens;
+  /** Makes the sign-in service once the storage has started: Firebase Auth when left out. */
+  readonly signIn?: SignInFactory;
   /** fetch for the calls of api; the browser's when left out. */
   readonly apiFetch?: typeof fetch;
   /** How long the first screen waits for the device's settings, ms: an open that hangs gets no more. */
@@ -114,7 +126,7 @@ export function Boot({
   device,
   fetcher,
   settingsWait = SETTINGS_WAIT_MS,
-  tokens = NO_TOKENS,
+  signIn: makeSignIn = firebaseSignIn,
   apiFetch,
   children,
 }: BootProps) {
@@ -127,6 +139,7 @@ export function Boot({
   const [stale, setStale] = useState(false);
   const [storage, setStorage] = useState<DeviceStorage | undefined>(undefined);
   const [trouble, setTrouble] = useState<Exclude<Trouble, "newer"> | undefined>(undefined);
+  const [service, setService] = useState<SignInService | undefined>(undefined);
 
   useEffect(() => {
     document.documentElement.lang = language;
@@ -180,18 +193,20 @@ export function Boot({
   // The client of api, once the file names it (R18): its refusals reach the device here.
   // The checks of packages, which the client's refusals reach before the packages are made.
   const checking = useRef<PackageChecks | undefined>(undefined);
-  // The client is made once for the file's api: the tokens and fetch given are read at each call, so
-  // that a parent that gives new objects of them makes no new client and asks nothing again.
-  const given = useRef({ tokens, apiFetch });
-  given.current = { tokens, apiFetch };
+  // The client is made once for the file's api: the sign-in service and fetch are read at each call,
+  // so that a parent that gives a new fetch makes no new client and asks nothing again, and a client
+  // made before the sign-in service has no token until there is one.
+  const given = useRef({ service, apiFetch });
+  given.current = { service, apiFetch };
   const apiOrigin = loaded?.kind === "ready" ? loaded.deployment.api : undefined;
   const api = useMemo(() => {
     if (apiOrigin === undefined) return undefined;
     const current: Tokens = {
-      token: (refresh) => given.current.tokens.token(refresh),
-      signOut: () => given.current.tokens.signOut(),
+      token: async (refresh) => given.current.service?.token(refresh),
+      signOut: async () => given.current.service?.signOut(),
     };
-    // Two requests that meet the account gone at once erase it once.
+    // Two requests that meet the account gone at once erase it once; an account gone later, after
+    // another sign-in on the same page, is erased again.
     let leaving: Promise<void> | undefined;
     return createApi({
       baseUrl: apiOrigin,
@@ -205,7 +220,10 @@ export function Boot({
             .signOut()
             .catch(() => {})
             .then(() => eraseAccount(device))
-            .then(() => {});
+            .then(() => {})
+            .finally(() => {
+              leaving = undefined;
+            });
           return leaving;
         },
         noAccess: async () => {
@@ -239,14 +257,6 @@ export function Boot({
       }),
     };
   }, [api, apiOrigin, device]);
-
-  // When app starts, once its storage has started: about every package whose views it keeps.
-  useEffect(() => {
-    if (packages === undefined || storage === undefined) return;
-    packages.checks.start();
-    void packages.checks.check();
-    return () => packages.checks.stop();
-  }, [packages, storage]);
 
   const state = useMemo<LanguageState>(
     () => ({ language, words: WORDS[language], choose }),
@@ -282,16 +292,33 @@ export function Boot({
   }, [framed, device]);
 
   const signIn = loaded?.kind === "ready" ? loaded.deployment.signIn : undefined;
+  // The factory as first given: the service of a page is made once.
+  const factory = useRef(makeSignIn);
   useEffect(() => {
     if (signIn === undefined) return;
     let current = true;
     void start(device, signIn).then((check) => {
-      if (current) setStorage({ device, signIn: check });
+      if (!current) return;
+      setStorage({ device, signIn: check });
+      // Only once the project is compared, and never over another tab's session of the previous
+      // one: initializeAuth would read it as this project's (section 3.7).
+      if (check !== "same" && check !== "erased") return;
+      let made = services.get(device);
+      if (made === undefined) {
+        made = factory.current(signIn);
+        services.set(device, made);
+      }
+      setService(made);
     });
     return () => {
       current = false;
     };
   }, [device, signIn]);
+
+  // Google's window in the language of the screens.
+  useEffect(() => {
+    service?.setLanguage(language);
+  }, [service, language]);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: a new attempt asks for the file again.
   useEffect(() => {
@@ -310,6 +337,23 @@ export function Boot({
   }, [framed, origin, fetcher, attempt]);
 
   return <LanguageProvider value={state}>{screen()}</LanguageProvider>;
+
+  /** The app, once the storage has started and the sign-in service is there. */
+  function app(): ReactNode {
+    if (storage === undefined || api === undefined || packages === undefined) return null;
+    if (storage.signIn === "blocked") return <OtherTab />;
+    if (storage.signIn === "failed") return <StorageGone trouble="unreadable" />;
+    if (service === undefined) return null;
+    return (
+      <StorageContext.Provider value={storage}>
+        <ApiProvider value={api}>
+          <PackagesProvider value={packages}>
+            <SignInProvider value={service}>{children}</SignInProvider>
+          </PackagesProvider>
+        </ApiProvider>
+      </StorageContext.Provider>
+    );
+  }
 
   function screen(): ReactNode {
     const offer = stale ? <ReloadOffer /> : null;
@@ -336,13 +380,7 @@ export function Boot({
         return (
           <DeploymentContext.Provider value={loaded.deployment}>
             {offer}
-            {storage === undefined || api === undefined || packages === undefined ? null : (
-              <StorageContext.Provider value={storage}>
-                <ApiProvider value={api}>
-                  <PackagesProvider value={packages}>{children}</PackagesProvider>
-                </ApiProvider>
-              </StorageContext.Provider>
-            )}
+            {app()}
           </DeploymentContext.Provider>
         );
     }

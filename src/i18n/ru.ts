@@ -3,7 +3,7 @@
 // pull request without a Russian string fails ci-lint (section 3.8 of docs/architecture.md). On
 // the learner's screens no address to the learner, no past tense and no short adjective about them.
 import type { en } from "./en.ts";
-import type { Holds, SamePlaces, Translation } from "./types.ts";
+import { type Holds, plural, type SamePlaces, type Translation } from "./types.ts";
 
 export const ru = {
   "app.document-title": "{screen} — NovaTrail",
@@ -31,6 +31,50 @@ export const ru = {
   "api.no-access": "У этого аккаунта ещё нет доступа",
   "api.sign-in": "Нужно войти снова",
   "api.fresh-sign-in": "Чтобы это сделать, нужно войти снова",
+  "signin.title": "Вход",
+  "signin.google": "Войти через Google",
+  "signin.blocked":
+    "Браузер не открыл окно входа. Нужно разрешить всплывающие окна для этого сайта и попробовать снова",
+  "signin.failed": "Войти не получилось. Нужно попробовать снова",
+  "signin.other-tab":
+    "Приложение открыто в другой вкладке с прежним входом. Нужно закрыть ту вкладку и попробовать снова",
+  "account.invite-title": "Инвайт-код",
+  "account.invite-intro": "Пока NovaTrail открыт по приглашениям",
+  "account.adult": "Мне 18 лет или больше",
+  "account.adult-needed": "Завести аккаунт может только тот, кому 18 или больше",
+  "account.create": "Завести аккаунт",
+  "account.held":
+    "Данные другого аккаунта на этом устройстве пока не стереть. Нужно закрыть другие вкладки приложения и попробовать снова",
+  "account.code-not-accepted": "Этот код не подходит или уже использован",
+  "account.code-needed": "Нужно ввести инвайт-код",
+  "profile.title": "Профиль ученика",
+  "profile.pseudonym": "Псевдоним",
+  "profile.pseudonym-hint": "Не настоящее имя, до 30 знаков",
+  "profile.pseudonym-length": "От 1 до 30 знаков",
+  "profile.country": "Страна",
+  "profile.country-choose": "Выбрать страну",
+  "profile.country-not-accepted": "NovaTrail пока не принимает учеников из этой страны",
+  "profile.create": "Продолжить",
+  "choose.title": "Кто учится?",
+  "persist.line": "Работы учеников хранятся на этом устройстве",
+  "persist.ask": "Попросить браузер их сохранить",
+  "persist.granted": "Браузер их сохранит",
+  "persist.refused": "Браузер всё равно может их стереть, если не хватит места",
+  "learner.switch": "Сменить ученика",
+  "signout.button": "Выйти",
+  "signout.title": "Выйти?",
+  "signout.erases": "Выход сотрёт с этого устройства всё, что относится к аккаунту",
+  "signout.unfinished": plural({
+    one: "{pseudonym}: {count} незавершённая задача",
+    few: "{pseudonym}: {count} незавершённые задачи",
+    many: "{pseudonym}: {count} незавершённых задач",
+    other: "{pseudonym}: {count} незавершённой задачи",
+  }),
+  "signout.nothing": "Незавершённых работ на этом устройстве нет",
+  "signout.confirm": "Выйти и стереть",
+  "signout.failed": "Выйти не получилось, и ничего не стёрто. Нужно попробовать снова",
+  "signout.left": "Стёрто не всё. Остальное приложение сотрёт при следующем запуске",
+  "common.cancel": "Отмена",
   "common.unknown": "Эта версия приложения этого ещё не знает",
 } as const satisfies Translation<typeof en, "ru">;
 

@@ -7,10 +7,15 @@
 # large downloads stop after a few kilobytes, and the failure looks like anything but the
 # network. Giving the container a network built with the host's own MTU settles it, and asks
 # nothing of whoever opens this repository.
+#
+# The container is on two networks: its own, and api's, so that the development server reaches a
+# local api in its own container (R19 in docs/decisions.md). Both are made here with the same MTU,
+# so that app starts without api, and api's own script finds its network already made, as it
+# would make it.
 
 set -euo pipefail
 
-network="novatrail-app"
+networks=("novatrail-app" "novatrail-api")
 
 # The interface that traffic bound for the internet leaves by, as the kernel picks it. The
 # default route of the main table is not enough: a VPN often leaves it in place and routes
@@ -28,20 +33,22 @@ if [[ -n "$interface" && -r "/sys/class/net/${interface}/mtu" ]]; then
     mtu=$(( detected < mtu ? detected : mtu ))
 fi
 
-if ! docker network inspect "$network" > /dev/null 2>&1; then
-    docker network create --opt "com.docker.network.driver.mtu=${mtu}" "$network" > /dev/null
-    echo "network ${network}: created with mtu ${mtu}"
-    exit 0
-fi
+for network in "${networks[@]}"; do
+    if ! docker network inspect "$network" > /dev/null 2>&1; then
+        docker network create --opt "com.docker.network.driver.mtu=${mtu}" "$network" > /dev/null
+        echo "network ${network}: created with mtu ${mtu}"
+        continue
+    fi
 
-# A network made without the option — by hand, say — runs at Docker's default.
-existing="$(docker network inspect "$network" \
-    --format '{{ index .Options "com.docker.network.driver.mtu" }}')"
-existing="${existing:-1500}"
+    # A network made without the option — by hand, say — runs at Docker's default.
+    existing="$(docker network inspect "$network" \
+        --format '{{ index .Options "com.docker.network.driver.mtu" }}')"
+    existing="${existing:-1500}"
 
-if [[ "$existing" != "$mtu" ]]; then
-    # A network in use cannot be changed, and taking it down from here would take the
-    # container with it.
-    echo "network ${network} has mtu ${existing}, this host now has ${mtu}." >&2
-    echo "To pick the new one up: close the container, then docker network rm ${network}" >&2
-fi
+    if [[ "$existing" != "$mtu" ]]; then
+        # A network in use cannot be changed, and taking it down from here would take the
+        # containers on it with it.
+        echo "network ${network} has mtu ${existing}, this host now has ${mtu}." >&2
+        echo "To pick the new one up: close the containers on it, then docker network rm ${network}" >&2
+    fi
+done

@@ -10,11 +10,15 @@
         "context": "."
     },
     "remoteUser": "vscode",
-    // Runs on the host before the container starts: gives it a network whose MTU is the
+    // Runs on the host before the container starts: gives it its networks, whose MTU is the
     // host's own, so a tunnel on the host does not silently truncate large downloads here.
     "initializeCommand": "bash .devcontainer/host-network.sh",
+    // Its own network, and api's, where the development server's proxy finds a local api by the
+    // address of api's container (R19 in docs/decisions.md): api's container is on that network
+    // alone, publishes no port, and listens on every interface.
     "runArgs": [
-        "--network=novatrail-app"
+        "--network=novatrail-app",
+        "--network=novatrail-api"
     ],
     "mounts": [
         // The sign-ins live in volumes shared by the containers of every NovaTrail repository:
