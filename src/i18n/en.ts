@@ -130,6 +130,67 @@ export const en = {
   "subjects.unavailable": "Not available now",
   "subjects.connect": "Connect",
   "subjects.disconnect": "Disconnect",
+  /** The heading of the task screen: a task has no title of its own. */
+  "task.title": "Task",
+  /** The name of the group of the two buttons of the mode. */
+  "task.mode": "Mode",
+  "task.by-steps": "Step by step",
+  /** The mode without the steps; in Russian not "сам", which tells the learner's gender. */
+  "task.on-my-own": "On my own",
+  /** The name of the panel beside the canvas. */
+  "task.tutor": "Tutor",
+  /** The name of an item that has no text of its own, by its place from 1. */
+  "task.item": "Item {n}",
+  /** The name of one of an item's answer slots, by its place from 1. */
+  "task.slot": "Answer {n}",
+  /** Sends the work to be checked. */
+  "task.check": "Check",
+  /** Beside Check while an answer slot bound choice has no option tapped. */
+  "task.check-locked": "Choose an answer in each item",
+  "task.correct": "Correct",
+  /** Not "wrong": the verdict that the learner can still get it (product 7 spec). */
+  "task.not-yet": "Not yet",
+  "task.unreadable": "Can't read this",
+  "task.unchecked": "Not checked",
+  /** After a check with items not right yet. */
+  "task.summary-not-yet": plural({
+    one: "Not right yet: {count} item of {total}",
+    other: "Not right yet: {count} items of {total}",
+  }),
+  /** The heading of the solution, shown once the task is solved. */
+  "task.solution": "Solution",
+  /** Begins the same task again: a template may give another instance. */
+  "task.again": "Try it again",
+  "task.home": "Back to My subjects",
+  /** On My subjects while the learner has an attempt open. */
+  "task.continue-title": "There is a task in progress",
+  "task.continue": "Continue the task",
+  /** Why the task is over, below "This task is already over". */
+  "task.closed-correct": "It was answered correctly",
+  "task.closed-solution-shown": "Its solution was shown",
+  "task.closed-left": "Another task was begun",
+  "task.closed-abandoned": "Nothing was done on it for 7 days",
+  "task.closed-not-suitable": "It doesn't suit this profile any more",
+  "task.closed-done": "It was finished with Done",
+  /** The heading of the panel of the solving steps. */
+  "steps.title": "Steps",
+  /** Leads to the next step; it reads no work. */
+  "steps.done": "Step done",
+  /** Beside a step passed, in the bar of steps. */
+  "steps.passed": "done",
+  /** Beside the step shown. */
+  "steps.now": "now",
+  /** Beside a step not open yet. */
+  "steps.later": "later",
+  /** The chips of what the statement gives. */
+  "steps.givens": "What we know",
+  /** The chip of what the task asks to find. */
+  "steps.unknown": "What to find",
+  "steps.techniques": "Techniques",
+  /** What opens "Step done" at a step whose exit condition is givens_ticked. */
+  "steps.exit-givens": "Mark what we know and what to find",
+  /** What opens "Step done", or Check, at a step whose exit condition is answer_slots_filled. */
+  "steps.exit-slots": "Write an answer in each slot",
   /** In place of the words of a code from api this build does not know: a newer api sent it. */
   "common.unknown": "This version of the app doesn't know this yet",
 } as const satisfies Dictionary;

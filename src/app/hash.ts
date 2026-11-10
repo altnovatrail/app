@@ -13,8 +13,11 @@ export interface Route {
 /** The screen that an empty or unknown hash shows. */
 export const HOME: Route = { screen: "home", parts: [] };
 
+/** The task screen: the attempt open, which the hash never names (R14). */
+export const TASK: Route = { screen: "task", parts: [] };
+
 /** The screens this build knows. A hash that names another one shows the home screen. */
-export const SCREENS: ReadonlySet<string> = new Set([HOME.screen]);
+export const SCREENS: ReadonlySet<string> = new Set([HOME.screen, TASK.screen]);
 
 /** The route a hash names: `#/screen/part`, each segment percent-encoded. */
 export function parseHash(hash: string): Route {

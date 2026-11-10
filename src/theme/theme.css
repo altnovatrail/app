@@ -215,3 +215,154 @@ button[aria-disabled="true"] {
 .nt-card .nt-buttons {
   margin: 0;
 }
+/* A screen of the full width: the task screen, its canvas beside the panel (section 3.3). */
+main.nt-wide {
+  max-inline-size: 90rem;
+}
+/*
+ * The task screen (R20 in docs/decisions.md): on a narrow screen one column — the panel, the canvas
+ * and the items, then Check; from 64rem the canvas and the items on the left, the tutor's panel on
+ * the right, Check across below them. Check does not stick to the bottom: a bar there would cover
+ * the targets below it (2.4.11, 2.5.8).
+ */
+.nt-task {
+  display: grid;
+  grid-template-areas: "panel" "work" "check";
+  gap: 1rem;
+}
+.nt-task-work {
+  grid-area: work;
+  min-inline-size: 0;
+}
+.nt-task-panel {
+  grid-area: panel;
+  min-inline-size: 0;
+}
+.nt-task-check {
+  grid-area: check;
+}
+.nt-task-check .nt-buttons,
+.nt-task-check p {
+  margin: 0;
+}
+@media (min-width: 64rem) {
+  .nt-task {
+    grid-template-columns: minmax(0, 1fr) 22rem;
+    grid-template-areas: "work panel" "check check";
+    align-items: start;
+  }
+}
+novatrail-canvas {
+  display: block;
+  max-inline-size: 100%;
+}
+/* The items beside the sheet, and the options of a slot bound choice, each a target of 44 × 44. */
+.nt-items {
+  margin-block: 1rem;
+}
+.nt-item,
+.nt-choices {
+  min-inline-size: 0;
+  margin: 0 0 1rem;
+  padding: 0;
+  border: none;
+}
+.nt-item > legend,
+.nt-choices > legend {
+  margin-block-end: 0.5rem;
+  padding: 0;
+  font-weight: 700;
+}
+.nt-option {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-block-end: 0.5rem;
+}
+.nt-option > label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.nt-option input {
+  flex: none;
+  inline-size: 2.75rem;
+  block-size: 2.75rem;
+  margin: 0;
+  accent-color: var(--nt-primary);
+}
+/* A verdict in a word and a sign: the colour adds to them, never stands alone (1.4.1). */
+.nt-verdict {
+  font-weight: 700;
+  white-space: nowrap;
+}
+.nt-verdict-correct {
+  color: var(--nt-correct);
+}
+.nt-verdict-other {
+  color: var(--nt-not-yet);
+}
+/* The bar of steps: the step shown is told by its word and its weight, not by colour alone. */
+.nt-step-bar {
+  margin: 0 0 1rem;
+  padding: 0;
+  list-style: none;
+}
+.nt-step-bar > li {
+  margin-block-end: 0.5rem;
+}
+.nt-step-bar > li[aria-current="step"] {
+  font-weight: 700;
+}
+.nt-step {
+  display: inline-block;
+  padding-block: 0.5rem;
+}
+.nt-step-mark {
+  color: var(--nt-text-muted);
+  font-weight: 400;
+}
+.nt-steps h2 {
+  margin-block: 0 0.5rem;
+  font-size: 1.25rem;
+}
+.nt-steps h2:focus:not(:focus-visible) {
+  outline: none;
+}
+.nt-techniques {
+  margin: 0 0 1rem;
+  padding: 0;
+  list-style: none;
+}
+.nt-technique-title {
+  font-weight: 700;
+}
+.nt-result {
+  font-size: 1.375rem;
+}
+.nt-solution img {
+  max-inline-size: 100%;
+  block-size: auto;
+}
+/*
+ * Check on a pause: one blink, three flashes of a second, 3 s in all — shorter than 5 s and no more
+ * than three a second (2.2.2, 2.3.1). For whoever asked for less motion, a still outline instead.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  button.nt-blink {
+    animation: nt-blink 1s ease-in-out 3;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  button.nt-blink {
+    outline: 0.1875rem solid var(--nt-focus);
+    outline-offset: 0.25rem;
+  }
+}
+@keyframes nt-blink {
+  50% {
+    background: var(--nt-on-primary);
+    color: var(--nt-primary);
+  }
+}

@@ -17,9 +17,11 @@ let current: symbol | undefined;
 export interface ScreenProps {
   readonly title: string;
   readonly children?: ReactNode;
+  /** A screen of the full width, as the task screen with its canvas beside the panel. */
+  readonly wide?: boolean;
 }
 
-export function Screen({ title, children }: ScreenProps) {
+export function Screen({ title, children, wide = false }: ScreenProps) {
   const { language, words } = useLanguage();
   const heading = useRef<HTMLHeadingElement>(null);
   const token = useRef(Symbol("screen"));
@@ -35,7 +37,7 @@ export function Screen({ title, children }: ScreenProps) {
   }, []);
 
   return (
-    <main lang={language}>
+    <main lang={language} className={wide ? "nt-wide" : undefined}>
       <h1 ref={heading} tabIndex={-1}>
         {title}
       </h1>

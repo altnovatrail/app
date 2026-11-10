@@ -24,6 +24,7 @@ import { PackagesProvider } from "../packages/PackagesContext.tsx";
 import { OpenViews } from "../packages/views.ts";
 import { openCache } from "../storage/cache.ts";
 import { setAccount } from "../storage/registry.ts";
+import { AttemptProvider } from "../task/AttemptContext.tsx";
 import { memoryDevice } from "../test/device.ts";
 import { inLanguage } from "../test/language.tsx";
 import { MySubjects } from "./MySubjects.tsx";
@@ -67,6 +68,8 @@ interface Setup {
   connect?: (moduleId: string) => void | Promise<void>;
   /** Called on each manifest asked for; throwing makes it fail. */
   manifest?: (digest: string) => void;
+  /** The attempt the learner has open. */
+  attempt?: string;
   /** What the cache keeps before the screen opens. */
   seed?: (device: ReturnType<typeof memoryDevice>["device"]) => Promise<void>;
 }
@@ -129,7 +132,19 @@ async function renderSubjects(setup: Setup, language: "en" | "ru" = "en") {
     inLanguage(
       <ApiProvider value={api}>
         <PackagesProvider value={packages}>
-          <MySubjects profileId={LEARNER.profileId} />
+          <AttemptProvider
+            learner={
+              setup.attempt === undefined
+                ? LEARNER
+                : create(ProfileSchema, {
+                    profileId: LEARNER.profileId,
+                    pseudonym: LEARNER.pseudonym,
+                    openAttempt: { attemptId: setup.attempt },
+                  })
+            }
+          >
+            <MySubjects profileId={LEARNER.profileId} />
+          </AttemptProvider>
         </PackagesProvider>
       </ApiProvider>,
       language,
@@ -144,6 +159,20 @@ async function card(title: string) {
 }
 
 describe("My subjects", () => {
+  it("goes on with the task in progress, and offers none when there is none", async () => {
+    const { unmount } = await renderSubjects({});
+    await screen.findByRole("heading", { name: "Connected" });
+    expect(screen.queryByRole("button", { name: "Continue the task" })).toBeNull();
+    unmount();
+    await renderSubjects({ attempt: "a1" });
+    expect(
+      await screen.findByRole("heading", { name: "There is a task in progress" }),
+    ).toBeVisible();
+    await userEvent.click(screen.getByRole("button", { name: "Continue the task" }));
+    expect(window.location.hash).toBe("#/task");
+    window.location.hash = "";
+  });
+
   it("takes no second press while a connection is under way, and keeps the focus where it was", async () => {
     let answer: () => void = () => {};
     const { asked } = await renderSubjects({

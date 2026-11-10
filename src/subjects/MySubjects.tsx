@@ -3,19 +3,21 @@
 // connect, each a card with its title in its own explanation language and, when that is not the
 // screen's, a line that names it, in the order of the screen's language. Connecting and
 // disconnecting are a press away; api's answer is the list of connected modules, and the focus goes
-// with the card to its new place. What comes next of a module — its lesson, chosen by engine — is
-// T27's and T28's.
+// with the card to its new place. An attempt open outside a lesson is a press away, above the lists
+// (T24). What comes next of a module — its lesson, chosen by engine — is T27's and T28's.
 import type { ConnectedModule } from "@altnovatrail/contracts/novatrail/api/v1/module_pb.js";
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { useApi } from "../api/ApiContext.tsx";
 import { type Failure, parseFailure } from "../api/failure.ts";
 import { failureText } from "../api/words.ts";
+import { navigate, TASK } from "../app/router.ts";
 import { Screen } from "../app/Screen.tsx";
 import { Offline } from "../boot/Screens.tsx";
 import { collator, languageNames } from "../i18n/intl.ts";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import type { Language } from "../i18n/language.ts";
 import { usePackages } from "../packages/PackagesContext.tsx";
+import { useAttempt } from "../task/AttemptContext.tsx";
 import { byTitle, cardsOf, type ModuleCard, type ModuleRef } from "./modules.ts";
 
 /** Whether a language tag is the screen's language, by its primary subtag. */
@@ -98,6 +100,8 @@ export interface SubjectsScreenProps {
   readonly onDisconnect: (moduleId: string) => void;
   /** Asks for the lists again: offered when the names of some modules did not come. */
   readonly onRetry?: () => void;
+  /** Goes on with the attempt the learner has open; none when there is none. */
+  readonly onContinue?: () => void;
 }
 
 /** The screen itself, from what its container has read. */
@@ -109,9 +113,11 @@ export function SubjectsScreen({
   onConnect,
   onDisconnect,
   onRetry,
+  onContinue,
 }: SubjectsScreenProps) {
   const { language, words } = useLanguage();
   const connectedId = useId();
+  const continueId = useId();
   const catalogId = useId();
   const compare = useMemo(() => collator(language).compare, [language]);
   const own = new Set(connected?.map((card) => card.moduleId));
@@ -130,6 +136,16 @@ export function SubjectsScreen({
         <p role="alert" className="nt-error">
           {failureText(failure, words)}
         </p>
+      )}
+      {onContinue === undefined ? null : (
+        <section aria-labelledby={continueId} className="nt-continue">
+          <h2 id={continueId}>{words.text("task.continue-title")}</h2>
+          <div className="nt-buttons">
+            <button type="button" onClick={onContinue}>
+              {words.text("task.continue")}
+            </button>
+          </div>
+        </section>
       )}
       {unnamed && onRetry !== undefined ? (
         <div role="status">
@@ -192,6 +208,7 @@ export function MySubjects({ profileId }: { readonly profileId: string }) {
   const api = useApi();
   const { views } = usePackages();
   const { words } = useLanguage();
+  const open = useAttempt()?.attemptId;
   const [read, setRead] = useState<Read>({ status: "loading" });
   const [attempt, setAttempt] = useState(0);
   const [failure, setFailure] = useState<Failure | undefined>(undefined);
@@ -279,6 +296,7 @@ export function MySubjects({ profileId }: { readonly profileId: string }) {
       {...(failure === undefined ? {} : { failure })}
       pending={pending}
       onRetry={retry}
+      {...(open === undefined ? {} : { onContinue: () => navigate(TASK) })}
       onConnect={(moduleId) =>
         void change(moduleId, "disconnect", () => api.module.connectModule({ profileId, moduleId }))
       }

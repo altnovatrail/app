@@ -268,6 +268,48 @@ describe("the way in", () => {
     }
   });
 
+  it("goes on with the open attempt GetAccount names, and home once it is over", async () => {
+    const service = fakeSignIn("uid-1");
+    const owner = { ...OWNER, openAttempt: { attemptId: "a1" } };
+    const account = { accountId: "account-1", profiles: [owner] };
+    const { asked } = renderApp(
+      {
+        getAccount: () => message(GetAccountResponseSchema, { account }),
+        getOpenAttempt: () => refusal("failed_precondition", Cause.ATTEMPT_CLOSED),
+      },
+      service,
+    );
+    await userEvent.click(await screen.findByRole("button", { name: "Ёжик" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Continue the task" }));
+    expect(window.location.hash).toBe("#/task");
+    expect(
+      await screen.findByRole("heading", { level: 1, name: "This task is already over" }),
+    ).toBeTruthy();
+    expect(asked).toContain("GetOpenAttempt");
+    await userEvent.click(screen.getByRole("button", { name: "Back to My subjects" }));
+    expect(await screen.findByRole("heading", { level: 1, name: "My subjects" })).toBeTruthy();
+    // The attempt is over: nothing to go on with any more, after switching the learner and back too.
+    expect(screen.queryByRole("button", { name: "Continue the task" })).toBeNull();
+    await userEvent.click(screen.getByRole("button", { name: "Switch learner" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Ёжик" }));
+    expect(await screen.findByRole("heading", { level: 1, name: "My subjects" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Continue the task" })).toBeNull();
+    window.location.hash = "";
+  });
+
+  it("goes home from the task screen when the learner has no attempt open", async () => {
+    window.location.hash = "#/task";
+    const entries = window.history.length;
+    const service = fakeSignIn("uid-1");
+    const account = { accountId: "account-1", profiles: [OWNER] };
+    renderApp({ getAccount: () => message(GetAccountResponseSchema, { account }) }, service);
+    await userEvent.click(await screen.findByRole("button", { name: "Ёжик" }));
+    expect(await screen.findByRole("heading", { level: 1, name: "My subjects" })).toBeTruthy();
+    expect(window.location.hash).toBe("#/home");
+    expect(window.history.length).toBe(entries);
+    window.location.hash = "";
+  });
+
   it("names what the sign-out takes, comes back on Cancel, and erases on Sign out and erase", async () => {
     const { device } = memoryDevice();
     const service = fakeSignIn("uid-1");
