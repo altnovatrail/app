@@ -1,0 +1,16 @@
+# What npm installs from package-lock.json.
+/node_modules/
+# What `just build` writes: the build of the app, which `vite preview` serves.
+/build/
+# The files of a release, which `just release-files` writes (T29 in RUN.md).
+/dist/
+# What `just ci-test` writes: the coverage report the shared typescript.yml sends to Codecov.
+/coverage/
+# What tsc keeps between runs.
+*.tsbuildinfo
+# The screenshots Vitest takes of a failed test in the browser: Vitest 5 puts them under .vitest/.
+__screenshots__/
+/.vitest/
+# The deployment configuration of a local run: the parameters of a Firebase project of the
+# author's own, which stay on the machine (section 3.7 of docs/architecture.md).
+/deployment.local.json

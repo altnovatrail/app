@@ -105,7 +105,7 @@
 |---|---|---|---|---|---|
 | [x] | T13 | Переход на `spec` v0.13.0 | Claude | — | — |
 | [x] | T14 | Что `spec` v0.13.0 решил за `app` | Claude | — | T13 |
-| [ ] | T15 | Каркас приложения и CI | я + Claude | да | — |
+| [x] | T15 | Каркас приложения и CI | я + Claude | да | — |
 | [ ] | T16 | Пакеты платформы: типы, контракты, канва и иконки | Claude | да | T15 |
 | [ ] | T17 | Конфигурация развёртывания, CSP и экраны сбоя | Claude | — | T16 |
 | [ ] | T18 | Хранилище на устройстве | Claude | да | T16 |
@@ -207,6 +207,36 @@
 - **Мой шаг:** required checks ruleset `main` — «TypeScript / lint», «TypeScript / test», «TypeScript / vuln», «TypeScript / licenses» и «CodeQL / analyze (javascript-typescript)», а `codecov/patch` — после первой выгрузки.
 - **Как проверить:** `just ci-lint`, `just ci-test`, `just ci-vuln`, `just ci-licenses` и `just build` — зелёные локально и в CI; Codecov принял отчёт.
 - **Разделы:** R03, R11; [docs/architecture.md](docs/architecture.md), разделы 3.1 и 3.9; R12, R30, R39, R48 spec; repositories 2.2 и 2.3 spec.
+- **Решено автором (2026-11-10)**, при планировании T15, оба ответа — по рекомендациям плана, и с ними — предложения плана ниже:
+  - маршруты — свой код на хеше адреса, `/#/<экран>/…`, без библиотеки: хостингу не нужно правил переадресации — ни у платформы, ни в self-hosting, — а фрагмент после `#` браузер серверу не шлёт, и журналы хостинга не видят, на каком экране ученик. В адресе — только ID содержания. Отвергнуто: пути History API — правило «любой путь → `index.html`» каждому хостингу и строка «в реестр spec»; без адресов — «назад» уводил бы из приложения;
+  - `playwright` — 1.64.1, версия образа заготовки, а Dependabot держит его в `ignore`, пока `spec` не поднимет образ (R79 spec). Отвергнуто: 1.65.0 сейчас — свой образ с ревизией 1254 и строка «в реестр spec»;
+  - предложения плана: версии — `npm install --before=2026-11-07T00:00:00Z`, а пакеты `@altnovatrail` в T16 — после сторонних, без даты, со сверкой дат lock-файла, как R08 skill-map; `ci-test` зависит от `build`: `typescript.yml` сборку не зовёт; `release-verify-npm` — в `ci-licenses` уже сейчас, если рецепт примет lock-файл без пакетов `@altnovatrail`; `NOTICE` — по строке на каждый пакет, который уходит в сборку, со сверкой тестом; `appType: "mpa"` у сервера разработки и `vite preview`; Dependabot — группа `shared-workflows` и экосистема `npm`.
+- **Выяснилось при планировании** — разведка 2026-11-10, только чтением:
+  - по правилу трёх дней против таблицы раздела 3.1 поднялись `vite` — 8.3.6, `@vitejs/plugin-react` — 6.2.1, `@biomejs/biome` — 2.6.6, `vitest` и его два пакета — 5.1.0; `playwright` 1.65.0 от 2026-11-05 ждёт ревизии 1254 Chrome Headless Shell (`npm view`; `browsers.json` `playwright-core`);
+  - `typescript.yml` `.github` v0.1.22 (`c0234058dc1a85edd7b5d579b90f8fdb98ea826b`) входов не берёт и зовёт `ci-lint`, `ci-test`, `ci-vuln` и `ci-licenses`, а `build` — нет; `codeql.yml` той же версии берёт вход `languages`; шаблон Dependabot architecture 3.3 `.github` с v0.1.17 несёт группу `shared-workflows`, которой у `canvas` и `skill-map` ещё нет;
+  - `canvas` (T08) и `skill-map` (T10) ставят `npm ci` только в `_install` с отметкой хеша, `ci-test` — через `build`, а `ci-licenses` — `licenses-check-repo` и `release-verify-npm`; `codecov/patch` у `skill-map` пришёл не с первым pull request с кодом, а со следующим: на `main` до мержа не было отчёта для сравнения.
+- **Сделано (2026-11-10):**
+  - перед задачей (правило 12): у CodeQL и Scorecard открыты те же семь находок Scorecard от 2026-10-20, у SonarCloud открытых нет — правок нет;
+  - пакет: `package.json` — `app` 0.0.0, `private`, только точные версии; `package-lock.json` v3 — `npm install --before=2026-11-07T00:00:00Z`, 172 пакета, даты всех сверены по реестру, самый поздний — `@biomejs/biome` 2.6.6 от 2026-11-06; `.npmrc`, `.gitignore`;
+  - инструменты: `tsconfig.base.json`, программы `tsconfig.app.json` и `tsconfig.node.json`; `vite.config.ts` — папка `build/`, `cssMinify: "esbuild"`, `assetsInlineLimit: 0`, `appType: "mpa"`, `127.0.0.1` с одним портом и `strictPort`, `server.fs.allow`; `vitest.config.ts` — проекты `node` и `browser`, покрытие v8 по `src/` и `scripts/`; `biome.json`; `justfile` — `ci`, `ci-lint`, `ci-test` через `build`, `ci-vuln`, `ci-licenses` с `release-verify-npm` и `scripts/notice.ts`, `build`, `dev`, `preview`, `fmt`; `licenses.json` — `lightningcss`; `NOTICE` — `react`, `react-dom` и `scheduler` с текстом MIT;
+  - код: `index.html`, `src/main.tsx`, `src/app/App.tsx` — пустой экран с `h1`; `src/app/hash.ts` и `src/app/router.ts` — маршруты на хеше; `scripts/notice.ts` и `scripts/versions.ts`; 23 теста в Node и Chromium;
+  - CI: шесть ссылок на общие workflow — `.github` v0.1.22, SHA c0234058; job «TypeScript» в `ci.yml`; `languages: javascript-typescript` в `codeql.yml` (Д9 в таблице 4 RUN.md `spec`); Dependabot — группа `shared-workflows` и экосистема `npm` с группой `vitest`, `@vitest/*`, `vite` и `@vitejs/plugin-react` и `ignore` мажоров `@types/node`, `playwright`, `@altnovatrail/spec` и `@altnovatrail/contracts`; `.github/codecov.yml`;
+  - документы: R14; начало журнала — «Следующий номер — R15»; [docs/architecture.md](docs/architecture.md), разделы 3.1 и 3.7 и источники раздела 4; README — значки TypeScript version и Coverage и Status;
+  - проверено: `just ci` зелёный — Biome, обе программы `tsc`, версии, 23 теста, покрытие строк 100 %, ветвей 90,7 %, `npm audit` без находок, «licenses-check: ok — 172 packages, 1 exceptions», «no package of @altnovatrail to verify», «notice: ok». Каждый `ci-*` прошёл ещё раз в копии дерева через `env -i` — `PATH`, путь к браузерам, временный `HOME`, `CI=true`. От обратного: диапазон в `package.json` роняет `scripts/versions.ts`, строка `NOTICE` без `scheduler` — `scripts/notice.ts`, импорт несуществующего модуля — `ci-test`. `vite preview` отвечает на `/` 200, а на `/deployment.json` и `/lesson/x` — 404. `just -f spec/justfile docs-check-repo` зелёный;
+  - `/code-review high`, один круг, — 10 находок, исправлены все:
+    - тест «после размонтирования» проходил при любой отписке — теперь он ловит сам `removeEventListener`;
+    - отрисованные деревья не размонтировались между тестами, а React не знал, что работает под `act`, — теперь это делает `src/test/browser.setup.ts`;
+    - `scripts/` не входили в покрытие, и `codecov/patch` их строк не считал бы — теперь входят, а запуск скриптов — функцией `run`, которую тесты зовут;
+    - `useRoute` давал новый объект на каждую отрисовку — теперь один хеш даёт один объект;
+    - проверка `NOTICE` шла в одну сторону и по началу строки — теперь в обе: лишняя строка, пустой copyright, лицензия без текста, пакет без лицензии;
+    - проверка `NOTICE` копировала все строки на каждый пакет — теперь одна карта;
+    - путь lock-файла без `node_modules/` резался не там — теперь остаётся целым;
+    - README называл `just ci` всеми проверками CI — теперь и проверку документов;
+    - `navigate` на уже показанный экран с другим написанием хеша добавлял запись в истории — теперь нет;
+    - `@vitejs/plugin-react` ходил бы в Dependabot отдельно от `vite` — теперь в той же группе.
+- **Открыто:**
+  - мой шаг: после мержа — «TypeScript / lint», «TypeScript / test», «TypeScript / vuln», «TypeScript / licenses» и «CodeQL / analyze (javascript-typescript)» обязательными в ruleset `main`; `codecov/patch` — когда он придёт со следующим pull request с кодом, как у `skill-map`;
+  - `playwright` 1.65.0 ждёт, пока `spec` поднимет образ в заготовке; тогда его берёт переход на тег (R14).
 
 #### T16. Пакеты платформы: типы, контракты, канва и иконки
 
