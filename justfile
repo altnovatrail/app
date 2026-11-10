@@ -15,13 +15,14 @@ bin := "node_modules/.bin"
 ci: ci-lint ci-test ci-vuln ci-licenses
 
 # Fail on code Biome would format or flag, on a type error in either program — the app sees the
-# DOM, the configuration, the scripts and the tests in Node see Node — and on a version in
-# package.json that is not exact.
+# DOM, the configuration, the scripts and the tests in Node see Node —, on a version in
+# package.json that is not exact, and on a module of icons that is not what scripts/icons.ts writes.
 ci-lint: _install
     {{ bin }}/biome ci
     {{ bin }}/tsc --noEmit -p tsconfig.app.json
     {{ bin }}/tsc --noEmit -p tsconfig.node.json
     node scripts/versions.ts
+    node scripts/icons.ts --check
 
 # The tests, in Node and in Chromium, with the coverage report coverage/lcov.info, which the shared
 # typescript.yml sends to Codecov. The build comes first: typescript.yml runs no build of its own,
@@ -36,8 +37,9 @@ ci-vuln:
 
 # The licenses of package-lock.json, against spec's list and the exceptions of licenses.json
 # (R39 in spec), and the signatures of the packages of @altnovatrail in it (R77 in spec); and a
-# NOTICE that names every package the build ships.
-ci-licenses:
+# NOTICE that names every package the build ships, with their own NOTICE files, read from
+# node_modules.
+ci-licenses: _install
     {{ quote(just_executable()) }} -f spec/justfile licenses-check-repo package-lock.json licenses.json
     {{ quote(just_executable()) }} -f spec/justfile release-verify-npm package-lock.json
     node scripts/notice.ts
@@ -46,13 +48,23 @@ ci-licenses:
 build: _install
     {{ bin }}/vite build
 
-# The development server, on 127.0.0.1.
+# The development server, on 127.0.0.1, with canvas from npm whatever the shell has set.
 dev: _install
-    {{ bin }}/vite
+    env -u NOVATRAIL_CANVAS {{ bin }}/vite
+
+# The development server with a working copy of canvas, built into its lib/, in place of the
+# package from npm; package.json and the lock file stay as they are (Д3 in RUN.md; R15).
+# The folder is taken from where the command is typed.
+dev-canvas folder: _install
+    NOVATRAIL_CANVAS={{ quote(join(invocation_directory(), folder)) }} {{ bin }}/vite
 
 # The build, served as the hosting would serve it.
 preview: build
     {{ bin }}/vite preview
+
+# Write src/app/icons.ts again from the set of icons package-lock.json pins.
+icons: _install
+    node scripts/icons.ts
 
 # Format and fix what Biome can.
 fmt: _install
