@@ -30,6 +30,10 @@ export const CAUSE_KEYS = {
   [Cause.ADULT_NEEDED]: "boot.grown-up",
   [Cause.LADDER_NOT_PASSED]: "task.ladder-not-passed",
   [Cause.NO_SHOWING]: "task.no-showing",
+  // The causes of a lesson run (T27; R23): a run ended, a segment not open yet, a task left.
+  [Cause.RUN_ENDED]: "lesson.ended",
+  [Cause.SEGMENT_UNAVAILABLE]: "lesson.not-open",
+  [Cause.SEGMENTS_NOT_ENDED]: "lesson.task-left",
 } as const;
 
 /** The words of a cause; the quota with when it comes back, in the screen's language. */

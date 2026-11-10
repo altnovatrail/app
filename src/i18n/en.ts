@@ -229,6 +229,43 @@ export const en = {
   "steps.exit-givens": "Mark what we know and what to find",
   /** What opens "Step done", or Check, at a step whose exit condition is answer_slots_filled. */
   "steps.exit-slots": "Write an answer in each slot",
+  /** The name of the bar of a lesson's segments. */
+  "lesson.segments": "Segments of the lesson",
+  /** The kinds of a lesson's segments, in the bar and in the line below it. */
+  "lesson.explanation": "Explanation",
+  "lesson.example": "Worked example",
+  "lesson.task": "Task",
+  /** Below the bar: the kind of the segment shown, its place and how many segments there are. */
+  "lesson.where": "{kind} · {n} of {total}",
+  /** Beside a segment passed, in the bar of segments. */
+  "lesson.passed": "passed",
+  /** Beside the segment the learner has reached. */
+  "lesson.now": "now",
+  /** Beside a segment not reached yet. */
+  "lesson.later": "later",
+  /** Why a task of the bar does not open: its attempt is closed. */
+  "lesson.task-over": "This task is over",
+  /** Why a segment of the bar does not open: it is not reached yet. */
+  "lesson.not-open": "Not open yet",
+  /** To the next segment; not "Next", which is the canvas's button of a worked example. */
+  "lesson.continue": "Continue",
+  "lesson.leave": "Leave the lesson",
+  /** The end screen of a lesson done, below its title: no score, no comparison. */
+  "lesson.complete": "Lesson complete",
+  /** A task of the lesson left or abandoned: it begins once more, a new attempt. */
+  "lesson.task-again": "Begin the task again",
+  /** "Lesson done" before every task of the lesson ended. */
+  "lesson.task-left": "The lesson has a task to finish",
+  /** A lesson api ended: the module or the lesson suits the profile no more. */
+  "lesson.ended-not-suitable": "This lesson doesn't suit this profile any more",
+  "lesson.ended-abandoned": "The lesson wasn't opened for 30 days",
+  /** A lesson ended for a reason this build has no words for. */
+  "lesson.ended": "This lesson is over",
+  /** On My subjects while the learner has a lesson open. */
+  "lesson.open-title": "A lesson in progress",
+  "lesson.open-continue": "Continue the lesson",
+  /** A lesson open whose title is not on this device: its module's name, not declined. */
+  "lesson.of-module": "A lesson: {module}",
   /** In place of the words of a code from api this build does not know: a newer api sent it. */
   "common.unknown": "This version of the app doesn't know this yet",
 } as const satisfies Dictionary;

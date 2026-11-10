@@ -4,19 +4,25 @@
 // screen's, a line that names it, in the order of the screen's language. Connecting and
 // disconnecting are a press away; api's answer is the list of connected modules, and the focus goes
 // with the card to its new place. An attempt open outside a lesson is a press away, above the lists
-// (T24). What comes next of a module — its lesson, chosen by engine — is T27's and T28's.
+// (T24), and so is each lesson run open, by the lesson's title as this device keeps it, or else its
+// module's name (T27; R23). What comes next of a module, chosen by engine, is T28's.
 import type { ConnectedModule } from "@altnovatrail/contracts/novatrail/api/v1/module_pb.js";
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { useApi } from "../api/ApiContext.tsx";
 import { type Failure, parseFailure } from "../api/failure.ts";
 import { failureText } from "../api/words.ts";
-import { navigate, TASK } from "../app/router.ts";
+import { LESSON, navigate, TASK } from "../app/router.ts";
 import { Screen } from "../app/Screen.tsx";
-import { Offline } from "../boot/Screens.tsx";
+import { ReadFailed } from "../boot/Screens.tsx";
 import { collator, languageNames } from "../i18n/intl.ts";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import type { Language } from "../i18n/language.ts";
+import { type RunRef, useLessons } from "../lesson/LessonContext.tsx";
+import { moduleOf } from "../lesson/run.ts";
 import { usePackages } from "../packages/PackagesContext.tsx";
+import type { OpenViews } from "../packages/views.ts";
+import type { Device } from "../storage/device.ts";
+import { openProfile, type Profile } from "../storage/profile.ts";
 import { useAttempt } from "../task/AttemptContext.tsx";
 import { byTitle, cardsOf, type ModuleCard, type ModuleRef } from "./modules.ts";
 
@@ -32,6 +38,32 @@ function nameOf(tag: string, language: Language): string {
   } catch {
     return tag;
   }
+}
+
+/** A lesson run open, as My subjects names it. */
+export interface OpenRun {
+  readonly lessonRunId: string;
+  /** The lesson's title as this device keeps it; none when the device keeps no state of the run. */
+  readonly title?: string;
+  /** Its module's name, when the title is not kept: its ID while the manifest has not come. */
+  readonly module: string;
+  /** The module's explanation language, the `lang` of either. */
+  readonly language?: string;
+}
+
+/** The name of a run open: the lesson's title, or "A lesson: {module}", the module's own element. */
+function RunName({ run }: { readonly run: OpenRun }) {
+  const { words } = useLanguage();
+  const lang = run.language === undefined ? {} : { lang: run.language };
+  if (run.title !== undefined) return <span {...lang}>{run.title}</span>;
+  const [before = "", after = ""] = words.pattern("lesson.of-module").split("{module}");
+  return (
+    <>
+      {before}
+      <span {...lang}>{run.module}</span>
+      {after}
+    </>
+  );
 }
 
 /** What a card's button does. */
@@ -102,6 +134,9 @@ export interface SubjectsScreenProps {
   readonly onRetry?: () => void;
   /** Goes on with the attempt the learner has open; none when there is none. */
   readonly onContinue?: () => void;
+  /** The learner's lesson runs open, each a press away. */
+  readonly runs?: readonly OpenRun[];
+  readonly onLesson?: (lessonRunId: string) => void;
 }
 
 /** The screen itself, from what its container has read. */
@@ -114,10 +149,13 @@ export function SubjectsScreen({
   onDisconnect,
   onRetry,
   onContinue,
+  runs = [],
+  onLesson,
 }: SubjectsScreenProps) {
   const { language, words } = useLanguage();
   const connectedId = useId();
   const continueId = useId();
+  const lessonsId = useId();
   const catalogId = useId();
   const compare = useMemo(() => collator(language).compare, [language]);
   const own = new Set(connected?.map((card) => card.moduleId));
@@ -145,6 +183,29 @@ export function SubjectsScreen({
               {words.text("task.continue")}
             </button>
           </div>
+        </section>
+      )}
+      {runs.length === 0 ? null : (
+        <section aria-labelledby={lessonsId} className="nt-continue">
+          <h2 id={lessonsId}>{words.text("lesson.open-title")}</h2>
+          <ul className="nt-cards">
+            {runs.map((run) => (
+              <li key={run.lessonRunId} className="nt-card">
+                <h3 id={`${lessonsId}-${run.lessonRunId}`}>
+                  <RunName run={run} />
+                </h3>
+                <div className="nt-buttons">
+                  <button
+                    type="button"
+                    aria-describedby={`${lessonsId}-${run.lessonRunId}`}
+                    onClick={() => onLesson?.(run.lessonRunId)}
+                  >
+                    {words.text("lesson.open-continue")}
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
         </section>
       )}
       {unnamed && onRetry !== undefined ? (
@@ -203,12 +264,55 @@ type Read =
 /** The key of a module at a version: a module in both lists is one card. */
 const keyOf = (module: ModuleRef) => `${module.moduleId} ${module.packageDigest}`;
 
+/** The name of a run open, from the state of its lesson on this device or its module's manifest. */
+async function runOf(
+  views: OpenViews,
+  profile: Profile | undefined,
+  run: RunRef,
+): Promise<OpenRun> {
+  const manifest = (await views.get(run.packageDigest, "manifest").catch(() => undefined))?.view;
+  const kept = await profile
+    ?.readLesson(run.lesson, run.packageDigest, run.lessonRunId)
+    .catch(() => undefined);
+  return {
+    lessonRunId: run.lessonRunId,
+    ...(kept === undefined ? {} : { title: kept.view.title }),
+    module: manifest?.title ?? moduleOf(run.lesson),
+    ...(manifest === undefined ? {} : { language: manifest.languages.explanation }),
+  };
+}
+
 /** "My subjects" of the learner chosen: what api says is connected and in the catalog. */
-export function MySubjects({ profileId }: { readonly profileId: string }) {
+export function MySubjects({
+  profileId,
+  device,
+}: {
+  readonly profileId: string;
+  /** The device, whose database names the lessons open; none in a screen's own test. */
+  readonly device?: Device;
+}) {
   const api = useApi();
   const { views } = usePackages();
-  const { words } = useLanguage();
   const open = useAttempt()?.attemptId;
+  const lessons = useLessons();
+  const refs = lessons?.runs;
+  const [runs, setRuns] = useState<readonly OpenRun[]>([]);
+  useEffect(() => {
+    let current = true;
+    void (async () => {
+      const all = refs ?? [];
+      // The profile's database once for every run named.
+      const profile =
+        all.length === 0 || device === undefined
+          ? undefined
+          : await openProfile(device, profileId).catch(() => undefined);
+      const named = await Promise.all(all.map((run) => runOf(views, profile, run)));
+      if (current) setRuns(named);
+    })();
+    return () => {
+      current = false;
+    };
+  }, [views, device, profileId, refs]);
   const [read, setRead] = useState<Read>({ status: "loading" });
   const [attempt, setAttempt] = useState(0);
   const [failure, setFailure] = useState<Failure | undefined>(undefined);
@@ -278,16 +382,7 @@ export function MySubjects({ profileId }: { readonly profileId: string }) {
     [views],
   );
 
-  if (read.status === "failed") {
-    if (read.failure.kind === "offline") return <Offline onRetry={retry} />;
-    return (
-      <Screen title={failureText(read.failure, words)}>
-        <button type="button" onClick={retry}>
-          {words.text("boot.retry")}
-        </button>
-      </Screen>
-    );
-  }
+  if (read.status === "failed") return <ReadFailed failure={read.failure} onRetry={retry} />;
   const done = read.status === "done";
   return (
     <SubjectsScreen
@@ -297,6 +392,13 @@ export function MySubjects({ profileId }: { readonly profileId: string }) {
       pending={pending}
       onRetry={retry}
       {...(open === undefined ? {} : { onContinue: () => navigate(TASK) })}
+      runs={runs}
+      onLesson={(lessonRunId) => {
+        const run = refs?.find((each) => each.lessonRunId === lessonRunId);
+        if (run === undefined) return;
+        lessons?.choose({ kind: "run", run });
+        navigate(LESSON);
+      }}
       onConnect={(moduleId) =>
         void change(moduleId, "disconnect", () => api.module.connectModule({ profileId, moduleId }))
       }

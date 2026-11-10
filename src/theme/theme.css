@@ -406,3 +406,60 @@ novatrail-canvas {
   margin: 0 0 0.5rem;
   padding-inline-start: 1.25rem;
 }
+/*
+ * The lesson player (R23 in docs/decisions.md): the bar of segments, chips of 44 × 44 by place that
+ * wrap onto a second line, the one shown filled and in bold; the sign ✓ of a segment passed and the
+ * chip's name tell it, not colour alone (1.4.1). From 64rem a chip shows its kind's word too.
+ */
+.nt-segment-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0 0 0.5rem;
+  padding: 0;
+  list-style: none;
+}
+button.nt-segment {
+  background: var(--nt-background);
+  color: var(--nt-primary);
+}
+/* The sign of a segment passed: drawn, with no text of its own for the chip's name. */
+button.nt-segment-passed::before {
+  content: "✓ " / "";
+}
+button.nt-segment-shown {
+  background: var(--nt-primary);
+  color: var(--nt-on-primary);
+  font-weight: 700;
+}
+.nt-segment-kind {
+  display: none;
+}
+@media (min-width: 64rem) {
+  .nt-segment-kind {
+    display: inline;
+  }
+}
+.nt-segment-heading {
+  margin-block: 0.5rem;
+  font-size: 1.25rem;
+}
+.nt-segment-heading:focus:not(:focus-visible) {
+  outline: none;
+}
+.nt-explanation img {
+  max-inline-size: 100%;
+  block-size: auto;
+}
+/* A button with an icon before its label: the gap, not a space, sets them apart. */
+button.nt-icon-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.nt-lesson-buttons {
+  margin-block-start: 1rem;
+}
+.nt-lesson-buttons > .nt-buttons {
+  margin-block-end: 0.5rem;
+}

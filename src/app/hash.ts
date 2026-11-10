@@ -2,7 +2,7 @@
 // docs/decisions.md). Any hosting serves the one index.html at the root, with no rule of its own,
 // and the browser sends no fragment to the server, so no hosting log learns which screen a learner
 // is on. A route names a screen and the IDs of content it shows, never the ID of a profile, an
-// account or an attempt.
+// account, an attempt or a lesson run.
 
 /** A screen and its parts, as the hash names them. */
 export interface Route {
@@ -16,8 +16,11 @@ export const HOME: Route = { screen: "home", parts: [] };
 /** The task screen: the attempt open, which the hash never names (R14). */
 export const TASK: Route = { screen: "task", parts: [] };
 
+/** The lesson player: the lesson run open, which the hash never names either (R23). */
+export const LESSON: Route = { screen: "lesson", parts: [] };
+
 /** The screens this build knows. A hash that names another one shows the home screen. */
-export const SCREENS: ReadonlySet<string> = new Set([HOME.screen, TASK.screen]);
+export const SCREENS: ReadonlySet<string> = new Set([HOME.screen, TASK.screen, LESSON.screen]);
 
 /** The route a hash names: `#/screen/part`, each segment percent-encoded. */
 export function parseHash(hash: string): Route {

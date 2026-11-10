@@ -207,6 +207,22 @@ describe("versions withdrawn", () => {
     }
   });
 
+  it("take the state of every lesson on their digest, and leave the lessons on another", async () => {
+    const setup = await signedIn();
+    const profile = await addProfile(setup.device, "p1");
+    const view = { id: "gaps", title: "Gaps", segments: [{ task: "t" }] };
+    for (const [lessonId, digest] of [
+      ["m/lesson/gaps", "d1"],
+      ["m/lesson/posts", "d2"],
+    ] as const) {
+      await profile?.saveLesson({ lessonId, digest, passageId: "r1", view, place: 1, demo: {} });
+    }
+    await versionsWithdrawn(setup.device, ["d1"]);
+    const again = await addProfile(setup.device, "p1");
+    expect(await again?.readLesson("m/lesson/gaps", "d1", "r1")).toBeUndefined();
+    expect((await again?.readLesson("m/lesson/posts", "d2", "r1"))?.place).toBe(1);
+  });
+
   it("are nothing to do with no digest, no registry, or no cache yet", async () => {
     const setup = memoryDevice();
     await versionsWithdrawn(setup.device, ["d1"]);
