@@ -33,6 +33,13 @@ updates:
       # vite they work with, so they move in one pull request.
       vitest:
         patterns: ["vitest", "@vitest/*", "vite", "@vitejs/plugin-react"]
+      # The transport for the browser pins connect itself exactly.
+      connect:
+        patterns: ["@connectrpc/*"]
+      # @firebase/auth registers itself with @firebase/app, and the two move as one release of the
+      # firebase package pins them (R15 in docs/decisions.md).
+      firebase:
+        patterns: ["@firebase/*"]
     ignore:
       # The types of Node follow the major version of the Node in .devcontainer/Dockerfile, which
       # moves by hand.
@@ -46,3 +53,7 @@ updates:
       # (R73 and R83 in spec).
       - dependency-name: "@altnovatrail/spec"
       - dependency-name: "@altnovatrail/contracts"
+      # The runtime of protobuf is the one @altnovatrail/contracts names, and the set of icons the
+      # one canvas names: both move with that package, and scripts/pins.ts holds them to it (R15).
+      - dependency-name: "@bufbuild/protobuf"
+      - dependency-name: "@iconify-json/material-symbols"

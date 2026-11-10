@@ -19,9 +19,9 @@ A component of [NovaTrail](https://github.com/altnovatrail/spec/tree/v0.13.0), a
 
 ## Status
 
-Detailing is done: the first epic of [RUN.md](RUN.md) decided what the component's card left open, and [docs/architecture.md](docs/architecture.md) holds the result. The code has begun with epic E2, the first app: so far the scaffold — an empty React app that builds, is checked and is tested in Node and in Chromium, locally and in CI.
+Detailing is done: the first epic of [RUN.md](RUN.md) decided what the component's card left open, and [docs/architecture.md](docs/architecture.md) holds the result. The code has begun with epic E2, the first app: so far the scaffold — an empty React app that builds, is checked and is tested in Node and in Chromium, locally and in CI — and the platform's packages it is built from: the canvas element, the contracts' code with its connect-es client and Firebase Auth, each package of `@altnovatrail` verified against its signed release.
 
-Run the four checks of the TypeScript code with `just ci` and the check of the documents with `just -f spec/justfile docs-check-repo` — CI runs both — the app with `just dev`, and its build with `just preview`, all inside the devcontainer.
+Run the four checks of the TypeScript code with `just ci` and the check of the documents with `just -f spec/justfile docs-check-repo` — CI runs both — the app with `just dev` — with a working copy of canvas, built, by `just dev-canvas <folder>` — and its build with `just preview`, all inside the devcontainer.
 
 ## Documents
 

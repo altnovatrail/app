@@ -5,11 +5,90 @@ This product is licensed under the Apache License, Version 2.0; see LICENSE.
 
 The build of this app includes the following third-party software, each under its own license.
 A test checks that this list names every package the build takes from npm, at its version in
-package-lock.json (R14 in docs/decisions.md).
+package-lock.json, with the NOTICE of each package that holds one, as it is (R14 and R15 in
+docs/decisions.md).
 
+@altnovatrail/canvas 0.3.4 — Apache-2.0 — Copyright the NovaTrail authors.
+@altnovatrail/contracts 0.13.0 — Apache-2.0 — Copyright the NovaTrail authors.
+@altnovatrail/spec 0.12.0 — Apache-2.0 — Copyright the NovaTrail authors.
+@bufbuild/protobuf 2.16.0 — (Apache-2.0 AND BSD-3-Clause) — Copyright 2021-2026 Buf Technologies, Inc.; its code from Protocol Buffers, under BSD-3-Clause: Copyright 2008 Google Inc. All rights reserved.
+@connectrpc/connect 2.3.0 — Apache-2.0 — Copyright 2021-2026 The Connect Authors
+@connectrpc/connect-web 2.3.0 — Apache-2.0 — Copyright 2021-2026 The Connect Authors
+@firebase/app 0.16.5 — Apache-2.0 — Copyright Google LLC
+@firebase/auth 1.13.9 — Apache-2.0 — Copyright Google LLC
+@firebase/component 0.7.5 — Apache-2.0 — Copyright Google LLC
+@firebase/logger 0.5.2 — Apache-2.0 — Copyright Google LLC
+@firebase/util 1.15.3 — Apache-2.0 — Copyright Google LLC
+@iconify-json/material-symbols 1.2.97 — Apache-2.0 — Material Symbols, by Google: https://github.com/google/material-design-icons
+@iconify/types 2.0.0 — MIT — Copyright (c) 2021 - 2022 Vjacheslav Trushkin / Iconify OÜ
+idb 7.1.1 — ISC — Copyright (c) 2016, Jake Archibald <jaffathecake@gmail.com>
+perfect-freehand 1.2.3 — MIT — Copyright (c) 2021 Stephen Ruiz Ltd
+quickselect 3.0.0 — ISC — Copyright (c) 2024, Vladimir Agafonkin
+rbush 4.0.1 — MIT — Copyright (c) 2024 Volodymyr Agafonkin
 react 19.3.1 — MIT — Copyright (c) Meta Platforms, Inc. and affiliates.
 react-dom 19.3.1 — MIT — Copyright (c) Meta Platforms, Inc. and affiliates.
 scheduler 0.28.0 — MIT — Copyright (c) Meta Platforms, Inc. and affiliates.
+tslib 2.9.1 — 0BSD — Copyright (c) Microsoft Corporation.
+
+Notice of @altnovatrail/canvas 0.3.4:
+
+@altnovatrail/canvas
+
+The package embeds icons of Material Symbols, by Google, under the Apache License, Version 2.0,
+the license in LICENSE: https://github.com/google/material-design-icons. They come from the npm
+package @iconify-json/material-symbols 1.2.97, and the package holds only the icons of its
+own buttons.
+
+Text of Apache-2.0, the license of the packages above marked Apache-2.0: the Apache License,
+Version 2.0, the same as this app's own, whose text is in LICENSE beside this file.
+
+Text of BSD-3-Clause, the license of the part of @bufbuild/protobuf above that comes from Protocol
+Buffers, with its copyright notice above:
+
+  Redistribution and use in source and binary forms, with or without modification, are permitted
+  provided that the following conditions are met:
+
+  * Redistributions of source code must retain the above copyright notice, this list of conditions
+    and the following disclaimer.
+  * Redistributions in binary form must reproduce the above copyright notice, this list of
+    conditions and the following disclaimer in the documentation and/or other materials provided
+    with the distribution.
+  * Neither the name of Google Inc. nor the names of its contributors may be used to endorse or
+    promote products derived from this software without specific prior written permission.
+
+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR
+  IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+  FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+  CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+  DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+  WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY
+  WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+Text of ISC, the license of the packages above marked ISC, each with its copyright notice above:
+
+  Permission to use, copy, modify, and/or distribute this software for any purpose with or without
+  fee is hereby granted, provided that the above copyright notice and this permission notice
+  appear in all copies.
+
+  THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS
+  SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE
+  AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+  WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT,
+  NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE
+  OF THIS SOFTWARE.
+
+Text of 0BSD, the license of the package above marked 0BSD, with its copyright notice above:
+
+  Permission to use, copy, modify, and/or distribute this software for any purpose with or without
+  fee is hereby granted.
+
+  THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS
+  SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE
+  AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+  WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT,
+  NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE
+  OF THIS SOFTWARE.
 
 Text of MIT, the license of the packages above marked MIT, each with its copyright notice above:
 

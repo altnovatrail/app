@@ -1,0 +1,4 @@
+/* An icon of an arrow points the way the line runs (architecture 6 in spec). */
+svg[data-mirrored]:dir(rtl) {
+  transform: scaleX(-1);
+}
