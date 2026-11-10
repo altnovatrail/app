@@ -19,10 +19,15 @@ import {
   type Transaction,
 } from "./backend.ts";
 
+/** Why a request failed: its error, which a failed request always has. */
+function failure(request: IDBRequest): DOMException {
+  return request.error ?? new DOMException("the request failed", "UnknownError");
+}
+
 function done<T>(request: IDBRequest<T>): Promise<T> {
   return new Promise((resolve, reject) => {
     request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
+    request.onerror = () => reject(failure(request));
   });
 }
 
@@ -46,7 +51,7 @@ function transaction(tx: IDBTransaction): Transaction {
       new Promise((resolve, reject) => {
         const request = source(tx, store, query).openCursor(keyRange(query.range));
         const entries: Entry[] = [];
-        request.onerror = () => reject(request.error);
+        request.onerror = () => reject(failure(request));
         request.onsuccess = () => {
           const cursor = request.result;
           if (cursor === null) {
@@ -144,7 +149,7 @@ export function indexedDbBackend(factory: IDBFactory = indexedDB): Backend {
           event.preventDefault();
           if (absent) resolve(undefined);
           else if (request.error?.name === "VersionError") reject(new NewerSchemaError(name));
-          else reject(request.error);
+          else reject(failure(request));
         };
         request.onsuccess = () => {
           const db = request.result;
