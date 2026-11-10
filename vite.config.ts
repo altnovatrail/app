@@ -2,10 +2,19 @@
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 import { canvasCopy } from "./scripts/canvas-dev.ts";
+import { deployment } from "./scripts/deployment-plugin.ts";
 
 // One port for the development server and for `vite preview`, which neither moves off quietly:
 // the local deployment configuration names the origin (section 3.7).
 const port = 5173;
+
+// The paths of api's services, which a local run sends to a local api: in deployment.local.json
+// api is app's own origin, so that both layers of the CSP let them through as 'self' (section
+// 3.7). Where the local api is, NOVATRAIL_API says; how app's container reaches it is T22's.
+const apiTarget = process.env.NOVATRAIL_API;
+const proxy = apiTarget
+  ? { "^/novatrail\\.": { target: apiTarget, changeOrigin: true } }
+  : undefined;
 
 export default defineConfig(({ command, isPreview }) => {
   // A working copy of canvas, on the development server alone, by `just dev-canvas` (Д3 in RUN.md);
@@ -13,7 +22,7 @@ export default defineConfig(({ command, isPreview }) => {
   const folder = process.env.NOVATRAIL_CANVAS;
   const copy = command === "serve" && isPreview !== true && folder ? canvasCopy(folder) : undefined;
   return {
-    plugins: [react()],
+    plugins: [react(), deployment()],
     resolve: { alias: copy?.aliases ?? [] },
     // No fallback to index.html for a path that is not there, as on a hosting with no rules: the
     // screens live in the hash (R14), and a missing /deployment.json answers 404, not the page.
@@ -36,11 +45,13 @@ export default defineConfig(({ command, isPreview }) => {
         strict: true,
         allow: ["index.html", "src", "node_modules", ...(copy ? [copy.allow] : [])],
       },
+      proxy,
     },
     preview: {
       host: "127.0.0.1",
       port,
       strictPort: true,
+      proxy,
     },
   };
 });
