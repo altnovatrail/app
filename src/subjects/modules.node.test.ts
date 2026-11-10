@@ -71,6 +71,15 @@ describe("the cards of modules", () => {
     ]);
     expect(cards[0]).toMatchObject({ title: "z/fails", unnamed: true });
     expect(cards[2]).not.toHaveProperty("unnamed");
+    // The same title goes by the ID.
+    const twins = byTitle(
+      [
+        { moduleId: "b", title: "Same" },
+        { moduleId: "a", title: "Same" },
+      ],
+      new Intl.Collator("en").compare,
+    );
+    expect(twins.map((card) => card.moduleId)).toEqual(["a", "b"]);
     // Russian puts Cyrillic before Latin.
     expect(byTitle(cards, new Intl.Collator("ru").compare).map((card) => card.title)).toEqual([
       "Ёлки",

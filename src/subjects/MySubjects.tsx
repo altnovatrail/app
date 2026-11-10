@@ -7,7 +7,6 @@
 // T27's and T28's.
 import type { ConnectedModule } from "@altnovatrail/contracts/novatrail/api/v1/module_pb.js";
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
-import { useLearner } from "../account/AccountGate.tsx";
 import { useApi } from "../api/ApiContext.tsx";
 import { type Failure, parseFailure } from "../api/failure.ts";
 import { failureText } from "../api/words.ts";
@@ -189,12 +188,10 @@ type Read =
 const keyOf = (module: ModuleRef) => `${module.moduleId} ${module.packageDigest}`;
 
 /** "My subjects" of the learner chosen: what api says is connected and in the catalog. */
-export function MySubjects() {
+export function MySubjects({ profileId }: { readonly profileId: string }) {
   const api = useApi();
   const { views } = usePackages();
   const { words } = useLanguage();
-  const chosen = useLearner();
-  const profileId = chosen?.learner.profileId ?? "";
   const [read, setRead] = useState<Read>({ status: "loading" });
   const [attempt, setAttempt] = useState(0);
   const [failure, setFailure] = useState<Failure | undefined>(undefined);

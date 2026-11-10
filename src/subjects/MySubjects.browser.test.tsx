@@ -16,7 +16,6 @@ import { Code, ConnectError, type ConnectRouter, createRouterTransport } from "@
 import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
-import { LearnerProvider } from "../account/AccountGate.tsx";
 import { ApiProvider } from "../api/ApiContext.tsx";
 import { createApi } from "../api/client.ts";
 import { PackageChecks } from "../packages/checks.ts";
@@ -65,7 +64,7 @@ interface Setup {
   connected?: Connected[];
   catalog?: { moduleId: string; packageDigest: string }[];
   list?: () => void;
-  connect?: (moduleId: string) => void;
+  connect?: (moduleId: string) => void | Promise<void>;
   /** Called on each manifest asked for; throwing makes it fail. */
   manifest?: (digest: string) => void;
   /** What the cache keeps before the screen opens. */
@@ -89,9 +88,9 @@ async function renderSubjects(setup: Setup, language: "en" | "ru" = "en") {
         asked.push(`catalog ${request.profileId}`);
         return { modules: setup.catalog ?? [] };
       },
-      connectModule(request) {
+      async connectModule(request) {
         asked.push(`connect ${request.moduleId}`);
-        setup.connect?.(request.moduleId);
+        await setup.connect?.(request.moduleId);
         const digest = setup.catalog?.find((m) => m.moduleId === request.moduleId)?.packageDigest;
         connected = [...connected, { moduleId: request.moduleId, packageDigest: digest ?? "" }];
         return { modules: connected };
@@ -126,19 +125,17 @@ async function renderSubjects(setup: Setup, language: "en" | "ru" = "en") {
     checks: new PackageChecks(api, device),
     files: new DeviceFiles({ api: "https://api.example.org", withdrawn: () => {} }),
   };
-  render(
+  const rendered = render(
     inLanguage(
       <ApiProvider value={api}>
         <PackagesProvider value={packages}>
-          <LearnerProvider value={{ learner: LEARNER, switchLearner: () => {}, signOut: () => {} }}>
-            <MySubjects />
-          </LearnerProvider>
+          <MySubjects profileId={LEARNER.profileId} />
         </PackagesProvider>
       </ApiProvider>,
       language,
     ),
   );
-  return { asked, device };
+  return { asked, device, unmount: rendered.unmount };
 }
 
 /** The card of a module, by the title it is labelled by. */
@@ -147,6 +144,32 @@ async function card(title: string) {
 }
 
 describe("My subjects", () => {
+  it("takes no second press while a connection is under way, and keeps the focus where it was", async () => {
+    let answer: () => void = () => {};
+    const { asked } = await renderSubjects({
+      catalog: [
+        { moduleId: MATH, packageDigest: D1 },
+        { moduleId: PHYSICS, packageDigest: D2 },
+      ],
+      connect: () => new Promise<void>((resolve) => (answer = resolve)),
+    });
+    const maths = (await card("Olympiad maths")).getByRole("button", { name: "Connect" });
+    await userEvent.click(maths);
+    expect(maths).toHaveAttribute("aria-disabled", "true");
+    expect(document.activeElement).toBe(maths);
+    // A press the browser lets through, as a screen reader's would: aria-disabled does not stop it.
+    (await card("Физика")).getByRole("button", { name: "Connect" }).click();
+    answer();
+    await vi.waitFor(() => expect(asked).toEqual(["list p1", "catalog p1", `connect ${MATH}`]));
+  });
+
+  it("drops the lists of a screen gone before they came", async () => {
+    const { unmount, asked } = await renderSubjects({});
+    unmount();
+    await vi.waitFor(() => expect(asked).toEqual(["list p1", "catalog p1"]));
+    expect(screen.queryByRole("heading", { level: 1 })).toBeNull();
+  });
+
   it("names a module by its ID when its manifest did not come, and asks again on a retry", async () => {
     let fail = true;
     let asked = 0;

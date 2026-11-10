@@ -215,6 +215,12 @@ describe("OpenViews.keptManifests", () => {
     await keep(`sha256:${"4".repeat(64)}`, { ...MANIFEST, id: "other", version: "9.0.0" });
     await cache?.put(`sha256:${"5".repeat(64)}`, "manifest", {});
     await keep(`sha256:${"6".repeat(64)}`, { id: "probe", title: "No version" });
+    // The same version again, and a shorter one of the same numbers: neither is later.
+    await keep(`sha256:${"8".repeat(64)}`, { ...MANIFEST, version: "1.10.0", title: "Same" });
+    await keep(`sha256:${"a".repeat(64)}`, { ...MANIFEST, version: "1.10", title: "Short" });
+    await cache?.put(`sha256:${"b".repeat(64)}`, "manifest", {
+      json: new TextEncoder().encode(JSON.stringify({ ...MANIFEST, version: "99.0.0" })),
+    });
     await cache?.put(`sha256:${"7".repeat(64)}`, "manifest", {
       json: new TextEncoder().encode("null"),
       version: "0.4",

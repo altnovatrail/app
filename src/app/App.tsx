@@ -34,7 +34,11 @@ export function App() {
     <>
       <LearnerBar />
       <div data-screen={route.screen}>
-        {chosen === undefined ? <Screen title={words.text("home.title")} /> : <MySubjects />}
+        {chosen === undefined ? (
+          <Screen title={words.text("home.title")} />
+        ) : (
+          <MySubjects profileId={chosen.learner.profileId} />
+        )}
       </div>
     </>
   );
