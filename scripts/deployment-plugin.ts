@@ -1,22 +1,24 @@
 // app's own plugin of Vite for the deployment configuration and the CSP (R09 in
 // docs/decisions.md; sections 3.1 and 3.7 of docs/architecture.md):
 // - at the build, the lower layer of the CSP goes into <head> right after <meta charset>, and the
-//   build stops if anything else stands before it; csp.json and spec's deployment.schema.json go
-//   into the build beside index.html, as infra's rollout reads them (R17 in infra);
+//   build stops if anything else stands before it; csp.json and spec's deployment.schema.json, from
+//   the file of spec's release in parts/, go into the build beside index.html, as infra's rollout
+//   reads them (R17 in infra);
 // - on the development server and in `vite preview`, /deployment.json is deployment.local.json,
 //   whose api has to be the origin of the server that serves it; `vite preview` also sends the
 //   header the rollout would build from csp.json, so that a local run holds both layers.
 import { existsSync, readFileSync } from "node:fs";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type { Plugin, PreviewServer, ViteDevServer } from "vite";
+import { DEPLOYMENT_ARCHIVE, deploymentPart, partText } from "./archive.ts";
 import { header, lowerLayer, type Places, type Template, templateProblems } from "./csp.ts";
 
 /** Where the plugin reads from, from the repository's root unless given. */
 export interface Options {
   /** The template of the CSP. */
   readonly template?: string;
-  /** The schema of the deployment configuration, from the spec submodule at its tag. */
-  readonly schema?: string;
+  /** The file of spec's release that holds the part deployment/, and so its schema. */
+  readonly archive?: string;
   /** The local deployment configuration, kept out of git. */
   readonly local?: string;
   /** Whether `vite preview` sends the header; a test turns it off, as a hosting without headers. */
@@ -80,7 +82,7 @@ function originOf(server: Server, preview: boolean): string {
 /** The plugin, reading its files from the paths given. */
 export function deployment(options: Options = {}): Plugin {
   const templatePath = options.template ?? "csp.json";
-  const schemaPath = options.schema ?? "spec/deployment/schemas/deployment.schema.json";
+  const archivePath = options.archive ?? DEPLOYMENT_ARCHIVE;
   const localPath = options.local ?? "deployment.local.json";
   const readTemplate = (): Template => {
     const template: unknown = JSON.parse(readFileSync(templatePath, "utf8"));
@@ -141,7 +143,7 @@ export function deployment(options: Options = {}): Plugin {
       this.emitFile({
         type: "asset",
         fileName: "deployment.schema.json",
-        source: readFileSync(schemaPath),
+        source: partText(deploymentPart(archivePath), "schemas/deployment.schema.json"),
       });
     },
     configureServer(server) {

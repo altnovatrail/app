@@ -1,8 +1,9 @@
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createServer } from "vite";
 import { describe, expect, it } from "vitest";
+import { deploymentPart, partText } from "./archive.ts";
 import {
   deployment,
   layerIsFirst,
@@ -106,7 +107,7 @@ describe("deployment", () => {
     run.call(context, {}, page(withLayer(PAGE, { "default-src": "'none'" })));
     expect(emitted.map((file) => file.fileName)).toEqual(["csp.json", "deployment.schema.json"]);
     expect(String(emitted[1]?.source)).toBe(
-      readFileSync("spec/deployment/schemas/deployment.schema.json", "utf8"),
+      partText(deploymentPart(), "schemas/deployment.schema.json"),
     );
   });
 

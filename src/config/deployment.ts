@@ -76,7 +76,8 @@ export function schemaRefusals(file: unknown): string[] {
     "",
   );
   if (isObject(file.signIn)) refused.push(...refusedFields(file.signIn, SIGN_IN, "signIn."));
-  return refused.sort();
+  // The order of code units, as the part asks, not a locale's order.
+  return refused.sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
 }
 
 /** Whether an origin, as the URL Standard serializes it, is on a loopback host. */

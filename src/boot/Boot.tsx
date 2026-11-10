@@ -54,7 +54,7 @@ export function Boot({ framed, origin, languages, fetcher, children }: BootProps
     let current = true;
     // A screen already shown stays while the file is asked for again, its button keeping focus.
     // A failure reading cannot name is one more try away, as a network that did not answer.
-    loadDeployment(origin, fetcher)
+    void loadDeployment(origin, fetcher)
       .catch((): Loaded => ({ kind: "offline" }))
       .then((result) => {
         if (current) setLoaded(result);

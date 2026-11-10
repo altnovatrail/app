@@ -11,6 +11,10 @@ set shell := ["bash", "-euo", "pipefail", "-c"]
 # fetched on the fly.
 bin := "node_modules/.bin"
 
+# The tag of the spec submodule, whose release the file in parts/ comes from: it moves with the
+# submodule, by the task that moves to a new tag.
+spec_tag := "v0.13.0"
+
 # Run the four checks CI runs, before a pull request.
 ci: ci-lint ci-test ci-vuln ci-licenses
 
@@ -38,10 +42,12 @@ ci-vuln:
 # The licenses of package-lock.json, against spec's list and the exceptions of licenses.json
 # (R39 in spec), and the signatures of the packages of @altnovatrail in it (R77 in spec); and a
 # NOTICE that names every package the build ships, with their own NOTICE files, read from
-# node_modules.
+# node_modules; and the file of spec's release the build and the tests take the part deployment/
+# from, which the code reads instead of spec/ (R21 and R85 in spec).
 ci-licenses: _install
     {{ quote(just_executable()) }} -f spec/justfile licenses-check-repo package-lock.json licenses.json
     {{ quote(just_executable()) }} -f spec/justfile release-verify-npm package-lock.json
+    {{ quote(just_executable()) }} -f spec/justfile release-verify spec {{ spec_tag }} parts/deployment-1.tar.gz
     node scripts/notice.ts
 
 # The build of the app into build/.

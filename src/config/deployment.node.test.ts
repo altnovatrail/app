@@ -1,9 +1,10 @@
-// The reading of /deployment.json held to spec's part deployment/ at the submodule's tag: its
-// schema's patterns, its examples and its vectors of reading (section 3.7 of docs/architecture.md).
-import { readdirSync, readFileSync } from "node:fs";
+// The reading of /deployment.json held to spec's part deployment/, from the file of spec's release
+// in parts/: its schema's patterns, its examples and its vectors of reading (section 3.7 of
+// docs/architecture.md).
 import type { ReadingVector } from "@altnovatrail/spec/deploymentv1";
 import { describe, expect, it } from "vitest";
 import { parse } from "yaml";
+import { deploymentPart, partText } from "../../scripts/archive.ts";
 import {
   API_PATTERN,
   AUTH_DOMAIN_PATTERN,
@@ -13,10 +14,14 @@ import {
   schemaRefusals,
 } from "./deployment.ts";
 
-const PART = "spec/deployment";
-const read = (path: string) => readFileSync(`${PART}/${path}`, "utf8");
+const part = deploymentPart();
+const read = (path: string) => partText(part, path);
+/** The YAML files right in a folder of the part, by their names. */
 const files = (folder: string) =>
-  readdirSync(`${PART}/${folder}`).filter((f) => f.endsWith(".yaml"));
+  [...part.keys()]
+    .filter((path) => path.startsWith(`${folder}/`) && path.endsWith(".yaml"))
+    .map((path) => path.slice(folder.length + 1))
+    .filter((name) => !name.includes("/"));
 
 describe("the part deployment/ of spec", () => {
   it("is the version this build reads, with the schema's own patterns", () => {

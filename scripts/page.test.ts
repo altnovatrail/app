@@ -8,6 +8,7 @@ import { join } from "node:path";
 import { type Browser, chromium, type Page } from "playwright";
 import { type PreviewServer, preview } from "vite";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { deploymentPart, partText } from "./archive.ts";
 import { deployment, layerIsFirst } from "./deployment-plugin.ts";
 
 const HOST = "127.0.0.1";
@@ -92,7 +93,7 @@ describe("the built page", () => {
     expect(existsSync("build/deployment.json")).toBe(false);
     expect(existsSync("build/csp.json")).toBe(true);
     expect(readFileSync("build/deployment.schema.json", "utf8")).toBe(
-      readFileSync("spec/deployment/schemas/deployment.schema.json", "utf8"),
+      partText(deploymentPart(), "schemas/deployment.schema.json"),
     );
   });
 
