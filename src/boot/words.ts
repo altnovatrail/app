@@ -12,6 +12,8 @@ export interface Words {
   readonly grownUp: string;
   readonly newVersion: string;
   readonly reload: string;
+  readonly erased: string;
+  readonly unreadable: string;
 }
 
 export const WORDS: Readonly<Record<Language, Words>> = {
@@ -23,6 +25,8 @@ export const WORDS: Readonly<Record<Language, Words>> = {
     grownUp: "A grown-up needs to help",
     newVersion: "There is a new version of the app",
     reload: "Reload",
+    erased: "The data on this device was erased",
+    unreadable: "The data on this device can't be read",
   },
   ru: {
     framed: "Приложение открывается только в своей вкладке",
@@ -32,6 +36,8 @@ export const WORDS: Readonly<Record<Language, Words>> = {
     grownUp: "Нужна помощь взрослого",
     newVersion: "Вышла новая версия приложения",
     reload: "Перезагрузить",
+    erased: "Данные на этом устройстве стёрты",
+    unreadable: "Не удалось прочитать данные на этом устройстве",
   },
 };
 

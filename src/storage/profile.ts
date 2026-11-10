@@ -1,0 +1,293 @@
+// The database of one learner's profile (section 3.2 of docs/architecture.md; R04, R16 in
+// docs/decisions.md): attempts with their history of writing and submissions, the work of a correct
+// submission until the words after it, and the state of lessons. History and contexts are kept as
+// the canvas gave them, unchanged. Every write says whether it was saved, so that the task screen
+// can tell the learner the work is not saved on this device.
+import type {
+  DemoState,
+  ExportedCell,
+  ExportedWork,
+  HistoryChange,
+  HistoryEvent,
+  Submission,
+} from "@altnovatrail/spec/canvas";
+import type * as open from "@altnovatrail/spec/formatv0/open";
+import { type Connection, type Key, type Transaction, within } from "./backend.ts";
+import type { Device } from "./device.ts";
+import { addDatabase, readRegistry } from "./registry.ts";
+import { PROFILE_SCHEMA, profileDatabase } from "./schema.ts";
+
+/** Whether a write reached the database. */
+export type Saved = "saved" | "unsaved";
+
+/** An attempt: its package, the open view of its task, the state of its steps (section 3.3). */
+export interface Attempt {
+  readonly attemptId: string;
+  /** The digest of the attempt's package. */
+  readonly digest: string;
+  /** The open view of the task or of the instance; gone once its version was withdrawn. */
+  readonly task?: open.Task;
+  /** The state of the steps — mode, place, chips, techniques — as the task screen keeps it. */
+  readonly steps?: unknown;
+  readonly changedAt: number;
+}
+
+/** The work for checking without its context: the crop of a sheet, or a workbook's boxes. */
+export type Work = { readonly png: Blob } | { readonly cells: readonly ExportedCell[] };
+
+/** A submission: its context as the canvas gave it, the history's length then, and its work. */
+export interface SubmissionRecord {
+  readonly context: Submission;
+  readonly historyLength: number;
+  readonly work: Work;
+}
+
+/** An attempt with its history and its submissions, in their order. */
+export interface StoredAttempt {
+  readonly attempt: Attempt;
+  readonly history: readonly HistoryEvent[];
+  readonly submissions: readonly SubmissionRecord[];
+}
+
+/** The state of a lesson on one package, in one passage (section 3.4). */
+export interface LessonState {
+  readonly lessonId: string;
+  readonly digest: string;
+  readonly passageId: string;
+  readonly view: open.Lesson;
+  /** The segment the learner has got to, from 1. */
+  readonly place: number;
+  /** How far each worked example's demo is open, by its segment. */
+  readonly demo: Readonly<Record<number, DemoState>>;
+  readonly changedAt: number;
+}
+
+const ATTEMPT_STORES = ["attempts", "history", "submissions"];
+
+async function eraseAttempt(tx: Transaction, attemptId: string): Promise<void> {
+  await tx.delete("attempts", attemptId);
+  await tx.delete("history", within(attemptId));
+  await tx.delete("submissions", within(attemptId));
+}
+
+export class Profile {
+  private readonly connection: Connection;
+  private readonly now: () => number;
+
+  constructor(connection: Connection, now: () => number) {
+    this.connection = connection;
+    this.now = now;
+  }
+
+  /** A write that tells, rather than throws, that it did not reach the database. */
+  private async save<T extends string>(
+    stores: readonly string[],
+    work: (tx: Transaction) => Promise<T>,
+  ): Promise<T | "unsaved"> {
+    try {
+      return await this.connection.write(stores, work);
+    } catch {
+      return "unsaved";
+    }
+  }
+
+  /** A new attempt, with no history and no submission. */
+  beginAttempt(attempt: Omit<Attempt, "changedAt" | "steps">): Promise<Saved> {
+    return this.save(ATTEMPT_STORES, async (tx) => {
+      await eraseAttempt(tx, attempt.attemptId);
+      await tx.put("attempts", attempt.attemptId, { ...attempt, changedAt: this.now() });
+      return "saved";
+    });
+  }
+
+  readAttempt(attemptId: string): Promise<StoredAttempt | undefined> {
+    return this.connection.read(ATTEMPT_STORES, async (tx) => {
+      const attempt = (await tx.get("attempts", attemptId)) as Attempt | undefined;
+      if (attempt === undefined) return undefined;
+      const history = await tx.entries("history", { range: within(attemptId) });
+      const submissions = await tx.entries("submissions", { range: within(attemptId) });
+      return {
+        attempt,
+        history: history.map((entry) => entry.value as HistoryEvent),
+        submissions: submissions.map((entry) => entry.value as SubmissionRecord),
+      };
+    });
+  }
+
+  /** Marks the attempt changed now, in the transaction; false when there is no such attempt. */
+  private async touch(tx: Transaction, attemptId: string, change: Partial<Attempt> = {}) {
+    const attempt = (await tx.get("attempts", attemptId)) as Attempt | undefined;
+    if (attempt === undefined) return false;
+    await tx.put("attempts", attemptId, { ...attempt, ...change, changedAt: this.now() });
+    return true;
+  }
+
+  saveSteps(attemptId: string, steps: unknown): Promise<Saved> {
+    return this.save(["attempts"], async (tx) =>
+      (await this.touch(tx, attemptId, { steps })) ? "saved" : "unsaved",
+    );
+  }
+
+  /**
+   * Adds what a `historychange` tells. A history whose length is not `from` has missed events:
+   * `"missed"`, and the caller gives the element's whole `history` to `replaceHistory`.
+   */
+  appendHistory(attemptId: string, change: HistoryChange): Promise<Saved | "missed"> {
+    return this.save(["attempts", "history"], async (tx): Promise<Saved | "missed"> => {
+      if ((await tx.count("history", { range: within(attemptId) })) !== change.from) {
+        return "missed";
+      }
+      if (!(await this.touch(tx, attemptId))) return "unsaved";
+      for (const [i, event] of change.events.entries()) {
+        await tx.put("history", [attemptId, change.from + i], event);
+      }
+      return "saved";
+    });
+  }
+
+  /** The whole history in place of what is kept. */
+  replaceHistory(attemptId: string, history: readonly HistoryEvent[]): Promise<Saved> {
+    return this.save(["attempts", "history"], async (tx) => {
+      if (!(await this.touch(tx, attemptId))) return "unsaved";
+      await tx.delete("history", within(attemptId));
+      for (const [i, event] of history.entries()) await tx.put("history", [attemptId, i], event);
+      return "saved";
+    });
+  }
+
+  /** A submission, with its context and work from `exportWork()` and the history's length. */
+  addSubmission(attemptId: string, work: ExportedWork, historyLength: number): Promise<Saved> {
+    const record: SubmissionRecord = {
+      context: work.submission,
+      historyLength,
+      work: "png" in work ? { png: work.png } : { cells: work.cells },
+    };
+    return this.save(["attempts", "submissions"], async (tx) => {
+      if (!(await this.touch(tx, attemptId))) return "unsaved";
+      const n = await tx.count("submissions", { range: within(attemptId) });
+      await tx.put("submissions", [attemptId, n], record);
+      return "saved";
+    });
+  }
+
+  /**
+   * The attempt ended (section 3.2): its history, submissions, steps and the open view of its task
+   * go. The work of a correct submission, by its number from 0, stays until the words after it.
+   */
+  async attemptEnded(attemptId: string, correct?: number): Promise<void> {
+    await this.connection.write([...ATTEMPT_STORES, "correctWork"], async (tx) => {
+      if (correct !== undefined) {
+        const record = (await tx.get("submissions", [attemptId, correct])) as
+          | SubmissionRecord
+          | undefined;
+        if (record !== undefined) await tx.put("correctWork", attemptId, record.work);
+      }
+      await eraseAttempt(tx, attemptId);
+    });
+  }
+
+  /** The work of an ended attempt's correct submission, for the words after it. */
+  async correctWork(attemptId: string): Promise<Work | undefined> {
+    return this.connection.read(
+      ["correctWork"],
+      async (tx) => (await tx.get("correctWork", attemptId)) as Work | undefined,
+    );
+  }
+
+  /** The words after the correct answer came, or their request ended: its work goes. */
+  async wordsCame(attemptId: string): Promise<void> {
+    await this.connection.write(["correctWork"], (tx) => tx.delete("correctWork", attemptId));
+  }
+
+  /** At the start: the work of every correct submission whose words app was closed before. */
+  async clearCorrectWork(): Promise<void> {
+    await this.connection.write(["correctWork"], (tx) => tx.delete("correctWork", {}));
+  }
+
+  /** The state of a lesson; a new passage or another package takes the place of the one kept. */
+  saveLesson(state: Omit<LessonState, "changedAt">): Promise<Saved> {
+    return this.save(["lessons"], async (tx) => {
+      await tx.put("lessons", state.lessonId, { ...state, changedAt: this.now() });
+      return "saved";
+    });
+  }
+
+  /**
+   * The state of a lesson on this package and in this passage. One kept on another package or of
+   * another passage is over, and goes (section 3.4).
+   */
+  async readLesson(
+    lessonId: string,
+    digest: string,
+    passageId: string,
+  ): Promise<LessonState | undefined> {
+    return this.connection.write(["lessons"], async (tx) => {
+      const state = (await tx.get("lessons", lessonId)) as LessonState | undefined;
+      if (state === undefined) return undefined;
+      if (state.digest === digest && state.passageId === passageId) return state;
+      await tx.delete("lessons", lessonId);
+      return undefined;
+    });
+  }
+
+  /** The lesson ended — passed, unchecked, not fitting or abandoned: its state goes. */
+  async lessonEnded(lessonId: string): Promise<void> {
+    await this.connection.write(["lessons"], (tx) => tx.delete("lessons", lessonId));
+  }
+
+  /** Versions withdrawn: the open views of their tasks, and the lessons on them, go. */
+  async withdraw(digests: readonly string[]): Promise<void> {
+    await this.connection.write(["attempts", "lessons"], async (tx) => {
+      for (const digest of digests) {
+        const range = { lower: digest, upper: digest };
+        for (const { key, value } of await tx.entries("attempts", { index: "digest", range })) {
+          const { task: _, ...attempt } = value as Attempt;
+          await tx.put("attempts", key, attempt);
+        }
+        for (const { key } of await tx.entries("lessons", { index: "digest", range })) {
+          await tx.delete("lessons", key);
+        }
+      }
+    });
+  }
+
+  /** Attempts and lessons last changed at a time or before go, with all of an attempt's work. */
+  async expire(cutoff: number): Promise<void> {
+    const range = { upper: cutoff };
+    await this.connection.write([...ATTEMPT_STORES, "lessons"], async (tx) => {
+      for (const { key } of await tx.entries("attempts", { index: "changedAt", range })) {
+        await eraseAttempt(tx, key as string);
+      }
+      for (const { key } of await tx.entries("lessons", { index: "changedAt", range })) {
+        await tx.delete("lessons", key as Key);
+      }
+    });
+  }
+}
+
+/** Names a new profile's database in the registry, then opens it. */
+export async function addProfile(device: Device, profileId: string): Promise<Profile | undefined> {
+  await addDatabase(device, profileDatabase(profileId), { kind: "profile", profileId });
+  return openProfile(device, profileId);
+}
+
+/**
+ * The database of a profile, only if the registry names it and it is not to be erased: one another
+ * tab erased is not made again.
+ */
+export async function openProfile(device: Device, profileId: string): Promise<Profile | undefined> {
+  const name = profileDatabase(profileId);
+  const entry = (await readRegistry(device))?.databases.get(name);
+  if (entry === undefined || entry.erase) return undefined;
+  const connection = await device.connect(name, PROFILE_SCHEMA, true);
+  return connection === undefined ? undefined : new Profile(connection, device.now);
+}
+
+/** A profile's database by its name in the registry, for the start and for erasure. */
+export async function openProfileDatabase(
+  device: Device,
+  name: string,
+): Promise<Profile | undefined> {
+  const connection = await device.connect(name, PROFILE_SCHEMA, false);
+  return connection === undefined ? undefined : new Profile(connection, device.now);
+}
