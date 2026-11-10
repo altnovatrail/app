@@ -366,3 +366,34 @@ novatrail-canvas {
     color: var(--nt-primary);
   }
 }
+/* What was read in a slot written by hand, or why not, below the item (R21 in docs/decisions.md). */
+.nt-reading {
+  margin: 0.25rem 0 0;
+}
+.nt-item-text {
+  margin: 0;
+}
+/* The tutor's words, at the top of the panel. */
+.nt-tutor {
+  margin: 0 0 1rem;
+  padding: 1rem;
+  border: 0.125rem solid var(--nt-border);
+  border-radius: 0.5rem;
+  background: var(--nt-surface);
+}
+.nt-tutor h2 {
+  margin-block: 0 0.5rem;
+  font-size: 1.25rem;
+}
+.nt-tutor p {
+  margin: 0;
+}
+/* A workbook's lines once checked, below the canvas. */
+.nt-lines {
+  margin: 1rem 0;
+  padding: 0;
+  list-style: none;
+}
+.nt-lines > li {
+  margin-block-end: 0.5rem;
+}

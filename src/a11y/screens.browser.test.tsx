@@ -65,6 +65,23 @@ const TASK: TaskScreenProps["task"] = {
   ],
 };
 
+/** A task answered on the sheet, and a workbook's page of two lines. */
+const HANDWRITTEN: TaskScreenProps["task"] = {
+  id: "rungs",
+  statement: [{ text: "The rungs are 30 cm apart." }],
+  canvas: { kind: "handwriting_sheet" },
+  items: [{ text: "How many rungs?", answer_slots: [{ binding: "anywhere" }] }],
+};
+const WORKBOOK: TaskScreenProps["task"] = {
+  id: "page",
+  statement: [{ text: "Fill in the boxes." }],
+  canvas: { kind: "workbook" },
+  items: [
+    { line: [{ text: "7 × " }, { binding: "box" }, { text: " = 56" }] },
+    { line: [{ text: "9 + " }, { binding: "box" }, { text: " = 12" }] },
+  ],
+};
+
 /** The task screen, by steps on the first step unless the test says otherwise. */
 function taskScreen(props: Partial<TaskScreenProps> = {}) {
   return (
@@ -113,19 +130,22 @@ function taskScreen(props: Partial<TaskScreenProps> = {}) {
   );
 }
 
-const JUDGED = verdictsOf([
-  create(ItemVerdictSchema, {
-    verdict: "not_yet",
-    answerSlots: [{ answerSlot: { item: 1, slot: 1 }, verdict: "not_yet", value: "4" }],
-  }),
-  create(ItemVerdictSchema, {
-    verdict: "correct",
-    answerSlots: [
-      { answerSlot: { item: 2, slot: 1 }, verdict: "correct", value: "Yes" },
-      { answerSlot: { item: 2, slot: 2 }, verdict: "correct", value: "Pears" },
-    ],
-  }),
-]);
+const JUDGED = verdictsOf(
+  [
+    create(ItemVerdictSchema, {
+      verdict: "not_yet",
+      answerSlots: [{ answerSlot: { item: 1, slot: 1 }, verdict: "not_yet", value: "4" }],
+    }),
+    create(ItemVerdictSchema, {
+      verdict: "correct",
+      answerSlots: [
+        { answerSlot: { item: 2, slot: 1 }, verdict: "correct", value: "Yes" },
+        { answerSlot: { item: 2, slot: 2 }, verdict: "correct", value: "Pears" },
+      ],
+    }),
+  ],
+  TASK,
+);
 
 /** Presses a form's button, so that every field shows its error. */
 async function submit(): Promise<void> {
@@ -252,6 +272,73 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
           { picture: "fruit.png", alt: "Five fruits" },
         ],
         againFailure: { kind: "offline" },
+      }),
+  ],
+  [
+    "task screen with handwriting after Not yet, with what was read and the tutor's words",
+    () =>
+      taskScreen({
+        task: HANDWRITTEN,
+        state: { ...initialState("self"), wrongAnswers: 1 },
+        mode: "self",
+        verdicts: verdictsOf(
+          [
+            create(ItemVerdictSchema, {
+              verdict: "not_yet",
+              answerSlots: [{ answerSlot: { item: 1, slot: 1 }, verdict: "not_yet", value: "5" }],
+            }),
+          ],
+          HANDWRITTEN,
+        ),
+        tutorWords: "How many gaps are there between the rungs?",
+        wordsCame: true,
+        outcome: "The tutor can't answer right now",
+      }),
+  ],
+  [
+    "task screen with handwriting that could not be read, by steps",
+    () =>
+      taskScreen({
+        task: HANDWRITTEN,
+        verdicts: verdictsOf(
+          [
+            create(ItemVerdictSchema, {
+              verdict: "unreadable",
+              answerSlots: [
+                {
+                  answerSlot: { item: 1, slot: 1 },
+                  verdict: "unreadable",
+                  reason: "several_final_answers",
+                },
+              ],
+            }),
+          ],
+          HANDWRITTEN,
+        ),
+        wordsFailure: "A grown-up's consent is needed first",
+      }),
+  ],
+  [
+    "task screen of a workbook once checked, its lines with what was read",
+    () =>
+      taskScreen({
+        task: WORKBOOK,
+        mode: "self",
+        verdicts: verdictsOf(
+          [
+            create(ItemVerdictSchema, {
+              verdict: "correct",
+              answerSlots: [{ answerSlot: { item: 1, slot: 1 }, verdict: "correct", value: "8" }],
+            }),
+            create(ItemVerdictSchema, {
+              verdict: "unreadable",
+              answerSlots: [
+                { answerSlot: { item: 2, slot: 1 }, verdict: "unreadable", reason: "blank" },
+              ],
+            }),
+          ],
+          WORKBOOK,
+        ),
       }),
   ],
   [

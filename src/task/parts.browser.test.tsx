@@ -152,7 +152,7 @@ describe("the items", () => {
         },
       ],
     };
-    const verdicts = verdictsOf([]);
+    const verdicts = verdictsOf([], task);
     render(
       inLanguage(
         <Items
