@@ -128,20 +128,20 @@
 
 ### 3.1. Фреймворк и сборка
 
-Решено R03. Приложение — веб, для планшета и компьютера, без офлайна и нативных приложений (product 10 spec), и без своего серверного процесса: его сборку раздаёт хостинг `infra` — Firebase Hosting (architecture 1 spec, 3.11 spec; R128 spec). Версии сторонних пакетов в таблице — на 2026-11-02, последние из вышедших не позже чем за три дня до установки, как в R12 canvas. Первая задача кода ставит их тем же правилом и собирает lock-файл `npm install --before=…`. Пакеты `@altnovatrail` под паузу не подпадают: `@altnovatrail/spec` выходит в день тега, и его версия — та же, что тег подмодуля (R73 spec), а подпись их всех сверяет `release-verify-npm` (R77 spec). Как собрать lock-файл, чтобы дата `--before` их не задела, решает первая задача кода. Лицензии — по полю `license` пакетов в реестре npm, а у расширения VS Code — по его репозиторию (раздел 4).
+Решено R03. Приложение — веб, для планшета и компьютера, без офлайна и нативных приложений (product 10 spec), и без своего серверного процесса: его сборку раздаёт хостинг `infra` — Firebase Hosting (architecture 1 spec, 3.11 spec; R128 spec). Версии сторонних пакетов в таблице — последние из вышедших не позже чем за три дня до установки, как в R12 canvas: те, что T15 поставил 2026-11-10 lock-файлом `npm install --before=2026-11-07T00:00:00Z`, а пакетов, которых T15 не ставил, — на 2026-11-02 (R14). Пакеты `@altnovatrail` под паузу не подпадают: `@altnovatrail/spec` выходит в день тега, и его версия — та же, что тег подмодуля (R73 spec), а подпись их всех сверяет `release-verify-npm` (R77 spec). Их ставят после сторонних, без даты, а даты всего lock-файла сверяют по реестру (R14). Лицензии — по полю `license` пакетов в реестре npm, а у расширения VS Code — по его репозиторию (раздел 4).
 
 | Роль | Пакет | Версия | Лицензия |
 |---|---|---|---|
 | фреймворк | `react`, `react-dom`; `@types/react`, `@types/react-dom` | 19.3.1; 19.3.0 | MIT |
-| сборщик | `vite` — с Rolldown внутри; `@vitejs/plugin-react` | 8.3.5; 6.1.2 | MIT |
+| сборщик | `vite` — с Rolldown внутри; `@vitejs/plugin-react` | 8.3.6; 6.2.1 | MIT |
 | сжатие CSS | `esbuild` | 0.28.2 | MIT |
 | исключение `dev` | `lightningcss` и его сборки под платформы — их ставит Vite | 1.33.0 | MPL-2.0 |
 | проверка типов | `typescript` | 7.0.2 | Apache-2.0 |
 | типы Node — для `vite.config.ts` и тестов в Node | `@types/node` | 24.19.2 | MIT |
 | типы платформы | `@altnovatrail/spec` | та же, что тег подмодуля: 0.13.0 | Apache-2.0 |
-| формат и линт | `@biomejs/biome`; расширение VS Code `biomejs.biome` | 2.6.4; 3.8.1 | MIT OR Apache-2.0 |
-| тесты | `vitest`, `@vitest/browser-playwright`, `@vitest/coverage-v8` | 5.0.5 | MIT |
-| браузер тестов | `playwright`; Chrome Headless Shell 1248 из образа `mcr.microsoft.com/playwright:v1.64.1-noble` по дайджесту | 1.64.1 | Apache-2.0; браузер — бесплатные условия Google, исключение |
+| формат и линт | `@biomejs/biome`; расширение VS Code `biomejs.biome` | 2.6.6; 3.8.1 | MIT OR Apache-2.0 |
+| тесты | `vitest`, `@vitest/browser-playwright`, `@vitest/coverage-v8` | 5.1.0 | MIT |
+| браузер тестов | `playwright`; Chrome Headless Shell 1248 из образа `mcr.microsoft.com/playwright:v1.64.1-noble` по дайджесту | 1.64.1 — версия образа заготовки при любой дате, а Dependabot держит его в `ignore` (R14) | Apache-2.0; браузер — бесплатные условия Google, исключение |
 | тесты экранов | `@testing-library/react`, `@testing-library/dom`; ввод — `userEvent` из `vitest/browser` | 16.3.3; 10.4.2 | MIT |
 | проверка доступности — раздел 3.9 | `axe-core` | 4.14.0 | MPL-2.0 — исключение `dev` (R11) |
 | иконки | `unplugin-icons`; `@svgr/core`, `@svgr/plugin-jsx`; набор `@iconify-json/material-symbols` (R78 spec) | 24.0.0; 8.1.0; набор — та же версия, что у `canvas` и `skill-map` в lock-файле, а последняя на 2026-11-02 — 1.2.97 | MIT; набор — Apache-2.0 |
@@ -154,7 +154,9 @@
 - Строгие флаги — те же, что в `tsconfig.base.json` `canvas`. Свои — `moduleResolution: bundler` и `jsx: react-jsx`: модули разрешает Vite, а не `tsc`, как у `canvas` с его `NodeNext`. Пакет `@altnovatrail/spec` проверен и под `bundler` (R73 spec).
 - `types` — явным списком: у TypeScript 7 он по умолчанию пуст. У приложения в нём `vite/client` и `unplugin-icons/types/react`. У `vite.config.ts` и тестов в Node — своя программа `tsc` с `types: ["node"]`, как `tsconfig.node.json` `canvas`.
 - Элемент канвы в JSX — дополнением `declare module "react" { namespace JSX { interface IntrinsicElements { "novatrail-canvas": … } } }` по типам `@altnovatrail/spec/canvas`. Типы импортируются через `import type`; `HTMLElementTagNameMap` и карту событий дополняет сам пакет `canvas` (R74 spec). Функцию `media` элементу `app` даёт по типу `Media` того же пакета (поправка 2026-11-02 к R74 spec), а `undo()` и `clear()` — вне договора, и `app` их не зовёт: «Отменить» и «Очистить» — кнопки самого элемента (поправка 2026-11-02 к R36 spec).
-- `tsc --noEmit` только проверяет, а собирает Vite.
+- `tsc --noEmit` только проверяет, а собирает Vite. Программ две: `tsconfig.app.json` — `src/` с DOM, и `tsconfig.node.json` — конфигурация, `scripts/` и тесты в Node; общие флаги — `tsconfig.base.json`, с `allowImportingTsExtensions`: импорт идёт с расширением `.ts`.
+
+**Маршруты** — в хеше адреса, своим кодом (R14): `/#/<экран>/<часть>/…`, части — в кодировке процентами. Разбор и сборка хеша — `src/app/hash.ts`, без DOM, а переход и текущий маршрут для React — `src/app/router.ts`, на `hashchange` и `useSyncExternalStore`; хеш, которого сборка не знает, — домашний экран. Хостингу правил не нужно: на каждый адрес он отдаёт один `index.html` в корне. Фрагмент после `#` браузер не шлёт ни хостингу, ни `api`, а в адресе — только ID содержания, урока или задачи, и никогда — ID профиля, аккаунта или попытки.
 
 **React и элемент канвы** — как записал `canvas` (R42 canvas; architecture 3.3 canvas):
 - точку входа `@altnovatrail/canvas` приложение импортирует до первой отрисовки: до регистрации элемента React пишет атрибут, а не свойство;
@@ -171,11 +173,13 @@
 - Конфигурация развёртывания не вшивается: ни `define`, ни переменных `VITE_*`. Vite заменяет их при сборке, а `app` читает конфигурацию во время работы из `/deployment.json` — раздел 3.7 (R09).
 - `build.assetsInlineLimit: 0`: Vite не встраивает мелкие файлы адресами `data:`, и CSP их не разрешает (раздел 3.7).
 - Свой плагин Vite: при сборке он ставит нижний слой CSP в `<head>` сразу после `<meta charset>` и кладёт в сборку `deployment.schema.json` и `csp.json`. Если перед нижним слоем оказалось что-то ещё, сборка останавливается. В разработке и в `vite preview` он отдаёт `/deployment.json` из `deployment.local.json`, а на сервере разработки нижнего слоя нет: преамбула React Refresh — встроенный скрипт. Пути `api` ведут на локальный `api` `server.proxy` и `preview.proxy`, а порт у обоих серверов один, со `strictPort: true` (раздел 3.7).
-- Сервер разработки — на `127.0.0.1`, со своим `server.fs.allow`: без списка Vite отдал бы весь репозиторий (R20 canvas).
+- Сервер разработки — на `127.0.0.1`, со своим `server.fs.allow` — `index.html`, `src/` и `node_modules/`: без списка Vite отдал бы весь репозиторий (R20 canvas).
+- `appType: "mpa"`: ни сервер разработки, ни `vite preview` не отдают `index.html` на путь, которого нет, — как хостинг без своих правил, — и `/deployment.json` без файла отвечает 404, а не страницей (R14; раздел 3.7).
 
 **Пакеты и лицензии.**
 - npm из Node 24.21.0 стадии `toolchain`. В `.npmrc` — `save-exact=true` и `ignore-scripts=true`, lock-файл — версии 3.
 - В `dependencies` — всё, что сборщик вшивает в сборку: `react`, `react-dom`, `@altnovatrail/canvas`, позже `skill-map`, `@altnovatrail/contracts` с `@bufbuild/protobuf` и клиентом Connect и пакет набора иконок `@iconify-json/material-symbols` — так велит поправка 2026-11-02 к R39 spec, которая закрыла Т-36. Всё остальное — в `devDependencies`, и `@altnovatrail/spec` тоже (R73 spec). От этого раздела зависят и `ci-vuln` — `npm audit --omit=dev` смотрит только поставку, — и исключение `lightningcss`: оно держится, только пока пакет — `dev` (R39 spec).
+- `NOTICE` — уведомление `app` и по строке `<имя> <версия> — <лицензия> — <copyright>` на каждый пакет lock-файла без отметки `dev`, с транзитивными, и строка `Text of <лицензия>` с текстом каждой их лицензии; `scripts/notice.ts` в `ci-licenses` сверяет это с lock-файлом в обе стороны (R14).
 - Лицензии lock-файла проверяет рецепт `spec` `licenses-check-repo` по списку `licenses-allowed`, с исключениями `licenses.json`. Исключение `lightningcss` — только у пакетов с `dev`, с причиной (R39 spec), а npm в этот файл не вписывается: он назван в `spec` (поправка 2026-10-22 к R12 spec). Так же — `axe-core` под MPL-2.0: он проверяет доступность в тестах, не поставляется и своего кода в поставку не вносит (R11).
 - `@altnovatrail/spec` — в `devDependencies`, своей копией, а не `peerDependencies`. Версию двигает переход на тег вместе с подмодулем, а Dependabot `npm` её пропускает (R73 spec; Д49 и Д50 в таблице 4 RUN.md `spec`). Так же — `@altnovatrail/contracts`: его версия — та же, что тег, и двигает её тот же переход, а Dependabot `npm` держит его в `ignore` (R83 spec; четвёртая поправка 2026-11-02 к R83 spec; поправка 2026-11-02 к R21 spec; Д92 в таблице 4 RUN.md `spec`). Код контрактов `app` импортирует путём файла кода, как пакет его экспортирует, — `@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js`, — а не копией и не из подмодуля (Д92 в таблице 4 RUN.md `spec`).
 - `canvas` и `skill-map` — по точной версии из npm, из области `@altnovatrail` (R37 spec). Подпись их версии и версий `@altnovatrail/spec` и `@altnovatrail/contracts` проверяет `release-verify-npm` в CI pull request, который меняет lock-файл, а дальше версию держит `integrity` (R77 spec; RULES.md, Hard rules). Первый релиз `@altnovatrail/canvas` — T70 в RUN.md `canvas` — вышел 2026-11-02, а на 2026-11-10 в npm — от 0.1.0 до 0.3.3 (`npm view`). Стили своего Shadow DOM он с 0.1.7 ставит через `adoptedStyleSheets`, по второй поправке 2026-11-02 к R36 spec, а формат 0.3 читает с 0.2.0 (Д117 в таблице 4 RUN.md `spec`). Первый релиз `@altnovatrail/skill-map`, 0.1.0, вышел 2026-11-08 (Д115 в таблице 4 RUN.md `spec`).
@@ -195,17 +199,17 @@
 - Уведомление набора — Material Symbols, Google, Apache-2.0, адрес `google/material-design-icons` и версия пакета набора — идёт в `NOTICE` сборки, вместе с уведомлениями всего, что в неё вшито (R78 spec).
 
 **Рецепты** — по договору обёртки TypeScript `.github`, которая зовёт их в стадии `toolchain`:
-- `ci-lint` — `biome ci` и `tsc --noEmit`;
-- `ci-test` — `vitest run --coverage`;
+- `ci-lint` — `biome ci`, `tsc --noEmit` обеими программами и `scripts/versions.ts`: в `package.json` только точные версии;
+- `ci-test` — `build`, затем `vitest run --coverage`: общий `typescript.yml` `build` не зовёт, и сборка, которая не собралась, роняет «TypeScript / test» (R14);
 - `ci-vuln` — `npm audit --omit=dev --audit-level=high`;
-- `ci-licenses` — `just -f spec/justfile licenses-check-repo package-lock.json licenses.json`;
-- `build` — `vite build`, в папку `build.outDir`;
+- `ci-licenses` — `just -f spec/justfile licenses-check-repo package-lock.json licenses.json`, `just -f spec/justfile release-verify-npm package-lock.json` и `scripts/notice.ts`;
+- `build` — `vite build`, в папку `build/`; для рук — ещё `dev`, `preview` и `fmt`;
 - `release-files <версия>` — архив этой сборки, единственным файлом в `dist/`. `deployment.json` в архиве нет, и рецепт это проверяет (раздел 3.7). Его подписывает общий `release.yml` `.github` без входа `npm-package`, а `infra` выкатывает сборку только с проверенной подписью (R77 spec; R106 spec). До первого релиза — неизменяемые релизы и ruleset тегов `v*` (Д54 в таблице 4 RUN.md `spec`).
 
 **Что придёт с кодом.** Отличие devcontainer от заготовки записывается решением тогда же (repositories 1 spec), а файлы CI пишет сессия этого репозитория, по текстам architecture 3.3 .github (поправка 2026-10-21 к R30 spec):
 - стадия `toolchain` с Chrome Headless Shell и его системными библиотеками из снимка архива Ubuntu и расширение `biomejs.biome` с Biome форматтером TypeScript по умолчанию уже здесь: их принёс рецепт `editDevcontainer` v0.6.6 (R79 spec; R12). Образ собран 2026-11-02: buf, Chrome Headless Shell 1248 и Biome на месте. Переход на v0.13.0 сменил только базовый образ — `mcr.microsoft.com/devcontainers/base` 3.0.12-noble (R13), — и образ с ним ещё не собран;
 - тег и дайджест образа Playwright и ревизия браузера в нём — те, что ждёт `playwright` из lock-файла. Их поднимает `spec` в `kinds/typescript.Dockerfile` заготовки, а `app` берёт их следующим переходом на тег; если новый `playwright` нужен `app` раньше, он поднимает все три в своём Dockerfile и пишет строку «в реестр spec» (R79 spec). Иначе `ci-test` не найдёт браузера;
-- CI — job TypeScript по общему `typescript.yml` `.github` с правом `id-token: write`; CodeQL с языком `javascript-typescript`; Dependabot `npm` с группой `vitest`, `@vitest/*` и `vite`, без мажорных версий `@types/node` и без `@altnovatrail/spec` и `@altnovatrail/contracts`; `.github/codecov.yml`; проверка `release-verify-npm`; `release.yml` с перечнем `paths` вида `typescript`, который `.github` пишет с первым релизом `canvas`.
+- CI — job TypeScript по общему `typescript.yml` `.github` с правом `id-token: write`; CodeQL с языком `javascript-typescript`; Dependabot `npm` с группой `vitest`, `@vitest/*` и `vite`, без мажорных версий `@types/node` и без `@altnovatrail/spec`, `@altnovatrail/contracts` и `playwright`, а `github-actions` — с группой `shared-workflows`; `.github/codecov.yml`; проверка `release-verify-npm` — пришли с T15, на `.github` v0.1.22 (R14). `release.yml` с перечнем `paths` вида `typescript` — T29.
 
 ### 3.2. Хранение на устройстве
 
@@ -677,7 +681,7 @@
 
 **Откуда и как читается.**
 - Файл лежит в корне origin `app`, рядом с `index.html`, но не в архиве релиза: его пишет выкатка, а не сборка. Сам `app` тоже стоит в корне своего origin: хранилище браузера одно на origin, а выход стирает весь localStorage и sessionStorage origin (раздел 3.2), так что делить origin с другим приложением `app` не может.
-- Первым делом при старте — до входа и до любого другого запроса — `app` зовёт `fetch("/deployment.json", { cache: "no-cache" })`. В режиме `no-cache` «Fetch creates a conditional request if there is a response in the HTTP cache» (раздел 4): новый файл после выкатки `app` видит при следующем открытии, даже если хостинг кеширует дольше. Путь — абсолютный: со страницы урока относительный путь попал бы не туда.
+- Первым делом при старте — до входа и до любого другого запроса — `app` зовёт `fetch("/deployment.json", { cache: "no-cache" })`. В режиме `no-cache` «Fetch creates a conditional request if there is a response in the HTTP cache» (раздел 4): новый файл после выкатки `app` видит при следующем открытии, даже если хостинг кеширует дольше. Путь — абсолютный, от корня origin: экраны живут в хеше адреса, и документ стоит в корне всегда (R14), но и тогда файл не зависит от того, откуда его просят.
 - Ответ годится, только если у него код 200, `redirected` ложно, тип MIME — `application/json`, а тело — не больше 16 KiB, в десятки раз больше нужного. Тип сверяется без параметров: `application/json; charset=utf-8` годится. Размер `app` меряет по прочитанному телу, а не по `Content-Length`: при сжатии и передаче частями этого заголовка может не быть. Обычный откат SPA отдаёт на отсутствующий файл `index.html` с кодом 200, и его отсекает тип. Ответ с кодом 5xx — как сбой сети: хостинг может ожить, и `app` даёт повторить.
 - Файл читается при каждом старте и в хранилище не кладётся. Service worker у `app` нет: офлайна в первом срезе нет (product 10 spec).
 
@@ -1051,6 +1055,12 @@ MathTrail Canvas — [mathtrail/canvas-api](https://github.com/mathtrail/canvas-
 - **PIN** (разделы 3.2 и 3.6) — R07 canvas-api: «Выход из детского режима закрыт PIN, но это барьер интерфейса, а не граница безопасности».
 - **Хостинг и адрес сервиса** (раздел 3.7) — R10 canvas-api: «SPA раздаётся с Firebase Hosting. Клиент обращается к canvas-api и Centrifugo по их URL в Cloud Run».
 - **Озвучка, язык и доступность** (разделы 2.4 и 2.7) — `docs/product.md` canvas-api, раздел 10, таблица нефункциональных требований: «Язык интерфейса | английский»; «Доступность для всех | контраст, крупные элементы; озвучка — после MVP | ручная проверка».
+
+Прочитано 2026-11-10 — каркас приложения (разделы 3.1 и 3.7; R14):
+- **Реестр npm**, `npm view <пакет> time` и даты всех 172 пакетов lock-файла: самый поздний — `@biomejs/biome` 2.6.6, 2026-11-06T13:28Z; позже 2026-11-07 не вышел ни один. Вне даты — `vite` 8.3.7 (2026-11-09), `@vitejs/plugin-react` 6.3.0 (2026-11-09) и `playwright` 1.65.0 (2026-11-05), чей `playwright-core` в `browsers.json` называет `chromium-headless-shell` ревизии 1254, а 1.64.1 — 1248. `react-router` 7.18.5 — 4 805 343 байта, `@tanstack/react-router` 1.170.46 — 1 073 323 байта, `wouter` 3.13.0 — Unlicense.
+- Vite 8.3.6, [Shared Options, appType](https://github.com/vitejs/vite/blob/v8.3.6/docs/config/shared-options.md#apptype): «`'spa'`: include HTML middlewares and use SPA fallback. Configure sirv with `single: true` in preview»; «`'mpa'`: include HTML middlewares». Проверено на сборке T15: `vite preview` отвечает на `/` 200, а на `/deployment.json` и `/lesson/x` — 404.
+- W3C, [Referrer Policy](https://www.w3.org/TR/referrer-policy/), «Strip url for use as a referrer»: «Set url’s fragment to null» — фрагмент адреса в `Referer` не уходит.
+- `react` 19.3.1, `LICENSE`: «The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software».
 
 Прочитано 2026-11-02 — фреймворк и сборка (раздел 3.1; R03):
 - **Реестр npm**, `npm view <пакет>@<версия> license time`: версии, лицензии и даты выхода таблицы раздела 3.1. Из сторонних самая поздняя — `@biomejs/biome` 2.6.4, 2026-10-28; `@altnovatrail/spec` 0.6.2 вышел 2026-11-01, вместе с тегом, а `@altnovatrail/canvas` в реестре нет. `@types/node` 24.19.2 — 2026-10-09. Preact 11.0.0 вышел 2026-09-30, а `@preact/preset-vite` 2.10.6 требует `@babel/core` 7.x. typescript-eslint 8.72.1 требует `"typescript": ">=4.8.4 <6.1.0"`. Vite 8.3.5 зависит от `lightningcss` `^1.33.0`, а `esbuild` у него — необязательный peer, `^0.27.0 || ^0.28.0`.

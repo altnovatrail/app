@@ -2,6 +2,8 @@
 
 [![CI](https://github.com/altnovatrail/app/actions/workflows/ci.yml/badge.svg)](https://github.com/altnovatrail/app/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/altnovatrail/app/actions/workflows/codeql.yml/badge.svg)](https://github.com/altnovatrail/app/actions/workflows/codeql.yml)
+[![TypeScript version](https://img.shields.io/github/package-json/dependency-version/altnovatrail/app/dev/typescript)](package.json)
+[![Coverage](https://codecov.io/gh/altnovatrail/app/branch/main/graph/badge.svg)](https://codecov.io/gh/altnovatrail/app)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/altnovatrail/app/badge)](https://scorecard.dev/viewer/?uri=github.com/altnovatrail/app)
 [![License](https://img.shields.io/github/license/altnovatrail/app)](LICENSE)
 
@@ -17,7 +19,9 @@ A component of [NovaTrail](https://github.com/altnovatrail/spec/tree/v0.13.0), a
 
 ## Status
 
-Detailing is done: the first epic of [RUN.md](RUN.md) decided what the component's card left open, and [docs/architecture.md](docs/architecture.md) holds the result. There is no code here yet: it comes in the epics that table 2 of RUN.md proposes, the first app first.
+Detailing is done: the first epic of [RUN.md](RUN.md) decided what the component's card left open, and [docs/architecture.md](docs/architecture.md) holds the result. The code has begun with epic E2, the first app: so far the scaffold — an empty React app that builds, is checked and is tested in Node and in Chromium, locally and in CI.
+
+Run the four checks of the TypeScript code with `just ci` and the check of the documents with `just -f spec/justfile docs-check-repo` — CI runs both — the app with `just dev`, and its build with `just preview`, all inside the devcontainer.
 
 ## Documents
 

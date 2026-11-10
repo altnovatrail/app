@@ -1,0 +1,40 @@
+// The screens of the app live in the hash of its address: /#/<screen>/<part>/… (R14 in
+// docs/decisions.md). Any hosting serves the one index.html at the root, with no rule of its own,
+// and the browser sends no fragment to the server, so no hosting log learns which screen a learner
+// is on. A route names a screen and the IDs of content it shows, never the ID of a profile, an
+// account or an attempt.
+
+/** A screen and its parts, as the hash names them. */
+export interface Route {
+  readonly screen: string;
+  readonly parts: readonly string[];
+}
+
+/** The screen that an empty or unknown hash shows. */
+export const HOME: Route = { screen: "home", parts: [] };
+
+/** The screens this build knows. A hash that names another one shows the home screen. */
+export const SCREENS: ReadonlySet<string> = new Set([HOME.screen]);
+
+/** The route a hash names: `#/screen/part`, each segment percent-encoded. */
+export function parseHash(hash: string): Route {
+  if (!hash.startsWith("#/")) return HOME;
+  const segments = hash.slice(2).split("/");
+  let decoded: string[];
+  try {
+    decoded = segments.map((segment) => decodeURIComponent(segment));
+  } catch {
+    // A malformed escape, typed in by hand or cut short.
+    return HOME;
+  }
+  const [screen, ...parts] = decoded;
+  if (screen === undefined || !SCREENS.has(screen) || parts.some((part) => part === "")) {
+    return HOME;
+  }
+  return { screen, parts };
+}
+
+/** The hash of a route, each segment percent-encoded. */
+export function formatHash(route: Route): string {
+  return `#/${[route.screen, ...route.parts].map((segment) => encodeURIComponent(segment)).join("/")}`;
+}

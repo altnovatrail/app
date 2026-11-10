@@ -18,14 +18,25 @@ concurrency:
 jobs:
   secrets:
     name: Secrets
-    uses: altnovatrail/.github/.github/workflows/secrets.yml@ff2a3597769ca85e59e476b1a41bdcbc1f50e3ed # v0.1.0
+    uses: altnovatrail/.github/.github/workflows/secrets.yml@c0234058dc1a85edd7b5d579b90f8fdb98ea826b # v0.1.22
 
   # A pull request's commits are what it checks; a push to main has been checked as one.
   dco:
     name: DCO
     if: github.event_name == 'pull_request'
-    uses: altnovatrail/.github/.github/workflows/dco.yml@ff2a3597769ca85e59e476b1a41bdcbc1f50e3ed # v0.1.0
+    uses: altnovatrail/.github/.github/workflows/dco.yml@c0234058dc1a85edd7b5d579b90f8fdb98ea826b # v0.1.22
 
   documents:
     name: Documents
-    uses: altnovatrail/.github/.github/workflows/documents.yml@ff2a3597769ca85e59e476b1a41bdcbc1f50e3ed # v0.1.0
+    uses: altnovatrail/.github/.github/workflows/documents.yml@c0234058dc1a85edd7b5d579b90f8fdb98ea826b # v0.1.22
+
+  # The app's TypeScript code, by its own ci- recipes in its toolchain stage, and the coverage of
+  # its tests, which the shared workflow sends to Codecov (R19 .github). id-token: write is for its
+  # coverage job alone, which asks for an OIDC token: a called workflow can only lower what this job
+  # gives it.
+  typescript:
+    name: TypeScript
+    permissions:
+      contents: read
+      id-token: write
+    uses: altnovatrail/.github/.github/workflows/typescript.yml@c0234058dc1a85edd7b5d579b90f8fdb98ea826b # v0.1.22

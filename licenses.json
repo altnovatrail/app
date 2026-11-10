@@ -1,0 +1,6 @@
+{
+  "lightningcss": {
+    "license": "MPL-2.0",
+    "reason": "Vite's default CSS minifier, a tool of development: vite requires it, but the build minifies CSS with esbuild, so it handles nothing that ships and puts nothing of its own into the build; its builds for each platform come with it (R03 in app's docs/decisions.md)"
+  }
+}

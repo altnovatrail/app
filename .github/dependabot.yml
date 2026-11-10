@@ -8,6 +8,11 @@ updates:
       interval: weekly
     cooldown:
       default-days: 3
+    groups:
+      # Every reference to a shared workflow of .github in one pull request, to one release:
+      # Dependabot names each altnovatrail/.github/.github/workflows/<file>.yml.
+      shared-workflows:
+        patterns: ["altnovatrail/.github/*"]
 
   - package-ecosystem: docker
     directory: /.devcontainer
@@ -15,3 +20,29 @@ updates:
       interval: weekly
     cooldown:
       default-days: 3
+
+  # The npm packages the app is built and checked with.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 3
+    groups:
+      # @vitest/browser-playwright pins vitest exactly, and vitest and @vitejs/plugin-react name the
+      # vite they work with, so they move in one pull request.
+      vitest:
+        patterns: ["vitest", "@vitest/*", "vite", "@vitejs/plugin-react"]
+    ignore:
+      # The types of Node follow the major version of the Node in .devcontainer/Dockerfile, which
+      # moves by hand.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
+      # The version of playwright is that of the image .devcontainer/Dockerfile takes Chrome
+      # Headless Shell from, and the three move together by hand, with spec's template (R79 in
+      # spec; R14 in docs/decisions.md).
+      - dependency-name: "playwright"
+      # The packages of spec move with the tag of the spec submodule, by a task of their own
+      # (R73 and R83 in spec).
+      - dependency-name: "@altnovatrail/spec"
+      - dependency-name: "@altnovatrail/contracts"
