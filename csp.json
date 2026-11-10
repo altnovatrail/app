@@ -1,0 +1,13 @@
+{
+  "default-src": "'none'",
+  "script-src": "'self' https://apis.google.com",
+  "style-src": "'self'",
+  "img-src": "'self' blob:",
+  "connect-src": "'self' {api} https://identitytoolkit.googleapis.com https://securetoken.googleapis.com",
+  "frame-src": "https://{authDomain}",
+  "font-src": "'none'",
+  "object-src": "'none'",
+  "base-uri": "'none'",
+  "form-action": "'none'",
+  "frame-ancestors": "'none'"
+}

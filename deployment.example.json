@@ -1,0 +1,11 @@
+{
+  "format": 1,
+  "api": "http://127.0.0.1:5173",
+  "signIn": {
+    "service": "firebase",
+    "apiKey": "<the key of the Firebase web app of the dev project>",
+    "authDomain": "<the dev project>.firebaseapp.com",
+    "projectId": "<the dev project>",
+    "appId": "<the ID of the Firebase web app of the dev project>"
+  }
+}
