@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { act } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { inLanguage } from "../test/language.tsx";
 import { App } from "./App.tsx";
 import { HOME, navigate, routeOf } from "./router.ts";
 
@@ -20,12 +21,12 @@ afterEach(async () => {
 
 describe("App", () => {
   it("shows the home screen with its heading", () => {
-    render(<App />);
+    render(inLanguage(<App />));
     expect(screen.getByRole("heading", { level: 1, name: "NovaTrail" })).toBeTruthy();
   });
 
   it("follows the hash, and shows the home screen for one it does not know", async () => {
-    const { container } = render(<App />);
+    const { container } = render(inLanguage(<App />));
     await act(() => setHash("#/nowhere"));
     expect(container.querySelector("[data-screen]")?.getAttribute("data-screen")).toBe("home");
   });
@@ -33,7 +34,7 @@ describe("App", () => {
   it("removes its listener of the hash once it is unmounted", () => {
     const added = vi.spyOn(window, "addEventListener");
     const removed = vi.spyOn(window, "removeEventListener");
-    const { unmount } = render(<App />);
+    const { unmount } = render(inLanguage(<App />));
     const listener = added.mock.calls.find(([type]) => type === "hashchange")?.[1];
     expect(listener).toBeTypeOf("function");
     unmount();

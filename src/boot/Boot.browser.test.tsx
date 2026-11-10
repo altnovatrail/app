@@ -2,9 +2,11 @@ import { act, render, screen } from "@testing-library/react";
 import { StrictMode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
+import { LanguageButtons } from "../i18n/LanguageButtons.tsx";
 import { addProfile } from "../storage/profile.ts";
 import { setAccount } from "../storage/registry.ts";
-import { profileDatabase, REGISTRY } from "../storage/schema.ts";
+import { profileDatabase, REGISTRY, SETTINGS } from "../storage/schema.ts";
+import { readLanguage, writeLanguage } from "../storage/settings.ts";
 import { memoryDevice } from "../test/device.ts";
 import { Boot, useDeployment, useStorage } from "./Boot.tsx";
 
@@ -392,6 +394,155 @@ describe("Boot and the storage", () => {
       "There is a new version of the app",
     );
     expect(screen.getByText("sign-in same")).toBeTruthy();
+  });
+});
+
+describe("Boot and the device's language", () => {
+  it("draws the first screen in the language chosen on this device, read before it", async () => {
+    const { device } = memoryDevice();
+    await writeLanguage(device, "ru");
+    render(
+      <Boot
+        framed={false}
+        origin={ORIGIN}
+        languages={["en"]}
+        device={device}
+        fetcher={async () => json({}, 404)}
+      >
+        <Shell />
+      </Boot>,
+    );
+    expect(await screen.findByRole("heading", { name: "Приложение не настроено" })).toBeTruthy();
+    // The page's language and title come in the effects after the screen.
+    await vi.waitFor(() => {
+      expect(document.documentElement.lang).toBe("ru");
+      expect(document.title).toBe("Приложение не настроено — NovaTrail");
+    });
+  });
+
+  it("takes the device's languages when the settings cannot be read, or name a language the build has not", async () => {
+    const { device, backend } = memoryDevice();
+    await backend.open(SETTINGS, { version: 9, stores: {} }, { create: true, onLost: () => {} });
+    const { unmount } = render(
+      <Boot
+        framed={false}
+        origin={ORIGIN}
+        languages={["ru-RU"]}
+        device={device}
+        fetcher={async () => json({}, 404)}
+      >
+        <Shell />
+      </Boot>,
+    );
+    expect(await screen.findByRole("heading", { name: "Приложение не настроено" })).toBeTruthy();
+    unmount();
+    const other = memoryDevice();
+    await writeLanguage(other.device, "kk");
+    render(
+      <Boot
+        framed={false}
+        origin={ORIGIN}
+        languages={["en"]}
+        device={other.device}
+        fetcher={async () => json({}, 404)}
+      >
+        <Shell />
+      </Boot>,
+    );
+    expect(await screen.findByRole("heading", { name: "This app isn't set up" })).toBeTruthy();
+  });
+
+  it("draws the first screen when the settings do not open in time, in the device's languages", async () => {
+    const { device, backend } = memoryDevice();
+    const open = backend.open.bind(backend);
+    vi.spyOn(backend, "open").mockImplementation((name, schema, options) =>
+      name === SETTINGS ? new Promise(() => {}) : open(name, schema, options),
+    );
+    render(
+      <Boot
+        framed={false}
+        origin={ORIGIN}
+        languages={["ru"]}
+        device={device}
+        settingsWait={50}
+        fetcher={async () => json({}, 404)}
+      >
+        <Shell />
+      </Boot>,
+    );
+    expect(await screen.findByRole("heading", { name: "Приложение не настроено" })).toBeTruthy();
+  });
+
+  it("tells the other tabs of no choice it could not keep", async () => {
+    const { device, backend } = memoryDevice();
+    await backend.open(SETTINGS, { version: 9, stores: {} }, { create: true, onLost: () => {} });
+    const tab = (tabDevice = device) => (
+      <Boot
+        framed={false}
+        origin={ORIGIN}
+        languages={["en"]}
+        device={tabDevice}
+        fetcher={async () => json(FILE)}
+      >
+        <LanguageButtons />
+      </Boot>
+    );
+    render(tab());
+    const other = document.createElement("div");
+    document.body.append(other);
+    render(tab(memoryDevice(backend).device), { container: other });
+    await vi.waitFor(() =>
+      expect(screen.getAllByRole("button", { name: "Русский" })).toHaveLength(2),
+    );
+    const [mine, theirs] = screen.getAllByRole("button", { name: "Русский" });
+    await userEvent.click(mine as HTMLElement);
+    expect(mine?.getAttribute("aria-pressed")).toBe("true");
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    expect(theirs?.getAttribute("aria-pressed")).toBe("false");
+    other.remove();
+  });
+
+  it("in a frame takes the device's languages, not the settings", async () => {
+    const { device } = memoryDevice();
+    await writeLanguage(device, "ru");
+    render(
+      <Boot framed origin={ORIGIN} languages={["en"]} device={device}>
+        <Shell />
+      </Boot>,
+    );
+    expect(
+      screen.getByRole("heading", { name: "This app opens only in a tab of its own" }),
+    ).toBeTruthy();
+  });
+
+  it("changes the screen at once on a tap, keeps the choice, and tells the other tabs", async () => {
+    const { device, backend } = memoryDevice();
+    const tab = (tabDevice = device) => (
+      <Boot
+        framed={false}
+        origin={ORIGIN}
+        languages={["en"]}
+        device={tabDevice}
+        fetcher={async () => json(FILE)}
+      >
+        <LanguageButtons />
+      </Boot>
+    );
+    render(tab());
+    const second = memoryDevice(backend).device;
+    const other = document.createElement("div");
+    document.body.append(other);
+    render(tab(second), { container: other });
+    await vi.waitFor(() =>
+      expect(screen.getAllByRole("button", { name: "Русский" })).toHaveLength(2),
+    );
+    const [mine, theirs] = screen.getAllByRole("button", { name: "Русский" });
+    await userEvent.click(mine as HTMLElement);
+    expect(mine?.getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getAllByRole("group", { name: "Язык" }).length).toBeGreaterThan(0);
+    await vi.waitFor(() => expect(theirs?.getAttribute("aria-pressed")).toBe("true"));
+    expect(await readLanguage(device)).toBe("ru");
+    other.remove();
   });
 });
 

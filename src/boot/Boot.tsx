@@ -3,18 +3,43 @@
 // before any other request, then the start of the storage on the device (R16; section 3.2), and the
 // app only once both are done. A failed preload after a rollout, or a database a newer build has
 // opened, offers a reload over whatever is shown; storage erased or unreadable while app is open
-// is a screen of its own.
-import { createContext, type ReactNode, useContext, useEffect, useState } from "react";
+// is a screen of its own. The language of the screens is the device's: the choice kept in the
+// device's settings, which are no part of the account's storage and are read beside the request
+// for the file, before the first screen and for a second at most, else navigator.languages (R10,
+// R17; section 3.8); a choice made in another tab comes by BroadcastChannel. In a frame,
+// navigator.languages alone.
+import "../theme/theme.css";
+import {
+  createContext,
+  type ReactNode,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import type { Deployment } from "../config/deployment.ts";
 import { type Loaded, loadDeployment } from "../config/load.ts";
+import { LanguageProvider, type LanguageState } from "../i18n/LanguageContext.tsx";
+import { deviceLanguage, type Language, lookup } from "../i18n/language.ts";
+import { WORDS } from "../i18n/words.ts";
 import type { Device } from "../storage/device.ts";
 import type { SignInCheck } from "../storage/erase.ts";
+import { readLanguage, writeLanguage } from "../storage/settings.ts";
 import { startStorage } from "../storage/start.ts";
-import { deviceLanguage } from "./language.ts";
 import { Framed, Offline, ReloadOffer, StorageGone, Unconfigured } from "./Screens.tsx";
 import { type Trouble, troubleOf } from "./storage.ts";
 
 const DeploymentContext = createContext<Deployment | undefined>(undefined);
+
+/** The channel the tabs of app tell each other of the device's language on. */
+export const SETTINGS_CHANNEL = "novatrail-settings";
+
+/** The language a tag names, if the build has it: a newer build may have written another. */
+function known(tag: unknown): Language | undefined {
+  return typeof tag === "string" ? lookup(tag) : undefined;
+}
 
 /** The storage on the device, started, and what came of its sign-in project against the registry. */
 export interface DeviceStorage {
@@ -61,11 +86,27 @@ export interface BootProps {
   /** The storage on the device; nothing of it opens in a frame. */
   readonly device: Device;
   readonly fetcher?: typeof fetch;
+  /** How long the first screen waits for the device's settings, ms: an open that hangs gets no more. */
+  readonly settingsWait?: number;
   readonly children: ReactNode;
 }
 
-export function Boot({ framed, origin, languages, device, fetcher, children }: BootProps) {
-  const language = deviceLanguage(languages);
+/** A second: the settings are one small record, and a screen must come even if IndexedDB hangs. */
+export const SETTINGS_WAIT_MS = 1000;
+
+export function Boot({
+  framed,
+  origin,
+  languages,
+  device,
+  fetcher,
+  settingsWait = SETTINGS_WAIT_MS,
+  children,
+}: BootProps) {
+  const [chosen, setChosen] = useState<Language | undefined>(undefined);
+  // In a frame no storage opens: the device's languages are all there is.
+  const [settingsRead, setSettingsRead] = useState(framed);
+  const language = chosen ?? deviceLanguage(languages);
   const [loaded, setLoaded] = useState<Loaded | undefined>(undefined);
   const [attempt, setAttempt] = useState(0);
   const [stale, setStale] = useState(false);
@@ -75,6 +116,56 @@ export function Boot({ framed, origin, languages, device, fetcher, children }: B
   useEffect(() => {
     document.documentElement.lang = language;
   }, [language]);
+
+  useEffect(() => {
+    if (framed) return;
+    let current = true;
+    const waited = setTimeout(() => {
+      if (current) setSettingsRead(true);
+    }, settingsWait);
+    void readLanguage(device).then((tag) => {
+      if (!current) return;
+      clearTimeout(waited);
+      setChosen((held) => held ?? known(tag));
+      setSettingsRead(true);
+    });
+    return () => {
+      current = false;
+      clearTimeout(waited);
+    };
+  }, [framed, device, settingsWait]);
+
+  // One channel for the tab, which tells the others and hears them: a channel never hears itself.
+  const channel = useRef<BroadcastChannel | undefined>(undefined);
+  useEffect(() => {
+    if (framed || typeof BroadcastChannel === "undefined") return;
+    const opened = new BroadcastChannel(SETTINGS_CHANNEL);
+    opened.onmessage = (event: MessageEvent) => {
+      const found = known(event.data);
+      if (found !== undefined) setChosen(found);
+    };
+    channel.current = opened;
+    return () => {
+      channel.current = undefined;
+      opened.close();
+    };
+  }, [framed]);
+
+  const choose = useCallback(
+    (next: Language) => {
+      setChosen(next);
+      // The other tabs hear of a choice that was kept, not of one the next start would not find.
+      void writeLanguage(device, next).then((kept) => {
+        if (kept) channel.current?.postMessage(next);
+      });
+    },
+    [device],
+  );
+
+  const state = useMemo<LanguageState>(
+    () => ({ language, words: WORDS[language], choose }),
+    [language, choose],
+  );
 
   useEffect(() => {
     // Vite tells of a module of the build that is not on the hosting any more (section 3.7).
@@ -132,33 +223,38 @@ export function Boot({ framed, origin, languages, device, fetcher, children }: B
     };
   }, [framed, origin, fetcher, attempt]);
 
-  const offer = stale ? <ReloadOffer language={language} /> : null;
-  if (framed) return <Framed language={language} />;
-  if (trouble !== undefined) return <StorageGone language={language} trouble={trouble} />;
-  if (loaded === undefined) return offer;
-  switch (loaded.kind) {
-    case "offline":
-      return (
-        <>
-          {offer}
-          <Offline language={language} onRetry={() => setAttempt((n) => n + 1)} />
-        </>
-      );
-    case "unconfigured":
-      return (
-        <>
-          {offer}
-          <Unconfigured language={language} detail={loaded.detail} />
-        </>
-      );
-    case "ready":
-      return (
-        <DeploymentContext.Provider value={loaded.deployment}>
-          {offer}
-          {storage === undefined ? null : (
-            <StorageContext.Provider value={storage}>{children}</StorageContext.Provider>
-          )}
-        </DeploymentContext.Provider>
-      );
+  return <LanguageProvider value={state}>{screen()}</LanguageProvider>;
+
+  function screen(): ReactNode {
+    const offer = stale ? <ReloadOffer /> : null;
+    if (framed) return <Framed />;
+    if (trouble !== undefined) return <StorageGone trouble={trouble} />;
+    // The first screen waits for the device's settings: its language does not change under a finger.
+    if (loaded === undefined || !settingsRead) return offer;
+    switch (loaded.kind) {
+      case "offline":
+        return (
+          <>
+            {offer}
+            <Offline onRetry={() => setAttempt((n) => n + 1)} />
+          </>
+        );
+      case "unconfigured":
+        return (
+          <>
+            {offer}
+            <Unconfigured detail={loaded.detail} />
+          </>
+        );
+      case "ready":
+        return (
+          <DeploymentContext.Provider value={loaded.deployment}>
+            {offer}
+            {storage === undefined ? null : (
+              <StorageContext.Provider value={storage}>{children}</StorageContext.Provider>
+            )}
+          </DeploymentContext.Provider>
+        );
+    }
   }
 }

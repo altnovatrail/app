@@ -1,0 +1,123 @@
+/*
+ * The theme of app (section 3.9 of docs/architecture.md; R17 in docs/decisions.md): light, its
+ * colours the tokens below, whose contrast the test of src/theme/contrast.node.test.ts reads from
+ * this file — text 4.5:1, borders, the focus ring and marks 3:1. Sizes in rem, so that the page's
+ * zoom and the reader's font size grow them; each target at least 44 × 44 CSS px (2.5.5); no motion
+ * unless prefers-reduced-motion says none is wanted; the system's colours in forced colours, which nothing here turns off.
+ */
+:root {
+  --nt-background: #ffffff;
+  --nt-surface: #f3f5f9;
+  --nt-text: #1a1c22;
+  --nt-text-muted: #4b5263;
+  --nt-border: #6b7280;
+  --nt-primary: #1d4ed8;
+  --nt-on-primary: #ffffff;
+  --nt-focus: #1d4ed8;
+  --nt-correct: #15803d;
+  --nt-not-yet: #b45309;
+  --nt-error: #b91c1c;
+  --nt-mark: #2563eb;
+
+  /* The canvas in the same colours (its custom properties, R28 in canvas). */
+  --novatrail-canvas-ink: var(--nt-text);
+  --novatrail-canvas-paper: var(--nt-background);
+  --novatrail-canvas-mark: var(--nt-mark);
+
+  color-scheme: light;
+}
+
+body {
+  margin: 0;
+  background: var(--nt-background);
+  color: var(--nt-text);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", sans-serif;
+  font-size: 100%;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+main {
+  box-sizing: border-box;
+  max-inline-size: 40rem;
+  margin-inline: auto;
+  padding: 1rem;
+}
+
+h1 {
+  margin-block: 0 1rem;
+  font-size: 1.75rem;
+  line-height: 1.25;
+}
+
+h1:focus:not(:focus-visible) {
+  outline: none;
+}
+
+p {
+  margin-block: 0 1rem;
+}
+
+button {
+  box-sizing: border-box;
+  min-block-size: 2.75rem;
+  min-inline-size: 2.75rem;
+  padding: 0.5rem 1rem;
+  border: 0.125rem solid var(--nt-primary);
+  border-radius: 0.5rem;
+  background: var(--nt-primary);
+  color: var(--nt-on-primary);
+  font: inherit;
+  cursor: pointer;
+}
+
+/* Motion only for whoever has not asked for less (2.3.3). */
+@media (prefers-reduced-motion: no-preference) {
+  button {
+    transition:
+      background-color 0.15s,
+      color 0.15s;
+  }
+}
+
+button[aria-pressed="false"] {
+  background: var(--nt-background);
+  color: var(--nt-primary);
+}
+
+/* The chosen one is told by more than colour, which forced colours take away (1.4.1). */
+button[aria-pressed="true"] {
+  font-weight: 700;
+  text-decoration: underline;
+  text-decoration-thickness: 0.125rem;
+  text-underline-offset: 0.25rem;
+}
+
+:focus-visible {
+  outline: 0.1875rem solid var(--nt-focus);
+  outline-offset: 0.125rem;
+}
+
+/* A group of buttons, which wraps on a narrow screen. */
+.nt-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  min-inline-size: 0;
+  margin: 0 0 1rem;
+  padding: 0;
+  border: none;
+}
+
+.nt-buttons > legend {
+  margin-block-end: 0.5rem;
+  padding: 0;
+}
+
+/* The offer to reload, over the screen. */
+.nt-offer {
+  box-sizing: border-box;
+  padding: 1rem;
+  background: var(--nt-surface);
+}
