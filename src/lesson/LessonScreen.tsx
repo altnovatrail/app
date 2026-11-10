@@ -12,6 +12,7 @@ import { Icon } from "../app/Icon.tsx";
 import { Screen } from "../app/Screen.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import type { Course } from "./place.ts";
+import type { Kind } from "./run.ts";
 import { KIND_KEYS, SegmentBar } from "./SegmentBar.tsx";
 
 export interface LessonScreenProps {
@@ -50,7 +51,7 @@ export function LessonScreen(props: LessonScreenProps) {
     was.current = shown;
   }, [shown]);
   const lang = props.language === undefined ? {} : { lang: props.language };
-  const kind = course.kinds[shown - 1] ?? "explanation";
+  const kind = course.kinds[shown - 1] as Kind;
   return (
     <Screen title={props.title} heading={<span {...lang}>{props.title}</span>} wide>
       <SegmentBar

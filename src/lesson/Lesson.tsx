@@ -276,8 +276,8 @@ function OpenLesson({
   // One key for the beginning of a segment's attempt, the same with its repeats.
   const beginKey = useRef<string | undefined>(undefined);
   const beginning = useRef(false);
-  const latest = useRef({ place, demo });
-  latest.current = { place, demo };
+  const latest = useRef({ place, demo, shown });
+  latest.current = { place, demo, shown };
   const media = useMemo(() => files.media(digest), [files, digest]);
   const language = manifest?.languages.explanation;
 
@@ -448,13 +448,12 @@ function OpenLesson({
   const inLesson: TaskInLesson = useMemo(
     () => ({
       onNext: (next: Next | undefined) => {
-        const segment = task?.segment;
-        if (segment === undefined) return;
+        // The task screen is the segment shown: its task ended.
+        const segment = latest.current.shown;
         setEnded((held) => new Set(held).add(segment));
         const after = next?.next;
-        if (after?.case === "segment") {
-          if (after.value > latest.current.place) move(after.value);
-        } else if (after?.case !== "segmentsEnded") void refresh();
+        if (after?.case === "segment") move(Math.max(after.value, latest.current.place));
+        else if (after?.case !== "segmentsEnded") void refresh();
       },
       onClosed: (reason: CloseReason) => {
         // Left or abandoned, the segment did not end: the learner begins it again (README of the
@@ -463,7 +462,7 @@ function OpenLesson({
         else void refresh();
       },
     }),
-    [task, move, refresh],
+    [move, refresh],
   );
 
   const goTo = useCallback(

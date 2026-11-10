@@ -10,14 +10,6 @@ import { useAttempt } from "../task/AttemptContext.tsx";
 import { Lesson } from "./Lesson.tsx";
 import { useLessons } from "./LessonContext.tsx";
 
-/** A choice's key, for React: another run is another player. */
-const keyOf = (open: NonNullable<ReturnType<typeof useLessons>>["chosen"]) =>
-  open === undefined
-    ? ""
-    : open.kind === "run"
-      ? `run ${open.run.lessonRunId}`
-      : `choice ${open.choiceId}`;
-
 export function LessonRoute({
   profileId,
   defaultMode,
@@ -31,6 +23,7 @@ export function LessonRoute({
   const { device } = useStorage();
   const lessons = useLessons();
   const setAttempt = useAttempt()?.setAttempt;
+  // The run it opened on, until the learner leaves: a new choice is a new screen.
   const [shown] = useState(lessons?.chosen);
   // A task of the lesson closes the attempt the learner had open outside it.
   const onAttempt = useCallback(() => setAttempt?.(undefined), [setAttempt]);
@@ -41,7 +34,6 @@ export function LessonRoute({
   if (shown === undefined) return null;
   return (
     <Lesson
-      key={keyOf(shown)}
       profileId={profileId}
       open={shown}
       device={device}

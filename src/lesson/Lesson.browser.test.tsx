@@ -167,6 +167,12 @@ interface Setup {
   readonly openTask?: (attemptId: string) => void;
   /** The beginning of a segment answers with no attempt. */
   readonly emptyBegin?: boolean;
+  /** The package has no manifest api gives. */
+  readonly noManifest?: boolean;
+  /** "Lesson done" answers with no end. */
+  readonly noEnd?: boolean;
+  /** The run comes without its lesson. */
+  readonly noLesson?: boolean;
   /** What comes next once the task is right. */
   readonly next?: MessageInitShape<typeof NextSchema>;
   /** Throws in place of "lesson done", once for each call it is given. */
@@ -213,7 +219,9 @@ async function renderLesson(setup: Setup = {}) {
   let reads = 0;
   const runOf = () => ({
     lessonRunId: "r1",
-    lesson: { json: encode(lesson), moduleFormatVersion: "0.4" },
+    ...(setup.noLesson === true
+      ? {}
+      : { lesson: { json: encode(lesson), moduleFormatVersion: "0.4" } }),
     packageDigest: D1,
     endedSegments: [...ended],
     ...(openAttempt === undefined
@@ -242,7 +250,7 @@ async function renderLesson(setup: Setup = {}) {
       completeLesson(request) {
         asked.push("lesson done");
         setup.complete?.(request);
-        return { end: { reason: RunEndReason.PASSED } };
+        return setup.noEnd === true ? {} : { end: { reason: RunEndReason.PASSED } };
       },
       beginAttempt(request) {
         begun.push(request);
@@ -329,7 +337,10 @@ async function renderLesson(setup: Setup = {}) {
       getHint: () => ({}),
     });
     router.service(PackageService, {
-      getManifest: () => ({ manifest: { json: encode(MANIFEST), moduleFormatVersion: "0.4" } }),
+      getManifest: () =>
+        setup.noManifest === true
+          ? {}
+          : { manifest: { json: encode(MANIFEST), moduleFormatVersion: "0.4" } },
       getSolvingSteps: () => ({}),
       getTechniques: () => ({}),
     });
@@ -445,6 +456,9 @@ describe("the lesson player", () => {
     expect(chip(3)).toHaveAccessibleName("3 Task");
     expect(chip(3)).toHaveAttribute("aria-disabled", "true");
     expect((await kept())?.place).toBe(1);
+    // The chip shown goes nowhere.
+    await userEvent.click(chip(1));
+    expect(screen.getByRole("heading", { level: 2 })).toHaveTextContent("Explanation · 1 of 4");
 
     // The worked example: a new element, its demo from the beginning; Continue stands at once.
     await userEvent.click(await continueButton());
@@ -534,7 +548,10 @@ describe("the lesson player", () => {
     await waitFor(async () => expect((await other.kept())?.place).toBe(1));
     other.unmount();
 
-    await renderLesson({ kept: { place: 2, demo: { 2: { opened: 9, hidden: true } } } });
+    // A demo kept for a segment that is no example is no state of any element either.
+    await renderLesson({
+      kept: { place: 2, demo: { 1: { opened: 0, hidden: false }, 2: { opened: 9, hidden: true } } },
+    });
     await waitFor(() => expect(canvas().workedExample).toBeDefined());
     expect(canvas().demoState).toEqual({ opened: 0, hidden: false });
   });
@@ -872,5 +889,77 @@ describe("the lesson player", () => {
     await renderLesson({ kept: { place: 3 }, emptyBegin: true });
     expect(await screen.findByRole("button", { name: "Begin the task again" })).toBeVisible();
     expect(screen.getByText("This version of the app doesn't know this yet")).toBeVisible();
+  });
+
+  it("keeps the state by the run's full ID when the manifest does not come, with no lang", async () => {
+    const { kept } = await renderLesson({ noManifest: true });
+    const title = await screen.findByRole("heading", { level: 1, name: "Gaps and posts" });
+    expect(title.querySelector("[lang]")).toBeNull();
+    await userEvent.click(await continueButton());
+    await waitFor(async () => expect((await kept())?.place).toBe(2));
+  });
+
+  it("says it keeps nothing of a run by a choice whose manifest does not come", async () => {
+    await renderLesson({ open: { kind: "choice", choiceId: "c1" }, noManifest: true });
+    expect(await screen.findByText("Your work isn't saved on this device")).toBeVisible();
+  });
+
+  it("ends a run by a choice api ended, and reads a run without its lesson as a failure", async () => {
+    const ended = await renderLesson({
+      open: { kind: "choice", choiceId: "c1" },
+      run: () => {
+        throw runEnded(RunEndReason.PASSED);
+      },
+    });
+    expect(await screen.findByRole("heading", { level: 1, name: "Lesson complete" })).toBeVisible();
+    expect(ended.endedRuns).toEqual([]);
+    ended.unmount();
+
+    await renderLesson({ noLesson: true });
+    expect(await screen.findByRole("button", { name: "Try again" })).toBeVisible();
+  });
+
+  it("ends the run when api refuses the task for its end, and asks CheckPackages if unchecked", async () => {
+    const { check, kept } = await renderLesson({
+      kept: { place: 3 },
+      begin: () => {
+        throw runEnded(RunEndReason.UNCHECKED);
+      },
+    });
+    expect(await screen.findByText("This version of the module is no longer given")).toBeVisible();
+    expect(check).toHaveBeenCalledOnce();
+    await waitFor(async () => expect(await kept()).toBeUndefined());
+  });
+
+  it("begins a task again with the same key after no answer, and stops at a segment refused again", async () => {
+    let offline = true;
+    const same = await renderLesson({
+      kept: { place: 3 },
+      begin: () => {
+        if (offline) throw new ConnectError("down", Code.Unavailable);
+      },
+    });
+    expect(await screen.findByText("No connection", { selector: "p" })).toBeVisible();
+    offline = false;
+    await userEvent.click(screen.getByRole("button", { name: "Begin the task again" }));
+    await screen.findByRole("group", { name: "How many gaps?" });
+    expect(new Set(same.begun.map((request) => request.idempotencyKey)).size).toBe(1);
+    same.unmount();
+
+    // api says the same segment is the one to finish: the learner may only try again.
+    await renderLesson({
+      kept: { place: 3 },
+      begin: () => {
+        throw endedSegments(Cause.SEGMENT_UNAVAILABLE, []);
+      },
+    });
+    expect(await screen.findByRole("button", { name: "Begin the task again" })).toBeVisible();
+    expect(screen.getByText("Not open yet", { selector: "p" })).toBeVisible();
+  });
+
+  it("takes lesson done with no end for a lesson passed", async () => {
+    await renderLesson({ kept: { place: 4 }, ended: [3], noEnd: true });
+    await userEvent.click(await continueButton());
+    expect(await screen.findByText("Lesson complete")).toBeVisible();
   });
 });
