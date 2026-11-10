@@ -90,12 +90,12 @@ async function open(locale = "en-US"): Promise<{
 }
 
 /** The hosts of Google that section 3.7 names for the sign-in, beside app's own origin. */
-const GOOGLE = [
+const GOOGLE: ReadonlySet<string> = new Set([
   "apis.google.com",
   "example-project.firebaseapp.com",
   "identitytoolkit.googleapis.com",
   "securetoken.googleapis.com",
-];
+]);
 
 /**
  * The script of gapi in place of Google's, which is closed to reading: it gives the SDK what it
@@ -206,9 +206,12 @@ describe("the built page", () => {
     await page
       .locator('iframe[src^="https://example-project.firebaseapp.com/__/auth/iframe"]')
       .waitFor({ state: "attached" });
-    await expect.poll(() => google.includes("identitytoolkit.googleapis.com")).toBe(true);
+    // Hosts compared whole: each request's URL was parsed, and its host is one of the list or not.
+    await expect
+      .poll(() => google.some((host) => host === "identitytoolkit.googleapis.com"))
+      .toBe(true);
     expect(
-      google.every((host) => GOOGLE.includes(host)),
+      google.every((host) => GOOGLE.has(host)),
       google.join(", "),
     ).toBe(true);
     expect(google.slice(0, 2)).toEqual(["apis.google.com", "example-project.firebaseapp.com"]);
