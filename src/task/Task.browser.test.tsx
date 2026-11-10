@@ -97,6 +97,12 @@ interface Setup {
   items?: { item: number; slot: number; verdict: string; value: string }[];
   wrongAnswers?: number;
   stepTechniqueIds?: string[];
+  /** Throws in place of a new attempt. */
+  begin?: () => void;
+  /** The module has no part of solving steps. */
+  noSteps?: boolean;
+  /** api answers with no start of the attempt. */
+  noStart?: boolean;
   /** Throws in place of the techniques of a step. */
   step?: () => void;
   /** Throws in place of the verdict, once for each call it is given. */
@@ -142,6 +148,7 @@ async function renderTask(setup: Setup = {}) {
       getOpenAttempt(request) {
         asked.push(`open ${request.attemptId}`);
         setup.open?.();
+        if (setup.noStart === true) return {};
         return {
           attempt: {
             start: {
@@ -162,6 +169,7 @@ async function renderTask(setup: Setup = {}) {
       },
       beginAttempt(request) {
         begun.push(request);
+        setup.begin?.();
         return { attempt: { attemptId: "a2", packageDigest: D1 } };
       },
     });
@@ -186,9 +194,15 @@ async function renderTask(setup: Setup = {}) {
     });
     router.service(PackageService, {
       getManifest: () => ({ manifest: { json: encode(MANIFEST), moduleFormatVersion: "0.4" } }),
-      getSolvingSteps: () => ({
-        solvingSteps: { json: encode({ steps: setup.steps ?? STEPS }), moduleFormatVersion: "0.4" },
-      }),
+      getSolvingSteps: () =>
+        setup.noSteps === true
+          ? {}
+          : {
+              solvingSteps: {
+                json: encode({ steps: setup.steps ?? STEPS }),
+                moduleFormatVersion: "0.4",
+              },
+            },
       getTechniques: () => ({
         techniques: {
           json: encode({
@@ -561,5 +575,77 @@ describe("the task screen", () => {
     await userEvent.click(screen.getByRole("button", { name: "Try it again" }));
     await vi.waitFor(() => expect(attempts).toEqual([undefined, "a2"]));
     expect(begun.length).toBe(1);
+  });
+
+  it("says a new attempt did not begin, keeps its key, and begins it on the next press", async () => {
+    let down = true;
+    const { begun, attempts } = await renderTask({
+      mode: Mode.SELF,
+      begin: () => {
+        if (down) throw refused(Code.FailedPrecondition, Cause.NO_CURRENT_VERSION);
+      },
+    });
+    await userEvent.click(await screen.findByRole("radio", { name: "5" }));
+    await userEvent.click(screen.getByRole("radio", { name: "Yes" }));
+    await userEvent.click(check());
+    await userEvent.click(await panel().findByRole("button", { name: "Try it again" }));
+    expect(await panel().findByRole("alert")).toHaveTextContent(
+      "This version of the module is no longer given",
+    );
+    down = false;
+    await userEvent.click(panel().getByRole("button", { name: "Try it again" }));
+    await vi.waitFor(() => expect(attempts).toEqual([undefined, "a2"]));
+    expect(begun.map((request) => request.idempotencyKey)).toEqual([
+      begun[0]?.idempotencyKey,
+      begun[0]?.idempotencyKey,
+    ]);
+  });
+
+  it("goes back to My subjects from the result, and to the steps from on my own", async () => {
+    window.location.hash = "#/task";
+    await renderTask();
+    await screen.findByRole("heading", { name: "Understand the task", level: 2 });
+    await userEvent.click(screen.getByRole("button", { name: "On my own" }));
+    expect(screen.queryByRole("complementary", { name: "Tutor" })).toBeNull();
+    await userEvent.click(screen.getByRole("button", { name: "Step by step" }));
+    await screen.findByRole("heading", { name: "Understand the task", level: 2 });
+    await userEvent.click(screen.getByRole("radio", { name: "5" }));
+    await userEvent.click(screen.getByRole("radio", { name: "Yes" }));
+    await userEvent.click(check());
+    await userEvent.click(await panel().findByRole("button", { name: "Back to My subjects" }));
+    expect(window.location.hash).toBe("#/home");
+    window.location.hash = "";
+  });
+
+  it("closes the screen when api says at a step that the attempt is over", async () => {
+    await renderTask({
+      step: () => {
+        throw refused(Code.FailedPrecondition, Cause.ATTEMPT_CLOSED, CloseReason.SOLUTION_SHOWN);
+      },
+    });
+    await screen.findByRole("heading", { name: "Understand the task", level: 2 });
+    for (const chip of ["Two apples", "Three pears", "How many fruits"]) {
+      await userEvent.click(panel().getByRole("button", { name: chip }));
+    }
+    await userEvent.click(panel().getByRole("button", { name: "Step done" }));
+    await screen.findByRole("heading", { name: "This task is already over", level: 1 });
+    expect(screen.getByText("Its solution was shown")).toBeVisible();
+  });
+
+  it("names an answer without the start of the attempt, and reads it again on a retry", async () => {
+    const { asked } = await renderTask({ noStart: true });
+    await screen.findByRole("heading", {
+      level: 1,
+      name: "This version of the app doesn't know this yet",
+    });
+    await userEvent.click(screen.getByRole("button", { name: "Try again" }));
+    await vi.waitFor(() => expect(asked).toEqual(["open a1", "open a1"]));
+  });
+
+  it("goes on my own for a module that has no part of solving steps", async () => {
+    await renderTask({ noSteps: true });
+    await screen.findByRole("radio", { name: "4" });
+    expect(screen.queryByRole("button", { name: "Step by step" })).toBeNull();
+    expect(screen.queryByRole("complementary", { name: "Tutor" })).toBeNull();
   });
 });

@@ -62,7 +62,13 @@ export function StepsPanel({
   const last = state.place === steps.length;
   const met = exitMet(step, task, state, filled);
   const lineKey = exitLine(step.exit_condition);
-  const techniques = givesTechniques(step) ? state.techniques[state.place] : undefined;
+  // The techniques api gave that the catalog names: an ID it does not name has nothing to show.
+  const techniques = (givesTechniques(step) ? (state.techniques[state.place] ?? []) : []).flatMap(
+    (id) => {
+      const technique = catalog?.techniques[id];
+      return technique === undefined ? [] : [{ id, technique }];
+    },
+  );
 
   return (
     <div className="nt-steps">
@@ -132,18 +138,14 @@ export function StepsPanel({
           )}
         </div>
       ) : null}
-      {techniques === undefined || techniques.length === 0 ? null : (
+      {techniques.length === 0 ? null : (
         <ul className="nt-techniques" aria-label={words.text("steps.techniques")}>
-          {techniques.map((id) => {
-            const technique = catalog?.techniques[id];
-            if (technique === undefined) return null;
-            return (
-              <li key={id} className="nt-card" {...lang}>
-                <p className="nt-technique-title">{technique.title}</p>
-                {technique.description === undefined ? null : <p>{technique.description}</p>}
-              </li>
-            );
-          })}
+          {techniques.map(({ id, technique }) => (
+            <li key={id} className="nt-card" {...lang}>
+              <p className="nt-technique-title">{technique.title}</p>
+              {technique.description === undefined ? null : <p>{technique.description}</p>}
+            </li>
+          ))}
         </ul>
       )}
       {lineKey === undefined ? null : (
