@@ -235,7 +235,7 @@
     - `navigate` на уже показанный экран с другим написанием хеша добавлял запись в истории — теперь нет;
     - `@vitejs/plugin-react` ходил бы в Dependabot отдельно от `vite` — теперь в той же группе.
 - **Открыто:**
-  - мой шаг: после мержа — «TypeScript / lint», «TypeScript / test», «TypeScript / vuln», «TypeScript / licenses» и «CodeQL / analyze (javascript-typescript)» обязательными в ruleset `main`; `codecov/patch` — когда он придёт со следующим pull request с кодом, как у `skill-map`;
+  - мой шаг: после мержа — «TypeScript / lint», «TypeScript / test», «TypeScript / vuln», «TypeScript / licenses» и «CodeQL / analyze (javascript-typescript)» обязательными в ruleset `main`; `codecov/patch` — когда он придёт со следующим pull request с кодом, как у `skill-map`. *Сделано 2026-11-10:* пять проверок поставил в ruleset `main` (25506242) исполнитель, по моему поручению, — от GitHub Actions, `integration_id` 15368; прежние пять проверок и остальные правила — как были. `codecov/patch` — в T16;
   - `playwright` 1.65.0 ждёт, пока `spec` поднимет образ в заготовке; тогда его берёт переход на тег (R14).
 
 #### T16. Пакеты платформы: типы, контракты, канва и иконки
@@ -251,6 +251,7 @@
   - Д3 — как подключать рабочую копию `canvas`, чтобы `package.json` и lock-файл `main` не менялись;
   - `NOTICE` — уведомления набора иконок и BSD-3-Clause `@bufbuild/protobuf`; таблица раздела 3.1 — версии на день задачи.
 - **Решить при планировании:** версия `canvas` — и то, что он стоит на `@altnovatrail/spec` 0.12.0, а `app` — на 0.13.0: по R73 spec у каждого своя копия, а если README `canvas` требует одну версию, — строка «в реестр spec»; транспорт connect-es для браузера и его версия; версия `firebase` и его лицензия.
+- **Шаг исполнителя по моему поручению (2026-11-10):** когда `codecov/patch` придёт с pull request этой задачи, — поставить его обязательным в ruleset `main` (25506242), от Codecov, `integration_id` 254, и записать это в «Сделано».
 - **Как проверить:** `release-verify-npm` в CI проходит; тест набора иконок падает, если версию сдвинуть.
 - **Разделы:** R03; [docs/architecture.md](docs/architecture.md), раздел 3.1; R36, R37, R39, R73, R74, R77, R78, R83 spec.
 
