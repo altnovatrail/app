@@ -20,6 +20,9 @@ export const NOTICES = ["NOTICE", "LICENSE"] as const;
 /** The files at the root of the archive; assets/ is the one folder beside them. */
 export const ROOT_FILES = ["index.html", "deployment.schema.json", "csp.json", ...NOTICES];
 
+/** Paths in the order of their code points: the same on every machine, whatever its locale. */
+const byCodePoint = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
+
 const VERSION = /^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$/;
 
 /** The byte of a gzip header that names the system it was made on: "unknown", on every one. */
@@ -39,7 +42,7 @@ export function archiveName(version: string): string {
 /** The files and folders of a folder, by their paths within it, sorted; a link is refused. */
 function walk(root: string, within = ""): { path: string; folder: boolean }[] {
   const found: { path: string; folder: boolean }[] = [];
-  for (const name of readdirSync(`${root}/${within}`).sort()) {
+  for (const name of readdirSync(`${root}/${within}`).sort(byCodePoint)) {
     const path = `${within}${name}`;
     const stat = lstatSync(`${root}/${path}`);
     if (stat.isDirectory()) {
@@ -66,7 +69,7 @@ export function pack(build: string, notices: Readonly<Record<string, Buffer>>): 
     if (bodies.has(`./${name}`)) throw new Error(`the build holds a ${name} of its own`);
     bodies.set(`./${name}`, body);
   }
-  const sorted = [...bodies.keys()].sort();
+  const sorted = [...bodies.keys()].sort(byCodePoint);
   const archive = gzipSync(tar(sorted.map((path) => ({ path, body: bodies.get(path) }))), {
     level: 9,
   });

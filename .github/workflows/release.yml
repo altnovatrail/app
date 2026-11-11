@@ -34,12 +34,13 @@ jobs:
     # On main only after a green CI of a push to this repository; on a pull request only from a
     # branch of this repository and not Dependabot's: a fork's run and Dependabot's get no OIDC
     # token, and the keyless signature needs one, so their trial would fail on what is no fault.
-    # Dependabot's changes are tried on main once they are in.
+    # Dependabot's changes are tried on main once they are in. Dependabot is told by the author of
+    # the pull request, not by the actor of the run, which anyone who reruns it becomes.
     if: >-
       github.event_name == 'workflow_dispatch' ||
       (github.event_name == 'pull_request' &&
       github.event.pull_request.head.repo.full_name == github.repository &&
-      github.actor != 'dependabot[bot]') ||
+      github.event.pull_request.user.login != 'dependabot[bot]') ||
       (github.event_name == 'workflow_run' &&
       github.event.workflow_run.conclusion == 'success' &&
       github.event.workflow_run.event == 'push' &&
