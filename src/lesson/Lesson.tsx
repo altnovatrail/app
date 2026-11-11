@@ -13,6 +13,7 @@ import type { Next } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.j
 import {
   Cause,
   CloseReason,
+  type EngineChoice,
   RunEndReason,
 } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import type { LessonRun } from "@altnovatrail/contracts/novatrail/api/v1/learning_pb.js";
@@ -28,6 +29,7 @@ import { HOME, navigate, redirect } from "../app/router.ts";
 import { Screen } from "../app/Screen.tsx";
 import { ReadFailed } from "../boot/Screens.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
+import { NextStep } from "../next/NextStep.tsx";
 import { usePackages } from "../packages/PackagesContext.tsx";
 import type { Device } from "../storage/device.ts";
 import { addProfile, type LessonState, openProfile, type Profile } from "../storage/profile.ts";
@@ -44,7 +46,7 @@ import {
   openingPlace,
   taskEnded,
 } from "./place.ts";
-import { demoOf, endedOf, endKey, fullId, kindOf, runEndOf } from "./run.ts";
+import { demoOf, endChoiceOf, endedOf, endKey, fullId, kindOf, runEndOf } from "./run.ts";
 
 /** What the player has read of the run. */
 interface Opened {
@@ -70,7 +72,7 @@ interface SegmentAttempt {
 type Read =
   | { readonly status: "loading" }
   | { readonly status: "failed"; readonly failure: Failure }
-  | { readonly status: "ended"; readonly reason: RunEndReason }
+  | { readonly status: "ended"; readonly reason: RunEndReason; readonly choice?: EngineChoice }
   | { readonly status: "ready"; readonly opened: Opened };
 
 /**
@@ -137,7 +139,9 @@ export function Lesson(props: LessonProps) {
             onEnded(what.run.lessonRunId);
           }
           if (end === RunEndReason.UNCHECKED) void checks.check();
-          if (current) setRead({ status: "ended", reason: end });
+          const choice = endChoiceOf(failure);
+          if (current)
+            setRead({ status: "ended", reason: end, ...(choice === undefined ? {} : { choice }) });
         } else if (failure.kind === "refused" && failure.cause === Cause.NOT_FOUND) {
           if (what.kind === "run") onEnded(what.run.lessonRunId);
           redirect(HOME);
@@ -192,19 +196,34 @@ export function Lesson(props: LessonProps) {
   if (read.status === "failed") {
     return <ReadFailed failure={read.failure} onRetry={() => setAttempt((n) => n + 1)} />;
   }
-  if (read.status === "ended") return <LessonEnd reason={read.reason} />;
+  if (read.status === "ended") {
+    return <LessonEnd reason={read.reason} next={nextStep(profileId, device, read.choice)} />;
+  }
   return <OpenLesson key={read.opened.runId} {...props} opened={read.opened} />;
 }
 
-/** The end of a run: the lesson's title if known, how it ended, and the way to My subjects. */
+/** The way to what the engine chose at the end of a run: the choice the end gave, or a press. */
+function nextStep(profileId: string, device: Device, choice: EngineChoice | undefined) {
+  return (
+    <NextStep profileId={profileId} device={device} {...(choice === undefined ? {} : { choice })} />
+  );
+}
+
+/**
+ * The end of a run: the lesson's title if known, how it ended, the way to what the engine chose —
+ * the choice the end gave, or else a press that asks for it (R24) —, and the way to My subjects.
+ */
 export function LessonEnd({
   reason,
   title,
   language,
+  next,
 }: {
   readonly reason: RunEndReason;
   readonly title?: string;
   readonly language?: string | undefined;
+  /** The way to what the engine chose. */
+  readonly next?: ReactNode;
 }) {
   const { words } = useLanguage();
   const end = words.text(endKey(reason));
@@ -218,8 +237,9 @@ export function LessonEnd({
           })}
     >
       {title === undefined ? null : <p className="nt-result">{end}</p>}
+      {next}
       <div className="nt-buttons">
-        <button type="button" onClick={() => navigate(HOME)}>
+        <button type="button" className="nt-secondary" onClick={() => navigate(HOME)}>
           {words.text("task.home")}
         </button>
       </div>
@@ -272,7 +292,9 @@ function OpenLesson({
   const [beginFailure, setBeginFailure] = useState<Failure | undefined>(undefined);
   const [pending, setPending] = useState(false);
   const [completeFailure, setCompleteFailure] = useState<Failure | undefined>(undefined);
-  const [end, setEnd] = useState<RunEndReason | undefined>(undefined);
+  const [end, setEnd] = useState<
+    { readonly reason: RunEndReason; readonly choice?: EngineChoice } | undefined
+  >(undefined);
   // One key for the beginning of a segment's attempt, the same with its repeats.
   const beginKey = useRef<string | undefined>(undefined);
   const beginning = useRef(false);
@@ -320,11 +342,11 @@ function OpenLesson({
 
   /** The run ended: its state goes, and the end is shown. */
   const finish = useCallback(
-    async (reason: RunEndReason) => {
+    async (reason: RunEndReason, choice?: EngineChoice) => {
       if (id !== undefined) await profile?.lessonEnded(id).catch(() => {});
       onEnded(runId);
       if (reason === RunEndReason.UNCHECKED) void checks.check();
-      setEnd(reason);
+      setEnd({ reason, ...(choice === undefined ? {} : { choice }) });
     },
     [id, profile, onEnded, runId, checks],
   );
@@ -366,7 +388,7 @@ function OpenLesson({
       } catch (reason) {
         const failure = parseFailure(reason);
         const ended = runEndOf(failure);
-        if (ended !== undefined) void finish(ended);
+        if (ended !== undefined) void finish(ended, endChoiceOf(failure));
         else setNote(failureText(failure, words));
         return undefined;
       }
@@ -415,7 +437,7 @@ function OpenLesson({
             if (failure.kind === "refused") beginKey.current = undefined;
             const runEnd = runEndOf(failure);
             const said = endedOf(failure);
-            if (runEnd !== undefined) void finish(runEnd);
+            if (runEnd !== undefined) void finish(runEnd, endChoiceOf(failure));
             else if (said === undefined) setBeginFailure(failure);
             else {
               // The segment api has open is the place; the same segment again is no way on.
@@ -482,12 +504,12 @@ function OpenLesson({
     void api.learning
       .completeLesson({ profileId, lessonRunId: runId })
       .then(
-        (answer) => void finish(answer.end?.reason ?? RunEndReason.PASSED),
+        (answer) => void finish(answer.end?.reason ?? RunEndReason.PASSED, answer.end?.choice),
         async (reason: unknown) => {
           const failure = parseFailure(reason);
           const runEnd = runEndOf(failure);
           const said = endedOf(failure);
-          if (runEnd !== undefined) void finish(runEnd);
+          if (runEnd !== undefined) void finish(runEnd, endChoiceOf(failure));
           else if (said === undefined) setCompleteFailure(failure);
           else {
             // A task of the lesson has not ended: the learner goes to the first such.
@@ -519,7 +541,16 @@ function OpenLesson({
     [persist],
   );
 
-  if (end !== undefined) return <LessonEnd reason={end} title={lesson.title} language={language} />;
+  if (end !== undefined) {
+    return (
+      <LessonEnd
+        reason={end.reason}
+        title={lesson.title}
+        language={language}
+        next={nextStep(profileId, device, end.choice)}
+      />
+    );
+  }
 
   const segment = segments[shown - 1];
   const kind = kinds[shown - 1];

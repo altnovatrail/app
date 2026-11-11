@@ -5,9 +5,10 @@
 // disconnecting are a press away; api's answer is the list of connected modules, and the focus goes
 // with the card to its new place. An attempt open outside a lesson is a press away, above the lists
 // (T24), and so is each lesson run open, by the lesson's title as this device keeps it, or else its
-// module's name (T27; R23). What comes next of a module, chosen by engine, is T28's.
+// module's name (T27; R23); and "What's next" asks the engine, or "Something else" beside an
+// attempt open, which it closes (T28; R24).
 import type { ConnectedModule } from "@altnovatrail/contracts/novatrail/api/v1/module_pb.js";
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { useApi } from "../api/ApiContext.tsx";
 import { type Failure, parseFailure } from "../api/failure.ts";
 import { failureText } from "../api/words.ts";
@@ -19,6 +20,7 @@ import { useLanguage } from "../i18n/LanguageContext.tsx";
 import type { Language } from "../i18n/language.ts";
 import { type RunRef, useLessons } from "../lesson/LessonContext.tsx";
 import { moduleOf } from "../lesson/run.ts";
+import { NextStep } from "../next/NextStep.tsx";
 import { usePackages } from "../packages/PackagesContext.tsx";
 import type { OpenViews } from "../packages/views.ts";
 import type { Device } from "../storage/device.ts";
@@ -134,6 +136,8 @@ export interface SubjectsScreenProps {
   readonly onRetry?: () => void;
   /** Goes on with the attempt the learner has open; none when there is none. */
   readonly onContinue?: () => void;
+  /** The way to what the engine chooses: "What's next", or "Something else" beside Continue. */
+  readonly next?: ReactNode;
   /** The learner's lesson runs open, each a press away. */
   readonly runs?: readonly OpenRun[];
   readonly onLesson?: (lessonRunId: string) => void;
@@ -151,6 +155,7 @@ export function SubjectsScreen({
   onContinue,
   runs = [],
   onLesson,
+  next,
 }: SubjectsScreenProps) {
   const { language, words } = useLanguage();
   const connectedId = useId();
@@ -185,6 +190,8 @@ export function SubjectsScreen({
           </div>
         </section>
       )}
+      {/* One place, whatever is open: the step stays itself while its press closes the attempt. */}
+      {next}
       {runs.length === 0 ? null : (
         <section aria-labelledby={lessonsId} className="nt-continue">
           <h2 id={lessonsId}>{words.text("lesson.open-title")}</h2>
@@ -392,6 +399,7 @@ export function MySubjects({
       pending={pending}
       onRetry={retry}
       {...(open === undefined ? {} : { onContinue: () => navigate(TASK) })}
+      next={<NextStep profileId={profileId} {...(device === undefined ? {} : { device })} />}
       runs={runs}
       onLesson={(lessonRunId) => {
         const run = refs?.find((each) => each.lessonRunId === lessonRunId);

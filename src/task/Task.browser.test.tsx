@@ -24,6 +24,7 @@ import {
 } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
 import {
   Cause,
+  ChoiceKind,
   CloseReason,
   RefusalSchema,
 } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
@@ -505,6 +506,44 @@ describe("the task screen", () => {
     expect(begun[0]?.idempotencyKey).not.toBe("");
   });
 
+  it("offers what the engine chose with Correct and with the solution shown, or asks for it", async () => {
+    const chosen = await renderTask({
+      mode: Mode.SELF,
+      answer: (request) => ({
+        items: judged(request),
+        wrongAnswers: 0,
+        solved: { solution: encode(SOLUTION), moduleFormatVersion: "0.4" },
+        next: { next: { case: "choice", value: { choiceId: "c2", kind: ChoiceKind.TASK } } },
+      }),
+    });
+    await userEvent.click(await screen.findByRole("radio", { name: "5" }));
+    await userEvent.click(screen.getByRole("radio", { name: "Yes" }));
+    await userEvent.click(check());
+    expect(await panel().findByRole("button", { name: "Next task" })).toBeVisible();
+    expect(panel().getByRole("button", { name: "Try it again" })).toHaveClass("nt-secondary");
+    chosen.unmount();
+
+    const shown = await renderTask({
+      mode: Mode.SELF,
+      adult: true,
+      show: () => ({
+        solved: { solution: encode(SOLUTION), moduleFormatVersion: "0.4" },
+        next: { next: { case: "choice", value: { choiceId: "c1", kind: ChoiceKind.LESSON } } },
+      }),
+    });
+    await userEvent.click(await screen.findByRole("button", { name: "Show the solution" }));
+    await userEvent.click(screen.getByRole("button", { name: "Show it" }));
+    expect(await panel().findByRole("button", { name: "Next lesson" })).toBeVisible();
+    shown.unmount();
+
+    // An answer with no choice: the press asks for it.
+    await renderTask({ mode: Mode.SELF });
+    await userEvent.click(await screen.findByRole("radio", { name: "5" }));
+    await userEvent.click(screen.getByRole("radio", { name: "Yes" }));
+    await userEvent.click(check());
+    expect(await panel().findByRole("button", { name: "What's next" })).toBeVisible();
+  });
+
   it("shows an attempt api closed unchecked, erases it and asks CheckPackages", async () => {
     const { check: checked, attempts } = await renderTask({
       open: () => {
@@ -516,6 +555,7 @@ describe("the task screen", () => {
     expect(checked).toHaveBeenCalledOnce();
     expect(attempts).toEqual([undefined]);
     expect(screen.getByRole("button", { name: "Try it again" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "What's next" })).toHaveClass("nt-secondary");
   });
 
   it("closes the screen when a check finds the attempt closed meanwhile", async () => {

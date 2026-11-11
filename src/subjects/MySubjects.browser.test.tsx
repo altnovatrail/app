@@ -2,7 +2,12 @@
 // and name, connecting and disconnecting, a module with no current version, an empty catalog and
 // the refusals, with api on connect-es's router and the open views on the device's memory.
 import { ProfileSchema } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
-import { Cause, RefusalSchema } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
+import {
+  Cause,
+  ChoiceKind,
+  RefusalSchema,
+} from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
+import { LearningService } from "@altnovatrail/contracts/novatrail/api/v1/learning_pb.js";
 import {
   type ConnectedModuleSchema,
   ModuleService,
@@ -106,6 +111,12 @@ async function renderSubjects(setup: Setup, language: "en" | "ru" = "en") {
         asked.push(`disconnect ${request.moduleId}`);
         connected = connected.filter((m) => m.moduleId !== request.moduleId);
         return { modules: connected };
+      },
+    });
+    router.service(LearningService, {
+      chooseNext() {
+        asked.push("choose");
+        return { choice: { kind: ChoiceKind.NOTHING } };
       },
     });
     router.service(PackageService, {
@@ -226,13 +237,13 @@ describe("My subjects", () => {
       },
     });
     expect(await screen.findByRole("article", { name: MATH })).toBeTruthy();
-    expect(screen.getByRole("status").textContent).toContain(
-      "The names of some modules didn't come",
-    );
+    expect(
+      screen.getByText("The names of some modules didn't come").closest("[role=status]"),
+    ).not.toBeNull();
     fail = false;
     await userEvent.click(screen.getByRole("button", { name: "Try again" }));
     expect(await screen.findByRole("article", { name: "Olympiad maths" })).toBeTruthy();
-    expect(screen.queryByRole("status")).toBeNull();
+    expect(screen.queryByText("The names of some modules didn't come")).toBeNull();
     expect(asked).toBeGreaterThan(1);
   });
 
@@ -381,5 +392,17 @@ describe("the lessons open", () => {
     await renderSubjects({ runs: [] });
     await screen.findByRole("heading", { level: 1, name: "My subjects" });
     expect(screen.queryByRole("region", { name: "A lesson in progress" })).toBeNull();
+  });
+});
+
+describe("the way to what the engine chose", () => {
+  it("keeps what Something else came to, once the attempt it closed is gone", async () => {
+    const { asked } = await renderSubjects({ attempt: "a1" });
+    await userEvent.click(await screen.findByRole("button", { name: "Something else" }));
+    await userEvent.click(screen.getByRole("button", { name: "Go on" }));
+    expect(await screen.findByText("There is nothing more to offer for now")).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Continue the task" })).toBeNull();
+    expect(screen.getByRole("button", { name: "What's next" })).toBeVisible();
+    expect(asked).toContain("choose");
   });
 });

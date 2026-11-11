@@ -13,6 +13,7 @@ import {
 } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
 import {
   Cause,
+  ChoiceKind,
   CloseReason,
   EndedSegmentsSchema,
   type Refusal,
@@ -171,6 +172,8 @@ interface Setup {
   readonly noManifest?: boolean;
   /** "Lesson done" answers with no end. */
   readonly noEnd?: boolean;
+  /** The engine's choice the end of the run gives. */
+  readonly endChoice?: { choiceId: string; kind: ChoiceKind };
   /** The run comes without its lesson. */
   readonly noLesson?: boolean;
   /** What comes next once the task is right. */
@@ -250,7 +253,14 @@ async function renderLesson(setup: Setup = {}) {
       completeLesson(request) {
         asked.push("lesson done");
         setup.complete?.(request);
-        return setup.noEnd === true ? {} : { end: { reason: RunEndReason.PASSED } };
+        return setup.noEnd === true
+          ? {}
+          : {
+              end: {
+                reason: RunEndReason.PASSED,
+                ...(setup.endChoice === undefined ? {} : { choice: setup.endChoice }),
+              },
+            };
       },
       beginAttempt(request) {
         begun.push(request);
@@ -957,9 +967,36 @@ describe("the lesson player", () => {
     expect(screen.getByText("Not open yet", { selector: "p" })).toBeVisible();
   });
 
+  it("offers what the engine chose at the end, and asks for it when the end gave none", async () => {
+    const chosen = await renderLesson({
+      kept: { place: 4 },
+      ended: [3],
+      endChoice: { choiceId: "c3", kind: ChoiceKind.LESSON },
+    });
+    await userEvent.click(await continueButton());
+    expect(await screen.findByRole("button", { name: "Next lesson" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Back to My subjects" })).toHaveClass("nt-secondary");
+    chosen.unmount();
+
+    await renderLesson({
+      kept: { place: 2 },
+      run: () => {
+        throw refused(Code.FailedPrecondition, Cause.RUN_ENDED, {
+          case: "runEnd",
+          value: create(RunEndSchema, {
+            reason: RunEndReason.ABANDONED,
+            choice: { choiceId: "c4", kind: ChoiceKind.TASK },
+          }),
+        });
+      },
+    });
+    expect(await screen.findByRole("button", { name: "Next task" })).toBeVisible();
+  });
+
   it("takes lesson done with no end for a lesson passed", async () => {
     await renderLesson({ kept: { place: 4 }, ended: [3], noEnd: true });
     await userEvent.click(await continueButton());
     expect(await screen.findByText("Lesson complete")).toBeVisible();
+    expect(screen.getByRole("button", { name: "What's next" })).toBeVisible();
   });
 });
