@@ -34,6 +34,12 @@ const OPEN = new Set([
   "novatrail.api.v1.LegalService/GetLegalTexts",
 ]);
 
+/**
+ * The methods whose absence is no build older than api: the legal texts came with spec v0.13.0,
+ * and an api on an older tag, which has none in force, answers them `unimplemented` (R27).
+ */
+const MAY_BE_ABSENT = new Set(["novatrail.api.v1.LegalService/GetLegalTexts"]);
+
 /** The pauses before each repeat, ms: 7.5 s in all, "for a short while". */
 export const PAUSES = [500, 1000, 2000, 4000] as const;
 
@@ -58,8 +64,10 @@ export function effects(on: ApiEvents): Interceptor {
       const error = ConnectError.from(reason);
       const cause = refusalOf(error)?.cause;
       // What the device does cannot take the refusal's place: the screen still learns of it.
-      if (error.code === Code.Unimplemented) on.stale();
-      else if (cause === Cause.ACCOUNT_GONE) await on.accountGone().catch(() => {});
+      const method = `${request.service.typeName}/${request.method.name}`;
+      if (error.code === Code.Unimplemented) {
+        if (!MAY_BE_ABSENT.has(method)) on.stale();
+      } else if (cause === Cause.ACCOUNT_GONE) await on.accountGone().catch(() => {});
       else if (cause === Cause.NO_ACCESS) await on.noAccess().catch(() => {});
       else if (cause === Cause.VERSION_NOT_GIVEN) on.withdrawn?.();
       throw error;

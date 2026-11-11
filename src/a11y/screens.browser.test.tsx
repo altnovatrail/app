@@ -15,6 +15,7 @@ import {
   EngineChoiceSchema,
   RunEndReason,
 } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
+import { LegalTextSchema } from "@altnovatrail/contracts/novatrail/api/v1/legal_pb.js";
 import { create } from "@bufbuild/protobuf";
 import { userEvent } from "vitest/browser";
 import {
@@ -23,6 +24,7 @@ import {
   LearnerProvider,
   OwnerProfileScreen,
   SignOutScreen,
+  type TextsRead,
 } from "../account/AccountGate.tsx";
 import { ApiProvider } from "../api/ApiContext.tsx";
 import type { Api } from "../api/client.ts";
@@ -196,6 +198,35 @@ const JUDGED = verdictsOf(
   TASK,
 );
 
+/** The legal texts of the account, synthetic: the policy with a translation and a table. */
+const TEXTS: TextsRead = {
+  status: "done",
+  value: [
+    create(LegalTextSchema, {
+      id: "privacy-policy",
+      version: 2,
+      body: "# Privacy Policy\n\n## What we keep\n\nLittle, and **not** for long.\n\n- one\n- two\n",
+      summary: "We keep little.",
+      summaryLanguage: "en",
+      translation: "# Политика конфиденциальности\n\nМы храним мало.\n",
+      translationLanguage: "ru",
+    }),
+    create(LegalTextSchema, {
+      id: "terms-of-use",
+      version: 1,
+      body: "# Terms of Use\n\n| Who | What |\n|---|---|\n| You | Learn |\n",
+      summary: "The terms.",
+      summaryLanguage: "en",
+    }),
+  ],
+  retry: () => {},
+};
+
+/** Every legal text of the screen, opened. */
+async function openTexts(): Promise<void> {
+  for (const summary of document.querySelectorAll("summary")) await userEvent.click(summary);
+}
+
 /** Presses a form's button, so that every field shows its error. */
 async function submit(): Promise<void> {
   const button = document.querySelector<HTMLButtonElement>("button[type=submit]");
@@ -232,8 +263,26 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
       />
     ),
   ],
-  ["invite code", () => <InviteScreen onCreate={async () => "done"} />],
-  ["invite code with its errors", () => <InviteScreen onCreate={async () => "done"} />, submit],
+  ["invite code", () => <InviteScreen texts={TEXTS} onCreate={async () => "done"} />],
+  [
+    "invite code with its texts open",
+    () => <InviteScreen texts={TEXTS} onCreate={async () => "done"} />,
+    openTexts,
+  ],
+  [
+    "invite code with its errors",
+    () => <InviteScreen texts={TEXTS} onCreate={async () => "done"} />,
+    submit,
+  ],
+  [
+    "invite code whose texts could not be read",
+    () => (
+      <InviteScreen
+        texts={{ status: "failed", failure: { kind: "offline" }, retry: () => {} }}
+        onCreate={async () => "done"}
+      />
+    ),
+  ],
   ["owner's profile", () => <OwnerProfileScreen onCreate={async () => "done"} />],
   [
     "owner's profile with its errors",

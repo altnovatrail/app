@@ -1,6 +1,6 @@
 // The element <novatrail-canvas> in React's JSX, as its contract with app has it (R74 in spec;
 // section 3.1 of docs/architecture.md). The types are spec's, of @altnovatrail/spec/canvas at the
-// tag of the spec submodule, 0.13.0; canvas's element is typed by its own copy, 0.12.0. The types
+// tag of the spec submodule, 0.15.0; canvas's element is typed by its own copy, 0.12.0. The types
 // being structural, ElementHoldsContract below fails to compile when the two part ways (R73 in
 // spec; R15).
 // React 19 sets a property the element has, and listens for an event by the name after `on`, as

@@ -1,13 +1,18 @@
 // The way into the app (sections 3.2, 3.6 and 3.10 of docs/architecture.md; R19 in
-// docs/decisions.md): the sign-in, the invite code of a user with no account, the owner's own
-// profile, the choice of the learner and the sign-out, each a screen of its own in the language of
-// the device. The app below it opens only once a learner is chosen, so that nothing of it opens
+// docs/decisions.md): the sign-in, the invite code of a user with no account with the legal texts it
+// accepts (R27), the owner's own profile, the choice of the learner and the sign-out, each a screen
+// of its own in the language of the device. The app below it opens only once a learner is chosen, so that nothing of it opens
 // before the device has erased what an account other than the one api names left there.
 import type { Profile } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
+import type {
+  LegalText as LegalTextOf,
+  LegalTextRef,
+} from "@altnovatrail/contracts/novatrail/api/v1/legal_pb.js";
 import {
   createContext,
   type FormEvent,
   type ReactNode,
+  useCallback,
   useContext,
   useEffect,
   useId,
@@ -16,13 +21,16 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
-import { useApi } from "../api/ApiContext.tsx";
+import { type RequestState, useApi, useRequest } from "../api/ApiContext.tsx";
+import type { Api } from "../api/client.ts";
 import type { Failure } from "../api/failure.ts";
 import { failureText } from "../api/words.ts";
 import { Screen } from "../app/Screen.tsx";
 import { useDeployment, useStorage } from "../boot/Boot.tsx";
 import { Offline, StorageGone } from "../boot/Screens.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
+import { LegalText } from "../legal/LegalText.tsx";
+import { accountTexts, readTexts, refsOf } from "../legal/texts.ts";
 import { usePackages } from "../packages/PackagesContext.tsx";
 import { useSignIn } from "../signin/SignInContext.tsx";
 import { SignInScreen } from "../signin/SignInScreen.tsx";
@@ -124,7 +132,7 @@ export function AccountGate({ children }: { readonly children: ReactNode }) {
         </Screen>
       );
     case "invite":
-      return <InviteScreen onCreate={(code) => session.createAccount(code)} />;
+      return <InviteStep session={session} />;
     case "owner-profile":
       return (
         <OwnerProfileScreen
@@ -171,37 +179,89 @@ function described(...ids: (string | false)[]): string | undefined {
   return named.length === 0 ? undefined : named.join(" ");
 }
 
-/** The invite code and the owner's statement of being 18 or older (R118 in spec). */
+/** The legal texts of the account, read in the language of the screen, and the screen with them. */
+function InviteStep({ session }: { readonly session: Session }) {
+  const { language } = useLanguage();
+  const read = useCallback(
+    async (api: Api) => accountTexts(await readTexts(api, language)),
+    [language],
+  );
+  const texts = useRequest(read);
+  return (
+    <InviteScreen
+      texts={texts}
+      onCreate={(code, accepted) => session.createAccount(code, accepted)}
+    />
+  );
+}
+
+/** The legal texts as a read gives them: read, being read, or a failure with its retry. */
+export type TextsRead = RequestState<readonly LegalTextOf[]> & { readonly retry: () => void };
+
+/**
+ * The invite code, the owner's statement of being 18 or older (R118 in spec), and their acceptance
+ * of the privacy policy and the terms of use in force, each open in place (R131 in spec; R27). While
+ * none is in force there is nothing to accept; while the texts are not read, nothing is sent. The
+ * acceptance holds for the versions it was given for: other versions shown take it back.
+ */
 export function InviteScreen({
+  texts,
   onCreate,
 }: {
-  readonly onCreate: (code: string) => Promise<"done" | "code-not-accepted" | Failure>;
+  readonly texts: TextsRead;
+  readonly onCreate: (
+    code: string,
+    accepted: readonly Pick<LegalTextRef, "id" | "version">[],
+  ) => Promise<"done" | "code-not-accepted" | "text-not-current" | Failure>;
 }) {
   const { words } = useLanguage();
   const id = useId();
   const codeField = useRef<HTMLInputElement>(null);
   const adultField = useRef<HTMLInputElement>(null);
+  const textsField = useRef<HTMLInputElement>(null);
+  // While the texts are read anew, those read before stay, so that the checkbox keeps its place.
+  const before = useRef<readonly LegalTextOf[]>([]);
+  if (texts.status === "done") before.current = texts.value;
+  const shown =
+    texts.status === "failed" ? [] : texts.status === "done" ? texts.value : before.current;
   const [code, setCode] = useState("");
   const [adult, setAdult] = useState(false);
+  // The versions the owner ticked the checkbox for, as one key: other versions shown are unticked.
+  const versions = refsOf(shown)
+    .map(({ id: text, version }) => `${text} ${version}`)
+    .join(" ");
+  const [acceptedFor, setAcceptedFor] = useState<string | undefined>(undefined);
+  const accepted = acceptedFor === versions;
   const [codeError, setCodeError] = useState<string | undefined>(undefined);
   const [adultError, setAdultError] = useState(false);
+  const [textsError, setTextsError] = useState<string | undefined>(undefined);
   const [failure, setFailure] = useState<Failure | undefined>(undefined);
   const [pending, setPending] = useState(false);
 
   async function submit(event: FormEvent) {
+    // Until the texts are read the button is off, and so is the form's submission by Enter.
     event.preventDefault();
     const noCode = code.trim() === "" ? words.text("account.code-needed") : undefined;
+    const noTexts = shown.length > 0 && !accepted ? words.text("account.texts-needed") : undefined;
     setCodeError(noCode);
     setAdultError(!adult);
+    setTextsError(noTexts);
     setFailure(undefined);
     if (noCode !== undefined) return codeField.current?.focus();
     if (!adult) return adultField.current?.focus();
+    if (noTexts !== undefined) return textsField.current?.focus();
     setPending(true);
-    const result = await onCreate(code.trim());
+    const result = await onCreate(code.trim(), refsOf(shown));
     setPending(false);
     if (result === "code-not-accepted") {
       setCodeError(words.text("account.code-not-accepted"));
       codeField.current?.focus();
+    } else if (result === "text-not-current") {
+      // The current versions are read again, and accepted again once they are shown.
+      setAcceptedFor(undefined);
+      setTextsError(words.text("account.texts-changed"));
+      texts.retry();
+      textsField.current?.focus();
     } else if (result !== "done") {
       setFailure(result);
     }
@@ -250,9 +310,50 @@ export function InviteScreen({
             </p>
           ) : null}
         </div>
-        <button type="submit" disabled={pending}>
+        {texts.status === "failed" ? (
+          <div className="nt-field">
+            <p role="alert" className="nt-error">
+              {failureText(texts.failure, words)}
+            </p>
+            <button type="button" onClick={texts.retry}>
+              {words.text("boot.retry")}
+            </button>
+          </div>
+        ) : null}
+        {shown.length === 0 ? null : (
+          <div className="nt-field">
+            <h2>{words.text("account.texts-title")}</h2>
+            {shown.map((text) => (
+              <LegalText key={text.id} text={text} level={3} />
+            ))}
+            <div className="nt-check">
+              <input
+                ref={textsField}
+                id={`${id}-texts`}
+                type="checkbox"
+                checked={accepted}
+                aria-invalid={textsError !== undefined}
+                aria-describedby={described(textsError !== undefined && `${id}-texts-error`)}
+                onChange={(event) => setAcceptedFor(event.target.checked ? versions : undefined)}
+              />
+              <label htmlFor={`${id}-texts`}>{words.text("account.texts")}</label>
+            </div>
+            {textsError === undefined ? null : (
+              <p id={`${id}-texts-error`} className="nt-error">
+                {textsError}
+              </p>
+            )}
+          </div>
+        )}
+        <button type="submit" disabled={pending || texts.status !== "done"}>
           {words.text("account.create")}
         </button>
+        {/* api has texts in force that the screen did not get to show: said all the same. */}
+        {shown.length === 0 && textsError !== undefined ? (
+          <p role="alert" className="nt-error">
+            {textsError}
+          </p>
+        ) : null}
         <FormFailure failure={failure} />
       </form>
     </Screen>

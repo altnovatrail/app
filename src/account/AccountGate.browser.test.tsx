@@ -18,6 +18,10 @@ import {
   BeginAttemptResponseSchema,
   ChooseNextResponseSchema,
 } from "@altnovatrail/contracts/novatrail/api/v1/learning_pb.js";
+import {
+  GetLegalTextsRequestSchema,
+  GetLegalTextsResponseSchema,
+} from "@altnovatrail/contracts/novatrail/api/v1/legal_pb.js";
 import { CheckPackagesResponseSchema } from "@altnovatrail/contracts/novatrail/api/v1/package_pb.js";
 import {
   create,
@@ -50,6 +54,32 @@ const FILE = {
 };
 
 const OWNER = { profileId: "p1", owner: true, pseudonym: "Ёжик", ageCategory: "adult" };
+
+/** The texts of the account, synthetic: the policy with a translation into Russian. */
+function texts(language: string, policy = 2) {
+  const ru = language === "ru";
+  return message(GetLegalTextsResponseSchema, {
+    texts: [
+      {
+        id: "privacy-policy",
+        version: policy,
+        body: "# Privacy Policy\n\nWe keep **little**. See <b>this</b> and [a link](https://example.org).\n",
+        summary: ru ? "Мы храним мало." : "We keep little.",
+        summaryLanguage: ru ? "ru" : "en",
+        ...(ru
+          ? { translation: "# Политика\n\nМы храним мало данных.\n", translationLanguage: "ru" }
+          : {}),
+      },
+      {
+        id: "terms-of-use",
+        version: 1,
+        body: "# Terms of Use\n\n| Who | What |\n|---|---|\n| You | Learn |\n",
+        summary: ru ? "Условия." : "The terms.",
+        summaryLanguage: ru ? "ru" : "en",
+      },
+    ],
+  });
+}
 
 function message<S extends DescMessage>(schema: S, init: MessageInitShape<S>): Response {
   return new Response(toBinary(schema, create(schema, init)), {
@@ -91,10 +121,18 @@ function renderApp(
   routes: Record<string, Route>,
   service: FakeSignIn,
   device = memoryDevice().device,
+  languages: readonly string[] = ["en"],
 ) {
   const asked: string[] = [];
   const apiFetch = vi.fn<typeof fetch>(async (input, init) => {
-    const method = String(input).split("/").at(-1) ?? "";
+    // A request by Connect GET holds its message in the address, after the method.
+    const [path = "", query = ""] = String(input).split("?");
+    const method = path.split("/").at(-1) ?? "";
+    if (query !== "") {
+      const message = new URLSearchParams(query).get("message") ?? "";
+      const binary = atob(message.replaceAll("-", "+").replaceAll("_", "/"));
+      init = { ...init, body: Uint8Array.from(binary, (c) => c.charCodeAt(0)) };
+    }
     asked.push(method);
     // The routes go by the method's name as the client of connect-es calls it.
     const route = routes[method.charAt(0).toLowerCase() + method.slice(1)];
@@ -106,7 +144,7 @@ function renderApp(
     <Boot
       framed={false}
       origin="https://app.example.org"
-      languages={["en"]}
+      languages={languages}
       device={device}
       fetcher={async () =>
         new Response(JSON.stringify(FILE), { headers: { "content-type": "application/json" } })
@@ -131,9 +169,12 @@ describe("the way in", () => {
     const service = fakeSignIn(null);
     let profiles: MessageInitShape<typeof GetAccountResponseSchema>["account"] | undefined;
     const codes: string[] = [];
+    const accepted: string[][] = [];
     const created: { country: string; pseudonym: string | undefined }[] = [];
     const { asked } = renderApp(
       {
+        getLegalTexts: (body) =>
+          texts(fromBinary(GetLegalTextsRequestSchema, body).interfaceLanguage),
         getAccount: () =>
           profiles === undefined
             ? refusal("permission_denied", Cause.NO_ACCESS)
@@ -141,6 +182,7 @@ describe("the way in", () => {
         createAccount: (body) => {
           const request = fromBinary(CreateAccountRequestSchema, body);
           codes.push(request.inviteCode);
+          accepted.push(request.acceptedTexts.map(({ id, version }) => `${id} ${version}`));
           expect(request.adultStated).toBe(true);
           if (request.inviteCode !== "0123-4567-89AB-CDEF") {
             return refusal("invalid_argument", Cause.CODE_NOT_ACCEPTED);
@@ -180,6 +222,34 @@ describe("the way in", () => {
     expect(document.activeElement).toBe(adult);
     expect(codes).toEqual([]);
     await userEvent.click(adult);
+    // The texts in force, each open in place, and the owner's acceptance of both.
+    expect(
+      screen.getByRole("heading", { level: 2, name: "Privacy Policy and Terms of Use" }),
+    ).toBeTruthy();
+    const accept = screen.getByRole("checkbox", {
+      name: "I accept the Privacy Policy and the Terms of Use",
+    });
+    await userEvent.click(screen.getByRole("button", { name: "Create account" }));
+    expect(accept).toHaveAccessibleDescription(
+      "To create an account, accept the Privacy Policy and the Terms of Use",
+    );
+    expect(document.activeElement).toBe(accept);
+    expect(codes).toEqual([]);
+    await userEvent.click(screen.getByText("Privacy Policy", { selector: "summary span" }));
+    expect(screen.getByText("We keep little.")).toBeVisible();
+    expect(screen.getByRole("heading", { level: 3, name: "Privacy Policy" })).toBeTruthy();
+    // What the part refuses is text: no link, and no HTML of the body.
+    const body = screen.getByText(
+      (_, element) =>
+        element?.tagName === "P" &&
+        element.textContent === "We keep little. See <b>this</b> and a link.",
+    );
+    expect(body.closest("section")).toHaveAttribute("lang", "en");
+    expect(document.querySelector("main a, main b")).toBeNull();
+    expect(
+      screen.queryByText("The text is in English, and the English text is the one in force"),
+    ).toBeNull();
+    await userEvent.click(accept);
     await userEvent.click(screen.getByRole("button", { name: "Create account" }));
     await vi.waitFor(() =>
       expect(code).toHaveAccessibleDescription("This code isn't valid or has been used"),
@@ -188,6 +258,7 @@ describe("the way in", () => {
     await userEvent.type(code, " 0123-4567-89AB-CDEF ");
     await userEvent.click(screen.getByRole("button", { name: "Create account" }));
     expect(codes).toEqual(["WRONG", "0123-4567-89AB-CDEF"]);
+    expect(accepted[1]).toEqual(["privacy-policy 2", "terms-of-use 1"]);
 
     // The owner's profile: a pseudonym of 1 to 30 characters, and a country api takes.
     expect(
@@ -239,6 +310,7 @@ describe("the way in", () => {
     // package to ask about.
     expect(asked).toEqual([
       "GetAccount",
+      "GetLegalTexts",
       "CreateAccount",
       "CreateAccount",
       "CreateOwnerProfile",
@@ -246,6 +318,99 @@ describe("the way in", () => {
       "GetAccount",
       "ListConnectedModules",
       "ListCatalog",
+    ]);
+  });
+
+  it("shows the texts on a Russian screen with their translation, and anew when api has newer ones", async () => {
+    const service = fakeSignIn("uid-1");
+    let policy = 2;
+    let down = true;
+    const accepted: string[][] = [];
+    renderApp(
+      {
+        getLegalTexts: (body) => {
+          if (down) {
+            return new Response(JSON.stringify({ code: "internal", message: "down" }), {
+              status: 500,
+              headers: { "content-type": "application/json" },
+            });
+          }
+          return texts(fromBinary(GetLegalTextsRequestSchema, body).interfaceLanguage, policy);
+        },
+        getAccount: () => refusal("permission_denied", Cause.NO_ACCESS),
+        createAccount: (body) => {
+          const request = fromBinary(CreateAccountRequestSchema, body);
+          accepted.push(request.acceptedTexts.map(({ id, version }) => `${id} ${version}`));
+          if (request.acceptedTexts[0]?.version !== policy) {
+            return refusal("failed_precondition", Cause.TEXT_NOT_CURRENT);
+          }
+          return refusal("invalid_argument", Cause.CODE_NOT_ACCEPTED);
+        },
+      },
+      service,
+      memoryDevice().device,
+      ["ru"],
+    );
+    expect(await screen.findByRole("heading", { level: 1, name: "Инвайт-код" })).toBeTruthy();
+    // Texts that could not be read: nothing is sent, and a retry asks again.
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Эта версия приложения этого ещё не знает",
+    );
+    expect(screen.getByRole("button", { name: "Завести аккаунт" })).toBeDisabled();
+    down = false;
+    await userEvent.click(screen.getByRole("button", { name: "Повторить" }));
+    const accept = await screen.findByRole("checkbox", {
+      name: "Принимаю политику конфиденциальности и условия использования",
+    });
+    // The gist in Russian, the line that the English text is in force, the translation and the text.
+    await userEvent.click(screen.getByText("Privacy Policy", { selector: "summary span" }));
+    expect(screen.getByText("Privacy Policy", { selector: "summary span" })).toHaveAttribute(
+      "lang",
+      "en",
+    );
+    expect(screen.getByText("Мы храним мало.", { selector: "section > p" })).toHaveAttribute(
+      "lang",
+      "ru",
+    );
+    expect(
+      screen.getAllByText("Текст — на английском, и в силе английский текст")[0],
+    ).toBeVisible();
+    expect(screen.getByRole("region", { name: "Перевод, только для чтения" })).toHaveAttribute(
+      "lang",
+      "ru",
+    );
+    expect(screen.getByRole("heading", { level: 3, name: "Политика" })).toBeTruthy();
+    expect(
+      screen.getAllByRole("region", { name: "Текст в силе, на английском" })[0],
+    ).toHaveAttribute("lang", "en");
+    // The terms' table, with its header.
+    await userEvent.click(screen.getByText("Terms of Use", { selector: "summary span" }));
+    expect(screen.getByRole("columnheader", { name: "Who" })).toBeTruthy();
+    expect(screen.getByRole("cell", { name: "Learn" })).toBeTruthy();
+
+    // api has a newer policy: the screen reads it, unticks, and says so.
+    await userEvent.type(screen.getByRole("textbox", { name: "Инвайт-код" }), "CODE");
+    await userEvent.click(screen.getByRole("checkbox", { name: "Мне 18 лет или больше" }));
+    await userEvent.click(accept);
+    policy = 3;
+    await userEvent.click(screen.getByRole("button", { name: "Завести аккаунт" }));
+    // The texts are read anew: their checkbox stays, unticked, with focus and the reason.
+    await vi.waitFor(() =>
+      expect(accept).toHaveAccessibleDescription(
+        "Тексты обновились. Нужно прочитать их снова и принять",
+      ),
+    );
+    expect(accept).not.toBeChecked();
+    expect(document.activeElement).toBe(accept);
+    await vi.waitFor(() =>
+      expect(screen.getByRole("button", { name: "Завести аккаунт" })).toBeEnabled(),
+    );
+    await userEvent.click(accept);
+    await userEvent.click(screen.getByRole("button", { name: "Завести аккаунт" }));
+    await vi.waitFor(() => expect(accepted).toHaveLength(2));
+    expect(accepted).toEqual([
+      ["privacy-policy 2", "terms-of-use 1"],
+      ["privacy-policy 3", "terms-of-use 1"],
     ]);
   });
 

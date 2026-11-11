@@ -11,18 +11,19 @@
   "type": "module",
   "dependencies": {
     "@altnovatrail/canvas": "0.3.4",
-    "@altnovatrail/contracts": "0.13.0",
+    "@altnovatrail/contracts": "0.15.0",
     "@bufbuild/protobuf": "2.16.0",
     "@connectrpc/connect": "2.3.0",
     "@connectrpc/connect-web": "2.3.0",
     "@firebase/app": "0.16.5",
     "@firebase/auth": "1.13.9",
     "@iconify-json/material-symbols": "1.2.97",
+    "marked": "18.1.3",
     "react": "19.3.1",
     "react-dom": "19.3.1"
   },
   "devDependencies": {
-    "@altnovatrail/spec": "0.13.0",
+    "@altnovatrail/spec": "0.15.0",
     "@biomejs/biome": "2.6.6",
     "@iconify/utils": "3.1.7",
     "@testing-library/dom": "10.4.2",
