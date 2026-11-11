@@ -15,7 +15,7 @@ import { failureText } from "../api/words.ts";
 import { LESSON, navigate, TASK } from "../app/router.ts";
 import { Screen } from "../app/Screen.tsx";
 import { ReadFailed } from "../boot/Screens.tsx";
-import { collator, languageNames } from "../i18n/intl.ts";
+import { collator, languageName } from "../i18n/intl.ts";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import type { Language } from "../i18n/language.ts";
 import { type RunRef, useLessons } from "../lesson/LessonContext.tsx";
@@ -36,7 +36,7 @@ function isScreenLanguage(tag: string, language: Language): boolean {
 /** A language's name in the screen's language; a tag Intl cannot read stands for itself. */
 function nameOf(tag: string, language: Language): string {
   try {
-    return languageNames(language).of(tag) ?? tag;
+    return languageName(language, tag) ?? tag;
   } catch {
     return tag;
   }
