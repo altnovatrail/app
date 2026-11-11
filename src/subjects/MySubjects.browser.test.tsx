@@ -18,11 +18,13 @@ import { describe, expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 import { ApiProvider } from "../api/ApiContext.tsx";
 import { createApi } from "../api/client.ts";
+import { LessonProvider } from "../lesson/LessonContext.tsx";
 import { PackageChecks } from "../packages/checks.ts";
 import { DeviceFiles } from "../packages/files.ts";
 import { PackagesProvider } from "../packages/PackagesContext.tsx";
 import { OpenViews } from "../packages/views.ts";
 import { openCache } from "../storage/cache.ts";
+import { addProfile } from "../storage/profile.ts";
 import { setAccount } from "../storage/registry.ts";
 import { AttemptProvider } from "../task/AttemptContext.tsx";
 import { memoryDevice } from "../test/device.ts";
@@ -72,6 +74,8 @@ interface Setup {
   attempt?: string;
   /** What the cache keeps before the screen opens. */
   seed?: (device: ReturnType<typeof memoryDevice>["device"]) => Promise<void>;
+  /** The lesson runs the learner has open. */
+  runs?: { lessonRunId: string; lesson: string; packageDigest: string }[];
 }
 
 async function renderSubjects(setup: Setup, language: "en" | "ru" = "en") {
@@ -143,7 +147,19 @@ async function renderSubjects(setup: Setup, language: "en" | "ru" = "en") {
                   })
             }
           >
-            <MySubjects profileId={LEARNER.profileId} />
+            {setup.runs === undefined ? (
+              <MySubjects profileId={LEARNER.profileId} />
+            ) : (
+              <LessonProvider
+                learner={create(ProfileSchema, {
+                  profileId: LEARNER.profileId,
+                  pseudonym: LEARNER.pseudonym,
+                  openLessonRuns: setup.runs,
+                })}
+              >
+                <MySubjects profileId={LEARNER.profileId} device={device} />
+              </LessonProvider>
+            )}
           </AttemptProvider>
         </PackagesProvider>
       </ApiProvider>,
@@ -328,5 +344,42 @@ describe("My subjects", () => {
       await screen.findByRole("heading", { level: 1, name: "There is a new version of the app" }),
     ).toBeTruthy();
     expect(screen.getByRole("button", { name: "Try again" })).toBeTruthy();
+  });
+});
+
+describe("the lessons open", () => {
+  it("names each by its title on this device, or by its module, and goes on with it", async () => {
+    const kept = { lessonRunId: "r1", lesson: `${MATH}/lesson/gaps-and-posts`, packageDigest: D1 };
+    const bare = { lessonRunId: "r2", lesson: `${PHYSICS}/lesson/levers`, packageDigest: D2 };
+    await renderSubjects({
+      runs: [kept, bare],
+      seed: async (device) => {
+        const profile = await addProfile(device, "p1");
+        await profile?.saveLesson({
+          lessonId: kept.lesson,
+          digest: D1,
+          passageId: "r1",
+          view: { id: "gaps-and-posts", title: "Gaps and posts", segments: [{ task: "t" }] },
+          place: 1,
+          demo: {},
+        });
+      },
+    });
+    const section = within(await screen.findByRole("region", { name: "A lesson in progress" }));
+    const title = await section.findByRole("heading", { level: 3, name: "Gaps and posts" });
+    expect(title.querySelector("[lang]")).toHaveAttribute("lang", "en");
+    const other = await section.findByRole("heading", { level: 3, name: "A lesson: Физика" });
+    expect(other.querySelector("[lang]")).toHaveAttribute("lang", "ru");
+    const buttons = section.getAllByRole("button", { name: "Continue the lesson" });
+    expect(buttons[1]).toHaveAccessibleDescription("A lesson: Физика");
+    await userEvent.click(buttons[0] as HTMLButtonElement);
+    expect(window.location.hash).toBe("#/lesson");
+    window.location.hash = "";
+  });
+
+  it("shows no lesson when the learner has none open", async () => {
+    await renderSubjects({ runs: [] });
+    await screen.findByRole("heading", { level: 1, name: "My subjects" });
+    expect(screen.queryByRole("region", { name: "A lesson in progress" })).toBeNull();
   });
 });

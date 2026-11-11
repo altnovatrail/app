@@ -310,6 +310,60 @@ describe("the way in", () => {
     window.location.hash = "";
   });
 
+  it("goes on with a lesson GetAccount names open, and home once api says it ended", async () => {
+    const service = fakeSignIn("uid-1");
+    const run = {
+      lessonRunId: "r1",
+      lesson: "example/with-lessons/lesson/gaps-and-posts",
+      packageDigest: `sha256:${"1".repeat(64)}`,
+    };
+    const owner = { ...OWNER, openLessonRuns: [run] };
+    const account = { accountId: "account-1", profiles: [owner] };
+    const { asked } = renderApp(
+      {
+        getAccount: () => message(GetAccountResponseSchema, { account }),
+        getLessonRun: () => refusal("failed_precondition", Cause.RUN_ENDED),
+      },
+      service,
+    );
+    await userEvent.click(await screen.findByRole("button", { name: "Ёжик" }));
+    expect(
+      await screen.findByRole("heading", { level: 2, name: "A lesson in progress" }),
+    ).toBeTruthy();
+    // No state of the run on this device, and no manifest: the lesson by its module's ID.
+    expect(
+      await screen.findByRole("heading", { level: 3, name: "A lesson: example/with-lessons" }),
+    ).toBeTruthy();
+    await userEvent.click(screen.getByRole("button", { name: "Continue the lesson" }));
+    expect(window.location.hash).toBe("#/lesson");
+    expect(
+      await screen.findByRole("heading", { level: 1, name: "This lesson is over" }),
+    ).toBeTruthy();
+    expect(asked).toContain("GetLessonRun");
+    await userEvent.click(screen.getByRole("button", { name: "Back to My subjects" }));
+    expect(await screen.findByRole("heading", { level: 1, name: "My subjects" })).toBeTruthy();
+    // The run is over: nothing to go on with, after switching the learner and back too.
+    expect(screen.queryByRole("button", { name: "Continue the lesson" })).toBeNull();
+    await userEvent.click(screen.getByRole("button", { name: "Switch learner" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Ёжик" }));
+    expect(await screen.findByRole("heading", { level: 1, name: "My subjects" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Continue the lesson" })).toBeNull();
+    window.location.hash = "";
+  });
+
+  it("goes home from the lesson player when the learner chose no lesson", async () => {
+    window.location.hash = "#/lesson";
+    const entries = window.history.length;
+    const service = fakeSignIn("uid-1");
+    const account = { accountId: "account-1", profiles: [OWNER] };
+    renderApp({ getAccount: () => message(GetAccountResponseSchema, { account }) }, service);
+    await userEvent.click(await screen.findByRole("button", { name: "Ёжик" }));
+    expect(await screen.findByRole("heading", { level: 1, name: "My subjects" })).toBeTruthy();
+    expect(window.location.hash).toBe("#/home");
+    expect(window.history.length).toBe(entries);
+    window.location.hash = "";
+  });
+
   it("names what the sign-out takes, comes back on Cancel, and erases on Sign out and erase", async () => {
     const { device } = memoryDevice();
     const service = fakeSignIn("uid-1");

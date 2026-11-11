@@ -1,7 +1,10 @@
 // The failure screens (sections 3.2 and 3.7 of docs/architecture.md): static, from the build itself,
 // in the language of the device, before any profile or sign-in. Each is a screen of its own, with
 // its heading (section 3.9); their words are the dictionaries' (section 3.8), and the line for
-// whoever deployed the copy is English on every screen (the 2026-11-02 amendment to R09).
+// whoever deployed the copy is English on every screen (the 2026-11-02 amendment to R09). A read of
+// a learner's screen that did not answer is one of them too: no connection, or what it came to.
+import type { Failure } from "../api/failure.ts";
+import { failureText } from "../api/words.ts";
 import { Screen } from "../app/Screen.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 
@@ -21,6 +24,25 @@ export function Offline({ onRetry }: { readonly onRetry: () => void }) {
   const { words } = useLanguage();
   return (
     <Screen title={words.text("boot.offline")}>
+      <button type="button" onClick={onRetry}>
+        {words.text("boot.retry")}
+      </button>
+    </Screen>
+  );
+}
+
+/** A screen's read did not answer: no connection, or the words of what it came to, and Try again. */
+export function ReadFailed({
+  failure,
+  onRetry,
+}: {
+  readonly failure: Failure;
+  readonly onRetry: () => void;
+}) {
+  const { words } = useLanguage();
+  if (failure.kind === "offline") return <Offline onRetry={onRetry} />;
+  return (
+    <Screen title={failureText(failure, words)}>
       <button type="button" onClick={onRetry}>
         {words.text("boot.retry")}
       </button>

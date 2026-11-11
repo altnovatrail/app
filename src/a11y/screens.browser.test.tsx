@@ -10,6 +10,7 @@ import { page } from "vitest/browser";
 import "../theme/theme.css";
 import { ProfileSchema } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import { ItemVerdictSchema } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
+import { RunEndReason } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import { create } from "@bufbuild/protobuf";
 import { userEvent } from "vitest/browser";
 import {
@@ -30,6 +31,10 @@ import {
 } from "../boot/Screens.tsx";
 import type { Language } from "../i18n/language.ts";
 import { WORDS, wordsOf } from "../i18n/words.ts";
+import { Example } from "../lesson/Example.tsx";
+import { Explanation } from "../lesson/Explanation.tsx";
+import { LessonEnd } from "../lesson/Lesson.tsx";
+import { LessonScreen, type LessonScreenProps } from "../lesson/LessonScreen.tsx";
 import { SignInScreen } from "../signin/SignInScreen.tsx";
 import { SubjectsScreen } from "../subjects/MySubjects.tsx";
 import { NO_VERDICTS, verdictsOf } from "../task/attempt.ts";
@@ -130,6 +135,30 @@ function taskScreen(props: Partial<TaskScreenProps> = {}) {
     />
   );
 }
+
+/** The lesson player on a segment of the lesson of section 3.4, with the segment given. */
+function lessonScreen(children: ReactNode, props: Partial<LessonScreenProps> = {}) {
+  return (
+    <LessonScreen
+      title="Gaps and posts"
+      language="en"
+      course={{ kinds: ["explanation", "example", "task", "explanation"], ended: new Set() }}
+      place={2}
+      shown={2}
+      unsaved={false}
+      pending={false}
+      onContinue={() => {}}
+      onGoTo={() => {}}
+      onNote={() => {}}
+      onLeave={() => {}}
+      {...props}
+    >
+      {children}
+    </LessonScreen>
+  );
+}
+
+const noMedia = () => Promise.reject(new Error("no file in this test"));
 
 const JUDGED = verdictsOf(
   [
@@ -377,6 +406,80 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
         shown: true,
         solution: [{ text: "Two and three make five." }],
       }),
+  ],
+  [
+    "lesson on an explanation, with its picture and numbered list",
+    () =>
+      lessonScreen(
+        <Explanation
+          parts={[
+            { text: "A fence has posts and gaps between them." },
+            { picture: "fence.png", alt: "A fence of four posts", width: 400, height: 100 },
+            { numbered_list: ["Count the gaps.", "Add one for the posts."] },
+          ]}
+          language="en"
+          media={noMedia}
+        />,
+        { place: 1, shown: 1 },
+      ),
+  ],
+  [
+    "lesson on a worked example, back from its task, a write not saved",
+    () =>
+      lessonScreen(
+        <Example
+          example={{
+            statement: [{ text: "A path is 20 m long, with a tree every 5 m." }],
+            canvas: { kind: "handwriting_sheet", grid: "squares" },
+            demo: [{ text: "20 ÷ 5 = 4 gaps." }, { text: "5 trees." }],
+          }}
+          manifest={undefined}
+          media={noMedia}
+          demo={{ opened: 1, hidden: false }}
+          onDemo={() => {}}
+        />,
+        { place: 3, shown: 2, unsaved: true, note: "Not open yet" },
+      ),
+  ],
+  [
+    "lesson on its task, solved, with Continue",
+    () =>
+      lessonScreen(taskScreen({ inLesson: true, solution: [{ text: "Four gaps." }] }), {
+        course: { kinds: ["explanation", "example", "task", "explanation"], ended: new Set([3]) },
+        place: 4,
+        shown: 3,
+      }),
+  ],
+  [
+    "lesson on a task that did not begin, with Begin the task again",
+    () =>
+      lessonScreen(null, {
+        place: 3,
+        shown: 3,
+        failure: { kind: "offline" },
+        onAgain: () => {},
+      }),
+  ],
+  [
+    "lesson complete",
+    () => <LessonEnd reason={RunEndReason.PASSED} title="Gaps and posts" language="en" />,
+  ],
+  ["lesson ended by api", () => <LessonEnd reason={RunEndReason.ABANDONED} />],
+  [
+    "My subjects with lessons in progress",
+    () => (
+      <SubjectsScreen
+        connected={[]}
+        catalog={[]}
+        onConnect={() => {}}
+        onDisconnect={() => {}}
+        runs={[
+          { lessonRunId: "r1", title: "Gaps and posts", module: "Olympiad maths", language: "en" },
+          { lessonRunId: "r2", module: "Физика", language: "ru" },
+        ]}
+        onLesson={() => {}}
+      />
+    ),
   ],
   [
     "My subjects with none connected and an empty catalog",

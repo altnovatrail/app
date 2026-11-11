@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatHash, HOME, parseHash, SCREENS } from "./hash.ts";
+import { formatHash, HOME, LESSON, parseHash, SCREENS, TASK } from "./hash.ts";
 
 describe("parseHash", () => {
   it("gives the home screen for an empty hash, a bare # and a hash without a slash", () => {
@@ -33,6 +33,12 @@ describe("formatHash", () => {
     const route = { screen: "home", parts: ["a/b", "урок", "x y"] };
     expect(formatHash(route)).toBe("#/home/a%2Fb/%D1%83%D1%80%D0%BE%D0%BA/x%20y");
     expect(parseHash(formatHash(route))).toEqual(route);
+  });
+
+  it("knows the task screen and the lesson player, which name no attempt and no run", () => {
+    expect(parseHash("#/task")).toEqual(TASK);
+    expect(parseHash("#/lesson")).toEqual(LESSON);
+    expect(formatHash(LESSON)).toBe("#/lesson");
   });
 
   it("writes the home screen as #/home", () => {

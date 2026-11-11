@@ -15,9 +15,14 @@
 // leading question, after it the words of the current rung again; "Explain differently" asks the
 // same rung in other words, once on a rung; "Show the solution" — the learner's from the start of
 // the attempt if an adult, from the fourth wrong answer if a child — ends the attempt with its
-// solution (R82 in spec; R22).
+// solution (R82 in spec; R22). A task of a lesson is a segment of its run: under the lesson's header,
+// with no "Try it again", and what api says comes next after it goes up to the player (R23).
 import { Mode as ProfileMode } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
-import { Action, type WorkSchema } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
+import {
+  Action,
+  type Next,
+  type WorkSchema,
+} from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
 import { Cause, CloseReason } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import type { OpenAttempt } from "@altnovatrail/contracts/novatrail/api/v1/learning_pb.js";
 import type {
@@ -37,7 +42,7 @@ import { outcomeOf } from "../api/outcome.ts";
 import { failureText, outcomeText } from "../api/words.ts";
 import { HOME, navigate, redirect } from "../app/router.ts";
 import { Screen } from "../app/Screen.tsx";
-import { Offline } from "../boot/Screens.tsx";
+import { ReadFailed } from "../boot/Screens.tsx";
 import { keyFor } from "../i18n/codes.ts";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { usePackages } from "../packages/PackagesContext.tsx";
@@ -127,14 +132,36 @@ export interface TaskProps {
   readonly adult: boolean;
   /** The learner's open attempt changed: a new one began, or this one ended. */
   readonly onAttempt: (attemptId: string | undefined) => void;
+  /** The attempt is a task segment of a lesson run: the player's, under its header. */
+  readonly lesson?: TaskInLesson;
 }
 
-export function Task({ profileId, attemptId, defaultMode, device, adult, onAttempt }: TaskProps) {
+/** What the lesson player hears of a task of its run. */
+export interface TaskInLesson {
+  /** The task ended on this screen: what api said comes next, if it said. */
+  readonly onNext: (next: Next | undefined) => void;
+  /** The attempt was closed when it was read, or api closed it meanwhile. */
+  readonly onClosed: (reason: CloseReason) => void;
+}
+
+export function Task({
+  profileId,
+  attemptId,
+  defaultMode,
+  device,
+  adult,
+  onAttempt,
+  lesson,
+}: TaskProps) {
   const api = useApi();
   const { views, checks } = usePackages();
   const { words } = useLanguage();
   const [read, setRead] = useState<Read>({ status: "loading" });
   const [attempt, setAttempt] = useState(0);
+  // The lesson player, if the attempt is a task of its run: it hears of a closed attempt once,
+  // whichever way it came.
+  const player = useRef(lesson);
+  player.current = lesson;
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: a retry reads the attempt again.
   useEffect(() => {
@@ -154,6 +181,12 @@ export function Task({ profileId, attemptId, defaultMode, device, adult, onAttem
           if (current) setRead({ status: "closed", reason: closed });
         } else if (failure.kind === "refused" && failure.cause === Cause.NOT_FOUND) {
           if (!current) return;
+          if (player.current !== undefined) {
+            // In a lesson the attempt is the run's: the player asks the run what became of it.
+            await ended(CloseReason.UNSPECIFIED);
+            if (current) setRead({ status: "closed", reason: CloseReason.UNSPECIFIED });
+            return;
+          }
           onAttempt(undefined);
           redirect(HOME);
         } else if (current) setRead({ status: "failed", failure });
@@ -239,17 +272,34 @@ export function Task({ profileId, attemptId, defaultMode, device, adult, onAttem
 
   const again = useAgain(profileId, attemptId, onAttempt);
 
+  const closedReason = read.status === "closed" ? read.reason : undefined;
+  useEffect(() => {
+    if (closedReason !== undefined) player.current?.onClosed(closedReason);
+  }, [closedReason]);
+
   if (read.status === "loading") return null;
-  if (read.status === "failed") {
-    if (read.failure.kind === "offline")
-      return <Offline onRetry={() => setAttempt((n) => n + 1)} />;
-    return (
-      <Screen title={failureText(read.failure, words)}>
+  if (lesson !== undefined && read.status !== "ready") {
+    // Under a lesson's header: a line of the segment, not a screen of its own.
+    return read.status === "failed" ? (
+      <div className="nt-lesson-task">
+        <p role="alert" className="nt-error">
+          {failureText(read.failure, words)}
+        </p>
         <button type="button" onClick={() => setAttempt((n) => n + 1)}>
           {words.text("boot.retry")}
         </button>
-      </Screen>
+      </div>
+    ) : (
+      <div className="nt-lesson-task">
+        <p>{words.text("api.attempt-closed")}</p>
+        {read.reason === CloseReason.UNSPECIFIED ? null : (
+          <p>{words.text(keyFor(CLOSED_KEYS, read.reason))}</p>
+        )}
+      </div>
     );
+  }
+  if (read.status === "failed") {
+    return <ReadFailed failure={read.failure} onRetry={() => setAttempt((n) => n + 1)} />;
   }
   if (read.status === "closed") {
     return (
@@ -287,6 +337,7 @@ export function Task({ profileId, attemptId, defaultMode, device, adult, onAttem
       adult={adult}
       opened={read.opened}
       again={again}
+      {...(lesson === undefined ? {} : { lesson })}
       onEnded={ended}
       onClosed={(reason) => {
         void ended(reason, read.opened.profile).then(() => setRead({ status: "closed", reason }));
@@ -334,6 +385,7 @@ interface OpenTaskProps {
   readonly adult: boolean;
   readonly opened: Opened;
   readonly again: ReturnType<typeof useAgain>;
+  readonly lesson?: TaskInLesson;
   readonly onEnded: (reason: CloseReason, held?: Profile, correct?: number) => Promise<void>;
   readonly onClosed: (reason: CloseReason) => void;
 }
@@ -354,6 +406,7 @@ function OpenTask({
   adult,
   opened,
   again,
+  lesson,
   onEnded,
   onClosed,
 }: OpenTaskProps) {
@@ -654,6 +707,7 @@ function OpenTask({
           setTutorWords(undefined);
           await onEnded(CloseReason.CORRECT, profile, of.number);
           setSolution(parts);
+          lesson?.onNext(answer.next);
           correctWords(of);
         }
       } catch (reason) {
@@ -681,6 +735,7 @@ function OpenTask({
     correctWords,
     onEnded,
     onClosed,
+    lesson,
   ]);
 
   /** "Hint": api gives the task's techniques and question, or the words of the rung again. */
@@ -801,6 +856,7 @@ function OpenTask({
           await onEnded(CloseReason.SOLUTION_SHOWN, profile);
           setShown(true);
           setSolution(parts);
+          lesson?.onNext(answer.next);
         },
         (reason: unknown) => {
           const found = parseFailure(reason);
@@ -817,7 +873,7 @@ function OpenTask({
         },
       )
       .finally(() => setPending(false));
-  }, [api, views, profileId, attemptId, profile, words, pause, onEnded, onClosed]);
+  }, [api, views, profileId, attemptId, profile, words, pause, onEnded, onClosed, lesson]);
 
   // An adult may ask for the solution from the start of the attempt, a child from the fourth wrong
   // answer, once the ladder of hints is passed (R82 in spec).
@@ -870,6 +926,7 @@ function OpenTask({
       onCheck={check}
       onAgain={again.start}
       onHome={() => navigate(HOME)}
+      inLesson={lesson !== undefined}
     />
   );
 }

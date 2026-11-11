@@ -7,8 +7,9 @@
 // ends before it does (R22). Once the task is solved or its solution shown, the panel gives way to
 // its result: "Correct" or "Solution shown", the words after a correct answer if any came, the
 // solution, "Try it again" and the way back to My subjects; the options take no tap, and the canvas
-// stays as it was. What it shows it takes from its container, Task.tsx, which also gives the canvas
-// the tutor's marks.
+// stays as it was. Under a lesson's header it is no screen of its own, and its result ends with the
+// lesson's Continue in place of "Try it again" (R23). What it shows it takes from its container,
+// Task.tsx, which also gives the canvas the tutor's marks.
 import type {
   CanvasElement,
   HistoryChangeEvent,
@@ -16,7 +17,7 @@ import type {
   Media,
 } from "@altnovatrail/spec/canvas";
 import type * as open from "@altnovatrail/spec/formatv0/open";
-import { type Ref, useEffect, useId, useRef, useState } from "react";
+import { type ReactNode, type Ref, useEffect, useId, useRef, useState } from "react";
 import type { Failure } from "../api/failure.ts";
 import { failureText } from "../api/words.ts";
 import { Screen } from "../app/Screen.tsx";
@@ -86,6 +87,26 @@ export interface TaskScreenProps {
   readonly onCheck: () => void;
   readonly onAgain: () => void;
   readonly onHome: () => void;
+  /** The task is a segment of a lesson, under its header: no screen of its own, no "Try it again". */
+  readonly inLesson?: boolean;
+}
+
+/** The screen of the task, or, in a lesson, the lesson's screen around it. */
+function Frame({
+  inLesson,
+  title,
+  children,
+}: {
+  readonly inLesson: boolean;
+  readonly title: string;
+  readonly children: ReactNode;
+}) {
+  if (inLesson) return <div className="nt-lesson-task">{children}</div>;
+  return (
+    <Screen title={title} wide>
+      {children}
+    </Screen>
+  );
 }
 
 export function TaskScreen(props: TaskScreenProps) {
@@ -119,7 +140,7 @@ export function TaskScreen(props: TaskScreenProps) {
       : words.text("task.summary-not-yet", { count: notRight, total: task.items.length });
 
   return (
-    <Screen title={words.text("task.title")} wide>
+    <Frame inLesson={props.inLesson === true} title={words.text("task.title")}>
       {steps.length === 0 || solved ? null : (
         <fieldset className="nt-buttons">
           <legend>{words.text("task.mode")}</legend>
@@ -181,20 +202,23 @@ export function TaskScreen(props: TaskScreenProps) {
                     {failureText(props.againFailure, words)}
                   </p>
                 )}
-                <div className="nt-buttons">
-                  <button
-                    type="button"
-                    aria-disabled={pending}
-                    onClick={() => {
-                      if (!pending) props.onAgain();
-                    }}
-                  >
-                    {words.text("task.again")}
-                  </button>
-                  <button type="button" className="nt-secondary" onClick={props.onHome}>
-                    {words.text("task.home")}
-                  </button>
-                </div>
+                {/* In a lesson the way on is its Continue, below the task (R23). */}
+                {props.inLesson === true ? null : (
+                  <div className="nt-buttons">
+                    <button
+                      type="button"
+                      aria-disabled={pending}
+                      onClick={() => {
+                        if (!pending) props.onAgain();
+                      }}
+                    >
+                      {words.text("task.again")}
+                    </button>
+                    <button type="button" className="nt-secondary" onClick={props.onHome}>
+                      {words.text("task.home")}
+                    </button>
+                  </div>
+                )}
               </>
             ) : (
               <>
@@ -304,6 +328,6 @@ export function TaskScreen(props: TaskScreenProps) {
           <p role="status">{props.wordsCame === true ? words.text("task.words-came") : ""}</p>
         </div>
       </div>
-    </Screen>
+    </Frame>
   );
 }
