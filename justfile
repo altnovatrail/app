@@ -30,9 +30,12 @@ ci-lint: _install
 
 # The tests, in Node and in Chromium, with the coverage report coverage/lcov.info, which the shared
 # typescript.yml sends to Codecov. The build comes first: typescript.yml runs no build of its own,
-# so a build that fails fails this check (R14).
+# so a build that fails fails this check (R14). Then the release's archive of that build and of a
+# second build of the same tree, in a folder of its own: the same bytes, in the layout infra's
+# rollout reads (R25).
 ci-test: build
     {{ bin }}/vitest run --coverage
+    again="$(mktemp -d)"; trap 'rm -rf "$again"' EXIT; {{ bin }}/vite build --outDir "$again" --emptyOutDir --logLevel warn && node scripts/release.ts --check "$again"
 
 # npm audit reads the lock file and asks the registry, so nothing is installed first. Only what
 # ships: the tools of development do not reach a learner (R39 in spec).
@@ -53,6 +56,19 @@ ci-licenses: _install
 # The build of the app into build/.
 build: _install
     {{ bin }}/vite build
+
+# The files of a release, for .github's release.yml, which runs this in the toolchain stage on the
+# tree of the commit alone — no git, no spec submodule, no token — with the version as v0.1.0: the
+# archive of the build, app_<version>.tar.gz, the one file of dist/, with NOTICE and LICENSE at its
+# root, checked before it is written (R25 in docs/decisions.md; section 3.1 of
+# docs/architecture.md). The build reads spec's part from parts/, which git holds.
+release-files version: (_release-version version) build
+    rm -rf dist
+    node scripts/release.ts {{ quote(version) }}
+
+# A version of a release, vX.Y.Z, checked before anything is built.
+_release-version version:
+    @node scripts/release.ts --name {{ quote(version) }} > /dev/null
 
 # The development server, on 127.0.0.1, with canvas from npm whatever the shell has set.
 dev: _install
