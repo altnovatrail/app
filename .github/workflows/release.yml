@@ -1,0 +1,81 @@
+# The release of app's build by .github's shared release.yml (R18 in .github), pinned to a release
+# of .github by SHA with its version beside it; Dependabot moves both. It builds the files with
+# `just release-files <version>` in the toolchain stage, on the tree of the commit alone — the
+# archive of the build, app_<version>.tar.gz, with NOTICE and LICENSE at its root (R25 in
+# docs/decisions.md) —, signs them and checks the signatures. The version is the next patch of
+# RELEASE_LINE. infra's rollout takes the archive by its name and its sum, once release-verify has
+# accepted it (R17 in infra; R77 in spec).
+#
+# Until the first release, every run is a trial that publishes nothing: on a pull request, on main
+# after a green CI and on the button. The first release (T31 in RUN.md) sets publish to
+# `${{ github.event_name != 'pull_request' }}`, once the repository keeps its releases immutable and
+# its tags v* under a ruleset (Д54 in table 4 of spec's RUN.md).
+name: Release
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main]
+  # Every pull request, with no paths of its own: a filter would copy the list below in another
+  # syntax, and a run of a change outside the list ends once the version is worked out.
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  RELEASE_LINE: "0.1"
+
+jobs:
+  release:
+    name: Release
+    # On main only after a green CI of a push to this repository; on a pull request only from a
+    # branch of this repository and not Dependabot's: a fork's run and Dependabot's get no OIDC
+    # token, and the keyless signature needs one, so their trial would fail on what is no fault.
+    # Dependabot's changes are tried on main once they are in.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.actor != 'dependabot[bot]') ||
+      (github.event_name == 'workflow_run' &&
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_repository.full_name == github.repository)
+    permissions:
+      contents: write
+      id-token: write
+      actions: read
+    uses: altnovatrail/.github/.github/workflows/release.yml@c0234058dc1a85edd7b5d579b90f8fdb98ea826b # v0.1.22
+    with:
+      # What the archive is built from: the app's code without its tests, the page, the CSP
+      # template and spec's part the build reads, the scripts of the build and of the archive, the
+      # configuration, the packages, the notices, the recipe, the toolchain and this file.
+      paths: |
+        src/**
+        :(exclude)src/**/*.test.ts
+        :(exclude)src/**/*.test.tsx
+        :(exclude)src/test/**
+        index.html
+        csp.json
+        parts/deployment-1.tar.gz
+        scripts/archive.ts
+        scripts/canvas-dev.ts
+        scripts/csp.ts
+        scripts/deployment-plugin.ts
+        scripts/release.ts
+        vite.config.ts
+        tsconfig.json
+        tsconfig.base.json
+        tsconfig.app.json
+        package.json
+        package-lock.json
+        .npmrc
+        justfile
+        NOTICE
+        LICENSE
+        .devcontainer/Dockerfile
+        .github/workflows/release.yml
+      publish: false
