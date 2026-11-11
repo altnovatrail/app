@@ -2,13 +2,16 @@
 // ISO 3166-1 alpha-2 officially assigned, 249 of them, as "ISO 3166-1 alpha-2", section "Officially
 // assigned code elements", lists them — https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2, read
 // 2026-11-10; the ISO Online Browsing Platform, the primary source, answered 403 to a reading, so
-// the list is the article's (section 4). Which of them a deployment takes learners from is api's to
-// say, by CAUSE_COUNTRY_NOT_ACCEPTED: app has no list of its own of those. A name is Intl's, in the
-// language of the screen. No DOM.
+// the list is the article's (section 4). They are the codes `Country` of spec's table of the age
+// of digital consent too, which api takes as well (R134 in spec; Д175 of its RUN.md): the type
+// holds the list to them, none left out and none more. Which of them a deployment takes learners
+// from is api's to say, by CAUSE_COUNTRY_NOT_ACCEPTED: app has no list of its own of those. A name
+// is Intl's, in the language of the screen. No DOM.
+import type { Country } from "@altnovatrail/spec/consentagev1";
 import { collator } from "../i18n/intl.ts";
 import type { Language } from "../i18n/language.ts";
 
-export const COUNTRIES: readonly string[] = [
+export const COUNTRIES = [
   "AD",
   "AE",
   "AF",
@@ -258,7 +261,12 @@ export const COUNTRIES: readonly string[] = [
   "ZA",
   "ZM",
   "ZW",
-];
+] as const satisfies readonly Country[];
+
+/** None of the codes of the table is left out: a code the list lacks is a type here. */
+const complete: [Exclude<Country, (typeof COUNTRIES)[number]>] extends [never] ? true : never =
+  true;
+void complete;
 
 /** The countries with their names in a language, in its order. */
 export function countryNames(language: Language): { code: string; name: string }[] {

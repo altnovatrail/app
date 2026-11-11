@@ -423,7 +423,33 @@ describe("the forms of the account", () => {
     await settled(session, "invite");
     expect(await session.createAccount("0123-4567-89AB-CDEF")).toBe("done");
     expect(created[0]).toMatchObject({ inviteCode: "0123-4567-89AB-CDEF", adultStated: true });
+    expect(created[0]?.acceptedTexts).toEqual([]);
     await settled(session, "owner-profile");
+  });
+
+  it("names the versions of the texts the owner accepted, and tells one no longer current", async () => {
+    const created: CreateAccountRequest[] = [];
+    let current = true;
+    const { session } = harness({
+      getAccount: () => {
+        throw refused(Code.PermissionDenied, Cause.NO_ACCESS);
+      },
+      createAccount: (request) => {
+        created.push(request);
+        if (!current) throw refused(Code.FailedPrecondition, Cause.TEXT_NOT_CURRENT);
+        return { account: { accountId: "account-1", profiles: [] } };
+      },
+    });
+    session.start();
+    await settled(session, "invite");
+    const accepted = [
+      { id: "privacy-policy", version: 2 },
+      { id: "terms-of-use", version: 1 },
+    ];
+    current = false;
+    expect(await session.createAccount("CODE", accepted)).toBe("text-not-current");
+    expect(session.snapshot().step).toBe("invite");
+    expect(created[0]?.acceptedTexts.map(({ id, version }) => ({ id, version }))).toEqual(accepted);
   });
 
   it("tells a code api did not take, and reads the account that is there already", async () => {

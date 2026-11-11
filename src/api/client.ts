@@ -1,8 +1,9 @@
 // The one client of api the screens call (section 15 of the text of the contracts; R18 in
 // docs/decisions.md): connect-es over Connect, the wire binary protobuf (section 9), each call with
 // api's own limit of 30 s, behind the interceptors of the contract's rules. The four open views of a
-// package go by a transport of their own, Connect GET with no token, no deadline and no header, so
-// that a request is simple, needs no preflight and an HTTP cache may keep its answer (T21). A call
+// package and the legal texts go by a transport of their own, Connect GET with no token, no deadline
+// and no header, so that a request is simple, needs no preflight and an HTTP cache may keep its
+// answer (T21, T32). A call
 // that does not answer throws an ApiError that says what it came to. No DOM beyond fetch.
 import { AccountService } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import { AttemptService } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
@@ -49,6 +50,7 @@ export interface Api {
   /** The four open views, by Connect GET with no token: `GetManifest` and the others. */
   readonly views: Client<typeof PackageService>;
   readonly progress: Client<typeof ProgressService>;
+  /** `GetLegalTexts`, by Connect GET with no token, as the open views, but past the HTTP cache. */
   readonly legal: Client<typeof LegalService>;
 }
 
@@ -118,6 +120,17 @@ export function createApi(options: ApiOptions): Api {
       fetch: fetcher,
       interceptors: open,
     });
+  // The legal texts the same way, but past the HTTP cache: a consent names the version shown, and
+  // a version that came out of a cache after a newer came into force api refuses (R27).
+  const legalTransport =
+    options.transport?.(open, "GET") ??
+    createConnectTransport({
+      baseUrl: options.baseUrl,
+      useBinaryFormat: true,
+      useHttpGet: true,
+      fetch: (input, init) => fetcher(input, { ...init, cache: "no-cache" }),
+      interceptors: open,
+    });
   const client = <S extends DescService>(service: S) => guarded(createClient(service, transport));
   return {
     account: client(AccountService),
@@ -127,6 +140,6 @@ export function createApi(options: ApiOptions): Api {
     package: client(PackageService),
     views: guarded(createClient(PackageService, viewsTransport)),
     progress: client(ProgressService),
-    legal: client(LegalService),
+    legal: guarded(createClient(LegalService, legalTransport)),
   };
 }

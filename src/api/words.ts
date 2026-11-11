@@ -2,7 +2,7 @@
 // contracts; sections 3.3 and 3.8 of docs/architecture.md; R18): the outcomes and the refusals
 // that every screen shows alike — a failure of AI is a neutral phrase, never "not yet" (R04 in
 // spec) — and the common string for a cause with no words here: a screen whose own causes they
-// are words them itself (T22, T26, T27). No DOM.
+// are words them itself (T22, T26, T27, T32). No DOM.
 import { Cause } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import { timestampDate } from "@bufbuild/protobuf/wkt";
 import { keyFor } from "../i18n/codes.ts";
@@ -34,6 +34,11 @@ export const CAUSE_KEYS = {
   [Cause.RUN_ENDED]: "lesson.ended",
   [Cause.SEGMENT_UNAVAILABLE]: "lesson.not-open",
   [Cause.SEGMENTS_NOT_ENDED]: "lesson.task-left",
+  // The causes of the consent and its texts (T32; R27): a screen of its own words them more.
+  [Cause.TOO_MANY_CONSENTS]: "api.too-many-consents",
+  [Cause.AGE_NEEDED]: "api.age-needed",
+  [Cause.TEXT_NOT_CURRENT]: "api.text-not-current",
+  [Cause.LEARNER_DECIDES]: "api.learner-decides",
 } as const;
 
 /** The words of a cause; the quota with when it comes back, in the screen's language. */

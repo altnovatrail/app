@@ -8,6 +8,7 @@
 // sign-in service first, then erases everything of the account.
 import type { Account, Profile } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import { Cause } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
+import type { LegalTextRef } from "@altnovatrail/contracts/novatrail/api/v1/legal_pb.js";
 import type { Api } from "../api/client.ts";
 import { type Failure, parseFailure } from "../api/failure.ts";
 import type { PackageChecks } from "../packages/checks.ts";
@@ -284,20 +285,27 @@ export class Session {
 
   /**
    * `CreateAccount` with the invite code — the form sends it trimmed at its ends, and api ignores
-   * dashes and spaces within it — and the statement of being 18 or older.
+   * dashes and spaces within it —, the statement of being 18 or older, and the versions of the
+   * privacy policy and the terms of use the owner accepted, as `GetLegalTexts` gave them (R131 in
+   * spec; R27): none while none is in force. A version no longer current is the form's to show anew.
    */
-  async createAccount(inviteCode: string): Promise<FormResult<"code-not-accepted">> {
+  async createAccount(
+    inviteCode: string,
+    acceptedTexts: readonly Pick<LegalTextRef, "id" | "version">[] = [],
+  ): Promise<FormResult<"code-not-accepted" | "text-not-current">> {
     const run = this.run;
     try {
       const answer = await this.options.api.account.createAccount({
         inviteCode,
         adultStated: true,
+        acceptedTexts: [...acceptedTexts],
       });
       await this.seen(run, answer.account);
       return "done";
     } catch (reason) {
       const failure = parseFailure(reason);
       if (refusedWith(failure, Cause.CODE_NOT_ACCEPTED)) return "code-not-accepted";
+      if (refusedWith(failure, Cause.TEXT_NOT_CURRENT)) return "text-not-current";
       if (refusedWith(failure, Cause.ALREADY_EXISTS)) {
         await this.load();
         return "done";

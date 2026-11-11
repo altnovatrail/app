@@ -43,6 +43,14 @@ export const en = {
   "api.version-gone": "This version of the module is no longer given",
   "api.not-found": "This isn't there any more",
   "api.attempt-closed": "This task is already over",
+  /** The account has given as many consents for children as it may for now (R136 spec). */
+  "api.too-many-consents": "No more consents can be given on this account for now",
+  /** The learner's country raised its age of digital consent: an adult gives the age again. */
+  "api.age-needed": "The learner's age needs to be given again",
+  /** The legal text shown is not the current one: the screen shows the current one. */
+  "api.text-not-current": "The text has changed. Read it again",
+  /** The learner gave their own consent, and this is theirs to decide. */
+  "api.learner-decides": "The learner decides this themselves",
   /** The user of the sign-in service has no account of NovaTrail yet. */
   "api.no-access": "This account has no access yet",
   /** The sign-in could not be renewed: the sign-in window comes on a press. */
@@ -76,6 +84,22 @@ export const en = {
   "account.code-not-accepted": "This code isn't valid or has been used",
   /** Below the field when it is empty. */
   "account.code-needed": "Enter the invite code",
+  /** The owner accepts both legal texts, a checkbox: api keeps the versions shown (R131 spec). */
+  "account.texts": "I accept the Privacy Policy and the Terms of Use",
+  /** Below the checkbox when it is not ticked. */
+  "account.texts-needed": "To create an account, accept the Privacy Policy and the Terms of Use",
+  /** api has newer versions of the texts than the screen showed: they are shown anew, unticked. */
+  "account.texts-changed": "The texts have changed. Read them again and accept them",
+  /** The heading above the legal texts of the account, each opened in place. */
+  "account.texts-title": "Privacy Policy and Terms of Use",
+  /** The gist of a legal text, in the language of the screen, above the text. */
+  "legal.gist": "In short",
+  /** On a screen in another language than English: the legal text in force is the English one. */
+  "legal.english-in-force": "The text is in English, and the English text is the one in force",
+  /** Above a translation of a legal text, which has no force of its own (R141 spec). */
+  "legal.translation": "Translation, for reading only",
+  /** Above the English text of a legal text, the one in force. */
+  "legal.original": "The text in force, in English",
   /** The heading of the screen that makes the owner's own profile as a learner. */
   "profile.title": "Your learner profile",
   /** The name a learner goes by: never a real one. */

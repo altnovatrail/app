@@ -6,6 +6,7 @@ import {
   GetAccountRequestSchema,
   GetAccountResponseSchema,
 } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
+import { GetLegalTextsResponseSchema } from "@altnovatrail/contracts/novatrail/api/v1/legal_pb.js";
 import { GetManifestResponseSchema } from "@altnovatrail/contracts/novatrail/api/v1/package_pb.js";
 import { create, fromBinary, toBinary } from "@bufbuild/protobuf";
 import { describe, expect, it, vi } from "vitest";
@@ -53,6 +54,22 @@ describe("the browser's transport", () => {
     expect(init.method).toBe("GET");
     expect(url).toMatch(
       /^https:\/\/api\.example\.org\/novatrail\.api\.v1\.PackageService\/GetManifest\?connect=v1&/,
+    );
+    expect([...new Headers(init.headers).keys()]).toEqual([]);
+  });
+
+  it("asks the legal texts by Connect GET with no header, past the HTTP cache, the language in the address", async () => {
+    const fetcher = vi.fn<typeof fetch>(async () => {
+      const body = toBinary(GetLegalTextsResponseSchema, create(GetLegalTextsResponseSchema, {}));
+      return new Response(body, { status: 200, headers: { "content-type": "application/proto" } });
+    });
+    const api = createApi({ baseUrl: "https://api.example.org", tokens, on, fetch: fetcher });
+    await api.legal.getLegalTexts({ interfaceLanguage: "ru" });
+    const [url, init] = fetcher.mock.calls[0] as [string, RequestInit];
+    expect(init.method).toBe("GET");
+    expect(init.cache).toBe("no-cache");
+    expect(url).toMatch(
+      /^https:\/\/api\.example\.org\/novatrail\.api\.v1\.LegalService\/GetLegalTexts\?connect=v1&/,
     );
     expect([...new Headers(init.headers).keys()]).toEqual([]);
   });
