@@ -1,8 +1,8 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { PSEUDO, pseudoString } from "../test/pseudo.ts";
 import { keyFor } from "./codes.ts";
 import { en } from "./en.ts";
-import { collator, dateTimeFormat, languageNames, numberFormat } from "./intl.ts";
+import { collator, dateTimeFormat, languageName, languageNames, numberFormat } from "./intl.ts";
 import { LANGUAGES } from "./language.ts";
 import { ru } from "./ru.ts";
 import {
@@ -122,6 +122,21 @@ describe("Intl in the screen's language", () => {
       "Ель",
       "Яна",
     ]);
+  });
+
+  it("writes a language's name in a Russian sentence in lower case, whatever the engine gives", () => {
+    expect(languageName("ru", "en")).toBe("английский");
+    expect(languageName("en", "ru")).toBe("Russian");
+    // JavaScriptCore's Intl writes it with a capital, as WebKit showed it in T34.
+    const of = vi.spyOn(Intl.DisplayNames.prototype, "of").mockReturnValue("Английский");
+    try {
+      expect(languageName("ru", "en")).toBe("английский");
+      expect(languageName("en", "en")).toBe("Английский");
+      of.mockReturnValue(undefined);
+      expect(languageName("ru", "en")).toBe("en");
+    } finally {
+      of.mockRestore();
+    }
   });
 });
 
