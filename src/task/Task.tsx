@@ -23,7 +23,11 @@ import {
   type Next,
   type WorkSchema,
 } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
-import { Cause, CloseReason } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
+import {
+  Cause,
+  CloseReason,
+  type EngineChoice,
+} from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import type { OpenAttempt } from "@altnovatrail/contracts/novatrail/api/v1/learning_pb.js";
 import type {
   CanvasElement,
@@ -45,9 +49,10 @@ import { Screen } from "../app/Screen.tsx";
 import { ReadFailed } from "../boot/Screens.tsx";
 import { keyFor } from "../i18n/codes.ts";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
+import { NextStep } from "../next/NextStep.tsx";
 import { usePackages } from "../packages/PackagesContext.tsx";
 import type { Device } from "../storage/device.ts";
-import { addProfile, openProfile, type Profile } from "../storage/profile.ts";
+import { addProfile, attemptOver, openProfile, type Profile } from "../storage/profile.ts";
 import {
   markNames,
   marksOf,
@@ -262,8 +267,10 @@ export function Task({
    */
   const ended = useCallback(
     async (reason: CloseReason, held?: Profile, correct?: number) => {
-      const profile = held ?? (await openProfile(device, profileId).catch(() => undefined));
-      await profile?.attemptEnded(attemptId, correct).catch(() => {});
+      await attemptOver(device, profileId, attemptId, {
+        ...(held === undefined ? {} : { held }),
+        ...(correct === undefined ? {} : { correct }),
+      });
       if (reason === CloseReason.UNCHECKED) void checks.check();
       onAttempt(undefined);
     },
@@ -326,6 +333,7 @@ export function Task({
             {words.text("task.home")}
           </button>
         </div>
+        <NextStep profileId={profileId} secondary />
       </Screen>
     );
   }
@@ -434,6 +442,8 @@ function OpenTask({
   const [explainNote, setExplainNote] = useState<string | undefined>(undefined);
   const [showNote, setShowNote] = useState<string | undefined>(undefined);
   const [shown, setShown] = useState(false);
+  // What the engine chose, when the answer that closed the attempt outside a lesson said (R24).
+  const [choice, setChoice] = useState<EngineChoice | undefined>(undefined);
   // The keys of "Explain differently" and "Show the solution": each the same with its repeats.
   const explainKey = useRef<string | undefined>(undefined);
   const showKey = useRef<string | undefined>(undefined);
@@ -541,6 +551,15 @@ function OpenTask({
       },
     );
   }, [want, place, api, profileId, attemptId, save, onClosed]);
+
+  /** What the answer that closed the attempt says comes next: the lesson's segment, or a choice. */
+  const comesNext = useCallback(
+    (next: Next | undefined) => {
+      lesson?.onNext(next);
+      if (next?.next.case === "choice") setChoice(next.next.value);
+    },
+    [lesson],
+  );
 
   const markName = useMemo(() => markNames(words), [words]);
 
@@ -707,7 +726,7 @@ function OpenTask({
           setTutorWords(undefined);
           await onEnded(CloseReason.CORRECT, profile, of.number);
           setSolution(parts);
-          lesson?.onNext(answer.next);
+          comesNext(answer.next);
           correctWords(of);
         }
       } catch (reason) {
@@ -735,7 +754,7 @@ function OpenTask({
     correctWords,
     onEnded,
     onClosed,
-    lesson,
+    comesNext,
   ]);
 
   /** "Hint": api gives the task's techniques and question, or the words of the rung again. */
@@ -856,7 +875,7 @@ function OpenTask({
           await onEnded(CloseReason.SOLUTION_SHOWN, profile);
           setShown(true);
           setSolution(parts);
-          lesson?.onNext(answer.next);
+          comesNext(answer.next);
         },
         (reason: unknown) => {
           const found = parseFailure(reason);
@@ -873,7 +892,7 @@ function OpenTask({
         },
       )
       .finally(() => setPending(false));
-  }, [api, views, profileId, attemptId, profile, words, pause, onEnded, onClosed, lesson]);
+  }, [api, views, profileId, attemptId, profile, words, pause, onEnded, onClosed, comesNext]);
 
   // An adult may ask for the solution from the start of the attempt, a child from the fourth wrong
   // answer, once the ladder of hints is passed (R82 in spec).
@@ -927,6 +946,13 @@ function OpenTask({
       onAgain={again.start}
       onHome={() => navigate(HOME)}
       inLesson={lesson !== undefined}
+      next={
+        <NextStep
+          key={choice?.choiceId ?? "ask"}
+          profileId={profileId}
+          {...(choice === undefined ? {} : { choice })}
+        />
+      }
     />
   );
 }

@@ -6,10 +6,10 @@
 // Check always, and "Show the solution" too when the learner may ask for it, with a word of what it
 // ends before it does (R22). Once the task is solved or its solution shown, the panel gives way to
 // its result: "Correct" or "Solution shown", the words after a correct answer if any came, the
-// solution, "Try it again" and the way back to My subjects; the options take no tap, and the canvas
-// stays as it was. Under a lesson's header it is no screen of its own, and its result ends with the
-// lesson's Continue in place of "Try it again" (R23). What it shows it takes from its container,
-// Task.tsx, which also gives the canvas the tutor's marks.
+// solution, the way to what the engine chose (T28), "Try it again" and the way back to My subjects;
+// the options take no tap, and the canvas stays as it was. Under a lesson's header it is no screen
+// of its own, and its result ends with the lesson's Continue in place of "Try it again" (R23). What
+// it shows it takes from its container, Task.tsx, which also gives the canvas the tutor's marks.
 import type {
   CanvasElement,
   HistoryChangeEvent,
@@ -89,6 +89,8 @@ export interface TaskScreenProps {
   readonly onHome: () => void;
   /** The task is a segment of a lesson, under its header: no screen of its own, no "Try it again". */
   readonly inLesson?: boolean;
+  /** The way to what the engine chose once the attempt is over, outside a lesson (R24). */
+  readonly next?: ReactNode;
 }
 
 /** The screen of the task, or, in a lesson, the lesson's screen around it. */
@@ -203,10 +205,12 @@ export function TaskScreen(props: TaskScreenProps) {
                   </p>
                 )}
                 {/* In a lesson the way on is its Continue, below the task (R23). */}
+                {props.inLesson === true ? null : props.next}
                 {props.inLesson === true ? null : (
                   <div className="nt-buttons">
                     <button
                       type="button"
+                      className="nt-secondary"
                       aria-disabled={pending}
                       onClick={() => {
                         if (!pending) props.onAgain();

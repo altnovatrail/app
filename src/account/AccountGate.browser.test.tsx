@@ -9,7 +9,15 @@ import {
   CreateOwnerProfileResponseSchema,
   GetAccountResponseSchema,
 } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
-import { Cause, RefusalSchema } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
+import {
+  Cause,
+  ChoiceKind,
+  RefusalSchema,
+} from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
+import {
+  BeginAttemptResponseSchema,
+  ChooseNextResponseSchema,
+} from "@altnovatrail/contracts/novatrail/api/v1/learning_pb.js";
 import { CheckPackagesResponseSchema } from "@altnovatrail/contracts/novatrail/api/v1/package_pb.js";
 import {
   create,
@@ -348,6 +356,42 @@ describe("the way in", () => {
     await userEvent.click(await screen.findByRole("button", { name: "Ёжик" }));
     expect(await screen.findByRole("heading", { level: 1, name: "My subjects" })).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Continue the lesson" })).toBeNull();
+    window.location.hash = "";
+  });
+
+  it("goes to the lesson the engine chose from My subjects, and on to its next task", async () => {
+    const service = fakeSignIn("uid-1");
+    const account = { accountId: "account-1", profiles: [OWNER] };
+    let next = ChoiceKind.LESSON;
+    const { asked } = renderApp(
+      {
+        getAccount: () => message(GetAccountResponseSchema, { account }),
+        chooseNext: () =>
+          message(ChooseNextResponseSchema, {
+            choice: { choiceId: next === ChoiceKind.LESSON ? "c1" : "c2", kind: next },
+          }),
+        openLesson: () => refusal("failed_precondition", Cause.RUN_ENDED),
+        beginAttempt: () =>
+          message(BeginAttemptResponseSchema, { attempt: { attemptId: "a5", packageDigest: "d" } }),
+        getOpenAttempt: () => refusal("failed_precondition", Cause.ATTEMPT_CLOSED),
+      },
+      service,
+    );
+    await userEvent.click(await screen.findByRole("button", { name: "Ёжик" }));
+    await userEvent.click(await screen.findByRole("button", { name: "What's next" }));
+    expect(
+      await screen.findByRole("heading", { level: 1, name: "This lesson is over" }),
+    ).toBeTruthy();
+    expect(window.location.hash).toBe("#/lesson");
+    expect(asked).toContain("OpenLesson");
+    // The end gave no choice: the press asks for one, and a task begins on the task screen.
+    next = ChoiceKind.TASK;
+    await userEvent.click(screen.getByRole("button", { name: "What's next" }));
+    expect(
+      await screen.findByRole("heading", { level: 1, name: "This task is already over" }),
+    ).toBeTruthy();
+    expect(window.location.hash).toBe("#/task");
+    expect(asked).toContain("BeginAttempt");
     window.location.hash = "";
   });
 

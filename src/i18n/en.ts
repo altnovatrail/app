@@ -266,6 +266,18 @@ export const en = {
   "lesson.open-continue": "Continue the lesson",
   /** A lesson open whose title is not on this device: its module's name, not declined. */
   "lesson.of-module": "A lesson: {module}",
+  /** Goes to what the engine chooses; it asks api first when no answer said it yet. */
+  "next.what": "What's next",
+  /** Goes to the lesson the engine chose. */
+  "next.lesson": "Next lesson",
+  /** Goes to the task the engine chose. */
+  "next.task": "Next task",
+  /** The engine chose nothing: no module connected has more to give now. */
+  "next.nothing": "There is nothing more to offer for now",
+  /** Asks the engine for something other than the task in progress, which it closes. */
+  "next.else": "Something else",
+  "next.else-confirm": "The task in progress closes, and it can't be gone back to",
+  "next.else-go": "Go on",
   /** In place of the words of a code from api this build does not know: a newer api sent it. */
   "common.unknown": "This version of the app doesn't know this yet",
 } as const satisfies Dictionary;

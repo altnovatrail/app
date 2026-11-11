@@ -324,3 +324,18 @@ export async function openProfileDatabase(
   const connection = await device.connect(name, PROFILE_SCHEMA, false);
   return connection === undefined ? undefined : new Profile(connection, device.now);
 }
+
+/**
+ * An attempt is over, by whatever way it closed: its work on this device goes (section 3.2), in the
+ * database the screen holds or else in the profile's, opened for it. A database that does not open
+ * or a write that fails leaves the work to the 30 days' term.
+ */
+export async function attemptOver(
+  device: Device,
+  profileId: string,
+  attemptId: string,
+  { held, correct }: { readonly held?: Profile; readonly correct?: number } = {},
+): Promise<void> {
+  const profile = held ?? (await openProfile(device, profileId).catch(() => undefined));
+  await profile?.attemptEnded(attemptId, correct).catch(() => {});
+}

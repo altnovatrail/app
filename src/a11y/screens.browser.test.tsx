@@ -10,7 +10,11 @@ import { page } from "vitest/browser";
 import "../theme/theme.css";
 import { ProfileSchema } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import { ItemVerdictSchema } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
-import { RunEndReason } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
+import {
+  ChoiceKind,
+  EngineChoiceSchema,
+  RunEndReason,
+} from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import { create } from "@bufbuild/protobuf";
 import { userEvent } from "vitest/browser";
 import {
@@ -20,6 +24,8 @@ import {
   OwnerProfileScreen,
   SignOutScreen,
 } from "../account/AccountGate.tsx";
+import { ApiProvider } from "../api/ApiContext.tsx";
+import type { Api } from "../api/client.ts";
 import { App, LearnerBar } from "../app/App.tsx";
 import {
   Framed,
@@ -35,8 +41,10 @@ import { Example } from "../lesson/Example.tsx";
 import { Explanation } from "../lesson/Explanation.tsx";
 import { LessonEnd } from "../lesson/Lesson.tsx";
 import { LessonScreen, type LessonScreenProps } from "../lesson/LessonScreen.tsx";
+import { NextStep } from "../next/NextStep.tsx";
 import { SignInScreen } from "../signin/SignInScreen.tsx";
 import { SubjectsScreen } from "../subjects/MySubjects.tsx";
+import { AttemptProvider } from "../task/AttemptContext.tsx";
 import { NO_VERDICTS, verdictsOf } from "../task/attempt.ts";
 import { initialState } from "../task/steps.ts";
 import { TaskScreen, type TaskScreenProps } from "../task/TaskScreen.tsx";
@@ -159,6 +167,17 @@ function lessonScreen(children: ReactNode, props: Partial<LessonScreenProps> = {
 }
 
 const noMedia = () => Promise.reject(new Error("no file in this test"));
+
+/** The way to what the engine chose, which no press here sends: api is never called. */
+function nextStep(props: Partial<Parameters<typeof NextStep>[0]> = {}) {
+  return (
+    <ApiProvider value={{} as Api}>
+      <NextStep profileId="p1" {...props} />
+    </ApiProvider>
+  );
+}
+
+const choice = (kind: ChoiceKind) => create(EngineChoiceSchema, { choiceId: "c1", kind });
 
 const JUDGED = verdictsOf(
   [
@@ -461,8 +480,68 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
       }),
   ],
   [
-    "lesson complete",
-    () => <LessonEnd reason={RunEndReason.PASSED} title="Gaps and posts" language="en" />,
+    "lesson complete, with the next lesson",
+    () => (
+      <LessonEnd
+        reason={RunEndReason.PASSED}
+        title="Gaps and posts"
+        language="en"
+        next={nextStep({ choice: choice(ChoiceKind.LESSON) })}
+      />
+    ),
+  ],
+  [
+    "lesson ended, with nothing more to offer",
+    () => (
+      <LessonEnd
+        reason={RunEndReason.NOT_SUITABLE}
+        next={nextStep({ choice: choice(ChoiceKind.NOTHING) })}
+      />
+    ),
+  ],
+  [
+    "task screen solved, with the next task",
+    () =>
+      taskScreen({
+        solution: [{ text: "Two and three make five." }],
+        next: nextStep({ choice: choice(ChoiceKind.TASK) }),
+      }),
+  ],
+  [
+    "My subjects with What's next",
+    () => (
+      <SubjectsScreen
+        connected={[]}
+        catalog={[]}
+        onConnect={() => {}}
+        onDisconnect={() => {}}
+        next={nextStep()}
+      />
+    ),
+  ],
+  [
+    "My subjects asking whether to leave the task in progress",
+    () => (
+      <SubjectsScreen
+        connected={[]}
+        catalog={[]}
+        onConnect={() => {}}
+        onDisconnect={() => {}}
+        onContinue={() => {}}
+        next={
+          <AttemptProvider
+            learner={create(ProfileSchema, { profileId: "p1", openAttempt: { attemptId: "a1" } })}
+          >
+            {nextStep()}
+          </AttemptProvider>
+        }
+      />
+    ),
+    async () => {
+      const button = document.querySelector<HTMLButtonElement>("button.nt-secondary");
+      if (button === null) throw new Error("no Something else");
+      await userEvent.click(button);
+    },
   ],
   ["lesson ended by api", () => <LessonEnd reason={RunEndReason.ABANDONED} />],
   [

@@ -2,7 +2,11 @@
 // docs/decisions.md; LearningService in the contract): the lesson's full ID, which keys its state on
 // the device; the kind of each segment; how a run ended, in words; and the places of the task
 // segments that ended, from a refusal that carries them. None of it needs the DOM.
-import { Cause, RunEndReason } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
+import {
+  Cause,
+  type EngineChoice,
+  RunEndReason,
+} from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import type { DemoState } from "@altnovatrail/spec/canvas";
 import type * as open from "@altnovatrail/spec/formatv0/open";
 import type { Failure } from "../api/failure.ts";
@@ -58,6 +62,12 @@ export function endKey(
 export function runEndOf(failure: Failure): RunEndReason | undefined {
   if (failure.kind !== "refused" || failure.cause !== Cause.RUN_ENDED) return undefined;
   return failure.data.case === "runEnd" ? failure.data.value.reason : RunEndReason.UNSPECIFIED;
+}
+
+/** The engine's choice a refusal `CAUSE_RUN_ENDED` carries: when the request that got it ended the run. */
+export function endChoiceOf(failure: Failure): EngineChoice | undefined {
+  if (failure.kind !== "refused" || failure.cause !== Cause.RUN_ENDED) return undefined;
+  return failure.data.case === "runEnd" ? failure.data.value.choice : undefined;
 }
 
 /**

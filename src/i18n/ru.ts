@@ -168,6 +168,13 @@ export const ru = {
   "lesson.open-title": "Начатый урок",
   "lesson.open-continue": "Продолжить урок",
   "lesson.of-module": "Урок: {module}",
+  "next.what": "Что дальше",
+  "next.lesson": "Следующий урок",
+  "next.task": "Следующая задача",
+  "next.nothing": "Пока больше нечего предложить",
+  "next.else": "Что-то другое",
+  "next.else-confirm": "Начатая задача закроется, и к ней не вернуться",
+  "next.else-go": "Перейти",
   "common.unknown": "Эта версия приложения этого ещё не знает",
 } as const satisfies Translation<typeof en, "ru">;
 
