@@ -36,7 +36,7 @@ function isScreenLanguage(tag: string, language: Language): boolean {
 /** A language's name in the screen's language; a tag Intl cannot read stands for itself. */
 function nameOf(tag: string, language: Language): string {
   try {
-    return languageName(language, tag) ?? tag;
+    return languageName(language, tag);
   } catch {
     return tag;
   }

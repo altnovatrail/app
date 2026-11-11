@@ -133,7 +133,7 @@ describe("Intl in the screen's language", () => {
       expect(languageName("ru", "en")).toBe("английский");
       expect(languageName("en", "en")).toBe("Английский");
       of.mockReturnValue(undefined);
-      expect(languageName("ru", "en")).toBeUndefined();
+      expect(languageName("ru", "en")).toBe("en");
     } finally {
       of.mockRestore();
     }

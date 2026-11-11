@@ -23,11 +23,11 @@ export function languageNames(language: Language) {
  * A language's name in the screen's language, as it stands inside a sentence. Engines differ on its
  * first letter in Russian: V8 and SpiderMonkey give CLDR's "английский", JavaScriptCore gives
  * "Английский" (T34 in RUN.md), and inside a Russian sentence a language's name is in lower case.
- * A tag Intl cannot read throws, as `of` does.
+ * A tag Intl cannot read throws, as `of` does; one it reads but cannot name stands for itself.
  */
-export function languageName(language: Language, tag: string): string | undefined {
-  const name = languageNames(language).of(tag);
-  if (name === undefined || language !== "ru") return name;
+export function languageName(language: Language, tag: string): string {
+  const name = languageNames(language).of(tag) ?? tag;
+  if (language !== "ru") return name;
   return name.charAt(0).toLocaleLowerCase("ru") + name.slice(1);
 }
 
