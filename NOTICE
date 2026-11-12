@@ -9,11 +9,11 @@ package-lock.json, with the NOTICE of each package that holds one, as it is (R14
 docs/decisions.md).
 
 @altnovatrail/canvas 0.3.15 — Apache-2.0 — Copyright the NovaTrail authors.
-@altnovatrail/contracts 0.15.1 — Apache-2.0 — Copyright the NovaTrail authors.
+@altnovatrail/contracts 0.16.3 — Apache-2.0 — Copyright the NovaTrail authors.
 @altnovatrail/skill-map 0.1.5 — Apache-2.0 — Copyright the NovaTrail authors.
 @altnovatrail/spec 0.15.0 — Apache-2.0 — Copyright the NovaTrail authors.
 @altnovatrail/spec 0.15.1 — Apache-2.0 — Copyright the NovaTrail authors.
-@bufbuild/protobuf 2.16.0 — (Apache-2.0 AND BSD-3-Clause) — Copyright 2021-2026 Buf Technologies, Inc.; its code from Protocol Buffers, under BSD-3-Clause: Copyright 2008 Google Inc. All rights reserved.
+@bufbuild/protobuf 2.17.0 — (Apache-2.0 AND BSD-3-Clause) — Copyright 2021-2026 Buf Technologies, Inc.; its code from Protocol Buffers, under BSD-3-Clause: Copyright 2008 Google Inc. All rights reserved.
 @connectrpc/connect 2.3.0 — Apache-2.0 — Copyright 2021-2026 The Connect Authors
 @connectrpc/connect-web 2.3.0 — Apache-2.0 — Copyright 2021-2026 The Connect Authors
 @firebase/app 0.16.5 — Apache-2.0 — Copyright Google LLC

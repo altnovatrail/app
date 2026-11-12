@@ -5,8 +5,10 @@
 // change nothing until Save (WCAG 3.2.2). What another tab changed meanwhile shows in the fields not
 // edited here; what is edited here stays until it is saved — an edit made while the request was on
 // its way among them. A failure that is the session's own goes to it as well (`onFailed`). Below the
-// form, the storage of the profile's works on the server, a consent of its own (R30), and the way to
-// the profile's modules and their licenses (R32), and to its progress (R35).
+// form, the storage of the profile's works on the server, a consent of its own (R30), the way to
+// the profile's modules and their licenses (R32) and to its progress (R35), and the share of
+// today's tutor time the profile and the account have used (section 15 of the text of the
+// contracts, "The quota").
 import {
   Mode,
   type Profile,
@@ -26,6 +28,7 @@ import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { LANGUAGES, type Language } from "../i18n/language.ts";
 import { MODULES_PAGE } from "./ModulesPage.tsx";
 import { PROGRESS_PAGE } from "./progress.ts";
+import { QuotaSection } from "./QuotaSection.tsx";
 import { WorkStorage } from "./WorkStorage.tsx";
 
 /** What the adult changed on the page and has not saved: the pseudonym as typed. */
@@ -275,6 +278,7 @@ export function ProfilePage({
           </button>
         </div>
       </section>
+      <QuotaSection profile={profile} />
     </Screen>
   );
 }

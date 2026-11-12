@@ -10,10 +10,17 @@
 // its button (R32). Below the lists the screen says that the tutor is an AI, and leads to the page
 // on how to use it safely (R33). Beside the engine's way the screen leads to the skill map, the
 // second way in, where the learner chooses a skill (R34); a card marks a module whose skill graph
-// is a chain "in order" (R06).
+// is a chain "in order" (R06). Under its heading, where the learner begins their work, the screen
+// says how much of today's tutor time the profile has used, or, once it is used up, when it comes
+// back (section 15 of the text of the contracts, "The quota"; R37).
+import type { QuotaShare } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
+// Whose action a request is; the cards have actions of their own.
+import { Action as Actor } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
 import type { ConnectedModule } from "@altnovatrail/contracts/novatrail/api/v1/module_pb.js";
 import { type ReactNode, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
-import { useApi } from "../api/ApiContext.tsx";
+import { learnerQuotaText, readQuota } from "../account/quota.ts";
+import { useApi, useRequest } from "../api/ApiContext.tsx";
+import type { Api } from "../api/client.ts";
 import { type Failure, parseFailure } from "../api/failure.ts";
 import { failureText } from "../api/words.ts";
 import { LESSON, navigate, SKILL_MAP, TASK, TUTOR } from "../app/router.ts";
@@ -137,6 +144,8 @@ export interface SubjectsScreenProps {
   readonly onLesson?: (lessonRunId: string) => void;
   /** Opens the page of a version's license, by its digest; no button without it. */
   readonly onLicense?: (digest: string) => void;
+  /** The share of today's quota of platform AI the profile has used; none while it is not known. */
+  readonly quota?: QuotaShare;
 }
 
 /** The screen itself, from what its container has read. */
@@ -153,8 +162,14 @@ export function SubjectsScreen({
   onLesson,
   onLicense,
   next,
+  quota,
 }: SubjectsScreenProps) {
   const { language, words } = useLanguage();
+  // Once for each share that comes, not for each render: its formats of Intl are made anew.
+  const spent = useMemo(
+    () => (quota === undefined ? undefined : learnerQuotaText(quota, words)),
+    [quota, words],
+  );
   const connectedId = useId();
   const continueId = useId();
   const lessonsId = useId();
@@ -178,6 +193,8 @@ export function SubjectsScreen({
           {failureText(failure, words)}
         </p>
       )}
+      {/* Above where the learner begins their work: how much of today's tutor time is used. */}
+      {spent === undefined ? null : <p>{spent}</p>}
       {onContinue === undefined ? null : (
         <section aria-labelledby={continueId} className="nt-continue">
           <h2 id={continueId}>{words.text("task.continue-title")}</h2>
@@ -340,7 +357,6 @@ export function MySubjects({
   const [pending, setPending] = useState(false);
   // The button the focus goes to once a card has moved: its own, in its new list.
   const focus = useRef<{ moduleId: string; action: Action } | undefined>(undefined);
-  const retry = useCallback(() => setAttempt((n) => n + 1), []);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: a retry reads the lists again.
   useEffect(() => {
@@ -372,6 +388,18 @@ export function MySubjects({
       current = false;
     };
   }, [api, views, profileId, attempt]);
+
+  // The share of the quota, by the learner's action: the profile's alone. It holds nothing back:
+  // a share that did not come is no line, nor is one from an api that has none yet (R27), and the
+  // lists stand as they are. A child's profile, which E4 brings, gets the same: never the account's.
+  const readShare = useCallback((of: Api) => readQuota(of, profileId, Actor.LEARNING), [profileId]);
+  const share = useRequest(readShare);
+  const retryShare = share.retry;
+  // A retry reads the lists again, and the share with them: it may have failed with them.
+  const retry = useCallback(() => {
+    setAttempt((n) => n + 1);
+    retryShare();
+  }, [retryShare]);
 
   // Once a card has moved, its button in the new list takes the focus the old one had.
   useEffect(() => {
@@ -412,6 +440,7 @@ export function MySubjects({
       connected={connected}
       catalog={catalog}
       {...(failure === undefined ? {} : { failure })}
+      {...(share.status === "done" && share.value !== undefined ? { quota: share.value } : {})}
       pending={pending}
       onRetry={retry}
       {...(open === undefined ? {} : { onContinue: () => navigate(TASK) })}

@@ -1,7 +1,13 @@
 // "My subjects" in Chromium (section 3.10 of docs/architecture.md; R99 in spec): the cards by role
 // and name, connecting and disconnecting, a module with no current version, an empty catalog and
-// the refusals, with api on connect-es's router and the open views on the device's memory.
-import { ProfileSchema } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
+// the refusals, and the line of the tutor time — the profile's share, the cap reached, and none
+// with no share or no GetQuota or a share that did not come —, with api on connect-es's router
+// and the open views on the device's memory.
+import {
+  AccountService,
+  ProfileSchema,
+  type QuotaShareSchema,
+} from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import {
   Cause,
   ChoiceKind,
@@ -18,12 +24,14 @@ import {
   PackageService,
 } from "@altnovatrail/contracts/novatrail/api/v1/package_pb.js";
 import { create, type MessageInitShape } from "@bufbuild/protobuf";
+import { timestampFromDate } from "@bufbuild/protobuf/wkt";
 import { Code, ConnectError, type ConnectRouter, createRouterTransport } from "@connectrpc/connect";
 import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 import { ApiProvider } from "../api/ApiContext.tsx";
 import { createApi } from "../api/client.ts";
+import { dateTimeFormat } from "../i18n/intl.ts";
 import { LessonProvider } from "../lesson/LessonContext.tsx";
 import { PackageChecks } from "../packages/checks.ts";
 import { DeviceFiles } from "../packages/files.ts";
@@ -84,6 +92,8 @@ interface Setup {
   runs?: { lessonRunId: string; lesson: string; packageDigest: string }[];
   /** The tiers of the skill graph of each version that has one. */
   tiers?: Record<string, Record<string, number>>;
+  /** The share GetQuota gives; throwing makes it fail. Without it, api has no GetQuota. */
+  quota?: () => MessageInitShape<typeof QuotaShareSchema>;
 }
 
 async function renderSubjects(setup: Setup, language: "en" | "ru" = "en") {
@@ -92,6 +102,7 @@ async function renderSubjects(setup: Setup, language: "en" | "ru" = "en") {
   await setup.seed?.(device);
   let connected = setup.connected ?? [];
   const asked: string[] = [];
+  const stale = vi.fn();
   const routes = (router: ConnectRouter) => {
     router.service(ModuleService, {
       listConnectedModules(request) {
@@ -116,6 +127,15 @@ async function renderSubjects(setup: Setup, language: "en" | "ru" = "en") {
         return { modules: connected };
       },
     });
+    const quota = setup.quota;
+    if (quota !== undefined) {
+      router.service(AccountService, {
+        getQuota(request) {
+          asked.push(`quota ${request.profileId} ${request.action}`);
+          return { share: quota() };
+        },
+      });
+    }
     router.service(LearningService, {
       chooseNext() {
         asked.push("choose");
@@ -150,7 +170,7 @@ async function renderSubjects(setup: Setup, language: "en" | "ru" = "en") {
   const api = createApi({
     baseUrl: "https://api.example.org",
     tokens: { token: async () => "t", signOut: async () => {} },
-    on: { stale: () => {}, accountGone: async () => {}, noAccess: async () => {} },
+    on: { stale, accountGone: async () => {}, noAccess: async () => {} },
     sleep: async () => {},
     transport: (interceptors) => createRouterTransport(routes, { transport: { interceptors } }),
   });
@@ -194,7 +214,7 @@ async function renderSubjects(setup: Setup, language: "en" | "ru" = "en") {
       language,
     ),
   );
-  return { asked, device, unmount: rendered.unmount };
+  return { asked, device, stale, unmount: rendered.unmount };
 }
 
 /** The card of a module, by the title it is labelled by. */
@@ -474,4 +494,92 @@ describe("the way to what the engine chose", () => {
     expect(screen.getByRole("button", { name: "What's next" })).toBeVisible();
     expect(asked).toContain("choose");
   });
+});
+
+describe("the tutor time", () => {
+  /** The line of the tutor time, if the screen shows one. */
+  const line = () => screen.queryByText(/^(Tutor time today|Today's tutor time|Время наставника)/);
+
+  it("says, above the way to begin, how much of today's the profile has used, and never the account's", async () => {
+    const { asked } = await renderSubjects({
+      quota: () => ({ profilePercent: 40, accountPercent: 90 }),
+    });
+    const said = await screen.findByText("Tutor time today: 40% used");
+    const next = await screen.findByRole("button", { name: "What's next" });
+    expect(said.compareDocumentPosition(next) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.queryByText(/90/)).toBeNull();
+    // By the learner's action, ACTION_LEARNING.
+    expect(asked).toContain("quota p1 1");
+  });
+
+  it("says, once a cap is reached, that the tutor's time is over and when it comes back", async () => {
+    const now = new Date();
+    const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+    await renderSubjects(
+      {
+        quota: () => ({
+          profilePercent: 100,
+          capReached: true,
+          nextFamilyDay: timestampFromDate(midnight),
+        }),
+      },
+      "ru",
+    );
+    const time = dateTimeFormat("ru", { timeStyle: "short" }).format(midnight);
+    expect(
+      await screen.findByText(
+        `Время наставника на сегодня кончилось. Оно вернётся завтра в ${time}`,
+      ),
+    ).toBeVisible();
+  });
+
+  it("is no line while platform AI is closed to the account, nor from an api with no GetQuota", async () => {
+    const { asked, unmount } = await renderSubjects({ quota: () => ({}) });
+    await screen.findByRole("heading", { name: "Connected" });
+    await vi.waitFor(() => expect(asked).toContain("quota p1 1"));
+    expect(line()).toBeNull();
+    unmount();
+    // No GetQuota at all: no line, and no offer to reload.
+    const { stale } = await renderSubjects({ catalog: [{ moduleId: MATH, packageDigest: D1 }] });
+    expect(await screen.findByRole("article", { name: "Olympiad maths" })).toBeTruthy();
+    expect(line()).toBeNull();
+    expect(stale).not.toHaveBeenCalled();
+  });
+
+  it("holds nothing back when the share did not come: the lists stand, with no line and no alert", async () => {
+    const { asked } = await renderSubjects({
+      catalog: [{ moduleId: MATH, packageDigest: D1 }],
+      quota: () => {
+        throw new ConnectError("down", Code.Unavailable);
+      },
+    });
+    expect(await screen.findByRole("article", { name: "Olympiad maths" })).toBeTruthy();
+    // The client's own repeats asked again, and then gave up.
+    await vi.waitFor(() =>
+      expect(asked.filter((each) => each.startsWith("quota"))).toHaveLength(5),
+    );
+    expect(line()).toBeNull();
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(screen.getByRole("heading", { level: 1, name: "My subjects" })).toBeVisible();
+  });
+
+  it("is asked again with the lists, when a retry brings them after both failed", async () => {
+    let down = true;
+    await renderSubjects({
+      catalog: [{ moduleId: MATH, packageDigest: D1 }],
+      list: () => {
+        if (down) throw new ConnectError("down", Code.Unavailable);
+      },
+      quota: () => {
+        if (down) throw new ConnectError("down", Code.Unavailable);
+        return { profilePercent: 40 };
+      },
+    });
+    expect(
+      await screen.findByRole("heading", { level: 1, name: "No connection" }, { timeout: 15_000 }),
+    ).toBeTruthy();
+    down = false;
+    await userEvent.click(screen.getByRole("button", { name: "Try again" }));
+    expect(await screen.findByText("Tutor time today: 40% used")).toBeTruthy();
+  }, 30_000);
 });

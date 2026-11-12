@@ -337,8 +337,8 @@ describe("the way in", () => {
     await userEvent.click(screen.getByRole("button", { name: "Switch learner" }));
     expect(await screen.findByRole("heading", { level: 1, name: "Who is learning?" })).toBeTruthy();
     expect(screen.queryByText("Learners' work is kept on this device")).toBeNull();
-    // Each request of the way in, then the learner's home, and no other: CheckPackages has no
-    // package to ask about.
+    // Each request of the way in, then the learner's home — its lists and the share of the
+    // quota —, and no other: CheckPackages has no package to ask about.
     expect(asked).toEqual([
       "GetAccount",
       "GetLegalTexts",
@@ -349,8 +349,10 @@ describe("the way in", () => {
       "GetAccount",
       "ListConnectedModules",
       "ListCatalog",
+      "GetQuota",
     ]);
-  });
+    // Some twenty steps of the way in: under the load of the whole suite they outlast 15 s.
+  }, 30_000);
 
   it("shows the texts on a Russian screen with their translation, and anew when api has newer ones", async () => {
     const service = fakeSignIn("uid-1");

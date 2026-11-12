@@ -36,9 +36,13 @@ const OPEN = new Set([
 
 /**
  * The methods whose absence is no build older than api: the legal texts came with spec v0.13.0,
- * and an api on an older tag, which has none in force, answers them `unimplemented` (R27).
+ * and an api on an older tag, which has none in force, answers them `unimplemented` (R27); the
+ * share of the quota came with v0.16.3, and an api on an older tag has none to give.
  */
-const MAY_BE_ABSENT = new Set(["novatrail.api.v1.LegalService/GetLegalTexts"]);
+const MAY_BE_ABSENT = new Set([
+  "novatrail.api.v1.LegalService/GetLegalTexts",
+  "novatrail.api.v1.AccountService/GetQuota",
+]);
 
 /** The pauses before each repeat, ms: 7.5 s in all, "for a short while". */
 export const PAUSES = [500, 1000, 2000, 4000] as const;

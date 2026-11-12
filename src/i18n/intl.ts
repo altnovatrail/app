@@ -1,7 +1,7 @@
-// What app writes of numbers, sizes, dates, names of languages and orders (section 3.8 of
-// docs/architecture.md): Intl in the screen's language, English after it for what that language
-// lacks. The numbers of a module and what a learner might copy into an answer Intl does not touch.
-// No DOM.
+// What app writes of numbers, shares, sizes, dates, lists, names of languages and orders (section
+// 3.8 of docs/architecture.md): Intl in the screen's language, English after it for what that
+// language lacks. The numbers of a module and what a learner might copy into an answer Intl does
+// not touch. No DOM.
 import type { Language } from "./language.ts";
 
 const locales = (language: Language): string[] => [language, "en"];
@@ -12,6 +12,19 @@ export function numberFormat(language: Language, options?: Intl.NumberFormatOpti
 
 export function dateTimeFormat(language: Language, options?: Intl.DateTimeFormatOptions) {
   return new Intl.DateTimeFormat(locales(language), options);
+}
+
+/**
+ * A list as the screen's language joins it: "A, B, and C", «A, B и C». Its parts tell the names
+ * from the words between them, so that a name in a language of its own keeps its `lang`.
+ */
+export function listFormat(language: Language, options?: Intl.ListFormatOptions) {
+  return new Intl.ListFormat(locales(language), options);
+}
+
+/** A share in whole percent, from 0 to 100, as the language writes it: "40%", «40 %». */
+export function percentText(language: Language, percent: number): string {
+  return numberFormat(language, { style: "percent" }).format(percent / 100);
 }
 
 /** The names of languages in the screen's language: the language of a module's explanations. */

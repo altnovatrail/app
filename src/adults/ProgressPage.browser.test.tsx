@@ -2,9 +2,10 @@
 // section 3.10 of docs/architecture.md): the way to it from the profile's page, the skill maps of
 // the modules connected with the adult's view of a module's map, the traps that repeat from the
 // first page alone, the attempts page by page with "Show more" and the focus, each with how it
-// came out and the words of its reason code — an unknown code with the common words —, a page
-// that did not come and its retry, and the pages with no profile chosen — with api on
-// connect-es's router and the open views on the device's memory.
+// came out and the words of its reason code — an unknown code with the common words —, its
+// lesson's title or ID and a solved attempt's skills in the module's language, a page that did not
+// come and its retry, and the pages with no profile chosen — with api on connect-es's router and
+// the open views on the device's memory.
 import "@altnovatrail/skill-map";
 import { ProfileSchema } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import { Action } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
@@ -32,7 +33,7 @@ import { userEvent } from "vitest/browser";
 import { ApiProvider } from "../api/ApiContext.tsx";
 import { createApi } from "../api/client.ts";
 import { routeOf, useRoute } from "../app/router.ts";
-import { dateTimeFormat } from "../i18n/intl.ts";
+import { dateTimeFormat, listFormat } from "../i18n/intl.ts";
 import type { Language } from "../i18n/language.ts";
 import { PackageChecks } from "../packages/checks.ts";
 import { DeviceFiles } from "../packages/files.ts";
@@ -332,6 +333,82 @@ describe("the progress of a profile", () => {
     });
     expect(within(open3).getByText("Физика").lang).toBe("ru");
     expect(progress).toEqual([expect.objectContaining({ profileId: "p1", pageToken: "" })]);
+  });
+
+  it("names a lesson by its title and a solved attempt's skills, in the module's language, and a lesson with no title by its ID", async () => {
+    const page: Page = {
+      attempts: [
+        {
+          task: `${PHYSICS}/task/levers-2`,
+          moduleVersion: "0.3.0",
+          lesson: `${PHYSICS}/lesson/levers-first`,
+          lessonTitle: "Рычаги",
+          closeReason: CloseReason.CORRECT,
+          wrongAnswers: 1,
+          skillTitles: ["Плечо силы", "Момент", "Равновесие"],
+        },
+        {
+          task: `${MATHS}/task/counting-gaps-5`,
+          moduleVersion: "1.2.0",
+          lesson: `${MATHS}/lesson/counting-first-steps`,
+          closeReason: CloseReason.DONE,
+          skillTitles: ["Counting gaps"],
+        },
+        // Skills api should not send beside an attempt not solved, and a solved one with none.
+        {
+          task: `${MATHS}/task/counting-gaps-6`,
+          moduleVersion: "1.2.0",
+          closeReason: CloseReason.LEFT,
+          skillTitles: ["Counting gaps"],
+        },
+        {
+          task: `${MATHS}/task/counting-gaps-7`,
+          moduleVersion: "1.2.0",
+          closeReason: CloseReason.SOLUTION_SHOWN,
+        },
+      ],
+    };
+    const skills = ["Плечо силы", "Момент", "Равновесие"];
+    for (const language of ["en", "ru"] as const) {
+      window.location.hash = "#/adults";
+      renderSection({ pages: { "": [() => page] } }, language);
+      await openProgress(language === "en" ? "See the progress" : "Посмотреть прогресс");
+      const attempts = within(
+        await screen.findByRole("region", { name: language === "en" ? "Attempts" : "Попытки" }),
+      );
+      const [titled, untitled, left, shown] = attempts.getAllByRole("article") as [
+        HTMLElement,
+        HTMLElement,
+        HTMLElement,
+        HTMLElement,
+      ];
+      const [lesson, trained] = language === "en" ? ["Lesson", "Skills"] : ["Урок", "Навыки"];
+      const dd = (card: HTMLElement, term: string) =>
+        [...card.querySelectorAll("dt")].find((dt) => dt.textContent === term)
+          ?.nextElementSibling as HTMLElement;
+      // The titles in the module's language, once its manifest has named it; the list in the
+      // screen's language, each title in the module's.
+      await vi.waitFor(() => expect(dd(titled, lesson).lang).toBe("ru"));
+      expect(termsOf(titled)).toMatchObject({
+        [lesson]: "Рычаги",
+        [trained]: listFormat(language).format(skills),
+      });
+      const list = dd(titled, trained);
+      expect(list.lang).toBe("");
+      expect(
+        [...list.querySelectorAll("span")].map((span) => [span.lang, span.textContent]),
+      ).toEqual(skills.map((skill) => ["ru", skill]));
+      // No title: the lesson by its ID, in no language of the module's.
+      expect(termsOf(untitled)).toMatchObject({
+        [lesson]: "counting-first-steps",
+        [trained]: "Counting gaps",
+      });
+      expect(dd(untitled, lesson).lang).toBe("");
+      expect(dd(untitled, trained).querySelector("span")?.lang).toBe("en");
+      expect(termsOf(left)[trained]).toBeUndefined();
+      expect(termsOf(shown)[trained]).toBeUndefined();
+      cleanup();
+    }
   });
 
   it("shows the next page on Show more, with the focus on its first attempt, an unknown code in the common words, and no traps of it", async () => {

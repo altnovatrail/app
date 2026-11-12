@@ -106,8 +106,8 @@ ENV PATH="/usr/local/node/bin:/usr/local/go/bin:/home/vscode/.local/bin:${PATH}"
 # Playwright finds no browser, and ci-test fails on it. All three are raised by hand, in spec's
 # repo-template, which a move to its new tag brings here, or here first, in the pull request that
 # raises the package (R79 spec): Dependabot reads FROM lines only, and this image is not in one.
-ARG PLAYWRIGHT_HEADLESS_SHELL_REVISION=1248
-COPY --from=mcr.microsoft.com/playwright:v1.64.1-noble@sha256:7852dc5a7d72f5fe458a597d690f6c42fbc8e9e26ddfa95f8e6ef552558d9bbf \
+ARG PLAYWRIGHT_HEADLESS_SHELL_REVISION=1254
+COPY --from=mcr.microsoft.com/playwright:v1.65.0-noble@sha256:9beb546099e11f52d62e505537914870e01a67e0e6b00ae41da4775324e73dbe \
     /ms-playwright/chromium_headless_shell-${PLAYWRIGHT_HEADLESS_SHELL_REVISION} \
     /ms-playwright/chromium_headless_shell-${PLAYWRIGHT_HEADLESS_SHELL_REVISION}
 # Where Playwright looks for its browsers, outside any home: in CI the checks run with HOME=/tmp.

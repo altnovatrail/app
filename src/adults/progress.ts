@@ -1,10 +1,10 @@
 // What the progress of a profile in the section for adults reads (R35 in docs/decisions.md;
 // section 3.10 of docs/architecture.md; GetProgress in section 15 of the text of the contracts):
 // its pages, the module and the local ID of an entry named by its full ID, how an attempt came out
-// by its close reason and its wrong answers, and the words of the reason code of the engine's
-// choice. The reason code is the adult's alone (concepts 12 in spec; R100 in spec): no answer to a
-// learning request carries it, and only this module of the section gives it words — a test holds
-// every other file of app away from it. No DOM.
+// by its close reason and its wrong answers, the skills a solved attempt's task trains, and the
+// words of the reason code of the engine's choice. The reason code is the adult's alone (concepts
+// 12 in spec; R100 in spec): no answer to a learning request carries it, and only this module of
+// the section gives it words — a test holds every other file of app away from it. No DOM.
 import { CloseReason, ReasonCode } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import type {
   AttemptRecord,
@@ -75,8 +75,24 @@ export function outcomeKey(record: AttemptRecord) {
   return keyFor(OUTCOME_KEYS, record.closeReason);
 }
 
+/** The close reasons of a solved attempt: the one attempt whose task's skills the progress names. */
+const SOLVED: ReadonlySet<CloseReason> = new Set([
+  CloseReason.CORRECT,
+  CloseReason.SOLUTION_SHOWN,
+  CloseReason.DONE,
+]);
+
 /**
- * The words of each reason code for the adult, the nine of the contract v0.15.1 (R100 and R107 in
+ * The titles of the skills a solved attempt's task trains, in their order; none of any other, as
+ * api gives none: the skills of a task are closed while it may be begun again, since their titles
+ * could tell how to solve it (section 14 of the format's text).
+ */
+export function skillTitlesOf(record: AttemptRecord): readonly string[] {
+  return SOLVED.has(record.closeReason) ? record.skillTitles : [];
+}
+
+/**
+ * The words of each reason code for the adult, the nine of the contract v0.16.3 (R100 and R107 in
  * spec). `REASON_CODE_OPEN_RUN` is never in the progress — an attempt of a lesson run has the code
  * of the choice that began the run —, and has its words all the same. A code this build does not
  * know, and none beside a time of choice, gets the common words, which name no reason.
