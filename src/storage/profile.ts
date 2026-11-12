@@ -1,9 +1,12 @@
 // The database of one learner's profile (section 3.2 of docs/architecture.md; R04, R16 in
 // docs/decisions.md): attempts with their history of writing and submissions, the work of a correct
 // submission until the words after it, and the state of lessons. History and contexts are kept as
-// the canvas gave them, unchanged. Every write says whether it was saved, so that the task screen
-// can tell the learner the work is not saved on this device.
+// the canvas gave them, unchanged; the pictures of the work as bytes with their type, not Blobs,
+// which WebKit does not write in an ephemeral session (the 2026-11-12 amendment to R16), and a Blob
+// that schema version 1 kept before is read as it is. Every write says whether it was saved, so
+// that the task screen can tell the learner the work is not saved on this device.
 import type {
+  CellPlace,
   DemoState,
   ExportedCell,
   ExportedWork,
@@ -35,18 +38,106 @@ export interface Attempt {
 /** The work for checking without its context: the crop of a sheet, or a workbook's boxes. */
 export type Work = { readonly png: Blob } | { readonly cells: readonly ExportedCell[] };
 
-/** A submission: its context as the canvas gave it, the history's length then, and its work. */
+/** A picture as the database keeps it: its bytes, and its media type beside them. */
+export interface Bytes {
+  readonly bytes: ArrayBuffer;
+  readonly type: string;
+}
+
+/** The work as the database keeps it: each picture in bytes. */
+export type KeptWork =
+  | { readonly png: Bytes }
+  | { readonly cells: readonly (CellPlace & { readonly png: Bytes })[] };
+
+/**
+ * A submission: its context as the canvas gave it, the history's length then, and its work — none
+ * when its record holds it in a form this build does not read. Such a record stays where it is,
+ * and goes by the rules all work goes by: the end of its attempt, the term, an erasure.
+ */
 export interface SubmissionRecord {
   readonly context: Submission;
   readonly historyLength: number;
-  readonly work: Work;
+  readonly work: Work | undefined;
 }
 
-/** An attempt with its history and its submissions, in their order. */
+/**
+ * An attempt with its history and its submissions, in their order. The submissions are read on
+ * their own, after the rest: when the browser cannot give them back, they are `undefined`, and the
+ * attempt and its history still come. Two reads are not one snapshot: a write of another tab may
+ * come between them, and a reader of the submissions takes a submission's history length as it is.
+ */
 export interface StoredAttempt {
   readonly attempt: Attempt;
   readonly history: readonly HistoryEvent[];
-  readonly submissions: readonly SubmissionRecord[];
+  readonly submissions: readonly SubmissionRecord[] | undefined;
+}
+
+/** What a profile keeps on this device, for the page This device (R04). */
+export interface Usage {
+  /** The attempts kept unfinished, counted. */
+  readonly unfinished: number;
+  /**
+   * About how many bytes its records take — the browser does not tell it of one database —; none
+   * when a record of it could not be read.
+   */
+  readonly bytes: number | undefined;
+}
+
+async function bytesOf(picture: Blob): Promise<Bytes> {
+  return { bytes: await picture.arrayBuffer(), type: picture.type };
+}
+
+/** The work as the database keeps it; its bytes are read before the transaction, not in it. */
+async function keptWork(work: ExportedWork): Promise<KeptWork> {
+  if ("png" in work) return { png: await bytesOf(work.png) };
+  return {
+    cells: await Promise.all(
+      work.cells.map(async ({ png, ...place }) => ({ ...place, png: await bytesOf(png) })),
+    ),
+  };
+}
+
+/** A picture kept: bytes, or a Blob that schema version 1 kept before them; anything else is none. */
+function pictureOf(kept: unknown): Blob | undefined {
+  if (kept instanceof Blob) return kept;
+  const bytes = kept as Partial<Bytes> | null | undefined;
+  if (!(bytes?.bytes instanceof ArrayBuffer) || typeof bytes.type !== "string") return undefined;
+  return new Blob([bytes.bytes], { type: bytes.type });
+}
+
+/** The work a record keeps, in either form, with Blobs again; a form this build cannot read is none. */
+export function workOf(kept: unknown): Work | undefined {
+  if (typeof kept !== "object" || kept === null) return undefined;
+  if ("png" in kept) {
+    const png = pictureOf(kept.png);
+    return png === undefined ? undefined : { png };
+  }
+  if (!("cells" in kept) || !Array.isArray(kept.cells)) return undefined;
+  const cells: ExportedCell[] = [];
+  for (const cell of kept.cells as readonly (CellPlace & { readonly png?: unknown })[]) {
+    const png = pictureOf(cell?.png);
+    if (png === undefined) return undefined;
+    cells.push({ ...cell, png });
+  }
+  return { cells };
+}
+
+const encoder = new TextEncoder();
+
+/**
+ * About how many bytes a record takes: its strings in UTF-8, eight bytes a number, its pictures by
+ * their size, a byte anything else. The browser keeps it in a form of its own: the page says "about".
+ */
+export function sizeOf(value: unknown): number {
+  if (typeof value === "string") return encoder.encode(value).length;
+  if (typeof value === "number") return 8;
+  if (value instanceof ArrayBuffer) return value.byteLength;
+  if (value instanceof Blob) return value.size;
+  if (Array.isArray(value)) return value.reduce((sum: number, item) => sum + sizeOf(item), 0);
+  if (typeof value === "object" && value !== null) {
+    return Object.entries(value).reduce((sum, [key, item]) => sum + sizeOf(key) + sizeOf(item), 0);
+  }
+  return 1;
 }
 
 /** The state of a lesson on one package, in one passage (section 3.4). */
@@ -63,6 +154,7 @@ export interface LessonState {
 }
 
 const ATTEMPT_STORES = ["attempts", "history", "submissions"];
+const STORES = Object.keys(PROFILE_SCHEMA.stores);
 
 async function eraseAttempt(tx: Transaction, attemptId: string): Promise<void> {
   await tx.delete("attempts", attemptId);
@@ -100,18 +192,27 @@ export class Profile {
     });
   }
 
-  readAttempt(attemptId: string): Promise<StoredAttempt | undefined> {
-    return this.connection.read(ATTEMPT_STORES, async (tx) => {
+  async readAttempt(attemptId: string): Promise<StoredAttempt | undefined> {
+    const found = await this.connection.read(["attempts", "history"], async (tx) => {
       const attempt = (await tx.get("attempts", attemptId)) as Attempt | undefined;
       if (attempt === undefined) return undefined;
       const history = await tx.entries("history", { range: within(attemptId) });
-      const submissions = await tx.entries("submissions", { range: within(attemptId) });
-      return {
-        attempt,
-        history: history.map((entry) => entry.value as HistoryEvent),
-        submissions: submissions.map((entry) => entry.value as SubmissionRecord),
-      };
+      return { attempt, history: history.map((entry) => entry.value as HistoryEvent) };
     });
+    if (found === undefined) return undefined;
+    // A read of their own: a record the browser cannot give back takes neither the attempt nor its
+    // history with it, and nothing is erased for it.
+    const submissions = await this.connection
+      .read(["submissions"], (tx) => tx.entries("submissions", { range: within(attemptId) }))
+      .then(
+        (entries) =>
+          entries.map(({ value }): SubmissionRecord => {
+            const { work, ...rest } = value as Omit<SubmissionRecord, "work"> & { work: unknown };
+            return { ...rest, work: workOf(work) };
+          }),
+        () => undefined,
+      );
+    return { ...found, submissions };
   }
 
   /** Marks the attempt changed now, in the transaction; false when there is no such attempt. */
@@ -164,12 +265,8 @@ export class Profile {
     work: ExportedWork,
     historyLength: number,
   ): Promise<number | "unsaved"> {
-    const record: SubmissionRecord = {
-      context: work.submission,
-      historyLength,
-      work: "png" in work ? { png: work.png } : { cells: work.cells },
-    };
     try {
+      const record = { context: work.submission, historyLength, work: await keptWork(work) };
       return await this.connection.write(["attempts", "submissions"], async (tx) => {
         if (!(await this.touch(tx, attemptId))) return "unsaved" as const;
         const n = await tx.count("submissions", { range: within(attemptId) });
@@ -186,22 +283,26 @@ export class Profile {
    * go. The work of a correct submission, by its number from 0, stays until the words after it.
    */
   async attemptEnded(attemptId: string, correct?: number): Promise<void> {
+    // Read first, on its own: a record the browser cannot give back would abort the erasure with it.
+    const work =
+      correct === undefined
+        ? undefined
+        : await this.connection
+            .read(["submissions"], (tx) => tx.get("submissions", [attemptId, correct]))
+            .then(
+              (record) => (record as { readonly work?: unknown } | undefined)?.work,
+              () => undefined,
+            );
     await this.connection.write([...ATTEMPT_STORES, "correctWork"], async (tx) => {
-      if (correct !== undefined) {
-        const record = (await tx.get("submissions", [attemptId, correct])) as
-          | SubmissionRecord
-          | undefined;
-        if (record !== undefined) await tx.put("correctWork", attemptId, record.work);
-      }
+      if (work !== undefined) await tx.put("correctWork", attemptId, work);
       await eraseAttempt(tx, attemptId);
     });
   }
 
   /** The work of an ended attempt's correct submission, for the words after it. */
   async correctWork(attemptId: string): Promise<Work | undefined> {
-    return this.connection.read(
-      ["correctWork"],
-      async (tx) => (await tx.get("correctWork", attemptId)) as Work | undefined,
+    return workOf(
+      await this.connection.read(["correctWork"], (tx) => tx.get("correctWork", attemptId)),
     );
   }
 
@@ -284,6 +385,23 @@ export class Profile {
     return this.connection.read(["attempts"], (tx) => tx.count("attempts"));
   }
 
+  /** What the profile keeps on this device: its unfinished attempts, and about how much space. */
+  async usage(): Promise<Usage> {
+    // Counted first and on its own: a count reads no record, and so it comes even when the sizes,
+    // which read every record, do not.
+    const unfinished = await this.unfinished();
+    const bytes = await this.connection
+      .read(STORES, async (tx) => {
+        let sum = 0;
+        for (const store of STORES) {
+          for (const { key, value } of await tx.entries(store)) sum += sizeOf(key) + sizeOf(value);
+        }
+        return sum;
+      })
+      .catch(() => undefined);
+    return { unfinished, bytes };
+  }
+
   /** Attempts and lessons last changed at a time or before go, with all of an attempt's work. */
   async expire(cutoff: number): Promise<void> {
     const range = { upper: cutoff };
@@ -310,10 +428,30 @@ export async function addProfile(device: Device, profileId: string): Promise<Pro
  */
 export async function openProfile(device: Device, profileId: string): Promise<Profile | undefined> {
   const name = profileDatabase(profileId);
-  const entry = (await readRegistry(device))?.databases.get(name);
-  if (entry === undefined || entry.erase) return undefined;
+  if ((await registered(device, name)) !== "live") return undefined;
   const connection = await device.connect(name, PROFILE_SCHEMA, true);
   return connection === undefined ? undefined : new Profile(connection, device.now);
+}
+
+/** Whether the registry names a database, and whether it is to be erased. */
+async function registered(device: Device, name: string): Promise<"live" | "erasing" | undefined> {
+  const entry = (await readRegistry(device))?.databases.get(name);
+  if (entry === undefined) return undefined;
+  return entry.erase ? "erasing" : "live";
+}
+
+/**
+ * What a profile keeps on this device, for the page This device: `undefined` when the registry
+ * names no database of it, and `"erasing"` while its erasure waits for the browser.
+ */
+export async function profileUsage(
+  device: Device,
+  profileId: string,
+): Promise<Usage | "erasing" | undefined> {
+  const name = profileDatabase(profileId);
+  const found = await registered(device, name);
+  if (found !== "live") return found;
+  return (await openProfileDatabase(device, name))?.usage();
 }
 
 /** A profile's database by its name in the registry, for the start and for erasure. */

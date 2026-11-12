@@ -21,6 +21,7 @@ import { ApiProvider } from "../api/ApiContext.tsx";
 import { createApi } from "../api/client.ts";
 import type { Failure } from "../api/failure.ts";
 import type { Route } from "../app/hash.ts";
+import { memoryDevice } from "../test/device.ts";
 import { inLanguage } from "../test/language.tsx";
 import { AdultSection } from "./AdultSection.tsx";
 import { ProfilePage } from "./ProfilePage.tsx";
@@ -100,7 +101,14 @@ describe("the section's first page", () => {
     const section = (shown: Route) =>
       inLanguage(
         <ApiProvider value={api}>
-          <AdultSection route={shown} profiles={profiles} onSaved={() => {}} onFailed={() => {}} />
+          <AdultSection
+            route={shown}
+            device={memoryDevice().device}
+            profiles={profiles}
+            onSaved={() => {}}
+            onFailed={() => {}}
+            onEraseAll={async () => "erased"}
+          />
         </ApiProvider>,
       );
     const { rerender } = render(section(route));
@@ -118,6 +126,32 @@ describe("the section's first page", () => {
     expect(window.location.hash).toBe("#/adults");
     await userEvent.click(screen.getByRole("button", { name: "Close the section" }));
     expect(window.location.hash).toBe("#/home");
+  });
+
+  it("opens This device from the first page", async () => {
+    window.location.hash = "#/adults";
+    const section = (shown: Route) =>
+      inLanguage(
+        <AdultSection
+          route={shown}
+          device={memoryDevice().device}
+          profiles={[profile()]}
+          onSaved={() => {}}
+          onFailed={() => {}}
+          onEraseAll={async () => "erased"}
+        />,
+      );
+    const { rerender } = render(section({ screen: "adults", parts: [] }));
+    const open = screen.getByRole("button", { name: "See what is on this device" });
+    expect(open).toHaveAccessibleDescription(
+      "What the app keeps on this device, and how to erase it",
+    );
+    await userEvent.click(open);
+    expect(window.location.hash).toBe("#/adults/device");
+    rerender(section({ screen: "adults", parts: ["device"] }));
+    expect(screen.getByRole("heading", { level: 1, name: "This device" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Back to the section" })).toBeTruthy();
+    expect(await screen.findByText("Nothing of this profile is kept on this device")).toBeTruthy();
   });
 });
 

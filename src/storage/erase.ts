@@ -14,7 +14,8 @@ import {
   readRegistry,
   type SignIn,
 } from "./registry.ts";
-import { CACHE, FIREBASE_AUTH, REGISTRY } from "./schema.ts";
+import { CACHE, FIREBASE_AUTH, FIREBASE_HEARTBEAT, profileDatabase, REGISTRY } from "./schema.ts";
+import { eraseSettings } from "./settings.ts";
 
 /** Every database of the account the registry names. */
 function accountDatabases(registry: Registry): string[] {
@@ -37,6 +38,27 @@ export async function eraseAccount(device: Device): Promise<boolean> {
   });
   if (!(await eraseDatabases(device, accountDatabases(registry)))) return false;
   return (await device.remove(REGISTRY)) === "deleted";
+}
+
+/**
+ * "Erase the profile's data on this device", on the page This device (R04): its database, marked in
+ * the registry first, as every erasure; one the browser did not delete the next start erases.
+ */
+export function eraseProfile(device: Device, profileId: string): Promise<boolean> {
+  return eraseDatabases(device, [profileDatabase(profileId)]);
+}
+
+/**
+ * What "Erase everything on this device" erases past the sign-out (section 3.2; the 2026-11-12
+ * amendment to R04): the device's settings, and the heartbeats of @firebase/app. The SDK holds its
+ * own connection to those and does not close it on versionchange, so their removal is "blocked"
+ * while the tab is open: IndexedDB does not cancel it for that, and it goes once that connection
+ * closes (R16). Gives whether the settings are gone and the heartbeats' removal did not fail.
+ */
+export async function eraseDevice(device: Device): Promise<boolean> {
+  const settings = await eraseSettings(device);
+  const heartbeats = await device.remove(FIREBASE_HEARTBEAT);
+  return settings && heartbeats !== "failed";
 }
 
 /**

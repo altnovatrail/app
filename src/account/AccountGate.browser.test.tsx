@@ -47,6 +47,8 @@ import { App } from "../app/App.tsx";
 import { Boot } from "../boot/Boot.tsx";
 import { addProfile } from "../storage/profile.ts";
 import { readRegistry } from "../storage/registry.ts";
+import { SETTINGS } from "../storage/schema.ts";
+import { writeLanguage } from "../storage/settings.ts";
 import { memoryDevice } from "../test/device.ts";
 import { type FakeSignIn, fakeSignIn } from "../test/signin.ts";
 import { AccountGate } from "./AccountGate.tsx";
@@ -865,5 +867,36 @@ describe("the section for adults", () => {
     window.location.hash = "#/adults/nowhere";
     await vi.waitFor(() => expect(window.location.hash).toBe("#/adults"));
     expect(screen.getByRole("heading", { level: 1, name: "For grown-ups" })).toBeTruthy();
+  });
+});
+
+describe("the page This device in the section", () => {
+  afterEach(() => {
+    window.location.hash = "";
+  });
+
+  it("erases everything on this device: the account's data, the device's language, the session", async () => {
+    const { device, backend } = memoryDevice();
+    await writeLanguage(device, "en");
+    const service = fakeSignIn("uid-1");
+    const account = { accountId: "account-1", profiles: [OWNER] };
+    renderApp(
+      { getAccount: () => message(GetAccountResponseSchema, { account }) },
+      service,
+      device,
+    );
+    await userEvent.click(await screen.findByRole("button", { name: "For grown-ups" }));
+    await userEvent.click(
+      await screen.findByRole("button", { name: "See what is on this device" }),
+    );
+    expect(await screen.findByRole("heading", { level: 1, name: "This device" })).toBeTruthy();
+    expect(window.location.hash).toBe("#/adults/device");
+    await userEvent.click(screen.getByRole("button", { name: "Erase everything on this device" }));
+    await userEvent.click(screen.getByRole("button", { name: "Erase" }));
+    expect(await screen.findByRole("heading", { level: 1, name: "Sign in" })).toBeTruthy();
+    expect(service.calls.signOut).toBe(1);
+    expect(await readRegistry(device)).toBeUndefined();
+    expect(backend.databases.has(SETTINGS)).toBe(false);
+    expect(window.location.hash).toBe("#/home");
   });
 });

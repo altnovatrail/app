@@ -7,6 +7,8 @@ import type { Device } from "./device.ts";
 import {
   accountSeen,
   eraseAccount,
+  eraseDevice,
+  eraseProfile,
   noAccess,
   profilesListed,
   signInProject,
@@ -14,7 +16,14 @@ import {
 } from "./erase.ts";
 import { addProfile, openProfile } from "./profile.ts";
 import { readRegistry, setAccount, setSignIn } from "./registry.ts";
-import { CACHE, FIREBASE_AUTH, profileDatabase, REGISTRY, SETTINGS } from "./schema.ts";
+import {
+  CACHE,
+  FIREBASE_AUTH,
+  FIREBASE_HEARTBEAT,
+  profileDatabase,
+  REGISTRY,
+  SETTINGS,
+} from "./schema.ts";
 import { readLanguage, writeLanguage } from "./settings.ts";
 
 const SIGN_IN = { projectId: "example-project", apiKey: "synthetic-web-api-key" };
@@ -82,6 +91,44 @@ describe("sign-out of the account's owner, and an account that is no more", () =
     const setup = await signedIn();
     setup.backend.failing.add(REGISTRY);
     expect(await eraseAccount(setup.device)).toBe(false);
+  });
+});
+
+describe("the erasures of the page This device", () => {
+  it("erase a profile's data alone, and leave a database the browser did not delete to the start", async () => {
+    const setup = await signedIn();
+    expect(await eraseProfile(setup.device, "p1")).toBe(true);
+    expect(setup.backend.databases.has(profileDatabase("p1"))).toBe(false);
+    expect(setup.backend.databases.has(profileDatabase("p2"))).toBe(true);
+    expect((await readRegistry(setup.device))?.databases.has(profileDatabase("p1"))).toBe(false);
+    expect(await openProfile(setup.device, "p1")).toBeUndefined();
+    // A profile with no database here has nothing to erase.
+    expect(await eraseProfile(setup.device, "p3")).toBe(true);
+    setup.backend.blocked.add(profileDatabase("p2"));
+    expect(await eraseProfile(setup.device, "p2")).toBe(false);
+    expect((await readRegistry(setup.device))?.databases.get(profileDatabase("p2"))?.erase).toBe(
+      true,
+    );
+  });
+
+  it("erase the device's settings and the heartbeats past the sign-out, a removal held not failing", async () => {
+    const setup = await signedIn();
+    await setup.backend.open(
+      FIREBASE_HEARTBEAT,
+      { version: 1, stores: { "firebase-heartbeat-store": {} } },
+      { create: true, onLost: () => {} },
+    );
+    setup.backend.blocked.add(FIREBASE_HEARTBEAT);
+    expect(await eraseDevice(setup.device)).toBe(true);
+    expect(await readLanguage(setup.device)).toBeUndefined();
+    setup.backend.blocked.delete(FIREBASE_HEARTBEAT);
+    expect(await eraseDevice(setup.device)).toBe(true);
+    expect(setup.backend.databases.has(FIREBASE_HEARTBEAT)).toBe(false);
+    setup.backend.failing.add(FIREBASE_HEARTBEAT);
+    expect(await eraseDevice(setup.device)).toBe(false);
+    setup.backend.failing.add(SETTINGS);
+    setup.backend.failing.delete(FIREBASE_HEARTBEAT);
+    expect(await eraseDevice(setup.device)).toBe(false);
   });
 });
 

@@ -14,7 +14,7 @@ import { type Failure, parseFailure } from "../api/failure.ts";
 import type { PackageChecks } from "../packages/checks.ts";
 import type { SignInResult, SignInService } from "../signin/service.ts";
 import type { Device } from "../storage/device.ts";
-import { accountSeen, eraseAccount, profilesListed } from "../storage/erase.ts";
+import { accountSeen, eraseAccount, eraseDevice, profilesListed } from "../storage/erase.ts";
 import { openProfileDatabase } from "../storage/profile.ts";
 import { eraseDatabases, readRegistry, type SignIn, setSignIn } from "../storage/registry.ts";
 import { profileDatabase } from "../storage/schema.ts";
@@ -387,11 +387,13 @@ export class Session {
 
   /**
    * The sign-out: the sign-in service's first, then everything of the account on this device
-   * (R04). `"erased"` when all of it is gone, `"left"` when some is, which the next start
-   * erases, and `"failed"` when the service did not sign out: then nothing is erased, since the
-   * same user would open the account again over its data gone.
+   * (R04), and with `everything` — "Erase everything on this device" — the device's settings and
+   * the heartbeats of @firebase/app too. `"erased"` when all of it is gone, `"left"` when some
+   * is, which the next start erases of the account, and `"failed"` when the service did not sign
+   * out: then nothing is erased, since the same user would open the account again over its data
+   * gone.
    */
-  async signOut(): Promise<"erased" | "left" | "failed"> {
+  async signOut(everything = false): Promise<"erased" | "left" | "failed"> {
     try {
       await this.options.service.signOut();
     } catch {
@@ -400,7 +402,9 @@ export class Session {
     this.run += 1;
     this.leaving = true;
     this.set({ step: "loading" });
-    const erased = await eraseAccount(this.options.device).catch(() => false);
+    const account = await eraseAccount(this.options.device).catch(() => false);
+    const device = everything ? await eraseDevice(this.options.device).catch(() => false) : true;
+    const erased = account && device;
     this.leaving = false;
     // Whoever the service names now — nobody, once it has signed out — the session starts from.
     this.user = undefined;

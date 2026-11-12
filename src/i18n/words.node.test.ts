@@ -2,7 +2,14 @@ import { describe, expect, it, vi } from "vitest";
 import { PSEUDO, pseudoString } from "../test/pseudo.ts";
 import { keyFor } from "./codes.ts";
 import { en } from "./en.ts";
-import { collator, dateTimeFormat, languageName, languageNames, numberFormat } from "./intl.ts";
+import {
+  collator,
+  dateTimeFormat,
+  languageName,
+  languageNames,
+  numberFormat,
+  sizeText,
+} from "./intl.ts";
 import { LANGUAGES } from "./language.ts";
 import { ru } from "./ru.ts";
 import {
@@ -115,6 +122,13 @@ describe("Intl in the screen's language", () => {
       "10 ноября 2026 г.",
     );
     expect(languageNames("ru").of("en")).toBe("английский");
+    // Sizes in kB, MB or GB, a decimal at most, and a kilobyte below that.
+    expect(sizeText("en", 300)).toBe("0.3 kB");
+    expect(sizeText("en", 23_456)).toBe("23.5 kB");
+    expect(sizeText("ru", 1_500_000)).toBe("1,5 МБ");
+    expect(sizeText("en", 120_000_000_000)).toBe("120 GB");
+    expect(sizeText("en", 999_960)).toBe("1 MB");
+    expect(sizeText("en", 950)).toBe("1 kB");
     // By the language's order, not by code units, which would put "борис" last.
     expect(["Яна", "борис", "Анна", "Ель"].sort(collator("ru").compare)).toEqual([
       "Анна",

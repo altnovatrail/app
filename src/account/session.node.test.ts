@@ -19,7 +19,8 @@ import { eraseAccount, noAccess } from "../storage/erase.ts";
 import { MemoryBackend } from "../storage/memory.ts";
 import { addProfile } from "../storage/profile.ts";
 import { readRegistry, setAccount } from "../storage/registry.ts";
-import { profileDatabase } from "../storage/schema.ts";
+import { FIREBASE_HEARTBEAT, profileDatabase, SETTINGS } from "../storage/schema.ts";
+import { readLanguage, writeLanguage } from "../storage/settings.ts";
 import { memoryDevice } from "../test/device.ts";
 import { fakeSignIn } from "../test/signin.ts";
 import { pseudonymOf, Session, type SessionState, unfinishedWork } from "./session.ts";
@@ -320,6 +321,40 @@ describe("the session", () => {
     backend.blocked.add(profileDatabase("p1"));
     expect(await session.signOut()).toBe("left");
     expect(session.snapshot().step).toBe("signed-out");
+  });
+
+  it.each([false, true])(
+    "erases the device's settings and the heartbeats too on Erase everything alone (%s)",
+    async (everything) => {
+      const backend = new MemoryBackend();
+      const { device } = memoryDevice(backend);
+      await setAccount(device, "account-1");
+      await writeLanguage(device, "ru");
+      const heartbeats = { version: 1, stores: { "firebase-heartbeat-store": {} } };
+      await backend.open(FIREBASE_HEARTBEAT, heartbeats, { create: true, onLost: () => {} });
+      const { session } = harness({}, "uid-1", device);
+      session.start();
+      await settled(session, "choose");
+      // The SDK's connection holds the heartbeats: their removal waits for it, and is no failure.
+      backend.blocked.add(FIREBASE_HEARTBEAT);
+      expect(await session.signOut(everything)).toBe("erased");
+      expect(await readRegistry(device)).toBeUndefined();
+      expect(await readLanguage(device)).toBe(everything ? undefined : "ru");
+      expect(session.snapshot().step).toBe("signed-out");
+    },
+  );
+
+  it("says when Erase everything left the device's settings", async () => {
+    const backend = new MemoryBackend();
+    const { device } = memoryDevice(backend);
+    await setAccount(device, "account-1");
+    await writeLanguage(device, "ru");
+    const { session } = harness({}, "uid-1", device);
+    session.start();
+    await settled(session, "choose");
+    backend.failing.add(SETTINGS);
+    expect(await session.signOut(true)).toBe("left");
+    expect(await readRegistry(device)).toBeUndefined();
   });
 
   it("asks for the account once when the window signs in a new user", async () => {

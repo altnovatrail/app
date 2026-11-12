@@ -5,7 +5,7 @@
 import "@altnovatrail/canvas";
 import { render } from "@testing-library/react";
 import type { ReactNode } from "react";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { page } from "vitest/browser";
 import "../theme/theme.css";
 import { ProfileSchema } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
@@ -27,6 +27,7 @@ import {
   type TextsRead,
 } from "../account/AccountGate.tsx";
 import { AdultSection } from "../adults/AdultSection.tsx";
+import { DevicePage } from "../adults/DevicePage.tsx";
 import { ProfilePage } from "../adults/ProfilePage.tsx";
 import { ApiProvider } from "../api/ApiContext.tsx";
 import type { Api } from "../api/client.ts";
@@ -47,6 +48,9 @@ import { LessonEnd } from "../lesson/Lesson.tsx";
 import { LessonScreen, type LessonScreenProps } from "../lesson/LessonScreen.tsx";
 import { NextStep } from "../next/NextStep.tsx";
 import { SignInScreen } from "../signin/SignInScreen.tsx";
+import { addProfile } from "../storage/profile.ts";
+import { addDatabase, setAccount } from "../storage/registry.ts";
+import { profileDatabase } from "../storage/schema.ts";
 import { SubjectsScreen } from "../subjects/MySubjects.tsx";
 import { AttemptProvider } from "../task/AttemptContext.tsx";
 import { NO_VERDICTS, verdictsOf } from "../task/attempt.ts";
@@ -230,6 +234,43 @@ async function openTexts(): Promise<void> {
 }
 
 /** Presses a form's button, so that every field shows its error. */
+/**
+ * A device where the owner keeps an unfinished attempt, and the other profile's database is at a
+ * version newer than the build's, so that it cannot be read.
+ */
+async function seeded() {
+  const { device, backend } = memoryDevice();
+  await setAccount(device, "account-1");
+  await (await addProfile(device, "p1"))?.beginAttempt({ attemptId: "a1", digest: "d1" });
+  await addDatabase(device, profileDatabase("p2"), { kind: "profile", profileId: "p2" });
+  await backend.open(
+    profileDatabase("p2"),
+    { version: 2, stores: {} },
+    {
+      create: true,
+      onLost: () => {},
+    },
+  );
+  return device;
+}
+
+const SEEDED = await seeded();
+
+function devicePage() {
+  return (
+    <DevicePage
+      device={SEEDED}
+      profiles={[OWNER, create(ProfileSchema, { profileId: "p2", pseudonym: "Аня" })]}
+      onEraseAll={async () => "failed"}
+      site={{
+        estimate: async () => ({ usage: 1_500_000, quota: 120_000_000_000 }),
+        persisted: async () => false,
+        persist: async () => false,
+      }}
+    />
+  );
+}
+
 async function submit(): Promise<void> {
   const button = document.querySelector<HTMLButtonElement>("button[type=submit]");
   if (button !== null) await userEvent.click(button);
@@ -600,11 +641,30 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
     () => (
       <AdultSection
         route={{ screen: "adults", parts: [] }}
+        device={memoryDevice().device}
         profiles={[OWNER]}
         onSaved={() => {}}
         onFailed={() => {}}
+        onEraseAll={async () => "erased"}
       />
     ),
+  ],
+  [
+    "This device, with a profile that keeps work and one that cannot be read",
+    () => devicePage(),
+    async () => {
+      await vi.waitFor(() => expect(document.querySelectorAll("h3 ~ p").length).toBeGreaterThan(4));
+    },
+  ],
+  [
+    "This device asking before it erases everything",
+    () => devicePage(),
+    async () => {
+      await vi.waitFor(() => expect(document.querySelectorAll("h3 ~ p").length).toBeGreaterThan(4));
+      const buttons = document.querySelectorAll<HTMLButtonElement>("button");
+      await userEvent.click(buttons[buttons.length - 1] as HTMLButtonElement);
+      expect(document.querySelector("fieldset legend")).not.toBeNull();
+    },
   ],
   [
     "a profile's page, with a language the build does not have",

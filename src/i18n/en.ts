@@ -349,6 +349,53 @@ export const en = {
   "adults.saved": "Saved",
   /** Save with nothing changed: nothing is asked. */
   "adults.unchanged": "Nothing has changed",
+  /** The page This device (R04; section 3.2): its heading, and its place on the first page. */
+  "device.title": "This device",
+  "device.hint": "What the app keeps on this device, and how to erase it",
+  "device.open": "See what is on this device",
+  /** The attempts a profile keeps unfinished on this device. */
+  "device.unfinished": plural({
+    one: "{count} unfinished task",
+    other: "{count} unfinished tasks",
+  }),
+  /** About how much space the profile's data takes on this device: an estimate. */
+  "device.size": "Its data here takes about {size}",
+  "device.none": "Nothing of this profile is kept on this device",
+  "device.unreadable": "The data of this profile on this device can't be read",
+  /** While no copy of the profile's work is on the server (R113): the warning of its loss. */
+  "device.only-here":
+    "Its work is on this device alone: if the site's data is erased, the work is lost",
+  "device.erase-profile": "Erase the profile's data on this device",
+  /** The question before the profile's data goes: the pseudonym is not declined. */
+  "device.erase-profile-confirm":
+    "Profile: {pseudonym}. Its unfinished work on this device is lost, and nothing changes on the server",
+  /** The button that answers the question yes. */
+  "device.erase": "Erase",
+  "device.erased": "Erased",
+  /** A database another tab still holds: the registry keeps it, and the next start erases it. */
+  "device.left": "Not all of it was erased. The app finishes at the next start",
+  "device.erase-failed": "Nothing was erased. Try again",
+  /** The space the whole site takes, as the browser estimates it. */
+  "device.space": "Space",
+  "device.estimate":
+    "The app takes about {usage} here, of the {quota} the browser gives it. This is the browser's estimate for the whole site",
+  /** Whether the browser agreed to keep the site's data: persistent storage. */
+  "device.keeping": "Keeping the data",
+  "device.persisted": "The browser has agreed to keep the site's data",
+  "device.not-persisted": "The browser hasn't agreed to keep the site's data",
+  "device.persist": "Ask the browser to keep it",
+  "device.refused": "The browser didn't agree. The data is kept, but the browser may erase it",
+  /** What the browser may erase by itself, and Safari's seven days (section 3.2). */
+  "device.browser-erases":
+    "The browser may erase the site's data by itself when space runs low. Safari erases it after seven days of use in which this app isn't touched",
+  /** The data of a web app on the Home Screen is kept apart from Safari's (section 3.2). */
+  "device.home-screen":
+    "In Safari, the app can be added to the Home Screen: there its data isn't erased after seven days. But it is apart from Safari's: you sign in there again, and unfinished work from this tab doesn't move there",
+  "device.erase-all": "Erase everything on this device",
+  /** The question before everything goes: the work, the device's language, and the sign-in. */
+  "device.erase-all-confirm":
+    "Everything the app keeps on this device is lost: the work of every profile and the language of the device. The app signs out, and nothing changes on the server",
+  "device.erase-all-failed": "The sign-out didn't go through, so nothing was erased. Try again",
   /** In place of the words of a code from api this build does not know: a newer api sent it. */
   "common.unknown": "This version of the app doesn't know this yet",
 } as const satisfies Dictionary;

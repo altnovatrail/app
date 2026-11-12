@@ -35,3 +35,24 @@ export function languageName(language: Language, tag: string): string {
 export function collator(language: Language) {
   return new Intl.Collator(locales(language));
 }
+
+const UNITS = [
+  ["gigabyte", 1e9],
+  ["megabyte", 1e6],
+  ["kilobyte", 1e3],
+] as const;
+
+/**
+ * A size in bytes, as the page This device writes it: kB, MB or GB, with a decimal at most. The unit
+ * is the largest the size rounds to one of at least, so that it is never "1,000 kB".
+ */
+export function sizeText(language: Language, bytes: number): string {
+  const [unit, size] = UNITS.find(([, each]) => Math.round((bytes / each) * 10) >= 10) ?? UNITS[2];
+  const format = numberFormat(language, {
+    style: "unit",
+    unit,
+    unitDisplay: "short",
+    maximumFractionDigits: 1,
+  });
+  return format.format(bytes / size);
+}

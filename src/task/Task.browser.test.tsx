@@ -894,8 +894,8 @@ describe("the task screen with handwriting", () => {
     await vi.waitFor(() => expect(sheet.marks?.marks[0]?.name).toBe("Tutor's mark 1 of 1"));
     const profile = await addProfile(device, "p1");
     const kept = await profile?.readAttempt("a1");
-    expect(kept?.submissions.length).toBe(1);
-    expect(sheet.marks?.submission).toEqual(kept?.submissions[0]?.context);
+    expect(kept?.submissions?.length).toBe(1);
+    expect(sheet.marks?.submission).toEqual(kept?.submissions?.[0]?.context);
   });
 
   it("says why a slot could not be read, for every reason, and an outcome of AI in neutral words", async () => {

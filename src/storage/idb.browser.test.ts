@@ -1,11 +1,13 @@
-// The backend on Chromium's own IndexedDB: what the store in memory stands in for in Node.
+// The backend on Chromium's own IndexedDB: what the store in memory stands in for in Node; and the
+// work kept as bytes, with a Blob that schema version 1 kept read after it (the 2026-11-12
+// amendment to R16).
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { type Connection, NewerSchemaError, type Schema, within } from "./backend.ts";
-import { browserDevice } from "./browser.ts";
+import { browserDevice, siteStorage } from "./browser.ts";
 import { indexedDbBackend } from "./idb.ts";
 import { addProfile } from "./profile.ts";
 import { readRegistry, setAccount } from "./registry.ts";
-import { profileDatabase } from "./schema.ts";
+import { PROFILE_SCHEMA, profileDatabase } from "./schema.ts";
 
 const backend = indexedDbBackend();
 const SCHEMA: Schema = { version: 1, stores: { things: { at: "at" }, other: {} } };
@@ -30,6 +32,7 @@ async function names(): Promise<string[]> {
 }
 
 afterEach(async () => {
+  vi.restoreAllMocks();
   for (const connection of held.splice(0)) connection.close();
   for (const database of made.splice(0)) await backend.remove(database);
   for (const database of await names()) await backend.remove(database);
@@ -38,11 +41,11 @@ afterEach(async () => {
 });
 
 describe("the backend on IndexedDB", () => {
-  it("keeps records by key and by index, cloned, Blobs and unrounded numbers too", async () => {
+  it("keeps records by key and by index, cloned, bytes and unrounded numbers too", async () => {
     const db = await open(name());
-    const blob = new Blob(["png"], { type: "image/png" });
+    const bytes = new TextEncoder().encode("png").buffer;
     await db.write(["things"], async (tx) => {
-      await tx.put("things", ["a", 0], { at: 3, x: 0.1 + 0.2, blob });
+      await tx.put("things", ["a", 0], { at: 3, x: 0.1 + 0.2, bytes });
       await tx.put("things", ["a", 1], { at: 1 });
       await tx.put("things", ["b", 0], { at: 2 });
       await tx.put("things", "plain", { none: true });
@@ -53,7 +56,7 @@ describe("the backend on IndexedDB", () => {
       upTo2: await tx.count("things", { index: "at", range: { upper: 2 } }),
       from: await tx.count("things", { range: { lower: ["b"] } }),
       all: await tx.count("things"),
-      first: (await tx.get("things", ["a", 0])) as { x: number; blob: Blob },
+      first: (await tx.get("things", ["a", 0])) as { x: number; bytes: ArrayBuffer },
     }));
     expect(read.a).toEqual([
       ["a", 0],
@@ -66,7 +69,7 @@ describe("the backend on IndexedDB", () => {
     ]);
     expect([read.upTo2, read.from, read.all]).toEqual([2, 1, 4]);
     expect(read.first.x).toBe(0.1 + 0.2);
-    expect(await read.first.blob.text()).toBe("png");
+    expect(new TextDecoder().decode(read.first.bytes)).toBe("png");
     await db.write(["things"], (tx) => tx.delete("things", within("a")));
     expect(await db.read(["things"], (tx) => tx.count("things"))).toBe(2);
     await db.write(["things"], (tx) => tx.delete("things", {}), "relaxed");
@@ -145,6 +148,78 @@ describe("the backend on IndexedDB", () => {
     });
     expect(await backend.remove(other)).toBe("blocked");
     holder.close();
+  });
+});
+
+describe("the work in a profile's database on IndexedDB", () => {
+  const CONTEXT = { boxes: [{ item: 1, slot: 1, ids: [1] }], digest: "0123456789abcdef" };
+
+  /** The record of a submission as IndexedDB itself gives it back. */
+  async function record(database: string): Promise<{ work: unknown }> {
+    const db = await new Promise<IDBDatabase>((resolve) => {
+      const request = indexedDB.open(database);
+      request.onsuccess = () => resolve(request.result);
+    });
+    const found = await new Promise<{ work: unknown }>((resolve) => {
+      const request = db.transaction("submissions").objectStore("submissions").get(["a1", 0]);
+      request.onsuccess = () => resolve(request.result as { work: unknown });
+    });
+    db.close();
+    return found;
+  }
+
+  it("writes the work as bytes with its type, and reads it as a Blob", async () => {
+    const device = browserDevice();
+    await setAccount(device, "account-1");
+    const profile = await addProfile(device, "p1");
+    await profile?.beginAttempt({ attemptId: "a1", digest: "d1" });
+    const cells = [{ item: 1, slot: 1, png: new Blob(["box"], { type: "image/png" }) }];
+    expect(await profile?.addSubmission("a1", { cells, submission: CONTEXT }, 0)).toBe(0);
+    const kept = (await record(profileDatabase("p1"))).work as {
+      cells: { png: { bytes: unknown; type: string } }[];
+    };
+    expect(kept.cells[0]?.png.bytes).toBeInstanceOf(ArrayBuffer);
+    expect(kept.cells[0]?.png.type).toBe("image/png");
+    const [read] = (await profile?.readAttempt("a1"))?.submissions ?? [];
+    const cell = read?.work !== undefined && "cells" in read.work ? read.work.cells[0] : undefined;
+    expect(cell?.png).toBeInstanceOf(Blob);
+    expect(cell?.png.type).toBe("image/png");
+    expect(await cell?.png.text()).toBe("box");
+  });
+
+  it("reads a Blob that schema version 1 kept before the bytes", async () => {
+    const device = browserDevice();
+    await setAccount(device, "account-1");
+    const profile = await addProfile(device, "p1");
+    await profile?.beginAttempt({ attemptId: "a1", digest: "d1" });
+    const connection = await device.connect(profileDatabase("p1"), PROFILE_SCHEMA, false);
+    await connection?.write(["submissions"], (tx) =>
+      tx.put("submissions", ["a1", 0], {
+        context: CONTEXT,
+        historyLength: 0,
+        work: { png: new Blob(["old crop"], { type: "image/png" }) },
+      }),
+    );
+    expect((await record(profileDatabase("p1"))).work).toEqual({ png: expect.any(Blob) });
+    const [read] = (await profile?.readAttempt("a1"))?.submissions ?? [];
+    const png = read?.work !== undefined && "png" in read.work ? read.work.png : undefined;
+    expect(await png?.text()).toBe("old crop");
+    expect(png?.type).toBe("image/png");
+  });
+});
+
+describe("what the browser tells of the site's storage", () => {
+  it("gives Chromium's estimate and whether it keeps the data, and nothing when it throws", async () => {
+    const estimate = await siteStorage.estimate();
+    expect(estimate?.quota).toBeGreaterThan(0);
+    expect(typeof (await siteStorage.persisted())).toBe("boolean");
+    const failing = () => Promise.reject(new DOMException("barred", "SecurityError"));
+    vi.spyOn(navigator.storage, "estimate").mockImplementation(failing);
+    vi.spyOn(navigator.storage, "persisted").mockImplementation(failing);
+    vi.spyOn(navigator.storage, "persist").mockImplementation(failing);
+    expect(await siteStorage.estimate()).toBeUndefined();
+    expect(await siteStorage.persisted()).toBeUndefined();
+    expect(await siteStorage.persist()).toBe(false);
   });
 });
 

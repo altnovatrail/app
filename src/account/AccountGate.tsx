@@ -29,7 +29,7 @@ import { type RequestState, useApi, useRequest } from "../api/ApiContext.tsx";
 import type { Api } from "../api/client.ts";
 import type { Failure } from "../api/failure.ts";
 import { failureText } from "../api/words.ts";
-import { ADULTS, navigate, useRoute } from "../app/router.ts";
+import { ADULTS, HOME, navigate, useRoute } from "../app/router.ts";
 import { Screen } from "../app/Screen.tsx";
 import { useDeployment, useStorage } from "../boot/Boot.tsx";
 import { Offline, StorageGone } from "../boot/Screens.tsx";
@@ -39,6 +39,7 @@ import { accountTexts, readTexts, refsOf } from "../legal/texts.ts";
 import { usePackages } from "../packages/PackagesContext.tsx";
 import { useSignIn } from "../signin/SignInContext.tsx";
 import { SignInScreen } from "../signin/SignInScreen.tsx";
+import { siteStorage } from "../storage/browser.ts";
 import type { Device } from "../storage/device.ts";
 import { countryNames } from "./countries.ts";
 import { pseudonymOf, Session, type Unfinished, unfinishedWork } from "./session.ts";
@@ -122,12 +123,21 @@ export function AccountGate({ children }: { readonly children: ReactNode }) {
     return (
       <AdultSection
         route={route}
+        device={device}
         profiles={state.account.profiles}
         onSaved={(changed) => {
           session.profileChanged(changed);
           channel.current?.postMessage(profileMessage(changed));
         }}
         onFailed={(failure) => session.profileFailed(failure)}
+        onEraseAll={async () => {
+          const done = await session.signOut(true);
+          if (done === "failed") return "failed";
+          // The sign-in comes next, and after it home, not the page of a device erased.
+          setLeft(done === "left");
+          navigate(HOME);
+          return done;
+        }}
       />
     );
   }
@@ -502,11 +512,7 @@ type Kept = "granted" | "refused";
 
 /** Asks the browser to keep the site's data: no browser that cannot is asked. */
 async function persist(): Promise<Kept> {
-  try {
-    return (await navigator.storage?.persist?.()) === true ? "granted" : "refused";
-  } catch {
-    return "refused";
-  }
+  return (await siteStorage.persist()) ? "granted" : "refused";
 }
 
 /**
