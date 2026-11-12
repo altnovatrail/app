@@ -16,7 +16,7 @@ export function useSequential(
   const digests = [
     ...new Set((cards ?? []).flatMap((card) => (card.digest === undefined ? [] : [card.digest]))),
   ]
-    .sort()
+    .sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))
     .join(" ");
   useEffect(() => {
     let current = true;

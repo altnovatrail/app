@@ -64,7 +64,7 @@ function useNames(connected: RequestState<ModuleCard[]>, moduleIds: readonly str
       ? ""
       : [...new Set(moduleIds)]
           .filter((moduleId) => cardOf(moduleId) === undefined && !kept.has(moduleId))
-          .sort()
+          .sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))
           .join(" ");
   useEffect(() => {
     if (missing === "") return;
