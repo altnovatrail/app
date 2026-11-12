@@ -196,6 +196,23 @@ button[aria-disabled="true"] {
   margin: 0;
   font-weight: 700;
 }
+/*
+ * NOTICE and LICENSE on the page of notices, as they are (R31): their lines and spaces kept, and
+ * wrapped where the screen is narrower than a line, so that the page never scrolls sideways.
+ */
+.nt-notice {
+  margin: 0 0 1rem;
+  font-size: 0.875rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+/* The terms of a place where the app does not meet its standard, on the page Accessibility. */
+.nt-terms > dt {
+  font-weight: 700;
+}
+.nt-terms > dd {
+  margin: 0 0 0.75rem;
+}
 /* The cards of modules, one below another. */
 .nt-cards {
   margin: 0 0 1rem;

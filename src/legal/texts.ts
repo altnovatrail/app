@@ -30,6 +30,20 @@ export function storageText(texts: readonly LegalText[]): LegalText | undefined 
   return texts.find((text) => text.id === STORAGE_TEXT);
 }
 
+/**
+ * The texts that are legal pages of their own (R31): the account's two and the consent to the
+ * storage of works. The texts for a family come with the screens of a child's consent, in E4.
+ */
+export const PAGE_TEXTS = [...ACCOUNT_TEXTS, STORAGE_TEXT] as const;
+
+/** The ID of a text that is a legal page. */
+export type PageText = (typeof PAGE_TEXTS)[number];
+
+/** Whether a part of the hash names a text that is a legal page. */
+export function isPageText(id: string): id is PageText {
+  return (PAGE_TEXTS as readonly string[]).includes(id);
+}
+
 /** The texts of the account among them, in the order of ACCOUNT_TEXTS: those in force alone. */
 export function accountTexts(texts: readonly LegalText[]): LegalText[] {
   return ACCOUNT_TEXTS.flatMap((id) => texts.filter((text) => text.id === id));

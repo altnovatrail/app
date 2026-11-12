@@ -343,6 +343,32 @@ describe("the built page", () => {
     await page.context().close();
   }, 120_000);
 
+  it("shows the legal pages before signing in, under the header, reading nothing but api (R31)", async () => {
+    writeFileSync(local, JSON.stringify(file(ORIGIN)));
+    const { page, violations, requests } = await open();
+    await page.goto(`${ORIGIN}/`);
+    await page.getByRole("button", { name: "Privacy and legal information" }).click();
+    await page.getByRole("button", { name: "Licenses and third-party notices" }).click();
+    // NOTICE and LICENSE came with the build, not from the hosting's /NOTICE and /LICENSE.
+    const files = page.locator("pre");
+    await files.first().waitFor();
+    expect(await files.allTextContents()).toEqual([
+      readFileSync("NOTICE", "utf8"),
+      readFileSync("LICENSE", "utf8"),
+    ]);
+    await page.getByRole("button", { name: "Back to the list" }).click();
+    await page.getByRole("button", { name: "Accessibility" }).click();
+    await page.getByRole("heading", { name: "Answering in handwriting" }).waitFor();
+    await page.getByRole("button", { name: "Open the privacy policy" }).click();
+    // vite preview has no api on its origin: its 404 is no LegalService, so no text in force.
+    await page.getByText("This copy of the app has no version of this text in force").waitFor();
+    expect(await page.locator("a").count()).toBe(0);
+    const own = requests.filter((path) => !path.startsWith("/assets/") && path !== "/");
+    expect(own).toEqual(["/deployment.json", "/novatrail.api.v1.LegalService/GetLegalTexts"]);
+    expect(violations).toEqual([]);
+    await page.context().close();
+  }, 60_000);
+
   it("says the app is not set up without the file, in the device's language", async () => {
     rmSync(local, { force: true });
     const { page, violations } = await open("ru-RU");

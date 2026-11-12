@@ -25,6 +25,7 @@ import {
 import { useApi, useRequest } from "../api/ApiContext.tsx";
 import type { Api } from "../api/client.ts";
 import { ApiError, type Failure, parseFailure, refusedWith } from "../api/failure.ts";
+import { ReadFailure } from "../api/ReadFailure.tsx";
 import { failureText } from "../api/words.ts";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { LegalText } from "../legal/LegalText.tsx";
@@ -115,14 +116,7 @@ function Consent({
         {words.text("storage.consent")}
       </h3>
       {texts.status === "failed" ? (
-        <div className="nt-field">
-          <p role="alert" className="nt-error">
-            {failureText(texts.failure, words)}
-          </p>
-          <button type="button" onClick={texts.retry}>
-            {words.text("boot.retry")}
-          </button>
-        </div>
+        <ReadFailure failure={texts.failure} onRetry={texts.retry} />
       ) : null}
       {shown === undefined ? null : <LegalText text={shown} level={4} />}
       <p id={`${id}-what`}>{words.text("storage.what")}</p>

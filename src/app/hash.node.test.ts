@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ADULTS, formatHash, HOME, LESSON, parseHash, SCREENS, TASK } from "./hash.ts";
+import { ADULTS, formatHash, HOME, LEGAL, LESSON, parseHash, SCREENS, TASK } from "./hash.ts";
 
 describe("parseHash", () => {
   it("gives the home screen for an empty hash, a bare # and a hash without a slash", () => {
@@ -45,6 +45,15 @@ describe("formatHash", () => {
     expect(parseHash("#/adults")).toEqual(ADULTS);
     expect(parseHash("#/adults/profile")).toEqual({ screen: "adults", parts: ["profile"] });
     expect(formatHash({ ...ADULTS, parts: ["profile"] })).toBe("#/adults/profile");
+  });
+
+  it("knows the legal pages, a text's among them by its ID", () => {
+    expect(parseHash("#/legal")).toEqual(LEGAL);
+    expect(parseHash("#/legal/privacy-policy")).toEqual({
+      screen: "legal",
+      parts: ["privacy-policy"],
+    });
+    expect(formatHash({ ...LEGAL, parts: ["notices"] })).toBe("#/legal/notices");
   });
 
   it("writes the home screen as #/home", () => {

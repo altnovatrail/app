@@ -25,12 +25,19 @@ export const LESSON: Route = { screen: "lesson", parts: [] };
  */
 export const ADULTS: Route = { screen: "adults", parts: [] };
 
+/**
+ * The legal pages, their list first; `#/legal/<page>` is each page — a legal text by its ID, the
+ * page Accessibility and the notices of third-party code (R31). They show before signing in too.
+ */
+export const LEGAL: Route = { screen: "legal", parts: [] };
+
 /** The screens this build knows. A hash that names another one shows the home screen. */
 export const SCREENS: ReadonlySet<string> = new Set([
   HOME.screen,
   TASK.screen,
   LESSON.screen,
   ADULTS.screen,
+  LEGAL.screen,
 ]);
 
 /** The route a hash names: `#/screen/part`, each segment percent-encoded. */

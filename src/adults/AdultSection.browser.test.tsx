@@ -111,6 +111,7 @@ describe("the section's first page", () => {
             onSaved={() => {}}
             onFailed={() => {}}
             onEraseAll={async () => "erased"}
+            onLegal={() => {}}
           />
         </ApiProvider>,
       );
@@ -142,6 +143,7 @@ describe("the section's first page", () => {
           onSaved={() => {}}
           onFailed={() => {}}
           onEraseAll={async () => "erased"}
+          onLegal={() => {}}
         />,
       );
     const { rerender } = render(section({ screen: "adults", parts: [] }));

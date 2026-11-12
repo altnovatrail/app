@@ -15,6 +15,8 @@ import { titleOf, tokensOf } from "./body.ts";
 import {
   ACCOUNT_TEXTS,
   accountTexts,
+  isPageText,
+  PAGE_TEXTS,
   readTexts,
   refsOf,
   STORAGE_TEXT,
@@ -70,6 +72,13 @@ describe("the legal texts", () => {
     const texts = [text("privacy-policy", 2), text(STORAGE_TEXT, 3)];
     expect(storageText(texts)).toMatchObject({ id: "storage-consent", version: 3 });
     expect(storageText([text("privacy-policy", 2)])).toBeUndefined();
+  });
+
+  it("makes pages of the account's texts and the consent to the storage, not of a family's", () => {
+    expect(PAGE_TEXTS).toEqual(["privacy-policy", "terms-of-use", "storage-consent"]);
+    expect(isPageText("terms-of-use")).toBe(true);
+    expect(isPageText("parent-consent")).toBe(false);
+    expect(isPageText("accessibility")).toBe(false);
   });
 
   it("reads an api with no LegalService as no text in force, and offers it no reload", async () => {

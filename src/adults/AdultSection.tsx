@@ -8,10 +8,13 @@
 // account holds the owner's profile of the category `adult` alone; the PIN comes in front of it
 // with E4 (section 3.10). A page of the account or the device — This device, `#/adults/device`,
 // and the own key to come — takes a part of the hash and a button on the first page; a page of one
-// profile — the progress to come — a part of the hash and a button on the profile's page.
+// profile — the progress to come — a part of the hash and a button on the profile's page. The
+// legal pages are not the section's: they show before signing in too, and the first page leads to
+// them (R31).
 import type { Profile } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import { type ReactNode, useEffect, useId, useMemo, useState } from "react";
 import type { Failure } from "../api/failure.ts";
+import { PageBar } from "../app/PageBar.tsx";
 import { ADULTS, HOME, navigate, type Route, redirect } from "../app/router.ts";
 import { Screen } from "../app/Screen.tsx";
 import { LanguageButtons } from "../i18n/LanguageButtons.tsx";
@@ -30,31 +33,31 @@ export const DEVICE_PAGE: Route = { screen: ADULTS.screen, parts: ["device"] };
 function SectionBar({ first }: { readonly first: boolean }) {
   const { words } = useLanguage();
   return (
-    <header className="nt-bar">
-      <p>{words.text("adults.title")}</p>
-      {first ? null : (
-        <button type="button" className="nt-secondary" onClick={() => navigate(ADULTS)}>
-          {words.text("adults.back")}
-        </button>
-      )}
-      <button type="button" className="nt-secondary" onClick={() => navigate(HOME)}>
-        {words.text("adults.close")}
-      </button>
-    </header>
+    <PageBar
+      title={words.text("adults.title")}
+      {...(first ? {} : { back: { text: words.text("adults.back"), to: ADULTS } })}
+      close={{ text: words.text("adults.close"), to: HOME }}
+    />
   );
 }
 
-/** The first page: the account's profiles, the owner's first, This device, and its language. */
+/**
+ * The first page: the account's profiles, the owner's first, This device, its language, and the
+ * way to the legal pages.
+ */
 export function SectionHome({
   profiles,
   onProfile,
+  onLegal,
 }: {
   readonly profiles: readonly Profile[];
   readonly onProfile: (profile: Profile) => void;
+  readonly onLegal: () => void;
 }) {
   const { language, words } = useLanguage();
   const sorted = useMemo(() => inOrder(profiles, language), [profiles, language]);
   const deviceHint = useId();
+  const legalHint = useId();
   return (
     <Screen title={words.text("adults.title")}>
       <h2>{words.text("adults.profiles")}</h2>
@@ -77,6 +80,13 @@ export function SectionHome({
       <h2>{words.text("adults.device-language")}</h2>
       <p>{words.text("adults.device-language-hint")}</p>
       <LanguageButtons />
+      <h2>{words.text("legal.title")}</h2>
+      <p id={legalHint}>{words.text("legal.hint")}</p>
+      <div className="nt-buttons">
+        <button type="button" aria-describedby={legalHint} onClick={onLegal}>
+          {words.text("legal.open")}
+        </button>
+      </div>
     </Screen>
   );
 }
@@ -88,6 +98,7 @@ export function AdultSection({
   onSaved,
   onFailed,
   onEraseAll,
+  onLegal,
 }: {
   readonly route: Route;
   readonly device: Device;
@@ -99,6 +110,8 @@ export function AdultSection({
   readonly onFailed: (failure: Failure) => void;
   /** "Erase everything on this device", on the page This device: the sign-out, and more. */
   readonly onEraseAll: () => Promise<"erased" | "left" | "failed">;
+  /** Opens the legal pages, whose bar comes back here. */
+  readonly onLegal: () => void;
 }) {
   const [chosen, setChosen] = useState<string | undefined>(undefined);
   const page = route.parts.join("/");
@@ -108,6 +121,7 @@ export function AdultSection({
     shown = (
       <SectionHome
         profiles={profiles}
+        onLegal={onLegal}
         onProfile={(each) => {
           setChosen(each.profileId);
           navigate(PROFILE_PAGE);

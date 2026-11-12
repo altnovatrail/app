@@ -100,6 +100,82 @@ export const en = {
   "legal.translation": "Translation, for reading only",
   /** Above the English text of a legal text, the one in force. */
   "legal.original": "The text in force, in English",
+  /**
+   * The list of the legal pages, its heading, and the button to it on the sign-in screen: it holds
+   * the word "privacy" (Д204 in spec's RUN.md).
+   */
+  "legal.title": "Privacy and legal information",
+  "legal.intro":
+    "The privacy policy, the terms of use and the consent are the texts of the operator of this copy of the app",
+  /** The button to the legal pages on the first page of the section for adults. */
+  "legal.open": "Read the privacy policy and other texts",
+  "legal.hint":
+    "The privacy policy, the terms of use, the consent to keeping works, accessibility and licenses",
+  /** The bar above a legal page: back to their list. */
+  "legal.back": "Back to the list",
+  /** The bar above a legal page: back to where they were opened from. */
+  "legal.close": "Close",
+  "legal.privacy-policy": "Privacy Policy",
+  "legal.terms-of-use": "Terms of Use",
+  "legal.storage-consent": "Consent to keeping works on the server",
+  "legal.accessibility": "Accessibility",
+  "legal.notices": "Licenses and third-party notices",
+  /** Below a legal text's heading: the number of its version and the day it came into force. */
+  "legal.version": "Version {version}, in force since {date}",
+  /** api gives no version of the text in force: none was approved, or this copy has none. */
+  "legal.none": "This copy of the app has no version of this text in force",
+  "legal.notices-intro":
+    "The app is free software under the Apache License, Version 2.0. Its build includes software by others, each under its own license. Below are their notices and the text of the license, in English, as they come with the app",
+  /** The heading above the file NOTICE, as it is; the name of the file stays. */
+  "legal.notice-file": "Notices (NOTICE)",
+  /** The heading above the file LICENSE, as it is; the name of the file stays. */
+  "legal.license-file": "License (LICENSE)",
+  "accessibility.standard": "The standard",
+  /** The names of the criteria are those of WCAG 2.2. */
+  "accessibility.standard-text":
+    "The app is made to meet the Web Content Accessibility Guidelines, WCAG 2.2, at level AA, and two criteria of level AAA beyond it: 2.5.5 Target Size (Enhanced), so that every button is at least 44 by 44 pixels, and 2.3.3 Animation from Interactions, so that nothing moves when the device asks for reduced motion",
+  "accessibility.partly": "In the places below, the app does not meet the standard yet",
+  "accessibility.gaps": "Where the app does not meet it yet",
+  /** The terms of each place where the app does not meet the standard. */
+  "accessibility.criteria": "Criteria",
+  "accessibility.why": "Why",
+  "accessibility.instead": "What there is instead",
+  "accessibility.when": "When this changes",
+  "accessibility.handwriting": "Answering in handwriting",
+  "accessibility.handwriting-criteria":
+    "2.1.1 Keyboard, level A; 2.5.1 Pointer Gestures, level A; 2.5.7 Dragging Movements, level AA",
+  "accessibility.handwriting-why":
+    "An answer on the sheet, or in a box of the workbook, is written by hand: with a finger, a stylus or a mouse. It cannot be typed on a keyboard or given with a single tap",
+  /** Up, Down, Left and Right are the canvas's own buttons, in its words. */
+  "accessibility.handwriting-instead":
+    "Choosing among options, and everything else in the app, works with a tap and from the keyboard. The sheet moves with its buttons Up and Down, and Left and Right when it is enlarged, with no two-finger gesture",
+  "accessibility.handwriting-when":
+    "Once there is a second way to answer, such as a keyboard or buttons with digits. The platform has not chosen it yet",
+  "accessibility.print": "Print in the lines of a workbook",
+  "accessibility.print-criteria": "1.4.12 Text Spacing, level AA",
+  "accessibility.print-why":
+    "The printed numbers, words and values in the lines of a workbook keep their own spacing: the place of each piece is fixed on the page, so the spacing you set for text does not reach them",
+  /** Zoom in and Zoom out are the canvas's own buttons, in its words. */
+  "accessibility.print-instead":
+    "The print can be made up to twice as large with the sheet's buttons Zoom in and Zoom out. The task's statement above the workbook takes your spacing",
+  "accessibility.print-when":
+    "There is no date yet: only once the layout of the page leaves the lines room for wider spacing",
+  /** Check and Not yet are the words of the task screen, Can't read this its reading's. */
+  "accessibility.check": "Sending an answer with Check",
+  "accessibility.check-criteria": "3.3.4 Error Prevention (Legal, Financial, Data), level AA",
+  "accessibility.check-why":
+    "Check sends the answer at once, with no question before it and no undo after: it is checked and counts in the learner's progress. A question before every check would get in a child's way",
+  "accessibility.check-instead":
+    "A wrong answer does not end the task: after Not yet, the learner can change the work and check it again. Work that can't be read comes back with Can't read this",
+  "accessibility.check-when":
+    "Once the second way to answer lets an answer be changed before it is checked",
+  "accessibility.checked": "How it is checked",
+  "accessibility.checked-text":
+    "Automated checks run on every change to the app's code: the rules of WCAG 2.2 that a program can find, the size of buttons, a screen 320 pixels wide, forced colors and reduced motion. Checks by people, with the screen readers VoiceOver, TalkBack and NVDA on tablets and computers, have not been done yet",
+  "accessibility.contact": "If something is hard to use",
+  "accessibility.contact-text":
+    "Write to the operator of this copy of the app if something in it is hard to use, or if you need what this page says in another form. How to reach the operator is in the privacy policy. Please write no personal details of a child",
+  "accessibility.policy": "Open the privacy policy",
   /** The heading of the screen that makes the owner's own profile as a learner. */
   "profile.title": "Your learner profile",
   /** The name a learner goes by: never a real one. */

@@ -32,6 +32,7 @@ import { ProfilePage } from "../adults/ProfilePage.tsx";
 import { ApiProvider } from "../api/ApiContext.tsx";
 import type { Api } from "../api/client.ts";
 import { App, LearnerBar } from "../app/App.tsx";
+import { HOME, LEGAL } from "../app/router.ts";
 import {
   Framed,
   Offline,
@@ -42,6 +43,7 @@ import {
 } from "../boot/Screens.tsx";
 import type { Language } from "../i18n/language.ts";
 import { WORDS, wordsOf } from "../i18n/words.ts";
+import { LegalPages } from "../legal/LegalPages.tsx";
 import { Example } from "../lesson/Example.tsx";
 import { Explanation } from "../lesson/Explanation.tsx";
 import { LessonEnd } from "../lesson/Lesson.tsx";
@@ -271,6 +273,26 @@ function devicePage() {
   );
 }
 
+/** An api that gives the privacy policy with its translation and a table, as version 2 does. */
+const POLICY_API = {
+  legal: {
+    getLegalTexts: async () => ({
+      texts: [
+        create(LegalTextSchema, {
+          id: "privacy-policy",
+          version: 2,
+          inForceSince: "2026-11-11",
+          body: "# Privacy policy\n\n## How long we keep it\n\n| What we keep | How long |\n|---|---|\n| Messages to the operator's email, and our replies | 1 year after the message came or after our last reply to it, whichever is later |\n",
+          summary: "Мы храним только то, без чего NovaTrail не работает.",
+          summaryLanguage: "ru",
+          translation: "# Политика конфиденциальности\n\nМы храним мало данных.\n",
+          translationLanguage: "ru",
+        }),
+      ],
+    }),
+  },
+} as unknown as Api;
+
 /** An api that gives the text storage-consent alone, for the consent of a profile's page. */
 const STORAGE_API = {
   legal: {
@@ -324,7 +346,10 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
     ),
   ],
   ["another tab", () => <OtherTab />],
-  ["sign-in", () => <SignInScreen onSignIn={async () => ({ kind: "closed" })} />],
+  [
+    "sign-in",
+    () => <SignInScreen onSignIn={async () => ({ kind: "closed" })} onLegal={() => {}} />,
+  ],
   [
     "sign-in that the project refused, after a sign-out that left some",
     () => (
@@ -332,6 +357,7 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
         onSignIn={async () => ({ kind: "closed" })}
         result={{ kind: "unconfigured", code: "unauthorized-domain" }}
         left
+        onLegal={() => {}}
       />
     ),
   ],
@@ -665,6 +691,26 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
     },
   ],
   ["lesson ended by api", () => <LessonEnd reason={RunEndReason.ABANDONED} />],
+  ["the legal pages, below their bar", () => <LegalPages route={LEGAL} back={HOME} />],
+  [
+    "the privacy policy as a page, with its translation and a table",
+    () => (
+      <ApiProvider value={POLICY_API}>
+        <LegalPages route={{ ...LEGAL, parts: ["privacy-policy"] }} back={HOME} />
+      </ApiProvider>
+    ),
+    async () => {
+      await vi.waitFor(() => expect(document.querySelector("table")).not.toBeNull());
+    },
+  ],
+  [
+    "Accessibility",
+    () => <LegalPages route={{ ...LEGAL, parts: ["accessibility"] }} back={HOME} />,
+  ],
+  [
+    "the notices of third-party code",
+    () => <LegalPages route={{ ...LEGAL, parts: ["notices"] }} back={HOME} />,
+  ],
   [
     "the section for adults, below its bar",
     () => (
@@ -675,6 +721,7 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
         onSaved={() => {}}
         onFailed={() => {}}
         onEraseAll={async () => "erased"}
+        onLegal={() => {}}
       />
     ),
   ],

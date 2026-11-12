@@ -872,6 +872,85 @@ describe("the section for adults", () => {
   });
 });
 
+describe("the legal pages", () => {
+  afterEach(() => {
+    window.location.hash = "";
+  });
+
+  it("open from the sign-in screen before signing in, read the policy with no token, and close home", async () => {
+    const service = fakeSignIn(null);
+    const read: string[] = [];
+    const { asked } = renderApp(
+      {
+        getLegalTexts: (body) => {
+          read.push(fromBinary(GetLegalTextsRequestSchema, body).interfaceLanguage);
+          return texts("en");
+        },
+      },
+      service,
+    );
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Privacy and legal information" }),
+    );
+    expect(
+      await screen.findByRole("heading", { level: 1, name: "Privacy and legal information" }),
+    ).toBeTruthy();
+    expect(window.location.hash).toBe("#/legal");
+    await userEvent.click(screen.getByRole("button", { name: "Privacy Policy" }));
+    expect(await screen.findByRole("heading", { level: 1, name: "Privacy Policy" })).toBeTruthy();
+    expect(await screen.findByText("We keep little.")).toBeTruthy();
+    expect(window.location.hash).toBe("#/legal/privacy-policy");
+    expect(read).toEqual(["en"]);
+    expect(asked).toEqual(["GetLegalTexts"]);
+    await userEvent.click(screen.getByRole("button", { name: "Back to the list" }));
+    expect(window.location.hash).toBe("#/legal");
+    await userEvent.click(await screen.findByRole("button", { name: "Close" }));
+    expect(await screen.findByRole("heading", { level: 1, name: "Sign in" })).toBeTruthy();
+    expect(window.location.hash).toBe("#/home");
+  });
+
+  it("open from the first page of the section for adults, and close back to it", async () => {
+    const service = fakeSignIn("uid-1");
+    const account = { accountId: "account-1", profiles: [OWNER] };
+    renderApp({ getAccount: () => message(GetAccountResponseSchema, { account }) }, service);
+    await userEvent.click(await screen.findByRole("button", { name: "For grown-ups" }));
+    const open = await screen.findByRole("button", {
+      name: "Read the privacy policy and other texts",
+    });
+    expect(open).toHaveAccessibleDescription(
+      "The privacy policy, the terms of use, the consent to keeping works, accessibility and licenses",
+    );
+    await userEvent.click(open);
+    expect(
+      await screen.findByRole("heading", { level: 1, name: "Privacy and legal information" }),
+    ).toBeTruthy();
+    await userEvent.click(screen.getByRole("button", { name: "Accessibility" }));
+    expect(await screen.findByRole("heading", { level: 1, name: "Accessibility" })).toBeTruthy();
+    await userEvent.click(screen.getByRole("button", { name: "Close" }));
+    expect(await screen.findByRole("heading", { level: 1, name: "For grown-ups" })).toBeTruthy();
+    expect(window.location.hash).toBe("#/adults");
+  });
+
+  it("close home, not to the section, once the account that opened them has gone", async () => {
+    const service = fakeSignIn("uid-1");
+    const account = { accountId: "account-1", profiles: [OWNER] };
+    renderApp({ getAccount: () => message(GetAccountResponseSchema, { account }) }, service);
+    await userEvent.click(await screen.findByRole("button", { name: "For grown-ups" }));
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Read the privacy policy and other texts" }),
+    );
+    expect(window.location.hash).toBe("#/legal");
+    // Another tab signs out; the pages, opened again, no longer lead into the section.
+    service.set(null);
+    window.location.hash = "#/home";
+    expect(await screen.findByRole("heading", { level: 1, name: "Sign in" })).toBeTruthy();
+    window.location.hash = "#/legal";
+    await userEvent.click(await screen.findByRole("button", { name: "Close" }));
+    expect(window.location.hash).toBe("#/home");
+    expect(await screen.findByRole("heading", { level: 1, name: "Sign in" })).toBeTruthy();
+  });
+});
+
 describe("the page This device in the section", () => {
   afterEach(() => {
     window.location.hash = "";

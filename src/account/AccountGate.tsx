@@ -5,7 +5,9 @@
 // so that nothing of it opens before the device has erased what an account other than the one api
 // names left there. The section for adults opens from the choice of the learner and from the bar
 // above the learner's screens, in place of either, while the account is open (R29); a profile it
-// changes, the other tabs hear of by BroadcastChannel, and a change they tell of comes here.
+// changes, the other tabs hear of by BroadcastChannel, and a change they tell of comes here. The
+// legal pages show at any step, before signing in too, from the sign-in screen and from the
+// section's first page, and their bar goes back to where they were opened from (R31).
 import type { Profile } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import type {
   LegalText as LegalTextOf,
@@ -28,12 +30,14 @@ import { AdultSection } from "../adults/AdultSection.tsx";
 import { type RequestState, useApi, useRequest } from "../api/ApiContext.tsx";
 import type { Api } from "../api/client.ts";
 import type { Failure } from "../api/failure.ts";
+import { ReadFailure } from "../api/ReadFailure.tsx";
 import { failureText } from "../api/words.ts";
-import { ADULTS, HOME, navigate, useRoute } from "../app/router.ts";
+import { ADULTS, HOME, LEGAL, navigate, type Route, useRoute } from "../app/router.ts";
 import { Screen } from "../app/Screen.tsx";
 import { useDeployment, useStorage } from "../boot/Boot.tsx";
 import { Offline, StorageGone } from "../boot/Screens.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
+import { LegalPages } from "../legal/LegalPages.tsx";
 import { LegalText } from "../legal/LegalText.tsx";
 import { accountTexts, readTexts, refsOf } from "../legal/texts.ts";
 import { usePackages } from "../packages/PackagesContext.tsx";
@@ -81,6 +85,13 @@ export function AccountGate({ children }: { readonly children: ReactNode }) {
   const [left, setLeft] = useState(false);
   const { language, words } = useLanguage();
   const route = useRoute();
+  // Where the legal pages' bar goes back to: home, unless the section opened them. Memory alone,
+  // as the profile the section chose: after a reload, home.
+  const [legalBack, setLegalBack] = useState<Route>(HOME);
+  const openLegal = useCallback((back: Route) => {
+    setLegalBack(back);
+    navigate(LEGAL);
+  }, []);
   // One channel for the tab, which tells the others of a profile api changed here and hears theirs.
   const channel = useRef<BroadcastChannel | undefined>(undefined);
   useEffect(() => {
@@ -119,6 +130,10 @@ export function AccountGate({ children }: { readonly children: ReactNode }) {
       />
     );
   }
+  // Back to the section only while its account is open: once it has gone, home.
+  if (route.screen === LEGAL.screen) {
+    return <LegalPages route={route} back={open ? legalBack : HOME} />;
+  }
   if (open && route.screen === ADULTS.screen) {
     return (
       <AdultSection
@@ -138,6 +153,7 @@ export function AccountGate({ children }: { readonly children: ReactNode }) {
           navigate(HOME);
           return done;
         }}
+        onLegal={() => openLegal(ADULTS)}
       />
     );
   }
@@ -154,6 +170,7 @@ export function AccountGate({ children }: { readonly children: ReactNode }) {
           }}
           {...(state.result === undefined ? {} : { result: state.result })}
           left={left}
+          onLegal={() => openLegal(HOME)}
         />
       );
     case "offline":
@@ -358,14 +375,7 @@ export function InviteScreen({
           ) : null}
         </div>
         {texts.status === "failed" ? (
-          <div className="nt-field">
-            <p role="alert" className="nt-error">
-              {failureText(texts.failure, words)}
-            </p>
-            <button type="button" onClick={texts.retry}>
-              {words.text("boot.retry")}
-            </button>
-          </div>
+          <ReadFailure failure={texts.failure} onRetry={texts.retry} />
         ) : null}
         {shown.length === 0 ? null : (
           <div className="nt-field">

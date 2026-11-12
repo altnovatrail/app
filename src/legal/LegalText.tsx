@@ -3,7 +3,7 @@
 // language api found, with that `lang`; on a screen in another language than English, the line
 // that the English text is the one in force and the version's translation, when it has one, which
 // has no force of its own (R141 in spec); and the English body, `lang="en"`. Nothing in it leads
-// out of app.
+// out of app. The legal pages show the same, open (R31).
 import type { LegalText as Text } from "@altnovatrail/contracts/novatrail/api/v1/legal_pb.js";
 import { useMemo } from "react";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
@@ -12,14 +12,27 @@ import { Markdown } from "./Markdown.tsx";
 
 /** A text, closed until it is opened; its own headings begin at `level`. */
 export function LegalText({ text, level }: { readonly text: Text; readonly level: number }) {
-  const { language, words } = useLanguage();
-  const translated = text.translation !== "" && text.translationLanguage !== "";
   const title = useMemo(() => titleOf(text.body) ?? text.id, [text.body, text.id]);
   return (
     <details className="nt-legal">
       <summary>
         <span lang="en">{title}</span>
       </summary>
+      <LegalContent text={text} level={level} />
+    </details>
+  );
+}
+
+/**
+ * What a text holds, below its title: the gist, the line that the English text is in force, the
+ * translation and the English body, whose own headings begin at `level`. The legal pages show it
+ * open, as a page of its own (R31).
+ */
+export function LegalContent({ text, level }: { readonly text: Text; readonly level: number }) {
+  const { language, words } = useLanguage();
+  const translated = text.translation !== "" && text.translationLanguage !== "";
+  return (
+    <>
       <section aria-label={words.text("legal.gist")}>
         <p lang={text.summaryLanguage === "" ? "en" : text.summaryLanguage}>{text.summary}</p>
       </section>
@@ -34,6 +47,6 @@ export function LegalText({ text, level }: { readonly text: Text; readonly level
         {translated ? <p lang={language}>{words.text("legal.original")}</p> : null}
         <Markdown body={text.body} level={level} />
       </section>
-    </details>
+    </>
   );
 }
