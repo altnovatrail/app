@@ -30,12 +30,14 @@ import { PackageService } from "@altnovatrail/contracts/novatrail/api/v1/package
 import type { CanvasElement, DemoState } from "@altnovatrail/spec/canvas";
 import type * as open from "@altnovatrail/spec/formatv0/open";
 import { create, type MessageInitShape } from "@bufbuild/protobuf";
+import { timestampFromDate } from "@bufbuild/protobuf/wkt";
 import { Code, ConnectError, type ConnectRouter, createRouterTransport } from "@connectrpc/connect";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 import { ApiProvider } from "../api/ApiContext.tsx";
 import { createApi } from "../api/client.ts";
+import { dateTimeFormat } from "../i18n/intl.ts";
 import type { PackageChecks } from "../packages/checks.ts";
 import { DeviceFiles } from "../packages/files.ts";
 import { PackagesProvider } from "../packages/PackagesContext.tsx";
@@ -652,6 +654,26 @@ describe("the lesson player", () => {
     // A refusal ended the action: the new one has its own key.
     expect(kept.begun[0]?.idempotencyKey).not.toBe(kept.begun[1]?.idempotencyKey);
     expect(kept.left).toHaveBeenCalledOnce();
+  });
+
+  it("says when the tutor comes back once the quota refuses the task segment, and keeps the run (R37)", async () => {
+    const midnight = new Date();
+    midnight.setHours(24, 0, 0, 0);
+    const kept = await renderLesson({
+      kept: { place: 3 },
+      begin: () => {
+        throw refused(Code.ResourceExhausted, Cause.QUOTA, {
+          case: "nextFamilyDay",
+          value: timestampFromDate(midnight),
+        });
+      },
+    });
+    const time = dateTimeFormat("en", { timeStyle: "short" }).format(midnight);
+    expect(
+      await screen.findByText(`Today's tutor time is used up. It comes back tomorrow at ${time}`),
+    ).toBeVisible();
+    expect(kept.endedRuns).toEqual([]);
+    expect(screen.getByRole("button", { name: "Begin the task again" })).toBeVisible();
   });
 
   it("sends lesson done again after no answer, and goes to the task left when api refuses", async () => {

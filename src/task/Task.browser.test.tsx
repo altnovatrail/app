@@ -37,6 +37,7 @@ import {
   Cause,
   ChoiceKind,
   CloseReason,
+  type OutcomeSchema,
   RefusalSchema,
 } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import {
@@ -462,6 +463,14 @@ async function renderTask(setup: Setup = {}) {
 
 const panel = () => within(screen.getByRole("complementary", { name: "Tutor" }));
 const check = () => screen.getByRole("button", { name: "Check" });
+
+/** The midnight after now on the device's clock: the next family day, by the offset it sends. */
+function tomorrow(): Date {
+  const day = new Date();
+  day.setHours(24, 0, 0, 0);
+  return day;
+}
+const at = (moment: Date) => dateTimeFormat("en", { timeStyle: "short" }).format(moment);
 
 afterEach(() => {
   vi.useRealTimers();
@@ -1025,6 +1034,162 @@ describe("the task screen with handwriting", () => {
     await userEvent.click(check());
     expect(await screen.findByText("The tutor can't answer right now")).toBeVisible();
     expect(screen.getAllByText("Not checked").length).toBeGreaterThan(0);
+  });
+
+  it("says when the tutor comes back once the quota left a check unchecked (R37)", async () => {
+    const midnight = tomorrow();
+    const { rungs } = await renderTask({
+      task: SHEET_TASK,
+      history: WRITTEN,
+      mode: Mode.SELF,
+      answer: () => ({
+        ...sheetAnswer("unchecked"),
+        outcome: { cause: Cause.QUOTA, nextFamilyDay: timestampFromDate(midnight) },
+      }),
+    });
+    await vi.waitFor(() => expect(check()).toHaveAttribute("aria-disabled", "false"));
+    await userEvent.click(check());
+    expect(
+      await screen.findByText(
+        `Today's tutor time is used up. It comes back tomorrow at ${at(midnight)}`,
+      ),
+    ).toBeVisible();
+    expect(screen.getAllByText("Not checked").length).toBeGreaterThan(0);
+    // "Unchecked" is no wrong answer: no rung, no words asked.
+    expect(rungs).toEqual([]);
+  });
+
+  it("stands the quota beside the fallback text of a rung, and no line beside it for no admission", async () => {
+    const midnight = tomorrow();
+    let outcome: MessageInitShape<typeof OutcomeSchema> = {
+      cause: Cause.QUOTA,
+      nextFamilyDay: timestampFromDate(midnight),
+    };
+    const { rungs } = await renderTask({
+      task: SHEET_TASK,
+      history: WRITTEN,
+      mode: Mode.SELF,
+      answer: () => sheetAnswer("not_yet", { value: "5", wrong: rungs.length + 1 }),
+      rung: (request) => ({ rung: request.wrongAnswers, words: "Read the task again.", outcome }),
+    });
+    await vi.waitFor(() => expect(check()).toHaveAttribute("aria-disabled", "false"));
+    await userEvent.click(check());
+    expect(await panel().findByText("Read the task again.")).toBeVisible();
+    const line = `Today's tutor time is used up. It comes back tomorrow at ${at(midnight)}`;
+    expect(panel().getByText(line)).toBeVisible();
+    // On platform AI the words carry the clock's offset, for the family day of the quota.
+    expect(rungs[0]?.clockOffsetMinutes).toBe(-new Date().getTimezoneOffset() || 0);
+    // The limit of platform AI stands beside them too, in its neutral phrase.
+    outcome = { cause: Cause.PLATFORM_LIMIT };
+    await userEvent.click(check());
+    await vi.waitFor(() => expect(panel().queryByText(line)).toBeNull());
+    expect(panel().getByText("The tutor can't answer right now")).toBeVisible();
+    // A deployment that admits no words of a model yet gives the fallback text alone.
+    outcome = { cause: Cause.NOT_ADMITTED };
+    await userEvent.click(check());
+    await vi.waitFor(() => expect(rungs.length).toBe(3));
+    await vi.waitFor(() =>
+      expect(panel().queryByText("The tutor can't answer right now")).toBeNull(),
+    );
+    expect(panel().getByText("Read the task again.")).toBeVisible();
+    expect(screen.queryByText("The tutor isn't available for this profile")).toBeNull();
+  });
+
+  it("says the quota once, by Check or by the words, and drops it once a model's words come", async () => {
+    const midnight = tomorrow();
+    const quota = { cause: Cause.QUOTA, nextFamilyDay: timestampFromDate(midnight) };
+    const line = `Today's tutor time is used up. It comes back tomorrow at ${at(midnight)}`;
+    let atCheck = true;
+    let explained: () => MessageInitShape<typeof ExplainDifferentlyResponseSchema> = () => {
+      throw new ConnectError("refused", Code.ResourceExhausted, undefined, [
+        {
+          desc: RefusalSchema,
+          value: create(RefusalSchema, {
+            cause: Cause.QUOTA,
+            data: { case: "nextFamilyDay", value: quota.nextFamilyDay },
+          }),
+        },
+      ]);
+    };
+    const { rungs } = await renderTask({
+      task: SHEET_TASK,
+      history: WRITTEN,
+      mode: Mode.SELF,
+      // A check whose slot of choice was wrong while the quota left its handwriting unchecked.
+      answer: () => ({
+        ...sheetAnswer("not_yet", { value: "5", wrong: rungs.length + 1 }),
+        ...(atCheck ? { outcome: quota } : {}),
+      }),
+      rung: (request) => ({
+        rung: request.wrongAnswers,
+        words: "Read the task again.",
+        outcome: quota,
+      }),
+      explain: () => explained(),
+    });
+    await vi.waitFor(() => expect(check()).toHaveAttribute("aria-disabled", "false"));
+    await userEvent.click(check());
+    expect(await screen.findByText("Read the task again.")).toBeVisible();
+    // The line stands by Check, and the words of the same check do not say it again.
+    expect(screen.getAllByText(line)).toHaveLength(1);
+    expect(panel().queryByText(line)).toBeNull();
+    // A check that read the work: the line goes with the words.
+    atCheck = false;
+    await userEvent.click(check());
+    await vi.waitFor(() => expect(rungs.length).toBe(2));
+    expect(await panel().findByText(line)).toBeVisible();
+    expect(screen.getAllByText(line)).toHaveLength(1);
+    // "Explain differently" refused by the quota says nothing the line does not; the right stays.
+    await userEvent.click(panel().getByRole("button", { name: "Explain differently" }));
+    await vi.waitFor(() =>
+      expect(panel().getByRole("button", { name: "Explain differently" })).toHaveAttribute(
+        "aria-disabled",
+        "false",
+      ),
+    );
+    expect(screen.getAllByText(line)).toHaveLength(1);
+    // The family day began: a model's words take the place of the fallback, and the line goes.
+    explained = () => ({ words: "In other words: count again." });
+    await userEvent.click(panel().getByRole("button", { name: "Explain differently" }));
+    expect(await panel().findByText("In other words: count again.")).toBeVisible();
+    expect(screen.queryByText(line)).toBeNull();
+  });
+
+  it("says why no words came after a correct answer while platform AI is closed (R37)", async () => {
+    let outcome: { cause: Cause } = { cause: Cause.PLATFORM_LIMIT };
+    const solved = () => ({
+      ...sheetAnswer("correct", { value: "7" }),
+      solved: { solution: encode(SOLUTION), moduleFormatVersion: "0.4" },
+    });
+    const first = await renderTask({
+      task: SHEET_TASK,
+      history: WRITTEN,
+      mode: Mode.SELF,
+      answer: solved,
+      correct: () => ({ outcome }),
+    });
+    await vi.waitFor(() => expect(check()).toHaveAttribute("aria-disabled", "false"));
+    await userEvent.click(check());
+    await screen.findByRole("region", { name: "Solution" });
+    expect(await panel().findByText("The tutor can't answer right now")).toBeVisible();
+    expect(panel().getByRole("heading", { name: "Tutor", level: 2 })).toBeVisible();
+    expect(first.corrects[0]?.clockOffsetMinutes).toBe(-new Date().getTimezoneOffset() || 0);
+    first.unmount();
+    // No admission after a correct answer is no news: the result stands without a line.
+    outcome = { cause: Cause.NOT_ADMITTED };
+    const second = await renderTask({
+      task: SHEET_TASK,
+      history: WRITTEN,
+      mode: Mode.SELF,
+      answer: solved,
+      correct: () => ({ outcome }),
+    });
+    await vi.waitFor(() => expect(check()).toHaveAttribute("aria-disabled", "false"));
+    await userEvent.click(check());
+    await screen.findByRole("region", { name: "Solution" });
+    await vi.waitFor(() => expect(second.corrects.length).toBe(1));
+    expect(screen.queryByText("The tutor isn't available for this profile")).toBeNull();
+    expect(screen.queryByRole("heading", { name: "Tutor", level: 2 })).toBeNull();
   });
 
   it("keeps Check closed with a line until the sheet holds an answer", async () => {

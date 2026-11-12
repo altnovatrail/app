@@ -31,8 +31,15 @@ export const en = {
   "task.not-saved": "Your work isn't saved on this device",
   /** A call of AI that gave nothing, and platform AI out of its limit: a neutral phrase (R04 spec). */
   "api.ai-failure": "The tutor can't answer right now",
-  /** The quota of platform AI for the family day is spent; {time} is when the next day begins. */
-  "api.quota": "Today's tutor time is used up. It comes back at {time}",
+  /**
+   * The quota of platform AI for the family day is spent; the next day begins on {date} at {time},
+   * later than tomorrow on the device's clock (R37).
+   */
+  "api.quota": "Today's tutor time is used up. It comes back on {date} at {time}",
+  /** The same, when the next family day begins today on the device's clock, at {time}. */
+  "api.quota-today": "Today's tutor time is used up. It comes back today at {time}",
+  /** The same, when the next family day begins tomorrow on the device's clock, at {time}. */
+  "api.quota-tomorrow": "Today's tutor time is used up. It comes back tomorrow at {time}",
   "api.not-admitted": "The tutor isn't available for this profile",
   /** The limit of the adult's own AI key ran out at its provider. */
   "api.limit-reached": "The limit of your AI key is used up",

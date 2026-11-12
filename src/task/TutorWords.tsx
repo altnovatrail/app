@@ -19,7 +19,10 @@ export interface TutorWordsProps {
   readonly words: string | undefined;
   /** The module's explanation language. */
   readonly language: string | undefined;
-  /** What the request of the words came to, when it gave none. */
+  /**
+   * What the request of the words came to: when it gave none, or, below the fallback text of a
+   * rung, why platform AI gave no words of its own (R37).
+   */
   readonly failure?: string;
   /** The words of a rung are asked and have not come yet. */
   readonly waiting?: boolean;
@@ -58,7 +61,8 @@ export function TutorWords({
       )}
       {waiting || explaining ? <p className="nt-hint">{words.text("task.words-waiting")}</p> : null}
       {failure === undefined ? null : <p className="nt-hint">{failure}</p>}
-      {note === undefined ? null : <p className="nt-hint">{note}</p>}
+      {/* A refusal of "Explain differently" that says what the line above says is not said twice. */}
+      {note === undefined || note === failure ? null : <p className="nt-hint">{note}</p>}
       {onExplain === undefined || text === undefined ? null : (
         <div className="nt-buttons">
           {/* Not disabled while it is under way: a disabled button would drop the focus. */}

@@ -21,7 +21,10 @@
 // account can report a problem with them as they are shown (R123 in spec; R33). While the voicing
 // is on, what comes after a press is said by itself — the verdict and the outcome of a check in the
 // screen's language, then the tutor's words and a hint in the module's —, and the press itself,
-// Check, Hint or "Explain differently", marks the synthesis at once for WebKit (R07; T45).
+// Check, Hint or "Explain differently", marks the synthesis at once for WebKit (R07; T45). While
+// platform AI is closed beyond a call — its quota for the family day is spent, or its limit ran
+// out —, the block "Tutor" says why beside the fallback text of a rung, and in place of the words
+// after a correct answer (R37).
 import { Mode as ProfileMode } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import {
   Action,
@@ -48,7 +51,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useApi } from "../api/ApiContext.tsx";
 import { type Failure, parseFailure } from "../api/failure.ts";
 import { aiFields, idempotencyKey } from "../api/keys.ts";
-import { outcomeOf } from "../api/outcome.ts";
+import { closesPlatformAI, outcomeOf } from "../api/outcome.ts";
 import { failureText, outcomeText } from "../api/words.ts";
 import { HOME, navigate, redirect } from "../app/router.ts";
 import { Screen } from "../app/Screen.tsx";
@@ -498,6 +501,8 @@ function OpenTask({
   const drawn = useRef(0);
   // The checks begun: an answer of words that belongs to an earlier check is dropped.
   const checks = useRef(0);
+  // The last check said platform AI is closed, by Check: the words it asked do not say it again.
+  const closedAtCheck = useRef(false);
   // Once the attempt is over its record is gone: nothing more is written, and no write says unsaved.
   const over = useRef(false);
   const latest = useRef({ state, solution, filled });
@@ -629,10 +634,23 @@ function OpenTask({
             if (late()) return;
             const read = outcomeOf(answer.outcome);
             if (answer.words !== "") {
-              // The fallback text of the rung comes with the outcome "not admitted": words all the same.
+              // The fallback text of the rung comes with an outcome: words all the same. Beside it
+              // stands why, when platform AI is closed beyond this call — the quota, with when it
+              // comes back, or its limit (R37).
+              const why =
+                closesPlatformAI(read) && !closedAtCheck.current
+                  ? outcomeText(read, words)
+                  : undefined;
               setSaid({ text: answer.words, reply: TutorReply.RUNG, rung: answer.rung });
+              if (why !== undefined) setWordsFailure(why);
               setWordsCame(true);
-              auto([{ text: answer.words, language: explanation }], verdictSaid.current);
+              auto(
+                [
+                  { text: answer.words, language: explanation },
+                  ...(why === undefined ? [] : [{ text: why, language }]),
+                ],
+                verdictSaid.current,
+              );
             } else if (read !== undefined) setWordsFailure(outcomeText(read, words));
             if (of.work !== undefined && answer.marks.length > 0) {
               setMarks(
@@ -668,10 +686,13 @@ function OpenTask({
           if (asked === checks.current) setWordsWaiting(false);
         });
     },
-    [api, profileId, attemptId, task, words, markName, onClosed, auto, explanation],
+    [api, profileId, attemptId, task, words, markName, onClosed, auto, explanation, language],
   );
 
-  /** The words after a correct answer, with its work: once they came or their request ended, it goes. */
+  /**
+   * The words after a correct answer, with its work: once they came or their request ended, it
+   * goes. None came, and platform AI is closed beyond this call: the block says why (R37).
+   */
   const correctWords = useCallback(
     (of: Sent) => {
       void api.attempt
@@ -688,7 +709,13 @@ function OpenTask({
               setSaid({ text: answer.words, reply: TutorReply.CORRECT_ANSWER, rung: 0 });
               setWordsCame(true);
               auto([{ text: answer.words, language: explanation }], verdictSaid.current);
+              return;
             }
+            const read = outcomeOf(answer.outcome);
+            if (!closesPlatformAI(read) || closedAtCheck.current) return;
+            const why = outcomeText(read, words);
+            setWordsFailure(why);
+            auto([{ text: why, language }], verdictSaid.current);
           },
           () => {},
         )
@@ -696,7 +723,7 @@ function OpenTask({
           if (of.contract !== undefined) void profile?.wordsCame(attemptId).catch(() => {});
         });
     },
-    [api, profileId, attemptId, profile, auto, explanation],
+    [api, profileId, attemptId, profile, auto, explanation, words, language],
   );
 
   /** The submission of what the sheet and the options hold now, or the one sent before, again. */
@@ -745,6 +772,7 @@ function OpenTask({
         // Nothing on the sheet to check after all: the screen stays as it was.
         if (of === undefined) return;
         setOutcome(undefined);
+        closedAtCheck.current = false;
         setWordsCame(false);
         setMarks(undefined);
         const before = latest.current.state.wrongAnswers;
@@ -760,6 +788,7 @@ function OpenTask({
         setVerdicts(verdicts);
         const read = outcomeOf(answer.outcome);
         if (read !== undefined) setOutcome(outcomeText(read, words));
+        closedAtCheck.current = closesPlatformAI(read);
         // The lines of the panel that came with the check, in the language of the screen.
         verdictSaid.current = auto(
           [
@@ -793,6 +822,8 @@ function OpenTask({
             // A solution the build cannot read is no reason to hide that the task is solved.
           }
           setSaid(undefined);
+          // What the words of a rung came to is past too: the block is the correct answer's now.
+          setWordsFailure(undefined);
           await onEnded(CloseReason.CORRECT, profile, of.number);
           setSolution(parts);
           comesNext(answer.next);
@@ -902,6 +933,8 @@ function OpenTask({
               reply: TutorReply.EXPLAINED_DIFFERENTLY,
               rung: before?.rung ?? Math.min(Math.max(wrongAnswers, 1), 3),
             }));
+            // Words of a model came: what the block said of platform AI closed is past.
+            setWordsFailure(undefined);
             setWordsCame(true);
             auto([{ text: answer.words, language: explanation }]);
           }

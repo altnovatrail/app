@@ -5,7 +5,8 @@
 // of the panel, which comes for them on my own too, with the hint asked for. Hint stands beside
 // Check always, and "Show the solution" too when the learner may ask for it, with a word of what it
 // ends before it does (R22). Once the task is solved or its solution shown, the panel gives way to
-// its result: "Correct" or "Solution shown", the words after a correct answer if any came, the
+// its result: "Correct" or "Solution shown", the words after a correct answer if any came — or why
+// none came while platform AI is closed (R37) —, the
 // solution, the way to what the engine chose (T28), "Try it again" and the way back to My subjects;
 // the options take no tap, and the canvas stays as it was. Under a lesson's header it is no screen
 // of its own, and its result ends with the lesson's Continue in place of "Try it again" (R23). What
@@ -63,7 +64,10 @@ export interface TaskScreenProps {
   readonly blink: boolean;
   /** The tutor's words of the rung, or after the correct answer; none while none came. */
   readonly tutorWords?: string;
-  /** What the request of the tutor's words came to, when it gave none. */
+  /**
+   * What the request of the tutor's words came to: when it gave none, or why they are the fallback
+   * text of the rung, or none came after the correct answer, while platform AI is closed (R37).
+   */
   readonly wordsFailure?: string;
   /** The words of a rung are asked and have not come yet. */
   readonly wordsWaiting?: boolean;
@@ -211,7 +215,12 @@ export function TaskScreen(props: TaskScreenProps) {
                     <Verdict verdict="correct" />
                   )}
                 </p>
-                <TutorWords words={props.tutorWords} language={explanation} report={props.report} />
+                <TutorWords
+                  words={props.tutorWords}
+                  language={explanation}
+                  {...(props.wordsFailure === undefined ? {} : { failure: props.wordsFailure })}
+                  report={props.report}
+                />
                 <Solution parts={solution} language={explanation} media={props.media} />
                 {props.againFailure === undefined ? null : (
                   <p role="alert" className="nt-error">
