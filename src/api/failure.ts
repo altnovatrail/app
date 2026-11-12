@@ -57,6 +57,11 @@ export function refusalOf(error: ConnectError): Refusal | undefined {
   return refusal === undefined || Cause[refusal.cause] === undefined ? undefined : refusal;
 }
 
+/** Whether a failure is a refusal for this cause. */
+export function refusedWith(failure: Failure, cause: CauseValue): boolean {
+  return failure.kind === "refused" && failure.cause === cause;
+}
+
 /** What an error of a call comes to. */
 export function parseFailure(error: unknown): Failure {
   if (error instanceof ApiError) return error.failure;

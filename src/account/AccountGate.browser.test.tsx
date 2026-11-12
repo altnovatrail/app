@@ -10,6 +10,8 @@ import {
   GetAccountResponseSchema,
   Mode,
   ProfileSchema,
+  SetWorkStorageRequestSchema,
+  SetWorkStorageResponseSchema,
   UpdateProfileRequestSchema,
   UpdateProfileResponseSchema,
 } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
@@ -873,6 +875,71 @@ describe("the section for adults", () => {
 describe("the page This device in the section", () => {
   afterEach(() => {
     window.location.hash = "";
+  });
+
+  it("keeps its warning of loss once the storage on the server is switched on: api keeps no copy yet", async () => {
+    const service = fakeSignIn("uid-1");
+    const account = { accountId: "account-1", profiles: [OWNER] };
+    const switched: ReturnType<typeof fromBinary<typeof SetWorkStorageRequestSchema>>[] = [];
+    const heard: unknown[] = [];
+    const other = new BroadcastChannel(PROFILES_CHANNEL);
+    other.onmessage = (event) => heard.push(event.data);
+    renderApp(
+      {
+        getAccount: () => message(GetAccountResponseSchema, { account }),
+        getLegalTexts: () =>
+          message(GetLegalTextsResponseSchema, {
+            texts: [
+              {
+                id: "storage-consent",
+                version: 1,
+                body: "# Keeping works on our server\n\nText.\n",
+                summary: "Works kept.",
+                summaryLanguage: "en",
+              },
+            ],
+          }),
+        setWorkStorage: (body) => {
+          switched.push(fromBinary(SetWorkStorageRequestSchema, body));
+          return message(SetWorkStorageResponseSchema, {
+            profile: { ...OWNER, workStorage: true },
+          });
+        },
+      },
+      service,
+    );
+    await userEvent.click(await screen.findByRole("button", { name: "For grown-ups" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Profile: Ёжик" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Keep works on the server" }));
+    await userEvent.click(
+      await screen.findByRole("checkbox", { name: /^I give my explicit consent/ }),
+    );
+    const on = screen.getByRole("button", { name: "Switch it on" });
+    await vi.waitFor(() => expect(on).toBeEnabled());
+    await userEvent.click(on);
+    expect(
+      await screen.findByRole("button", { name: "Stop keeping works on the server" }),
+    ).toBeTruthy();
+    expect(switched).toHaveLength(1);
+    expect(switched[0]).toMatchObject({
+      profileId: "p1",
+      enabled: true,
+      text: { id: "storage-consent", version: 1 },
+    });
+    // The other tabs hear of it, as of any profile api changed.
+    await vi.waitFor(() => expect(heard).toHaveLength(1));
+    expect(profileOf(heard[0])).toMatchObject({ profileId: "p1", workStorage: true });
+    await userEvent.click(screen.getByRole("button", { name: "Back to the section" }));
+    await userEvent.click(
+      await screen.findByRole("button", { name: "See what is on this device" }),
+    );
+    expect(await screen.findByRole("heading", { level: 1, name: "This device" })).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Its work is on this device alone: if the site's data is erased, the work is lost",
+      ),
+    ).toBeTruthy();
+    other.close();
   });
 
   it("erases everything on this device: the account's data, the device's language, the session", async () => {

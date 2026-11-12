@@ -29,7 +29,9 @@ type OnDevice =
 
 /**
  * Whether api keeps a copy of the profile's work. None yet, whatever `work_storage` says: api writes
- * the consent and keeps no copy (Д12 api; T39), so the warning of its loss stands for every profile.
+ * the consent and keeps no copy, and the contract has no request that would send one (Д12 api; В53
+ * and Д16 in RUN.md), so the warning of its loss stands for every profile, its storage switched on
+ * too (R30). The words of the profile's page that say so change with this.
  */
 function copiedOnServer(_profile: Profile): boolean {
   return false;

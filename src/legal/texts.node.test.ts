@@ -12,7 +12,14 @@ import { describe, expect, it, vi } from "vitest";
 import { createApi } from "../api/client.ts";
 import { ApiError } from "../api/failure.ts";
 import { titleOf, tokensOf } from "./body.ts";
-import { ACCOUNT_TEXTS, accountTexts, readTexts, refsOf } from "./texts.ts";
+import {
+  ACCOUNT_TEXTS,
+  accountTexts,
+  readTexts,
+  refsOf,
+  STORAGE_TEXT,
+  storageText,
+} from "./texts.ts";
 
 function text(id: string, version: number): LegalText {
   return create(LegalTextSchema, {
@@ -57,6 +64,12 @@ describe("the legal texts", () => {
       { id: "terms-of-use", version: 1 },
     ]);
     expect(accountTexts([text("terms-of-use", 1)]).map((t) => t.id)).toEqual(["terms-of-use"]);
+  });
+
+  it("finds the consent to the storage of works, and none while it has no version in force", () => {
+    const texts = [text("privacy-policy", 2), text(STORAGE_TEXT, 3)];
+    expect(storageText(texts)).toMatchObject({ id: "storage-consent", version: 3 });
+    expect(storageText([text("privacy-policy", 2)])).toBeUndefined();
   });
 
   it("reads an api with no LegalService as no text in force, and offers it no reload", async () => {

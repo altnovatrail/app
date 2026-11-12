@@ -14,7 +14,7 @@ import {
 import { Cause, RefusalSchema } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import { create, type MessageInitShape } from "@bufbuild/protobuf";
 import { Code, ConnectError, type ConnectRouter, createRouterTransport } from "@connectrpc/connect";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 import { ApiProvider } from "../api/ApiContext.tsx";
@@ -83,6 +83,9 @@ function renderPage(
   const rendered = render(page(shown));
   return { asked, saved, failed, rerender: (of: Profile) => rendered.rerender(page(of)) };
 }
+
+/** The status of the profile's form, not of the storage of works below it. */
+const saving = () => within(document.querySelector("form") as HTMLElement).getByRole("status");
 
 afterEach(() => {
   window.location.hash = "";
@@ -159,7 +162,7 @@ describe("a profile's page", () => {
   it("asks nothing when nothing changed, and says so", async () => {
     const { asked } = renderPage(profile(), () => profile());
     await userEvent.click(screen.getByRole("button", { name: "Save" }));
-    expect(screen.getByRole("status").textContent).toBe("Nothing has changed");
+    expect(saving().textContent).toBe("Nothing has changed");
     expect(asked).toEqual([]);
   });
 
@@ -182,7 +185,7 @@ describe("a profile's page", () => {
     await userEvent.click(screen.getByRole("radio", { name: "Normal" }));
     await userEvent.click(screen.getByRole("radio", { name: "Slow" }));
     await userEvent.click(screen.getByRole("button", { name: "Save" }));
-    await vi.waitFor(() => expect(screen.getByRole("status").textContent).toBe("Saved"));
+    await vi.waitFor(() => expect(saving().textContent).toBe("Saved"));
     expect(asked).toHaveLength(1);
     expect(asked[0]?.settings).toMatchObject({
       pseudonym: "Ёж",
@@ -234,7 +237,7 @@ describe("a profile's page", () => {
     await vi.waitFor(() => expect(answered).toBeDefined());
     await userEvent.click(screen.getByRole("radio", { name: "Slow" }));
     answered?.();
-    await vi.waitFor(() => expect(screen.getByRole("status").textContent).toBe("Saved"));
+    await vi.waitFor(() => expect(saving().textContent).toBe("Saved"));
     // The page shows the profile it is given: the mode sent is its own now, the speed still an edit.
     rerender(profile({ defaultMode: Mode.BY_STEPS }));
     expect(screen.getByRole("radio", { name: "Step by step" })).toBeChecked();

@@ -10,7 +10,7 @@ import type { Account, Profile } from "@altnovatrail/contracts/novatrail/api/v1/
 import { Cause } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import type { LegalTextRef } from "@altnovatrail/contracts/novatrail/api/v1/legal_pb.js";
 import type { Api } from "../api/client.ts";
-import { type Failure, parseFailure } from "../api/failure.ts";
+import { type Failure, parseFailure, refusedWith } from "../api/failure.ts";
 import type { PackageChecks } from "../packages/checks.ts";
 import type { SignInResult, SignInService } from "../signin/service.ts";
 import type { Device } from "../storage/device.ts";
@@ -98,10 +98,6 @@ export interface SessionOptions {
   readonly project: SignIn;
   /** The checks of packages: they start once an account is there, and stop when it goes. */
   readonly checks?: PackageChecks;
-}
-
-function refusedWith(failure: Failure, cause: Cause): boolean {
-  return failure.kind === "refused" && failure.cause === cause;
 }
 
 export class Session {

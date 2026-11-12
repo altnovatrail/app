@@ -271,6 +271,35 @@ function devicePage() {
   );
 }
 
+/** An api that gives the text storage-consent alone, for the consent of a profile's page. */
+const STORAGE_API = {
+  legal: {
+    getLegalTexts: async () => ({
+      texts: [
+        create(LegalTextSchema, {
+          id: "storage-consent",
+          version: 1,
+          body: "# Keeping works on our server\n\n## What is kept\n\n- each work, as the device holds it.\n",
+          summary: "Вы включаете хранение работ этого ученика на нашем сервере.",
+          summaryLanguage: "ru",
+        }),
+      ],
+    }),
+  },
+} as unknown as Api;
+
+/** The consent to keeping works opened on a profile's page, and switched on with no tick. */
+async function consenting(): Promise<void> {
+  const keep = document.querySelector<HTMLButtonElement>("section .nt-buttons button");
+  if (keep === null) throw new Error("no Keep works on the server");
+  await userEvent.click(keep);
+  const on = document.querySelector<HTMLButtonElement>("section form button[type=submit]");
+  if (on === null) throw new Error("no Switch it on");
+  await vi.waitFor(() => expect(on.disabled).toBe(false));
+  await userEvent.click(on);
+  expect(document.querySelector("section form [aria-invalid=true]")).not.toBeNull();
+}
+
 async function submit(): Promise<void> {
   const button = document.querySelector<HTMLButtonElement>("button[type=submit]");
   if (button !== null) await userEvent.click(button);
@@ -690,6 +719,27 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
       </ApiProvider>
     ),
     submit,
+  ],
+  [
+    "a profile's page asking the consent to keep works on the server, unticked",
+    () => (
+      <ApiProvider value={STORAGE_API}>
+        <ProfilePage profile={OWNER} onSaved={() => {}} onFailed={() => {}} />
+      </ApiProvider>
+    ),
+    consenting,
+  ],
+  [
+    "a profile's page with its works kept on the server",
+    () => (
+      <ApiProvider value={{} as Api}>
+        <ProfilePage
+          profile={{ ...OWNER, workStorage: true }}
+          onSaved={() => {}}
+          onFailed={() => {}}
+        />
+      </ApiProvider>
+    ),
   ],
   [
     "My subjects with lessons in progress",

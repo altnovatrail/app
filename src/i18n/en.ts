@@ -349,6 +349,32 @@ export const en = {
   "adults.saved": "Saved",
   /** Save with nothing changed: nothing is asked. */
   "adults.unchanged": "Nothing has changed",
+  /** The storage of a profile's works on the server (R113 in spec), on the profile's page. */
+  "storage.title": "Keeping works on the server",
+  "storage.on": "Keeping this profile's works on the server is on",
+  "storage.off": "Keeping this profile's works on the server is off",
+  /** While api keeps no copy of a work: the consent is recorded, and no work goes to the server. */
+  "storage.not-yet":
+    "The server doesn't keep works yet: switching this on records the consent, and the works stay on this device alone",
+  /** Opens the consent, in place. */
+  "storage.keep": "Keep works on the server",
+  /** Switches the storage off at once, with no question. */
+  "storage.switch-off": "Stop keeping works on the server",
+  "storage.off-hint":
+    "It stops at once, and any copies of this profile's works on the server are erased. The works on this device stay",
+  /** The heading of the consent, above the text storage-consent. */
+  "storage.consent": "Consent to keeping works on the server",
+  /** What R127 in spec has the switch say: a work may tell of health and family; nobody reads it. */
+  "storage.what":
+    "A work may tell something personal, about health and family too. Nobody reads it",
+  /** The checkbox of the consent: explicit, to what the works tell about health too. */
+  "storage.agree":
+    "I give my explicit consent to keeping this profile's works on the server, with what they tell about health",
+  "storage.agree-needed": "To switch it on, tick the consent",
+  /** api has a newer version of the text than the one shown: it is shown, and agreed to again. */
+  "storage.text-changed": "The text of the consent has changed. Read it again and tick the consent",
+  /** The button of the consent: switches the storage on. */
+  "storage.switch-on": "Switch it on",
   /** The page This device (R04; section 3.2): its heading, and its place on the first page. */
   "device.title": "This device",
   "device.hint": "What the app keeps on this device, and how to erase it",

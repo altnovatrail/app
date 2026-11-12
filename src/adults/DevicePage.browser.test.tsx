@@ -1,8 +1,9 @@
 // The page This device in Chromium (R04 with its 2026-11-12 amendment; section 3.2 of
 // docs/architecture.md): what each profile keeps here and about how much, the profile with nothing
 // here and the one that cannot be read, the warning of loss on every profile while api keeps no
-// copy (R113 in spec), the browser's estimate, persistent storage asked for and refused, Safari's
-// seven days, and both erasures, each asked first, with the focus where it belongs.
+// copy (R113 in spec), with the storage on the server switched on too (R30), the browser's
+// estimate, persistent storage asked for and refused, Safari's seven days, and both erasures, each
+// asked first, with the focus where it belongs.
 import {
   type Profile,
   ProfileSchema,
@@ -72,7 +73,8 @@ const section = (name: string) => screen.getByRole("region", { name });
 describe("the page This device", () => {
   it("names what each profile keeps here, the owner's first, and warns of its loss on each", async () => {
     const { device } = await deviceWithWork();
-    renderPage(device);
+    // The storage on the server switched on is no copy there: api keeps none yet (R30).
+    renderPage(device, { profiles: [OTHER, { ...OWNER, workStorage: true }] });
     expect(screen.getByRole("heading", { level: 1, name: "This device" })).toBeTruthy();
     expect(await screen.findByText("1 unfinished task")).toBeTruthy();
     expect(

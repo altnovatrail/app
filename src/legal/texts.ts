@@ -22,6 +22,14 @@ export async function readTexts(api: Api, language: Language): Promise<readonly 
   }
 }
 
+/** The text `SetWorkStorage` names when it switches the storage of works on (R113, R131 in spec). */
+export const STORAGE_TEXT = "storage-consent";
+
+/** The consent to the storage of works among them: none while it has no version in force. */
+export function storageText(texts: readonly LegalText[]): LegalText | undefined {
+  return texts.find((text) => text.id === STORAGE_TEXT);
+}
+
 /** The texts of the account among them, in the order of ACCOUNT_TEXTS: those in force alone. */
 export function accountTexts(texts: readonly LegalText[]): LegalText[] {
   return ACCOUNT_TEXTS.flatMap((id) => texts.filter((text) => text.id === id));
