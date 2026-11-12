@@ -210,6 +210,8 @@ export const en = {
   "task.check-write": "Write an answer on the sheet",
   /** Told to a screen reader when the tutor's words have come; the words themselves are not. */
   "task.words-came": "The tutor's words came",
+  /** In the block "Tutor" while the tutor's words are asked: they take some seconds to come. */
+  "task.words-waiting": "The tutor is writing…",
   /** The name of a tutor's mark on a handwriting sheet, by its number and the count. */
   "task.mark": "Tutor's mark {n} of {total}",
   /** The name of a tutor's mark on a workbook, with its line and its box. */
@@ -271,6 +273,10 @@ export const en = {
   "lesson.task-over": "This task is over",
   /** Why a segment of the bar does not open: it is not reached yet. */
   "lesson.not-open": "Not open yet",
+  /** A line of the screen when a chip of the bar not reached is pressed: it names the chip. */
+  "lesson.not-open-pressed": "{n} {kind}: not open yet",
+  /** A line of the screen when the chip of a task that ended is pressed: it names the chip. */
+  "lesson.task-over-pressed": "{n} {kind}: already over",
   /** To the next segment; not "Next", which is the canvas's button of a worked example. */
   "lesson.continue": "Continue",
   "lesson.leave": "Leave the lesson",

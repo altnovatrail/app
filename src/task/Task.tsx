@@ -433,6 +433,7 @@ function OpenTask({
   const [blink, setBlink] = useState(false);
   const [tutorWords, setTutorWords] = useState<string | undefined>(opened.rung);
   const [wordsFailure, setWordsFailure] = useState<string | undefined>(undefined);
+  const [wordsWaiting, setWordsWaiting] = useState(false);
   const [wordsCame, setWordsCame] = useState(false);
   const [outcome, setOutcome] = useState<string | undefined>(undefined);
   const [marks, setMarks] = useState<Marks | undefined>(undefined);
@@ -567,6 +568,7 @@ function OpenTask({
   const rungWords = useCallback(
     (wrongAnswers: number, of: Sent) => {
       setWordsFailure(undefined);
+      setWordsWaiting(true);
       const asked = checks.current;
       // The words of an earlier check, or of an attempt that ended meanwhile, show nothing.
       const late = () => asked !== checks.current || over.current;
@@ -616,7 +618,11 @@ function OpenTask({
                 found.cause === Cause.NO_MORE_WORDS);
             if (!quiet) setWordsFailure(failureText(found, words));
           },
-        );
+        )
+        .finally(() => {
+          // A newer check cleared it and may wait for words of its own; an attempt that ended has none.
+          if (asked === checks.current) setWordsWaiting(false);
+        });
     },
     [api, profileId, attemptId, task, words, markName, onClosed],
   );
@@ -683,6 +689,8 @@ function OpenTask({
     setFailure(undefined);
     pause.stop();
     checks.current += 1;
+    // The words a check before asked are no more awaited: its answer would be dropped.
+    setWordsWaiting(false);
     void (async () => {
       try {
         const of = await submission();
@@ -871,6 +879,7 @@ function OpenTask({
           setFailure(undefined);
           setOutcome(undefined);
           setWordsFailure(undefined);
+          setWordsWaiting(false);
           setExplainNote(undefined);
           await onEnded(CloseReason.SOLUTION_SHOWN, profile);
           setShown(true);
@@ -897,7 +906,9 @@ function OpenTask({
   // An adult may ask for the solution from the start of the attempt, a child from the fourth wrong
   // answer, once the ladder of hints is passed (R82 in spec).
   const mayShow = adult || state.wrongAnswers >= 4;
-  const mayExplain = !explained && state.wrongAnswers > 0 && tutorWords !== undefined;
+  // Not while the words of the rung are still asked: the right would go on the words before them.
+  const mayExplain =
+    !explained && state.wrongAnswers > 0 && tutorWords !== undefined && !wordsWaiting;
 
   return (
     <TaskScreen
@@ -918,6 +929,7 @@ function OpenTask({
       {...(again.failure === undefined ? {} : { againFailure: again.failure })}
       {...(tutorWords === undefined ? {} : { tutorWords })}
       {...(wordsFailure === undefined ? {} : { wordsFailure })}
+      wordsWaiting={wordsWaiting}
       {...(outcome === undefined ? {} : { outcome })}
       wordsCame={wordsCame}
       {...(hint === undefined ? {} : { hint })}
