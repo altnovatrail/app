@@ -8,13 +8,15 @@
 // module's name (T27; R23); and "What's next" asks the engine, or "Something else" beside an
 // attempt open, which it closes (T28; R24). A card of a version has the page of its license beside
 // its button (R32). Below the lists the screen says that the tutor is an AI, and leads to the page
-// on how to use it safely (R33).
+// on how to use it safely (R33). Beside the engine's way the screen leads to the skill map, the
+// second way in, where the learner chooses a skill (R34); a card marks a module whose skill graph
+// is a chain "in order" (R06).
 import type { ConnectedModule } from "@altnovatrail/contracts/novatrail/api/v1/module_pb.js";
 import { type ReactNode, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { useApi } from "../api/ApiContext.tsx";
 import { type Failure, parseFailure } from "../api/failure.ts";
 import { failureText } from "../api/words.ts";
-import { LESSON, navigate, TASK, TUTOR } from "../app/router.ts";
+import { LESSON, navigate, SKILL_MAP, TASK, TUTOR } from "../app/router.ts";
 import { Screen } from "../app/Screen.tsx";
 import { ReadFailed } from "../boot/Screens.tsx";
 import { collator } from "../i18n/intl.ts";
@@ -30,6 +32,7 @@ import { openProfile, type Profile } from "../storage/profile.ts";
 import { useAttempt } from "../task/AttemptContext.tsx";
 import { CardHeading } from "./CardHeading.tsx";
 import { byTitle, cardsOf, type ModuleCard, type ModuleRef } from "./modules.ts";
+import { useSequential } from "./useSequential.ts";
 
 /** A lesson run open, as My subjects names it. */
 export interface OpenRun {
@@ -187,6 +190,11 @@ export function SubjectsScreen({
       )}
       {/* One place, whatever is open: the step stays itself while its press closes the attempt. */}
       {next}
+      <div className="nt-buttons">
+        <button type="button" className="nt-secondary" onClick={() => navigate(SKILL_MAP)}>
+          {words.text("skillmap.title")}
+        </button>
+      </div>
       {runs.length === 0 ? null : (
         <section aria-labelledby={lessonsId} className="nt-continue">
           <h2 id={lessonsId}>{words.text("lesson.open-title")}</h2>
@@ -395,12 +403,14 @@ export function MySubjects({
     [views],
   );
 
-  if (read.status === "failed") return <ReadFailed failure={read.failure} onRetry={retry} />;
   const done = read.status === "done";
+  const connected = useSequential(views, done ? read.connected : undefined);
+  const catalog = useSequential(views, done ? read.catalog : undefined);
+  if (read.status === "failed") return <ReadFailed failure={read.failure} onRetry={retry} />;
   return (
     <SubjectsScreen
-      connected={done ? read.connected : undefined}
-      catalog={done ? read.catalog : undefined}
+      connected={connected}
+      catalog={catalog}
       {...(failure === undefined ? {} : { failure })}
       pending={pending}
       onRetry={retry}

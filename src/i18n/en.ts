@@ -248,6 +248,29 @@ export const en = {
   "subjects.disconnect": "Disconnect",
   /** On a module's card: the page of its LICENSE and NOTICE (R32). */
   "subjects.license": "License",
+  /** On a module's card: its skill graph is a chain, so its lessons go one after another (R06). */
+  "subjects.sequential": "In order",
+  /** The second way in beside My subjects, and its screen's heading (product 4 spec; R34). */
+  "skillmap.title": "Skill map",
+  /** On a module's card on the screen Skill map: opens the module's map. */
+  "skillmap.open": "Open the map",
+  /** Back from a module's map to the list of the maps of the modules connected. */
+  "skillmap.all": "All skill maps",
+  /** The heading of a module's map; {module} is the module's title, in its own language. */
+  "skillmap.module-title": "Skill map: {module}",
+  /** Above a module's map: the map's own button is Practise (skill-map's words). */
+  "skillmap.hint": "To practise a skill, open it on the map and press Practise",
+  /** A module with no skill graph. */
+  "skillmap.none": "This subject has no skill map",
+  /** The modules of the catalog that teach the anchor skills whose holding is unknown (Д211). */
+  "skillmap.offered-title": "Modules to connect",
+  /** "Unknown" and "Skills from other modules" are skill-map's own words on the map. */
+  "skillmap.offered-text":
+    "This subject builds on skills from other modules that are Unknown on the map. These modules teach them",
+  /** While the choice of a skill pressed on the map is under way: another press waits for it. */
+  "skillmap.choosing": "Opening what's next…",
+  /** A module of those connected from the map: its card says so in place of its button. */
+  "skillmap.connected": "Connected: it is in My subjects now",
   /** The heading of the task screen: a task has no title of its own. */
   "task.title": "Task",
   /** The name of the group of the two buttons of the mode. */

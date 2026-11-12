@@ -24,6 +24,14 @@
   --novatrail-canvas-paper: var(--nt-background);
   --novatrail-canvas-mark: var(--nt-mark);
 
+  /*
+   * The skill map in the same colours (its custom properties, R10 in skill-map): the accent on the
+   * paper and the paper on the accent are the primary's pairs above, 4.5:1 and more.
+   */
+  --novatrail-skill-map-paper: var(--nt-background);
+  --novatrail-skill-map-ink: var(--nt-text);
+  --novatrail-skill-map-accent: var(--nt-primary);
+
   color-scheme: light;
 }
 

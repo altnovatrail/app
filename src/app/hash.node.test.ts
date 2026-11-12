@@ -8,6 +8,7 @@ import {
   MODULE_LICENSE,
   parseHash,
   SCREENS,
+  SKILL_MAP,
   TASK,
   TUTOR,
 } from "./hash.ts";
@@ -77,6 +78,13 @@ describe("formatHash", () => {
   it("knows the page on the AI tutor, which names nobody", () => {
     expect(formatHash(TUTOR)).toBe("#/tutor");
     expect(parseHash("#/tutor")).toEqual(TUTOR);
+  });
+
+  it("knows the skill map, and a module's by its ID, which is content, not the learner", () => {
+    expect(formatHash(SKILL_MAP)).toBe("#/skill-map");
+    const route = { ...SKILL_MAP, parts: ["novatrail/olympiad-math"] };
+    expect(formatHash(route)).toBe("#/skill-map/novatrail%2Folympiad-math");
+    expect(parseHash(formatHash(route))).toEqual(route);
   });
 
   it("writes the home screen as #/home", () => {

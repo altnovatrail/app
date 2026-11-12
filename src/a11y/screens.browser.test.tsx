@@ -3,6 +3,7 @@
 // axe-core finds, every target at least 44 × 44 CSS px, no sideways scroll and no text cut. Each
 // screen is found by its role and name.
 import "@altnovatrail/canvas";
+import "@altnovatrail/skill-map";
 import { render } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -19,6 +20,10 @@ import {
   RunEndReason,
 } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import { LegalTextSchema } from "@altnovatrail/contracts/novatrail/api/v1/legal_pb.js";
+import {
+  AnchorSkillHolding,
+  GetSkillMapResponseSchema,
+} from "@altnovatrail/contracts/novatrail/api/v1/progress_pb.js";
 import { create } from "@bufbuild/protobuf";
 import { userEvent } from "vitest/browser";
 import {
@@ -36,7 +41,7 @@ import { ProfilePage } from "../adults/ProfilePage.tsx";
 import { ApiProvider } from "../api/ApiContext.tsx";
 import type { Api } from "../api/client.ts";
 import { App, LearnerBar } from "../app/App.tsx";
-import { HOME, LEGAL, TUTOR } from "../app/router.ts";
+import { HOME, LEGAL, SKILL_MAP, TUTOR } from "../app/router.ts";
 import {
   Framed,
   Offline,
@@ -56,6 +61,7 @@ import { NextStep } from "../next/NextStep.tsx";
 import { LicensePages, licenseRoute } from "../packages/LicensePage.tsx";
 import { type Packages, PackagesProvider } from "../packages/PackagesContext.tsx";
 import { SignInScreen } from "../signin/SignInScreen.tsx";
+import { moduleMapRoute, SkillMapRoute } from "../skills/SkillMapScreen.tsx";
 import { addProfile } from "../storage/profile.ts";
 import { addDatabase, setAccount } from "../storage/registry.ts";
 import { profileDatabase } from "../storage/schema.ts";
@@ -393,6 +399,65 @@ const MODULES_API = {
         { moduleId: "novatrail/gone", packageDigest: "" },
       ],
     }),
+  },
+} as unknown as Api;
+
+/** The open views of a module with a skill graph of two skills, and of a module that teaches. */
+const MAPPED = {
+  views: {
+    get: async (digest: string, kind: string) =>
+      kind === "skill-graph"
+        ? {
+            view: {
+              skills: {
+                counting: { title: "Counting", assessability: "verdict" },
+                halves: {
+                  title: "Halves",
+                  assessability: "verdict",
+                  prerequisites: ["counting", "core.multiplication-table"],
+                },
+              },
+            },
+            skillTiers: { counting: 1, halves: 2 },
+          }
+        : {
+            view: {
+              module_format_version: "0.4",
+              id: digest === D1 ? "example/fair-shares" : "novatrail/tables",
+              version: "1.0.0",
+              title: digest === D1 ? "Fair shares" : "Таблица умножения",
+              languages: { explanation: digest === D1 ? "en" : "ru" },
+            },
+            skillTiers: {},
+          },
+    keptManifests: async () => new Map(),
+  },
+} as unknown as Packages;
+
+/** An api of a profile with a module whose anchor skill is unknown, and a module that teaches it. */
+const MAP_API = {
+  module: {
+    listConnectedModules: async () => ({
+      modules: [
+        { moduleId: "example/fair-shares", packageDigest: D1 },
+        { moduleId: "novatrail/gone", packageDigest: "" },
+      ],
+    }),
+    listCatalog: async () => ({ modules: [{ moduleId: "novatrail/tables", packageDigest: D2 }] }),
+  },
+  progress: {
+    getSkillMap: async () =>
+      create(GetSkillMapResponseSchema, {
+        packageDigest: D1,
+        skills: [{ skill: "counting", evidenceCount: 1 }],
+        anchorSkills: [
+          {
+            anchorSkill: "core.multiplication-table",
+            holding: AnchorSkillHolding.UNKNOWN,
+            teachingModules: ["novatrail/tables"],
+          },
+        ],
+      }),
   },
 } as unknown as Api;
 
@@ -907,6 +972,7 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
             digest: D1,
             title: "Olympiad maths",
             language: "en",
+            sequential: true,
           },
         ]}
         catalog={[{ moduleId: "novatrail/physics", digest: D2, title: "Физика", language: "ru" }]}
@@ -915,6 +981,41 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
         onLicense={() => {}}
       />
     ),
+  ],
+  [
+    "the skill maps of the modules connected",
+    () => (
+      <ApiProvider value={MAP_API}>
+        <PackagesProvider value={MAPPED}>
+          <SkillMapRoute route={SKILL_MAP} profileId="p1" />
+        </PackagesProvider>
+      </ApiProvider>
+    ),
+    async () => {
+      await vi.waitFor(() => expect(document.querySelectorAll("article")).toHaveLength(2));
+    },
+  ],
+  [
+    "a module's skill map, a skill open, with a module to connect",
+    () => (
+      <ApiProvider value={MAP_API}>
+        <PackagesProvider value={MAPPED}>
+          <SkillMapRoute route={moduleMapRoute("example/fair-shares")} profileId="p1" />
+        </PackagesProvider>
+      </ApiProvider>
+    ),
+    async () => {
+      await vi.waitFor(() => expect(document.querySelectorAll("article")).toHaveLength(1));
+      const root = await vi.waitFor(() => {
+        const found = document.querySelector("novatrail-skill-map")?.shadowRoot;
+        if (found?.querySelector("button.tile") == null) throw new Error("no map yet");
+        return found;
+      });
+      [...root.querySelectorAll<HTMLButtonElement>("button.tile")]
+        .find((tile) => tile.textContent?.startsWith("Counting"))
+        ?.click();
+      await vi.waitFor(() => expect(root.querySelector("button.practise")).not.toBeNull());
+    },
   ],
   ["the page on the AI tutor, below its bar", () => <TutorPages route={TUTOR} />],
   [

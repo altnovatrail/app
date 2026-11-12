@@ -14,6 +14,7 @@ import {
 } from "@altnovatrail/contracts/novatrail/api/v1/module_pb.js";
 import {
   GetManifestResponseSchema,
+  GetSkillGraphResponseSchema,
   PackageService,
 } from "@altnovatrail/contracts/novatrail/api/v1/package_pb.js";
 import { create, type MessageInitShape } from "@bufbuild/protobuf";
@@ -81,6 +82,8 @@ interface Setup {
   seed?: (device: ReturnType<typeof memoryDevice>["device"]) => Promise<void>;
   /** The lesson runs the learner has open. */
   runs?: { lessonRunId: string; lesson: string; packageDigest: string }[];
+  /** The tiers of the skill graph of each version that has one. */
+  tiers?: Record<string, Record<string, number>>;
 }
 
 async function renderSubjects(setup: Setup, language: "en" | "ru" = "en") {
@@ -126,6 +129,20 @@ async function renderSubjects(setup: Setup, language: "en" | "ru" = "en") {
           ...(MANIFESTS[request.packageDigest]
             ? { manifest: MANIFESTS[request.packageDigest] }
             : {}),
+        });
+      },
+      getSkillGraph(request) {
+        const tiers = setup.tiers?.[request.packageDigest];
+        return create(GetSkillGraphResponseSchema, {
+          ...(tiers === undefined
+            ? {}
+            : {
+                skillGraph: {
+                  json: new TextEncoder().encode(JSON.stringify({ skills: {} })),
+                  moduleFormatVersion: "0.4",
+                },
+                skillTiers: tiers,
+              }),
         });
       },
     });
@@ -339,6 +356,28 @@ describe("My subjects", () => {
     expect((await card("novatrail/gone")).queryByRole("button", { name: "Лицензия" })).toBeNull();
     await userEvent.click((await card("Olympiad maths")).getByRole("button", { name: "Лицензия" }));
     expect(window.location.hash).toBe(`#/license/sha256%3A${"1".repeat(64)}`);
+    window.location.hash = "";
+  });
+
+  it("marks a module whose skill graph is a chain, connected or not, and no other", async () => {
+    await renderSubjects(
+      {
+        connected: [{ moduleId: MATH, packageDigest: D1 }],
+        catalog: [{ moduleId: PHYSICS, packageDigest: D2 }],
+        tiers: { [D1]: { "counting-gaps": 1, "time-calendar": 2 }, [D2]: { a: 1, b: 1 } },
+      },
+      "ru",
+    );
+    // The mark comes once the graph has, after the card.
+    expect(await (await card("Olympiad maths")).findByText("По порядку")).toBeVisible();
+    expect((await card("Физика")).queryByText("По порядку")).toBeNull();
+  });
+
+  it("leads to the skill map beside the engine's way", async () => {
+    await renderSubjects({ connected: [], catalog: [] });
+    await screen.findByRole("heading", { name: "Connected" });
+    await userEvent.click(screen.getByRole("button", { name: "Skill map" }));
+    expect(window.location.hash).toBe("#/skill-map");
     window.location.hash = "";
   });
 

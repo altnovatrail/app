@@ -1,8 +1,9 @@
 // What a module's card says of it (sections 3.8 and 3.10 of docs/architecture.md; R92 in spec):
 // its title as the card's heading, in its own explanation language; a line that names that
-// language when it is not the screen's; and whether the module is available — a module with no
-// current version for the learner is not. My subjects names its modules so, and the section for
-// adults its profile's modules (R32 in docs/decisions.md).
+// language when it is not the screen's; whether the module is available — a module with no
+// current version for the learner is not —; and the mark "in order" of a module whose skill graph
+// is a chain (R06). My subjects and the skill map name their modules so, and the section for
+// adults its profile's modules (R32 and R34 in docs/decisions.md).
 import { languageName } from "../i18n/intl.ts";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import type { Language } from "../i18n/language.ts";
@@ -38,6 +39,7 @@ export function CardHeading({ card, id }: { readonly card: ModuleCard; readonly 
           })}
         </p>
       )}
+      {card.sequential === true ? <p>{words.text("subjects.sequential")}</p> : null}
       {card.digest === undefined ? <p>{words.text("subjects.unavailable")}</p> : null}
     </>
   );

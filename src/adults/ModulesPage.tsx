@@ -16,6 +16,7 @@ import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { usePackages } from "../packages/PackagesContext.tsx";
 import { CardHeading } from "../subjects/CardHeading.tsx";
 import { byTitle, cardsOf, type ModuleCard } from "../subjects/modules.ts";
+import { useSequential } from "../subjects/useSequential.ts";
 
 /** The page of the profile's modules: the profile chosen in the section. */
 export const MODULES_PAGE: Route = { screen: ADULTS.screen, parts: ["modules"] };
@@ -63,12 +64,13 @@ export function ModulesPage({ profile }: { readonly profile: Profile }) {
     [views, profileId],
   );
   const cards = useRequest(read);
+  const marked = useSequential(views, cards.status === "done" ? cards.value : undefined);
   const compare = useMemo(() => collator(language).compare, [language]);
   let shown = null;
   if (cards.status === "failed") {
     shown = <ReadFailure failure={cards.failure} onRetry={cards.retry} />;
   } else if (cards.status === "done") {
-    const sorted = byTitle(cards.value, compare);
+    const sorted = byTitle(marked ?? cards.value, compare);
     shown =
       sorted.length === 0 ? (
         <p>{words.text("subjects.none")}</p>

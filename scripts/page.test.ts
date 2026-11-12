@@ -3,7 +3,8 @@
 // Chrome Headless Shell, from the image the toolchain stage takes it from, opens it. A violation of
 // either layer of the CSP fails the test, and so does any request before /deployment.json. The
 // sign-in window goes under the header too, with what Google would answer stubbed, and a request to
-// a host section 3.7 does not name fails it. So do a module's license and its files from api (R32).
+// a host section 3.7 does not name fails it. So do a module's license and its files from api (R32),
+// and the skill map's element (R34).
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -434,6 +435,59 @@ describe("the built page", () => {
     expect(own).toEqual(["/deployment.json"]);
     await page.getByRole("button", { name: "Close" }).click();
     await page.getByRole("heading", { name: "Sign in" }).waitFor();
+    expect(violations).toEqual([]);
+    await page.context().close();
+  }, 60_000);
+
+  it("takes the skill map's element under the header: its styles, its lines and Practise (R34)", async () => {
+    writeFileSync(local, JSON.stringify(file(ORIGIN)));
+    const { page, violations, requests } = await open();
+    await page.goto(`${ORIGIN}/`);
+    await page.getByRole("heading", { name: "Sign in" }).waitFor();
+    // The build registered the element before its first render (section 3.1); the test puts one on
+    // the page as the map's screen does, with the learner's view and a state, and keeps what
+    // Practise sends.
+    await page.evaluate(`(() => {
+      const map = document.createElement("novatrail-skill-map");
+      map.setAttribute("view", "learner");
+      map.setAttribute("lang", "en");
+      map.addEventListener("skillchoose", (event) => { window.chosen = event.detail.skill; });
+      document.body.append(map);
+      map.graph = {
+        skills: {
+          counting: { title: "Counting", assessability: "verdict" },
+          halves: { title: "Halves", assessability: "verdict", prerequisites: ["counting"] },
+        },
+      };
+      map.tiers = { counting: 1, halves: 2 };
+      map.manifest = {
+        module_format_version: "0.4",
+        id: "example/probe",
+        version: "1.0.0",
+        title: "Probe",
+        languages: { explanation: "en" },
+      };
+      map.skillMap = { packageDigest: "", skills: [], anchorSkills: [] };
+    })()`);
+    const map = page.locator("novatrail-skill-map");
+    await map.getByRole("button", { name: /^Counting/ }).click();
+    expect(
+      await page.evaluate(
+        `document.querySelector("novatrail-skill-map").shadowRoot.adoptedStyleSheets.length`,
+      ),
+    ).toBeGreaterThan(0);
+    // The lines of the skill opened are SVG the element builds in the DOM, which no directive bars.
+    await expect
+      .poll(() =>
+        page.evaluate(
+          `document.querySelector("novatrail-skill-map").shadowRoot.querySelectorAll("svg.lines path").length`,
+        ),
+      )
+      .toBeGreaterThan(0);
+    await map.getByRole("button", { name: "Practise" }).click();
+    expect(await page.evaluate("window.chosen")).toBe("example/probe/skill/counting");
+    const own = requests.filter((path) => !path.startsWith("/assets/") && path !== "/");
+    expect(own).toEqual(["/deployment.json"]);
     expect(violations).toEqual([]);
     await page.context().close();
   }, 60_000);

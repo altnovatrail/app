@@ -45,6 +45,13 @@ export const MODULE_LICENSE: Route = { screen: "license", parts: [] };
  */
 export const TUTOR: Route = { screen: "tutor", parts: [] };
 
+/**
+ * The skill map, the learner's second way in beside My subjects (product 4 in spec; R34):
+ * `#/skill-map` lists the maps of the modules connected, and `#/skill-map/<module>` is a module's
+ * map, by the module's ID — an ID of content, never the learner's.
+ */
+export const SKILL_MAP: Route = { screen: "skill-map", parts: [] };
+
 /** The screens this build knows. A hash that names another one shows the home screen. */
 export const SCREENS: ReadonlySet<string> = new Set([
   HOME.screen,
@@ -54,6 +61,7 @@ export const SCREENS: ReadonlySet<string> = new Set([
   LEGAL.screen,
   MODULE_LICENSE.screen,
   TUTOR.screen,
+  SKILL_MAP.screen,
 ]);
 
 /** The route a hash names: `#/screen/part`, each segment percent-encoded. */
