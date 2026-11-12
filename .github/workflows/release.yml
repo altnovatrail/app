@@ -6,10 +6,10 @@
 # RELEASE_LINE. infra's rollout takes the archive by its name and its sum, once release-verify has
 # accepted it (R17 in infra; R77 in spec).
 #
-# Until the first release, every run is a trial that publishes nothing: on a pull request, on main
-# after a green CI and on the button. The first release (T31 in RUN.md) sets publish to
-# `${{ github.event_name != 'pull_request' }}`, once the repository keeps its releases immutable and
-# its tags v* under a ruleset (Д54 in table 4 of spec's RUN.md).
+# A run after a green CI on main, and the button on main, publish the release; a pull request tries
+# it, publishing nothing: it builds the files, signs them and checks the signatures. The repository
+# keeps its releases immutable and its tags v* under a ruleset with no bypass (Д54 in table 4 of
+# spec's RUN.md), and publishing began with T31 in RUN.md.
 name: Release
 
 on:
@@ -79,4 +79,4 @@ jobs:
         LICENSE
         .devcontainer/Dockerfile
         .github/workflows/release.yml
-      publish: false
+      publish: ${{ github.event_name != 'pull_request' }}
