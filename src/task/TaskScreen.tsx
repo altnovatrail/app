@@ -5,11 +5,15 @@
 // of the panel, which comes for them on my own too, with the hint asked for. Hint stands beside
 // Check always, and "Show the solution" too when the learner may ask for it, with a word of what it
 // ends before it does (R22). Once the task is solved or its solution shown, the panel gives way to
-// its result: "Correct" or "Solution shown", the words after a correct answer if any came, the
+// its result: "Correct" or "Solution shown", the words after a correct answer if any came — or why
+// none came while platform AI is closed (R37) —, the
 // solution, the way to what the engine chose (T28), "Try it again" and the way back to My subjects;
 // the options take no tap, and the canvas stays as it was. Under a lesson's header it is no screen
 // of its own, and its result ends with the lesson's Continue in place of "Try it again" (R23). What
-// it shows it takes from its container, Task.tsx, which also gives the canvas the tutor's marks.
+// it shows it takes from its container, Task.tsx, which also gives the canvas the tutor's marks and
+// "Report a problem" with the tutor's words, for a learner of the category adult (R33). Above it
+// all, the voicing of the profile switched on and off; above the canvas, "Read aloud" of the
+// statement with its items (R07; T45).
 import type {
   CanvasElement,
   HistoryChangeEvent,
@@ -17,12 +21,15 @@ import type {
   Media,
 } from "@altnovatrail/spec/canvas";
 import type * as open from "@altnovatrail/spec/formatv0/open";
-import { type ReactNode, type Ref, useEffect, useId, useRef, useState } from "react";
+import { type ReactNode, type Ref, useEffect, useId, useMemo, useRef, useState } from "react";
 import type { Failure } from "../api/failure.ts";
 import { failureText } from "../api/words.ts";
 import { Screen } from "../app/Screen.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
-import { notYet, type Verdicts } from "./attempt.ts";
+import { ReadAloud } from "../voice/ReadAloud.tsx";
+import { taskPhrases } from "../voice/texts.ts";
+import { VoicingToggle } from "../voice/VoicingToggle.tsx";
+import { summaryText, type Verdicts } from "./attempt.ts";
 import { Hint, type HintGiven } from "./Hint.tsx";
 import { Items, Verdict } from "./Items.tsx";
 import { Solution } from "./Solution.tsx";
@@ -57,12 +64,17 @@ export interface TaskScreenProps {
   readonly blink: boolean;
   /** The tutor's words of the rung, or after the correct answer; none while none came. */
   readonly tutorWords?: string;
-  /** What the request of the tutor's words came to, when it gave none. */
+  /**
+   * What the request of the tutor's words came to: when it gave none, or why they are the fallback
+   * text of the rung, or none came after the correct answer, while platform AI is closed (R37).
+   */
   readonly wordsFailure?: string;
   /** The words of a rung are asked and have not come yet. */
   readonly wordsWaiting?: boolean;
   /** The words came since the last check: a screen reader is told. */
   readonly wordsCame?: boolean;
+  /** "Report a problem" with the tutor's words shown, for a learner of the category adult (R33). */
+  readonly report?: ReactNode;
   /** The outcome of AI at the last check, in words: a failure of AI, a quota, a limit. */
   readonly outcome?: string;
   /** The hint api gave before the first wrong answer; none while none was asked for. */
@@ -128,6 +140,7 @@ export function TaskScreen(props: TaskScreenProps) {
     asked.current = confirming;
   }, [confirming]);
   const explanation = manifest?.languages.explanation;
+  const statement = useMemo(() => taskPhrases(task, explanation), [task, explanation]);
   const solved = solution !== undefined;
   const open = !solved && slotsFilled(task, state.choices, filled);
   // What locks Check: the sheet first, then the options.
@@ -136,12 +149,12 @@ export function TaskScreen(props: TaskScreenProps) {
     : !choicesOnly(task) && !writingFilled(task, filled)
       ? "task.check-write"
       : "task.check-locked";
-  const notRight = notYet(verdicts);
-  const summary = solved
-    ? words.text(props.shown === true ? "task.solution-shown" : "task.correct")
-    : verdicts.items.size === 0 || notRight === 0
-      ? ""
-      : words.text("task.summary-not-yet", { count: notRight, total: task.items.length });
+  const summary = summaryText(
+    verdicts,
+    solved ? (props.shown === true ? "shown" : "correct") : undefined,
+    task.items.length,
+    words,
+  );
 
   return (
     <Frame inLesson={props.inLesson === true} title={words.text("task.title")}>
@@ -160,11 +173,13 @@ export function TaskScreen(props: TaskScreenProps) {
           </button>
         </fieldset>
       )}
+      <VoicingToggle language={explanation} />
       <p role="status" className="nt-error">
         {props.notSaved ? words.text("task.not-saved") : ""}
       </p>
       <div className="nt-task">
         <div className="nt-task-work">
+          <ReadAloud phrases={statement} language={explanation} />
           {/* The order of the properties is the order React gives them (section 3.1). */}
           <novatrail-canvas
             ref={props.canvasRef}
@@ -200,7 +215,12 @@ export function TaskScreen(props: TaskScreenProps) {
                     <Verdict verdict="correct" />
                   )}
                 </p>
-                <TutorWords words={props.tutorWords} language={explanation} />
+                <TutorWords
+                  words={props.tutorWords}
+                  language={explanation}
+                  {...(props.wordsFailure === undefined ? {} : { failure: props.wordsFailure })}
+                  report={props.report}
+                />
                 <Solution parts={solution} language={explanation} media={props.media} />
                 {props.againFailure === undefined ? null : (
                   <p role="alert" className="nt-error">
@@ -245,6 +265,7 @@ export function TaskScreen(props: TaskScreenProps) {
                   {...(props.onExplain === undefined ? {} : { onExplain: props.onExplain })}
                   explaining={props.explaining === true}
                   {...(props.explainNote === undefined ? {} : { note: props.explainNote })}
+                  report={props.report}
                 />
               </>
             )}

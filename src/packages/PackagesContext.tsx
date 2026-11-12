@@ -20,3 +20,8 @@ export function usePackages(): Packages {
   if (packages === undefined) throw new Error("usePackages outside PackagesProvider");
   return packages;
 }
+
+/** The packages, where a screen can do without them: none outside PackagesProvider. */
+export function useOptionalPackages(): Packages | undefined {
+  return useContext(PackagesContext);
+}

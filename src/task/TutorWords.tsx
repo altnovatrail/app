@@ -6,16 +6,23 @@
 // R22). While the words of a rung or "Explain differently" are asked, the block says the tutor is
 // writing: they take seconds to come — the words of a rung ≈ 10 s (section 3.3). The block is no
 // live region: the whole text would be read out at once, so a line of the screen tells that the
-// words came, and the learner reads them here.
-import { useId } from "react";
+// words came, and the learner reads them here; "Read aloud" below them says them again by the
+// device's voice (R07; ../voice/ReadAloud.tsx). Below its heading it says, always, that the tutor is
+// an AI, not a person, and below the words stands "Report a problem" for a learner of the category
+// adult, in E3 the adult of the account (R123 in spec; R33).
+import { type ReactNode, useId } from "react";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
+import { ReadAloud } from "../voice/ReadAloud.tsx";
 
 export interface TutorWordsProps {
   /** The tutor's words; none while none came. */
   readonly words: string | undefined;
   /** The module's explanation language. */
   readonly language: string | undefined;
-  /** What the request of the words came to, when it gave none. */
+  /**
+   * What the request of the words came to: when it gave none, or, below the fallback text of a
+   * rung, why platform AI gave no words of its own (R37).
+   */
   readonly failure?: string;
   /** The words of a rung are asked and have not come yet. */
   readonly waiting?: boolean;
@@ -25,6 +32,8 @@ export interface TutorWordsProps {
   readonly explaining?: boolean;
   /** What "Explain differently" came to, when it gave no other words. */
   readonly note?: string;
+  /** "Report a problem" with the words shown, below them; none for a learner it is not offered. */
+  readonly report?: ReactNode;
 }
 
 export function TutorWords({
@@ -35,6 +44,7 @@ export function TutorWords({
   onExplain,
   explaining = false,
   note,
+  report,
 }: TutorWordsProps) {
   const { words } = useLanguage();
   const id = useId();
@@ -42,12 +52,17 @@ export function TutorWords({
   return (
     <section aria-labelledby={id} className="nt-tutor">
       <h2 id={id}>{words.text("task.tutor")}</h2>
+      <p className="nt-hint">{words.text("tutor.ai")}</p>
       {text === undefined ? null : (
-        <p {...(language === undefined ? {} : { lang: language })}>{text}</p>
+        <>
+          <p {...(language === undefined ? {} : { lang: language })}>{text}</p>
+          <ReadAloud phrases={[{ text, language }]} language={language} />
+        </>
       )}
       {waiting || explaining ? <p className="nt-hint">{words.text("task.words-waiting")}</p> : null}
       {failure === undefined ? null : <p className="nt-hint">{failure}</p>}
-      {note === undefined ? null : <p className="nt-hint">{note}</p>}
+      {/* A refusal of "Explain differently" that says what the line above says is not said twice. */}
+      {note === undefined || note === failure ? null : <p className="nt-hint">{note}</p>}
       {onExplain === undefined || text === undefined ? null : (
         <div className="nt-buttons">
           {/* Not disabled while it is under way: a disabled button would drop the focus. */}
@@ -63,6 +78,7 @@ export function TutorWords({
           </button>
         </div>
       )}
+      {text === undefined ? null : report}
     </section>
   );
 }

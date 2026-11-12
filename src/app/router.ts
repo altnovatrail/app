@@ -3,7 +3,17 @@
 import { useSyncExternalStore } from "react";
 import { formatHash, parseHash, type Route } from "./hash.ts";
 
-export { HOME, LESSON, type Route, TASK } from "./hash.ts";
+export {
+  ADULTS,
+  HOME,
+  LEGAL,
+  LESSON,
+  MODULE_LICENSE,
+  type Route,
+  SKILL_MAP,
+  TASK,
+  TUTOR,
+} from "./hash.ts";
 
 /**
  * Goes to a route: a new entry of the history, so that the browser's "back" returns. Going to the

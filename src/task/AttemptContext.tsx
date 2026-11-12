@@ -6,6 +6,7 @@
 // does not bring an ended attempt back; a new GetAccount gives a new profile, and its own word.
 import type { Profile } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import { createContext, type ReactNode, useCallback, useContext, useMemo, useState } from "react";
+import { asGiven } from "../account/settings.ts";
 
 export interface CurrentAttempt {
   /** The open attempt's ID; none when the learner has none open. */
@@ -20,7 +21,7 @@ const learnt = new WeakMap<Profile, { readonly attemptId: string | undefined }>(
 
 /** The open attempt GetAccount named outside a lesson, or what this tab learnt since. */
 function openAttemptOf(learner: Profile): string | undefined {
-  const held = learnt.get(learner);
+  const held = learnt.get(asGiven(learner));
   if (held !== undefined) return held.attemptId;
   return learner.openAttempt?.segment === undefined ? learner.openAttempt?.attemptId : undefined;
 }
@@ -35,7 +36,7 @@ export function AttemptProvider({
   const [attemptId, setHeld] = useState(() => openAttemptOf(learner));
   const setAttempt = useCallback(
     (next: string | undefined) => {
-      learnt.set(learner, { attemptId: next });
+      learnt.set(asGiven(learner), { attemptId: next });
       setHeld(next);
     },
     [learner],

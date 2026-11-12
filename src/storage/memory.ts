@@ -86,16 +86,24 @@ class MemoryTransaction implements Transaction {
     return store;
   }
 
-  async get(store: string, key: Key): Promise<unknown> {
-    return structuredClone(this.store(store).get(id(key))?.value);
+  /** A record of a store the test made unreadable is not given back, as a browser may fail to. */
+  private readable(store: string): void {
+    if (this.backend.unreadable.has(store)) {
+      throw new DOMException(`the records of ${store} can't be read`, "UnknownError");
+    }
   }
 
-  async entries(store: string, query: Query = {}): Promise<readonly Entry[]> {
+  async get(store: string, key: Key): Promise<unknown> {
+    const found = this.store(store).get(id(key));
+    if (found !== undefined) this.readable(store);
+    return structuredClone(found?.value);
+  }
+
+  /** The records a query finds, in its order, not cloned. */
+  private found(store: string, query: Query): Entry[] {
     const records = [...this.store(store).values()];
     if (query.index === undefined) {
-      return sorted(records.filter((entry) => inRange(entry.key, query.range))).map((entry) =>
-        structuredClone(entry),
-      );
+      return sorted(records.filter((entry) => inRange(entry.key, query.range)));
     }
     const property = this.database.indexes.get(store)?.[query.index];
     if (property === undefined) throw new DOMException(`no index ${query.index}`, "NotFoundError");
@@ -104,15 +112,22 @@ class MemoryTransaction implements Transaction {
       .filter((row): row is { entry: Entry; by: Key } => row.by !== undefined)
       .filter((row) => inRange(row.by, query.range))
       .sort((a, b) => compareKeys(a.by, b.by) || compareKeys(a.entry.key, b.entry.key))
-      .map((row) => structuredClone(row.entry));
+      .map((row) => row.entry);
   }
 
-  async keys(store: string, query?: Query): Promise<readonly Key[]> {
-    return (await this.entries(store, query)).map((entry) => entry.key);
+  async entries(store: string, query: Query = {}): Promise<readonly Entry[]> {
+    const found = this.found(store, query);
+    if (found.length > 0) this.readable(store);
+    return found.map((entry) => structuredClone(entry));
   }
 
-  async count(store: string, query?: Query): Promise<number> {
-    return (await this.entries(store, query)).length;
+  /** Keys and counts read no record, as in IndexedDB. */
+  async keys(store: string, query: Query = {}): Promise<readonly Key[]> {
+    return this.found(store, query).map((entry) => structuredClone(entry.key));
+  }
+
+  async count(store: string, query: Query = {}): Promise<number> {
+    return this.found(store, query).length;
   }
 
   async put(store: string, key: Key, value: unknown): Promise<void> {
@@ -207,6 +222,8 @@ export class MemoryBackend implements Backend {
   readonly failing = new Set<string>();
   /** Whether every write is refused, as on a full disk. */
   refuseWrites = false;
+  /** Stores whose records are not given back, as a browser that cannot read a record's file. */
+  readonly unreadable = new Set<string>();
 
   async open(name: string, schema: Schema, options: OpenOptions): Promise<Connection | undefined> {
     let database = this.databases.get(name);

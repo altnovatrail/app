@@ -82,7 +82,7 @@ describe("the history and the context through IndexedDB", () => {
 
     const stored = await profile?.readAttempt("a1");
     expect(stored?.history).toEqual(first.history);
-    const context = stored?.submissions[0]?.context as SheetSubmission;
+    const context = stored?.submissions?.[0]?.context as SheetSubmission;
     expect(context).toEqual(work.submission);
 
     const second = element();
@@ -93,7 +93,7 @@ describe("the history and the context through IndexedDB", () => {
     const label = context.groups[0]?.label ?? "A";
     second.marks = { submission: context, marks: [{ kind: "frame", at: { group: label }, name }] };
     expect(second.marks?.marks).toHaveLength(1);
-    const kept = stored?.submissions[0]?.work;
+    const kept = stored?.submissions?.[0]?.work;
     if (kept === undefined || !("png" in kept)) throw new Error("no crop kept");
     expect(await kept.png.arrayBuffer()).toEqual(await work.png.arrayBuffer());
   });

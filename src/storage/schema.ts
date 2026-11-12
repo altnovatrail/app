@@ -11,6 +11,8 @@ export const REGISTRY = "novatrail-registry";
 export const CACHE = "novatrail-cache";
 /** Firebase Auth's own database, where it keeps the session (section 3.7). */
 export const FIREBASE_AUTH = "firebaseLocalStorageDb";
+/** The database of @firebase/app's heartbeats: its versions and the days it ran (section 3.7). */
+export const FIREBASE_HEARTBEAT = "firebase-heartbeat-database";
 
 const PROFILE = "novatrail-profile-";
 

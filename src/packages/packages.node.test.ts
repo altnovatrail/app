@@ -22,7 +22,8 @@ import { addProfile } from "../storage/profile.ts";
 import { setAccount } from "../storage/registry.ts";
 import { DAY, memoryDevice } from "../test/device.ts";
 import { checkPackages, keptDigests, LATER_MS, PackageChecks, type Timer } from "./checks.ts";
-import { DeviceFiles, FileError, fileUrl } from "./files.ts";
+import { DeviceFiles, FileError, fileUrl, isDigest } from "./files.ts";
+import { readLicense } from "./license.ts";
 import { FORMATS, OpenViews } from "./views.ts";
 
 const D1 = `sha256:${"1".repeat(64)}`;
@@ -467,5 +468,116 @@ describe("the files of a device part", () => {
     expect(down.sleeps).toEqual([...PAUSES]);
     const back = files([new TypeError("Failed to fetch"), new Response("ok")]);
     expect(await (await back.device.file(D1, "NOTICE")).text()).toBe("ok");
+  });
+
+  it("know a package digest, and nothing else", () => {
+    expect(isDigest(D1)).toBe(true);
+    for (const other of ["sha256:ab", `sha256:${"A".repeat(64)}`, `sha1:${"1".repeat(64)}`, ""]) {
+      expect(isDigest(other)).toBe(false);
+    }
+  });
+
+  it("give LICENSE and NOTICE as text, as they are, and none for a file the part has not", async () => {
+    const text = "Apache License\nVersion 2.0, January 2004\n\n  TERMS — «as is»\n";
+    const { device } = files([new Response(text), new Response(null, { status: 404 })]);
+    expect(await device.text(D1, "LICENSE")).toBe(text);
+    expect(await device.text(D1, "NOTICE")).toBeUndefined();
+    const gone = files([new Response(null, { status: 410 })]);
+    expect(await failureOf(gone.device.text(D1, "LICENSE"))).toBe("withdrawn");
+    expect(gone.withdrawn).toHaveBeenCalledOnce();
+  });
+});
+
+describe("the license of a module", () => {
+  const API = "https://api.example.org";
+
+  /** The files by path, each a list of answers in turn. */
+  function reading(answers: Record<string, (Response | Error)[]>) {
+    const sleeps: number[] = [];
+    const withdrawn = vi.fn();
+    const asked: string[] = [];
+    const fetcher = vi.fn<typeof fetch>(async (input) => {
+      const path = String(input).split("/device/")[1] ?? "";
+      asked.push(path);
+      const next = answers[path]?.shift();
+      if (next instanceof Error) throw next;
+      return next ?? new Response(null, { status: 500 });
+    });
+    const device = new DeviceFiles({
+      api: API,
+      withdrawn,
+      fetch: fetcher,
+      sleep: async (ms) => {
+        sleeps.push(ms);
+      },
+    });
+    return { read: () => readLicense(device, D1), device, withdrawn, sleeps, asked };
+  }
+
+  it("gives both files as they are", async () => {
+    const { read } = reading({
+      LICENSE: [new Response("License text\n")],
+      NOTICE: [new Response("Notice text\n")],
+    });
+    expect(await read()).toEqual({
+      withdrawn: false,
+      license: "License text\n",
+      notice: "Notice text\n",
+    });
+  });
+
+  it("gives none for a NOTICE or a LICENSE the part has not (404)", async () => {
+    const { read } = reading({
+      LICENSE: [new Response(null, { status: 404 })],
+      NOTICE: [new Response(null, { status: 404 })],
+    });
+    expect(await read()).toEqual({ withdrawn: false });
+  });
+
+  it("says a version api no longer gives (410), asking CheckPackages once and NOTICE not at all", async () => {
+    const { read, withdrawn, asked } = reading({ LICENSE: [new Response(null, { status: 410 })] });
+    expect(await read()).toEqual({ withdrawn: true });
+    expect(withdrawn).toHaveBeenCalledOnce();
+    expect(asked).toEqual(["LICENSE"]);
+  });
+
+  it("waits out a deployment (503 with Retry-After), and gives no connection past api's limit", async () => {
+    const busy = () => new Response(null, { status: 503, headers: { "Retry-After": "1" } });
+    const going = reading({
+      LICENSE: [busy(), new Response("License text\n")],
+      NOTICE: [new Response(null, { status: 404 })],
+    });
+    expect(await going.read()).toMatchObject({ license: "License text\n" });
+    expect(going.sleeps).toEqual([1000]);
+    const long = reading({ LICENSE: Array.from({ length: 40 }, busy) });
+    const failed = await long.read().catch((reason: unknown) => reason);
+    expect(failed).toBeInstanceOf(ApiError);
+    expect((failed as ApiError).failure).toEqual({ kind: "offline" });
+  });
+
+  it("repeats a body cut off on its way, as a network that failed", async () => {
+    const cut = () =>
+      new Response(
+        new ReadableStream({
+          start(controller) {
+            controller.error(new TypeError("network error"));
+          },
+        }),
+      );
+    const { read, sleeps } = reading({
+      LICENSE: [cut(), new Response("License text\n")],
+      NOTICE: [new Response(null, { status: 404 })],
+    });
+    expect(await read()).toEqual({ withdrawn: false, license: "License text\n" });
+    expect(sleeps).toEqual([PAUSES[0]]);
+  });
+
+  it("makes another answer a failure of the read, and leaves an error of its own be", async () => {
+    const odd = reading({ LICENSE: [new Response(null, { status: 500 })] });
+    const failed = await odd.read().catch((reason: unknown) => reason);
+    expect((failed as ApiError).failure).toEqual({ kind: "unknown", code: Code.Unknown });
+    const broken = reading({});
+    vi.spyOn(broken.device, "text").mockRejectedValue(new RangeError("own"));
+    await expect(broken.read()).rejects.toThrow(RangeError);
   });
 });

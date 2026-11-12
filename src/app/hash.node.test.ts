@@ -1,5 +1,17 @@
 import { describe, expect, it } from "vitest";
-import { formatHash, HOME, LESSON, parseHash, SCREENS, TASK } from "./hash.ts";
+import {
+  ADULTS,
+  formatHash,
+  HOME,
+  LEGAL,
+  LESSON,
+  MODULE_LICENSE,
+  parseHash,
+  SCREENS,
+  SKILL_MAP,
+  TASK,
+  TUTOR,
+} from "./hash.ts";
 
 describe("parseHash", () => {
   it("gives the home screen for an empty hash, a bare # and a hash without a slash", () => {
@@ -39,6 +51,40 @@ describe("formatHash", () => {
     expect(parseHash("#/task")).toEqual(TASK);
     expect(parseHash("#/lesson")).toEqual(LESSON);
     expect(formatHash(LESSON)).toBe("#/lesson");
+  });
+
+  it("knows the section for adults and its pages, which name no profile", () => {
+    expect(parseHash("#/adults")).toEqual(ADULTS);
+    expect(parseHash("#/adults/profile")).toEqual({ screen: "adults", parts: ["profile"] });
+    expect(formatHash({ ...ADULTS, parts: ["profile"] })).toBe("#/adults/profile");
+  });
+
+  it("knows the legal pages, a text's among them by its ID", () => {
+    expect(parseHash("#/legal")).toEqual(LEGAL);
+    expect(parseHash("#/legal/privacy-policy")).toEqual({
+      screen: "legal",
+      parts: ["privacy-policy"],
+    });
+    expect(formatHash({ ...LEGAL, parts: ["notices"] })).toBe("#/legal/notices");
+  });
+
+  it("knows the license of a module, by the digest of its package", () => {
+    const digest = `sha256:${"1".repeat(64)}`;
+    const route = { ...MODULE_LICENSE, parts: [digest] };
+    expect(formatHash(route)).toBe(`#/license/sha256%3A${"1".repeat(64)}`);
+    expect(parseHash(formatHash(route))).toEqual(route);
+  });
+
+  it("knows the page on the AI tutor, which names nobody", () => {
+    expect(formatHash(TUTOR)).toBe("#/tutor");
+    expect(parseHash("#/tutor")).toEqual(TUTOR);
+  });
+
+  it("knows the skill map, and a module's by its ID, which is content, not the learner", () => {
+    expect(formatHash(SKILL_MAP)).toBe("#/skill-map");
+    const route = { ...SKILL_MAP, parts: ["novatrail/olympiad-math"] };
+    expect(formatHash(route)).toBe("#/skill-map/novatrail%2Folympiad-math");
+    expect(parseHash(formatHash(route))).toEqual(route);
   });
 
   it("writes the home screen as #/home", () => {

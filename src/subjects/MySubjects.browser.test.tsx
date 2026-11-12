@@ -14,6 +14,7 @@ import {
 } from "@altnovatrail/contracts/novatrail/api/v1/module_pb.js";
 import {
   GetManifestResponseSchema,
+  GetSkillGraphResponseSchema,
   PackageService,
 } from "@altnovatrail/contracts/novatrail/api/v1/package_pb.js";
 import { create, type MessageInitShape } from "@bufbuild/protobuf";
@@ -81,6 +82,8 @@ interface Setup {
   seed?: (device: ReturnType<typeof memoryDevice>["device"]) => Promise<void>;
   /** The lesson runs the learner has open. */
   runs?: { lessonRunId: string; lesson: string; packageDigest: string }[];
+  /** The tiers of the skill graph of each version that has one. */
+  tiers?: Record<string, Record<string, number>>;
 }
 
 async function renderSubjects(setup: Setup, language: "en" | "ru" = "en") {
@@ -126,6 +129,20 @@ async function renderSubjects(setup: Setup, language: "en" | "ru" = "en") {
           ...(MANIFESTS[request.packageDigest]
             ? { manifest: MANIFESTS[request.packageDigest] }
             : {}),
+        });
+      },
+      getSkillGraph(request) {
+        const tiers = setup.tiers?.[request.packageDigest];
+        return create(GetSkillGraphResponseSchema, {
+          ...(tiers === undefined
+            ? {}
+            : {
+                skillGraph: {
+                  json: new TextEncoder().encode(JSON.stringify({ skills: {} })),
+                  moduleFormatVersion: "0.4",
+                },
+                skillTiers: tiers,
+              }),
         });
       },
     });
@@ -321,6 +338,58 @@ describe("My subjects", () => {
     expect((await card("novatrail/gone")).getByText("Сейчас недоступен")).toBeTruthy();
     expect(await screen.findByText("В каталоге пока нет модулей для этого профиля")).toBeTruthy();
     expect((await card("novatrail/gone")).getByRole("button", { name: "Отключить" })).toBeTruthy();
+  });
+
+  it("opens the license of a version from its card, connected or not, and has none without one", async () => {
+    await renderSubjects(
+      {
+        connected: [
+          { moduleId: MATH, packageDigest: D1 },
+          { moduleId: "novatrail/gone", packageDigest: "" },
+        ],
+        catalog: [{ moduleId: PHYSICS, packageDigest: D2 }],
+      },
+      "ru",
+    );
+    const physics = (await card("Физика")).getByRole("button", { name: "Лицензия" });
+    expect(physics).toHaveAccessibleDescription("Физика");
+    expect((await card("novatrail/gone")).queryByRole("button", { name: "Лицензия" })).toBeNull();
+    await userEvent.click((await card("Olympiad maths")).getByRole("button", { name: "Лицензия" }));
+    expect(window.location.hash).toBe(`#/license/sha256%3A${"1".repeat(64)}`);
+    window.location.hash = "";
+  });
+
+  it("marks a module whose skill graph is a chain, connected or not, and no other", async () => {
+    await renderSubjects(
+      {
+        connected: [{ moduleId: MATH, packageDigest: D1 }],
+        catalog: [{ moduleId: PHYSICS, packageDigest: D2 }],
+        tiers: { [D1]: { "counting-gaps": 1, "time-calendar": 2 }, [D2]: { a: 1, b: 1 } },
+      },
+      "ru",
+    );
+    // The mark comes once the graph has, after the card.
+    expect(await (await card("Olympiad maths")).findByText("По порядку")).toBeVisible();
+    expect((await card("Физика")).queryByText("По порядку")).toBeNull();
+  });
+
+  it("leads to the skill map beside the engine's way", async () => {
+    await renderSubjects({ connected: [], catalog: [] });
+    await screen.findByRole("heading", { name: "Connected" });
+    await userEvent.click(screen.getByRole("button", { name: "Skill map" }));
+    expect(window.location.hash).toBe("#/skill-map");
+    window.location.hash = "";
+  });
+
+  it("says below the lists that the tutor is an AI, and leads to the page on using it safely", async () => {
+    await renderSubjects({ connected: [], catalog: [] }, "ru");
+    const section = within(await screen.findByRole("region", { name: "Наставник — это ИИ" }));
+    expect(section.getByText(/компьютерная программа, а не человек/)).toBeVisible();
+    await userEvent.click(
+      section.getByRole("button", { name: "Как безопасно пользоваться наставником" }),
+    );
+    expect(window.location.hash).toBe("#/tutor");
+    window.location.hash = "";
   });
 
   it("tells a connection api refused, and offers to try again when it does not answer", async () => {

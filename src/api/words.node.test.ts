@@ -12,8 +12,8 @@ import { dateTimeFormat } from "../i18n/intl.ts";
 import { WORDS } from "../i18n/words.ts";
 import type { Failure } from "./failure.ts";
 import { aiFields, clockOffsetMinutes, idempotencyKey } from "./keys.ts";
-import { outcomeOf } from "./outcome.ts";
-import { CAUSE_KEYS, failureText, outcomeText } from "./words.ts";
+import { closesPlatformAI, outcomeOf } from "./outcome.ts";
+import { CAUSE_KEYS, calendarDays, failureText, outcomeText } from "./words.ts";
 
 const DAY = new Date(Date.UTC(2026, 10, 11, 4, 0));
 
@@ -55,6 +55,29 @@ describe("outcomeOf", () => {
       cause: Cause.AI_FAILURE,
     });
   });
+
+  it("tells the quota and the limit of platform AI apart from a moment's failure and no admission", () => {
+    expect(closesPlatformAI({ cause: Cause.QUOTA, nextFamilyDay: DAY })).toBe(true);
+    expect(closesPlatformAI({ cause: Cause.PLATFORM_LIMIT })).toBe(true);
+    for (const cause of [Cause.AI_FAILURE, Cause.NOT_ADMITTED, Cause.KEY_REFUSED]) {
+      expect(closesPlatformAI({ cause })).toBe(false);
+    }
+    expect(closesPlatformAI(undefined)).toBe(false);
+  });
+});
+
+describe("calendarDays", () => {
+  it("counts the dates of the device's calendar, not the hours between", () => {
+    const late = new Date(2026, 10, 12, 23, 59);
+    expect(calendarDays(late, new Date(2026, 10, 12, 0, 0))).toBe(0);
+    expect(calendarDays(late, new Date(2026, 10, 13, 0, 1))).toBe(1);
+    expect(calendarDays(new Date(2026, 10, 12, 0, 0), new Date(2026, 10, 13, 23, 59))).toBe(1);
+    expect(calendarDays(late, new Date(2026, 10, 14, 6, 0))).toBe(2);
+    expect(calendarDays(late, new Date(2026, 10, 11, 23, 0))).toBe(-1);
+    // Across a change of summer time the days stay whole.
+    expect(calendarDays(new Date(2026, 2, 28, 12, 0), new Date(2026, 2, 30, 12, 0))).toBe(2);
+    expect(calendarDays(new Date(2026, 9, 24, 12, 0), new Date(2026, 9, 26, 12, 0))).toBe(2);
+  });
 });
 
 describe("the words of what a call came to", () => {
@@ -65,10 +88,48 @@ describe("the words of what a call came to", () => {
   });
 
   it("words each outcome, the quota with when it comes back in the screen's language", () => {
-    const time = dateTimeFormat("ru", { timeStyle: "short" }).format(DAY);
-    expect(outcomeText({ cause: Cause.QUOTA, nextFamilyDay: DAY }, WORDS.ru)).toBe(
-      `Время наставника на сегодня кончилось. Оно вернётся в ${time}`,
+    // In the device's time zone, whatever it is: an evening, and the midnight after it.
+    const evening = new Date(2026, 10, 12, 21, 30);
+    const midnight = new Date(2026, 10, 13, 0, 0);
+    const time = (language: "en" | "ru", at: Date) =>
+      dateTimeFormat(language, { timeStyle: "short" }).format(at);
+    expect(outcomeText({ cause: Cause.QUOTA, nextFamilyDay: midnight }, WORDS.ru, evening)).toBe(
+      `Время наставника на сегодня кончилось. Оно вернётся завтра в ${time("ru", midnight)}`,
     );
+    expect(outcomeText({ cause: Cause.QUOTA, nextFamilyDay: midnight }, WORDS.en, evening)).toBe(
+      `Today's tutor time is used up. It comes back tomorrow at ${time("en", midnight)}`,
+    );
+    // A family day that ends later today by the device's clock: the offset changed to the east.
+    const late = new Date(2026, 10, 12, 23, 0);
+    expect(outcomeText({ cause: Cause.QUOTA, nextFamilyDay: late }, WORDS.ru, evening)).toBe(
+      `Время наставника на сегодня кончилось. Оно вернётся сегодня в ${time("ru", late)}`,
+    );
+    // A time of today the device's clock has passed — it runs ahead of api's — is today as well,
+    // and one on a day before today, by a clock far off, is its date.
+    expect(
+      outcomeText(
+        { cause: Cause.QUOTA, nextFamilyDay: late },
+        WORDS.en,
+        new Date(2026, 10, 12, 23, 30),
+      ),
+    ).toBe(`Today's tutor time is used up. It comes back today at ${time("en", late)}`);
+    expect(outcomeText({ cause: Cause.QUOTA, nextFamilyDay: late }, WORDS.en, midnight)).toBe(
+      `Today's tutor time is used up. It comes back on November 12 at ${time("en", late)}`,
+    );
+    // A family day of up to 44 hours after a change of the offset: the date of its end (R56 api).
+    const after = new Date(2026, 10, 14, 6, 0);
+    expect(outcomeText({ cause: Cause.QUOTA, nextFamilyDay: after }, WORDS.ru, evening)).toBe(
+      `Время наставника на сегодня кончилось. Оно вернётся 14 ноября в ${time("ru", after)}`,
+    );
+    expect(outcomeText({ cause: Cause.QUOTA, nextFamilyDay: after }, WORDS.en, evening)).toBe(
+      `Today's tutor time is used up. It comes back on November 14 at ${time("en", after)}`,
+    );
+    // The last day of a month, and of a year: tomorrow is the first of the next.
+    const eve = new Date(2026, 11, 31, 22, 0);
+    expect(
+      outcomeText({ cause: Cause.QUOTA, nextFamilyDay: new Date(2027, 0, 1) }, WORDS.en, eve),
+    ).toMatch(/It comes back tomorrow at /);
+    expect(typeof outcomeText({ cause: Cause.QUOTA, nextFamilyDay: DAY }, WORDS.ru)).toBe("string");
     expect(outcomeText({ cause: Cause.QUOTA }, WORDS.en)).toBe("The tutor can't answer right now");
     expect(outcomeText({ cause: Cause.PLATFORM_LIMIT }, WORDS.ru)).toBe(
       "Наставник сейчас не может ответить",
@@ -109,9 +170,18 @@ describe("the words of what a call came to", () => {
       [{ kind: "unknown", code: Code.Internal }, "Эта версия приложения этого ещё не знает"],
     ];
     for (const [failure, text] of cases) expect(failureText(failure, WORDS.ru)).toBe(text);
-    const quota = refused(Cause.QUOTA, { case: "nextFamilyDay", value: timestampFromDate(DAY) });
-    expect(failureText(quota, WORDS.en)).toBe(
-      `Today's tutor time is used up. It comes back at ${dateTimeFormat("en", { timeStyle: "short" }).format(DAY)}`,
+    // The refusal says the same as the outcome, by the device's calendar.
+    const midnight = new Date(2026, 10, 13, 0, 0);
+    const quota = refused(Cause.QUOTA, {
+      case: "nextFamilyDay",
+      value: timestampFromDate(midnight),
+    });
+    expect(failureText(quota, WORDS.en, new Date(2026, 10, 12, 18, 0))).toBe(
+      `Today's tutor time is used up. It comes back tomorrow at ${dateTimeFormat("en", { timeStyle: "short" }).format(midnight)}`,
     );
+    expect(failureText(refused(Cause.QUOTA, none), WORDS.en)).toBe(
+      "The tutor can't answer right now",
+    );
+    expect(typeof failureText(quota, WORDS.ru)).toBe("string");
   });
 });

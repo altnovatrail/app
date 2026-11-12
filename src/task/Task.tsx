@@ -16,11 +16,20 @@
 // same rung in other words, once on a rung; "Show the solution" — the learner's from the start of
 // the attempt if an adult, from the fourth wrong answer if a child — ends the attempt with its
 // solution (R82 in spec; R22). A task of a lesson is a segment of its run: under the lesson's header,
-// with no "Try it again", and what api says comes next after it goes up to the player (R23).
+// with no "Try it again", and what api says comes next after it goes up to the player (R23). The
+// tutor's words are kept with the reply that brought them and its rung, so that the adult of the
+// account can report a problem with them as they are shown (R123 in spec; R33). While the voicing
+// is on, what comes after a press is said by itself — the verdict and the outcome of a check in the
+// screen's language, then the tutor's words and a hint in the module's —, and the press itself,
+// Check, Hint or "Explain differently", marks the synthesis at once for WebKit (R07; T45). While
+// platform AI is closed beyond a call — its quota for the family day is spent, or its limit ran
+// out —, the block "Tutor" says why beside the fallback text of a rung, and in place of the words
+// after a correct answer (R37).
 import { Mode as ProfileMode } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import {
   Action,
   type Next,
+  TutorReply,
   type WorkSchema,
 } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
 import {
@@ -42,7 +51,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useApi } from "../api/ApiContext.tsx";
 import { type Failure, parseFailure } from "../api/failure.ts";
 import { aiFields, idempotencyKey } from "../api/keys.ts";
-import { outcomeOf } from "../api/outcome.ts";
+import { closesPlatformAI, outcomeOf } from "../api/outcome.ts";
 import { failureText, outcomeText } from "../api/words.ts";
 import { HOME, navigate, redirect } from "../app/router.ts";
 import { Screen } from "../app/Screen.tsx";
@@ -53,11 +62,16 @@ import { NextStep } from "../next/NextStep.tsx";
 import { usePackages } from "../packages/PackagesContext.tsx";
 import type { Device } from "../storage/device.ts";
 import { addProfile, attemptOver, openProfile, type Profile } from "../storage/profile.ts";
+import { ReportProblem } from "../tutor/ReportProblem.tsx";
+import type { Said } from "../tutor/report.ts";
+import { hintPhrases, type Phrase } from "../voice/texts.ts";
+import { useVoicing } from "../voice/VoicingContext.tsx";
 import {
   markNames,
   marksOf,
   resumed,
   solutionOf,
+  summaryText,
   tappedChoices,
   type Verdicts,
   verdictsOf,
@@ -108,7 +122,7 @@ interface Opened {
   /** The first write of the attempt on this device did not land. */
   readonly unsaved: boolean;
   /** The words of the current rung the attempt keeps, for an attempt gone on with. */
-  readonly rung?: string;
+  readonly rung?: Said;
   /** The hint asked for before the first wrong answer, as the attempt keeps it. */
   readonly hint?: HintGiven;
   /** "Explain differently" was asked for on the current rung. */
@@ -244,7 +258,12 @@ export function Task({
         state,
         verdicts,
         unsaved,
-        ...(answer.rung === undefined ? {} : { rung: answer.rung.words }),
+        ...(answer.rung === undefined
+          ? {}
+          : {
+              // What GetHint would give again: the words of a rung (TutorReply in the contract).
+              rung: { text: answer.rung.words, reply: TutorReply.RUNG, rung: answer.rung.rung },
+            }),
         ...(answer.wrongAnswers === 0 &&
         (answer.requestedTechniqueIds.length > 0 || answer.requestedLeadingQuestion !== "")
           ? {
@@ -420,8 +439,34 @@ function OpenTask({
 }: OpenTaskProps) {
   const api = useApi();
   const { views, files } = usePackages();
-  const { words } = useLanguage();
+  const { language, words } = useLanguage();
+  const { auto: say, prime, speech } = useVoicing();
+  // What the screen says by itself is its own: words that come once the learner has left are not
+  // said over the next screen, and leaving the screen stops what it was saying — a segment of a
+  // lesson goes with no change of the route.
+  const mounted = useRef(true);
+  const spoken = useRef<object | undefined>(undefined);
+  const auto = useCallback(
+    (phrases: readonly Phrase[], after?: object) => {
+      if (!mounted.current) return undefined;
+      const token = say(phrases, after);
+      if (token !== undefined) spoken.current = token;
+      return token;
+    },
+    [say],
+  );
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      if (spoken.current !== undefined && speech.speaking() === spoken.current) speech.stop();
+    };
+  }, [speech]);
   const { task, profile, steps } = opened;
+  const explanation = opened.manifest?.languages.explanation;
+  // What the voicing said of the last check — its verdict — which the tutor's words of the same
+  // check follow rather than cut short.
+  const verdictSaid = useRef<object | undefined>(undefined);
   const element = useRef<CanvasElement>(null);
   const [state, setState] = useState(opened.state);
   const [verdicts, setVerdicts] = useState(opened.verdicts);
@@ -431,7 +476,8 @@ function OpenTask({
   const [failure, setFailure] = useState<Failure | undefined>(undefined);
   const [solution, setSolution] = useState<readonly open.StatementPart[] | undefined>(undefined);
   const [blink, setBlink] = useState(false);
-  const [tutorWords, setTutorWords] = useState<string | undefined>(opened.rung);
+  const [said, setSaid] = useState<Said | undefined>(opened.rung);
+  const tutorWords = said?.text;
   const [wordsFailure, setWordsFailure] = useState<string | undefined>(undefined);
   const [wordsWaiting, setWordsWaiting] = useState(false);
   const [wordsCame, setWordsCame] = useState(false);
@@ -455,6 +501,8 @@ function OpenTask({
   const drawn = useRef(0);
   // The checks begun: an answer of words that belongs to an earlier check is dropped.
   const checks = useRef(0);
+  // The last check said platform AI is closed, by Check: the words it asked do not say it again.
+  const closedAtCheck = useRef(false);
   // Once the attempt is over its record is gone: nothing more is written, and no write says unsaved.
   const over = useRef(false);
   const latest = useRef({ state, solution, filled });
@@ -586,9 +634,23 @@ function OpenTask({
             if (late()) return;
             const read = outcomeOf(answer.outcome);
             if (answer.words !== "") {
-              // The fallback text of the rung comes with the outcome "not admitted": words all the same.
-              setTutorWords(answer.words);
+              // The fallback text of the rung comes with an outcome: words all the same. Beside it
+              // stands why, when platform AI is closed beyond this call — the quota, with when it
+              // comes back, or its limit (R37).
+              const why =
+                closesPlatformAI(read) && !closedAtCheck.current
+                  ? outcomeText(read, words)
+                  : undefined;
+              setSaid({ text: answer.words, reply: TutorReply.RUNG, rung: answer.rung });
+              if (why !== undefined) setWordsFailure(why);
               setWordsCame(true);
+              auto(
+                [
+                  { text: answer.words, language: explanation },
+                  ...(why === undefined ? [] : [{ text: why, language }]),
+                ],
+                verdictSaid.current,
+              );
             } else if (read !== undefined) setWordsFailure(outcomeText(read, words));
             if (of.work !== undefined && answer.marks.length > 0) {
               setMarks(
@@ -624,10 +686,13 @@ function OpenTask({
           if (asked === checks.current) setWordsWaiting(false);
         });
     },
-    [api, profileId, attemptId, task, words, markName, onClosed],
+    [api, profileId, attemptId, task, words, markName, onClosed, auto, explanation, language],
   );
 
-  /** The words after a correct answer, with its work: once they came or their request ended, it goes. */
+  /**
+   * The words after a correct answer, with its work: once they came or their request ended, it
+   * goes. None came, and platform AI is closed beyond this call: the block says why (R37).
+   */
   const correctWords = useCallback(
     (of: Sent) => {
       void api.attempt
@@ -641,9 +706,16 @@ function OpenTask({
         .then(
           (answer) => {
             if (answer.words !== undefined && answer.words !== "") {
-              setTutorWords(answer.words);
+              setSaid({ text: answer.words, reply: TutorReply.CORRECT_ANSWER, rung: 0 });
               setWordsCame(true);
+              auto([{ text: answer.words, language: explanation }], verdictSaid.current);
+              return;
             }
+            const read = outcomeOf(answer.outcome);
+            if (!closesPlatformAI(read) || closedAtCheck.current) return;
+            const why = outcomeText(read, words);
+            setWordsFailure(why);
+            auto([{ text: why, language }], verdictSaid.current);
           },
           () => {},
         )
@@ -651,7 +723,7 @@ function OpenTask({
           if (of.contract !== undefined) void profile?.wordsCame(attemptId).catch(() => {});
         });
     },
-    [api, profileId, attemptId, profile],
+    [api, profileId, attemptId, profile, auto, explanation, words, language],
   );
 
   /** The submission of what the sheet and the options hold now, or the one sent before, again. */
@@ -685,6 +757,9 @@ function OpenTask({
   }, [handwriting, profile, attemptId]);
 
   const check = useCallback(() => {
+    // Within the press: the words that come after it may be said (WebKit; section 3.5).
+    prime();
+    verdictSaid.current = undefined;
     setPending(true);
     setFailure(undefined);
     pause.stop();
@@ -697,6 +772,7 @@ function OpenTask({
         // Nothing on the sheet to check after all: the screen stays as it was.
         if (of === undefined) return;
         setOutcome(undefined);
+        closedAtCheck.current = false;
         setWordsCame(false);
         setMarks(undefined);
         const before = latest.current.state.wrongAnswers;
@@ -708,9 +784,23 @@ function OpenTask({
           ...(of.contract === undefined ? {} : { work: of.contract, ...aiFields() }),
         });
         sent.current = undefined;
-        setVerdicts(verdictsOf(answer.items, task));
+        const verdicts = verdictsOf(answer.items, task);
+        setVerdicts(verdicts);
         const read = outcomeOf(answer.outcome);
         if (read !== undefined) setOutcome(outcomeText(read, words));
+        closedAtCheck.current = closesPlatformAI(read);
+        // The lines of the panel that came with the check, in the language of the screen.
+        verdictSaid.current = auto(
+          [
+            summaryText(
+              verdicts,
+              answer.solved === undefined ? undefined : "correct",
+              task.items.length,
+              words,
+            ),
+            read === undefined ? "" : outcomeText(read, words),
+          ].map((text) => ({ text, language })),
+        );
         if (answer.solved === undefined) {
           save({ ...latest.current.state, wrongAnswers: answer.wrongAnswers });
           if (answer.wrongAnswers > before) {
@@ -719,7 +809,7 @@ function OpenTask({
             setExplainNote(undefined);
             explainKey.current = undefined;
             // The words of the rung before, and the hint before the first wrong answer, are past.
-            setTutorWords(undefined);
+            setSaid(undefined);
             setHint(undefined);
             rungWords(answer.wrongAnswers, of);
           }
@@ -731,7 +821,9 @@ function OpenTask({
           } catch {
             // A solution the build cannot read is no reason to hide that the task is solved.
           }
-          setTutorWords(undefined);
+          setSaid(undefined);
+          // What the words of a rung came to is past too: the block is the correct answer's now.
+          setWordsFailure(undefined);
           await onEnded(CloseReason.CORRECT, profile, of.number);
           setSolution(parts);
           comesNext(answer.next);
@@ -763,10 +855,14 @@ function OpenTask({
     onEnded,
     onClosed,
     comesNext,
+    prime,
+    auto,
+    language,
   ]);
 
   /** "Hint": api gives the task's techniques and question, or the words of the rung again. */
   const askHint = useCallback(() => {
+    prime();
     setFailure(undefined);
     setPending(true);
     void api.attempt
@@ -775,13 +871,19 @@ function OpenTask({
         (answer) => {
           if (over.current) return;
           if (answer.hint.case === "techniques") {
-            setHint({
-              techniques: answer.hint.value.techniqueIds,
-              ...(answer.leadingQuestion === "" ? {} : { question: answer.leadingQuestion }),
-            });
+            const techniques = answer.hint.value.techniqueIds;
+            const question = answer.leadingQuestion === "" ? undefined : answer.leadingQuestion;
+            setHint({ techniques, ...(question === undefined ? {} : { question }) });
+            auto(hintPhrases(task, techniques, question, opened.catalog, explanation));
           } else if (answer.hint.case === "rung") {
-            setTutorWords(answer.hint.value.words);
+            const { words: text, rung } = answer.hint.value;
+            // The words shown again stay the reply they came by — "explain differently" too — and
+            // a report begun on them stays open.
+            setSaid((before) =>
+              before?.text === text ? before : { text, reply: TutorReply.RUNG, rung },
+            );
             setWordsCame(true);
+            auto([{ text, language: explanation }]);
           }
         },
         (reason: unknown) => {
@@ -795,10 +897,11 @@ function OpenTask({
         },
       )
       .finally(() => setPending(false));
-  }, [api, profileId, attemptId, onClosed]);
+  }, [api, profileId, attemptId, onClosed, prime, auto, task, opened.catalog, explanation]);
 
   /** "Explain differently": the same rung in other words, one call of AI on a rung. */
   const explain = useCallback(() => {
+    prime();
     explainKey.current ??= idempotencyKey();
     setExplaining(true);
     setExplainNote(undefined);
@@ -822,8 +925,18 @@ function OpenTask({
           const read = outcomeOf(answer.outcome);
           if (read !== undefined) setExplainNote(outcomeText(read, words));
           if (answer.words !== "" && read?.cause !== Cause.NO_OTHER_WORDS) {
-            setTutorWords(answer.words);
+            // The same rung in other words: the rung of the words they take the place of, which
+            // are always there when it is asked; else the rung of the wrong answers, 1 to 3.
+            const wrongAnswers = latest.current.state.wrongAnswers;
+            setSaid((before) => ({
+              text: answer.words,
+              reply: TutorReply.EXPLAINED_DIFFERENTLY,
+              rung: before?.rung ?? Math.min(Math.max(wrongAnswers, 1), 3),
+            }));
+            // Words of a model came: what the block said of platform AI closed is past.
+            setWordsFailure(undefined);
             setWordsCame(true);
+            auto([{ text: answer.words, language: explanation }]);
           }
         },
         (reason: unknown) => {
@@ -848,7 +961,7 @@ function OpenTask({
         },
       )
       .finally(() => setExplaining(false));
-  }, [api, profileId, attemptId, words, onClosed]);
+  }, [api, profileId, attemptId, words, onClosed, prime, auto, explanation]);
 
   /** "Show the solution": the attempt ends with the solution shown (R82 in spec). */
   const showSolution = useCallback(() => {
@@ -873,7 +986,7 @@ function OpenTask({
           } catch {
             // A solution the build cannot read is no reason to hide that the attempt is over.
           }
-          setTutorWords(undefined);
+          setSaid(undefined);
           setHint(undefined);
           setMarks(undefined);
           setFailure(undefined);
@@ -928,6 +1041,19 @@ function OpenTask({
       {...(solution === undefined ? {} : { solution })}
       {...(again.failure === undefined ? {} : { againFailure: again.failure })}
       {...(tutorWords === undefined ? {} : { tutorWords })}
+      {...(adult && said !== undefined && said.text !== ""
+        ? {
+            report: (
+              // Other words are another report: the form begins anew with them.
+              <ReportProblem
+                key={`${said.reply} ${said.rung} ${said.text}`}
+                profileId={profileId}
+                attemptId={attemptId}
+                said={said}
+              />
+            ),
+          }
+        : {})}
       {...(wordsFailure === undefined ? {} : { wordsFailure })}
       wordsWaiting={wordsWaiting}
       {...(outcome === undefined ? {} : { outcome })}

@@ -2,7 +2,7 @@ import type * as open from "@altnovatrail/spec/formatv0/open";
 import { describe, expect, it } from "vitest";
 import { ApiError } from "../api/failure.ts";
 import type { OpenViews } from "../packages/views.ts";
-import { byTitle, cardOf, cardsOf } from "./modules.ts";
+import { byTitle, cardOf, cardsOf, isSequential, sequentialOf } from "./modules.ts";
 
 const D1 = `sha256:${"1".repeat(64)}`;
 const D2 = `sha256:${"2".repeat(64)}`;
@@ -86,5 +86,40 @@ describe("the cards of modules", () => {
       "b/no-part",
       "z/fails",
     ]);
+  });
+});
+
+describe('the mark "in order"', () => {
+  it("is a chain's: two skills or more, each in a tier of its own (R58 in spec)", () => {
+    expect(isSequential({ "counting-gaps": 1, "time-calendar": 2 })).toBe(true);
+    expect(isSequential({ c: 3, a: 1, b: 2 })).toBe(true);
+    expect(isSequential({ a: 1, b: 1, c: 2 })).toBe(false);
+    // One skill, or none, is no chain.
+    expect(isSequential({ a: 1 })).toBe(false);
+    expect(isSequential({})).toBe(false);
+  });
+
+  it("is known by the tiers of a package's graph, and is not for a graph that does not come", async () => {
+    const asked: string[] = [];
+    const views = {
+      async get(digest: string, kind: string) {
+        asked.push(`${kind} ${digest}`);
+        if (kind === "manifest") return { view: manifest("Chain"), skillTiers: {} };
+        if (digest === D1) return { view: {}, skillTiers: { a: 1, b: 2 } };
+        if (digest === D2) throw new ApiError({ kind: "offline" });
+        return undefined;
+      },
+      async keptManifests() {
+        return new Map();
+      },
+    } as unknown as OpenViews;
+    expect(await sequentialOf(views, D1)).toBe(true);
+    expect(await sequentialOf(views, D2)).toBe(false);
+    expect(await sequentialOf(views, `sha256:${"3".repeat(64)}`)).toBe(false);
+    // A card does not wait for the graph: it reads the manifest alone.
+    asked.length = 0;
+    const [card] = await cardsOf(views, [{ moduleId: "m/chain", packageDigest: D1 }]);
+    expect(card).not.toHaveProperty("sequential");
+    expect(asked).toEqual([`manifest ${D1}`]);
   });
 });

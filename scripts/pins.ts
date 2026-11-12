@@ -1,7 +1,7 @@
 // The versions in package.json that another package decides, held to it (R15 in docs/decisions.md;
 // section 3.1 of docs/architecture.md):
 // - the set of icons is the version that the UI packages of @altnovatrail installed name in their
-//   devDependencies, canvas and later skill-map: one set of icons in every interface (R78 in spec).
+//   devDependencies, canvas and skill-map: one set of icons in every interface (R78 in spec).
 //   A package that names no set is passed over;
 // - @bufbuild/protobuf is the version @altnovatrail/contracts names in its dependencies, so that the
 //   contracts' code and the app's client share one runtime of protobuf;

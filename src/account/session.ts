@@ -10,14 +10,15 @@ import type { Account, Profile } from "@altnovatrail/contracts/novatrail/api/v1/
 import { Cause } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import type { LegalTextRef } from "@altnovatrail/contracts/novatrail/api/v1/legal_pb.js";
 import type { Api } from "../api/client.ts";
-import { type Failure, parseFailure } from "../api/failure.ts";
+import { type Failure, parseFailure, refusedWith } from "../api/failure.ts";
 import type { PackageChecks } from "../packages/checks.ts";
 import type { SignInResult, SignInService } from "../signin/service.ts";
 import type { Device } from "../storage/device.ts";
-import { accountSeen, eraseAccount, profilesListed } from "../storage/erase.ts";
+import { accountSeen, eraseAccount, eraseDevice, profilesListed } from "../storage/erase.ts";
 import { openProfileDatabase } from "../storage/profile.ts";
 import { eraseDatabases, readRegistry, type SignIn, setSignIn } from "../storage/registry.ts";
 import { profileDatabase } from "../storage/schema.ts";
+import { withSettings } from "./settings.ts";
 
 export type SessionState =
   /** The sign-in service has not read its session yet. */
@@ -97,10 +98,6 @@ export interface SessionOptions {
   readonly project: SignIn;
   /** The checks of packages: they start once an account is there, and stop when it goes. */
   readonly checks?: PackageChecks;
-}
-
-function refusedWith(failure: Failure, cause: Cause): boolean {
-  return failure.kind === "refused" && failure.cause === cause;
 }
 
 export class Session {
@@ -259,6 +256,16 @@ export class Session {
     }
   }
 
+  /**
+   * A failure of a change of a profile in the section for adults: one that is the session's own
+   * moves it, and a profile api no longer has — deleted on another device — asks for the account
+   * again, which erases it here (R04). The page shows the rest.
+   */
+  profileFailed(failure: Failure): void {
+    if (refusedWith(failure, Cause.NO_PROFILE)) void this.load();
+    else this.formFailure(failure);
+  }
+
   /** A failure of a form: one that is the session's own moves it, the rest the form shows. */
   private formFailure(failure: Failure): Failure {
     if (failure.kind === "sign-in" || failure.kind === "account-gone") this.failed(failure);
@@ -314,13 +321,21 @@ export class Session {
     }
   }
 
-  /** `CreateOwnerProfile`, of the category `adult`, with the owner's country and pseudonym. */
+  /**
+   * `CreateOwnerProfile`, of the category `adult`, with the owner's country and pseudonym, and the
+   * language of the screen as the language of the learner's screens, as the contract has a new
+   * profile take the language of the section for adults (R10).
+   */
   async createOwnerProfile(
     pseudonym: string,
     country: string,
+    language: string,
   ): Promise<FormResult<"country-not-accepted">> {
     try {
-      await this.options.api.account.createOwnerProfile({ country, settings: { pseudonym } });
+      await this.options.api.account.createOwnerProfile({
+        country,
+        settings: { pseudonym, interfaceLanguage: language },
+      });
     } catch (reason) {
       const failure = parseFailure(reason);
       if (refusedWith(failure, Cause.COUNTRY_NOT_ACCEPTED)) return "country-not-accepted";
@@ -337,6 +352,28 @@ export class Session {
     this.set({ step: "learning", account: this.state.account, learner: this.state.owner });
   }
 
+  /**
+   * A profile api changed — in this tab, or in another that told of it —: the account's profile of
+   * its ID takes its settings, the learner chosen too (R29). An account that holds no such profile
+   * is another's, and stays as it is.
+   */
+  profileChanged(changed: Profile): void {
+    const state = this.state;
+    if (state.step !== "choose" && state.step !== "learning") return;
+    const before = state.account.profiles.find(
+      (profile) => profile.profileId === changed.profileId,
+    );
+    if (before === undefined) return;
+    const after = withSettings(before, changed);
+    const swap = (profile: Profile) => (profile.profileId === changed.profileId ? after : profile);
+    const account = { ...state.account, profiles: state.account.profiles.map(swap) };
+    this.set(
+      state.step === "choose"
+        ? { ...state, account, owner: swap(state.owner) }
+        : { ...state, account, learner: swap(state.learner) },
+    );
+  }
+
   /** Back to the choice of the learner: "Switch learner". */
   switchLearner(): void {
     if (this.state.step !== "learning") return;
@@ -346,11 +383,13 @@ export class Session {
 
   /**
    * The sign-out: the sign-in service's first, then everything of the account on this device
-   * (R04). `"erased"` when all of it is gone, `"left"` when some is, which the next start
-   * erases, and `"failed"` when the service did not sign out: then nothing is erased, since the
-   * same user would open the account again over its data gone.
+   * (R04), and with `everything` — "Erase everything on this device" — the device's settings and
+   * the heartbeats of @firebase/app too. `"erased"` when all of it is gone, `"left"` when some
+   * is, which the next start erases of the account, and `"failed"` when the service did not sign
+   * out: then nothing is erased, since the same user would open the account again over its data
+   * gone.
    */
-  async signOut(): Promise<"erased" | "left" | "failed"> {
+  async signOut(everything = false): Promise<"erased" | "left" | "failed"> {
     try {
       await this.options.service.signOut();
     } catch {
@@ -359,7 +398,9 @@ export class Session {
     this.run += 1;
     this.leaving = true;
     this.set({ step: "loading" });
-    const erased = await eraseAccount(this.options.device).catch(() => false);
+    const account = await eraseAccount(this.options.device).catch(() => false);
+    const device = everything ? await eraseDevice(this.options.device).catch(() => false) : true;
+    const erased = account && device;
     this.leaving = false;
     // Whoever the service names now — nobody, once it has signed out — the session starts from.
     this.user = undefined;

@@ -1,8 +1,16 @@
 // The way into the app (sections 3.2, 3.6 and 3.10 of docs/architecture.md; R19 in
 // docs/decisions.md): the sign-in, the invite code of a user with no account with the legal texts it
 // accepts (R27), the owner's own profile, the choice of the learner and the sign-out, each a screen
-// of its own in the language of the device. The app below it opens only once a learner is chosen, so that nothing of it opens
-// before the device has erased what an account other than the one api names left there.
+// of its own in the language of the device. The app below it opens only once a learner is chosen,
+// so that nothing of it opens before the device has erased what an account other than the one api
+// names left there. The section for adults opens from the choice of the learner and from the bar
+// above the learner's screens, in place of either, while the account is open (R29); a profile it
+// changes, the other tabs hear of by BroadcastChannel, and a change they tell of comes here. The
+// legal pages show at any step, before signing in too, from the sign-in screen and from the
+// section's first page, and their bar goes back to where they were opened from (R31). So does the
+// license of a module's version, opened from a card of My subjects, in the language of the
+// learner's screens while a learner is chosen, and closed home (R32); and so does the page on the AI
+// tutor, opened from My subjects too (R33).
 import type { Profile } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import type {
   LegalText as LegalTextOf,
@@ -21,28 +29,50 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
+import { AdultSection } from "../adults/AdultSection.tsx";
 import { type RequestState, useApi, useRequest } from "../api/ApiContext.tsx";
 import type { Api } from "../api/client.ts";
 import type { Failure } from "../api/failure.ts";
+import { ReadFailure } from "../api/ReadFailure.tsx";
 import { failureText } from "../api/words.ts";
+import {
+  ADULTS,
+  HOME,
+  LEGAL,
+  MODULE_LICENSE,
+  navigate,
+  type Route,
+  TUTOR,
+  useRoute,
+} from "../app/router.ts";
 import { Screen } from "../app/Screen.tsx";
 import { useDeployment, useStorage } from "../boot/Boot.tsx";
 import { Offline, StorageGone } from "../boot/Screens.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
+import { LearnerLanguage } from "../i18n/LearnerLanguage.tsx";
+import { LegalPages } from "../legal/LegalPages.tsx";
 import { LegalText } from "../legal/LegalText.tsx";
 import { accountTexts, readTexts, refsOf } from "../legal/texts.ts";
+import { LicensePages } from "../packages/LicensePage.tsx";
 import { usePackages } from "../packages/PackagesContext.tsx";
 import { useSignIn } from "../signin/SignInContext.tsx";
 import { SignInScreen } from "../signin/SignInScreen.tsx";
+import { siteStorage } from "../storage/browser.ts";
 import type { Device } from "../storage/device.ts";
+import { TutorPages } from "../tutor/TutorPage.tsx";
 import { countryNames } from "./countries.ts";
 import { pseudonymOf, Session, type Unfinished, unfinishedWork } from "./session.ts";
+import { PROFILES_CHANNEL, profileMessage, profileOf } from "./settings.ts";
 
 /** The learner chosen, and what the bar above the learner's screens does. */
 export interface Learner {
   readonly learner: Profile;
   readonly switchLearner: () => void;
   readonly signOut: () => void;
+  /** api changed the profile on a learner's screen — its voicing (T45): the session takes it. */
+  readonly onSaved: (profile: Profile) => void;
+  /** A request of a learner's screen about the profile did not go through. */
+  readonly onFailed: (failure: Failure) => void;
 }
 
 const LearnerContext = createContext<Learner | undefined>(undefined);
@@ -72,8 +102,41 @@ export function AccountGate({ children }: { readonly children: ReactNode }) {
   const state = useSyncExternalStore(session.subscribe, session.snapshot);
   const [leaving, setLeaving] = useState(false);
   const [left, setLeft] = useState(false);
-  const { words } = useLanguage();
+  const { language, words } = useLanguage();
+  const route = useRoute();
+  // Where the legal pages' bar goes back to: home, unless the section opened them. Memory alone,
+  // as the profile the section chose: after a reload, home.
+  const [legalBack, setLegalBack] = useState<Route>(HOME);
+  const openLegal = useCallback((back: Route) => {
+    setLegalBack(back);
+    navigate(LEGAL);
+  }, []);
+  // One channel for the tab, which tells the others of a profile api changed here and hears theirs.
+  const channel = useRef<BroadcastChannel | undefined>(undefined);
+  useEffect(() => {
+    if (typeof BroadcastChannel === "undefined") return;
+    const opened = new BroadcastChannel(PROFILES_CHANNEL);
+    opened.onmessage = (event: MessageEvent) => {
+      const changed = profileOf(event.data);
+      if (changed !== undefined) session.profileChanged(changed);
+    };
+    channel.current = opened;
+    return () => {
+      channel.current = undefined;
+      opened.close();
+    };
+  }, [session]);
   const open = state.step === "choose" || state.step === "learning";
+  // A profile api changed — in the section or on a learner's screen —: the session's, and the other
+  // tabs'.
+  const onSaved = useCallback(
+    (changed: Profile) => {
+      session.profileChanged(changed);
+      channel.current?.postMessage(profileMessage(changed));
+    },
+    [session],
+  );
+  const onFailed = useCallback((failure: Failure) => session.profileFailed(failure), [session]);
   // The sign-out screen is for the account open when it was asked: once that has gone some other
   // way — another tab signed out, the account is gone — the next account does not open on it.
   useEffect(() => {
@@ -96,6 +159,37 @@ export function AccountGate({ children }: { readonly children: ReactNode }) {
       />
     );
   }
+  // The screen they close to is My subjects while a learner is chosen, in their language.
+  if (route.screen === MODULE_LICENSE.screen || route.screen === TUTOR.screen) {
+    const pages =
+      route.screen === TUTOR.screen ? <TutorPages route={route} /> : <LicensePages route={route} />;
+    if (state.step !== "learning") return pages;
+    return <LearnerLanguage field={state.learner.interfaceLanguage}>{pages}</LearnerLanguage>;
+  }
+  // Back to the section only while its account is open: once it has gone, home.
+  if (route.screen === LEGAL.screen) {
+    return <LegalPages route={route} back={open ? legalBack : HOME} />;
+  }
+  if (open && route.screen === ADULTS.screen) {
+    return (
+      <AdultSection
+        route={route}
+        device={device}
+        profiles={state.account.profiles}
+        onSaved={onSaved}
+        onFailed={onFailed}
+        onEraseAll={async () => {
+          const done = await session.signOut(true);
+          if (done === "failed") return "failed";
+          // The sign-in comes next, and after it home, not the page of a device erased.
+          setLeft(done === "left");
+          navigate(HOME);
+          return done;
+        }}
+        onLegal={() => openLegal(ADULTS)}
+      />
+    );
+  }
   switch (state.step) {
     case "starting":
     case "loading":
@@ -109,6 +203,7 @@ export function AccountGate({ children }: { readonly children: ReactNode }) {
           }}
           {...(state.result === undefined ? {} : { result: state.result })}
           left={left}
+          onLegal={() => openLegal(HOME)}
         />
       );
     case "offline":
@@ -136,7 +231,9 @@ export function AccountGate({ children }: { readonly children: ReactNode }) {
     case "owner-profile":
       return (
         <OwnerProfileScreen
-          onCreate={(pseudonym, country) => session.createOwnerProfile(pseudonym, country)}
+          onCreate={(pseudonym, country) =>
+            session.createOwnerProfile(pseudonym, country, language)
+          }
         />
       );
     case "choose":
@@ -155,6 +252,8 @@ export function AccountGate({ children }: { readonly children: ReactNode }) {
             learner: state.learner,
             switchLearner: () => session.switchLearner(),
             signOut: () => setLeaving(true),
+            onSaved,
+            onFailed,
           }}
         >
           {children}
@@ -311,14 +410,7 @@ export function InviteScreen({
           ) : null}
         </div>
         {texts.status === "failed" ? (
-          <div className="nt-field">
-            <p role="alert" className="nt-error">
-              {failureText(texts.failure, words)}
-            </p>
-            <button type="button" onClick={texts.retry}>
-              {words.text("boot.retry")}
-            </button>
-          </div>
+          <ReadFailure failure={texts.failure} onRetry={texts.retry} />
         ) : null}
         {shown.length === 0 ? null : (
           <div className="nt-field">
@@ -465,16 +557,13 @@ type Kept = "granted" | "refused";
 
 /** Asks the browser to keep the site's data: no browser that cannot is asked. */
 async function persist(): Promise<Kept> {
-  try {
-    return (await navigator.storage?.persist?.()) === true ? "granted" : "refused";
-  } catch {
-    return "refused";
-  }
+  return (await siteStorage.persist()) ? "granted" : "refused";
 }
 
 /**
  * The choice of the learner: the owner's profile with no PIN while the account has no child
- * (section 3.6), and on the first sign-in the line that learners' work is kept here (section 3.2).
+ * (section 3.6), and on the first sign-in the line that learners' work is kept here (section 3.2);
+ * below, the way into the section for adults and the sign-out.
  */
 export function ChooseScreen({
   profiles,
@@ -515,11 +604,14 @@ export function ChooseScreen({
           <p role="status">{kept === undefined ? null : words.text(`persist.${kept}`)}</p>
         </section>
       ) : null}
-      <p>
+      <div className="nt-buttons">
+        <button type="button" className="nt-secondary" onClick={() => navigate(ADULTS)}>
+          {words.text("adults.title")}
+        </button>
         <button type="button" className="nt-secondary" onClick={onSignOut}>
           {words.text("signout.button")}
         </button>
-      </p>
+      </div>
     </Screen>
   );
 }

@@ -14,7 +14,9 @@ import {
   readRegistry,
   type SignIn,
 } from "./registry.ts";
-import { CACHE, FIREBASE_AUTH, REGISTRY } from "./schema.ts";
+import { CACHE, FIREBASE_AUTH, FIREBASE_HEARTBEAT, profileDatabase, REGISTRY } from "./schema.ts";
+import { eraseSettings } from "./settings.ts";
+import { VOICING } from "./voicing.ts";
 
 /** Every database of the account the registry names. */
 function accountDatabases(registry: Registry): string[] {
@@ -40,8 +42,30 @@ export async function eraseAccount(device: Device): Promise<boolean> {
 }
 
 /**
+ * "Erase the profile's data on this device", on the page This device (R04): its database, marked in
+ * the registry first, as every erasure; one the browser did not delete the next start erases.
+ */
+export function eraseProfile(device: Device, profileId: string): Promise<boolean> {
+  return eraseDatabases(device, [profileDatabase(profileId)]);
+}
+
+/**
+ * What "Erase everything on this device" erases past the sign-out (section 3.2; the 2026-11-12
+ * amendment to R04): the device's settings, and the heartbeats of @firebase/app. The SDK holds its
+ * own connection to those and does not close it on versionchange, so their removal is "blocked"
+ * while the tab is open: IndexedDB does not cancel it for that, and it goes once that connection
+ * closes (R16). Gives whether the settings are gone and the heartbeats' removal did not fail.
+ */
+export async function eraseDevice(device: Device): Promise<boolean> {
+  const settings = await eraseSettings(device);
+  const heartbeats = await device.remove(FIREBASE_HEARTBEAT);
+  return settings && heartbeats !== "failed";
+}
+
+/**
  * An account signed in: if the registry names another, what is left of it goes before anything
- * opens (R04), and the registry names this one. The session is the new account's and stays.
+ * opens (R04), and the registry names this one. The session is the new account's and stays. The
+ * voicing of the device goes too: the new account's adult decides anew (R36).
  */
 export async function accountSeen(device: Device, accountId: string): Promise<boolean> {
   const registry = await readRegistry(device);
@@ -49,6 +73,7 @@ export async function accountSeen(device: Device, accountId: string): Promise<bo
   await changeRegistry(device, async (tx) => {
     await tx.put("registry", "account", { id: accountId });
     await tx.delete("registry", "ending");
+    await tx.delete("registry", VOICING);
   });
   if (registry?.account === undefined) return true;
   return eraseDatabases(device, accountDatabases(registry));
@@ -56,12 +81,16 @@ export async function accountSeen(device: Device, accountId: string): Promise<bo
 
 /**
  * `CAUSE_NO_ACCESS` while the registry names an account: another account signed in, with no
- * account of NovaTrail, and what is left of the one named goes (the 2026-11-10 amendment to R04).
+ * account of NovaTrail, and what is left of the one named goes (the 2026-11-10 amendment to R04),
+ * the voicing of the device with it (R36).
  */
 export async function noAccess(device: Device): Promise<boolean> {
   const registry = await readRegistry(device);
   if (registry?.account === undefined) return true;
-  await changeRegistry(device, (tx) => tx.delete("registry", "account"));
+  await changeRegistry(device, async (tx) => {
+    await tx.delete("registry", "account");
+    await tx.delete("registry", VOICING);
+  });
   return eraseDatabases(device, accountDatabases(registry));
 }
 

@@ -155,6 +155,23 @@ export function notYet(verdicts: Verdicts): number {
   return [...verdicts.items.values()].filter((verdict) => verdict !== "correct").length;
 }
 
+/**
+ * The summary of the tutor's panel after a check, which the voicing says too: Correct, the solution
+ * shown, or how many items are not right yet; empty with none to name.
+ */
+export function summaryText(
+  verdicts: Verdicts,
+  solved: "correct" | "shown" | undefined,
+  items: number,
+  words: Words,
+): string {
+  if (solved !== undefined) {
+    return words.text(solved === "shown" ? "task.solution-shown" : "task.correct");
+  }
+  const count = notYet(verdicts);
+  return count === 0 ? "" : words.text("task.summary-not-yet", { count, total: items });
+}
+
 /** What api keeps of an open attempt that the screen goes on from. */
 export interface KeptByApi {
   readonly items: readonly ItemVerdict[];

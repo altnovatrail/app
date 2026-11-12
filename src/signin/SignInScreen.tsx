@@ -1,6 +1,7 @@
 // The sign-in screen (sections 3.7 and 3.8 of docs/architecture.md): in the language of the device,
 // whose buttons are here, and Google's window on a press. What came of the last window is a line
 // below its button; a project that does not take this copy has the line for whoever deployed it.
+// Below, the way to the legal pages, by a button that holds the word "privacy" (R31).
 import { useState } from "react";
 import { Screen } from "../app/Screen.tsx";
 import { operatorLine } from "../boot/Screens.tsx";
@@ -16,6 +17,8 @@ export interface SignInScreenProps {
   readonly result?: SignInResult;
   /** The last sign-out did not erase all of the account. */
   readonly left?: boolean;
+  /** Opens the legal pages. */
+  readonly onLegal: () => void;
 }
 
 function resultText(result: SignInResult, words: Words): string | undefined {
@@ -33,7 +36,7 @@ function resultText(result: SignInResult, words: Words): string | undefined {
   }
 }
 
-export function SignInScreen({ onSignIn, result, left = false }: SignInScreenProps) {
+export function SignInScreen({ onSignIn, result, left = false, onLegal }: SignInScreenProps) {
   const { words } = useLanguage();
   const [pending, setPending] = useState(false);
   const line = result === undefined ? undefined : resultText(result, words);
@@ -63,6 +66,11 @@ export function SignInScreen({ onSignIn, result, left = false }: SignInScreenPro
           ) : null}
         </div>
       )}
+      <div className="nt-buttons">
+        <button type="button" className="nt-secondary" onClick={onLegal}>
+          {words.text("legal.title")}
+        </button>
+      </div>
     </Screen>
   );
 }

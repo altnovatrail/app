@@ -12,7 +12,16 @@ import { describe, expect, it, vi } from "vitest";
 import { createApi } from "../api/client.ts";
 import { ApiError } from "../api/failure.ts";
 import { titleOf, tokensOf } from "./body.ts";
-import { ACCOUNT_TEXTS, accountTexts, readTexts, refsOf } from "./texts.ts";
+import {
+  ACCOUNT_TEXTS,
+  accountTexts,
+  isPageText,
+  PAGE_TEXTS,
+  readTexts,
+  refsOf,
+  STORAGE_TEXT,
+  storageText,
+} from "./texts.ts";
 
 function text(id: string, version: number): LegalText {
   return create(LegalTextSchema, {
@@ -57,6 +66,19 @@ describe("the legal texts", () => {
       { id: "terms-of-use", version: 1 },
     ]);
     expect(accountTexts([text("terms-of-use", 1)]).map((t) => t.id)).toEqual(["terms-of-use"]);
+  });
+
+  it("finds the consent to the storage of works, and none while it has no version in force", () => {
+    const texts = [text("privacy-policy", 2), text(STORAGE_TEXT, 3)];
+    expect(storageText(texts)).toMatchObject({ id: "storage-consent", version: 3 });
+    expect(storageText([text("privacy-policy", 2)])).toBeUndefined();
+  });
+
+  it("makes pages of the account's texts and the consent to the storage, not of a family's", () => {
+    expect(PAGE_TEXTS).toEqual(["privacy-policy", "terms-of-use", "storage-consent"]);
+    expect(isPageText("terms-of-use")).toBe(true);
+    expect(isPageText("parent-consent")).toBe(false);
+    expect(isPageText("accessibility")).toBe(false);
   });
 
   it("reads an api with no LegalService as no text in force, and offers it no reload", async () => {

@@ -3,10 +3,12 @@
 // in colour alone; the step shown, its title and its description in the module's language, the
 // chips and the cards of techniques it gives, and the line of what opens "Step done". A step passed
 // is a touch away; forward goes only "Step done", which reads no work. The last step has no "Step
-// done": it ends with Check.
+// done": it ends with Check. "Read aloud" reads the step shown, its chips and its cards (R07).
 import type * as open from "@altnovatrail/spec/formatv0/open";
 import { useEffect, useId, useRef } from "react";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
+import { ReadAloud } from "../voice/ReadAloud.tsx";
+import { stepPhrases } from "../voice/texts.ts";
 import { exitMet, givesChips, givesTechniques, type StepsState } from "./steps.ts";
 import { TechniqueCards } from "./TechniqueCards.tsx";
 
@@ -134,6 +136,18 @@ export function StepsPanel({
         </div>
       ) : null}
       <TechniqueCards ids={techniques} catalog={catalog} language={language} />
+      <ReadAloud
+        phrases={stepPhrases(
+          step,
+          givesChips(step, task)
+            ? [...(task.givens ?? []), ...(task.unknown === undefined ? [] : [task.unknown])]
+            : [],
+          techniques,
+          catalog,
+          language,
+        )}
+        language={language}
+      />
       {lineKey === undefined ? null : (
         <p id={lineId} className="nt-hint">
           {words.text(lineKey)}

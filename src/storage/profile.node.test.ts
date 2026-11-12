@@ -12,10 +12,13 @@ import {
   openProfile,
   openProfileDatabase,
   type Profile,
+  profileUsage,
+  sizeOf,
   type Work,
+  workOf,
 } from "./profile.ts";
 import { addDatabase, eraseDatabases } from "./registry.ts";
-import { KEEP_MS, profileDatabase } from "./schema.ts";
+import { KEEP_MS, PROFILE_SCHEMA, profileDatabase } from "./schema.ts";
 
 const TASK: open.Task = {
   id: "probe",
@@ -186,6 +189,148 @@ describe("the profile's database", () => {
     await profile.attemptEnded("a1", 0);
     await profile.clearCorrectWork();
     expect(await profile.correctWork("a1")).toBeUndefined();
+  });
+});
+
+describe("the work in bytes", () => {
+  const png = (text: string) => new Blob([text], { type: "image/png" });
+
+  it("keeps each picture as bytes with its type, and gives it back as a Blob", async () => {
+    const { profile, backend } = await setUp();
+    await profile.addSubmission("a1", { png: png("crop"), submission: CONTEXT }, 1);
+    const cells: ExportedWork = {
+      cells: [{ item: 1, slot: 2, png: png("box") }],
+      submission: { boxes: [{ item: 1, slot: 2, ids: [1] }], digest: "fedcba9876543210" },
+    };
+    await profile.addSubmission("a1", cells, 2);
+    const [sheet, workbook] = backend
+      .records(profileDatabase("p1"), "submissions")
+      .map((entry) => entry.value);
+    const kept = (sheet as { work: { png: { bytes: unknown; type: string } } }).work.png;
+    expect(kept.bytes).toBeInstanceOf(ArrayBuffer);
+    expect(kept.type).toBe("image/png");
+    const box = (workbook as { work: { cells: { item: number; png: unknown }[] } }).work;
+    expect(box.cells[0]).toMatchObject({ item: 1, slot: 2, png: { type: "image/png" } });
+    const [first, second] = (await profile.readAttempt("a1"))?.submissions ?? [];
+    expect(first?.work).toEqual({ png: expect.any(Blob) });
+    expect(await crop(first?.work).text()).toBe("crop");
+    expect(crop(first?.work).type).toBe("image/png");
+    const cell =
+      second?.work !== undefined && "cells" in second.work ? second.work.cells[0] : undefined;
+    expect(cell).toMatchObject({ item: 1, slot: 2 });
+    expect(await cell?.png.text()).toBe("box");
+    await profile.attemptEnded("a1", 0);
+    expect(await crop(await profile.correctWork("a1")).text()).toBe("crop");
+  });
+
+  it("reads a Blob that schema version 1 kept, of a sheet and of a workbook", async () => {
+    const { device } = await setUp();
+    const connection = await device.connect(profileDatabase("p1"), PROFILE_SCHEMA, false);
+    await connection?.write(["submissions", "correctWork"], async (tx) => {
+      await tx.put("submissions", ["a1", 0], {
+        context: CONTEXT,
+        historyLength: 1,
+        work: { png: png("old") },
+      });
+      await tx.put("submissions", ["a1", 1], {
+        context: CONTEXT,
+        historyLength: 1,
+        work: { cells: [{ item: 1, slot: 1, png: png("old box") }] },
+      });
+      await tx.put("correctWork", "a0", { png: png("old right") });
+    });
+    const profile = await openProfile(device, "p1");
+    const [sheet, workbook] = (await profile?.readAttempt("a1"))?.submissions ?? [];
+    expect(await crop(sheet?.work).text()).toBe("old");
+    expect(workbook?.work !== undefined && "cells" in workbook.work).toBe(true);
+    expect(await crop(await profile?.correctWork("a0")).text()).toBe("old right");
+  });
+
+  it("gives none for a work it cannot read, and keeps its record", async () => {
+    const { device, backend } = await setUp();
+    const connection = await device.connect(profileDatabase("p1"), PROFILE_SCHEMA, false);
+    await connection?.write(["submissions"], (tx) =>
+      tx.put("submissions", ["a1", 0], { context: CONTEXT, historyLength: 1, work: { svg: "x" } }),
+    );
+    const profile = await openProfile(device, "p1");
+    const [kept] = (await profile?.readAttempt("a1"))?.submissions ?? [];
+    expect(kept?.context).toEqual(CONTEXT);
+    expect(kept?.work).toBeUndefined();
+    expect(backend.records(profileDatabase("p1"), "submissions")).toHaveLength(1);
+    for (const odd of [null, "png", { png: { bytes: "x", type: "image/png" } }, { cells: "x" }]) {
+      expect(workOf(odd)).toBeUndefined();
+    }
+    expect(workOf({ cells: [{ item: 1, slot: 1, png: {} }] })).toBeUndefined();
+  });
+
+  it("gives the attempt and its history when its submissions cannot be read, and erases nothing", async () => {
+    const { profile, backend } = await setUp();
+    await profile.appendHistory("a1", { from: 0, events: [write(1, 0)] });
+    await profile.addSubmission("a1", work("x"), 1);
+    backend.unreadable.add("submissions");
+    const stored = await profile.readAttempt("a1");
+    expect(stored?.history).toEqual([write(1, 0)]);
+    expect(stored?.submissions).toBeUndefined();
+    backend.unreadable.clear();
+    expect((await profile.readAttempt("a1"))?.submissions).toHaveLength(1);
+  });
+
+  it("ends an attempt whole when its correct submission cannot be read", async () => {
+    const { profile, backend } = await setUp();
+    await profile.appendHistory("a1", { from: 0, events: [write(1, 0)] });
+    await profile.addSubmission("a1", work("right"), 1);
+    backend.unreadable.add("submissions");
+    await profile.attemptEnded("a1", 0);
+    backend.unreadable.clear();
+    expect(await profile.readAttempt("a1")).toBeUndefined();
+    expect(backend.records(profileDatabase("p1"), "history")).toEqual([]);
+    expect(await profile.correctWork("a1")).toBeUndefined();
+  });
+
+  it("says the work is not saved when its bytes cannot be read", async () => {
+    const { profile, backend } = await setUp();
+    const broken = new Blob(["x"]);
+    broken.arrayBuffer = () => Promise.reject(new DOMException("gone", "NotReadableError"));
+    expect(await profile.addSubmission("a1", { png: broken, submission: CONTEXT }, 1)).toBe(
+      "unsaved",
+    );
+    expect(backend.records(profileDatabase("p1"), "submissions")).toEqual([]);
+  });
+});
+
+describe("what a profile keeps on this device", () => {
+  it("counts its unfinished attempts and about how many bytes its records take", async () => {
+    const { device, profile, backend } = await setUp();
+    const empty = await profileUsage(device, "p1");
+    expect(empty).toMatchObject({ unfinished: 1 });
+    await profile.addSubmission(
+      "a1",
+      { png: new Blob([new Uint8Array(5000)]), submission: CONTEXT },
+      0,
+    );
+    const before = typeof empty === "object" ? (empty.bytes ?? 0) : 0;
+    const after = await profileUsage(device, "p1");
+    expect(typeof after === "object" ? after.bytes : 0).toBeGreaterThan(before + 5000);
+    // A record that cannot be read leaves the count, and the size is not known.
+    backend.unreadable.add("submissions");
+    expect(await profileUsage(device, "p1")).toEqual({ unfinished: 1, bytes: undefined });
+    backend.unreadable.clear();
+    expect(await profileUsage(device, "p2")).toBeUndefined();
+    backend.blocked.add(profileDatabase("p1"));
+    await eraseDatabases(device, [profileDatabase("p1")]);
+    expect(await profileUsage(device, "p1")).toBe("erasing");
+    backend.blocked.clear();
+    await eraseDatabases(device, [profileDatabase("p1")]);
+    expect(await profileUsage(device, "p1")).toBeUndefined();
+  });
+
+  it("sizes strings in UTF-8, numbers by eight bytes, pictures by their size", () => {
+    expect(sizeOf("ёж")).toBe(4);
+    expect(sizeOf(0.5)).toBe(8);
+    expect(sizeOf(new ArrayBuffer(3))).toBe(3);
+    expect(sizeOf(new Blob(["abcd"]))).toBe(4);
+    expect(sizeOf([1, "a"])).toBe(9);
+    expect(sizeOf({ ab: true, c: null })).toBe(5);
   });
 });
 

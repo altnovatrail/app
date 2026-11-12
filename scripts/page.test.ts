@@ -3,10 +3,13 @@
 // Chrome Headless Shell, from the image the toolchain stage takes it from, opens it. A violation of
 // either layer of the CSP fails the test, and so does any request before /deployment.json. The
 // sign-in window goes under the header too, with what Google would answer stubbed, and a request to
-// a host section 3.7 does not name fails it.
+// a host section 3.7 does not name fails it. So do a module's license and its files from api (R32),
+// and the skill map's element (R34).
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { GetManifestResponseSchema } from "@altnovatrail/contracts/novatrail/api/v1/package_pb.js";
+import { create, toBinary } from "@bufbuild/protobuf";
 import { type Browser, chromium, type Page } from "playwright";
 import { type PreviewServer, preview } from "vite";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -230,6 +233,7 @@ describe("the built page", () => {
       const sheet = document.createElement("novatrail-canvas");
       sheet.lang = "en";
       sheet.style.blockSize = "30rem";
+      sheet.style.inlineSize = "30rem";
       document.body.append(sheet);
       const drawn = new OffscreenCanvas(2, 2);
       drawn.getContext("2d").fillRect(0, 0, 2, 2);
@@ -270,6 +274,20 @@ describe("the built page", () => {
     expect(await page.evaluate(`document.querySelector("novatrail-canvas").history.length`)).toBe(
       1,
     );
+    // The page's zoom of the sheet, by the element's own button, lays the sheet out by a custom
+    // property it sets through the CSSOM, which style-src leaves be: on an element narrower than
+    // the sheet's cap, twice as wide, and scrolled across in a region of its own (T36). The zoom
+    // has four steps above its fit.
+    const larger = sheet.getByRole("button", { name: "Zoom in" });
+    for (let i = 0; i < 8 && (await larger.getAttribute("aria-disabled")) !== "true"; i++) {
+      await larger.click();
+    }
+    expect(await larger.getAttribute("aria-disabled")).toBe("true");
+    const across = sheet.getByRole("region", { name: "Sheet" });
+    await across.waitFor();
+    await expect
+      .poll(() => across.evaluate((element) => element.scrollWidth / element.clientWidth))
+      .toBeCloseTo(2, 1);
     expect(violations).toEqual([]);
     await page.context().close();
   }, 60_000);
@@ -327,6 +345,152 @@ describe("the built page", () => {
     expect(violations).toEqual([]);
     await page.context().close();
   }, 120_000);
+
+  it("shows the legal pages before signing in, under the header, reading nothing but api (R31)", async () => {
+    writeFileSync(local, JSON.stringify(file(ORIGIN)));
+    const { page, violations, requests } = await open();
+    await page.goto(`${ORIGIN}/`);
+    await page.getByRole("button", { name: "Privacy and legal information" }).click();
+    await page.getByRole("button", { name: "Licenses and third-party notices" }).click();
+    // NOTICE and LICENSE came with the build, not from the hosting's /NOTICE and /LICENSE.
+    const files = page.locator("pre");
+    await files.first().waitFor();
+    expect(await files.allTextContents()).toEqual([
+      readFileSync("NOTICE", "utf8"),
+      readFileSync("LICENSE", "utf8"),
+    ]);
+    await page.getByRole("button", { name: "Back to the list" }).click();
+    await page.getByRole("button", { name: "Accessibility" }).click();
+    await page.getByRole("heading", { name: "Answering in handwriting" }).waitFor();
+    await page.getByRole("button", { name: "Open the privacy policy" }).click();
+    // vite preview has no api on its origin: its 404 is no LegalService, so no text in force.
+    await page.getByText("This copy of the app has no version of this text in force").waitFor();
+    expect(await page.locator("a").count()).toBe(0);
+    const own = requests.filter((path) => !path.startsWith("/assets/") && path !== "/");
+    expect(own).toEqual(["/deployment.json", "/novatrail.api.v1.LegalService/GetLegalTexts"]);
+    expect(violations).toEqual([]);
+    await page.context().close();
+  }, 60_000);
+
+  it("shows a module's license by its address, under the header, asking only api for it (R32)", async () => {
+    writeFileSync(local, JSON.stringify(file(ORIGIN)));
+    const { page, violations, requests } = await open();
+    const hex = "1".repeat(64);
+    const license = "Apache License\n                           Version 2.0, January 2004\n";
+    const notice = "Olympiad maths\nCopyright 2026 The NovaTrail authors\n";
+    // api is this origin: vite preview has none, so the test answers for it.
+    await page.route(`${ORIGIN}/packages/**`, async (route) => {
+      const path = new URL(route.request().url()).pathname;
+      const body = path.endsWith("/device/LICENSE") ? license : notice;
+      await route.fulfill({ contentType: "text/plain; charset=utf-8", body });
+    });
+    const manifest = new TextEncoder().encode(
+      JSON.stringify({
+        module_format_version: "0.4",
+        id: "novatrail/olympiad-math",
+        version: "1.2.0",
+        title: "Olympiad maths",
+        languages: { explanation: "en" },
+        license: "Apache-2.0",
+      }),
+    );
+    await page.route(`${ORIGIN}/novatrail.api.v1.PackageService/GetManifest?**`, async (route) => {
+      const answer = create(GetManifestResponseSchema, {
+        manifest: { json: manifest, moduleFormatVersion: "0.4" },
+      });
+      await route.fulfill({
+        contentType: "application/proto",
+        body: Buffer.from(toBinary(GetManifestResponseSchema, answer)),
+      });
+    });
+    await page.goto(`${ORIGIN}/#/license/sha256%3A${hex}`);
+    const files = page.locator("pre");
+    await files.nth(1).waitFor();
+    expect(await files.allTextContents()).toEqual([license, notice]);
+    await page.getByText("Olympiad maths", { exact: true }).waitFor();
+    expect(await page.locator("a").count()).toBe(0);
+    const own = requests.filter((path) => !path.startsWith("/assets/") && path !== "/");
+    expect(own.sort()).toEqual(
+      [
+        "/deployment.json",
+        "/novatrail.api.v1.PackageService/GetManifest",
+        `/packages/sha256-${hex}/device/LICENSE`,
+        `/packages/sha256-${hex}/device/NOTICE`,
+      ].sort(),
+    );
+    await page.getByRole("button", { name: "Close" }).click();
+    await page.getByRole("heading", { name: "Sign in" }).waitFor();
+    expect(violations).toEqual([]);
+    await page.context().close();
+  }, 60_000);
+
+  it("shows the page on the AI tutor by its address, under the header, asking api nothing (R33)", async () => {
+    writeFileSync(local, JSON.stringify(file(ORIGIN)));
+    const { page, violations, requests } = await open();
+    await page.goto(`${ORIGIN}/#/tutor`);
+    await page.getByRole("heading", { level: 1, name: "How to use the AI tutor safely" }).waitFor();
+    await page.getByRole("heading", { name: "The tutor is an AI" }).waitFor();
+    expect(await page.locator("a").count()).toBe(0);
+    const own = requests.filter((path) => !path.startsWith("/assets/") && path !== "/");
+    expect(own).toEqual(["/deployment.json"]);
+    await page.getByRole("button", { name: "Close" }).click();
+    await page.getByRole("heading", { name: "Sign in" }).waitFor();
+    expect(violations).toEqual([]);
+    await page.context().close();
+  }, 60_000);
+
+  it("takes the skill map's element under the header: its styles, its lines and Practise (R34)", async () => {
+    writeFileSync(local, JSON.stringify(file(ORIGIN)));
+    const { page, violations, requests } = await open();
+    await page.goto(`${ORIGIN}/`);
+    await page.getByRole("heading", { name: "Sign in" }).waitFor();
+    // The build registered the element before its first render (section 3.1); the test puts one on
+    // the page as the map's screen does, with the learner's view and a state, and keeps what
+    // Practise sends.
+    await page.evaluate(`(() => {
+      const map = document.createElement("novatrail-skill-map");
+      map.setAttribute("view", "learner");
+      map.setAttribute("lang", "en");
+      map.addEventListener("skillchoose", (event) => { window.chosen = event.detail.skill; });
+      document.body.append(map);
+      map.graph = {
+        skills: {
+          counting: { title: "Counting", assessability: "verdict" },
+          halves: { title: "Halves", assessability: "verdict", prerequisites: ["counting"] },
+        },
+      };
+      map.tiers = { counting: 1, halves: 2 };
+      map.manifest = {
+        module_format_version: "0.4",
+        id: "example/probe",
+        version: "1.0.0",
+        title: "Probe",
+        languages: { explanation: "en" },
+      };
+      map.skillMap = { packageDigest: "", skills: [], anchorSkills: [] };
+    })()`);
+    const map = page.locator("novatrail-skill-map");
+    await map.getByRole("button", { name: /^Counting/ }).click();
+    expect(
+      await page.evaluate(
+        `document.querySelector("novatrail-skill-map").shadowRoot.adoptedStyleSheets.length`,
+      ),
+    ).toBeGreaterThan(0);
+    // The lines of the skill opened are SVG the element builds in the DOM, which no directive bars.
+    await expect
+      .poll(() =>
+        page.evaluate(
+          `document.querySelector("novatrail-skill-map").shadowRoot.querySelectorAll("svg.lines path").length`,
+        ),
+      )
+      .toBeGreaterThan(0);
+    await map.getByRole("button", { name: "Practise" }).click();
+    expect(await page.evaluate("window.chosen")).toBe("example/probe/skill/counting");
+    const own = requests.filter((path) => !path.startsWith("/assets/") && path !== "/");
+    expect(own).toEqual(["/deployment.json"]);
+    expect(violations).toEqual([]);
+    await page.context().close();
+  }, 60_000);
 
   it("says the app is not set up without the file, in the device's language", async () => {
     rmSync(local, { force: true });

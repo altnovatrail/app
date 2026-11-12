@@ -3,19 +3,30 @@
 // axe-core finds, every target at least 44 × 44 CSS px, no sideways scroll and no text cut. Each
 // screen is found by its role and name.
 import "@altnovatrail/canvas";
+import "@altnovatrail/skill-map";
 import { render } from "@testing-library/react";
 import type { ReactNode } from "react";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { page } from "vitest/browser";
 import "../theme/theme.css";
 import { ProfileSchema } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
-import { ItemVerdictSchema } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
+import {
+  ItemVerdictSchema,
+  TutorReply,
+} from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
 import {
   ChoiceKind,
+  CloseReason,
   EngineChoiceSchema,
+  ReasonCode,
   RunEndReason,
 } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import { LegalTextSchema } from "@altnovatrail/contracts/novatrail/api/v1/legal_pb.js";
+import {
+  AnchorSkillHolding,
+  GetProgressResponseSchema,
+  GetSkillMapResponseSchema,
+} from "@altnovatrail/contracts/novatrail/api/v1/progress_pb.js";
 import { create } from "@bufbuild/protobuf";
 import { userEvent } from "vitest/browser";
 import {
@@ -26,9 +37,15 @@ import {
   SignOutScreen,
   type TextsRead,
 } from "../account/AccountGate.tsx";
+import { AdultSection } from "../adults/AdultSection.tsx";
+import { DevicePage } from "../adults/DevicePage.tsx";
+import { ModulesPage } from "../adults/ModulesPage.tsx";
+import { ProfilePage } from "../adults/ProfilePage.tsx";
+import { ProgressMap, ProgressPage } from "../adults/ProgressPage.tsx";
 import { ApiProvider } from "../api/ApiContext.tsx";
 import type { Api } from "../api/client.ts";
 import { App, LearnerBar } from "../app/App.tsx";
+import { HOME, LEGAL, SKILL_MAP, TUTOR } from "../app/router.ts";
 import {
   Framed,
   Offline,
@@ -39,12 +56,19 @@ import {
 } from "../boot/Screens.tsx";
 import type { Language } from "../i18n/language.ts";
 import { WORDS, wordsOf } from "../i18n/words.ts";
+import { LegalPages } from "../legal/LegalPages.tsx";
 import { Example } from "../lesson/Example.tsx";
 import { Explanation } from "../lesson/Explanation.tsx";
 import { LessonEnd } from "../lesson/Lesson.tsx";
 import { LessonScreen, type LessonScreenProps } from "../lesson/LessonScreen.tsx";
 import { NextStep } from "../next/NextStep.tsx";
+import { LicensePages, licenseRoute } from "../packages/LicensePage.tsx";
+import { type Packages, PackagesProvider } from "../packages/PackagesContext.tsx";
 import { SignInScreen } from "../signin/SignInScreen.tsx";
+import { moduleMapRoute, SkillMapRoute } from "../skills/SkillMapScreen.tsx";
+import { addProfile } from "../storage/profile.ts";
+import { addDatabase, setAccount } from "../storage/registry.ts";
+import { profileDatabase } from "../storage/schema.ts";
 import { SubjectsScreen } from "../subjects/MySubjects.tsx";
 import { AttemptProvider } from "../task/AttemptContext.tsx";
 import { NO_VERDICTS, verdictsOf } from "../task/attempt.ts";
@@ -54,6 +78,10 @@ import { axeViolations, overflows, smallTargets } from "../test/a11y.ts";
 import { memoryDevice } from "../test/device.ts";
 import { inLanguage } from "../test/language.tsx";
 import { PSEUDO } from "../test/pseudo.ts";
+import { fakeSpeech } from "../test/speech.ts";
+import { ReportProblem } from "../tutor/ReportProblem.tsx";
+import { TutorPages } from "../tutor/TutorPage.tsx";
+import { SpeechProvider, VoicingProvider } from "../voice/VoicingContext.tsx";
 
 const OWNER = create(ProfileSchema, {
   profileId: "p1",
@@ -96,6 +124,30 @@ const WORKBOOK: TaskScreenProps["task"] = {
     { line: [{ text: "9 + " }, { binding: "box" }, { text: " = 12" }] },
   ],
 };
+
+/** "Report a problem" beside the words of a rung, with an api it never reaches. */
+function report() {
+  return (
+    <ApiProvider value={{} as Api}>
+      <ReportProblem
+        profileId="p1"
+        attemptId="a1"
+        said={{ text: "Count the gaps.", reply: TutorReply.RUNG, rung: 1 }}
+      />
+    </ApiProvider>
+  );
+}
+
+/** Presses the button with the words of a key, in whichever language of the test the screen is. */
+async function press(key: "report.button" | "report.send"): Promise<void> {
+  // None found is a failure, not a skip.
+  const names = [WORDS.en, WORDS.ru, wordsOf(PSEUDO, "en")].map((each) => each.text(key));
+  const button = [...document.querySelectorAll<HTMLButtonElement>("button")].find((each) =>
+    names.includes(each.textContent ?? ""),
+  );
+  if (button === undefined) throw new Error(`no button ${key}`);
+  await userEvent.click(button);
+}
 
 /** The task screen, by steps on the first step unless the test says otherwise. */
 function taskScreen(props: Partial<TaskScreenProps> = {}) {
@@ -228,10 +280,231 @@ async function openTexts(): Promise<void> {
 }
 
 /** Presses a form's button, so that every field shows its error. */
+/**
+ * A device where the owner keeps an unfinished attempt, and the other profile's database is at a
+ * version newer than the build's, so that it cannot be read.
+ */
+async function seeded() {
+  const { device, backend } = memoryDevice();
+  await setAccount(device, "account-1");
+  await (await addProfile(device, "p1"))?.beginAttempt({ attemptId: "a1", digest: "d1" });
+  await addDatabase(device, profileDatabase("p2"), { kind: "profile", profileId: "p2" });
+  await backend.open(
+    profileDatabase("p2"),
+    { version: 2, stores: {} },
+    {
+      create: true,
+      onLost: () => {},
+    },
+  );
+  return device;
+}
+
+const SEEDED = await seeded();
+
+function devicePage() {
+  return (
+    <DevicePage
+      device={SEEDED}
+      profiles={[OWNER, create(ProfileSchema, { profileId: "p2", pseudonym: "Аня" })]}
+      onEraseAll={async () => "failed"}
+      site={{
+        estimate: async () => ({ usage: 1_500_000, quota: 120_000_000_000 }),
+        persisted: async () => false,
+        persist: async () => false,
+      }}
+    />
+  );
+}
+
+/** An api that gives the privacy policy with its translation and a table, as version 2 does. */
+const POLICY_API = {
+  legal: {
+    getLegalTexts: async () => ({
+      texts: [
+        create(LegalTextSchema, {
+          id: "privacy-policy",
+          version: 2,
+          inForceSince: "2026-11-11",
+          body: "# Privacy policy\n\n## How long we keep it\n\n| What we keep | How long |\n|---|---|\n| Messages to the operator's email, and our replies | 1 year after the message came or after our last reply to it, whichever is later |\n",
+          summary: "Мы храним только то, без чего NovaTrail не работает.",
+          summaryLanguage: "ru",
+          translation: "# Политика конфиденциальности\n\nМы храним мало данных.\n",
+          translationLanguage: "ru",
+        }),
+      ],
+    }),
+  },
+} as unknown as Api;
+
+/** An api that gives the text storage-consent alone, for the consent of a profile's page. */
+const STORAGE_API = {
+  legal: {
+    getLegalTexts: async () => ({
+      texts: [
+        create(LegalTextSchema, {
+          id: "storage-consent",
+          version: 1,
+          body: "# Keeping works on our server\n\n## What is kept\n\n- each work, as the device holds it.\n",
+          summary: "Вы включаете хранение работ этого ученика на нашем сервере.",
+          summaryLanguage: "ru",
+        }),
+      ],
+    }),
+  },
+} as unknown as Api;
+
+/** The consent to keeping works opened on a profile's page, and switched on with no tick. */
+async function consenting(): Promise<void> {
+  const keep = document.querySelector<HTMLButtonElement>("section .nt-buttons button");
+  if (keep === null) throw new Error("no Keep works on the server");
+  await userEvent.click(keep);
+  const on = document.querySelector<HTMLButtonElement>("section form button[type=submit]");
+  if (on === null) throw new Error("no Switch it on");
+  await vi.waitFor(() => expect(on.disabled).toBe(false));
+  await userEvent.click(on);
+  expect(document.querySelector("section form [aria-invalid=true]")).not.toBeNull();
+}
+
 async function submit(): Promise<void> {
   const button = document.querySelector<HTMLButtonElement>("button[type=submit]");
   if (button !== null) await userEvent.click(button);
 }
+
+const D1 = `sha256:${"1".repeat(64)}`;
+const D2 = `sha256:${"2".repeat(64)}`;
+
+/** The packages of a module whose manifest and files come at once: LICENSE with long lines. */
+const LICENSED = {
+  views: {
+    get: async () => ({
+      view: {
+        title: "Olympiad maths",
+        version: "1.2.0",
+        license: "Apache-2.0",
+        languages: { explanation: "en" },
+      },
+      skillTiers: {},
+    }),
+    keptManifests: async () => new Map(),
+  },
+  files: {
+    text: async (_: string, path: string) =>
+      path === "LICENSE"
+        ? `Apache License\n${"   You must give any other recipients of the Work or Derivative Works a copy of this License; and".repeat(2)}\n`
+        : undefined,
+  },
+} as unknown as Packages;
+
+/** An api that gives the profile two modules, one with no current version. */
+const MODULES_API = {
+  module: {
+    listConnectedModules: async () => ({
+      modules: [
+        { moduleId: "novatrail/olympiad-math", packageDigest: D1 },
+        { moduleId: "novatrail/gone", packageDigest: "" },
+      ],
+    }),
+  },
+} as unknown as Api;
+
+/** The open views of a module with a skill graph of two skills, and of a module that teaches. */
+const MAPPED = {
+  views: {
+    get: async (digest: string, kind: string) =>
+      kind === "skill-graph"
+        ? {
+            view: {
+              skills: {
+                counting: { title: "Counting", assessability: "verdict" },
+                halves: {
+                  title: "Halves",
+                  assessability: "verdict",
+                  prerequisites: ["counting", "core.multiplication-table"],
+                },
+              },
+            },
+            skillTiers: { counting: 1, halves: 2 },
+          }
+        : {
+            view: {
+              module_format_version: "0.4",
+              id: digest === D1 ? "example/fair-shares" : "novatrail/tables",
+              version: "1.0.0",
+              title: digest === D1 ? "Fair shares" : "Таблица умножения",
+              languages: { explanation: digest === D1 ? "en" : "ru" },
+            },
+            skillTiers: {},
+          },
+    keptManifests: async () => new Map(),
+  },
+} as unknown as Packages;
+
+/** An api of a profile with a module whose anchor skill is unknown, and a module that teaches it. */
+const MAP_API = {
+  module: {
+    listConnectedModules: async () => ({
+      modules: [
+        { moduleId: "example/fair-shares", packageDigest: D1 },
+        { moduleId: "novatrail/gone", packageDigest: "" },
+      ],
+    }),
+    listCatalog: async () => ({ modules: [{ moduleId: "novatrail/tables", packageDigest: D2 }] }),
+  },
+  progress: {
+    getSkillMap: async () =>
+      create(GetSkillMapResponseSchema, {
+        packageDigest: D1,
+        skills: [{ skill: "counting", evidenceCount: 1 }],
+        anchorSkills: [
+          {
+            anchorSkill: "core.multiplication-table",
+            holding: AnchorSkillHolding.UNKNOWN,
+            teachingModules: ["novatrail/tables"],
+          },
+        ],
+      }),
+  },
+} as unknown as Api;
+
+/** An api of a profile's progress: a trap that repeats, two attempts and a page more. */
+const PROGRESS_API = {
+  ...MAP_API,
+  progress: {
+    ...MAP_API.progress,
+    getProgress: async () =>
+      create(GetProgressResponseSchema, {
+        repeatingTraps: [
+          {
+            trap: "example/fair-shares/trap/halves-of-unequal-parts",
+            description: "Takes unequal parts for halves",
+            trapAdvice: "Ask whether both parts are the same size before naming them halves",
+            attemptCount: 2,
+            lastClosedAt: { seconds: 1_794_000_000n },
+          },
+        ],
+        attempts: [
+          {
+            task: "example/fair-shares/task/a-rather-long-task-identifier-with-no-break-in-it-at-all",
+            moduleVersion: "1.0.0",
+            lesson: "example/fair-shares/lesson/halves-first-steps",
+            closeReason: CloseReason.CORRECT,
+            wrongAnswers: 2,
+            begunAt: { seconds: 1_794_000_000n },
+            closedAt: { seconds: 1_794_000_600n },
+            chosenAt: { seconds: 1_793_999_990n },
+            reasonCode: ReasonCode.QUEUE,
+          },
+          {
+            task: "novatrail/gone/task/levers-1",
+            moduleVersion: "0.3.0",
+            begunAt: { seconds: 1_794_000_000n },
+          },
+        ],
+        nextPageToken: "page-2",
+      }),
+  },
+} as unknown as Api;
 
 const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
   ["framed", () => <Framed />],
@@ -252,7 +525,10 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
     ),
   ],
   ["another tab", () => <OtherTab />],
-  ["sign-in", () => <SignInScreen onSignIn={async () => ({ kind: "closed" })} />],
+  [
+    "sign-in",
+    () => <SignInScreen onSignIn={async () => ({ kind: "closed" })} onLegal={() => {}} />,
+  ],
   [
     "sign-in that the project refused, after a sign-out that left some",
     () => (
@@ -260,6 +536,7 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
         onSignIn={async () => ({ kind: "closed" })}
         result={{ kind: "unconfigured", code: "unauthorized-domain" }}
         left
+        onLegal={() => {}}
       />
     ),
   ],
@@ -307,7 +584,15 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
   [
     "My subjects, below the bar, with a card of each kind",
     () => (
-      <LearnerProvider value={{ learner: OWNER, switchLearner: () => {}, signOut: () => {} }}>
+      <LearnerProvider
+        value={{
+          learner: OWNER,
+          switchLearner: () => {},
+          signOut: () => {},
+          onSaved: () => {},
+          onFailed: () => {},
+        }}
+      >
         <LearnerBar />
         <SubjectsScreen
           connected={[
@@ -342,6 +627,27 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
     ),
   ],
   ["task screen by steps, with its chips", () => taskScreen()],
+  [
+    "task screen with the voicing on, on a device with no voice for the module's language",
+    () => (
+      <ApiProvider value={{} as Api}>
+        <SpeechProvider value={fakeSpeech([]).speech}>
+          <VoicingProvider
+            profile={create(ProfileSchema, {
+              profileId: "p1",
+              presentationStyle: { voicing: { enabled: true } },
+            })}
+            device={memoryDevice().device}
+            place="task"
+            onSaved={() => {}}
+            onFailed={() => {}}
+          >
+            {taskScreen({ tutorWords: "How many gaps are there?", wordsCame: true })}
+          </VoicingProvider>
+        </SpeechProvider>
+      </ApiProvider>
+    ),
+  ],
   [
     "task screen at the plan, with a technique, and the work not saved",
     () =>
@@ -451,6 +757,30 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
         onShow: () => {},
         showNote: "A grown-up needs to help",
       }),
+  ],
+  [
+    "task screen with the words of a rung and Report a problem",
+    () => taskScreen({ mode: "self", tutorWords: "Count the gaps.", report: report() }),
+  ],
+  [
+    "task screen with the form of a report, sent without a kind",
+    () => taskScreen({ mode: "self", tutorWords: "Count the gaps.", report: report() }),
+    async () => {
+      await press("report.button");
+      await press("report.send");
+    },
+  ],
+  [
+    "task screen solved, with the words after it and the form of a report",
+    () =>
+      taskScreen({
+        solution: [{ text: "Two and three make five." }],
+        tutorWords: "Well done: five fruits.",
+        report: report(),
+      }),
+    async () => {
+      await press("report.button");
+    },
   ],
   [
     "task screen asking whether to show the solution",
@@ -593,6 +923,103 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
     },
   ],
   ["lesson ended by api", () => <LessonEnd reason={RunEndReason.ABANDONED} />],
+  ["the legal pages, below their bar", () => <LegalPages route={LEGAL} back={HOME} />],
+  [
+    "the privacy policy as a page, with its translation and a table",
+    () => (
+      <ApiProvider value={POLICY_API}>
+        <LegalPages route={{ ...LEGAL, parts: ["privacy-policy"] }} back={HOME} />
+      </ApiProvider>
+    ),
+    async () => {
+      await vi.waitFor(() => expect(document.querySelector("table")).not.toBeNull());
+    },
+  ],
+  [
+    "Accessibility",
+    () => <LegalPages route={{ ...LEGAL, parts: ["accessibility"] }} back={HOME} />,
+  ],
+  [
+    "the notices of third-party code",
+    () => <LegalPages route={{ ...LEGAL, parts: ["notices"] }} back={HOME} />,
+  ],
+  [
+    "the section for adults, below its bar",
+    () => (
+      <AdultSection
+        route={{ screen: "adults", parts: [] }}
+        device={memoryDevice().device}
+        profiles={[OWNER]}
+        onSaved={() => {}}
+        onFailed={() => {}}
+        onEraseAll={async () => "erased"}
+        onLegal={() => {}}
+      />
+    ),
+  ],
+  [
+    "This device, with a profile that keeps work and one that cannot be read",
+    () => devicePage(),
+    async () => {
+      await vi.waitFor(() => expect(document.querySelectorAll("h3 ~ p").length).toBeGreaterThan(4));
+    },
+  ],
+  [
+    "This device asking before it erases everything",
+    () => devicePage(),
+    async () => {
+      await vi.waitFor(() => expect(document.querySelectorAll("h3 ~ p").length).toBeGreaterThan(4));
+      const buttons = document.querySelectorAll<HTMLButtonElement>("button");
+      await userEvent.click(buttons[buttons.length - 1] as HTMLButtonElement);
+      expect(document.querySelector("fieldset legend")).not.toBeNull();
+    },
+  ],
+  [
+    "a profile's page, with a language the build does not have",
+    () => (
+      <ApiProvider value={{} as Api}>
+        <ProfilePage
+          profile={{ ...OWNER, interfaceLanguage: "de" }}
+          onSaved={() => {}}
+          onFailed={() => {}}
+        />
+      </ApiProvider>
+    ),
+  ],
+  [
+    "a profile's page with its error",
+    () => (
+      <ApiProvider value={{} as Api}>
+        <ProfilePage
+          profile={{ ...OWNER, pseudonym: " " }}
+          onSaved={() => {}}
+          onFailed={() => {}}
+        />
+      </ApiProvider>
+    ),
+    submit,
+  ],
+  [
+    "a profile's page asking the consent to keep works on the server, unticked",
+    () => (
+      <ApiProvider value={STORAGE_API}>
+        <ProfilePage profile={OWNER} onSaved={() => {}} onFailed={() => {}} />
+      </ApiProvider>
+    ),
+    consenting,
+  ],
+  [
+    "a profile's page with its works kept on the server",
+    () => (
+      <ApiProvider value={{} as Api}>
+        <ProfilePage
+          profile={{ ...OWNER, workStorage: true }}
+          onSaved={() => {}}
+          onFailed={() => {}}
+        />
+      </ApiProvider>
+    ),
+  ],
   [
     "My subjects with lessons in progress",
     () => (
@@ -608,6 +1035,120 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
         onLesson={() => {}}
       />
     ),
+  ],
+  [
+    "My subjects with cards that open their licenses",
+    () => (
+      <SubjectsScreen
+        connected={[
+          {
+            moduleId: "novatrail/olympiad-math",
+            digest: D1,
+            title: "Olympiad maths",
+            language: "en",
+            sequential: true,
+          },
+        ]}
+        catalog={[{ moduleId: "novatrail/physics", digest: D2, title: "Физика", language: "ru" }]}
+        onConnect={() => {}}
+        onDisconnect={() => {}}
+        onLicense={() => {}}
+      />
+    ),
+  ],
+  [
+    "the skill maps of the modules connected",
+    () => (
+      <ApiProvider value={MAP_API}>
+        <PackagesProvider value={MAPPED}>
+          <SkillMapRoute route={SKILL_MAP} profileId="p1" />
+        </PackagesProvider>
+      </ApiProvider>
+    ),
+    async () => {
+      await vi.waitFor(() => expect(document.querySelectorAll("article")).toHaveLength(2));
+    },
+  ],
+  [
+    "a module's skill map, a skill open, with a module to connect",
+    () => (
+      <ApiProvider value={MAP_API}>
+        <PackagesProvider value={MAPPED}>
+          <SkillMapRoute route={moduleMapRoute("example/fair-shares")} profileId="p1" />
+        </PackagesProvider>
+      </ApiProvider>
+    ),
+    async () => {
+      await vi.waitFor(() => expect(document.querySelectorAll("article")).toHaveLength(1));
+      const root = await vi.waitFor(() => {
+        const found = document.querySelector("novatrail-skill-map")?.shadowRoot;
+        if (found?.querySelector("button.tile") == null) throw new Error("no map yet");
+        return found;
+      });
+      [...root.querySelectorAll<HTMLButtonElement>("button.tile")]
+        .find((tile) => tile.textContent?.startsWith("Counting"))
+        ?.click();
+      await vi.waitFor(() => expect(root.querySelector("button.practise")).not.toBeNull());
+    },
+  ],
+  ["the page on the AI tutor, below its bar", () => <TutorPages route={TUTOR} />],
+  [
+    "the license of a module, below its bar",
+    () => (
+      <ApiProvider value={{} as Api}>
+        <PackagesProvider value={LICENSED}>
+          <LicensePages route={licenseRoute(D1)} />
+        </PackagesProvider>
+      </ApiProvider>
+    ),
+    async () => {
+      await vi.waitFor(() => expect(document.querySelector("pre")).not.toBeNull());
+    },
+  ],
+  [
+    "the modules of a profile in the section",
+    () => (
+      <ApiProvider value={MODULES_API}>
+        <PackagesProvider value={LICENSED}>
+          <ModulesPage profile={OWNER} />
+        </PackagesProvider>
+      </ApiProvider>
+    ),
+    async () => {
+      await vi.waitFor(() => expect(document.querySelectorAll("article")).toHaveLength(2));
+    },
+  ],
+  [
+    "the progress of a profile in the section",
+    () => (
+      <ApiProvider value={PROGRESS_API}>
+        <PackagesProvider value={MAPPED}>
+          <ProgressPage profile={OWNER} />
+        </PackagesProvider>
+      </ApiProvider>
+    ),
+    async () => {
+      await vi.waitFor(() => expect(document.querySelectorAll("article")).toHaveLength(5));
+    },
+  ],
+  [
+    "a module's map in the progress, the adult's view, a skill open",
+    () => (
+      <ApiProvider value={PROGRESS_API}>
+        <PackagesProvider value={MAPPED}>
+          <ProgressMap profile={OWNER} moduleId="example/fair-shares" />
+        </PackagesProvider>
+      </ApiProvider>
+    ),
+    async () => {
+      const root = await vi.waitFor(() => {
+        const found = document.querySelector("novatrail-skill-map")?.shadowRoot;
+        if (found?.querySelector("button.tile") == null) throw new Error("no map yet");
+        return found;
+      });
+      root.querySelector<HTMLButtonElement>("button.tile")?.click();
+      await vi.waitFor(() => expect(root.querySelector("[aria-expanded='true']")).not.toBeNull());
+    },
   ],
   [
     "My subjects with none connected and an empty catalog",

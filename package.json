@@ -10,14 +10,15 @@
   },
   "type": "module",
   "dependencies": {
-    "@altnovatrail/canvas": "0.3.4",
+    "@altnovatrail/canvas": "0.3.15",
     "@altnovatrail/contracts": "0.15.1",
+    "@altnovatrail/skill-map": "0.1.5",
     "@bufbuild/protobuf": "2.16.0",
     "@connectrpc/connect": "2.3.0",
     "@connectrpc/connect-web": "2.3.0",
     "@firebase/app": "0.16.5",
     "@firebase/auth": "1.13.9",
-    "@iconify-json/material-symbols": "1.2.97",
+    "@iconify-json/material-symbols": "1.2.98",
     "marked": "18.1.3",
     "react": "19.3.1",
     "react-dom": "19.3.1"

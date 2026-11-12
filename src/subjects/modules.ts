@@ -2,7 +2,11 @@
 // the contract): each module by the title and explanation language of the open view of its current
 // version's manifest. A module with no current version for the learner is named by the manifest the
 // cache keeps of an earlier version, or else by its ID, and shown unavailable; a manifest that cannot
-// be had names the module by its ID too, and says so, so that the screen can ask again. No DOM.
+// be had names the module by its ID too, and says so, so that the screen can ask again. A module
+// whose skill graph is a chain is marked "in order", by the tiers of the open view of its current
+// version's graph (R58 in spec; section 3.4): the mark comes apart from the card, when the graph
+// has come, so a graph slow to come holds no card back, and one that cannot be had marks nothing.
+// No DOM.
 import type * as open from "@altnovatrail/spec/formatv0/open";
 import type { OpenViews } from "../packages/views.ts";
 
@@ -16,12 +20,35 @@ export interface ModuleCard {
   readonly language?: string;
   /** The manifest of its current version did not come: the ID stands in until a retry. */
   readonly unnamed?: true;
+  /** Its current version's skill graph is a chain: the mark "in order" (R06), once it is known. */
+  readonly sequential?: true;
 }
 
 /** A module as the catalog or the list of connected modules gives it. */
 export interface ModuleRef {
   readonly moduleId: string;
   readonly packageDigest: string;
+}
+
+/**
+ * Whether the tiers of a skill graph make it a chain: two skills or more, each in a tier of its own
+ * — anchor skills have no tier (R58 in spec; its amendment of 2026-11-02). The tiers are those
+ * module-kit computed and api gives with the graph, so the mark and the map's tiers never part.
+ */
+export function isSequential(tiers: Readonly<Record<string, number>>): boolean {
+  const each = Object.values(tiers);
+  return each.length >= 2 && new Set(each).size === each.length;
+}
+
+/**
+ * Whether the skill graph of a package is a chain, by its tiers; false for a package with no graph
+ * and for a graph that cannot be had: the mark is left out, and nothing else waits for it.
+ */
+export function sequentialOf(views: OpenViews, digest: string): Promise<boolean> {
+  return views.get(digest, "skill-graph").then(
+    (graph) => graph !== undefined && isSequential(graph.skillTiers),
+    () => false,
+  );
 }
 
 /** The manifests kept of earlier versions, read once for all the cards that need them. */

@@ -2,7 +2,8 @@
 // contracts; sections 3.3 and 3.8 of docs/architecture.md; R18): the outcomes and the refusals
 // that every screen shows alike — a failure of AI is a neutral phrase, never "not yet" (R04 in
 // spec) — and the common string for a cause with no words here: a screen whose own causes they
-// are words them itself (T22, T26, T27, T32). No DOM.
+// are words them itself (T22, T26, T27, T32). The quota says when the tutor comes back by the
+// device's clock: today, tomorrow, or on the date of a family day that begins later (R37). No DOM.
 import { Cause } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import { timestampDate } from "@bufbuild/protobuf/wkt";
 import { keyFor } from "../i18n/codes.ts";
@@ -41,27 +42,49 @@ export const CAUSE_KEYS = {
   [Cause.LEARNER_DECIDES]: "api.learner-decides",
 } as const;
 
+/** How many days of the device's calendar lie from one moment to another: 0 on the same date. */
+export function calendarDays(from: Date, to: Date): number {
+  const day = (moment: Date) => Date.UTC(moment.getFullYear(), moment.getMonth(), moment.getDate());
+  return Math.round((day(to) - day(from)) / 86_400_000);
+}
+
+/**
+ * The words of the quota, with when the next family day begins on the device's clock: today — a
+ * time of today the clock has passed, too, when it runs ahead of api's —, tomorrow, or on its date,
+ * when a change of the clock's offset made the family day longer than the device's (R56 api), and
+ * when a clock far off puts it on a day before today.
+ */
+function quotaText(nextFamilyDay: Date, words: Words, now: Date): string {
+  const time = dateTimeFormat(words.language, { timeStyle: "short" }).format(nextFamilyDay);
+  const days = calendarDays(now, nextFamilyDay);
+  if (days === 0) return words.text("api.quota-today", { time });
+  if (days === 1) return words.text("api.quota-tomorrow", { time });
+  const date = dateTimeFormat(words.language, { day: "numeric", month: "long" }).format(
+    nextFamilyDay,
+  );
+  return words.text("api.quota", { date, time });
+}
+
 /** The words of a cause; the quota with when it comes back, in the screen's language. */
-function causeText(cause: Cause, nextFamilyDay: Date | undefined, words: Words): string {
+function causeText(cause: Cause, nextFamilyDay: Date | undefined, words: Words, now: Date): string {
   const key = keyFor(CAUSE_KEYS, cause);
   if (key !== "api.quota") return words.text(key);
   if (nextFamilyDay === undefined) return words.text("api.ai-failure");
-  const time = dateTimeFormat(words.language, { timeStyle: "short" }).format(nextFamilyDay);
-  return words.text("api.quota", { time });
+  return quotaText(nextFamilyDay, words, now);
 }
 
-/** The words of an outcome of AI. */
-export function outcomeText(outcome: ReadOutcome, words: Words): string {
-  return causeText(outcome.cause, outcome.nextFamilyDay, words);
+/** The words of an outcome of AI, as of `now`. */
+export function outcomeText(outcome: ReadOutcome, words: Words, now: Date = new Date()): string {
+  return causeText(outcome.cause, outcome.nextFamilyDay, words, now);
 }
 
-/** The words of a call that did not answer. */
-export function failureText(failure: Failure, words: Words): string {
+/** The words of a call that did not answer, as of `now`. */
+export function failureText(failure: Failure, words: Words, now: Date = new Date()): string {
   switch (failure.kind) {
     case "refused": {
       const day =
         failure.data.case === "nextFamilyDay" ? timestampDate(failure.data.value) : undefined;
-      return causeText(failure.cause, day, words);
+      return causeText(failure.cause, day, words, now);
     }
     case "offline":
       return words.text("boot.offline");

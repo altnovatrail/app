@@ -27,6 +27,19 @@ export interface ReadOutcome {
   readonly ownKeyLimit?: OwnKeyLimit;
 }
 
+/**
+ * Whether an outcome tells that platform AI is closed beyond this call — its quota for the family
+ * day is spent, or its provider's limit ran out —, which the screen says beside words that came
+ * without AI, too: the fallback text of a rung, or no words after a correct answer (R37). A failure
+ * of AI is a moment's, and "not admitted" the standing state of a deployment that admits no words
+ * yet: beside every fallback text and every correct answer, its line would say nothing new.
+ */
+export function closesPlatformAI(
+  outcome: ReadOutcome | undefined,
+): outcome is ReadOutcome & { readonly cause: Cause.QUOTA | Cause.PLATFORM_LIMIT } {
+  return outcome?.cause === Cause.QUOTA || outcome?.cause === Cause.PLATFORM_LIMIT;
+}
+
 /** The outcome of an answer, read; `undefined` when the call of AI gave what it was for. */
 export function outcomeOf(outcome: Outcome | undefined): ReadOutcome | undefined {
   if (outcome === undefined) return undefined;

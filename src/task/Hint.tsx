@@ -3,9 +3,12 @@
 // which api gave, from the open catalog; and its leading question, the author's question that
 // breaks the task down, in the module's explanation language. After a wrong answer the hint is the
 // words of the current rung again, which the block "Tutor" shows. Nothing of it needs the key.
+// "Read aloud" below it reads it all (R07).
 import type * as open from "@altnovatrail/spec/formatv0/open";
 import { useId } from "react";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
+import { ReadAloud } from "../voice/ReadAloud.tsx";
+import { hintPhrases } from "../voice/texts.ts";
 import { TechniqueCards } from "./TechniqueCards.tsx";
 
 /** A hint api gave: the IDs of the task's techniques, and its leading question if it has one. */
@@ -57,6 +60,10 @@ export function Hint({
       <TechniqueCards ids={hint.techniques} catalog={catalog} language={language} />
       {hint.question === undefined ? null : <p {...lang}>{hint.question}</p>}
       {nothing ? <p className="nt-hint">{words.text("task.hint-none")}</p> : null}
+      <ReadAloud
+        phrases={hintPhrases(task, hint.techniques, hint.question, catalog, language)}
+        language={language}
+      />
     </section>
   );
 }

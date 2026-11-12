@@ -24,6 +24,14 @@
   --novatrail-canvas-paper: var(--nt-background);
   --novatrail-canvas-mark: var(--nt-mark);
 
+  /*
+   * The skill map in the same colours (its custom properties, R10 in skill-map): the accent on the
+   * paper and the paper on the accent are the primary's pairs above, 4.5:1 and more.
+   */
+  --novatrail-skill-map-paper: var(--nt-background);
+  --novatrail-skill-map-ink: var(--nt-text);
+  --novatrail-skill-map-accent: var(--nt-primary);
+
   color-scheme: light;
 }
 
@@ -146,7 +154,8 @@ button[aria-disabled="true"] {
   font-weight: 700;
 }
 .nt-field input:not([type="checkbox"]),
-.nt-field select {
+.nt-field select,
+.nt-field textarea {
   box-sizing: border-box;
   inline-size: 100%;
   min-block-size: 2.75rem;
@@ -180,6 +189,18 @@ button[aria-disabled="true"] {
   color: var(--nt-error);
   font-weight: 700;
 }
+/* "Read aloud" beside a text, and the line of why it cannot read, which wraps below it. */
+.nt-read-aloud {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.5rem 0 1rem;
+}
+.nt-read-aloud > .nt-hint {
+  margin: 0;
+  min-inline-size: 0;
+}
 /* The bar above a learner's screens: who is learning, and the buttons to switch or sign out. */
 .nt-bar {
   display: flex;
@@ -195,6 +216,23 @@ button[aria-disabled="true"] {
   flex: 1 1 auto;
   margin: 0;
   font-weight: 700;
+}
+/*
+ * NOTICE and LICENSE on the page of notices, as they are (R31): their lines and spaces kept, and
+ * wrapped where the screen is narrower than a line, so that the page never scrolls sideways.
+ */
+.nt-notice {
+  margin: 0 0 1rem;
+  font-size: 0.875rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+/* The terms of a place where the app does not meet its standard, on the page Accessibility. */
+.nt-terms > dt {
+  font-weight: 700;
+}
+.nt-terms > dd {
+  margin: 0 0 0.75rem;
 }
 /* The cards of modules, one below another. */
 .nt-cards {
@@ -387,6 +425,17 @@ novatrail-canvas {
 }
 .nt-tutor p {
   margin: 0;
+}
+/* "Report a problem" below the tutor's words, and its form in place (R33). */
+.nt-report {
+  margin-block-start: 1rem;
+}
+.nt-report h3 {
+  margin-block: 0 0.5rem;
+  font-size: 1.125rem;
+}
+.nt-report .nt-hint {
+  margin-block: 0.25rem 0.5rem;
 }
 /* A workbook's lines once checked, below the canvas. */
 .nt-lines {

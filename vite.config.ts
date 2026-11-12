@@ -44,10 +44,18 @@ export default defineConfig(({ command, isPreview }) => {
       host: "127.0.0.1",
       port,
       strictPort: true,
-      // Without a list, the development server would hand out the whole repository.
+      // Without a list, the development server would hand out the whole repository. NOTICE and
+      // LICENSE the page of notices takes in as text (R31).
       fs: {
         strict: true,
-        allow: ["index.html", "src", "node_modules", ...(copy ? [copy.allow] : [])],
+        allow: [
+          "index.html",
+          "src",
+          "node_modules",
+          "NOTICE",
+          "LICENSE",
+          ...(copy ? [copy.allow] : []),
+        ],
       },
       proxy,
     },

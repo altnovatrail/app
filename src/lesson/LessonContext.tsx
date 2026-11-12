@@ -6,6 +6,7 @@
 // switching the learner and back does not bring an ended run back.
 import type { Profile } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import { createContext, type ReactNode, useCallback, useContext, useMemo, useState } from "react";
+import { asGiven } from "../account/settings.ts";
 
 /** An open lesson run, as `LessonRunRef` names it. */
 export interface RunRef {
@@ -39,7 +40,7 @@ const learnt = new WeakMap<Profile, readonly RunRef[]>();
 
 function runsOf(learner: Profile): readonly RunRef[] {
   return (
-    learnt.get(learner) ??
+    learnt.get(asGiven(learner)) ??
     learner.openLessonRuns.map(({ lessonRunId, lesson, packageDigest }) => ({
       lessonRunId,
       lesson,
@@ -61,7 +62,7 @@ export function LessonProvider({
     (next: (held: readonly RunRef[]) => readonly RunRef[]) => {
       setRuns((held) => {
         const made = next(held);
-        learnt.set(learner, made);
+        learnt.set(asGiven(learner), made);
         return made;
       });
     },
