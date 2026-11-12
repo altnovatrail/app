@@ -31,6 +31,13 @@ export const ADULTS: Route = { screen: "adults", parts: [] };
  */
 export const LEGAL: Route = { screen: "legal", parts: [] };
 
+/**
+ * The license of a module: `#/license/<digest>`, LICENSE and NOTICE of a version by the digest of
+ * its package, an ID of content, opened from a card of My subjects (R32). It shows at any step, as
+ * the legal pages do; the section for adults shows the same page as one of its own.
+ */
+export const MODULE_LICENSE: Route = { screen: "license", parts: [] };
+
 /** The screens this build knows. A hash that names another one shows the home screen. */
 export const SCREENS: ReadonlySet<string> = new Set([
   HOME.screen,
@@ -38,6 +45,7 @@ export const SCREENS: ReadonlySet<string> = new Set([
   LESSON.screen,
   ADULTS.screen,
   LEGAL.screen,
+  MODULE_LICENSE.screen,
 ]);
 
 /** The route a hash names: `#/screen/part`, each segment percent-encoded. */

@@ -130,6 +130,22 @@ export const en = {
   "legal.notice-file": "Notices (NOTICE)",
   /** The heading above the file LICENSE, as it is; the name of the file stays. */
   "legal.license-file": "License (LICENSE)",
+  /** The bar above the page of a module's license (R32). */
+  "license.bar": "Licenses of modules",
+  "license.title": "The module's license and notices",
+  /** The bar above the page of a module's license: back to where it was opened from. */
+  "license.close": "Close",
+  "license.intro":
+    "The module's author gives it under this license. Its text and the notices are below, as they come with the module",
+  /** The terms of the module whose license the page shows, from its manifest. */
+  "license.module": "Module",
+  "license.version": "Version",
+  /** The license of the module by its name, an identifier of the SPDX list such as Apache-2.0. */
+  "license.name": "License",
+  /** The module came with no LICENSE, which the module format does not allow. */
+  "license.no-license": "No file LICENSE came with the module",
+  /** The module has no NOTICE, which the module format allows. */
+  "license.no-notice": "The module has no file NOTICE",
   "accessibility.standard": "The standard",
   /** The names of the criteria are those of WCAG 2.2. */
   "accessibility.standard-text":
@@ -230,6 +246,8 @@ export const en = {
   "subjects.unavailable": "Not available now",
   "subjects.connect": "Connect",
   "subjects.disconnect": "Disconnect",
+  /** On a module's card: the page of its LICENSE and NOTICE (R32). */
+  "subjects.license": "License",
   /** The heading of the task screen: a task has no title of its own. */
   "task.title": "Task",
   /** The name of the group of the two buttons of the mode. */
@@ -425,6 +443,13 @@ export const en = {
   "adults.saved": "Saved",
   /** Save with nothing changed: nothing is asked. */
   "adults.unchanged": "Nothing has changed",
+  /** The modules of a profile, on its page: each with the page of its license (R32). */
+  "adults.modules": "Modules",
+  "adults.modules-hint": "The modules connected to the profile, and the license of each",
+  "adults.modules-open": "See the modules and their licenses",
+  "adults.modules-title": "Modules: {pseudonym}",
+  /** On the page of a module's license in the section: back to the profile's modules. */
+  "adults.modules-back": "Back to the modules",
   /** The storage of a profile's works on the server (R113 in spec), on the profile's page. */
   "storage.title": "Keeping works on the server",
   "storage.on": "Keeping this profile's works on the server is on",

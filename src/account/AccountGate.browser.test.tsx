@@ -29,6 +29,7 @@ import {
   GetLegalTextsRequestSchema,
   GetLegalTextsResponseSchema,
 } from "@altnovatrail/contracts/novatrail/api/v1/legal_pb.js";
+import { ListConnectedModulesResponseSchema } from "@altnovatrail/contracts/novatrail/api/v1/module_pb.js";
 import {
   CheckPackagesResponseSchema,
   GetManifestResponseSchema,
@@ -142,6 +143,12 @@ function renderApp(
   const apiFetch = vi.fn<typeof fetch>(async (input, init) => {
     // A request by Connect GET holds its message in the address, after the method.
     const [path = "", query = ""] = String(input).split("?");
+    // A file of a device part goes by GET at its path, `device <path>` among the routes, else 404.
+    const [, file] = path.split("/device/");
+    if (file !== undefined) {
+      asked.push(`device ${file}`);
+      return routes[`device ${file}`]?.(new Uint8Array()) ?? new Response(null, { status: 404 });
+    }
     const method = path.split("/").at(-1) ?? "";
     if (query !== "") {
       const message = new URLSearchParams(query).get("message") ?? "";
@@ -1044,5 +1051,70 @@ describe("the page This device in the section", () => {
     expect(await readRegistry(device)).toBeUndefined();
     expect(backend.databases.has(SETTINGS)).toBe(false);
     expect(window.location.hash).toBe("#/home");
+  });
+});
+
+describe("the license of a module", () => {
+  afterEach(() => {
+    window.location.hash = "";
+  });
+
+  const LICENSE = "Apache License\nVersion 2.0, January 2004\n";
+  const routes = (profile: object) => ({
+    getAccount: () =>
+      message(GetAccountResponseSchema, {
+        account: { accountId: "account-1", profiles: [profile] },
+      }),
+    listConnectedModules: () =>
+      message(ListConnectedModulesResponseSchema, {
+        modules: [{ moduleId: "example/choices", packageDigest: D1 }],
+      }),
+    getManifest: ATTEMPT_ROUTES.getManifest as Route,
+    "device LICENSE": () => new Response(LICENSE),
+  });
+
+  it("opens from a card of My subjects in the learner's language, and closes back to it", async () => {
+    const service = fakeSignIn("uid-1");
+    const { asked } = renderApp(routes({ ...OWNER, interfaceLanguage: "ru" }), service);
+    await userEvent.click(await screen.findByRole("button", { name: "Ёжик" }));
+    const card = within(await screen.findByRole("article", { name: "Choices" }));
+    await userEvent.click(card.getByRole("button", { name: "Лицензия" }));
+    expect(window.location.hash).toBe(`#/license/sha256%3A${"1".repeat(64)}`);
+    expect(
+      await screen.findByRole("heading", { level: 1, name: "Лицензия и уведомления модуля" }),
+    ).toBeTruthy();
+    expect(document.documentElement.lang).toBe("ru");
+    await vi.waitFor(() => expect(document.querySelector("pre")?.textContent).toBe(LICENSE));
+    expect(await screen.findByText("Файла NOTICE у модуля нет")).toBeTruthy();
+    expect(asked).toContain("device LICENSE");
+    expect(asked).toContain("device NOTICE");
+    await userEvent.click(screen.getByRole("button", { name: "Закрыть" }));
+    expect(await screen.findByRole("heading", { level: 1, name: "Мои предметы" })).toBeTruthy();
+  });
+
+  it("opens from the profile's modules in the section, in the device's language, and before signing in by its address", async () => {
+    const service = fakeSignIn("uid-1");
+    renderApp(routes({ ...OWNER, interfaceLanguage: "ru" }), service);
+    await userEvent.click(await screen.findByRole("button", { name: "For grown-ups" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Profile: Ёжик" }));
+    await userEvent.click(
+      await screen.findByRole("button", { name: "See the modules and their licenses" }),
+    );
+    const card = within(await screen.findByRole("article", { name: "Choices" }));
+    await userEvent.click(card.getByRole("button", { name: "License" }));
+    expect(
+      await screen.findByRole("heading", { level: 1, name: "The module's license and notices" }),
+    ).toBeTruthy();
+    expect(document.documentElement.lang).toBe("en");
+    await userEvent.click(screen.getByRole("button", { name: "Back to the modules" }));
+    expect(await screen.findByRole("heading", { level: 1, name: "Modules: Ёжик" })).toBeTruthy();
+    // Signed out, the page still shows by its address, in the device's language, and closes home.
+    service.set(null);
+    window.location.hash = "#/home";
+    expect(await screen.findByRole("heading", { level: 1, name: "Sign in" })).toBeTruthy();
+    window.location.hash = `#/license/${encodeURIComponent(D1)}`;
+    await vi.waitFor(() => expect(document.querySelector("pre")?.textContent).toBe(LICENSE));
+    await userEvent.click(screen.getByRole("button", { name: "Close" }));
+    expect(await screen.findByRole("heading", { level: 1, name: "Sign in" })).toBeTruthy();
   });
 });

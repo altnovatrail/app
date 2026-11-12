@@ -6,7 +6,8 @@
 // with the card to its new place. An attempt open outside a lesson is a press away, above the lists
 // (T24), and so is each lesson run open, by the lesson's title as this device keeps it, or else its
 // module's name (T27; R23); and "What's next" asks the engine, or "Something else" beside an
-// attempt open, which it closes (T28; R24).
+// attempt open, which it closes (T28; R24). A card of a version has the page of its license beside
+// its button (R32).
 import type { ConnectedModule } from "@altnovatrail/contracts/novatrail/api/v1/module_pb.js";
 import { type ReactNode, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { useApi } from "../api/ApiContext.tsx";
@@ -15,32 +16,19 @@ import { failureText } from "../api/words.ts";
 import { LESSON, navigate, TASK } from "../app/router.ts";
 import { Screen } from "../app/Screen.tsx";
 import { ReadFailed } from "../boot/Screens.tsx";
-import { collator, languageName } from "../i18n/intl.ts";
+import { collator } from "../i18n/intl.ts";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
-import type { Language } from "../i18n/language.ts";
 import { type RunRef, useLessons } from "../lesson/LessonContext.tsx";
 import { moduleOf } from "../lesson/run.ts";
 import { NextStep } from "../next/NextStep.tsx";
+import { licenseRoute } from "../packages/LicensePage.tsx";
 import { usePackages } from "../packages/PackagesContext.tsx";
 import type { OpenViews } from "../packages/views.ts";
 import type { Device } from "../storage/device.ts";
 import { openProfile, type Profile } from "../storage/profile.ts";
 import { useAttempt } from "../task/AttemptContext.tsx";
+import { CardHeading } from "./CardHeading.tsx";
 import { byTitle, cardsOf, type ModuleCard, type ModuleRef } from "./modules.ts";
-
-/** Whether a language tag is the screen's language, by its primary subtag. */
-function isScreenLanguage(tag: string, language: Language): boolean {
-  return tag.split("-")[0]?.toLowerCase() === language;
-}
-
-/** A language's name in the screen's language; a tag Intl cannot read stands for itself. */
-function nameOf(tag: string, language: Language): string {
-  try {
-    return languageName(language, tag);
-  } catch {
-    return tag;
-  }
-}
 
 /** A lesson run open, as My subjects names it. */
 export interface OpenRun {
@@ -71,35 +59,27 @@ function RunName({ run }: { readonly run: OpenRun }) {
 /** What a card's button does. */
 type Action = "connect" | "disconnect";
 
-/** A module's card, its button described by its title. */
+/** A module's card, its buttons described by its title. */
 function Card({
   card,
   action,
   pending,
   onPress,
+  onLicense,
 }: {
   readonly card: ModuleCard;
   readonly action: Action;
   readonly pending: boolean;
   readonly onPress: (moduleId: string) => void;
+  readonly onLicense: ((digest: string) => void) | undefined;
 }) {
-  const { language, words } = useLanguage();
+  const { words } = useLanguage();
   const id = useId();
-  const explanation = card.language;
+  const digest = card.digest;
   return (
     <li className="nt-card">
       <article aria-labelledby={id}>
-        <h3 id={id} {...(explanation === undefined ? {} : { lang: explanation })}>
-          {card.title}
-        </h3>
-        {explanation === undefined || isScreenLanguage(explanation, language) ? null : (
-          <p>
-            {words.text("subjects.explanation-language", {
-              language: nameOf(explanation, language),
-            })}
-          </p>
-        )}
-        {card.digest === undefined ? <p>{words.text("subjects.unavailable")}</p> : null}
+        <CardHeading card={card} id={id} />
         <div className="nt-buttons">
           {/* Not disabled while a press is under way: a disabled button would drop the focus. */}
           <button
@@ -115,6 +95,16 @@ function Card({
           >
             {words.text(action === "connect" ? "subjects.connect" : "subjects.disconnect")}
           </button>
+          {digest === undefined || onLicense === undefined ? null : (
+            <button
+              type="button"
+              className="nt-secondary"
+              aria-describedby={id}
+              onClick={() => onLicense(digest)}
+            >
+              {words.text("subjects.license")}
+            </button>
+          )}
         </div>
       </article>
     </li>
@@ -141,6 +131,8 @@ export interface SubjectsScreenProps {
   /** The learner's lesson runs open, each a press away. */
   readonly runs?: readonly OpenRun[];
   readonly onLesson?: (lessonRunId: string) => void;
+  /** Opens the page of a version's license, by its digest; no button without it. */
+  readonly onLicense?: (digest: string) => void;
 }
 
 /** The screen itself, from what its container has read. */
@@ -155,6 +147,7 @@ export function SubjectsScreen({
   onContinue,
   runs = [],
   onLesson,
+  onLicense,
   next,
 }: SubjectsScreenProps) {
   const { language, words } = useLanguage();
@@ -236,6 +229,7 @@ export function SubjectsScreen({
                 action="disconnect"
                 pending={pending}
                 onPress={onDisconnect}
+                onLicense={onLicense}
               />
             ))}
           </ul>
@@ -254,6 +248,7 @@ export function SubjectsScreen({
                 action="connect"
                 pending={pending}
                 onPress={onConnect}
+                onLicense={onLicense}
               />
             ))}
           </ul>
@@ -407,6 +402,7 @@ export function MySubjects({
         lessons?.choose({ kind: "run", run });
         navigate(LESSON);
       }}
+      onLicense={(digest) => navigate(licenseRoute(digest))}
       onConnect={(moduleId) =>
         void change(moduleId, "disconnect", () => api.module.connectModule({ profileId, moduleId }))
       }

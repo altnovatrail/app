@@ -4,7 +4,9 @@
 // that fetch needs no preflight and goes through the HTTP cache, which keeps them; app stores none
 // itself. A media file goes to the canvas as a Blob (R36 in spec). 404 is a path the part has not;
 // 410 a version api no longer gives, and CheckPackages is asked; 503 a deployment going on, repeated
-// after the time Retry-After names. No DOM beyond fetch and Blob.
+// after the time Retry-After names. LICENSE and NOTICE come as text, UTF-8 as the module format has
+// them (R62 in spec), for the page of a module's license (R32 in docs/decisions.md). No DOM beyond
+// fetch and Blob.
 import type { Media } from "@altnovatrail/spec/canvas";
 import { PAUSES, retryAfter, STILL_GOING_MS } from "../api/interceptors.ts";
 
@@ -23,6 +25,11 @@ export class FileError extends Error {
 
 const DIGEST = /^sha256:[0-9a-f]{64}$/;
 
+/** Whether a string is a package digest: `sha256:` and 64 lowercase hexadecimal digits. */
+export function isDigest(digest: string): boolean {
+  return DIGEST.test(digest);
+}
+
 /** The origin without the slashes it may end in; a loop, as a pattern for it could backtrack. */
 function withoutTrailingSlashes(origin: string): string {
   let end = origin.length;
@@ -32,7 +39,7 @@ function withoutTrailingSlashes(origin: string): string {
 
 /** The address of a file of a package's device part on api; a path that would leave it is none. */
 export function fileUrl(api: string, digest: string, path: string): string {
-  if (!DIGEST.test(digest)) throw new FileError("unknown", `not a package digest: ${digest}`);
+  if (!isDigest(digest)) throw new FileError("unknown", `not a package digest: ${digest}`);
   const parts = path.split("/");
   if (parts.some((part) => part === "" || part === "." || part === "..")) {
     throw new FileError("missing", `not a path of the device part: ${path}`);
@@ -81,7 +88,15 @@ export class DeviceFiles {
         await pause();
         continue;
       }
-      if (response.ok) return response.blob();
+      if (response.ok) {
+        // A body cut off on its way is a network that failed too.
+        try {
+          return await response.blob();
+        } catch {
+          await pause();
+          continue;
+        }
+      }
       if (response.status === 404) throw new FileError("missing", url);
       if (response.status === 410) {
         this.options.withdrawn();
@@ -96,6 +111,16 @@ export class DeviceFiles {
       if (waited + asked > STILL_GOING_MS) throw new FileError("offline", url);
       waited += asked;
       await sleep(asked);
+    }
+  }
+
+  /** A text file of a package's device part, LICENSE or NOTICE, as it is; none if the part has none. */
+  async text(digest: string, path: string): Promise<string | undefined> {
+    try {
+      return await (await this.file(digest, path)).text();
+    } catch (reason) {
+      if (reason instanceof FileError && reason.failure === "missing") return undefined;
+      throw reason;
     }
   }
 

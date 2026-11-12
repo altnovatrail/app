@@ -28,6 +28,7 @@ import {
 } from "../account/AccountGate.tsx";
 import { AdultSection } from "../adults/AdultSection.tsx";
 import { DevicePage } from "../adults/DevicePage.tsx";
+import { ModulesPage } from "../adults/ModulesPage.tsx";
 import { ProfilePage } from "../adults/ProfilePage.tsx";
 import { ApiProvider } from "../api/ApiContext.tsx";
 import type { Api } from "../api/client.ts";
@@ -49,6 +50,8 @@ import { Explanation } from "../lesson/Explanation.tsx";
 import { LessonEnd } from "../lesson/Lesson.tsx";
 import { LessonScreen, type LessonScreenProps } from "../lesson/LessonScreen.tsx";
 import { NextStep } from "../next/NextStep.tsx";
+import { LicensePages, licenseRoute } from "../packages/LicensePage.tsx";
+import { type Packages, PackagesProvider } from "../packages/PackagesContext.tsx";
 import { SignInScreen } from "../signin/SignInScreen.tsx";
 import { addProfile } from "../storage/profile.ts";
 import { addDatabase, setAccount } from "../storage/registry.ts";
@@ -326,6 +329,43 @@ async function submit(): Promise<void> {
   const button = document.querySelector<HTMLButtonElement>("button[type=submit]");
   if (button !== null) await userEvent.click(button);
 }
+
+const D1 = `sha256:${"1".repeat(64)}`;
+const D2 = `sha256:${"2".repeat(64)}`;
+
+/** The packages of a module whose manifest and files come at once: LICENSE with long lines. */
+const LICENSED = {
+  views: {
+    get: async () => ({
+      view: {
+        title: "Olympiad maths",
+        version: "1.2.0",
+        license: "Apache-2.0",
+        languages: { explanation: "en" },
+      },
+      skillTiers: {},
+    }),
+    keptManifests: async () => new Map(),
+  },
+  files: {
+    text: async (_: string, path: string) =>
+      path === "LICENSE"
+        ? `Apache License\n${"   You must give any other recipients of the Work or Derivative Works a copy of this License; and".repeat(2)}\n`
+        : undefined,
+  },
+} as unknown as Packages;
+
+/** An api that gives the profile two modules, one with no current version. */
+const MODULES_API = {
+  module: {
+    listConnectedModules: async () => ({
+      modules: [
+        { moduleId: "novatrail/olympiad-math", packageDigest: D1 },
+        { moduleId: "novatrail/gone", packageDigest: "" },
+      ],
+    }),
+  },
+} as unknown as Api;
 
 const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
   ["framed", () => <Framed />],
@@ -803,6 +843,51 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
         onLesson={() => {}}
       />
     ),
+  ],
+  [
+    "My subjects with cards that open their licenses",
+    () => (
+      <SubjectsScreen
+        connected={[
+          {
+            moduleId: "novatrail/olympiad-math",
+            digest: D1,
+            title: "Olympiad maths",
+            language: "en",
+          },
+        ]}
+        catalog={[{ moduleId: "novatrail/physics", digest: D2, title: "Физика", language: "ru" }]}
+        onConnect={() => {}}
+        onDisconnect={() => {}}
+        onLicense={() => {}}
+      />
+    ),
+  ],
+  [
+    "the license of a module, below its bar",
+    () => (
+      <ApiProvider value={{} as Api}>
+        <PackagesProvider value={LICENSED}>
+          <LicensePages route={licenseRoute(D1)} />
+        </PackagesProvider>
+      </ApiProvider>
+    ),
+    async () => {
+      await vi.waitFor(() => expect(document.querySelector("pre")).not.toBeNull());
+    },
+  ],
+  [
+    "the modules of a profile in the section",
+    () => (
+      <ApiProvider value={MODULES_API}>
+        <PackagesProvider value={LICENSED}>
+          <ModulesPage profile={OWNER} />
+        </PackagesProvider>
+      </ApiProvider>
+    ),
+    async () => {
+      await vi.waitFor(() => expect(document.querySelectorAll("article")).toHaveLength(2));
+    },
   ],
   [
     "My subjects with none connected and an empty catalog",

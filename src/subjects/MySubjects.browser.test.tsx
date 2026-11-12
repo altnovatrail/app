@@ -323,6 +323,25 @@ describe("My subjects", () => {
     expect((await card("novatrail/gone")).getByRole("button", { name: "Отключить" })).toBeTruthy();
   });
 
+  it("opens the license of a version from its card, connected or not, and has none without one", async () => {
+    await renderSubjects(
+      {
+        connected: [
+          { moduleId: MATH, packageDigest: D1 },
+          { moduleId: "novatrail/gone", packageDigest: "" },
+        ],
+        catalog: [{ moduleId: PHYSICS, packageDigest: D2 }],
+      },
+      "ru",
+    );
+    const physics = (await card("Физика")).getByRole("button", { name: "Лицензия" });
+    expect(physics).toHaveAccessibleDescription("Физика");
+    expect((await card("novatrail/gone")).queryByRole("button", { name: "Лицензия" })).toBeNull();
+    await userEvent.click((await card("Olympiad maths")).getByRole("button", { name: "Лицензия" }));
+    expect(window.location.hash).toBe(`#/license/sha256%3A${"1".repeat(64)}`);
+    window.location.hash = "";
+  });
+
   it("tells a connection api refused, and offers to try again when it does not answer", async () => {
     let down = true;
     await renderSubjects({

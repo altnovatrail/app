@@ -7,7 +7,9 @@
 // above the learner's screens, in place of either, while the account is open (R29); a profile it
 // changes, the other tabs hear of by BroadcastChannel, and a change they tell of comes here. The
 // legal pages show at any step, before signing in too, from the sign-in screen and from the
-// section's first page, and their bar goes back to where they were opened from (R31).
+// section's first page, and their bar goes back to where they were opened from (R31). So does the
+// license of a module's version, opened from a card of My subjects, in the language of the
+// learner's screens while a learner is chosen, and closed home (R32).
 import type { Profile } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import type {
   LegalText as LegalTextOf,
@@ -32,14 +34,24 @@ import type { Api } from "../api/client.ts";
 import type { Failure } from "../api/failure.ts";
 import { ReadFailure } from "../api/ReadFailure.tsx";
 import { failureText } from "../api/words.ts";
-import { ADULTS, HOME, LEGAL, navigate, type Route, useRoute } from "../app/router.ts";
+import {
+  ADULTS,
+  HOME,
+  LEGAL,
+  MODULE_LICENSE,
+  navigate,
+  type Route,
+  useRoute,
+} from "../app/router.ts";
 import { Screen } from "../app/Screen.tsx";
 import { useDeployment, useStorage } from "../boot/Boot.tsx";
 import { Offline, StorageGone } from "../boot/Screens.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
+import { LearnerLanguage } from "../i18n/LearnerLanguage.tsx";
 import { LegalPages } from "../legal/LegalPages.tsx";
 import { LegalText } from "../legal/LegalText.tsx";
 import { accountTexts, readTexts, refsOf } from "../legal/texts.ts";
+import { LicensePages } from "../packages/LicensePage.tsx";
 import { usePackages } from "../packages/PackagesContext.tsx";
 import { useSignIn } from "../signin/SignInContext.tsx";
 import { SignInScreen } from "../signin/SignInScreen.tsx";
@@ -129,6 +141,12 @@ export function AccountGate({ children }: { readonly children: ReactNode }) {
         }}
       />
     );
+  }
+  // The screen it closes to is My subjects while a learner is chosen, in their language.
+  if (route.screen === MODULE_LICENSE.screen) {
+    const pages = <LicensePages route={route} />;
+    if (state.step !== "learning") return pages;
+    return <LearnerLanguage field={state.learner.interfaceLanguage}>{pages}</LearnerLanguage>;
   }
   // Back to the section only while its account is open: once it has gone, home.
   if (route.screen === LEGAL.screen) {

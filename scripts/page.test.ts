@@ -3,10 +3,12 @@
 // Chrome Headless Shell, from the image the toolchain stage takes it from, opens it. A violation of
 // either layer of the CSP fails the test, and so does any request before /deployment.json. The
 // sign-in window goes under the header too, with what Google would answer stubbed, and a request to
-// a host section 3.7 does not name fails it.
+// a host section 3.7 does not name fails it. So do a module's license and its files from api (R32).
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { GetManifestResponseSchema } from "@altnovatrail/contracts/novatrail/api/v1/package_pb.js";
+import { create, toBinary } from "@bufbuild/protobuf";
 import { type Browser, chromium, type Page } from "playwright";
 import { type PreviewServer, preview } from "vite";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -365,6 +367,58 @@ describe("the built page", () => {
     expect(await page.locator("a").count()).toBe(0);
     const own = requests.filter((path) => !path.startsWith("/assets/") && path !== "/");
     expect(own).toEqual(["/deployment.json", "/novatrail.api.v1.LegalService/GetLegalTexts"]);
+    expect(violations).toEqual([]);
+    await page.context().close();
+  }, 60_000);
+
+  it("shows a module's license by its address, under the header, asking only api for it (R32)", async () => {
+    writeFileSync(local, JSON.stringify(file(ORIGIN)));
+    const { page, violations, requests } = await open();
+    const hex = "1".repeat(64);
+    const license = "Apache License\n                           Version 2.0, January 2004\n";
+    const notice = "Olympiad maths\nCopyright 2026 The NovaTrail authors\n";
+    // api is this origin: vite preview has none, so the test answers for it.
+    await page.route(`${ORIGIN}/packages/**`, async (route) => {
+      const path = new URL(route.request().url()).pathname;
+      const body = path.endsWith("/device/LICENSE") ? license : notice;
+      await route.fulfill({ contentType: "text/plain; charset=utf-8", body });
+    });
+    const manifest = new TextEncoder().encode(
+      JSON.stringify({
+        module_format_version: "0.4",
+        id: "novatrail/olympiad-math",
+        version: "1.2.0",
+        title: "Olympiad maths",
+        languages: { explanation: "en" },
+        license: "Apache-2.0",
+      }),
+    );
+    await page.route(`${ORIGIN}/novatrail.api.v1.PackageService/GetManifest?**`, async (route) => {
+      const answer = create(GetManifestResponseSchema, {
+        manifest: { json: manifest, moduleFormatVersion: "0.4" },
+      });
+      await route.fulfill({
+        contentType: "application/proto",
+        body: Buffer.from(toBinary(GetManifestResponseSchema, answer)),
+      });
+    });
+    await page.goto(`${ORIGIN}/#/license/sha256%3A${hex}`);
+    const files = page.locator("pre");
+    await files.nth(1).waitFor();
+    expect(await files.allTextContents()).toEqual([license, notice]);
+    await page.getByText("Olympiad maths", { exact: true }).waitFor();
+    expect(await page.locator("a").count()).toBe(0);
+    const own = requests.filter((path) => !path.startsWith("/assets/") && path !== "/");
+    expect(own.sort()).toEqual(
+      [
+        "/deployment.json",
+        "/novatrail.api.v1.PackageService/GetManifest",
+        `/packages/sha256-${hex}/device/LICENSE`,
+        `/packages/sha256-${hex}/device/NOTICE`,
+      ].sort(),
+    );
+    await page.getByRole("button", { name: "Close" }).click();
+    await page.getByRole("heading", { name: "Sign in" }).waitFor();
     expect(violations).toEqual([]);
     await page.context().close();
   }, 60_000);

@@ -8,7 +8,9 @@
 // account holds the owner's profile of the category `adult` alone; the PIN comes in front of it
 // with E4 (section 3.10). A page of the account or the device — This device, `#/adults/device`,
 // and the own key to come — takes a part of the hash and a button on the first page; a page of one
-// profile — the progress to come — a part of the hash and a button on the profile's page. The
+// profile — its modules, `#/adults/modules`, and the progress to come — a part of the hash and a
+// button on the profile's page. The license of a module's version, `#/adults/license/<digest>`,
+// is a page of the section by the digest in the hash, opened from the profile's modules (R32). The
 // legal pages are not the section's: they show before signing in too, and the first page leads to
 // them (R31).
 import type { Profile } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
@@ -19,8 +21,10 @@ import { ADULTS, HOME, navigate, type Route, redirect } from "../app/router.ts";
 import { Screen } from "../app/Screen.tsx";
 import { LanguageButtons } from "../i18n/LanguageButtons.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
+import { digestOf, ModuleLicense } from "../packages/LicensePage.tsx";
 import type { Device } from "../storage/device.ts";
 import { DevicePage } from "./DevicePage.tsx";
+import { LICENSE_PART, MODULES_PAGE, ModulesPage } from "./ModulesPage.tsx";
 import { inOrder } from "./order.ts";
 import { ProfilePage } from "./ProfilePage.tsx";
 
@@ -113,8 +117,11 @@ export function AdultSection({
   /** Opens the legal pages, whose bar comes back here. */
   readonly onLegal: () => void;
 }) {
+  const { words } = useLanguage();
   const [chosen, setChosen] = useState<string | undefined>(undefined);
   const page = route.parts.join("/");
+  const [first, ...rest] = route.parts;
+  const digest = first === LICENSE_PART ? digestOf(rest) : undefined;
   const profile = profiles.find((each) => each.profileId === chosen);
   let shown: ReactNode;
   if (page === "") {
@@ -137,6 +144,25 @@ export function AdultSection({
         profile={profile}
         onSaved={onSaved}
         onFailed={onFailed}
+      />
+    );
+  } else if (page === MODULES_PAGE.parts.join("/") && profile !== undefined) {
+    shown = <ModulesPage key={profile.profileId} profile={profile} />;
+  } else if (digest !== undefined) {
+    // Back to the modules of the profile chosen; after a reload, with none chosen, the bar alone.
+    shown = (
+      <ModuleLicense
+        key={digest}
+        digest={digest}
+        back={
+          profile === undefined ? undefined : (
+            <div className="nt-buttons">
+              <button type="button" className="nt-secondary" onClick={() => navigate(MODULES_PAGE)}>
+                {words.text("adults.modules-back")}
+              </button>
+            </div>
+          )
+        }
       />
     );
   }

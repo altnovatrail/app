@@ -5,7 +5,8 @@
 // change nothing until Save (WCAG 3.2.2). What another tab changed meanwhile shows in the fields not
 // edited here; what is edited here stays until it is saved — an edit made while the request was on
 // its way among them. A failure that is the session's own goes to it as well (`onFailed`). Below the
-// form, the storage of the profile's works on the server, a consent of its own (R30).
+// form, the storage of the profile's works on the server, a consent of its own (R30), and the way to
+// the profile's modules and their licenses (R32).
 import {
   Mode,
   type Profile,
@@ -17,11 +18,13 @@ import { changes, formOf, type ProfileForm } from "../account/settings.ts";
 import { useApi } from "../api/ApiContext.tsx";
 import { ApiError, type Failure, parseFailure } from "../api/failure.ts";
 import { failureText } from "../api/words.ts";
+import { navigate } from "../app/router.ts";
 import { Screen } from "../app/Screen.tsx";
 import { languageName } from "../i18n/intl.ts";
 import { NAMES } from "../i18n/LanguageButtons.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { LANGUAGES, type Language } from "../i18n/language.ts";
+import { MODULES_PAGE } from "./ModulesPage.tsx";
 import { WorkStorage } from "./WorkStorage.tsx";
 
 /** What the adult changed on the page and has not saved: the pseudonym as typed. */
@@ -245,6 +248,19 @@ export function ProfilePage({
         )}
       </form>
       <WorkStorage profile={profile} onSaved={onSaved} onFailed={onFailed} />
+      <section aria-labelledby={`${id}-modules`}>
+        <h2 id={`${id}-modules`}>{words.text("adults.modules")}</h2>
+        <p id={`${id}-modules-hint`}>{words.text("adults.modules-hint")}</p>
+        <div className="nt-buttons">
+          <button
+            type="button"
+            aria-describedby={`${id}-modules-hint`}
+            onClick={() => navigate(MODULES_PAGE)}
+          >
+            {words.text("adults.modules-open")}
+          </button>
+        </div>
+      </section>
     </Screen>
   );
 }
