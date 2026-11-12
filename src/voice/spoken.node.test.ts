@@ -60,6 +60,16 @@ describe("a module's text in English", () => {
     expect(spokenText("14:25 + 1 hour = 15:25.", "en")).toBe("14:25 + 1 hour equals 15:25.");
     expect(spokenText("pages 3-5", "en")).toBe("pages 3-5");
   });
+
+  it("takes a fraction once from a run of slashes, and goes through a long run of digits at once", () => {
+    expect(spokenText("1/2/3", "en")).toBe("1 half /3");
+    expect(spokenText("Pay 12 , then 5 .", "en")).toBe("Pay 12, then 5.");
+    // A pattern that tried each digit of the run again took 6.5 s here; a linear one, a moment.
+    const digits = "1".repeat(100_000);
+    const started = performance.now();
+    expect(spokenText(`${digits} =`, "en")).toBe(`${digits} equals`);
+    expect(performance.now() - started).toBeLessThan(3_000);
+  });
 });
 
 describe("a text in Russian", () => {
