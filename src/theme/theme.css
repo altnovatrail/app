@@ -189,6 +189,18 @@ button[aria-disabled="true"] {
   color: var(--nt-error);
   font-weight: 700;
 }
+/* "Read aloud" beside a text, and the line of why it cannot read, which wraps below it. */
+.nt-read-aloud {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.5rem 0 1rem;
+}
+.nt-read-aloud > .nt-hint {
+  margin: 0;
+  min-inline-size: 0;
+}
 /* The bar above a learner's screens: who is learning, and the buttons to switch or sign out. */
 .nt-bar {
   display: flex;

@@ -285,10 +285,10 @@ describe("a profile's page", () => {
     expect(screen.getByRole("radio", { name: "On my own" })).toBeChecked();
   });
 
-  it("says that the voicing is kept for later, and to turn it off beside a screen reader", () => {
+  it("says that the voice is the device's, and to turn the voicing off beside a screen reader", () => {
     renderPage(profile(), () => profile());
     expect(screen.getByRole("group", { name: "Voicing" })).toHaveAccessibleDescription(
-      "This version of the app doesn't read aloud yet. The setting is kept for when it does If you listen to a screen reader, turn voicing off: the two would speak at once",
+      "The tutor's words are read by a voice of the device. Each device's voice is chosen on its page This device If you listen to a screen reader, turn voicing off: the two would speak at once",
     );
     expect(screen.getByRole("group", { name: "Default mode" })).toHaveAccessibleDescription(
       "Each task begins in it. The learner can switch it on the task screen",

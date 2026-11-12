@@ -10,7 +10,9 @@
 // the options take no tap, and the canvas stays as it was. Under a lesson's header it is no screen
 // of its own, and its result ends with the lesson's Continue in place of "Try it again" (R23). What
 // it shows it takes from its container, Task.tsx, which also gives the canvas the tutor's marks and
-// "Report a problem" with the tutor's words, for a learner of the category adult (R33).
+// "Report a problem" with the tutor's words, for a learner of the category adult (R33). Above it
+// all, the voicing of the profile switched on and off; above the canvas, "Read aloud" of the
+// statement with its items (R07; T45).
 import type {
   CanvasElement,
   HistoryChangeEvent,
@@ -18,12 +20,15 @@ import type {
   Media,
 } from "@altnovatrail/spec/canvas";
 import type * as open from "@altnovatrail/spec/formatv0/open";
-import { type ReactNode, type Ref, useEffect, useId, useRef, useState } from "react";
+import { type ReactNode, type Ref, useEffect, useId, useMemo, useRef, useState } from "react";
 import type { Failure } from "../api/failure.ts";
 import { failureText } from "../api/words.ts";
 import { Screen } from "../app/Screen.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
-import { notYet, type Verdicts } from "./attempt.ts";
+import { ReadAloud } from "../voice/ReadAloud.tsx";
+import { taskPhrases } from "../voice/texts.ts";
+import { VoicingToggle } from "../voice/VoicingToggle.tsx";
+import { summaryText, type Verdicts } from "./attempt.ts";
 import { Hint, type HintGiven } from "./Hint.tsx";
 import { Items, Verdict } from "./Items.tsx";
 import { Solution } from "./Solution.tsx";
@@ -131,6 +136,7 @@ export function TaskScreen(props: TaskScreenProps) {
     asked.current = confirming;
   }, [confirming]);
   const explanation = manifest?.languages.explanation;
+  const statement = useMemo(() => taskPhrases(task, explanation), [task, explanation]);
   const solved = solution !== undefined;
   const open = !solved && slotsFilled(task, state.choices, filled);
   // What locks Check: the sheet first, then the options.
@@ -139,12 +145,12 @@ export function TaskScreen(props: TaskScreenProps) {
     : !choicesOnly(task) && !writingFilled(task, filled)
       ? "task.check-write"
       : "task.check-locked";
-  const notRight = notYet(verdicts);
-  const summary = solved
-    ? words.text(props.shown === true ? "task.solution-shown" : "task.correct")
-    : verdicts.items.size === 0 || notRight === 0
-      ? ""
-      : words.text("task.summary-not-yet", { count: notRight, total: task.items.length });
+  const summary = summaryText(
+    verdicts,
+    solved ? (props.shown === true ? "shown" : "correct") : undefined,
+    task.items.length,
+    words,
+  );
 
   return (
     <Frame inLesson={props.inLesson === true} title={words.text("task.title")}>
@@ -163,11 +169,13 @@ export function TaskScreen(props: TaskScreenProps) {
           </button>
         </fieldset>
       )}
+      <VoicingToggle language={explanation} />
       <p role="status" className="nt-error">
         {props.notSaved ? words.text("task.not-saved") : ""}
       </p>
       <div className="nt-task">
         <div className="nt-task-work">
+          <ReadAloud phrases={statement} language={explanation} />
           {/* The order of the properties is the order React gives them (section 3.1). */}
           <novatrail-canvas
             ref={props.canvasRef}

@@ -4,8 +4,9 @@
 // to keep the data, and what the browser and Safari may erase by themselves, with the Home Screen
 // for advice. A profile's data and everything are erased here, each asked first (WCAG 3.3.4);
 // everything signs out too. While api keeps no copy of a profile's work, the page says that the
-// work is on this device alone (R113 in spec). The places of what comes later are marked: the
-// essays (T47), the own key (T46) and the voices of the device (T45).
+// work is on this device alone (R113 in spec). After the profiles, the voices of the device and on
+// Android and Linux the leave for voicing (R07; ../voice/DeviceVoices.tsx). The places of what comes
+// later are marked: the essays (T47) and the own key (T46).
 import type { Profile } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { Screen } from "../app/Screen.tsx";
@@ -15,6 +16,7 @@ import { type SiteStorage, siteStorage } from "../storage/browser.ts";
 import type { Device } from "../storage/device.ts";
 import { eraseProfile } from "../storage/erase.ts";
 import { profileUsage, type Usage } from "../storage/profile.ts";
+import { DeviceVoices } from "../voice/DeviceVoices.tsx";
 import { inOrder } from "./order.ts";
 
 /**
@@ -291,8 +293,7 @@ export function DevicePage({
           onErased={reload}
         />
       ))}
-      {/* T45: the voices of this device by language, and the voicing allowed on Android and Linux
-          (section 3.5). */}
+      <DeviceVoices device={device} />
       {estimate === undefined ? null : (
         <>
           <h2>{words.text("device.space")}</h2>

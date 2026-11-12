@@ -18,7 +18,10 @@
 // solution (R82 in spec; R22). A task of a lesson is a segment of its run: under the lesson's header,
 // with no "Try it again", and what api says comes next after it goes up to the player (R23). The
 // tutor's words are kept with the reply that brought them and its rung, so that the adult of the
-// account can report a problem with them as they are shown (R123 in spec; R33).
+// account can report a problem with them as they are shown (R123 in spec; R33). While the voicing
+// is on, what comes after a press is said by itself — the verdict and the outcome of a check in the
+// screen's language, then the tutor's words and a hint in the module's —, and the press itself,
+// Check, Hint or "Explain differently", marks the synthesis at once for WebKit (R07; T45).
 import { Mode as ProfileMode } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import {
   Action,
@@ -58,11 +61,14 @@ import type { Device } from "../storage/device.ts";
 import { addProfile, attemptOver, openProfile, type Profile } from "../storage/profile.ts";
 import { ReportProblem } from "../tutor/ReportProblem.tsx";
 import type { Said } from "../tutor/report.ts";
+import { hintPhrases, type Phrase } from "../voice/texts.ts";
+import { useVoicing } from "../voice/VoicingContext.tsx";
 import {
   markNames,
   marksOf,
   resumed,
   solutionOf,
+  summaryText,
   tappedChoices,
   type Verdicts,
   verdictsOf,
@@ -430,8 +436,34 @@ function OpenTask({
 }: OpenTaskProps) {
   const api = useApi();
   const { views, files } = usePackages();
-  const { words } = useLanguage();
+  const { language, words } = useLanguage();
+  const { auto: say, prime, speech } = useVoicing();
+  // What the screen says by itself is its own: words that come once the learner has left are not
+  // said over the next screen, and leaving the screen stops what it was saying — a segment of a
+  // lesson goes with no change of the route.
+  const mounted = useRef(true);
+  const spoken = useRef<object | undefined>(undefined);
+  const auto = useCallback(
+    (phrases: readonly Phrase[], after?: object) => {
+      if (!mounted.current) return undefined;
+      const token = say(phrases, after);
+      if (token !== undefined) spoken.current = token;
+      return token;
+    },
+    [say],
+  );
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      if (spoken.current !== undefined && speech.speaking() === spoken.current) speech.stop();
+    };
+  }, [speech]);
   const { task, profile, steps } = opened;
+  const explanation = opened.manifest?.languages.explanation;
+  // What the voicing said of the last check — its verdict — which the tutor's words of the same
+  // check follow rather than cut short.
+  const verdictSaid = useRef<object | undefined>(undefined);
   const element = useRef<CanvasElement>(null);
   const [state, setState] = useState(opened.state);
   const [verdicts, setVerdicts] = useState(opened.verdicts);
@@ -600,6 +632,7 @@ function OpenTask({
               // The fallback text of the rung comes with the outcome "not admitted": words all the same.
               setSaid({ text: answer.words, reply: TutorReply.RUNG, rung: answer.rung });
               setWordsCame(true);
+              auto([{ text: answer.words, language: explanation }], verdictSaid.current);
             } else if (read !== undefined) setWordsFailure(outcomeText(read, words));
             if (of.work !== undefined && answer.marks.length > 0) {
               setMarks(
@@ -635,7 +668,7 @@ function OpenTask({
           if (asked === checks.current) setWordsWaiting(false);
         });
     },
-    [api, profileId, attemptId, task, words, markName, onClosed],
+    [api, profileId, attemptId, task, words, markName, onClosed, auto, explanation],
   );
 
   /** The words after a correct answer, with its work: once they came or their request ended, it goes. */
@@ -654,6 +687,7 @@ function OpenTask({
             if (answer.words !== undefined && answer.words !== "") {
               setSaid({ text: answer.words, reply: TutorReply.CORRECT_ANSWER, rung: 0 });
               setWordsCame(true);
+              auto([{ text: answer.words, language: explanation }], verdictSaid.current);
             }
           },
           () => {},
@@ -662,7 +696,7 @@ function OpenTask({
           if (of.contract !== undefined) void profile?.wordsCame(attemptId).catch(() => {});
         });
     },
-    [api, profileId, attemptId, profile],
+    [api, profileId, attemptId, profile, auto, explanation],
   );
 
   /** The submission of what the sheet and the options hold now, or the one sent before, again. */
@@ -696,6 +730,9 @@ function OpenTask({
   }, [handwriting, profile, attemptId]);
 
   const check = useCallback(() => {
+    // Within the press: the words that come after it may be said (WebKit; section 3.5).
+    prime();
+    verdictSaid.current = undefined;
     setPending(true);
     setFailure(undefined);
     pause.stop();
@@ -719,9 +756,22 @@ function OpenTask({
           ...(of.contract === undefined ? {} : { work: of.contract, ...aiFields() }),
         });
         sent.current = undefined;
-        setVerdicts(verdictsOf(answer.items, task));
+        const verdicts = verdictsOf(answer.items, task);
+        setVerdicts(verdicts);
         const read = outcomeOf(answer.outcome);
         if (read !== undefined) setOutcome(outcomeText(read, words));
+        // The lines of the panel that came with the check, in the language of the screen.
+        verdictSaid.current = auto(
+          [
+            summaryText(
+              verdicts,
+              answer.solved === undefined ? undefined : "correct",
+              task.items.length,
+              words,
+            ),
+            read === undefined ? "" : outcomeText(read, words),
+          ].map((text) => ({ text, language })),
+        );
         if (answer.solved === undefined) {
           save({ ...latest.current.state, wrongAnswers: answer.wrongAnswers });
           if (answer.wrongAnswers > before) {
@@ -774,10 +824,14 @@ function OpenTask({
     onEnded,
     onClosed,
     comesNext,
+    prime,
+    auto,
+    language,
   ]);
 
   /** "Hint": api gives the task's techniques and question, or the words of the rung again. */
   const askHint = useCallback(() => {
+    prime();
     setFailure(undefined);
     setPending(true);
     void api.attempt
@@ -786,10 +840,10 @@ function OpenTask({
         (answer) => {
           if (over.current) return;
           if (answer.hint.case === "techniques") {
-            setHint({
-              techniques: answer.hint.value.techniqueIds,
-              ...(answer.leadingQuestion === "" ? {} : { question: answer.leadingQuestion }),
-            });
+            const techniques = answer.hint.value.techniqueIds;
+            const question = answer.leadingQuestion === "" ? undefined : answer.leadingQuestion;
+            setHint({ techniques, ...(question === undefined ? {} : { question }) });
+            auto(hintPhrases(task, techniques, question, opened.catalog, explanation));
           } else if (answer.hint.case === "rung") {
             const { words: text, rung } = answer.hint.value;
             // The words shown again stay the reply they came by — "explain differently" too — and
@@ -798,6 +852,7 @@ function OpenTask({
               before?.text === text ? before : { text, reply: TutorReply.RUNG, rung },
             );
             setWordsCame(true);
+            auto([{ text, language: explanation }]);
           }
         },
         (reason: unknown) => {
@@ -811,10 +866,11 @@ function OpenTask({
         },
       )
       .finally(() => setPending(false));
-  }, [api, profileId, attemptId, onClosed]);
+  }, [api, profileId, attemptId, onClosed, prime, auto, task, opened.catalog, explanation]);
 
   /** "Explain differently": the same rung in other words, one call of AI on a rung. */
   const explain = useCallback(() => {
+    prime();
     explainKey.current ??= idempotencyKey();
     setExplaining(true);
     setExplainNote(undefined);
@@ -847,6 +903,7 @@ function OpenTask({
               rung: before?.rung ?? Math.min(Math.max(wrongAnswers, 1), 3),
             }));
             setWordsCame(true);
+            auto([{ text: answer.words, language: explanation }]);
           }
         },
         (reason: unknown) => {
@@ -871,7 +928,7 @@ function OpenTask({
         },
       )
       .finally(() => setExplaining(false));
-  }, [api, profileId, attemptId, words, onClosed]);
+  }, [api, profileId, attemptId, words, onClosed, prime, auto, explanation]);
 
   /** "Show the solution": the attempt ends with the solution shown (R82 in spec). */
   const showSolution = useCallback(() => {

@@ -6,11 +6,13 @@
 // R22). While the words of a rung or "Explain differently" are asked, the block says the tutor is
 // writing: they take seconds to come — the words of a rung ≈ 10 s (section 3.3). The block is no
 // live region: the whole text would be read out at once, so a line of the screen tells that the
-// words came, and the learner reads them here. Below its heading it says, always, that the tutor is
+// words came, and the learner reads them here; "Read aloud" below them says them again by the
+// device's voice (R07; ../voice/ReadAloud.tsx). Below its heading it says, always, that the tutor is
 // an AI, not a person, and below the words stands "Report a problem" for a learner of the category
 // adult, in E3 the adult of the account (R123 in spec; R33).
 import { type ReactNode, useId } from "react";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
+import { ReadAloud } from "../voice/ReadAloud.tsx";
 
 export interface TutorWordsProps {
   /** The tutor's words; none while none came. */
@@ -49,7 +51,10 @@ export function TutorWords({
       <h2 id={id}>{words.text("task.tutor")}</h2>
       <p className="nt-hint">{words.text("tutor.ai")}</p>
       {text === undefined ? null : (
-        <p {...(language === undefined ? {} : { lang: language })}>{text}</p>
+        <>
+          <p {...(language === undefined ? {} : { lang: language })}>{text}</p>
+          <ReadAloud phrases={[{ text, language }]} language={language} />
+        </>
       )}
       {waiting || explaining ? <p className="nt-hint">{words.text("task.words-waiting")}</p> : null}
       {failure === undefined ? null : <p className="nt-hint">{failure}</p>}

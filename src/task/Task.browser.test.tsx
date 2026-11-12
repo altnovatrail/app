@@ -5,7 +5,14 @@
 // in the profile's database, and a write that did not land — with api on connect-es's router and
 // the storage on the device's memory.
 import "@altnovatrail/canvas";
-import { Mode } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
+import {
+  AccountService,
+  Mode,
+  type Profile,
+  ProfileSchema,
+  type SetVoicingRequest,
+  VoicingSpeed,
+} from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import {
   Action,
   AttemptService,
@@ -43,6 +50,7 @@ import { create, type MessageInitShape } from "@bufbuild/protobuf";
 import { timestampFromDate } from "@bufbuild/protobuf/wkt";
 import { Code, ConnectError, type ConnectRouter, createRouterTransport } from "@connectrpc/connect";
 import { render, screen, within } from "@testing-library/react";
+import type { ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 import { ApiProvider } from "../api/ApiContext.tsx";
@@ -57,6 +65,8 @@ import { addProfile } from "../storage/profile.ts";
 import { setAccount } from "../storage/registry.ts";
 import { memoryDevice } from "../test/device.ts";
 import { inLanguage } from "../test/language.tsx";
+import { fakeSpeech, voice } from "../test/speech.ts";
+import { SpeechProvider, VoicingProvider } from "../voice/VoicingContext.tsx";
 import { Task } from "./Task.tsx";
 
 const D1 = `sha256:${"1".repeat(64)}`;
@@ -175,6 +185,12 @@ interface Setup {
   report?: (request: ReportProblemRequest, n: number) => void | Promise<void>;
   /** The answer to a report in place of the one api keeps by its key. */
   reportAnswer?: MessageInitShape<typeof ReportProblemResponseSchema>;
+  /**
+   * The screen among a learner's screens, with this synthesis and the profile's voicing on or
+   * off; else outside them, the voicing off. SetVoicing fails when `voicingFails` says.
+   */
+  voicing?: { speech: ReturnType<typeof fakeSpeech>; on: boolean };
+  voicingFails?: boolean;
 }
 
 /** When the operator reviews a report by, in the tests: 3 days after 2026-11-12, at noon UTC. */
@@ -221,7 +237,22 @@ async function renderTask(setup: Setup = {}) {
   const reportRequests: ReportProblemRequest[] = [];
   const reports = new Map<string, ReportProblemRequest>();
   let wrong = setup.wrongAnswers ?? 0;
+  const voicings: SetVoicingRequest[] = [];
+  const saved: Profile[] = [];
+  const failed: unknown[] = [];
   const routes = (router: ConnectRouter) => {
+    router.service(AccountService, {
+      setVoicing(request) {
+        voicings.push(request);
+        if (setup.voicingFails === true) throw new ConnectError("down", Code.Unavailable);
+        return {
+          profile: {
+            profileId: request.profileId,
+            presentationStyle: { voicing: request.voicing },
+          },
+        };
+      },
+    });
     router.service(LearningService, {
       getOpenAttempt(request) {
         asked.push(`open ${request.attemptId}`);
@@ -369,18 +400,41 @@ async function renderTask(setup: Setup = {}) {
     }),
   };
   const attempts: (string | undefined)[] = [];
+  const voiced = (screen: ReactNode) =>
+    setup.voicing === undefined ? (
+      screen
+    ) : (
+      <SpeechProvider value={setup.voicing.speech.speech}>
+        <VoicingProvider
+          profile={create(ProfileSchema, {
+            profileId: "p1",
+            presentationStyle: {
+              voicing: { enabled: setup.voicing.on, speed: VoicingSpeed.NORMAL },
+            },
+          })}
+          device={device}
+          place="task"
+          onSaved={(profile) => saved.push(profile)}
+          onFailed={(failure) => failed.push(failure)}
+        >
+          {screen}
+        </VoicingProvider>
+      </SpeechProvider>
+    );
   const rendered = render(
     inLanguage(
       <ApiProvider value={api}>
         <PackagesProvider value={packages}>
-          <Task
-            profileId="p1"
-            attemptId="a1"
-            defaultMode={setup.mode ?? Mode.BY_STEPS}
-            device={device}
-            adult={setup.adult ?? false}
-            onAttempt={(id) => attempts.push(id)}
-          />
+          {voiced(
+            <Task
+              profileId="p1"
+              attemptId="a1"
+              defaultMode={setup.mode ?? Mode.BY_STEPS}
+              device={device}
+              adult={setup.adult ?? false}
+              onAttempt={(id) => attempts.push(id)}
+            />,
+          )}
         </PackagesProvider>
       </ApiProvider>,
     ),
@@ -399,6 +453,9 @@ async function renderTask(setup: Setup = {}) {
     reports,
     check,
     attempts,
+    voicings,
+    saved,
+    failed,
     unmount: rendered.unmount,
   };
 }
@@ -1856,5 +1913,144 @@ describe("Report a problem with the tutor's words (R33)", () => {
     await send();
     expect(await screen.findByText("Thank you: the report is sent")).toBeVisible();
     expect(reportRequests[0]?.kind).toBe(ProblemKind.OTHER);
+  });
+});
+
+describe("the task screen's voicing", () => {
+  const SAMANTHA = voice("Samantha", "en-US", { isDefault: true });
+
+  it("says the verdict and then the tutor's words by itself while the voicing is on", async () => {
+    const speech = fakeSpeech([SAMANTHA]);
+    await renderTask({ mode: Mode.SELF, voicing: { speech, on: true } });
+    await userEvent.click(await screen.findByRole("radio", { name: "4" }));
+    await userEvent.click(screen.getByRole("radio", { name: "No" }));
+    await userEvent.click(check());
+    await screen.findByText("Not right yet: 2 items of 2");
+    await vi.waitFor(() =>
+      expect(speech.texts()).toEqual([
+        "Not right yet: 2 items of 2",
+        "Count the gaps between the rungs.",
+      ]),
+    );
+    // The press marked an empty utterance first, for WebKit; the words went on after the verdict.
+    expect(speech.said()[0]?.text).toBe("");
+    expect(speech.asked.filter((each) => "cancel" in each)).toHaveLength(2);
+    expect(speech.said().every((each) => each.text === "" || each.voice === SAMANTHA)).toBe(true);
+  });
+
+  it("says a hint by itself, in the module's language, while the voicing is on", async () => {
+    const speech = fakeSpeech([SAMANTHA]);
+    await renderTask({ mode: Mode.SELF, voicing: { speech, on: true } });
+    await screen.findByRole("radio", { name: "4" });
+    await userEvent.click(screen.getByRole("button", { name: "Hint" }));
+    await screen.findByRole("region", { name: "Hint" });
+    await vi.waitFor(() =>
+      expect(speech.texts()).toEqual([
+        "Two apples",
+        "Three pears",
+        "How many fruits",
+        "Draw the problem",
+        "A picture helps.",
+        "What if there were only two pears?",
+      ]),
+    );
+    expect(speech.said().at(-1)?.lang).toBe("en");
+  });
+
+  it("says nothing by itself while the voicing is off, and reads the task on a press", async () => {
+    const speech = fakeSpeech([SAMANTHA]);
+    await renderTask({ mode: Mode.SELF, voicing: { speech, on: false } });
+    await userEvent.click(await screen.findByRole("button", { name: "Read aloud" }));
+    expect(speech.texts()).toEqual([
+      "Two apples and three pears are in a bowl.",
+      "How many fruits?",
+      "4",
+      "5",
+      "More pears?",
+      "Yes",
+      "No",
+    ]);
+    // A second press while it reads stops it.
+    await userEvent.click(screen.getByRole("button", { name: "Read aloud" }));
+    expect(speech.speech.speaking()).toBeUndefined();
+    expect(speech.asked.at(-1)).toEqual({ cancel: true });
+    const before = speech.asked.length;
+    await userEvent.click(screen.getByRole("radio", { name: "4" }));
+    await userEvent.click(screen.getByRole("radio", { name: "No" }));
+    await userEvent.click(check());
+    await screen.findByText("Not right yet: 2 items of 2");
+    await screen.findByText("Count the gaps between the rungs.");
+    expect(speech.asked).toHaveLength(before);
+  });
+
+  it("turns the voicing on by SetVoicing, and the session takes the profile it gives", async () => {
+    const speech = fakeSpeech([SAMANTHA]);
+    const { voicings, saved } = await renderTask({
+      mode: Mode.SELF,
+      voicing: { speech, on: false },
+    });
+    const toggle = await screen.findByRole("button", { name: "Voicing" });
+    expect(toggle).toHaveAttribute("aria-pressed", "false");
+    await userEvent.click(toggle);
+    await vi.waitFor(() => expect(saved).toHaveLength(1));
+    expect(voicings.map(({ profileId, voicing }) => [profileId, voicing?.enabled])).toEqual([
+      ["p1", true],
+    ]);
+    expect(saved[0]?.presentationStyle?.voicing?.enabled).toBe(true);
+  });
+
+  it("turns the voicing off, stops speech, and says when SetVoicing did not go through", async () => {
+    const speech = fakeSpeech([SAMANTHA]);
+    const { voicings, failed } = await renderTask({
+      mode: Mode.SELF,
+      voicing: { speech, on: true },
+      voicingFails: true,
+    });
+    const toggle = await screen.findByRole("button", { name: "Voicing" });
+    expect(toggle).toHaveAttribute("aria-pressed", "true");
+    await userEvent.click(toggle);
+    expect(await screen.findByRole("alert")).toBeVisible();
+    expect(voicings[0]?.voicing?.enabled).toBe(false);
+    expect(failed).toHaveLength(1);
+    expect(speech.asked).toEqual([{ cancel: true }]);
+  });
+
+  it("says why it is silent while on, on a device with no voice for the module's language", async () => {
+    const speech = fakeSpeech([voice("Milena", "ru-RU")]);
+    await renderTask({ mode: Mode.SELF, voicing: { speech, on: true } });
+    await screen.findByRole("button", { name: "Voicing" });
+    expect(screen.getAllByText("This device has no voice for English").length).toBeGreaterThan(0);
+    const read = screen.getByRole("button", { name: "Read aloud" });
+    expect(read).toHaveAttribute("aria-disabled", "true");
+    expect(read).toHaveAccessibleDescription("This device has no voice for English");
+    // Not active, though not disabled: Playwright would wait for it to be enabled.
+    await userEvent.click(read, { force: true });
+    // The text stays on the screen: nothing is said, and the press is no failure.
+    expect(speech.texts()).toEqual([]);
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+});
+
+describe("the task screen's voicing, once the screen is gone", () => {
+  it("stops what it said, and says no words that come after the learner left", async () => {
+    const speech = fakeSpeech([voice("Samantha", "en-US", { isDefault: true })]);
+    let answer: (words: string) => void = () => {};
+    const { unmount } = await renderTask({
+      mode: Mode.SELF,
+      voicing: { speech, on: true },
+      rung: (request) =>
+        new Promise((resolve) => {
+          answer = (words) => resolve({ rung: request.wrongAnswers ?? 1, words });
+        }),
+    });
+    await userEvent.click(await screen.findByRole("radio", { name: "4" }));
+    await userEvent.click(screen.getByRole("radio", { name: "No" }));
+    await userEvent.click(check());
+    await vi.waitFor(() => expect(speech.texts()).toEqual(["Not right yet: 2 items of 2"]));
+    unmount();
+    expect(speech.asked.at(-1)).toEqual({ cancel: true });
+    answer("Count the gaps between the rungs.");
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(speech.texts()).toEqual(["Not right yet: 2 items of 2"]);
   });
 });

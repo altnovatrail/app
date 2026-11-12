@@ -234,7 +234,7 @@ export function ProfilePage({
             </Option>
           </fieldset>
           <div id={`${id}-voicing-hint`}>
-            <p className="nt-hint">{words.text("adults.voicing-later")}</p>
+            <p className="nt-hint">{words.text("adults.voicing-device")}</p>
             <p className="nt-hint">{words.text("adults.voicing-reader")}</p>
           </div>
         </fieldset>

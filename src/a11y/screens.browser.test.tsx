@@ -78,8 +78,10 @@ import { axeViolations, overflows, smallTargets } from "../test/a11y.ts";
 import { memoryDevice } from "../test/device.ts";
 import { inLanguage } from "../test/language.tsx";
 import { PSEUDO } from "../test/pseudo.ts";
+import { fakeSpeech } from "../test/speech.ts";
 import { ReportProblem } from "../tutor/ReportProblem.tsx";
 import { TutorPages } from "../tutor/TutorPage.tsx";
+import { SpeechProvider, VoicingProvider } from "../voice/VoicingContext.tsx";
 
 const OWNER = create(ProfileSchema, {
   profileId: "p1",
@@ -582,7 +584,15 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
   [
     "My subjects, below the bar, with a card of each kind",
     () => (
-      <LearnerProvider value={{ learner: OWNER, switchLearner: () => {}, signOut: () => {} }}>
+      <LearnerProvider
+        value={{
+          learner: OWNER,
+          switchLearner: () => {},
+          signOut: () => {},
+          onSaved: () => {},
+          onFailed: () => {},
+        }}
+      >
         <LearnerBar />
         <SubjectsScreen
           connected={[
@@ -617,6 +627,27 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
     ),
   ],
   ["task screen by steps, with its chips", () => taskScreen()],
+  [
+    "task screen with the voicing on, on a device with no voice for the module's language",
+    () => (
+      <ApiProvider value={{} as Api}>
+        <SpeechProvider value={fakeSpeech([]).speech}>
+          <VoicingProvider
+            profile={create(ProfileSchema, {
+              profileId: "p1",
+              presentationStyle: { voicing: { enabled: true } },
+            })}
+            device={memoryDevice().device}
+            place="task"
+            onSaved={() => {}}
+            onFailed={() => {}}
+          >
+            {taskScreen({ tutorWords: "How many gaps are there?", wordsCame: true })}
+          </VoicingProvider>
+        </SpeechProvider>
+      </ApiProvider>
+    ),
+  ],
   [
     "task screen at the plan, with a technique, and the work not saved",
     () =>

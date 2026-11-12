@@ -40,6 +40,9 @@ export interface Value {
 export const TABLE: Readonly<Record<string, Value>> = {
   // "Continue" of the lesson player, to the next link (the 2026-11-10 amendment to R06).
   continue: { base: "arrow-circle-right", filled: false, mirrored: true },
+  // "Read aloud" by the voice of the device beside a text (R36 in docs/decisions.md): a
+  // speaker, no fill, as it is in a line that runs right to left — a speaker is no direction.
+  "read-aloud": { base: "volume-up", filled: false, mirrored: false },
 };
 
 /** An icon as the app draws it: its view box, and the paths it fills in the text's colour. */

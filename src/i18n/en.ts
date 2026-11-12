@@ -455,9 +455,9 @@ export const en = {
   "adults.speed": "Speed of voicing",
   "adults.speed-normal": "Normal",
   "adults.speed-slow": "Slow",
-  /** Until the voicing comes (T45): the setting is kept, and nothing is read aloud yet. */
-  "adults.voicing-later":
-    "This version of the app doesn't read aloud yet. The setting is kept for when it does",
+  /** The voice is the device's: chosen on the page This device of each device (R07). */
+  "adults.voicing-device":
+    "The tutor's words are read by a voice of the device. Each device's voice is chosen on its page This device",
   /** Voicing and a screen reader would speak at once (section 3.9). */
   "adults.voicing-reader":
     "If you listen to a screen reader, turn voicing off: the two would speak at once",
@@ -618,6 +618,34 @@ export const en = {
   "device.erase-all-confirm":
     "Everything the app keeps on this device is lost: the work of every profile and the language of the device. The app signs out, and nothing changes on the server",
   "device.erase-all-failed": "The sign-out didn't go through, so nothing was erased. Try again",
+  /** The speaker button beside a text: reads it by the device's voice (section 3.5), not "listen". */
+  "voice.read": "Read aloud",
+  /** Beside a speaker button that cannot read: {language} is the name of the text's language. */
+  "voice.no-voice": "This device has no voice for {language}",
+  /** Beside a speaker button on Android and Linux before an adult's leave on this device (R07). */
+  "voice.ask-adult": "On this device, an adult turns voicing on first",
+  /** The task screen's switch of the voicing of the tutor's words: pressed while it is on. */
+  "voice.toggle": "Voicing",
+  /** The page This device, in a browser with no speech synthesis. */
+  "voice.unsupported": "This browser doesn't read text aloud. The text stays on the screen",
+  /** On Android and Linux: why the voicing waits for the adult (R07). */
+  "voice.leave-why":
+    "On this device the system chooses the voice, and the browser can't tell whether it speaks on the device or sends the text over the network. So the app reads aloud here only once you turn it on",
+  "voice.not-allowed": "Voicing is off on this device",
+  "voice.allowed": "Voicing is on on this device",
+  "voice.disallowed": "Voicing is off on this device now",
+  "voice.allow": "Turn voicing on on this device",
+  "voice.disallow": "Turn voicing off on this device",
+  /** Above the voices of each language. */
+  "voice.languages": "Each language is read by a voice of this device. You can choose it",
+  /** A language this device has no voice for: the text stays, and nothing reads it. */
+  "voice.none": "This device has no voice for this language. Its texts stay on the screen",
+  /** How to add a voice, in words with no link (privacy 1, 7 spec; section 3.5). */
+  "voice.add":
+    "A voice is added in the system's settings: in Windows, in the speech settings; on a Mac, the voice is downloaded from Apple; on Android, as the voice data of the language",
+  /** Says a sentence by the voice chosen. */
+  "voice.sample": "Read a sample aloud",
+  "voice.not-kept": "The choice wasn't kept on this device. Try again",
   /**
    * In the block Tutor, below its heading, wherever the tutor's words stand: the disclosure that
    * the tutor is an AI (R123 spec). Plain, for a learner of any age.

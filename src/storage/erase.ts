@@ -16,6 +16,7 @@ import {
 } from "./registry.ts";
 import { CACHE, FIREBASE_AUTH, FIREBASE_HEARTBEAT, profileDatabase, REGISTRY } from "./schema.ts";
 import { eraseSettings } from "./settings.ts";
+import { VOICING } from "./voicing.ts";
 
 /** Every database of the account the registry names. */
 function accountDatabases(registry: Registry): string[] {
@@ -63,7 +64,8 @@ export async function eraseDevice(device: Device): Promise<boolean> {
 
 /**
  * An account signed in: if the registry names another, what is left of it goes before anything
- * opens (R04), and the registry names this one. The session is the new account's and stays.
+ * opens (R04), and the registry names this one. The session is the new account's and stays. The
+ * voicing of the device goes too: the new account's adult decides anew (R36).
  */
 export async function accountSeen(device: Device, accountId: string): Promise<boolean> {
   const registry = await readRegistry(device);
@@ -71,6 +73,7 @@ export async function accountSeen(device: Device, accountId: string): Promise<bo
   await changeRegistry(device, async (tx) => {
     await tx.put("registry", "account", { id: accountId });
     await tx.delete("registry", "ending");
+    await tx.delete("registry", VOICING);
   });
   if (registry?.account === undefined) return true;
   return eraseDatabases(device, accountDatabases(registry));
@@ -78,12 +81,16 @@ export async function accountSeen(device: Device, accountId: string): Promise<bo
 
 /**
  * `CAUSE_NO_ACCESS` while the registry names an account: another account signed in, with no
- * account of NovaTrail, and what is left of the one named goes (the 2026-11-10 amendment to R04).
+ * account of NovaTrail, and what is left of the one named goes (the 2026-11-10 amendment to R04),
+ * the voicing of the device with it (R36).
  */
 export async function noAccess(device: Device): Promise<boolean> {
   const registry = await readRegistry(device);
   if (registry?.account === undefined) return true;
-  await changeRegistry(device, (tx) => tx.delete("registry", "account"));
+  await changeRegistry(device, async (tx) => {
+    await tx.delete("registry", "account");
+    await tx.delete("registry", VOICING);
+  });
   return eraseDatabases(device, accountDatabases(registry));
 }
 

@@ -69,6 +69,10 @@ export interface Learner {
   readonly learner: Profile;
   readonly switchLearner: () => void;
   readonly signOut: () => void;
+  /** api changed the profile on a learner's screen — its voicing (T45): the session takes it. */
+  readonly onSaved: (profile: Profile) => void;
+  /** A request of a learner's screen about the profile did not go through. */
+  readonly onFailed: (failure: Failure) => void;
 }
 
 const LearnerContext = createContext<Learner | undefined>(undefined);
@@ -123,6 +127,16 @@ export function AccountGate({ children }: { readonly children: ReactNode }) {
     };
   }, [session]);
   const open = state.step === "choose" || state.step === "learning";
+  // A profile api changed — in the section or on a learner's screen —: the session's, and the other
+  // tabs'.
+  const onSaved = useCallback(
+    (changed: Profile) => {
+      session.profileChanged(changed);
+      channel.current?.postMessage(profileMessage(changed));
+    },
+    [session],
+  );
+  const onFailed = useCallback((failure: Failure) => session.profileFailed(failure), [session]);
   // The sign-out screen is for the account open when it was asked: once that has gone some other
   // way — another tab signed out, the account is gone — the next account does not open on it.
   useEffect(() => {
@@ -162,11 +176,8 @@ export function AccountGate({ children }: { readonly children: ReactNode }) {
         route={route}
         device={device}
         profiles={state.account.profiles}
-        onSaved={(changed) => {
-          session.profileChanged(changed);
-          channel.current?.postMessage(profileMessage(changed));
-        }}
-        onFailed={(failure) => session.profileFailed(failure)}
+        onSaved={onSaved}
+        onFailed={onFailed}
         onEraseAll={async () => {
           const done = await session.signOut(true);
           if (done === "failed") return "failed";
@@ -241,6 +252,8 @@ export function AccountGate({ children }: { readonly children: ReactNode }) {
             learner: state.learner,
             switchLearner: () => session.switchLearner(),
             signOut: () => setLeaving(true),
+            onSaved,
+            onFailed,
           }}
         >
           {children}

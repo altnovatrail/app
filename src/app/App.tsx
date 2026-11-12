@@ -6,9 +6,11 @@
 // attempt open and the lesson runs open are the learner's in memory, from what GetAccount named.
 // The bar and the screens are in the language of the learner's profile, else the device's; the
 // buttons of the device's language are on the sign-in screen and in the section for adults
-// (section 3.8). With no learner — a screen's own test — the home is a bare screen.
+// (section 3.8). The voicing of the screens is the learner's profile's and this device's, and speech
+// stops when the screen changes (T45; R07). With no learner — a screen's own test — the home is a
+// bare screen.
 import type { Profile } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
-import { useLearner } from "../account/AccountGate.tsx";
+import { type Learner, useLearner } from "../account/AccountGate.tsx";
 import { useStorage } from "../boot/Boot.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { LearnerLanguage } from "../i18n/LearnerLanguage.tsx";
@@ -18,6 +20,7 @@ import { SkillMapRoute } from "../skills/SkillMapScreen.tsx";
 import { MySubjects } from "../subjects/MySubjects.tsx";
 import { AttemptProvider } from "../task/AttemptContext.tsx";
 import { TaskRoute } from "../task/TaskRoute.tsx";
+import { VoicingProvider } from "../voice/VoicingContext.tsx";
 import type { Route } from "./router.ts";
 import { ADULTS, navigate, SKILL_MAP, useRoute } from "./router.ts";
 import { Screen } from "./Screen.tsx";
@@ -46,10 +49,35 @@ export function LearnerBar() {
   );
 }
 
-/** The screens of a learner chosen, by the route. */
-function LearnerScreens({ route, learner }: { readonly route: Route; readonly learner: Profile }) {
+/** The screens of a learner chosen, by the route, with the voicing of the learner's profile. */
+function LearnerScreens({ route, chosen }: { readonly route: Route; readonly chosen: Learner }) {
   const { device } = useStorage();
+  const { learner } = chosen;
   const adult = learner.ageCategory === "adult";
+  return (
+    <VoicingProvider
+      profile={learner}
+      device={device}
+      place={[route.screen, ...route.parts].join("/")}
+      onSaved={chosen.onSaved}
+      onFailed={chosen.onFailed}
+    >
+      <LearnerRoutes route={route} learner={learner} adult={adult} />
+    </VoicingProvider>
+  );
+}
+
+/** The screen of the route, for the learner chosen. */
+function LearnerRoutes({
+  route,
+  learner,
+  adult,
+}: {
+  readonly route: Route;
+  readonly learner: Profile;
+  readonly adult: boolean;
+}) {
+  const { device } = useStorage();
   return (
     <AttemptProvider learner={learner}>
       <LessonProvider learner={learner}>
@@ -90,7 +118,7 @@ export function App() {
     <LearnerLanguage field={chosen.learner.interfaceLanguage}>
       <LearnerBar />
       <div data-screen={route.screen}>
-        <LearnerScreens key={chosen.learner.profileId} route={route} learner={chosen.learner} />
+        <LearnerScreens key={chosen.learner.profileId} route={route} chosen={chosen} />
       </div>
     </LearnerLanguage>
   );
