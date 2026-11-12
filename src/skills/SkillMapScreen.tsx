@@ -12,7 +12,7 @@
 // of spec's RUN.md); once one is connected, the map's state is read again in place.
 import { Action } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
 import type { EngineChoice } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
-import { type ReactNode, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { useApi, useRequest } from "../api/ApiContext.tsx";
 import type { Api } from "../api/client.ts";
 import { type Failure, parseFailure } from "../api/failure.ts";
@@ -21,19 +21,17 @@ import { ReadFailure } from "../api/ReadFailure.tsx";
 import { failureText, outcomeText } from "../api/words.ts";
 import { HOME, navigate, type Route, redirect, SKILL_MAP } from "../app/router.ts";
 import { Screen } from "../app/Screen.tsx";
-import { collator } from "../i18n/intl.ts";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
-import { Phrase } from "../i18n/Phrase.tsx";
 import { givenOf } from "../next/choice.ts";
 import { useEngine } from "../next/useEngine.ts";
 import { usePackages } from "../packages/PackagesContext.tsx";
 import type { Device } from "../storage/device.ts";
 import { CardHeading } from "../subjects/CardHeading.tsx";
-import { byTitle, cardsOf, type ModuleCard } from "../subjects/modules.ts";
-import { useSequential } from "../subjects/useSequential.ts";
+import { ModuleCardItem, ModuleCardList, useConnectedCards } from "../subjects/ModuleCards.tsx";
+import { cardsOf } from "../subjects/modules.ts";
 import { useAttempt } from "../task/AttemptContext.tsx";
 import { type ModuleMap, offeredModules, readModuleMap } from "./map.ts";
-import { ModuleSkillMap } from "./SkillMap.tsx";
+import { MapHeading, ModuleSkillMap, mapTitle } from "./SkillMap.tsx";
 
 /** The map of a module, by its ID. */
 export function moduleMapRoute(moduleId: string): Route {
@@ -57,83 +55,10 @@ function Ways({ all }: { readonly all: boolean }) {
   );
 }
 
-/** A card of a module, with its button described by its title; a module without a version has none. */
-function Card({
-  card,
-  action,
-}: {
-  readonly card: ModuleCard;
-  readonly action?: {
-    readonly text: string;
-    readonly pending?: boolean;
-    readonly onPress: () => void;
-  };
-}) {
-  const id = useId();
-  return (
-    <li className="nt-card">
-      <article aria-labelledby={id}>
-        <CardHeading card={card} id={id} />
-        {action === undefined ? null : (
-          <div className="nt-buttons">
-            {/* Not disabled while a press is under way: a disabled button would drop the focus. */}
-            <button
-              type="button"
-              aria-describedby={id}
-              aria-disabled={action.pending === true}
-              data-module={card.moduleId}
-              onClick={() => {
-                if (action.pending !== true) action.onPress();
-              }}
-            >
-              {action.text}
-            </button>
-          </div>
-        )}
-      </article>
-    </li>
-  );
-}
-
-/** The cards of modules in the order of the screen's language, and a retry when names are missing. */
-function Cards({
-  cards,
-  onRetry,
-  render,
-}: {
-  readonly cards: readonly ModuleCard[];
-  readonly onRetry: () => void;
-  readonly render: (card: ModuleCard) => ReactNode;
-}) {
-  const { language, words } = useLanguage();
-  const { views } = usePackages();
-  const compare = useMemo(() => collator(language).compare, [language]);
-  const sorted = byTitle(useSequential(views, cards) ?? cards, compare);
-  return (
-    <>
-      {sorted.some((card) => card.unnamed === true) ? (
-        <div role="status">
-          <p>{words.text("subjects.unnamed")}</p>
-          <button type="button" onClick={onRetry}>
-            {words.text("boot.retry")}
-          </button>
-        </div>
-      ) : null}
-      <ul className="nt-cards">{sorted.map(render)}</ul>
-    </>
-  );
-}
-
 /** `#/skill-map`: the modules connected, each with the way to its map. */
 function MapList({ profileId }: { readonly profileId: string }) {
   const { words } = useLanguage();
-  const { views } = usePackages();
-  const read = useCallback(
-    async (api: Api) =>
-      cardsOf(views, (await api.module.listConnectedModules({ profileId })).modules),
-    [views, profileId],
-  );
-  const cards = useRequest(read);
+  const cards = useConnectedCards(profileId);
   let shown = null;
   if (cards.status === "failed") {
     shown = <ReadFailure failure={cards.failure} onRetry={cards.retry} />;
@@ -142,11 +67,11 @@ function MapList({ profileId }: { readonly profileId: string }) {
       cards.value.length === 0 ? (
         <p>{words.text("subjects.none")}</p>
       ) : (
-        <Cards
+        <ModuleCardList
           cards={cards.value}
           onRetry={cards.retry}
           render={(card) => (
-            <Card
+            <ModuleCardItem
               key={card.moduleId}
               card={card}
               {...(card.digest === undefined
@@ -234,7 +159,7 @@ function Offered({
     shown = <ReadFailure failure={cards.failure} onRetry={cards.retry} />;
   } else if (cards.status === "done") {
     shown = (
-      <Cards
+      <ModuleCardList
         cards={cards.value}
         onRetry={cards.retry}
         render={(card) =>
@@ -246,7 +171,7 @@ function Offered({
               </p>
             </li>
           ) : (
-            <Card
+            <ModuleCardItem
               key={card.moduleId}
               card={card}
               {...(card.digest === undefined
@@ -287,19 +212,6 @@ type Read =
       /** The modules offered when the map was read: a module connected meanwhile stays on. */
       readonly offered: readonly string[];
     };
-
-/** The heading of a module's map: "Skill map: {module}", the title in its own language. */
-function MapHeading({ map }: { readonly map: ModuleMap | undefined }) {
-  const { words } = useLanguage();
-  const manifest = map?.manifest;
-  if (manifest === undefined) return words.text("skillmap.title");
-  return (
-    <Phrase
-      id="skillmap.module-title"
-      values={{ module: <span lang={manifest.languages.explanation}>{manifest.title}</span> }}
-    />
-  );
-}
 
 /** `#/skill-map/<module>`: the module's map, the choice of a skill on it, and the modules offered. */
 function MapOfModule({
@@ -395,12 +307,8 @@ function MapOfModule({
 
   const map = read.status === "done" ? read.map : undefined;
   const outcome = nothing === undefined ? undefined : outcomeOf(nothing.outcome);
-  const title =
-    map?.manifest === undefined
-      ? words.text("skillmap.title")
-      : words.text("skillmap.module-title", { module: map.manifest.title });
   return (
-    <Screen title={title} heading={<MapHeading map={map} />}>
+    <Screen title={mapTitle(map, words)} heading={<MapHeading map={map} />}>
       <Ways all />
       {read.status === "failed" ? <ReadFailure failure={read.failure} onRetry={retry} /> : null}
       {read.status === "done" ? (

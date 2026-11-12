@@ -16,12 +16,15 @@ import {
 } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
 import {
   ChoiceKind,
+  CloseReason,
   EngineChoiceSchema,
+  ReasonCode,
   RunEndReason,
 } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import { LegalTextSchema } from "@altnovatrail/contracts/novatrail/api/v1/legal_pb.js";
 import {
   AnchorSkillHolding,
+  GetProgressResponseSchema,
   GetSkillMapResponseSchema,
 } from "@altnovatrail/contracts/novatrail/api/v1/progress_pb.js";
 import { create } from "@bufbuild/protobuf";
@@ -38,6 +41,7 @@ import { AdultSection } from "../adults/AdultSection.tsx";
 import { DevicePage } from "../adults/DevicePage.tsx";
 import { ModulesPage } from "../adults/ModulesPage.tsx";
 import { ProfilePage } from "../adults/ProfilePage.tsx";
+import { ProgressMap, ProgressPage } from "../adults/ProgressPage.tsx";
 import { ApiProvider } from "../api/ApiContext.tsx";
 import type { Api } from "../api/client.ts";
 import { App, LearnerBar } from "../app/App.tsx";
@@ -457,6 +461,45 @@ const MAP_API = {
             teachingModules: ["novatrail/tables"],
           },
         ],
+      }),
+  },
+} as unknown as Api;
+
+/** An api of a profile's progress: a trap that repeats, two attempts and a page more. */
+const PROGRESS_API = {
+  ...MAP_API,
+  progress: {
+    ...MAP_API.progress,
+    getProgress: async () =>
+      create(GetProgressResponseSchema, {
+        repeatingTraps: [
+          {
+            trap: "example/fair-shares/trap/halves-of-unequal-parts",
+            description: "Takes unequal parts for halves",
+            trapAdvice: "Ask whether both parts are the same size before naming them halves",
+            attemptCount: 2,
+            lastClosedAt: { seconds: 1_794_000_000n },
+          },
+        ],
+        attempts: [
+          {
+            task: "example/fair-shares/task/a-rather-long-task-identifier-with-no-break-in-it-at-all",
+            moduleVersion: "1.0.0",
+            lesson: "example/fair-shares/lesson/halves-first-steps",
+            closeReason: CloseReason.CORRECT,
+            wrongAnswers: 2,
+            begunAt: { seconds: 1_794_000_000n },
+            closedAt: { seconds: 1_794_000_600n },
+            chosenAt: { seconds: 1_793_999_990n },
+            reasonCode: ReasonCode.QUEUE,
+          },
+          {
+            task: "novatrail/gone/task/levers-1",
+            moduleVersion: "0.3.0",
+            begunAt: { seconds: 1_794_000_000n },
+          },
+        ],
+        nextPageToken: "page-2",
       }),
   },
 } as unknown as Api;
@@ -1042,6 +1085,38 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
     ),
     async () => {
       await vi.waitFor(() => expect(document.querySelectorAll("article")).toHaveLength(2));
+    },
+  ],
+  [
+    "the progress of a profile in the section",
+    () => (
+      <ApiProvider value={PROGRESS_API}>
+        <PackagesProvider value={MAPPED}>
+          <ProgressPage profile={OWNER} />
+        </PackagesProvider>
+      </ApiProvider>
+    ),
+    async () => {
+      await vi.waitFor(() => expect(document.querySelectorAll("article")).toHaveLength(5));
+    },
+  ],
+  [
+    "a module's map in the progress, the adult's view, a skill open",
+    () => (
+      <ApiProvider value={PROGRESS_API}>
+        <PackagesProvider value={MAPPED}>
+          <ProgressMap profile={OWNER} moduleId="example/fair-shares" />
+        </PackagesProvider>
+      </ApiProvider>
+    ),
+    async () => {
+      const root = await vi.waitFor(() => {
+        const found = document.querySelector("novatrail-skill-map")?.shadowRoot;
+        if (found?.querySelector("button.tile") == null) throw new Error("no map yet");
+        return found;
+      });
+      root.querySelector<HTMLButtonElement>("button.tile")?.click();
+      await vi.waitFor(() => expect(root.querySelector("[aria-expanded='true']")).not.toBeNull());
     },
   ],
   [

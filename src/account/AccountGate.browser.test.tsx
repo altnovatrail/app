@@ -18,6 +18,8 @@ import {
 import {
   Cause,
   ChoiceKind,
+  CloseReason,
+  type ReasonCode,
   RefusalSchema,
 } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import {
@@ -37,6 +39,10 @@ import {
   GetTechniquesResponseSchema,
 } from "@altnovatrail/contracts/novatrail/api/v1/package_pb.js";
 import {
+  GetProgressResponseSchema,
+  GetSkillMapResponseSchema,
+} from "@altnovatrail/contracts/novatrail/api/v1/progress_pb.js";
+import {
   create,
   type DescMessage,
   fromBinary,
@@ -46,8 +52,11 @@ import {
 import { render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
+import { CHOICE_REASON_KEYS } from "../adults/progress.ts";
 import { App } from "../app/App.tsx";
 import { Boot } from "../boot/Boot.tsx";
+import { en } from "../i18n/en.ts";
+import { ru } from "../i18n/ru.ts";
 import { addProfile } from "../storage/profile.ts";
 import { readRegistry } from "../storage/registry.ts";
 import { SETTINGS } from "../storage/schema.ts";
@@ -1164,5 +1173,86 @@ describe("the page on the AI tutor", () => {
     expect(screen.getByText(/call your country's emergency number/)).toBeTruthy();
     await userEvent.click(screen.getByRole("button", { name: "Close" }));
     expect(await screen.findByRole("heading", { level: 1, name: "Sign in" })).toBeTruthy();
+  });
+});
+
+describe("the reason code of the engine's choice", () => {
+  afterEach(() => {
+    window.location.hash = "";
+  });
+
+  /** The words of the nine reason codes, in both languages: none of them is a learner's. */
+  const REASONS = Object.values(CHOICE_REASON_KEYS).flatMap((key) => [en[key], ru[key]]);
+  const reasonsShown = () => REASONS.filter((words) => document.body.textContent?.includes(words));
+
+  it("never reaches the learner's screens, and the adult sees it in the progress", async () => {
+    const service = fakeSignIn("uid-1");
+    const owner = { ...OWNER, interfaceLanguage: "ru", openAttempt: { attemptId: "a1" } };
+    const codes = Object.keys(CHOICE_REASON_KEYS).map(Number) as ReasonCode[];
+    const { asked } = renderApp(
+      {
+        getAccount: () =>
+          message(GetAccountResponseSchema, {
+            account: { accountId: "account-1", profiles: [owner] },
+          }),
+        ...ATTEMPT_ROUTES,
+        listConnectedModules: () =>
+          message(ListConnectedModulesResponseSchema, {
+            modules: [{ moduleId: "example/choices", packageDigest: D1 }],
+          }),
+        chooseNext: () =>
+          message(ChooseNextResponseSchema, { choice: { kind: ChoiceKind.NOTHING } }),
+        getSkillMap: () => message(GetSkillMapResponseSchema, { packageDigest: D1 }),
+        // What api would answer the adult: an attempt of every code.
+        getProgress: () =>
+          message(GetProgressResponseSchema, {
+            attempts: codes.map((reasonCode) => ({
+              task: "example/choices/task/pick",
+              moduleVersion: "1.0.0",
+              closeReason: CloseReason.CORRECT,
+              chosenAt: { seconds: 1n },
+              reasonCode,
+            })),
+          }),
+      },
+      service,
+    );
+    // The learner's screens, in the learner's language: My subjects, what's next, the task screen
+    // and the skill map.
+    await userEvent.click(await screen.findByRole("button", { name: "Ёжик" }));
+    expect(await screen.findByRole("heading", { level: 1, name: "Мои предметы" })).toBeTruthy();
+    await screen.findByRole("article", { name: "Choices" });
+    expect(reasonsShown()).toEqual([]);
+    await userEvent.click(screen.getByRole("button", { name: "Продолжить задачу" }));
+    expect(await screen.findByRole("heading", { level: 1, name: "Задача" })).toBeTruthy();
+    expect(await screen.findByRole("group", { name: "Режим" })).toBeTruthy();
+    expect(reasonsShown()).toEqual([]);
+    window.location.hash = "#/home";
+    await userEvent.click(await screen.findByRole("button", { name: "Что-то другое" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Перейти" }));
+    expect(await screen.findByText("Пока больше нечего предложить")).toBeTruthy();
+    expect(reasonsShown()).toEqual([]);
+    window.location.hash = "#/skill-map";
+    await userEvent.click(await screen.findByRole("button", { name: "Открыть карту" }));
+    expect(
+      await screen.findByRole("heading", { level: 1, name: "Карта навыков: Choices" }),
+    ).toBeTruthy();
+    expect(reasonsShown()).toEqual([]);
+    expect(asked).toContain("GetSkillMap");
+    expect(asked).toContain("ChooseNext");
+    expect(asked).not.toContain("GetProgress");
+
+    // The section for adults, in the device's language: the progress names each code.
+    await userEvent.click(screen.getByRole("button", { name: "Для взрослых" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Profile: Ёжик" }));
+    await userEvent.click(await screen.findByRole("button", { name: "See the progress" }));
+    expect(await screen.findByRole("heading", { level: 1, name: "Progress: Ёжик" })).toBeTruthy();
+    await vi.waitFor(() =>
+      expect(reasonsShown()).toEqual(Object.values(CHOICE_REASON_KEYS).map((key) => en[key])),
+    );
+    expect(asked).toContain("GetProgress");
+    await userEvent.click(screen.getByRole("button", { name: "Close the section" }));
+    expect(await screen.findByRole("heading", { level: 1, name: "Мои предметы" })).toBeTruthy();
+    expect(reasonsShown()).toEqual([]);
   });
 });

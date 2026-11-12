@@ -8,8 +8,9 @@
 // account holds the owner's profile of the category `adult` alone; the PIN comes in front of it
 // with E4 (section 3.10). A page of the account or the device — This device, `#/adults/device`,
 // and the own key to come — takes a part of the hash and a button on the first page; a page of one
-// profile — its modules, `#/adults/modules`, and the progress to come — a part of the hash and a
-// button on the profile's page. The license of a module's version, `#/adults/license/<digest>`,
+// profile — its modules, `#/adults/modules`, and its progress, `#/adults/progress` with the map of
+// each module below it, `#/adults/progress/<module>` (R35) — a part of the hash and a button on the
+// profile's page. The license of a module's version, `#/adults/license/<digest>`,
 // is a page of the section by the digest in the hash, opened from the profile's modules (R32). The
 // legal pages are not the section's: they show before signing in too, and the first page leads to
 // them (R31).
@@ -27,6 +28,8 @@ import { DevicePage } from "./DevicePage.tsx";
 import { LICENSE_PART, MODULES_PAGE, ModulesPage } from "./ModulesPage.tsx";
 import { inOrder } from "./order.ts";
 import { ProfilePage } from "./ProfilePage.tsx";
+import { ProgressMap, ProgressPage } from "./ProgressPage.tsx";
+import { PROGRESS_PART } from "./progress.ts";
 
 /** A profile's page: the one chosen in the section. */
 export const PROFILE_PAGE: Route = { screen: ADULTS.screen, parts: ["profile"] };
@@ -148,6 +151,11 @@ export function AdultSection({
     );
   } else if (page === MODULES_PAGE.parts.join("/") && profile !== undefined) {
     shown = <ModulesPage key={profile.profileId} profile={profile} />;
+  } else if (first === PROGRESS_PART && rest.length === 0 && profile !== undefined) {
+    shown = <ProgressPage key={profile.profileId} profile={profile} />;
+  } else if (first === PROGRESS_PART && rest.length === 1 && profile !== undefined) {
+    const moduleId = rest[0] as string;
+    shown = <ProgressMap key={moduleId} profile={profile} moduleId={moduleId} />;
   } else if (digest !== undefined) {
     // Back to the modules of the profile chosen; after a reload, with none chosen, the bar alone.
     shown = (

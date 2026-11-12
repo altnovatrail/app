@@ -5,18 +5,11 @@
 // LICENSE and NOTICE of that version, `#/adults/license/<digest>`, a page of the section too. A
 // module with no current version has no files to show, and its card says it is unavailable.
 import type { Profile } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
-import { useCallback, useId, useMemo } from "react";
-import { useRequest } from "../api/ApiContext.tsx";
-import type { Api } from "../api/client.ts";
 import { ReadFailure } from "../api/ReadFailure.tsx";
 import { ADULTS, navigate, type Route } from "../app/router.ts";
 import { Screen } from "../app/Screen.tsx";
-import { collator } from "../i18n/intl.ts";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
-import { usePackages } from "../packages/PackagesContext.tsx";
-import { CardHeading } from "../subjects/CardHeading.tsx";
-import { byTitle, cardsOf, type ModuleCard } from "../subjects/modules.ts";
-import { useSequential } from "../subjects/useSequential.ts";
+import { ModuleCardItem, ModuleCardList, useConnectedCards } from "../subjects/ModuleCards.tsx";
 
 /** The page of the profile's modules: the profile chosen in the section. */
 export const MODULES_PAGE: Route = { screen: ADULTS.screen, parts: ["modules"] };
@@ -29,67 +22,38 @@ export function sectionLicense(digest: string): Route {
   return { screen: ADULTS.screen, parts: [LICENSE_PART, digest] };
 }
 
-/** A module's card, with the way to its license when it has a current version. */
-function Card({ card }: { readonly card: ModuleCard }) {
-  const { words } = useLanguage();
-  const id = useId();
-  const digest = card.digest;
-  return (
-    <li className="nt-card">
-      <article aria-labelledby={id}>
-        <CardHeading card={card} id={id} />
-        {digest === undefined ? null : (
-          <div className="nt-buttons">
-            <button
-              type="button"
-              aria-describedby={id}
-              onClick={() => navigate(sectionLicense(digest))}
-            >
-              {words.text("subjects.license")}
-            </button>
-          </div>
-        )}
-      </article>
-    </li>
-  );
-}
-
 export function ModulesPage({ profile }: { readonly profile: Profile }) {
-  const { language, words } = useLanguage();
-  const { views } = usePackages();
-  const profileId = profile.profileId;
-  const read = useCallback(
-    async (api: Api) =>
-      cardsOf(views, (await api.module.listConnectedModules({ profileId })).modules),
-    [views, profileId],
-  );
-  const cards = useRequest(read);
-  const marked = useSequential(views, cards.status === "done" ? cards.value : undefined);
-  const compare = useMemo(() => collator(language).compare, [language]);
+  const { words } = useLanguage();
+  const cards = useConnectedCards(profile.profileId);
   let shown = null;
   if (cards.status === "failed") {
     shown = <ReadFailure failure={cards.failure} onRetry={cards.retry} />;
   } else if (cards.status === "done") {
-    const sorted = byTitle(marked ?? cards.value, compare);
     shown =
-      sorted.length === 0 ? (
+      cards.value.length === 0 ? (
         <p>{words.text("subjects.none")}</p>
       ) : (
-        <>
-          {sorted.some((card) => card.unnamed === true) ? (
-            <div role="status">
-              <p>{words.text("subjects.unnamed")}</p>
-              <button type="button" onClick={cards.retry}>
-                {words.text("boot.retry")}
-              </button>
-            </div>
-          ) : null}
-          <ul className="nt-cards">
-            {sorted.map((card) => (
-              <Card key={card.moduleId} card={card} />
-            ))}
-          </ul>
-        </>
+        <ModuleCardList
+          cards={cards.value}
+          onRetry={cards.retry}
+          render={(card) => {
+            const digest = card.digest;
+            return (
+              <ModuleCardItem
+                key={card.moduleId}
+                card={card}
+                {...(digest === undefined
+                  ? {}
+                  : {
+                      action: {
+                        text: words.text("subjects.license"),
+                        onPress: () => navigate(sectionLicense(digest)),
+                      },
+                    })}
+              />
+            );
+          }}
+        />
       );
   }
   return (

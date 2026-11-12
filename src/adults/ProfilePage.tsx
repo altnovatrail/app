@@ -6,7 +6,7 @@
 // edited here; what is edited here stays until it is saved — an edit made while the request was on
 // its way among them. A failure that is the session's own goes to it as well (`onFailed`). Below the
 // form, the storage of the profile's works on the server, a consent of its own (R30), and the way to
-// the profile's modules and their licenses (R32).
+// the profile's modules and their licenses (R32), and to its progress (R35).
 import {
   Mode,
   type Profile,
@@ -25,6 +25,7 @@ import { NAMES } from "../i18n/LanguageButtons.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { LANGUAGES, type Language } from "../i18n/language.ts";
 import { MODULES_PAGE } from "./ModulesPage.tsx";
+import { PROGRESS_PAGE } from "./progress.ts";
 import { WorkStorage } from "./WorkStorage.tsx";
 
 /** What the adult changed on the page and has not saved: the pseudonym as typed. */
@@ -258,6 +259,19 @@ export function ProfilePage({
             onClick={() => navigate(MODULES_PAGE)}
           >
             {words.text("adults.modules-open")}
+          </button>
+        </div>
+      </section>
+      <section aria-labelledby={`${id}-progress`}>
+        <h2 id={`${id}-progress`}>{words.text("progress.section")}</h2>
+        <p id={`${id}-progress-hint`}>{words.text("progress.section-hint")}</p>
+        <div className="nt-buttons">
+          <button
+            type="button"
+            aria-describedby={`${id}-progress-hint`}
+            onClick={() => navigate(PROGRESS_PAGE)}
+          >
+            {words.text("progress.open")}
           </button>
         </div>
       </section>

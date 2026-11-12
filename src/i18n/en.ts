@@ -473,6 +473,78 @@ export const en = {
   "adults.modules-title": "Modules: {pseudonym}",
   /** On the page of a module's license in the section: back to the profile's modules. */
   "adults.modules-back": "Back to the modules",
+  /** The progress of a profile (R35), on its page: the way to the page of the progress. */
+  "progress.section": "Progress",
+  "progress.section-hint":
+    "The skill maps, the attempts with why each task was given, and the traps that repeat",
+  "progress.open": "See the progress",
+  "progress.title": "Progress: {pseudonym}",
+  /** The reason codes are the adult's alone: no learner's screen shows them (R100 in spec). */
+  "progress.hint": "Why each task was given shows here alone: the learner's screens don't say it",
+  "progress.maps": "Skill maps",
+  "progress.maps-hint": "The skills of each module connected, as the learner model reads them",
+  /** On a module's map in the progress: back to the page of the progress. */
+  "progress.back": "Back to the progress",
+  /** The traps that repeat: mistakes the program found in two closed attempts or more. */
+  "progress.traps": "Traps that repeat",
+  "progress.traps-hint":
+    "Mistakes the program found in two closed attempts or more, each with the advice of the module's author",
+  "progress.traps-none": "No trap repeats yet",
+  "progress.trap-advice": "Advice",
+  /** How many closed attempts found the trap: two or more. */
+  "progress.trap-found": "Found in",
+  "progress.trap-count": plural({
+    one: "{count} closed attempt",
+    other: "{count} closed attempts",
+  }),
+  "progress.trap-last": "Last time",
+  "progress.attempts": "Attempts",
+  "progress.attempts-hint": "The newest first",
+  "progress.attempts-none": "No attempts yet",
+  /** Asks api for the next page of attempts. */
+  "progress.more": "Show more",
+  /** The heading of an attempt: {task} is the task's ID in its module, as the progress names it. */
+  "progress.task": "Task {task}",
+  "progress.module": "Module",
+  /** The lesson of an attempt of a lesson's segment, by its ID in its module. */
+  "progress.lesson": "Lesson",
+  "progress.version": "Version",
+  "progress.outcome": "Outcome",
+  "progress.outcome-open": "Still going",
+  "progress.outcome-first": "Answered correctly at the first answer",
+  "progress.outcome-correct": "Answered correctly",
+  "progress.outcome-solution-shown": "Solution shown",
+  "progress.outcome-left": "Left: another task was begun",
+  "progress.outcome-abandoned": "Nothing was done on it for 7 days",
+  "progress.outcome-unchecked": "Not checked: this version of the module is no longer given",
+  "progress.outcome-not-suitable": "Ended: its lesson doesn't suit this profile any more",
+  "progress.outcome-done": "Finished with Done",
+  "progress.wrong": "Wrong answers",
+  "progress.begun": "Begun",
+  "progress.closed": "Closed",
+  /** Why the engine gave the task, outside a lesson. */
+  "progress.why": "Why it was given",
+  /** Why the engine gave the lesson the attempt is a segment of. */
+  "progress.why-lesson": "Why its lesson was given",
+  "progress.chosen": "Chosen",
+  /** No choice of the engine: the learner began the same task again. */
+  "progress.again": "The learner began it again: the program chose nothing",
+  /** The nine reason codes of the engine's choice (concepts 12 in spec; R100 and R107 in spec). */
+  "progress.reason-consolidation":
+    "Consolidation: after a wrong answer, another task on the same skill",
+  "progress.reason-new-skill":
+    "A new skill: one not given before, whose prerequisites are counted as met, or which has none",
+  "progress.reason-queue":
+    "Next in the queue: of the skills within reach given before and not mastered, the one not given for longest",
+  "progress.reason-repetition": "Review: the time to review a mastered skill has come",
+  "progress.reason-probe": "A probe: a skill put aside comes back as a check",
+  "progress.reason-skill-chosen":
+    "The learner chose the skill on the skill map, and the program the task or lesson on it",
+  "progress.reason-author-order":
+    "The author's order: a skill with a rubric or with no assessment comes next by the skill graph",
+  "progress.reason-open-run": "The lesson begun: the learner goes on with it",
+  "progress.reason-rotation":
+    "In rotation: a skill given before comes round again, the one not given for longest first",
   /** The storage of a profile's works on the server (R113 in spec), on the profile's page. */
   "storage.title": "Keeping works on the server",
   "storage.on": "Keeping this profile's works on the server is on",
