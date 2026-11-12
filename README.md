@@ -27,10 +27,10 @@ Run the four checks of the TypeScript code with `just ci` and the check of the d
 
 The first app runs against a local api, in api's own devcontainer, with the dev project of Firebase (section 3.7 of [docs/architecture.md](docs/architecture.md)):
 
-1. In the dev project of Firebase, put `127.0.0.1` among the authorized domains of Authentication.
-2. Copy `deployment.example.json` to `deployment.local.json` and fill in the project's parameters; `api` stays `http://127.0.0.1:5173`, app's own origin, whose paths of api the development server sends on.
-3. In api's container: `just dev migrate`, `just dev countries allow <XX>` for the owner's country, `just dev invite` for an invite code, then `just dev serve`, and `hostname -i` for the address of the container.
-4. In this container, which is on api's network too: `NOVATRAIL_API=http://<that address>:8080 just dev`, then open `http://127.0.0.1:5173`.
+1. In the dev project of Firebase, register a Web App for app, if there is none yet, and put `127.0.0.1` among the authorized domains of Authentication.
+2. Copy `deployment.example.json` to `deployment.local.json` and fill in the parameters of that Web App's config, `apiKey` included, from the project settings of Firebase; `api` stays `http://127.0.0.1:5173`, app's own origin, whose paths of api the development server sends on.
+3. In api's container: `just dev migrate`, `just dev countries allow <XX>` for the owner's country, `just dev invite` for an invite code — a new one each time the account was deleted — then `just dev serve`, and `hostname -i` for the address of the container.
+4. In this container, which is on api's network too: `NOVATRAIL_API=http://<that address>:8080 just dev`, then open `http://127.0.0.1:5173`. VS Code forwards the port by itself when `just dev` runs in its terminal; otherwise forward 5173 in its Ports panel, to the same port 5173 on the host: the origin is app's, and the authorized domain of Firebase.
 
 ## Documents
 
