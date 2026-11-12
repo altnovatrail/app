@@ -1,9 +1,12 @@
 # app
 
 [![CI](https://github.com/altnovatrail/app/actions/workflows/ci.yml/badge.svg)](https://github.com/altnovatrail/app/actions/workflows/ci.yml)
+[![Release](https://github.com/altnovatrail/app/actions/workflows/release.yml/badge.svg)](https://github.com/altnovatrail/app/actions/workflows/release.yml)
 [![CodeQL](https://github.com/altnovatrail/app/actions/workflows/codeql.yml/badge.svg)](https://github.com/altnovatrail/app/actions/workflows/codeql.yml)
+[![Latest release](https://img.shields.io/github/v/release/altnovatrail/app)](https://github.com/altnovatrail/app/releases/latest)
 [![TypeScript version](https://img.shields.io/github/package-json/dependency-version/altnovatrail/app/dev/typescript)](package.json)
 [![Coverage](https://codecov.io/gh/altnovatrail/app/branch/main/graph/badge.svg)](https://codecov.io/gh/altnovatrail/app)
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/16599/badge)](https://www.bestpractices.dev/projects/16599)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/altnovatrail/app/badge)](https://scorecard.dev/viewer/?uri=github.com/altnovatrail/app)
 [![License](https://img.shields.io/github/license/altnovatrail/app)](LICENSE)
 
@@ -19,7 +22,7 @@ A component of [NovaTrail](https://github.com/altnovatrail/spec/tree/v0.15.1), a
 
 ## Status
 
-Detailing is done: the first epic of [RUN.md](RUN.md) decided what the component's card left open, and [docs/architecture.md](docs/architecture.md) holds the result. The second epic, E2, built the first app, which an adult learner uses against a local api, with no children yet and no deployment: signing in with Google, the account with the texts in force and the owner's own profile, "My subjects" with the catalog of modules, the lesson player, the task screen with the canvas — the steps, the choice of options, the check of handwriting, the hint, "Explain differently" and the solution shown —, and what the engine chose next. Its screens are in English and Russian, and every one passes axe-core in CI. The tutor's own words are not in yet: until tutor gives them, a learner gets the rung's fallback text. E2 ends with the first signed release of the build, which infra deploys; deployment, the adult's own key, speech, the skill map and the adults' section come next, and children's profiles after them.
+Detailing is done: the first epic of [RUN.md](RUN.md) decided what the component's card left open, and [docs/architecture.md](docs/architecture.md) holds the result. The second epic, E2, built the first app, which an adult learner uses against a local api, with no children yet and no deployment: signing in with Google, the account with the texts in force and the owner's own profile, "My subjects" with the catalog of modules, the lesson player, the task screen with the canvas — the steps, the choice of options, the check of handwriting, the hint, "Explain differently" and the solution shown —, and what the engine chose next. Its screens are in English and Russian, and every one passes axe-core in CI. The tutor's own words are not in yet: until tutor gives them, a learner gets the rung's fallback text. E2 ended on 2026-11-12 with the first signed release of the build, v0.1.0, which infra deploys; deployment, the adult's own key, speech, the skill map and the adults' section come next, and children's profiles after them.
 
 Run the four checks of the TypeScript code with `just ci` and the check of the documents with `just -f spec/justfile docs-check-repo` — CI runs both — the app with `just dev` — with a working copy of canvas, built, by `just dev-canvas <folder>` — and its build with `just preview`, all inside the devcontainer.
 
