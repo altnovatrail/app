@@ -230,6 +230,7 @@ describe("the built page", () => {
       const sheet = document.createElement("novatrail-canvas");
       sheet.lang = "en";
       sheet.style.blockSize = "30rem";
+      sheet.style.inlineSize = "30rem";
       document.body.append(sheet);
       const drawn = new OffscreenCanvas(2, 2);
       drawn.getContext("2d").fillRect(0, 0, 2, 2);
@@ -270,6 +271,20 @@ describe("the built page", () => {
     expect(await page.evaluate(`document.querySelector("novatrail-canvas").history.length`)).toBe(
       1,
     );
+    // The page's zoom of the sheet, by the element's own button, lays the sheet out by a custom
+    // property it sets through the CSSOM, which style-src leaves be: on an element narrower than
+    // the sheet's cap, twice as wide, and scrolled across in a region of its own (T36). The zoom
+    // has four steps above its fit.
+    const larger = sheet.getByRole("button", { name: "Zoom in" });
+    for (let i = 0; i < 8 && (await larger.getAttribute("aria-disabled")) !== "true"; i++) {
+      await larger.click();
+    }
+    expect(await larger.getAttribute("aria-disabled")).toBe("true");
+    const across = sheet.getByRole("region", { name: "Sheet" });
+    await across.waitFor();
+    await expect
+      .poll(() => across.evaluate((element) => element.scrollWidth / element.clientWidth))
+      .toBeCloseTo(2, 1);
     expect(violations).toEqual([]);
     await page.context().close();
   }, 60_000);

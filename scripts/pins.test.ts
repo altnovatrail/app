@@ -1,8 +1,8 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { pinProblems, run } from "./pins.ts";
+import { pinProblems, run, SET } from "./pins.ts";
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -82,6 +82,13 @@ describe("run", () => {
   it("passes this repository, as npm ci installed it", () => {
     vi.spyOn(console, "log").mockImplementation(() => {});
     expect(run()).toBe(0);
+  });
+
+  it("holds this repository's set to the one its canvas names, not passing canvas over", () => {
+    const read = (path: string) => JSON.parse(readFileSync(path, "utf8"));
+    const named = read("node_modules/@altnovatrail/canvas/package.json").devDependencies?.[SET];
+    expect(named).toBeDefined();
+    expect(read("package.json").dependencies[SET]).toBe(named);
   });
 
   it("fails a tree whose set is not canvas's, and names it", () => {
