@@ -9,7 +9,8 @@
 // legal pages show at any step, before signing in too, from the sign-in screen and from the
 // section's first page, and their bar goes back to where they were opened from (R31). So does the
 // license of a module's version, opened from a card of My subjects, in the language of the
-// learner's screens while a learner is chosen, and closed home (R32).
+// learner's screens while a learner is chosen, and closed home (R32); and so does the page on the AI
+// tutor, opened from My subjects too (R33).
 import type { Profile } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import type {
   LegalText as LegalTextOf,
@@ -41,6 +42,7 @@ import {
   MODULE_LICENSE,
   navigate,
   type Route,
+  TUTOR,
   useRoute,
 } from "../app/router.ts";
 import { Screen } from "../app/Screen.tsx";
@@ -57,6 +59,7 @@ import { useSignIn } from "../signin/SignInContext.tsx";
 import { SignInScreen } from "../signin/SignInScreen.tsx";
 import { siteStorage } from "../storage/browser.ts";
 import type { Device } from "../storage/device.ts";
+import { TutorPages } from "../tutor/TutorPage.tsx";
 import { countryNames } from "./countries.ts";
 import { pseudonymOf, Session, type Unfinished, unfinishedWork } from "./session.ts";
 import { PROFILES_CHANNEL, profileMessage, profileOf } from "./settings.ts";
@@ -142,9 +145,10 @@ export function AccountGate({ children }: { readonly children: ReactNode }) {
       />
     );
   }
-  // The screen it closes to is My subjects while a learner is chosen, in their language.
-  if (route.screen === MODULE_LICENSE.screen) {
-    const pages = <LicensePages route={route} />;
+  // The screen they close to is My subjects while a learner is chosen, in their language.
+  if (route.screen === MODULE_LICENSE.screen || route.screen === TUTOR.screen) {
+    const pages =
+      route.screen === TUTOR.screen ? <TutorPages route={route} /> : <LicensePages route={route} />;
     if (state.step !== "learning") return pages;
     return <LearnerLanguage field={state.learner.interfaceLanguage}>{pages}</LearnerLanguage>;
   }

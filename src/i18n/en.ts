@@ -523,6 +523,81 @@ export const en = {
   "device.erase-all-confirm":
     "Everything the app keeps on this device is lost: the work of every profile and the language of the device. The app signs out, and nothing changes on the server",
   "device.erase-all-failed": "The sign-out didn't go through, so nothing was erased. Try again",
+  /**
+   * In the block Tutor, below its heading, wherever the tutor's words stand: the disclosure that
+   * the tutor is an AI (R123 spec). Plain, for a learner of any age.
+   */
+  "tutor.ai": "The tutor is an AI, not a person",
+  /** The heading of the section of My subjects that leads to the page on the tutor. */
+  "tutor.home-title": "The tutor is an AI",
+  "tutor.home-text":
+    "The tutor, which gives hints and explains, is an AI: a computer program, not a person. Whether an answer is right, a program decides by the task's key, not the AI",
+  /** The button to the page on the tutor, the learning material of R123 spec. */
+  "tutor.open": "How to use the tutor safely",
+  /** The bar above the page on the tutor, and its button that closes it home. */
+  "tutor.bar": "About the tutor",
+  "tutor.close": "Close",
+  /** The heading of the page on the tutor. */
+  "tutor.title": "How to use the AI tutor safely",
+  "tutor.what": "The tutor is an AI",
+  "tutor.what-1":
+    "The tutor, which gives hints and explains, is an AI: a computer program, not a person. No person writes its replies while you learn",
+  "tutor.what-2":
+    "Whether an answer is right, a program decides by the task's key, not the AI. The AI reads your work, the handwriting or the drawing, and words the tutor's replies",
+  "tutor.wrong": "It can be wrong",
+  "tutor.wrong-1":
+    "An AI can misread the work or say what isn't so. If its words seem wrong, read the task again and check what you can yourself",
+  /** Explain differently is the button of the block Tutor, once on each rung (R82 spec). */
+  "tutor.wrong-2":
+    "When it can't read the work, it asks you to write it again. When its words after a wrong answer aren't clear, the button Explain differently says them another way, once",
+  "tutor.gets": "What it gets, and what it doesn't",
+  "tutor.gets-1":
+    "To check the work, the app sends a picture of it with the task. Your name, your pseudonym and any ID never go to the AI",
+  "tutor.gets-2":
+    "But the picture shows everything on the sheet. So don't write your name or the real names of people you know on it, nor anything else personal: an address, a phone number, a school",
+  "tutor.gets-3": "Which AI services the tutor uses, and what they keep, the privacy policy says",
+  "tutor.learn": "It is there to help you learn",
+  "tutor.learn-1":
+    "The tutor gives hints step by step; it doesn't solve the task for you. Try on your own first: what you work out yourself, you learn best",
+  "tutor.personal": "It is not someone to confide in",
+  "tutor.personal-1":
+    "The tutor is there for the task, and it needs nothing personal about you. Don't write to it about your health, your family or your feelings, and don't look to it for advice on them: talk to someone you trust",
+  "tutor.personal-2":
+    "If it asks for something personal, or says something that upsets you or seems unsafe, stop and tell someone you trust",
+  "tutor.problem": "If something is wrong",
+  /** Report a problem is the button beside each reply of the tutor. */
+  "tutor.problem-1":
+    "Beside each reply of the tutor, the adult of the account can press Report a problem. The report goes to the operator of the app, who reviews it within 3 days",
+  "tutor.problem-2":
+    "The report keeps the tutor's words and what is written in it as they are, so write no names in it",
+  /** Beside each reply of the tutor, for the adult of the account (R123 spec). */
+  "report.button": "Report a problem",
+  /** The heading of the form of a report, below the words it is about. */
+  "report.title": "Report a problem with these words",
+  /** The group of the six kinds of a problem, one of which the adult picks. */
+  "report.kind": "What is wrong with the words?",
+  "report.kind-wrong": "Wrong",
+  "report.kind-unclear": "Unclear",
+  "report.kind-not-for-age": "Not right for the learner's age",
+  "report.kind-harmful": "Harmful, dangerous or upsetting",
+  "report.kind-personal": "Asks about something personal, or talks of it",
+  "report.kind-other": "Something else",
+  /** The label of the text of a report, which may be left empty. */
+  "report.text": "What else to say, if anything",
+  /** The report keeps the text for a year after its review, as written (R123 spec). */
+  "report.text-hint":
+    "Up to 1000 characters. Please write no names in it, yours or anyone else's: the report keeps it as it is written",
+  "report.words": "The tutor's words above go with the report, as the app showed them",
+  /** Also on the page on the tutor: the texts tell to call at once (R123 spec). */
+  "report.danger":
+    "If anyone is in danger now, call your country's emergency number: don't wait for the review",
+  "report.send": "Send",
+  "report.no-kind": "Choose what is wrong",
+  /** The kind Something else, sent with no text. */
+  "report.no-text": "Say in the text what is wrong",
+  /** The answer of api; {date} is the day the operator reviews it by. */
+  "report.sent": "Thank you: the report is sent. It will be reviewed by {date}",
+  "report.sent-undated": "Thank you: the report is sent",
   /** In place of the words of a code from api this build does not know: a newer api sent it. */
   "common.unknown": "This version of the app doesn't know this yet",
 } as const satisfies Dictionary;

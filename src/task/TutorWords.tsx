@@ -6,8 +6,10 @@
 // R22). While the words of a rung or "Explain differently" are asked, the block says the tutor is
 // writing: they take seconds to come — the words of a rung ≈ 10 s (section 3.3). The block is no
 // live region: the whole text would be read out at once, so a line of the screen tells that the
-// words came, and the learner reads them here.
-import { useId } from "react";
+// words came, and the learner reads them here. Below its heading it says, always, that the tutor is
+// an AI, not a person, and below the words stands "Report a problem" for a learner of the category
+// adult, in E3 the adult of the account (R123 in spec; R33).
+import { type ReactNode, useId } from "react";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 
 export interface TutorWordsProps {
@@ -25,6 +27,8 @@ export interface TutorWordsProps {
   readonly explaining?: boolean;
   /** What "Explain differently" came to, when it gave no other words. */
   readonly note?: string;
+  /** "Report a problem" with the words shown, below them; none for a learner it is not offered. */
+  readonly report?: ReactNode;
 }
 
 export function TutorWords({
@@ -35,6 +39,7 @@ export function TutorWords({
   onExplain,
   explaining = false,
   note,
+  report,
 }: TutorWordsProps) {
   const { words } = useLanguage();
   const id = useId();
@@ -42,6 +47,7 @@ export function TutorWords({
   return (
     <section aria-labelledby={id} className="nt-tutor">
       <h2 id={id}>{words.text("task.tutor")}</h2>
+      <p className="nt-hint">{words.text("tutor.ai")}</p>
       {text === undefined ? null : (
         <p {...(language === undefined ? {} : { lang: language })}>{text}</p>
       )}
@@ -63,6 +69,7 @@ export function TutorWords({
           </button>
         </div>
       )}
+      {text === undefined ? null : report}
     </section>
   );
 }

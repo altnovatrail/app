@@ -7,13 +7,14 @@
 // (T24), and so is each lesson run open, by the lesson's title as this device keeps it, or else its
 // module's name (T27; R23); and "What's next" asks the engine, or "Something else" beside an
 // attempt open, which it closes (T28; R24). A card of a version has the page of its license beside
-// its button (R32).
+// its button (R32). Below the lists the screen says that the tutor is an AI, and leads to the page
+// on how to use it safely (R33).
 import type { ConnectedModule } from "@altnovatrail/contracts/novatrail/api/v1/module_pb.js";
 import { type ReactNode, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { useApi } from "../api/ApiContext.tsx";
 import { type Failure, parseFailure } from "../api/failure.ts";
 import { failureText } from "../api/words.ts";
-import { LESSON, navigate, TASK } from "../app/router.ts";
+import { LESSON, navigate, TASK, TUTOR } from "../app/router.ts";
 import { Screen } from "../app/Screen.tsx";
 import { ReadFailed } from "../boot/Screens.tsx";
 import { collator } from "../i18n/intl.ts";
@@ -155,6 +156,7 @@ export function SubjectsScreen({
   const continueId = useId();
   const lessonsId = useId();
   const catalogId = useId();
+  const tutorId = useId();
   const compare = useMemo(() => collator(language).compare, [language]);
   const own = new Set(connected?.map((card) => card.moduleId));
   const mine = connected === undefined ? undefined : byTitle(connected, compare);
@@ -253,6 +255,15 @@ export function SubjectsScreen({
             ))}
           </ul>
         )}
+      </section>
+      <section aria-labelledby={tutorId}>
+        <h2 id={tutorId}>{words.text("tutor.home-title")}</h2>
+        <p>{words.text("tutor.home-text")}</p>
+        <div className="nt-buttons">
+          <button type="button" className="nt-secondary" onClick={() => navigate(TUTOR)}>
+            {words.text("tutor.open")}
+          </button>
+        </div>
       </section>
     </Screen>
   );

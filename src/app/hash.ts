@@ -38,6 +38,13 @@ export const LEGAL: Route = { screen: "legal", parts: [] };
  */
 export const MODULE_LICENSE: Route = { screen: "license", parts: [] };
 
+/**
+ * The page on the AI tutor and how to use it safely, the learning material of R123 in spec:
+ * `#/tutor`, opened from My subjects (R33). It shows at any step, as the license of a module does,
+ * in the language of the learner's screens while a learner is chosen.
+ */
+export const TUTOR: Route = { screen: "tutor", parts: [] };
+
 /** The screens this build knows. A hash that names another one shows the home screen. */
 export const SCREENS: ReadonlySet<string> = new Set([
   HOME.screen,
@@ -46,6 +53,7 @@ export const SCREENS: ReadonlySet<string> = new Set([
   ADULTS.screen,
   LEGAL.screen,
   MODULE_LICENSE.screen,
+  TUTOR.screen,
 ]);
 
 /** The route a hash names: `#/screen/part`, each segment percent-encoded. */

@@ -9,7 +9,8 @@
 // solution, the way to what the engine chose (T28), "Try it again" and the way back to My subjects;
 // the options take no tap, and the canvas stays as it was. Under a lesson's header it is no screen
 // of its own, and its result ends with the lesson's Continue in place of "Try it again" (R23). What
-// it shows it takes from its container, Task.tsx, which also gives the canvas the tutor's marks.
+// it shows it takes from its container, Task.tsx, which also gives the canvas the tutor's marks and
+// "Report a problem" with the tutor's words, for a learner of the category adult (R33).
 import type {
   CanvasElement,
   HistoryChangeEvent,
@@ -63,6 +64,8 @@ export interface TaskScreenProps {
   readonly wordsWaiting?: boolean;
   /** The words came since the last check: a screen reader is told. */
   readonly wordsCame?: boolean;
+  /** "Report a problem" with the tutor's words shown, for a learner of the category adult (R33). */
+  readonly report?: ReactNode;
   /** The outcome of AI at the last check, in words: a failure of AI, a quota, a limit. */
   readonly outcome?: string;
   /** The hint api gave before the first wrong answer; none while none was asked for. */
@@ -200,7 +203,7 @@ export function TaskScreen(props: TaskScreenProps) {
                     <Verdict verdict="correct" />
                   )}
                 </p>
-                <TutorWords words={props.tutorWords} language={explanation} />
+                <TutorWords words={props.tutorWords} language={explanation} report={props.report} />
                 <Solution parts={solution} language={explanation} media={props.media} />
                 {props.againFailure === undefined ? null : (
                   <p role="alert" className="nt-error">
@@ -245,6 +248,7 @@ export function TaskScreen(props: TaskScreenProps) {
                   {...(props.onExplain === undefined ? {} : { onExplain: props.onExplain })}
                   explaining={props.explaining === true}
                   {...(props.explainNote === undefined ? {} : { note: props.explainNote })}
+                  report={props.report}
                 />
               </>
             )}

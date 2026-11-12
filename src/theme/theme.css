@@ -146,7 +146,8 @@ button[aria-disabled="true"] {
   font-weight: 700;
 }
 .nt-field input:not([type="checkbox"]),
-.nt-field select {
+.nt-field select,
+.nt-field textarea {
   box-sizing: border-box;
   inline-size: 100%;
   min-block-size: 2.75rem;
@@ -404,6 +405,17 @@ novatrail-canvas {
 }
 .nt-tutor p {
   margin: 0;
+}
+/* "Report a problem" below the tutor's words, and its form in place (R33). */
+.nt-report {
+  margin-block-start: 1rem;
+}
+.nt-report h3 {
+  margin-block: 0 0.5rem;
+  font-size: 1.125rem;
+}
+.nt-report .nt-hint {
+  margin-block: 0.25rem 0.5rem;
 }
 /* A workbook's lines once checked, below the canvas. */
 .nt-lines {

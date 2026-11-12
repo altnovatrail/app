@@ -9,7 +9,10 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { page } from "vitest/browser";
 import "../theme/theme.css";
 import { ProfileSchema } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
-import { ItemVerdictSchema } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
+import {
+  ItemVerdictSchema,
+  TutorReply,
+} from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
 import {
   ChoiceKind,
   EngineChoiceSchema,
@@ -33,7 +36,7 @@ import { ProfilePage } from "../adults/ProfilePage.tsx";
 import { ApiProvider } from "../api/ApiContext.tsx";
 import type { Api } from "../api/client.ts";
 import { App, LearnerBar } from "../app/App.tsx";
-import { HOME, LEGAL } from "../app/router.ts";
+import { HOME, LEGAL, TUTOR } from "../app/router.ts";
 import {
   Framed,
   Offline,
@@ -65,6 +68,8 @@ import { axeViolations, overflows, smallTargets } from "../test/a11y.ts";
 import { memoryDevice } from "../test/device.ts";
 import { inLanguage } from "../test/language.tsx";
 import { PSEUDO } from "../test/pseudo.ts";
+import { ReportProblem } from "../tutor/ReportProblem.tsx";
+import { TutorPages } from "../tutor/TutorPage.tsx";
 
 const OWNER = create(ProfileSchema, {
   profileId: "p1",
@@ -107,6 +112,30 @@ const WORKBOOK: TaskScreenProps["task"] = {
     { line: [{ text: "9 + " }, { binding: "box" }, { text: " = 12" }] },
   ],
 };
+
+/** "Report a problem" beside the words of a rung, with an api it never reaches. */
+function report() {
+  return (
+    <ApiProvider value={{} as Api}>
+      <ReportProblem
+        profileId="p1"
+        attemptId="a1"
+        said={{ text: "Count the gaps.", reply: TutorReply.RUNG, rung: 1 }}
+      />
+    </ApiProvider>
+  );
+}
+
+/** Presses the button with the words of a key, in whichever language of the test the screen is. */
+async function press(key: "report.button" | "report.send"): Promise<void> {
+  // None found is a failure, not a skip.
+  const names = [WORDS.en, WORDS.ru, wordsOf(PSEUDO, "en")].map((each) => each.text(key));
+  const button = [...document.querySelectorAll<HTMLButtonElement>("button")].find((each) =>
+    names.includes(each.textContent ?? ""),
+  );
+  if (button === undefined) throw new Error(`no button ${key}`);
+  await userEvent.click(button);
+}
 
 /** The task screen, by steps on the first step unless the test says otherwise. */
 function taskScreen(props: Partial<TaskScreenProps> = {}) {
@@ -591,6 +620,30 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
       }),
   ],
   [
+    "task screen with the words of a rung and Report a problem",
+    () => taskScreen({ mode: "self", tutorWords: "Count the gaps.", report: report() }),
+  ],
+  [
+    "task screen with the form of a report, sent without a kind",
+    () => taskScreen({ mode: "self", tutorWords: "Count the gaps.", report: report() }),
+    async () => {
+      await press("report.button");
+      await press("report.send");
+    },
+  ],
+  [
+    "task screen solved, with the words after it and the form of a report",
+    () =>
+      taskScreen({
+        solution: [{ text: "Two and three make five." }],
+        tutorWords: "Well done: five fruits.",
+        report: report(),
+      }),
+    async () => {
+      await press("report.button");
+    },
+  ],
+  [
     "task screen asking whether to show the solution",
     () => taskScreen({ onShow: () => {} }),
     async () => {
@@ -863,6 +916,7 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
       />
     ),
   ],
+  ["the page on the AI tutor, below its bar", () => <TutorPages route={TUTOR} />],
   [
     "the license of a module, below its bar",
     () => (

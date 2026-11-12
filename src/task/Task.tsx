@@ -16,11 +16,14 @@
 // same rung in other words, once on a rung; "Show the solution" — the learner's from the start of
 // the attempt if an adult, from the fourth wrong answer if a child — ends the attempt with its
 // solution (R82 in spec; R22). A task of a lesson is a segment of its run: under the lesson's header,
-// with no "Try it again", and what api says comes next after it goes up to the player (R23).
+// with no "Try it again", and what api says comes next after it goes up to the player (R23). The
+// tutor's words are kept with the reply that brought them and its rung, so that the adult of the
+// account can report a problem with them as they are shown (R123 in spec; R33).
 import { Mode as ProfileMode } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import {
   Action,
   type Next,
+  TutorReply,
   type WorkSchema,
 } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
 import {
@@ -53,6 +56,8 @@ import { NextStep } from "../next/NextStep.tsx";
 import { usePackages } from "../packages/PackagesContext.tsx";
 import type { Device } from "../storage/device.ts";
 import { addProfile, attemptOver, openProfile, type Profile } from "../storage/profile.ts";
+import { ReportProblem } from "../tutor/ReportProblem.tsx";
+import type { Said } from "../tutor/report.ts";
 import {
   markNames,
   marksOf,
@@ -108,7 +113,7 @@ interface Opened {
   /** The first write of the attempt on this device did not land. */
   readonly unsaved: boolean;
   /** The words of the current rung the attempt keeps, for an attempt gone on with. */
-  readonly rung?: string;
+  readonly rung?: Said;
   /** The hint asked for before the first wrong answer, as the attempt keeps it. */
   readonly hint?: HintGiven;
   /** "Explain differently" was asked for on the current rung. */
@@ -244,7 +249,12 @@ export function Task({
         state,
         verdicts,
         unsaved,
-        ...(answer.rung === undefined ? {} : { rung: answer.rung.words }),
+        ...(answer.rung === undefined
+          ? {}
+          : {
+              // What GetHint would give again: the words of a rung (TutorReply in the contract).
+              rung: { text: answer.rung.words, reply: TutorReply.RUNG, rung: answer.rung.rung },
+            }),
         ...(answer.wrongAnswers === 0 &&
         (answer.requestedTechniqueIds.length > 0 || answer.requestedLeadingQuestion !== "")
           ? {
@@ -431,7 +441,8 @@ function OpenTask({
   const [failure, setFailure] = useState<Failure | undefined>(undefined);
   const [solution, setSolution] = useState<readonly open.StatementPart[] | undefined>(undefined);
   const [blink, setBlink] = useState(false);
-  const [tutorWords, setTutorWords] = useState<string | undefined>(opened.rung);
+  const [said, setSaid] = useState<Said | undefined>(opened.rung);
+  const tutorWords = said?.text;
   const [wordsFailure, setWordsFailure] = useState<string | undefined>(undefined);
   const [wordsWaiting, setWordsWaiting] = useState(false);
   const [wordsCame, setWordsCame] = useState(false);
@@ -587,7 +598,7 @@ function OpenTask({
             const read = outcomeOf(answer.outcome);
             if (answer.words !== "") {
               // The fallback text of the rung comes with the outcome "not admitted": words all the same.
-              setTutorWords(answer.words);
+              setSaid({ text: answer.words, reply: TutorReply.RUNG, rung: answer.rung });
               setWordsCame(true);
             } else if (read !== undefined) setWordsFailure(outcomeText(read, words));
             if (of.work !== undefined && answer.marks.length > 0) {
@@ -641,7 +652,7 @@ function OpenTask({
         .then(
           (answer) => {
             if (answer.words !== undefined && answer.words !== "") {
-              setTutorWords(answer.words);
+              setSaid({ text: answer.words, reply: TutorReply.CORRECT_ANSWER, rung: 0 });
               setWordsCame(true);
             }
           },
@@ -719,7 +730,7 @@ function OpenTask({
             setExplainNote(undefined);
             explainKey.current = undefined;
             // The words of the rung before, and the hint before the first wrong answer, are past.
-            setTutorWords(undefined);
+            setSaid(undefined);
             setHint(undefined);
             rungWords(answer.wrongAnswers, of);
           }
@@ -731,7 +742,7 @@ function OpenTask({
           } catch {
             // A solution the build cannot read is no reason to hide that the task is solved.
           }
-          setTutorWords(undefined);
+          setSaid(undefined);
           await onEnded(CloseReason.CORRECT, profile, of.number);
           setSolution(parts);
           comesNext(answer.next);
@@ -780,7 +791,12 @@ function OpenTask({
               ...(answer.leadingQuestion === "" ? {} : { question: answer.leadingQuestion }),
             });
           } else if (answer.hint.case === "rung") {
-            setTutorWords(answer.hint.value.words);
+            const { words: text, rung } = answer.hint.value;
+            // The words shown again stay the reply they came by — "explain differently" too — and
+            // a report begun on them stays open.
+            setSaid((before) =>
+              before?.text === text ? before : { text, reply: TutorReply.RUNG, rung },
+            );
             setWordsCame(true);
           }
         },
@@ -822,7 +838,14 @@ function OpenTask({
           const read = outcomeOf(answer.outcome);
           if (read !== undefined) setExplainNote(outcomeText(read, words));
           if (answer.words !== "" && read?.cause !== Cause.NO_OTHER_WORDS) {
-            setTutorWords(answer.words);
+            // The same rung in other words: the rung of the words they take the place of, which
+            // are always there when it is asked; else the rung of the wrong answers, 1 to 3.
+            const wrongAnswers = latest.current.state.wrongAnswers;
+            setSaid((before) => ({
+              text: answer.words,
+              reply: TutorReply.EXPLAINED_DIFFERENTLY,
+              rung: before?.rung ?? Math.min(Math.max(wrongAnswers, 1), 3),
+            }));
             setWordsCame(true);
           }
         },
@@ -873,7 +896,7 @@ function OpenTask({
           } catch {
             // A solution the build cannot read is no reason to hide that the attempt is over.
           }
-          setTutorWords(undefined);
+          setSaid(undefined);
           setHint(undefined);
           setMarks(undefined);
           setFailure(undefined);
@@ -928,6 +951,19 @@ function OpenTask({
       {...(solution === undefined ? {} : { solution })}
       {...(again.failure === undefined ? {} : { againFailure: again.failure })}
       {...(tutorWords === undefined ? {} : { tutorWords })}
+      {...(adult && said !== undefined && said.text !== ""
+        ? {
+            report: (
+              // Other words are another report: the form begins anew with them.
+              <ReportProblem
+                key={`${said.reply} ${said.rung} ${said.text}`}
+                profileId={profileId}
+                attemptId={attemptId}
+                said={said}
+              />
+            ),
+          }
+        : {})}
       {...(wordsFailure === undefined ? {} : { wordsFailure })}
       wordsWaiting={wordsWaiting}
       {...(outcome === undefined ? {} : { outcome })}

@@ -17,10 +17,14 @@ import {
   type GetRungWordsRequest,
   type GetRungWordsResponseSchema,
   MarkKind,
+  ProblemKind,
+  type ReportProblemRequest,
+  type ReportProblemResponseSchema,
   type ShowSolutionRequest,
   type ShowSolutionResponseSchema,
   type SubmitWorkRequest,
   type SubmitWorkResponseSchema,
+  TutorReply,
 } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
 import {
   Cause,
@@ -36,12 +40,14 @@ import { PackageService } from "@altnovatrail/contracts/novatrail/api/v1/package
 import type { CanvasElement, HistoryEvent } from "@altnovatrail/spec/canvas";
 import type * as open from "@altnovatrail/spec/formatv0/open";
 import { create, type MessageInitShape } from "@bufbuild/protobuf";
+import { timestampFromDate } from "@bufbuild/protobuf/wkt";
 import { Code, ConnectError, type ConnectRouter, createRouterTransport } from "@connectrpc/connect";
 import { render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 import { ApiProvider } from "../api/ApiContext.tsx";
 import { createApi } from "../api/client.ts";
+import { dateTimeFormat } from "../i18n/intl.ts";
 import type { PackageChecks } from "../packages/checks.ts";
 import { DeviceFiles } from "../packages/files.ts";
 import { PackagesProvider } from "../packages/PackagesContext.tsx";
@@ -162,7 +168,17 @@ interface Setup {
   explained?: boolean;
   /** The hint asked for that the open attempt keeps. */
   openHint?: { techniques: string[]; question?: string };
+  /**
+   * Before api answers a report: throws to refuse it, or to lose its reply once it is recorded; the
+   * number is of the request, from 0.
+   */
+  report?: (request: ReportProblemRequest, n: number) => void | Promise<void>;
+  /** The answer to a report in place of the one api keeps by its key. */
+  reportAnswer?: MessageInitShape<typeof ReportProblemResponseSchema>;
 }
+
+/** When the operator reviews a report by, in the tests: 3 days after 2026-11-12, at noon UTC. */
+const REVIEW_BY = new Date("2026-11-15T12:00:00Z");
 
 /** The verdicts of the options tapped, against the key. */
 function judged(request: SubmitWorkRequest) {
@@ -201,6 +217,9 @@ async function renderTask(setup: Setup = {}) {
   const corrects: GetCorrectAnswerWordsRequest[] = [];
   const explains: ExplainDifferentlyRequest[] = [];
   const shows: ShowSolutionRequest[] = [];
+  // Every request of a report, and the reports api keeps, by their idempotency key.
+  const reportRequests: ReportProblemRequest[] = [];
+  const reports = new Map<string, ReportProblemRequest>();
   let wrong = setup.wrongAnswers ?? 0;
   const routes = (router: ConnectRouter) => {
     router.service(LearningService, {
@@ -292,6 +311,18 @@ async function renderTask(setup: Setup = {}) {
           }
         );
       },
+      async reportProblem(request) {
+        reportRequests.push(request);
+        // A repeat with the same key gets the same report, and api keeps no second one.
+        if (!reports.has(request.idempotencyKey)) reports.set(request.idempotencyKey, request);
+        await setup.report?.(request, reportRequests.length - 1);
+        return (
+          setup.reportAnswer ?? {
+            reportId: `report-${[...reports.keys()].indexOf(request.idempotencyKey) + 1}`,
+            reviewBy: timestampFromDate(REVIEW_BY),
+          }
+        );
+      },
       beginStep(request) {
         asked.push(`step ${request.step}`);
         setup.step?.();
@@ -364,6 +395,8 @@ async function renderTask(setup: Setup = {}) {
     corrects,
     explains,
     shows,
+    reportRequests,
+    reports,
     check,
     attempts,
     unmount: rendered.unmount,
@@ -1533,5 +1566,295 @@ describe("the hint and the solution on their edges", () => {
     expect(await screen.findByText("Solution shown", { selector: ".nt-result" })).toBeVisible();
     expect(shows.length).toBe(1);
     expect(screen.queryByRole("region", { name: "Solution" })).toBeNull();
+  });
+});
+
+describe("Report a problem with the tutor's words (R33)", () => {
+  /** A wrong answer on my own: the words of its rung come. */
+  async function notYet(): Promise<void> {
+    await userEvent.click(await screen.findByRole("radio", { name: "4" }));
+    await userEvent.click(screen.getByRole("radio", { name: "No" }));
+    await userEvent.click(check());
+    await screen.findByText("Count the gaps between the rungs.");
+  }
+  const form = () =>
+    within(screen.getByRole("form", { name: "Report a problem with these words" }));
+  const send = () => userEvent.click(form().getByRole("button", { name: "Send" }));
+  const day = dateTimeFormat("en", { dateStyle: "long" }).format(REVIEW_BY);
+  const thanks = `Thank you: the report is sent. It will be reviewed by ${day}`;
+
+  it("says the tutor is an AI, and offers a learner who is not an adult no report", async () => {
+    await renderTask({ mode: Mode.SELF });
+    await notYet();
+    expect(panel().getByText("The tutor is an AI, not a person")).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Report a problem" })).toBeNull();
+  });
+
+  it("reports the words of a rung with its kind, its text and a key, and says by when it is reviewed", async () => {
+    const { reportRequests } = await renderTask({ mode: Mode.SELF, adult: true });
+    await notYet();
+    expect(panel().getByText("The tutor is an AI, not a person")).toBeVisible();
+    await userEvent.click(panel().getByRole("button", { name: "Report a problem" }));
+    expect(document.activeElement).toBe(
+      screen.getByRole("heading", { name: "Report a problem with these words" }),
+    );
+    expect(form().getAllByRole("radio")).toHaveLength(6);
+    expect(form().getByText(/Please write no names in it/)).toBeVisible();
+    // No kind chosen: nothing goes, and the group is told why.
+    await send();
+    expect(form().getByRole("alert")).toHaveTextContent("Choose what is wrong");
+    expect(
+      form().getByRole("group", { name: "What is wrong with the words?" }),
+    ).toHaveAccessibleDescription("Choose what is wrong");
+    expect(reportRequests).toEqual([]);
+    await userEvent.click(form().getByRole("radio", { name: "Unclear" }));
+    expect(form().queryByRole("alert")).toBeNull();
+    await userEvent.type(
+      form().getByRole("textbox", { name: "What else to say, if anything" }),
+      "  The gaps are not on the picture.  ",
+    );
+    await send();
+    const answer = await screen.findByText(thanks);
+    expect(document.activeElement).toBe(answer);
+    expect(reportRequests).toHaveLength(1);
+    const [sent] = reportRequests;
+    expect(sent?.profileId).toBe("p1");
+    expect(sent?.attemptId).toBe("a1");
+    expect(sent?.idempotencyKey).not.toBe("");
+    expect(sent?.reply).toBe(TutorReply.RUNG);
+    expect(sent?.rung).toBe(1);
+    expect(sent?.words).toBe("Count the gaps between the rungs.");
+    expect(sent?.kind).toBe(ProblemKind.UNCLEAR);
+    expect(sent?.text).toBe("The gaps are not on the picture.");
+    // The same words are reported once: no second button beside them.
+    expect(screen.queryByRole("button", { name: "Report a problem" })).toBeNull();
+  });
+
+  it("repeats a report whose reply was lost with the same key, and api keeps one report", async () => {
+    const { reportRequests, reports } = await renderTask({
+      mode: Mode.SELF,
+      adult: true,
+      report: (_, n) => {
+        // The first reply lost on the way, which the client repeats itself; the second a failure
+        // the screen names; the third goes through.
+        if (n === 0) throw new ConnectError("lost", Code.Unavailable);
+        if (n === 1) throw new ConnectError("lost", Code.Internal);
+      },
+    });
+    await notYet();
+    await userEvent.click(panel().getByRole("button", { name: "Report a problem" }));
+    await userEvent.click(form().getByRole("radio", { name: "Wrong" }));
+    await send();
+    expect(await form().findByRole("alert")).toHaveTextContent(
+      "This version of the app doesn't know this yet",
+    );
+    await send();
+    expect(await screen.findByText(thanks)).toBeVisible();
+    expect(reportRequests).toHaveLength(3);
+    const keys = new Set(reportRequests.map((request) => request.idempotencyKey));
+    expect(keys.size).toBe(1);
+    expect(reports.size).toBe(1);
+  });
+
+  it("gives an edited report a key of its own, after a failure too", async () => {
+    const { reportRequests, reports } = await renderTask({
+      mode: Mode.SELF,
+      adult: true,
+      report: (_, n) => {
+        if (n === 0) throw new ConnectError("lost", Code.Internal);
+      },
+    });
+    await notYet();
+    await userEvent.click(panel().getByRole("button", { name: "Report a problem" }));
+    await userEvent.click(form().getByRole("radio", { name: "Harmful, dangerous or upsetting" }));
+    await send();
+    await form().findByRole("alert");
+    // Another text is another report, which api may keep beside the first.
+    await userEvent.type(form().getByRole("textbox"), "It scared the learner.");
+    expect(form().queryByRole("alert")).toBeNull();
+    await send();
+    expect(await screen.findByText(thanks)).toBeVisible();
+    expect(reportRequests).toHaveLength(2);
+    expect(reportRequests[0]?.idempotencyKey).not.toBe(reportRequests[1]?.idempotencyKey);
+    expect(reportRequests[1]?.kind).toBe(ProblemKind.HARMFUL);
+    expect(reports.size).toBe(2);
+  });
+
+  it("keeps the key of a report still under way, and takes a refusal as its end", async () => {
+    let going = true;
+    const { reportRequests } = await renderTask({
+      mode: Mode.SELF,
+      adult: true,
+      report: (_, n) => {
+        if (going) throw refused(Code.Unavailable, Cause.STILL_GOING);
+        if (n === reportRequests.length - 1 && reportRequests.length <= 20) {
+          throw refused(Code.InvalidArgument, Cause.KEY_ALREADY_USED);
+        }
+      },
+    });
+    await notYet();
+    await userEvent.click(panel().getByRole("button", { name: "Report a problem" }));
+    await userEvent.click(form().getByRole("radio", { name: "Not right for the learner's age" }));
+    // The client waits for the first as long as api lets it go, then the screen says no connection.
+    await send();
+    expect(await form().findByRole("alert")).toHaveTextContent("No connection");
+    const waited = reportRequests.length;
+    going = false;
+    await send();
+    expect(await form().findByRole("alert")).toHaveTextContent(
+      "This version of the app doesn't know this yet",
+    );
+    expect(reportRequests[waited]?.idempotencyKey).toBe(reportRequests[0]?.idempotencyKey);
+    // A refusal ends the report: the next press is another, with a key of its own.
+    const refusedKey = reportRequests[waited]?.idempotencyKey;
+    await send();
+    await vi.waitFor(() => expect(reportRequests.length).toBe(waited + 2));
+    expect(reportRequests[waited + 1]?.idempotencyKey).not.toBe(refusedKey);
+  });
+
+  it("reports the words after a correct answer without a rung", async () => {
+    const { reportRequests } = await renderTask({
+      mode: Mode.SELF,
+      adult: true,
+      correct: () => ({ words: "Well done: five fruits." }),
+    });
+    await userEvent.click(await screen.findByRole("radio", { name: "5" }));
+    await userEvent.click(screen.getByRole("radio", { name: "Yes" }));
+    await userEvent.click(check());
+    await screen.findByText("Well done: five fruits.");
+    expect(panel().getByText("The tutor is an AI, not a person")).toBeVisible();
+    await userEvent.click(panel().getByRole("button", { name: "Report a problem" }));
+    await userEvent.click(
+      form().getByRole("radio", { name: "Asks about something personal, or talks of it" }),
+    );
+    await send();
+    expect(await screen.findByText(thanks)).toBeVisible();
+    expect(reportRequests[0]?.reply).toBe(TutorReply.CORRECT_ANSWER);
+    expect(reportRequests[0]?.rung).toBe(0);
+    expect(reportRequests[0]?.words).toBe("Well done: five fruits.");
+    expect(reportRequests[0]?.kind).toBe(ProblemKind.PERSONAL);
+  });
+
+  it("reports the words a rung keeps by its rung, and Explain differently by the same rung", async () => {
+    const { reportRequests } = await renderTask({
+      mode: Mode.SELF,
+      adult: true,
+      kept: { rung: 2, words: "Count the gaps." },
+      wrongAnswers: 2,
+    });
+    await screen.findByText("Count the gaps.");
+    await userEvent.click(panel().getByRole("button", { name: "Report a problem" }));
+    await userEvent.click(form().getByRole("radio", { name: "Wrong" }));
+    await send();
+    await screen.findByText(thanks);
+    expect(reportRequests[0]?.reply).toBe(TutorReply.RUNG);
+    expect(reportRequests[0]?.rung).toBe(2);
+    // Other words are another reply: the button stands beside them anew.
+    await userEvent.click(panel().getByRole("button", { name: "Explain differently" }));
+    await screen.findByText("In other words: count the fruits one by one.");
+    await userEvent.click(panel().getByRole("button", { name: "Report a problem" }));
+    await userEvent.click(form().getByRole("radio", { name: "Unclear" }));
+    await send();
+    await vi.waitFor(() => expect(reportRequests).toHaveLength(2));
+    expect(reportRequests[1]?.reply).toBe(TutorReply.EXPLAINED_DIFFERENTLY);
+    expect(reportRequests[1]?.rung).toBe(2);
+    expect(reportRequests[1]?.words).toBe("In other words: count the fruits one by one.");
+    expect(reportRequests[1]?.idempotencyKey).not.toBe(reportRequests[0]?.idempotencyKey);
+  });
+
+  it("keeps a report begun on words that Hint gives again, as the reply they came by", async () => {
+    const { reportRequests } = await renderTask({
+      mode: Mode.SELF,
+      adult: true,
+      kept: { rung: 1, words: "Count the gaps." },
+      wrongAnswers: 1,
+      hint: () => ({
+        hint: {
+          case: "rung",
+          value: { rung: 1, words: "In other words: count the fruits one by one." },
+        },
+      }),
+    });
+    await userEvent.click(await screen.findByRole("button", { name: "Explain differently" }));
+    await screen.findByText("In other words: count the fruits one by one.");
+    await userEvent.click(panel().getByRole("button", { name: "Report a problem" }));
+    await userEvent.click(form().getByRole("radio", { name: "Unclear" }));
+    await userEvent.type(form().getByRole("textbox"), "Still unclear.");
+    await userEvent.click(screen.getByRole("button", { name: "Hint" }));
+    await vi.waitFor(() =>
+      expect(screen.getByRole("button", { name: "Hint" })).not.toHaveAttribute(
+        "aria-disabled",
+        "true",
+      ),
+    );
+    expect(form().getByRole("textbox")).toHaveValue("Still unclear.");
+    await send();
+    await screen.findByText(thanks);
+    expect(reportRequests[0]?.reply).toBe(TutorReply.EXPLAINED_DIFFERENTLY);
+    expect(reportRequests[0]?.rung).toBe(1);
+  });
+
+  it("offers no report beside words that are empty", async () => {
+    await renderTask({
+      mode: Mode.SELF,
+      adult: true,
+      kept: { rung: 1, words: "" },
+      wrongAnswers: 1,
+    });
+    expect(await screen.findByText("The tutor is an AI, not a person")).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Report a problem" })).toBeNull();
+  });
+
+  it("takes no Cancel and no second Send while a report is under way", async () => {
+    let release: () => void = () => {};
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const { reportRequests } = await renderTask({
+      mode: Mode.SELF,
+      adult: true,
+      report: () => gate,
+    });
+    await notYet();
+    await userEvent.click(panel().getByRole("button", { name: "Report a problem" }));
+    await userEvent.click(form().getByRole("radio", { name: "Wrong" }));
+    await send();
+    await vi.waitFor(() => expect(reportRequests).toHaveLength(1));
+    expect(form().getByRole("button", { name: "Cancel" })).toHaveAttribute("aria-disabled", "true");
+    expect(form().getByRole("button", { name: "Send" })).toHaveAttribute("aria-disabled", "true");
+    // Presses the browser lets through, as a screen reader's would: aria-disabled does not stop them.
+    form().getByRole("button", { name: "Cancel" }).click();
+    form().getByRole("button", { name: "Send" }).click();
+    release();
+    expect(await screen.findByText(thanks)).toBeVisible();
+    expect(reportRequests).toHaveLength(1);
+  });
+
+  it("asks Something else for its text, gives the focus back on Cancel, and thanks without a day none came", async () => {
+    const { reportRequests } = await renderTask({
+      mode: Mode.SELF,
+      adult: true,
+      reportAnswer: { reportId: "report-1" },
+    });
+    await notYet();
+    const button = panel().getByRole("button", { name: "Report a problem" });
+    await userEvent.click(button);
+    await userEvent.click(form().getByRole("radio", { name: "Something else" }));
+    await send();
+    expect(form().getByRole("alert")).toHaveTextContent("Say in the text what is wrong");
+    expect(form().getByRole("textbox")).toHaveAccessibleDescription(
+      /Up to 1000 characters.*Say in the text what is wrong/,
+    );
+    expect(form().getByRole("textbox")).toHaveAttribute("maxlength", "1000");
+    await userEvent.click(form().getByRole("button", { name: "Cancel" }));
+    expect(screen.queryByRole("form")).toBeNull();
+    expect(document.activeElement).toBe(panel().getByRole("button", { name: "Report a problem" }));
+    expect(reportRequests).toEqual([]);
+    await userEvent.click(panel().getByRole("button", { name: "Report a problem" }));
+    await userEvent.click(form().getByRole("radio", { name: "Something else" }));
+    await userEvent.type(form().getByRole("textbox"), "The words are in another language.");
+    await send();
+    expect(await screen.findByText("Thank you: the report is sent")).toBeVisible();
+    expect(reportRequests[0]?.kind).toBe(ProblemKind.OTHER);
   });
 });

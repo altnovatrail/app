@@ -1118,3 +1118,51 @@ describe("the license of a module", () => {
     expect(await screen.findByRole("heading", { level: 1, name: "Sign in" })).toBeTruthy();
   });
 });
+
+describe("the page on the AI tutor", () => {
+  afterEach(() => {
+    window.location.hash = "";
+  });
+
+  const routes = (profile: object) => ({
+    getAccount: () =>
+      message(GetAccountResponseSchema, {
+        account: { accountId: "account-1", profiles: [profile] },
+      }),
+    listConnectedModules: () => message(ListConnectedModulesResponseSchema, { modules: [] }),
+  });
+
+  it("opens from My subjects in the learner's language, closes back to it, and shows before signing in by its address", async () => {
+    const service = fakeSignIn("uid-1");
+    renderApp(routes({ ...OWNER, interfaceLanguage: "ru" }), service);
+    await userEvent.click(await screen.findByRole("button", { name: "Ёжик" }));
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Как безопасно пользоваться наставником" }),
+    );
+    expect(window.location.hash).toBe("#/tutor");
+    expect(
+      await screen.findByRole("heading", {
+        level: 1,
+        name: "Как безопасно пользоваться ИИ-наставником",
+      }),
+    ).toBeTruthy();
+    expect(document.documentElement.lang).toBe("ru");
+    expect(screen.getAllByRole("heading", { level: 2 })).toHaveLength(6);
+    expect(document.querySelector("a")).toBeNull();
+    await userEvent.click(screen.getByRole("button", { name: "Закрыть" }));
+    expect(await screen.findByRole("heading", { level: 1, name: "Мои предметы" })).toBeTruthy();
+    // Signed out, the page shows by its address in the device's language; a part it does not know
+    // goes to the page itself.
+    service.set(null);
+    window.location.hash = "#/home";
+    expect(await screen.findByRole("heading", { level: 1, name: "Sign in" })).toBeTruthy();
+    window.location.hash = "#/tutor/more";
+    expect(
+      await screen.findByRole("heading", { level: 1, name: "How to use the AI tutor safely" }),
+    ).toBeTruthy();
+    expect(window.location.hash).toBe("#/tutor");
+    expect(screen.getByText(/call your country's emergency number/)).toBeTruthy();
+    await userEvent.click(screen.getByRole("button", { name: "Close" }));
+    expect(await screen.findByRole("heading", { level: 1, name: "Sign in" })).toBeTruthy();
+  });
+});

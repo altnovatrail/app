@@ -423,6 +423,21 @@ describe("the built page", () => {
     await page.context().close();
   }, 60_000);
 
+  it("shows the page on the AI tutor by its address, under the header, asking api nothing (R33)", async () => {
+    writeFileSync(local, JSON.stringify(file(ORIGIN)));
+    const { page, violations, requests } = await open();
+    await page.goto(`${ORIGIN}/#/tutor`);
+    await page.getByRole("heading", { level: 1, name: "How to use the AI tutor safely" }).waitFor();
+    await page.getByRole("heading", { name: "The tutor is an AI" }).waitFor();
+    expect(await page.locator("a").count()).toBe(0);
+    const own = requests.filter((path) => !path.startsWith("/assets/") && path !== "/");
+    expect(own).toEqual(["/deployment.json"]);
+    await page.getByRole("button", { name: "Close" }).click();
+    await page.getByRole("heading", { name: "Sign in" }).waitFor();
+    expect(violations).toEqual([]);
+    await page.context().close();
+  }, 60_000);
+
   it("says the app is not set up without the file, in the device's language", async () => {
     rmSync(local, { force: true });
     const { page, violations } = await open("ru-RU");

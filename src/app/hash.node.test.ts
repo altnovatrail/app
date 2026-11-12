@@ -9,6 +9,7 @@ import {
   parseHash,
   SCREENS,
   TASK,
+  TUTOR,
 } from "./hash.ts";
 
 describe("parseHash", () => {
@@ -71,6 +72,11 @@ describe("formatHash", () => {
     const route = { ...MODULE_LICENSE, parts: [digest] };
     expect(formatHash(route)).toBe(`#/license/sha256%3A${"1".repeat(64)}`);
     expect(parseHash(formatHash(route))).toEqual(route);
+  });
+
+  it("knows the page on the AI tutor, which names nobody", () => {
+    expect(formatHash(TUTOR)).toBe("#/tutor");
+    expect(parseHash("#/tutor")).toEqual(TUTOR);
   });
 
   it("writes the home screen as #/home", () => {
