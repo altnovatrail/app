@@ -9,7 +9,11 @@ import type { ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { page } from "vitest/browser";
 import "../theme/theme.css";
-import { ProfileSchema } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
+import {
+  GetQuotaResponseSchema,
+  ProfileSchema,
+  QuotaShareSchema,
+} from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import {
   ItemVerdictSchema,
   TutorReply,
@@ -351,6 +355,21 @@ const STORAGE_API = {
         }),
       ],
     }),
+  },
+} as unknown as Api;
+
+/** An api of a profile whose cap is reached, beside the account's share: its page's tutor time. */
+const QUOTA_API = {
+  account: {
+    getQuota: async () =>
+      create(GetQuotaResponseSchema, {
+        share: {
+          profilePercent: 100,
+          accountPercent: 85,
+          capReached: true,
+          nextFamilyDay: { seconds: 1_794_009_600n },
+        },
+      }),
   },
 } as unknown as Api;
 
@@ -1018,6 +1037,29 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
           onFailed={() => {}}
         />
       </ApiProvider>
+    ),
+  ],
+  [
+    "a profile's page with the tutor time of the profile and the account, its cap reached",
+    () => (
+      <ApiProvider value={QUOTA_API}>
+        <ProfilePage profile={OWNER} onSaved={() => {}} onFailed={() => {}} />
+      </ApiProvider>
+    ),
+    async () => {
+      await vi.waitFor(() => expect(document.querySelectorAll("section")).toHaveLength(4));
+    },
+  ],
+  [
+    "My subjects with the tutor time used today",
+    () => (
+      <SubjectsScreen
+        connected={[]}
+        catalog={[]}
+        onConnect={() => {}}
+        onDisconnect={() => {}}
+        quota={create(QuotaShareSchema, { profilePercent: 40 })}
+      />
     ),
   ],
   [

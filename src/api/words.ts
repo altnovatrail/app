@@ -3,12 +3,13 @@
 // that every screen shows alike — a failure of AI is a neutral phrase, never "not yet" (R04 in
 // spec) — and the common string for a cause with no words here: a screen whose own causes they
 // are words them itself (T22, T26, T27, T32). The quota says when the tutor comes back by the
-// device's clock: today, tomorrow, or on the date of a family day that begins later (R37). No DOM.
+// device's clock: today, tomorrow, or on the date of a family day that begins later (R37), and so
+// does any other line of when the next family day begins, by phrases of its own. No DOM.
 import { Cause } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import { timestampDate } from "@bufbuild/protobuf/wkt";
 import { keyFor } from "../i18n/codes.ts";
 import { dateTimeFormat } from "../i18n/intl.ts";
-import type { Words } from "../i18n/words.ts";
+import type { Key, PlacesOf, Words } from "../i18n/words.ts";
 import type { Failure } from "./failure.ts";
 import type { ReadOutcome } from "./outcome.ts";
 
@@ -48,21 +49,48 @@ export function calendarDays(from: Date, to: Date): number {
   return Math.round((day(to) - day(from)) / 86_400_000);
 }
 
+/** A key whose string takes these places and no other. */
+type KeyWith<P extends string> = {
+  [K in Key]: [PlacesOf<K>] extends [P] ? ([P] extends [PlacesOf<K>] ? K : never) : never;
+}[Key];
+
 /**
- * The words of the quota, with when the next family day begins on the device's clock: today — a
- * time of today the clock has passed, too, when it runs ahead of api's —, tomorrow, or on its date,
- * when a change of the clock's offset made the family day longer than the device's (R56 api), and
- * when a clock far off puts it on a day before today.
+ * The three phrases of a line that says when the next family day begins, each a whole phrase of
+ * the dictionary, not glued from pieces (R37): today at its time, tomorrow at it, or on its date.
  */
-function quotaText(nextFamilyDay: Date, words: Words, now: Date): string {
+export interface DayPhrases {
+  readonly today: KeyWith<"time">;
+  readonly tomorrow: KeyWith<"time">;
+  readonly later: KeyWith<"date" | "time">;
+}
+
+/** The quota spent, and when it comes back: the words of every screen alike. */
+const QUOTA_PHRASES = {
+  today: "api.quota-today",
+  tomorrow: "api.quota-tomorrow",
+  later: "api.quota",
+} as const satisfies DayPhrases;
+
+/**
+ * A line of when the next family day begins on the device's clock: today — a time of today the
+ * clock has passed, too, when it runs ahead of api's —, tomorrow, or on its date, when a change of
+ * the clock's offset made the family day longer than the device's (R56 api), and when a clock far
+ * off puts it on a day before today.
+ */
+export function dayText(
+  phrases: DayPhrases,
+  nextFamilyDay: Date,
+  words: Words,
+  now: Date = new Date(),
+): string {
   const time = dateTimeFormat(words.language, { timeStyle: "short" }).format(nextFamilyDay);
   const days = calendarDays(now, nextFamilyDay);
-  if (days === 0) return words.text("api.quota-today", { time });
-  if (days === 1) return words.text("api.quota-tomorrow", { time });
+  if (days === 0) return words.text(phrases.today, { time });
+  if (days === 1) return words.text(phrases.tomorrow, { time });
   const date = dateTimeFormat(words.language, { day: "numeric", month: "long" }).format(
     nextFamilyDay,
   );
-  return words.text("api.quota", { date, time });
+  return words.text(phrases.later, { date, time });
 }
 
 /** The words of a cause; the quota with when it comes back, in the screen's language. */
@@ -70,7 +98,7 @@ function causeText(cause: Cause, nextFamilyDay: Date | undefined, words: Words, 
   const key = keyFor(CAUSE_KEYS, cause);
   if (key !== "api.quota") return words.text(key);
   if (nextFamilyDay === undefined) return words.text("api.ai-failure");
-  return quotaText(nextFamilyDay, words, now);
+  return dayText(QUOTA_PHRASES, nextFamilyDay, words, now);
 }
 
 /** The words of an outcome of AI, as of `now`. */

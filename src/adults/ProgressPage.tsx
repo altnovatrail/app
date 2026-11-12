@@ -4,10 +4,12 @@
 // its own, `#/adults/progress/<module>`; the traps that repeat, from the first page of GetProgress
 // alone; and the attempts, newest first, a page at a time, each with how it came out, its wrong
 // answers, its times and why the engine gave its task or its lesson — the reason code, which the
-// adult alone sees (concepts 12 in spec; R100 in spec). The progress names a task and a lesson by
-// their full IDs alone, and the screen shows their local IDs; a module by the manifest of its
-// current version, or of the one the cache keeps, or else by its ID (В57 in RUN.md). In the
-// device's language, as the section is (R10).
+// adult alone sees (concepts 12 in spec; R100 in spec). The progress names a task by its full ID
+// alone, and the screen shows its local ID; a lesson by its title, or by its local ID when api no
+// longer reads the package the attempt went on; and a solved attempt the skills its task trains,
+// by their titles. A module is named by the manifest of its current version, or of the one the
+// cache keeps, or else by its ID. In the device's language, as the section is (R10); a module's
+// texts — a lesson's title, the skills', a trap's — in the module's explanation language.
 import type { Profile } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import { Action } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
 import type {
@@ -23,7 +25,7 @@ import { ReadFailure } from "../api/ReadFailure.tsx";
 import { failureText } from "../api/words.ts";
 import { navigate } from "../app/router.ts";
 import { Screen } from "../app/Screen.tsx";
-import { dateTimeFormat, numberFormat } from "../i18n/intl.ts";
+import { dateTimeFormat, listFormat, numberFormat } from "../i18n/intl.ts";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import type { Language } from "../i18n/language.ts";
 import { usePackages } from "../packages/PackagesContext.tsx";
@@ -38,6 +40,7 @@ import {
   PROGRESS_PAGE,
   progressMapRoute,
   readProgress,
+  skillTitlesOf,
 } from "./progress.ts";
 
 /** A module's name by its ID, as a card names it: its title, in its own language when known. */
@@ -91,10 +94,14 @@ function Name({ card }: { readonly card: ModuleCard }) {
   return card.language === undefined ? card.title : <span lang={card.language}>{card.title}</span>;
 }
 
-/** The formats of the times and numbers of the progress, one of each per language. */
+/** The formats of the times, numbers and lists of the progress, one of each per language. */
 const FORMATS = new Map<
   Language,
-  { readonly time: Intl.DateTimeFormat; readonly number: Intl.NumberFormat }
+  {
+    readonly time: Intl.DateTimeFormat;
+    readonly number: Intl.NumberFormat;
+    readonly list: Intl.ListFormat;
+  }
 >();
 
 function formatsOf(language: Language) {
@@ -103,6 +110,7 @@ function formatsOf(language: Language) {
     held = {
       time: dateTimeFormat(language, { dateStyle: "medium", timeStyle: "short" }),
       number: numberFormat(language),
+      list: listFormat(language),
     };
     FORMATS.set(language, held);
   }
@@ -114,6 +122,33 @@ function When({ at }: { readonly at: Timestamp }) {
   const { language } = useLanguage();
   const date = timestampDate(at);
   return <time dateTime={date.toISOString()}>{formatsOf(language).time.format(date)}</time>;
+}
+
+/**
+ * Titles of a module, as the screen's language lists them: each title in the module's language, the
+ * words between them in the screen's.
+ */
+function Titles({
+  titles,
+  lang,
+}: {
+  readonly titles: readonly string[];
+  readonly lang: string | undefined;
+}) {
+  const { language } = useLanguage();
+  return formatsOf(language)
+    .list.formatToParts(titles)
+    .map((part, index) =>
+      part.type === "element" && lang !== undefined ? (
+        // A record's titles never change in place, and a title may come twice.
+        // biome-ignore lint/suspicious/noArrayIndexKey: a part's place in the list is its key.
+        <span key={index} lang={lang}>
+          {part.value}
+        </span>
+      ) : (
+        part.value
+      ),
+    );
 }
 
 /** A term of a card and what it says, in a language of its own when it is a module's text. */
@@ -188,6 +223,12 @@ function Attempt({
   const task = entryOf(record.task, "task");
   const lesson = record.lesson === "" ? undefined : record.lesson;
   const essay = record.essaySubmissions.length > 0;
+  // The titles of the lesson and of the skills are the module's, in its explanation language, as a
+  // trap's texts are: a lesson's segments are tasks of its own module. They are empty when api no
+  // longer reads the package of the attempt's version, and the lesson keeps its ID.
+  const lang = task === undefined ? undefined : names(task.moduleId).language;
+  const titled = record.lessonTitle !== "";
+  const skills = skillTitlesOf(record);
   return (
     <li className="nt-card">
       <article aria-labelledby={id}>
@@ -201,8 +242,13 @@ function Attempt({
             </Term>
           )}
           {lesson === undefined ? null : (
-            <Term term={words.text("progress.lesson")}>
-              {entryOf(lesson, "lesson")?.local ?? lesson}
+            <Term term={words.text("progress.lesson")} lang={titled ? lang : undefined}>
+              {titled ? record.lessonTitle : (entryOf(lesson, "lesson")?.local ?? lesson)}
+            </Term>
+          )}
+          {skills.length === 0 ? null : (
+            <Term term={words.text("progress.skills")}>
+              <Titles titles={skills} lang={lang} />
             </Term>
           )}
           <Term term={words.text("progress.version")}>{record.moduleVersion}</Term>

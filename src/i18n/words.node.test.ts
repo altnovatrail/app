@@ -7,7 +7,9 @@ import {
   dateTimeFormat,
   languageName,
   languageNames,
+  listFormat,
   numberFormat,
+  percentText,
   sizeText,
 } from "./intl.ts";
 import { LANGUAGES } from "./language.ts";
@@ -114,7 +116,7 @@ describe("keyFor", () => {
 });
 
 describe("Intl in the screen's language", () => {
-  it("writes numbers, dates, names of languages and orders as the language does", () => {
+  it("writes numbers, shares, dates, lists, names of languages and orders as the language does", () => {
     expect(numberFormat("ru").format(1.5)).toBe("1,5");
     expect(numberFormat("en").format(1.5)).toBe("1.5");
     const day = new Date(Date.UTC(2026, 10, 10));
@@ -129,6 +131,12 @@ describe("Intl in the screen's language", () => {
     expect(sizeText("en", 120_000_000_000)).toBe("120 GB");
     expect(sizeText("en", 999_960)).toBe("1 MB");
     expect(sizeText("en", 950)).toBe("1 kB");
+    // Shares in whole percent, and lists joined as the language joins them.
+    expect(percentText("en", 40)).toBe("40%");
+    // Russian puts a no-break space before the sign.
+    expect(percentText("ru", 100)).toBe(`100${String.fromCharCode(0xa0)}%`);
+    expect(listFormat("en").format(["A", "B", "C"])).toBe("A, B, and C");
+    expect(listFormat("ru").format(["А", "Б", "В"])).toBe("А, Б и В");
     // By the language's order, not by code units, which would put "борис" last.
     expect(["Яна", "борис", "Анна", "Ель"].sort(collator("ru").compare)).toEqual([
       "Анна",

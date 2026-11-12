@@ -25,6 +25,7 @@ import {
   PROGRESS_PAGE,
   progressMapRoute,
   readProgress,
+  skillTitlesOf,
 } from "./progress.ts";
 
 describe("the progress's pages", () => {
@@ -95,6 +96,30 @@ describe("outcomeKey", () => {
     expect(outcomeKey(record(CloseReason.NOT_SUITABLE))).toBe("progress.outcome-not-suitable");
     expect(outcomeKey(record(CloseReason.DONE))).toBe("progress.outcome-done");
     expect(outcomeKey(record(42 as CloseReason))).toBe("common.unknown");
+  });
+});
+
+describe("skillTitlesOf", () => {
+  const record = (closeReason: CloseReason) =>
+    create(AttemptRecordSchema, { closeReason, skillTitles: ["Counting gaps", "Posts"] });
+
+  it("names the skills of a solved attempt's task in their order, and of no other attempt", () => {
+    for (const solved of [CloseReason.CORRECT, CloseReason.SOLUTION_SHOWN, CloseReason.DONE]) {
+      expect(skillTitlesOf(record(solved))).toEqual(["Counting gaps", "Posts"]);
+    }
+    for (const other of [
+      CloseReason.UNSPECIFIED,
+      CloseReason.LEFT,
+      CloseReason.ABANDONED,
+      CloseReason.UNCHECKED,
+      CloseReason.NOT_SUITABLE,
+      42 as CloseReason,
+    ]) {
+      expect(skillTitlesOf(record(other))).toEqual([]);
+    }
+    expect(skillTitlesOf(create(AttemptRecordSchema, { closeReason: CloseReason.DONE }))).toEqual(
+      [],
+    );
   });
 });
 

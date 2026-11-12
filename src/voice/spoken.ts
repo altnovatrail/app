@@ -118,8 +118,12 @@ function tableOf(language: string): Table | undefined {
   return Object.hasOwn(TABLES, primary) ? TABLES[primary] : undefined;
 }
 
-/** A fraction, a sign or a box; a hyphen between two numbers is read as a minus first. */
-const TOKEN = /(\d+)\/(\d+)|[×÷−=<>□]/gu;
+/**
+ * A number, a fraction when a slash and digits follow it, a sign or a box; a hyphen between two
+ * numbers is read as a minus first. A number alone is a token too, so that nothing after its digits
+ * can fail and send the match back through them: the pattern stays linear in a long run of digits.
+ */
+const TOKEN = /(\d+)(?:\/(\d+))?|[×÷−=<>□]/gu;
 
 /** Whether the character before or after a sign is an operand's: a digit, a box, a bracket. */
 const BEFORE = /[\p{N}□)]/u;
@@ -132,6 +136,7 @@ export function spokenText(text: string, language: string): string {
   const minus = text.replace(/(\d)\s+-\s+(?=\d)/gu, "$1 − ");
   const spoken = minus.replace(TOKEN, (match, numerator, denominator, at: number) => {
     if (numerator !== undefined) {
+      if (denominator === undefined) return match;
       return ` ${table.fraction(Number(numerator), Number(denominator))} `;
     }
     if (match === BOX) return ` ${table.box} `;
@@ -144,9 +149,11 @@ export function spokenText(text: string, language: string): string {
       (before !== undefined && BEFORE.test(before)) || (after !== undefined && AFTER.test(after));
     return ` ${(between ? table.between : table.alone)[sign]} `;
   });
+  // Every run of white space is one space by then, so the space before a mark is matched alone:
+  // a quantified run there would be tried again from each of its spaces.
   return spoken
     .replace(/\s+/gu, " ")
-    .replace(/\s+([,;:!?]|\.(?!\.))/gu, "$1")
+    .replace(/ ([,;:!?]|\.(?!\.))/gu, "$1")
     .trim();
 }
 

@@ -513,8 +513,10 @@ export const en = {
   /** The heading of an attempt: {task} is the task's ID in its module, as the progress names it. */
   "progress.task": "Task {task}",
   "progress.module": "Module",
-  /** The lesson of an attempt of a lesson's segment, by its ID in its module. */
+  /** The lesson of an attempt of a lesson's segment, by its title, or else its ID in its module. */
   "progress.lesson": "Lesson",
+  /** The skills a solved attempt's task trains, by their titles in the module's language. */
+  "progress.skills": "Skills",
   "progress.version": "Version",
   "progress.outcome": "Outcome",
   "progress.outcome-open": "Still going",
@@ -578,6 +580,29 @@ export const en = {
   "storage.text-changed": "The text of the consent has changed. Read it again and tick the consent",
   /** The button of the consent: switches the storage on. */
   "storage.switch-on": "Switch it on",
+  /**
+   * On My subjects: the share of today's quota of platform AI the learner's profile has used, as a
+   * percentage — never a sum of money (concepts 14 spec). Once it is used up, the line is api.quota.
+   */
+  "quota.learner": "Tutor time today: {percent} used",
+  /** The share of the quota of platform AI, on a profile's page in the section for adults. */
+  "quota.title": "Tutor time",
+  "quota.hint":
+    "How much of today's tutor time — the platform's AI, which checks work and words the tutor's replies — this profile and the whole account have used",
+  /** The share of the profile's own cap, as a percentage: {percent} is "40%". */
+  "quota.profile": "This profile: {percent} used",
+  /** The share of the cap of the whole account, which all its profiles use. */
+  "quota.account": "The whole account: {percent} used",
+  /** The profile's or the account's cap is reached: no work of the profile goes to platform AI. */
+  "quota.reached":
+    "Today's tutor time is used up: until it renews, the platform's AI checks no work of this profile",
+  /** When the next family day begins, today on the device's clock, at {time} (R37). */
+  "quota.renews-today": "Tutor time renews today at {time}",
+  "quota.renews-tomorrow": "Tutor time renews tomorrow at {time}",
+  /** The same, later than tomorrow, on {date} with no year (R37). */
+  "quota.renews": "Tutor time renews on {date} at {time}",
+  /** The account's tariff has no caps: platform AI is closed to it, and there is no share. */
+  "quota.closed": "The platform's AI has no tutor time on this account now: it is closed to it",
   /** The page This device (R04; section 3.2): its heading, and its place on the first page. */
   "device.title": "This device",
   "device.hint": "What the app keeps on this device, and how to erase it",
