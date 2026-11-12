@@ -19,8 +19,19 @@ export const TASK: Route = { screen: "task", parts: [] };
 /** The lesson player: the lesson run open, which the hash never names either (R23). */
 export const LESSON: Route = { screen: "lesson", parts: [] };
 
+/**
+ * The section for adults, its first page; `#/adults/<page>` is each of its other pages, a profile's
+ * among them for the profile chosen in the section, which the hash never names either (R29).
+ */
+export const ADULTS: Route = { screen: "adults", parts: [] };
+
 /** The screens this build knows. A hash that names another one shows the home screen. */
-export const SCREENS: ReadonlySet<string> = new Set([HOME.screen, TASK.screen, LESSON.screen]);
+export const SCREENS: ReadonlySet<string> = new Set([
+  HOME.screen,
+  TASK.screen,
+  LESSON.screen,
+  ADULTS.screen,
+]);
 
 /** The route a hash names: `#/screen/part`, each segment percent-encoded. */
 export function parseHash(hash: string): Route {

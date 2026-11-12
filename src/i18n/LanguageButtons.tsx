@@ -5,7 +5,7 @@ import { useLanguage } from "./LanguageContext.tsx";
 import { LANGUAGES, type Language } from "./language.ts";
 
 /** Each language by its own name: Intl.DisplayNames writes Russian's in lower case. */
-const NAMES: Readonly<Record<Language, string>> = { en: "English", ru: "Русский" };
+export const NAMES: Readonly<Record<Language, string>> = { en: "English", ru: "Русский" };
 
 export function LanguageButtons() {
   const { language, words, choose } = useLanguage();

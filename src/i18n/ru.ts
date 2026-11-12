@@ -191,6 +191,32 @@ export const ru = {
   "next.else": "Что-то другое",
   "next.else-confirm": "Начатая задача закроется, и к ней не вернуться",
   "next.else-go": "Перейти",
+  "adults.title": "Для взрослых",
+  "adults.close": "Закрыть раздел",
+  "adults.back": "Назад в раздел",
+  "adults.device-language": "Язык на этом устройстве",
+  "adults.device-language-hint": "На нём — этот раздел и экраны до выбора ученика",
+  "adults.profiles": "Профили",
+  "adults.profile": "Профиль: {pseudonym}",
+  "adults.mode": "Режим по умолчанию",
+  "adults.mode-hint":
+    "С него начинается каждая задача. Ученик может переключить его на экране задачи",
+  "adults.language": "Язык экранов ученика",
+  "adults.language-none": "Не выбран: экраны ученика — на языке устройства",
+  "adults.language-unknown":
+    "Язык профиля — {language}, а его в этой версии приложения нет. Экраны ученика — на языке устройства",
+  "adults.voicing": "Озвучка",
+  "adults.voicing-on": "Озвучивать слова наставника",
+  "adults.speed": "Скорость озвучки",
+  "adults.speed-normal": "Обычная",
+  "adults.speed-slow": "Медленная",
+  "adults.voicing-later":
+    "Эта версия приложения пока не озвучивает. Настройка сохранится и заработает, когда озвучка появится",
+  "adults.voicing-reader":
+    "Если вы слушаете программу чтения с экрана, озвучку лучше выключить: они говорили бы разом",
+  "adults.save": "Сохранить",
+  "adults.saved": "Сохранено",
+  "adults.unchanged": "Ничего не изменилось",
   "common.unknown": "Эта версия приложения этого ещё не знает",
 } as const satisfies Translation<typeof en, "ru">;
 

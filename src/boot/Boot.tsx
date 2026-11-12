@@ -31,6 +31,7 @@ import type { Deployment } from "../config/deployment.ts";
 import { type Loaded, loadDeployment } from "../config/load.ts";
 import { LanguageProvider, type LanguageState } from "../i18n/LanguageContext.tsx";
 import { deviceLanguage, type Language, lookup } from "../i18n/language.ts";
+import { setDeviceLanguage } from "../i18n/page.ts";
 import { WORDS } from "../i18n/words.ts";
 import { PackageChecks } from "../packages/checks.ts";
 import { DeviceFiles } from "../packages/files.ts";
@@ -142,7 +143,7 @@ export function Boot({
   const [service, setService] = useState<SignInService | undefined>(undefined);
 
   useEffect(() => {
-    document.documentElement.lang = language;
+    setDeviceLanguage(language);
   }, [language]);
 
   useEffect(() => {

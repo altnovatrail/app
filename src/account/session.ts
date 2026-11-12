@@ -18,6 +18,7 @@ import { accountSeen, eraseAccount, profilesListed } from "../storage/erase.ts";
 import { openProfileDatabase } from "../storage/profile.ts";
 import { eraseDatabases, readRegistry, type SignIn, setSignIn } from "../storage/registry.ts";
 import { profileDatabase } from "../storage/schema.ts";
+import { withSettings } from "./settings.ts";
 
 export type SessionState =
   /** The sign-in service has not read its session yet. */
@@ -259,6 +260,16 @@ export class Session {
     }
   }
 
+  /**
+   * A failure of a change of a profile in the section for adults: one that is the session's own
+   * moves it, and a profile api no longer has — deleted on another device — asks for the account
+   * again, which erases it here (R04). The page shows the rest.
+   */
+  profileFailed(failure: Failure): void {
+    if (refusedWith(failure, Cause.NO_PROFILE)) void this.load();
+    else this.formFailure(failure);
+  }
+
   /** A failure of a form: one that is the session's own moves it, the rest the form shows. */
   private formFailure(failure: Failure): Failure {
     if (failure.kind === "sign-in" || failure.kind === "account-gone") this.failed(failure);
@@ -314,13 +325,21 @@ export class Session {
     }
   }
 
-  /** `CreateOwnerProfile`, of the category `adult`, with the owner's country and pseudonym. */
+  /**
+   * `CreateOwnerProfile`, of the category `adult`, with the owner's country and pseudonym, and the
+   * language of the screen as the language of the learner's screens, as the contract has a new
+   * profile take the language of the section for adults (R10).
+   */
   async createOwnerProfile(
     pseudonym: string,
     country: string,
+    language: string,
   ): Promise<FormResult<"country-not-accepted">> {
     try {
-      await this.options.api.account.createOwnerProfile({ country, settings: { pseudonym } });
+      await this.options.api.account.createOwnerProfile({
+        country,
+        settings: { pseudonym, interfaceLanguage: language },
+      });
     } catch (reason) {
       const failure = parseFailure(reason);
       if (refusedWith(failure, Cause.COUNTRY_NOT_ACCEPTED)) return "country-not-accepted";
@@ -335,6 +354,28 @@ export class Session {
     if (this.state.step !== "choose") return;
     this.fresh = undefined;
     this.set({ step: "learning", account: this.state.account, learner: this.state.owner });
+  }
+
+  /**
+   * A profile api changed — in this tab, or in another that told of it —: the account's profile of
+   * its ID takes its settings, the learner chosen too (R29). An account that holds no such profile
+   * is another's, and stays as it is.
+   */
+  profileChanged(changed: Profile): void {
+    const state = this.state;
+    if (state.step !== "choose" && state.step !== "learning") return;
+    const before = state.account.profiles.find(
+      (profile) => profile.profileId === changed.profileId,
+    );
+    if (before === undefined) return;
+    const after = withSettings(before, changed);
+    const swap = (profile: Profile) => (profile.profileId === changed.profileId ? after : profile);
+    const account = { ...state.account, profiles: state.account.profiles.map(swap) };
+    this.set(
+      state.step === "choose"
+        ? { ...state, account, owner: swap(state.owner) }
+        : { ...state, account, learner: swap(state.learner) },
+    );
   }
 
   /** Back to the choice of the learner: "Switch learner". */

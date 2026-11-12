@@ -5,6 +5,11 @@ import { render } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { page, userEvent } from "vitest/browser";
 import "../theme/theme.css";
+import { ProfileSchema } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
+import { create } from "@bufbuild/protobuf";
+import { ProfilePage } from "../adults/ProfilePage.tsx";
+import { ApiProvider } from "../api/ApiContext.tsx";
+import type { Api } from "../api/client.ts";
 import { Offline } from "../boot/Screens.tsx";
 import { LanguageButtons } from "../i18n/LanguageButtons.tsx";
 import { axeViolations } from "../test/a11y.ts";
@@ -21,6 +26,21 @@ describe("forced colours", () => {
     await userEvent.tab();
     expect(document.activeElement).toBe(button);
     expect(getComputedStyle(button).outlineStyle).toBe("solid");
+    expect(await axeViolations()).toEqual([]);
+  });
+
+  it("keep the fields and choices of a profile's page in the system's colours", async () => {
+    const profile = create(ProfileSchema, { profileId: "p1", owner: true, pseudonym: "Ёжик" });
+    render(
+      inLanguage(
+        <ApiProvider value={{} as Api}>
+          <ProfilePage profile={profile} onSaved={() => {}} onFailed={() => {}} />
+        </ApiProvider>,
+      ),
+    );
+    const radio = page.getByRole("radio", { name: "Step by step" }).element() as HTMLElement;
+    expect(getComputedStyle(radio).forcedColorAdjust).toBe("auto");
+    expect(radio).toBeChecked();
     expect(await axeViolations()).toEqual([]);
   });
 

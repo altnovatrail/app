@@ -1,8 +1,11 @@
 // The way into the app (sections 3.2, 3.6 and 3.10 of docs/architecture.md; R19 in
 // docs/decisions.md): the sign-in, the invite code of a user with no account with the legal texts it
 // accepts (R27), the owner's own profile, the choice of the learner and the sign-out, each a screen
-// of its own in the language of the device. The app below it opens only once a learner is chosen, so that nothing of it opens
-// before the device has erased what an account other than the one api names left there.
+// of its own in the language of the device. The app below it opens only once a learner is chosen,
+// so that nothing of it opens before the device has erased what an account other than the one api
+// names left there. The section for adults opens from the choice of the learner and from the bar
+// above the learner's screens, in place of either, while the account is open (R29); a profile it
+// changes, the other tabs hear of by BroadcastChannel, and a change they tell of comes here.
 import type { Profile } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import type {
   LegalText as LegalTextOf,
@@ -21,10 +24,12 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
+import { AdultSection } from "../adults/AdultSection.tsx";
 import { type RequestState, useApi, useRequest } from "../api/ApiContext.tsx";
 import type { Api } from "../api/client.ts";
 import type { Failure } from "../api/failure.ts";
 import { failureText } from "../api/words.ts";
+import { ADULTS, navigate, useRoute } from "../app/router.ts";
 import { Screen } from "../app/Screen.tsx";
 import { useDeployment, useStorage } from "../boot/Boot.tsx";
 import { Offline, StorageGone } from "../boot/Screens.tsx";
@@ -37,6 +42,7 @@ import { SignInScreen } from "../signin/SignInScreen.tsx";
 import type { Device } from "../storage/device.ts";
 import { countryNames } from "./countries.ts";
 import { pseudonymOf, Session, type Unfinished, unfinishedWork } from "./session.ts";
+import { PROFILES_CHANNEL, profileMessage, profileOf } from "./settings.ts";
 
 /** The learner chosen, and what the bar above the learner's screens does. */
 export interface Learner {
@@ -72,7 +78,23 @@ export function AccountGate({ children }: { readonly children: ReactNode }) {
   const state = useSyncExternalStore(session.subscribe, session.snapshot);
   const [leaving, setLeaving] = useState(false);
   const [left, setLeft] = useState(false);
-  const { words } = useLanguage();
+  const { language, words } = useLanguage();
+  const route = useRoute();
+  // One channel for the tab, which tells the others of a profile api changed here and hears theirs.
+  const channel = useRef<BroadcastChannel | undefined>(undefined);
+  useEffect(() => {
+    if (typeof BroadcastChannel === "undefined") return;
+    const opened = new BroadcastChannel(PROFILES_CHANNEL);
+    opened.onmessage = (event: MessageEvent) => {
+      const changed = profileOf(event.data);
+      if (changed !== undefined) session.profileChanged(changed);
+    };
+    channel.current = opened;
+    return () => {
+      channel.current = undefined;
+      opened.close();
+    };
+  }, [session]);
   const open = state.step === "choose" || state.step === "learning";
   // The sign-out screen is for the account open when it was asked: once that has gone some other
   // way — another tab signed out, the account is gone — the next account does not open on it.
@@ -93,6 +115,19 @@ export function AccountGate({ children }: { readonly children: ReactNode }) {
           setLeaving(false);
           return done;
         }}
+      />
+    );
+  }
+  if (open && route.screen === ADULTS.screen) {
+    return (
+      <AdultSection
+        route={route}
+        profiles={state.account.profiles}
+        onSaved={(changed) => {
+          session.profileChanged(changed);
+          channel.current?.postMessage(profileMessage(changed));
+        }}
+        onFailed={(failure) => session.profileFailed(failure)}
       />
     );
   }
@@ -136,7 +171,9 @@ export function AccountGate({ children }: { readonly children: ReactNode }) {
     case "owner-profile":
       return (
         <OwnerProfileScreen
-          onCreate={(pseudonym, country) => session.createOwnerProfile(pseudonym, country)}
+          onCreate={(pseudonym, country) =>
+            session.createOwnerProfile(pseudonym, country, language)
+          }
         />
       );
     case "choose":
@@ -474,7 +511,8 @@ async function persist(): Promise<Kept> {
 
 /**
  * The choice of the learner: the owner's profile with no PIN while the account has no child
- * (section 3.6), and on the first sign-in the line that learners' work is kept here (section 3.2).
+ * (section 3.6), and on the first sign-in the line that learners' work is kept here (section 3.2);
+ * below, the way into the section for adults and the sign-out.
  */
 export function ChooseScreen({
   profiles,
@@ -515,11 +553,14 @@ export function ChooseScreen({
           <p role="status">{kept === undefined ? null : words.text(`persist.${kept}`)}</p>
         </section>
       ) : null}
-      <p>
+      <div className="nt-buttons">
+        <button type="button" className="nt-secondary" onClick={() => navigate(ADULTS)}>
+          {words.text("adults.title")}
+        </button>
         <button type="button" className="nt-secondary" onClick={onSignOut}>
           {words.text("signout.button")}
         </button>
-      </p>
+      </div>
     </Screen>
   );
 }

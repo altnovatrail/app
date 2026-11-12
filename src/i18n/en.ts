@@ -308,6 +308,47 @@ export const en = {
   "next.else": "Something else",
   "next.else-confirm": "The task in progress closes, and it can't be gone back to",
   "next.else-go": "Go on",
+  /** The section for adults: its heading, and the buttons that open it (section 3.10). */
+  "adults.title": "For grown-ups",
+  /** Leaves the section for the learner's home, or the choice of the learner. */
+  "adults.close": "Close the section",
+  /** From a page of the section to its first page. */
+  "adults.back": "Back to the section",
+  /** The heading above the buttons of the language of this device, on the section's first page. */
+  "adults.device-language": "Language on this device",
+  "adults.device-language-hint":
+    "This section and the screens before a learner is chosen are in it",
+  /** The heading above the profiles of the account, each a page of its own. */
+  "adults.profiles": "Profiles",
+  /** A profile's page and the button that opens it: the pseudonym is not declined. */
+  "adults.profile": "Profile: {pseudonym}",
+  /** The setting each task begins in (R05): the learner switches it on the task screen. */
+  "adults.mode": "Default mode",
+  "adults.mode-hint": "Each task begins in it. The learner can switch it on the task screen",
+  /** The language of the learner's screens, a field of the profile (R10). */
+  "adults.language": "Language of the learner's screens",
+  /** The profile has no language: its learner's screens are in the device's. */
+  "adults.language-none": "None is chosen: the learner's screens are in the language of the device",
+  /** The profile's language is one this build does not have; {language} is its name. */
+  "adults.language-unknown":
+    "The profile's language is {language}, which this version of the app doesn't have. The learner's screens are in the language of the device",
+  /** The voicing of the tutor's words by the device (R07). */
+  "adults.voicing": "Voicing",
+  "adults.voicing-on": "Read the tutor's words aloud",
+  "adults.speed": "Speed of voicing",
+  "adults.speed-normal": "Normal",
+  "adults.speed-slow": "Slow",
+  /** Until the voicing comes (T45): the setting is kept, and nothing is read aloud yet. */
+  "adults.voicing-later":
+    "This version of the app doesn't read aloud yet. The setting is kept for when it does",
+  /** Voicing and a screen reader would speak at once (section 3.9). */
+  "adults.voicing-reader":
+    "If you listen to a screen reader, turn voicing off: the two would speak at once",
+  "adults.save": "Save",
+  /** api kept the settings changed. */
+  "adults.saved": "Saved",
+  /** Save with nothing changed: nothing is asked. */
+  "adults.unchanged": "Nothing has changed",
   /** In place of the words of a code from api this build does not know: a newer api sent it. */
   "common.unknown": "This version of the app doesn't know this yet",
 } as const satisfies Dictionary;

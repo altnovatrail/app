@@ -26,6 +26,8 @@ import {
   SignOutScreen,
   type TextsRead,
 } from "../account/AccountGate.tsx";
+import { AdultSection } from "../adults/AdultSection.tsx";
+import { ProfilePage } from "../adults/ProfilePage.tsx";
 import { ApiProvider } from "../api/ApiContext.tsx";
 import type { Api } from "../api/client.ts";
 import { App, LearnerBar } from "../app/App.tsx";
@@ -593,6 +595,42 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
     },
   ],
   ["lesson ended by api", () => <LessonEnd reason={RunEndReason.ABANDONED} />],
+  [
+    "the section for adults, below its bar",
+    () => (
+      <AdultSection
+        route={{ screen: "adults", parts: [] }}
+        profiles={[OWNER]}
+        onSaved={() => {}}
+        onFailed={() => {}}
+      />
+    ),
+  ],
+  [
+    "a profile's page, with a language the build does not have",
+    () => (
+      <ApiProvider value={{} as Api}>
+        <ProfilePage
+          profile={{ ...OWNER, interfaceLanguage: "de" }}
+          onSaved={() => {}}
+          onFailed={() => {}}
+        />
+      </ApiProvider>
+    ),
+  ],
+  [
+    "a profile's page with its error",
+    () => (
+      <ApiProvider value={{} as Api}>
+        <ProfilePage
+          profile={{ ...OWNER, pseudonym: " " }}
+          onSaved={() => {}}
+          onFailed={() => {}}
+        />
+      </ApiProvider>
+    ),
+    submit,
+  ],
   [
     "My subjects with lessons in progress",
     () => (

@@ -4,13 +4,15 @@ import {
   AccountService,
   type CreateAccountRequest,
   type CreateOwnerProfileRequest,
-  type ProfileSchema,
+  Mode,
+  ProfileSchema,
 } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import { Cause, RefusalSchema } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import { create, type MessageInitShape } from "@bufbuild/protobuf";
 import { Code, ConnectError, type ConnectRouter, createRouterTransport } from "@connectrpc/connect";
 import { describe, expect, it, vi } from "vitest";
 import { createApi } from "../api/client.ts";
+import { parseFailure } from "../api/failure.ts";
 import type { PackageChecks } from "../packages/checks.ts";
 import type { Device } from "../storage/device.ts";
 import { eraseAccount, noAccess } from "../storage/erase.ts";
@@ -495,7 +497,7 @@ describe("the forms of the account", () => {
     expect(session.snapshot().step).toBe("signed-out");
   });
 
-  it("creates the owner's profile with its country and pseudonym, and tells a country not taken", async () => {
+  it("creates the owner's profile with its country, pseudonym and language, and tells a country not taken", async () => {
     const asked: CreateOwnerProfileRequest[] = [];
     let profiles: MessageInitShape<typeof ProfileSchema>[] = [];
     let cause: Cause | undefined = Cause.COUNTRY_NOT_ACCEPTED;
@@ -512,16 +514,84 @@ describe("the forms of the account", () => {
     });
     session.start();
     await settled(session, "owner-profile");
-    expect(await session.createOwnerProfile("Ёжик", "DE")).toBe("country-not-accepted");
-    expect(asked[0]).toMatchObject({ country: "DE", settings: { pseudonym: "Ёжик" } });
+    expect(await session.createOwnerProfile("Ёжик", "DE", "ru")).toBe("country-not-accepted");
+    expect(asked[0]).toMatchObject({
+      country: "DE",
+      settings: { pseudonym: "Ёжик", interfaceLanguage: "ru" },
+    });
     cause = undefined;
-    expect(await session.createOwnerProfile("Ёжик", "US")).toBe("done");
+    expect(await session.createOwnerProfile("Ёжик", "US", "ru")).toBe("done");
     await settled(session, "choose");
 
     cause = Cause.ALREADY_EXISTS;
-    expect(await session.createOwnerProfile("Ёжик", "US")).toBe("done");
+    expect(await session.createOwnerProfile("Ёжик", "US", "ru")).toBe("done");
     cause = Cause.NO_CONSENT;
-    expect(await session.createOwnerProfile("Ёжик", "US")).toMatchObject({ kind: "refused" });
+    expect(await session.createOwnerProfile("Ёжик", "US", "ru")).toMatchObject({
+      kind: "refused",
+    });
+  });
+
+  it("gives the profile api changed its settings, in the choice and the learner chosen, and no other", async () => {
+    const { session } = harness({
+      getAccount: () => account("account-1", [owner(), { ...owner("p2"), owner: false }]),
+    });
+    session.start();
+    await settled(session, "choose");
+    const changed = create(ProfileSchema, {
+      ...owner(),
+      pseudonym: "Ёж",
+      defaultMode: Mode.SELF,
+      interfaceLanguage: "ru",
+      openAttempt: { attemptId: "a9" },
+    } as MessageInitShape<typeof ProfileSchema>);
+    session.profileChanged(changed);
+    let state = session.snapshot();
+    if (state.step !== "choose") throw new Error(state.step);
+    expect(state.owner).toMatchObject({ pseudonym: "Ёж", defaultMode: Mode.SELF });
+    // The rest stays as the tab has it: api's open attempt is GetAccount's to give.
+    expect(state.owner.openAttempt).toBeUndefined();
+    expect(state.account.profiles.map((profile) => profile.pseudonym)).toEqual(["Ёж", "Ёжик"]);
+
+    session.choose();
+    session.profileChanged(create(ProfileSchema, { ...owner(), pseudonym: "Ёжик" }));
+    state = session.snapshot();
+    if (state.step !== "learning") throw new Error(state.step);
+    expect(state.learner.pseudonym).toBe("Ёжик");
+    expect(state.learner.interfaceLanguage).toBeUndefined();
+
+    // Another account's profile, from a tab of another sign-in, changes nothing.
+    const before = session.snapshot();
+    session.profileChanged(create(ProfileSchema, { ...owner("p9"), pseudonym: "Чужой" }));
+    expect(session.snapshot()).toBe(before);
+  });
+
+  it("asks for the account again when a change finds the profile gone, and signs out on the sign-in's failure", async () => {
+    let asked = 0;
+    const { session } = harness({
+      getAccount: () => {
+        asked += 1;
+        return account("account-1", [owner()]);
+      },
+    });
+    session.start();
+    await settled(session, "choose");
+    // A failure the page says, alone, moves nothing.
+    session.profileFailed({ kind: "offline" });
+    expect(session.snapshot().step).toBe("choose");
+    session.profileFailed(parseFailure(refused(Code.FailedPrecondition, Cause.NO_PROFILE)));
+    await settled(session, "choose");
+    expect(asked).toBe(2);
+    session.profileFailed({ kind: "sign-in" });
+    expect(session.snapshot().step).toBe("signed-out");
+  });
+
+  it("takes no profile changed while no account is open", async () => {
+    const { session } = harness({}, null);
+    session.start();
+    await settled(session, "signed-out");
+    const before = session.snapshot();
+    session.profileChanged(create(ProfileSchema, owner()));
+    expect(session.snapshot()).toBe(before);
   });
 });
 

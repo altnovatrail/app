@@ -8,6 +8,10 @@ import {
   CreateOwnerProfileRequestSchema,
   CreateOwnerProfileResponseSchema,
   GetAccountResponseSchema,
+  Mode,
+  ProfileSchema,
+  UpdateProfileRequestSchema,
+  UpdateProfileResponseSchema,
 } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import {
   Cause,
@@ -17,12 +21,18 @@ import {
 import {
   BeginAttemptResponseSchema,
   ChooseNextResponseSchema,
+  GetOpenAttemptResponseSchema,
 } from "@altnovatrail/contracts/novatrail/api/v1/learning_pb.js";
 import {
   GetLegalTextsRequestSchema,
   GetLegalTextsResponseSchema,
 } from "@altnovatrail/contracts/novatrail/api/v1/legal_pb.js";
-import { CheckPackagesResponseSchema } from "@altnovatrail/contracts/novatrail/api/v1/package_pb.js";
+import {
+  CheckPackagesResponseSchema,
+  GetManifestResponseSchema,
+  GetSolvingStepsResponseSchema,
+  GetTechniquesResponseSchema,
+} from "@altnovatrail/contracts/novatrail/api/v1/package_pb.js";
 import {
   create,
   type DescMessage,
@@ -30,7 +40,7 @@ import {
   type MessageInitShape,
   toBinary,
 } from "@bufbuild/protobuf";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 import { App } from "../app/App.tsx";
@@ -40,6 +50,7 @@ import { readRegistry } from "../storage/registry.ts";
 import { memoryDevice } from "../test/device.ts";
 import { type FakeSignIn, fakeSignIn } from "../test/signin.ts";
 import { AccountGate } from "./AccountGate.tsx";
+import { PROFILES_CHANNEL, profileMessage, profileOf } from "./settings.ts";
 
 const FILE = {
   format: 1,
@@ -666,4 +677,193 @@ describe("the way in", () => {
     await userEvent.click(screen.getByRole("button", { name: "Try again" }));
     expect(await screen.findByRole("heading", { level: 1, name: "Who is learning?" })).toBeTruthy();
   }, 30_000);
+});
+
+const D1 = `sha256:${"1".repeat(64)}`;
+const encode = (value: unknown) => new TextEncoder().encode(JSON.stringify(value));
+
+/** An open attempt of a module with steps, and its views: the task screen shows the mode. */
+const ATTEMPT_ROUTES: Record<string, Route> = {
+  getOpenAttempt: () =>
+    message(GetOpenAttemptResponseSchema, {
+      attempt: {
+        start: {
+          attemptId: "a1",
+          task: {
+            json: encode({
+              id: "pick",
+              statement: [{ text: "Pick one." }],
+              canvas: { kind: "handwriting_sheet" },
+              items: [{ answer_slots: [{ binding: "choice", options: ["4", "5"] }] }],
+            }),
+            moduleFormatVersion: "0.4",
+          },
+          packageDigest: D1,
+        },
+      },
+    }),
+  getManifest: () =>
+    message(GetManifestResponseSchema, {
+      manifest: {
+        json: encode({
+          module_format_version: "0.4",
+          id: "example/choices",
+          version: "1.0.0",
+          title: "Choices",
+          languages: { explanation: "en" },
+        }),
+        moduleFormatVersion: "0.4",
+      },
+    }),
+  getSolvingSteps: () =>
+    message(GetSolvingStepsResponseSchema, {
+      solvingSteps: {
+        json: encode({ steps: [{ title: "Solve it", exit_condition: "answer_slots_filled" }] }),
+        moduleFormatVersion: "0.4",
+      },
+    }),
+  getTechniques: () =>
+    message(GetTechniquesResponseSchema, {
+      techniques: { json: encode({ techniques: {} }), moduleFormatVersion: "0.4" },
+    }),
+};
+
+describe("the section for adults", () => {
+  afterEach(() => {
+    window.location.hash = "";
+  });
+
+  it("opens from the choice and the bar, saves what changed, and the learner's screens take it", async () => {
+    const service = fakeSignIn("uid-1");
+    const account = { accountId: "account-1", profiles: [OWNER] };
+    const updates: ReturnType<typeof fromBinary<typeof UpdateProfileRequestSchema>>[] = [];
+    const heard: unknown[] = [];
+    const other = new BroadcastChannel(PROFILES_CHANNEL);
+    other.onmessage = (event) => heard.push(event.data);
+    renderApp(
+      {
+        getAccount: () => message(GetAccountResponseSchema, { account }),
+        updateProfile: (body) => {
+          updates.push(fromBinary(UpdateProfileRequestSchema, body));
+          return message(UpdateProfileResponseSchema, {
+            profile: { ...OWNER, defaultMode: Mode.SELF, interfaceLanguage: "ru" },
+          });
+        },
+      },
+      service,
+    );
+
+    // From the choice of the learner, in the device's language.
+    await userEvent.click(await screen.findByRole("button", { name: "For grown-ups" }));
+    expect(await screen.findByRole("heading", { level: 1, name: "For grown-ups" })).toBeTruthy();
+    expect(window.location.hash).toBe("#/adults");
+    expect(screen.getByRole("group", { name: "Language" })).toBeTruthy();
+    await userEvent.click(screen.getByRole("button", { name: "Profile: Ёжик" }));
+    expect(await screen.findByRole("heading", { level: 1, name: "Profile: Ёжик" })).toBeTruthy();
+    expect(window.location.hash).toBe("#/adults/profile");
+    expect(screen.getByRole("radio", { name: "Step by step" })).toBeChecked();
+    await userEvent.click(screen.getByRole("radio", { name: "On my own" }));
+    await userEvent.click(screen.getByRole("radio", { name: "Русский" }));
+    await userEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(await screen.findByText("Saved")).toBeTruthy();
+    // Only what changed goes.
+    expect(updates).toHaveLength(1);
+    expect(updates[0]).toMatchObject({
+      profileId: "p1",
+      settings: { defaultMode: Mode.SELF, interfaceLanguage: "ru" },
+    });
+    expect(updates[0]?.settings?.pseudonym).toBeUndefined();
+    expect(updates[0]?.settings?.voicing).toBeUndefined();
+    // The other tabs hear of it.
+    await vi.waitFor(() => expect(heard).toHaveLength(1));
+    expect(profileOf(heard[0])).toMatchObject({ profileId: "p1", defaultMode: Mode.SELF });
+    // The section stays in the device's language.
+    expect(screen.getByRole("heading", { level: 1, name: "Profile: Ёжик" })).toBeTruthy();
+    expect(document.documentElement.lang).toBe("en");
+
+    await userEvent.click(screen.getByRole("button", { name: "Back to the section" }));
+    expect(await screen.findByRole("heading", { level: 1, name: "For grown-ups" })).toBeTruthy();
+    await userEvent.click(screen.getByRole("button", { name: "Close the section" }));
+    expect(await screen.findByRole("heading", { level: 1, name: "Who is learning?" })).toBeTruthy();
+    await userEvent.click(screen.getByRole("button", { name: "Ёжик" }));
+    // The learner's screens in the profile's language, the page's language with them.
+    expect(await screen.findByRole("heading", { level: 1, name: "Мои предметы" })).toBeTruthy();
+    expect(document.documentElement.lang).toBe("ru");
+    // From the bar, back to the device's language.
+    await userEvent.click(screen.getByRole("button", { name: "Для взрослых" }));
+    expect(await screen.findByRole("heading", { level: 1, name: "For grown-ups" })).toBeTruthy();
+    expect(document.documentElement.lang).toBe("en");
+    await userEvent.click(screen.getByRole("button", { name: "Close the section" }));
+    expect(await screen.findByRole("heading", { level: 1, name: "Мои предметы" })).toBeTruthy();
+    other.close();
+  });
+
+  it("takes what another tab saved, and the default mode comes to the attempt the task screen opens", async () => {
+    const service = fakeSignIn("uid-1");
+    const owner = { ...OWNER, openAttempt: { attemptId: "a1" } };
+    const account = { accountId: "account-1", profiles: [owner] };
+    const other = new BroadcastChannel(PROFILES_CHANNEL);
+    renderApp(
+      { getAccount: () => message(GetAccountResponseSchema, { account }), ...ATTEMPT_ROUTES },
+      service,
+    );
+    await userEvent.click(await screen.findByRole("button", { name: "Ёжик" }));
+    expect(await screen.findByRole("heading", { level: 1, name: "My subjects" })).toBeTruthy();
+    // Something that is no profile changes nothing.
+    other.postMessage("ru");
+    other.postMessage(
+      profileMessage(
+        create(ProfileSchema, { ...OWNER, defaultMode: Mode.SELF, interfaceLanguage: "ru" }),
+      ),
+    );
+    expect(await screen.findByRole("heading", { level: 1, name: "Мои предметы" })).toBeTruthy();
+    // The open attempt GetAccount named stays: other settings make no other profile of it.
+    await userEvent.click(screen.getByRole("button", { name: "Продолжить задачу" }));
+    expect(await screen.findByRole("heading", { level: 1, name: "Задача" })).toBeTruthy();
+    const mode = screen.getByRole("group", { name: "Режим" });
+    expect(within(mode).getByRole("button", { name: "Самостоятельно" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    other.close();
+  });
+
+  it("asks for the account again when api has the profile no longer, and the page goes with it", async () => {
+    const service = fakeSignIn("uid-1");
+    let asked = 0;
+    const owner = { ...OWNER, profileId: "p0", pseudonym: "Белка" };
+    renderApp(
+      {
+        getAccount: () => {
+          asked += 1;
+          const profiles = asked === 1 ? [OWNER, { ...owner, owner: false }] : [OWNER];
+          return message(GetAccountResponseSchema, {
+            account: { accountId: "account-1", profiles },
+          });
+        },
+        updateProfile: () => refusal("failed_precondition", Cause.NO_PROFILE),
+      },
+      service,
+    );
+    await userEvent.click(await screen.findByRole("button", { name: "For grown-ups" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Profile: Белка" }));
+    await userEvent.click(await screen.findByRole("radio", { name: "On my own" }));
+    await userEvent.click(screen.getByRole("button", { name: "Save" }));
+    await vi.waitFor(() => expect(window.location.hash).toBe("#/adults"));
+    expect(await screen.findByRole("button", { name: "Profile: Ёжик" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Profile: Белка" })).toBeNull();
+    expect(asked).toBe(2);
+  });
+
+  it("goes to its first page from a profile's page with none chosen, and from a page it does not know", async () => {
+    window.location.hash = "#/adults/profile";
+    const service = fakeSignIn("uid-1");
+    const account = { accountId: "account-1", profiles: [OWNER] };
+    renderApp({ getAccount: () => message(GetAccountResponseSchema, { account }) }, service);
+    expect(await screen.findByRole("heading", { level: 1, name: "For grown-ups" })).toBeTruthy();
+    expect(window.location.hash).toBe("#/adults");
+    window.location.hash = "#/adults/nowhere";
+    await vi.waitFor(() => expect(window.location.hash).toBe("#/adults"));
+    expect(screen.getByRole("heading", { level: 1, name: "For grown-ups" })).toBeTruthy();
+  });
 });
