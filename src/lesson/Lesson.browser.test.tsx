@@ -511,7 +511,7 @@ describe("the lesson player", () => {
     expect(chip(3)).toHaveAttribute("aria-disabled", "true");
     expect(chip(3)).toHaveAccessibleDescription("This task is over");
     chip(3).click();
-    expect(await screen.findByText("This task is over", { selector: "p" })).toBeVisible();
+    expect(await screen.findByText("3 Task: already over", { selector: "p" })).toBeVisible();
     expect(screen.getByRole("heading", { level: 2 })).toHaveTextContent("Explanation · 4 of 4");
     // Back to the example: its demo as it was left; Continue leads to the place, past the task.
     await userEvent.click(chip(2));
@@ -731,7 +731,8 @@ describe("the lesson player", () => {
     await renderLesson();
     await screen.findByText("A fence has posts and gaps between them.");
     chip(4).click();
-    expect(await screen.findByText("Not open yet", { selector: "p" })).toBeVisible();
+    // The line names the chip pressed: under the heading of segment 1, not said of that one.
+    expect(await screen.findByText("4 Explanation: not open yet", { selector: "p" })).toBeVisible();
     expect(screen.getByRole("heading", { level: 2 })).toHaveTextContent("Explanation · 1 of 4");
   });
 

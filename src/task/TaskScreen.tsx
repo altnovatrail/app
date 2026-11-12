@@ -59,6 +59,8 @@ export interface TaskScreenProps {
   readonly tutorWords?: string;
   /** What the request of the tutor's words came to, when it gave none. */
   readonly wordsFailure?: string;
+  /** The words of a rung are asked and have not come yet. */
+  readonly wordsWaiting?: boolean;
   /** The words came since the last check: a screen reader is told. */
   readonly wordsCame?: boolean;
   /** The outcome of AI at the last check, in words: a failure of AI, a quota, a limit. */
@@ -186,7 +188,8 @@ export function TaskScreen(props: TaskScreenProps) {
         mode === "steps" ||
         props.hint !== undefined ||
         props.tutorWords !== undefined ||
-        props.wordsFailure !== undefined ? (
+        props.wordsFailure !== undefined ||
+        props.wordsWaiting === true ? (
           <aside className="nt-task-panel" aria-label={words.text("task.tutor")}>
             {solved ? (
               <>
@@ -238,6 +241,7 @@ export function TaskScreen(props: TaskScreenProps) {
                   words={props.tutorWords}
                   language={explanation}
                   {...(props.wordsFailure === undefined ? {} : { failure: props.wordsFailure })}
+                  waiting={props.wordsWaiting === true}
                   {...(props.onExplain === undefined ? {} : { onExplain: props.onExplain })}
                   explaining={props.explaining === true}
                   {...(props.explainNote === undefined ? {} : { note: props.explainNote })}

@@ -1098,6 +1098,73 @@ describe("the task screen with handwriting", () => {
     expect(screen.getByText("Your work isn't saved on this device")).toBeVisible();
   });
 
+  it("says the tutor is writing while the words of the rung are asked, and not once they came", async () => {
+    let words: () => void = () => {};
+    await renderTask({
+      task: SHEET_TASK,
+      history: WRITTEN,
+      mode: Mode.SELF,
+      answer: () => sheetAnswer("not_yet", { value: "5", wrong: 1 }),
+      rung: () =>
+        new Promise((resolve) => {
+          words = () => resolve({ rung: 1, words: "How many gaps are there?" });
+        }),
+    });
+    expect(screen.queryByText("The tutor is writing…")).toBeNull();
+    await vi.waitFor(() => expect(check()).toHaveAttribute("aria-disabled", "false"));
+    await userEvent.click(check());
+    await screen.findByText("Read: 5");
+    expect(await panel().findByText("The tutor is writing…")).toBeVisible();
+    expect(panel().getByRole("heading", { name: "Tutor" })).toBeVisible();
+    words();
+    expect(await panel().findByText("How many gaps are there?")).toBeVisible();
+    await vi.waitFor(() => expect(screen.queryByText("The tutor is writing…")).toBeNull());
+  });
+
+  it("offers no Explain differently while the words of the rung are still asked", async () => {
+    let words: () => void = () => {};
+    await renderTask({
+      mode: Mode.SELF,
+      rung: () =>
+        new Promise((resolve) => {
+          words = () => resolve({ rung: 1, words: "Count the gaps between the rungs." });
+        }),
+      hint: () => ({
+        hint: { case: "rung", value: { rung: 1, words: "Look at the pears again." } },
+      }),
+    });
+    await userEvent.click(await screen.findByRole("radio", { name: "4" }));
+    await userEvent.click(screen.getByRole("radio", { name: "No" }));
+    await userEvent.click(check());
+    await panel().findByText("The tutor is writing…");
+    // Hint gives the rung's words it keeps meanwhile: the right to other words waits for the model's.
+    await userEvent.click(screen.getByRole("button", { name: "Hint" }));
+    await panel().findByText("Look at the pears again.");
+    expect(screen.queryByRole("button", { name: "Explain differently" })).toBeNull();
+    words();
+    await panel().findByText("Count the gaps between the rungs.");
+    expect(await screen.findByRole("button", { name: "Explain differently" })).toBeVisible();
+  });
+
+  it("says the tutor is writing while Explain differently is under way, under the words before", async () => {
+    let words: () => void = () => {};
+    await renderTask({
+      mode: Mode.SELF,
+      kept: { rung: 1, words: "Count the gaps." },
+      wrongAnswers: 1,
+      explain: () =>
+        new Promise((resolve) => {
+          words = () => resolve({ words: "In other words: count the gaps one by one." });
+        }),
+    });
+    await userEvent.click(await screen.findByRole("button", { name: "Explain differently" }));
+    expect(await panel().findByText("The tutor is writing…")).toBeVisible();
+    expect(panel().getByText("Count the gaps.")).toBeVisible();
+    words();
+    expect(await panel().findByText("In other words: count the gaps one by one.")).toBeVisible();
+    await vi.waitFor(() => expect(screen.queryByText("The tutor is writing…")).toBeNull());
+  });
+
   it("drops the words of a rung that come after a newer check has solved the task", async () => {
     let words: () => void = () => {};
     let n = 0;

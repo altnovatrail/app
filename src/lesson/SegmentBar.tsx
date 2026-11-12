@@ -4,8 +4,9 @@
 // list wraps onto a second line. Each chip's name is its place and its kind, which the chip shows
 // from 64rem, its text the same (2.5.3), and how far it is is its description. A segment that does
 // not open — a task that ended, or one not reached — is `aria-disabled`, with why as its description
-// in place of how far, and a press says it in a line of the screen. The kind of the segment shown,
-// its place and the count are the heading below the bar, LessonScreen.tsx's.
+// in place of how far, and a press says it in a line of the screen with the chip's name: under the
+// heading of the segment shown, a bare "Not open yet" would read as said of that one. The kind of
+// the segment shown, its place and the count are the heading below the bar, LessonScreen.tsx's.
 import { useId } from "react";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { type Course, closedWhy } from "./place.ts";
@@ -17,6 +18,12 @@ export const KIND_KEYS = {
   example: "lesson.example",
   task: "lesson.task",
 } as const satisfies Record<Kind, string>;
+
+/** The line of the screen when a chip that does not open is pressed, by why. */
+const PRESSED = {
+  "lesson.not-open": "lesson.not-open-pressed",
+  "lesson.task-over": "lesson.task-over-pressed",
+} as const satisfies Record<NonNullable<ReturnType<typeof closedWhy>>, string>;
 
 export interface SegmentBarProps {
   readonly course: Course;
@@ -59,8 +66,9 @@ export function SegmentBar({ course, place, shown, onGoTo, onClosed }: SegmentBa
                 aria-describedby={describedBy}
                 {...(why === undefined ? {} : { "aria-disabled": true })}
                 onClick={() => {
-                  if (why !== undefined) onClosed(words.text(why));
-                  else if (segment !== shown) onGoTo(segment);
+                  if (why !== undefined) {
+                    onClosed(words.text(PRESSED[why], { n: segment, kind: kindWord }));
+                  } else if (segment !== shown) onGoTo(segment);
                 }}
               >
                 {segment}
