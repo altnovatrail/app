@@ -19,7 +19,7 @@ A component of [NovaTrail](https://github.com/altnovatrail/spec/tree/v0.15.1), a
 
 ## Status
 
-Detailing is done: the first epic of [RUN.md](RUN.md) decided what the component's card left open, and [docs/architecture.md](docs/architecture.md) holds the result. The code has begun with epic E2, the first app: so far the scaffold — an empty React app that builds, is checked and is tested in Node and in Chromium, locally and in CI — and the platform's packages it is built from: the canvas element, the contracts' code with its connect-es client and Firebase Auth, each package of `@altnovatrail` verified against its signed release.
+Detailing is done: the first epic of [RUN.md](RUN.md) decided what the component's card left open, and [docs/architecture.md](docs/architecture.md) holds the result. The second epic, E2, built the first app, which an adult learner uses against a local api, with no children yet and no deployment: signing in with Google, the account with the texts in force and the owner's own profile, "My subjects" with the catalog of modules, the lesson player, the task screen with the canvas — the steps, the choice of options, the check of handwriting, the hint, "Explain differently" and the solution shown —, and what the engine chose next. Its screens are in English and Russian, and every one passes axe-core in CI. The tutor's own words are not in yet: until tutor gives them, a learner gets the rung's fallback text. E2 ends with the first signed release of the build, which infra deploys; deployment, the adult's own key, speech, the skill map and the adults' section come next, and children's profiles after them.
 
 Run the four checks of the TypeScript code with `just ci` and the check of the documents with `just -f spec/justfile docs-check-repo` — CI runs both — the app with `just dev` — with a working copy of canvas, built, by `just dev-canvas <folder>` — and its build with `just preview`, all inside the devcontainer.
 
@@ -31,6 +31,25 @@ The first app runs against a local api, in api's own devcontainer, with the dev 
 2. Copy `deployment.example.json` to `deployment.local.json` and fill in the parameters of that Web App's config, `apiKey` included, from the project settings of Firebase; `api` stays `http://127.0.0.1:5173`, app's own origin, whose paths of api the development server sends on.
 3. In api's container: `just dev migrate`, `just dev countries allow <XX>` for the owner's country, `just dev invite` for an invite code — a new one each time the account was deleted — then `just dev serve`, and `hostname -i` for the address of the container.
 4. In this container, which is on api's network too: `NOVATRAIL_API=http://<that address>:8080 just dev`, then open `http://127.0.0.1:5173`. VS Code forwards the port by itself when `just dev` runs in its terminal; otherwise forward 5173 in its Ports panel, to the same port 5173 on the host: the origin is app's, and the authorized domain of Firebase.
+
+## Releases
+
+A release comes out by itself once the checks pass on `main` and a change touches what the build is made from: the next patch of the line 0.1, tagged `vX.Y.Z` with the release, and nobody tags by hand. Releases are immutable, and a ruleset keeps every tag `v*` on its commit.
+
+A release holds the archive of the build, `app_<version>.tar.gz`, signed with cosign by NovaTrail's shared release workflow, and beside it its bundle, `app_<version>.tar.gz.sigstore.json`, which the check of the signature reads. At the archive's root are `index.html`, `assets/`, `deployment.schema.json` — the schema of the deployment configuration, `/deployment.json`, which the page reads at every start and the archive does not hold —, `csp.json` — the template of the Content-Security-Policy header the host sends —, and `NOTICE` and `LICENSE`. The same build serves the platform and every self-hosted copy. infra deploys it; whoever hosts it takes it at an exact tag, checks it before serving it with spec's `just -f spec/justfile release-verify app <tag> <file>`, which checks the signature against Sigstore's trust root and everything its certificate names (R77 spec), and writes `deployment.json` of their own by spec's [part `deployment/`](https://github.com/altnovatrail/spec/tree/v0.15.1/deployment).
+
+## Contributing
+
+Report a bug or propose a change in an [issue](https://github.com/altnovatrail/app/issues), in English or Russian, and open one before a pull request unless the pull request fixes a typo or a broken link. How a change comes in, with every commit signed off, and what every change keeps to are in the organization's [CONTRIBUTING.md](https://github.com/altnovatrail/.github/blob/main/CONTRIBUTING.md); the rules every NovaTrail repository shares are in spec's [RULES.md](https://github.com/altnovatrail/spec/blob/v0.15.1/RULES.md): code comes with its tests, and no learner's data, not even in examples. Report a vulnerability privately, as the [security policy](https://github.com/altnovatrail/app/security/policy) says, never in a public issue.
+
+Work in the devcontainer: open the repository in VS Code and choose "Reopen in Container". It holds every tool at the version the repository pins, and the packages are those `package-lock.json` pins. The checks are recipes of the [justfile](justfile), and `just --list` names each with its arguments:
+
+- `just ci-lint` — Biome, the TypeScript compiler on the app and on the scripts and tests in Node, that every version in `package.json` is exact, and that the module of icons is what `scripts/icons.ts` writes;
+- `just ci-test` — the build, then every test with Vitest, in Node and in Chromium, among them the accessibility checks of every screen with axe-core; it writes the coverage to `coverage/lcov.info`, then builds the tree again and checks that both archives of a release are the same bytes;
+- `just ci-vuln` — `npm audit` of what ships; `just ci-licenses` — the licenses of the lock file against spec's list, the signatures of the packages of `@altnovatrail`, the file of spec's release the build takes the deployment format from, and that `NOTICE` names every package the build ships;
+- `just build` — the app into `build/`; `just release-files <version>` — the archive of a release into `dist/`.
+
+A check exits with a non-zero status when it finds a problem. CI runs them all on every pull request and on `main`, and a pull request merges only when they pass. Documents are checked by `just -f spec/justfile docs-check-repo`.
 
 ## Documents
 
