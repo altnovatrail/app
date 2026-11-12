@@ -1074,6 +1074,8 @@ describe("the task screen with handwriting", () => {
     });
     await vi.waitFor(() => expect(check()).toHaveAttribute("aria-disabled", "false"));
     await userEvent.click(check());
+    // In "On my own" the block "Tutor" comes with the first answer: wait for it before reading it.
+    await screen.findByRole("complementary", { name: "Tutor" });
     expect(await panel().findByText("Read the task again.")).toBeVisible();
     const line = `Today's tutor time is used up. It comes back tomorrow at ${at(midnight)}`;
     expect(panel().getByText(line)).toBeVisible();
@@ -1171,6 +1173,8 @@ describe("the task screen with handwriting", () => {
     await vi.waitFor(() => expect(check()).toHaveAttribute("aria-disabled", "false"));
     await userEvent.click(check());
     await screen.findByRole("region", { name: "Solution" });
+    // In "On my own" the block "Tutor" comes with the first answer: wait for it before reading it.
+    await screen.findByRole("complementary", { name: "Tutor" });
     expect(await panel().findByText("The tutor can't answer right now")).toBeVisible();
     expect(panel().getByRole("heading", { name: "Tutor", level: 2 })).toBeVisible();
     expect(first.corrects[0]?.clockOffsetMinutes).toBe(-new Date().getTimezoneOffset() || 0);
