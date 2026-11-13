@@ -1,9 +1,10 @@
 # app's own recipes: the build of the app, and the four checks .github's typescript.yml runs in CI,
 # one job each, in a new container of the toolchain stage of .devcontainer/Dockerfile — as the
 # runner's user, with HOME=/tmp and with CI from the step's environment (R14 in
-# docs/decisions.md; section 3.1 of docs/architecture.md). Only ci-licenses reads spec/: it runs
-# spec's recipes licenses-check-repo and release-verify-npm, and the licenses job alone gets the
-# submodule. The documents are checked by spec's own recipe, just -f spec/justfile docs-check-repo.
+# docs/decisions.md; section 3.1 of docs/architecture.md). Of the four only ci-licenses reads spec/:
+# it runs spec's recipes licenses-check-repo and release-verify-npm, and the licenses job alone gets
+# the submodule; site-check, by hand and not in CI, runs spec's release-verify too. The documents
+# are checked by spec's own recipe, just -f spec/justfile docs-check-repo.
 
 set shell := ["bash", "-euo", "pipefail", "-c"]
 
@@ -83,6 +84,23 @@ dev-canvas folder: _install
 # The build, served as the hosting would serve it.
 preview: build
     {{ bin }}/vite preview
+
+# Check a deployed site against the release of app it serves, as section 3.7 has it (R42): the
+# archive and its signature from the release, the archive accepted by spec's release-verify, then
+# scripts/site.ts — every file of the build at its path, /deployment.json as app reads it, the
+# headers, and the page in Chromium up to the sign-in window, which it closes with nobody signed in.
+# For the platform: just site-check https://novatrail.web.app <the release in infra's list>.
+site-check origin version: _install (_release-version version)
+    #!/usr/bin/env bash
+    set -euo pipefail
+    name="$(node scripts/release.ts --name {{ quote(version) }})"
+    work="$(mktemp -d)"
+    trap 'rm -rf "$work"' EXIT
+    for file in "$name" "$name.sigstore.json"; do
+        curl -fsSL --proto '=https' -o "$work/$file" "https://github.com/altnovatrail/app/releases/download/{{ version }}/$file"
+    done
+    {{ quote(just_executable()) }} -f spec/justfile release-verify app {{ quote(version) }} "$work/$name"
+    node scripts/site.ts {{ quote(origin) }} "$work/$name"
 
 # Write src/app/icons.ts again from the set of icons package-lock.json pins.
 icons: _install

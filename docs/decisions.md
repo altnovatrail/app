@@ -4,7 +4,7 @@
 >
 > **Rule:** do not re-propose what was rejected without new facts. If a decision has to change, ask the author and update this file. An entry is not rewritten: a dated amendment at the end of the entry corrects it, or a new entry replaces it, and the old one stays in place marked "Superseded".
 >
-> The repository was set up on 2026-10-19 from the template of `spec` v0.1.0 (R21 spec), moved on 2026-10-20 to `spec` v0.2.9 (R01), on 2026-11-02 to v0.6.2 (R02) and on the same day to v0.6.6 (R12), on 2026-11-10 to v0.13.0 (R13), on 2026-11-11 to v0.15.0 (R26) and on the same day to v0.15.1 (R28), and on 2026-11-12 to v0.16.3 (R38). How it comes to differ from the template — by the tools in the devcontainer, the rules in RUN.md — is recorded here as a decision, as R46 canvas-api recorded the differences from its model. Next number — R42.
+> The repository was set up on 2026-10-19 from the template of `spec` v0.1.0 (R21 spec), moved on 2026-10-20 to `spec` v0.2.9 (R01), on 2026-11-02 to v0.6.2 (R02) and on the same day to v0.6.6 (R12), on 2026-11-10 to v0.13.0 (R13), on 2026-11-11 to v0.15.0 (R26) and on the same day to v0.15.1 (R28), and on 2026-11-12 to v0.16.3 (R38). How it comes to differ from the template — by the tools in the devcontainer, the rules in RUN.md — is recorded here as a decision, as R46 canvas-api recorded the differences from its model. Next number — R43.
 >
 > Here entries are cited as `R03`, in other repositories as `R03 app`. Decisions of `spec` are cited as "R18 spec", MathTrail's decisions as "R37 canvas-api", and in a list as "canvas-api: R37, R38". Each log has its own numbers.
 >
@@ -1380,3 +1380,23 @@ An answer in handwriting — 2.1.1, 2.5.1 and 2.5.7 — and the submission by "C
 - shortening the rules of RUN.md — they are the template's, and a difference in them makes every move to a new tag harder; the bodies of the open tasks — each is planned and rewritten in its own session.
 
 — *Consequence:* RUN.md — rule 9, «Как устроен план: эпики», the opening, tables 1–3 and the part of E3; [plan/E3.md](plan/E3.md); the 2026-11-13 amendment to R13.
+
+**R42. The deployment of `app` is checked by `app` itself, by the recipe `just site-check <origin> <version>`: the release's archive, accepted by `release-verify`, against what the site serves to anyone — every file of the archive byte for byte, `/deployment.json` as the code of `app` reads it, the headers section 3.7 of [architecture.md](architecture.md) asks of the hosting, and the page in Chromium under the site's own header up to the sign-in window, which it closes before anyone signs in. The sign-in with an account, the invite code and a task on the deployment are not walked again: T24 `infra` walked them. The platform's domain is `novatrail.web.app`.** The author's answers of 2026-11-13 in the planning of T50, the first by the recommendation and the second not by it: T24 `infra` rolled out `app` v0.1.0 with `api` v0.1.22 on 2026-11-12, and the author signed in there with Google and made the account by a code of `api invite`. The newest release of `app` is v0.1.3, on `spec` v0.16.3, and its pair is `api` v0.1.29. To raise the list is E6 of `infra`, and a session of `app` changes no other repository (RULES.md, Across repositories).
+- **What the rollout of `infra` checks and what `app` checks.** The rollout holds the archive to the list's digest and to its layout, `/deployment.json` to the schema and to `api_origin`, and after the release of the site the page at `/` and at a path of the SPA, one file of `assets/`, a 404 under `/assets/`, `/deployment.json`, `/NOTICE` and `/LICENSE`, with their headers (`tools/deploy/app.mjs` of `infra`, `main` on 2026-11-13). `site-check` adds:
+  - every file of the archive, `csp.json` and `deployment.schema.json` included;
+  - the file read by the code of `app` itself, `loadDeployment`;
+  - the CSP header built by `csp.json` of the release, by `scripts/csp.ts`;
+  - what only a browser shows: no violation of the CSP under the real header with Google's real script and iframe, only the origin of `app` asked before the tap of "Sign in with Google", after it no host beyond those of section 3.7, the window on `https://<authDomain>/__/auth/handler` and the hidden iframe of `authDomain` in the page, and the site's host among the authorized domains of the project, by the rule of the SDK: a name also within a domain, an IP address only exactly.
+
+  It reads the site as anyone does and signs nobody in, so it needs neither the author nor an account (R146 spec). The same recipe checks a self-hosted copy: its operator names the copy's origin.
+- **The domain.** `novatrail.web.app`, which the rollout of `infra` sets (R06 infra); an own domain waits for О-16. That it is among the authorized domains of the Firebase project, the recipe sees in the answer of `identitytoolkit.googleapis.com`.
+- **The archive** is taken from the release's public address with its signature, by `curl`, not by `gh`: so the recipe needs no token, and a copy's operator can run it too.
+
+— *Why:* the rollout's check is the rollout's: it does not open the page in a browser, and a self-hosted copy has no rollout of `infra` at all, while section 3.7 is the design of `app`. A recipe and not a one-off script, by the author's word, so that it runs again after each rollout — E6 `infra` and T51.
+
+— *Rejected:*
+- putting T50 off until E6 `infra` rolls out v0.1.3: E6 itself waits for T50, and the two would wait for each other;
+- a one-off script — the recommendation of the planning: no code to keep, but nothing to run again after the next rollout;
+- walking the sign-in, the invite code and a task again by hand — R146 spec: the author walks nothing by hand, and on the deployment the sign-in is the author's Google account.
+
+— *Consequence:* `justfile`, `site-check`; `scripts/site.ts` and its test; `scripts/google-stub.ts`, Google's stand-ins out of `scripts/page.test.ts`; [architecture.md](architecture.md), sections 3.1 and 3.7; DEBT.md — Д8 and Д9; RUN.md — T50 and the row «в реестр spec» В61.
