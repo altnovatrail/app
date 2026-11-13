@@ -4,7 +4,7 @@
 >
 > **Rule:** do not re-propose what was rejected without new facts. If a decision has to change, ask the author and update this file. An entry is not rewritten: a dated amendment at the end of the entry corrects it, or a new entry replaces it, and the old one stays in place marked "Superseded".
 >
-> The repository was set up on 2026-10-19 from the template of `spec` v0.1.0 (R21 spec), moved on 2026-10-20 to `spec` v0.2.9 (R01), on 2026-11-02 to v0.6.2 (R02) and on the same day to v0.6.6 (R12), on 2026-11-10 to v0.13.0 (R13), on 2026-11-11 to v0.15.0 (R26) and on the same day to v0.15.1 (R28), and on 2026-11-12 to v0.16.3 (R38). How it comes to differ from the template — by the tools in the devcontainer, the rules in RUN.md — is recorded here as a decision, as R46 canvas-api recorded the differences from its model. Next number — R41.
+> The repository was set up on 2026-10-19 from the template of `spec` v0.1.0 (R21 spec), moved on 2026-10-20 to `spec` v0.2.9 (R01), on 2026-11-02 to v0.6.2 (R02) and on the same day to v0.6.6 (R12), on 2026-11-10 to v0.13.0 (R13), on 2026-11-11 to v0.15.0 (R26) and on the same day to v0.15.1 (R28), and on 2026-11-12 to v0.16.3 (R38). How it comes to differ from the template — by the tools in the devcontainer, the rules in RUN.md — is recorded here as a decision, as R46 canvas-api recorded the differences from its model. Next number — R42.
 >
 > Here entries are cited as `R03`, in other repositories as `R03 app`. Decisions of `spec` are cited as "R18 spec", MathTrail's decisions as "R37 canvas-api", and in a list as "canvas-api: R37, R38". Each log has its own numbers.
 >
@@ -531,6 +531,8 @@ An answer in handwriting — 2.1.1, 2.5.1 and 2.5.7 — and the submission by "C
 — *Consequence:* T13 in RUN.md; the 2026-11-10 amendments to R04, R06, R08, R10 and R11; T14 — the rest of what the tag decided for `app`. — CLAUDE.md; README.md; RUN.md, T13 and T14; `.devcontainer/`; [architecture.md](architecture.md), sections 2, 3.1, 3.2, 3.4, 3.6, 3.8, 3.9 and 3.10.
 
 — *Amendment 2026-11-12:* a done task outside an epic goes to the archive of the current epic, into its section «Задачи вне эпика, сделанные за его время», as soon as it is done, and its summary sentence goes to the start of the section «Задачи вне эпика» of RUN.md; it leaves RUN.md with the epic (rule 9 of RUN.md by the template of `spec` v0.16.3; R39). — RUN.md, «Как устроен план: эпики» and rule 9.
+
+— *Amendment 2026-11-13:* RUN.md has no section «Задачи вне эпика» (R41). A task outside an epic stands in table 1 as before; its body is in the part of the current epic, beside the bodies of its tasks, or at the end of the file when there is no epic. Once done, it goes to the same section of the epic's archive as before, and its summary sentence goes to the list of done tasks of the epic's part, marked «вне эпика». — RUN.md, «Как устроен план: эпики» and rule 9.
 
 ## The app's skeleton
 
@@ -1364,3 +1366,17 @@ An answer in handwriting — 2.1.1, 2.5.1 and 2.5.7 — and the submission by "C
 — *Does not decide:* the check with a real `api` — until its move to the tag, row 6.13, and T56 (Д20 in `DEBT.md`); a line telling the child that the adult sees their progress — E4, as in R35.
 
 — *Consequence:* `src/account/quota.ts`; `src/adults/QuotaSection.tsx` and the section in `src/adults/ProfilePage.tsx`; the line in `src/subjects/MySubjects.tsx`; `skillTitlesOf` in `src/adults/progress.ts`, and "Lesson" and "Skills" in `src/adults/ProgressPage.tsx`; `dayText` in `src/api/words.ts`; `listFormat` and `percentText` in `src/i18n/intl.ts`; `GetQuota` in `MAY_BE_ABSENT` of `src/api/interceptors.ts`; the keys `quota.*` and `progress.skills` in the dictionaries; tests. The 2026-11-12 amendments to R29, R35 and R37. Д19 is closed. — [architecture.md](architecture.md), sections 3.8 and 3.10; DEBT.md, Д20; RUN.md, T53.
+
+## RUN.md: only what a session acts on
+
+**R41. RUN.md has no section «Задачи вне эпика», and what in the current epic's part has stopped being live goes to the epic's archive before the epic ends. A task outside an epic has its body in the epic's part and its summary sentence, marked «вне эпика», in the epic's list of done tasks; when there is no epic, its body stands at the end of the file. The summary sentences of done tasks are short: the gist and the decision, the detail is in the body in the archive.** The author's word of 2026-11-13, after T56 turned out to wait for `spec` and `api`: to remove the section, which no longer held a task, and to clean RUN.md of what the executor does not need, for the tokens of every session that reads it whole (R143 spec).
+- **Moved to [plan/E3.md](plan/E3.md)**, word for word, with the links corrected, into the sections «Закрытые строки таблицы 3» and «Из описания эпика в RUN.md»: the history of the closed rows В50–В60, the reconnaissance of the neighbours in the planning of E3 on 2026-11-12, the decision on В51 that T38 carried out, the points of «Почему такой порядок» about done tasks, the lines about how the epic was cut into tasks, and the summary sentences of T35–T55 as they were before they were shortened. A task that relies on the reconnaissance checks the neighbours again on the day of its planning.
+- **A difference from the template.** The template's RUN.md of `spec` v0.16.3 and R145 spec name the section «Задачи вне эпика»; in `app`, a task of analysis by the threshold of R145 spec goes where any task outside an epic goes. A move to a tag of `spec` that brings a new template takes this difference into account.
+
+— *Why:* every session reads RUN.md whole (R143 spec): a section without a task, the history of answered rows and a snapshot of the neighbours that newer tags have overtaken cost tokens in each of them and help none. The archive is not read whole, so what moved there costs nothing until a task needs it.
+
+— *Rejected:*
+- deleting the moved text — the archive must keep the epic's description word for word (RUN.md, «Как устроен план: эпики»), and what moved early is part of it;
+- shortening the rules of RUN.md — they are the template's, and a difference in them makes every move to a new tag harder; the bodies of the open tasks — each is planned and rewritten in its own session.
+
+— *Consequence:* RUN.md — rule 9, «Как устроен план: эпики», the opening, tables 1–3 and the part of E3; [plan/E3.md](plan/E3.md); the 2026-11-13 amendment to R13.
