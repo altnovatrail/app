@@ -9,12 +9,15 @@ import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "no
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { GetManifestResponseSchema } from "@altnovatrail/contracts/novatrail/api/v1/package_pb.js";
+import type { Deployment } from "@altnovatrail/spec/deploymentv1";
 import { create, toBinary } from "@bufbuild/protobuf";
 import { type Browser, chromium, type Page } from "playwright";
 import { type PreviewServer, preview } from "vite";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { deploymentPart, partText } from "./archive.ts";
 import { deployment, layerIsFirst } from "./deployment-plugin.ts";
+import { standInForGoogle } from "./google-stub.ts";
+import { allowedHosts } from "./site.ts";
 
 const HOST = "127.0.0.1";
 /** Ports of their own, beside the 5173 of `just dev` and `just preview`. */
@@ -92,43 +95,8 @@ async function open(locale = "en-US"): Promise<{
   return { page, violations, requests };
 }
 
-/** The hosts of Google that section 3.7 names for the sign-in, beside app's own origin. */
-const GOOGLE: ReadonlySet<string> = new Set([
-  "apis.google.com",
-  "example-project.firebaseapp.com",
-  "identitytoolkit.googleapis.com",
-  "securetoken.googleapis.com",
-]);
-
-/**
- * The script of gapi in place of Google's, which is closed to reading: it gives the SDK what it
- * calls — the loader, and a context that puts the hidden iframe of the sign-in pages in the page
- * and says it is there once it has loaded — and calls the SDK back by the name in its address.
- */
-const GAPI = `(() => {
-  const frames = {
-    CROSS_ORIGIN_IFRAMES_FILTER: {},
-    Iframe: function Iframe() {},
-    getContext: () => ({
-      open(options, ready) {
-        const frame = document.createElement("iframe");
-        frame.src = options.url;
-        frame.setAttribute("aria-hidden", "true");
-        const loaded = new Promise((resolve) => frame.addEventListener("load", resolve, { once: true }));
-        options.where.appendChild(frame);
-        return ready({
-          restyle: async () => {},
-          ping: () => loaded,
-          register() {},
-          send() {},
-        });
-      },
-    }),
-  };
-  window.gapi = { load: (_, options) => options.callback(), iframes: frames };
-  const onload = new URL(document.currentScript.src).searchParams.get("onload");
-  if (onload) window[onload]();
-})();`;
+/** The hosts section 3.7 names for the sign-in, beside app's own origin, as the site check has them. */
+const GOOGLE = allowedHosts(ORIGIN, file(ORIGIN) as Deployment);
 
 describe("the built page", () => {
   it("has the lower layer first in <head>, and no deployment.json of its own", () => {
@@ -173,27 +141,7 @@ describe("the built page", () => {
     const { page, violations } = await open();
     // Every request off app's origin, page and window alike, by its host, in its order.
     const google: string[] = [];
-    await page.context().route(
-      (url) => url.origin !== ORIGIN,
-      async (route) => {
-        const url = new URL(route.request().url());
-        google.push(url.host);
-        if (url.host === "apis.google.com") {
-          await route.fulfill({ contentType: "text/javascript", body: GAPI });
-        } else if (url.host === "identitytoolkit.googleapis.com") {
-          await route.fulfill({
-            contentType: "application/json",
-            headers: { "access-control-allow-origin": "*", "access-control-allow-headers": "*" },
-            body: JSON.stringify({ projectId: "example-project", authorizedDomains: [HOST] }),
-          });
-        } else {
-          await route.fulfill({
-            contentType: "text/html",
-            body: "<!doctype html><title>auth</title>",
-          });
-        }
-      },
-    );
+    await standInForGoogle(page.context(), ORIGIN, () => [HOST], google);
     await page.goto(`${ORIGIN}/`);
     const button = page.getByRole("button", { name: "Sign in with Google" });
     await button.waitFor();
