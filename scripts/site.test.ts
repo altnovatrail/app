@@ -29,8 +29,9 @@ import {
 } from "./site.ts";
 
 const HOST = "127.0.0.1";
-/** A port of its own, beside the 5173 of `just dev` and the 5181 and 5182 of the page test. */
-const PORT = 5183;
+/** A port of its own, beside the 5173 of `just dev`, the 5181 and 5182 of the page test and the 5183
+ * of the plugin test. */
+const PORT = 5184;
 const ORIGIN = `http://${HOST}:${PORT}`;
 const AUTH_DOMAIN = "example-project.firebaseapp.com";
 
