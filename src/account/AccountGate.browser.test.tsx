@@ -1,4 +1,4 @@
-// The way in, through Boot, in Chromium (sections 3.2, 3.6 and 3.10 of docs/architecture.md): the
+// The way in, through Boot, in the browser (sections 3.2, 3.6 and 3.10 of docs/architecture.md): the
 // sign-in, the invite code, the owner's profile, the choice of the learner, the bar above the
 // learner's screens and the sign-out, each screen by its role and name, with api answering by the
 // test's fetch and the sign-in service the test's own.

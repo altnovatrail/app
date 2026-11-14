@@ -1,18 +1,18 @@
-// The test of the built page (section 3.7 of docs/architecture.md; Д8 and Д9 in RUN.md, in
-// Chromium): `vite preview` serves build/ — ci-test builds it first — with app's own plugin, and
-// Chrome Headless Shell, from the image the toolchain stage takes it from, opens it. A violation of
-// either layer of the CSP fails the test, and so does any request before /deployment.json. The
-// sign-in window goes under the header too, with what Google would answer stubbed, and a request to
-// a host section 3.7 does not name fails it. So do a module's license and its files from api (R32),
-// and the skill map's element (R34). No file of the build names the route to api's development
-// token, which the local build's sign-in takes (R44).
+// The test of the built page (section 3.7 of docs/architecture.md; Д8 and Д9 in DEBT.md): `vite
+// preview` serves build/ — ci-test builds it first — with app's own plugin, and Chrome Headless
+// Shell, WebKit and Firefox, from the image the toolchain stage takes them from, open it, each in
+// turn (R45). A violation of either layer of the CSP fails the test, and so does any request
+// before /deployment.json. The sign-in window goes under the header too, with what Google would
+// answer stubbed, and a request to a host section 3.7 does not name fails it. So do a module's
+// license and its files from api (R32), and the skill map's element (R34). No file of the build
+// names the route to api's development token, which the local build's sign-in takes (R44).
 import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { GetManifestResponseSchema } from "@altnovatrail/contracts/novatrail/api/v1/package_pb.js";
 import type { Deployment } from "@altnovatrail/spec/deploymentv1";
 import { create, toBinary } from "@bufbuild/protobuf";
-import { type Browser, chromium, type Page } from "playwright";
+import { type Browser, type BrowserType, chromium, firefox, type Page, webkit } from "playwright";
 import { type PreviewServer, preview } from "vite";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { LOCAL_TOKEN_PATH } from "../src/signin/token-path.ts";
@@ -65,17 +65,19 @@ let bare: PreviewServer;
 beforeAll(async () => {
   server = await serve(PORT, local, true);
   bare = await serve(BARE_PORT, bareLocal, false);
-  browser = await chromium.launch({ headless: true });
 }, 60_000);
 
 afterAll(async () => {
-  await browser?.close();
   await server?.close();
   await bare?.close();
   rmSync(folder, { recursive: true, force: true });
 });
 
-/** A page that records every violation of the CSP and every request, in their order. */
+/**
+ * A page that records every violation of the CSP and every request to app's own origins, by its
+ * path, in their order. Not Google's: WebKit, whose user agent names Safari, has the SDK load gapi
+ * and the hidden iframe at every start (section 3.7), and the sign-in's test follows those by host.
+ */
 async function open(locale = "en-US"): Promise<{
   page: Page;
   violations: string[];
@@ -93,14 +95,17 @@ async function open(locale = "en-US"): Promise<{
   page.on("console", (message) => {
     if (message.text().includes("Content Security Policy")) violations.push(message.text());
   });
-  page.on("request", (request) => requests.push(new URL(request.url()).pathname));
+  page.on("request", (request) => {
+    const url = new URL(request.url());
+    if (url.origin === ORIGIN || url.origin === BARE_ORIGIN) requests.push(url.pathname);
+  });
   return { page, violations, requests };
 }
 
 /** The hosts section 3.7 names for the sign-in, beside app's own origin, as the site check has them. */
 const GOOGLE = allowedHosts(ORIGIN, file(ORIGIN) as Deployment);
 
-describe("the built page", () => {
+describe("the build", () => {
   it("has the lower layer first in <head>, and no deployment.json of its own", () => {
     expect(layerIsFirst(readFileSync("build/index.html", "utf8"))).toBe(true);
     expect(existsSync("build/deployment.json")).toBe(false);
@@ -117,6 +122,23 @@ describe("the built page", () => {
     expect(files.length).toBeGreaterThan(3);
     const naming = files.filter((path) => readFileSync(path).includes(LOCAL_TOKEN_PATH));
     expect(naming).toEqual([]);
+  });
+});
+
+/** The three engines the page is opened in, each in turn (R45). */
+const ENGINES: readonly (readonly [string, BrowserType])[] = [
+  ["chromium", chromium],
+  ["webkit", webkit],
+  ["firefox", firefox],
+];
+
+describe.each(ENGINES)("the built page in %s", (engine, type) => {
+  beforeAll(async () => {
+    browser = await type.launch({ headless: true });
+  }, 60_000);
+
+  afterAll(async () => {
+    await browser?.close();
   });
 
   it("starts under both layers of the CSP with the file, and asks for it before anything else", async () => {
@@ -156,8 +178,11 @@ describe("the built page", () => {
     await page.goto(`${ORIGIN}/`);
     const button = page.getByRole("button", { name: "Sign in with Google" });
     await button.waitFor();
-    // On a computer the SDK asks Google nothing before the window (section 4).
-    expect(google).toEqual([]);
+    // On a computer the SDK asks Google nothing before the window (section 4); where it takes the
+    // browser for Safari, as in WebKit, it loads gapi and the hidden iframe at the start.
+    const atStart =
+      engine === "webkit" ? ["apis.google.com", "example-project.firebaseapp.com"] : [];
+    await expect.poll(() => [...new Set(google)]).toEqual(atStart);
     const opened = page.waitForEvent("popup");
     await button.click();
     const popup = await opened;
@@ -505,10 +530,16 @@ describe("the built page", () => {
     await page.setContent(`<iframe src="${ORIGIN}/" title="app"></iframe>`);
     await answered;
     await page.waitForLoadState("load");
-    // Chrome puts its own error page in the frame in place of app.
+    // Each engine leaves its own trace of the document it refused: Chrome its error page, WebKit
+    // app's address with nothing run, Firefox no address (measurements 4). app asks for no file.
+    const refused = {
+      chromium: "chrome-error://chromewebdata/",
+      webkit: `${ORIGIN}/`,
+      firefox: "",
+    };
     expect(page.frames().map((frame) => frame.url())).toEqual([
       "about:blank",
-      "chrome-error://chromewebdata/",
+      refused[engine as keyof typeof refused],
     ]);
     expect(requests).not.toContain("/deployment.json");
     await page.context().close();

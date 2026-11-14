@@ -1,4 +1,4 @@
-// The invite code's screen with its texts in Chromium (R27): an acceptance holds for the versions
+// The invite code's screen with its texts in the browser (R27): an acceptance holds for the versions
 // it was given for, and a refusal of a version no longer current is said even with no text shown.
 import { LegalTextSchema } from "@altnovatrail/contracts/novatrail/api/v1/legal_pb.js";
 import { create } from "@bufbuild/protobuf";

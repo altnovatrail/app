@@ -1,4 +1,4 @@
-// The body of a legal text in Chromium (R27): each block of CommonMark and GitHub's tables as its
+// The body of a legal text in the browser (R27): each block of CommonMark and GitHub's tables as its
 // element, headings below the page's own, and what the legal part refuses — HTML, a link, an
 // image — as text, with no element of its own and nothing that leads out.
 import { render } from "@testing-library/react";

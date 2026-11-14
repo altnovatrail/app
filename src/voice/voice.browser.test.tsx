@@ -1,7 +1,9 @@
-// Voicing in Chromium (R07 and R36 in docs/decisions.md; section 3.5 of docs/architecture.md): the
-// speaker button and its line where a text cannot be said, the section Voicing of the page This
-// device with the voices of each language and the adult's leave kept in the registry, and the path
-// "no voice" on Chromium's own speechSynthesis, which in the container has no voice at all.
+// Voicing in the three engines (R07, R36 and R45 in docs/decisions.md; section 3.5 of
+// docs/architecture.md): the speaker button and its line where a text cannot be said, the section
+// Voicing of the page This device with the voices of each language and the adult's leave kept in
+// the registry, and the path "no voice" on the engine's own speechSynthesis: in the container
+// Chromium's and Firefox's have no voice at all, and WebKit's only the four English voices of flite,
+// none of them local by its own word (measurements 4).
 import { ProfileSchema } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import type * as open from "@altnovatrail/spec/formatv0/open";
 import { create } from "@bufbuild/protobuf";
@@ -28,8 +30,8 @@ function withSpeech(speech: Speech, node: ReactNode, language: "en" | "ru" = "en
   return render(inLanguage(<SpeechProvider value={speech}>{node}</SpeechProvider>, language));
 }
 
-/** Chromium's own synthesis, on a system that needs no leave. */
-function chromium(): Speech {
+/** The engine's own synthesis, on a system that needs no leave. */
+function ownSynthesis(): Speech {
   return speechOf({
     navigator: {
       userAgent: "Mozilla/5.0 (Windows NT 10.0)",
@@ -109,10 +111,10 @@ describe("Read aloud", () => {
     );
   });
 
-  it("says no voice on Chromium's own synthesis, which has none here", async () => {
-    // The container's Chromium lists no voice: the path is the one of a device with none.
-    expect(speechSynthesis.getVoices()).toEqual([]);
-    withSpeech(chromium(), <ReadAloud phrases={PHRASES} language="en" />);
+  it("says no voice on the engine's own synthesis, which has none here it may use", async () => {
+    // The container's engines list no local voice: the path is the one of a device with none.
+    expect(speechSynthesis.getVoices().filter((voice) => voice.localService)).toEqual([]);
+    withSpeech(ownSynthesis(), <ReadAloud phrases={PHRASES} language="en" />);
     expect(readAloud()).toHaveAttribute("aria-disabled", "true");
     expect(readAloud()).toHaveAccessibleDescription("This device has no voice for English");
     await userEvent.click(readAloud(), { force: true });
@@ -231,8 +233,8 @@ describe("the section Voicing of This device", () => {
     expect(screen.queryByRole("group")).toBeNull();
   });
 
-  it("says no voice for each language on Chromium's own synthesis, which has none here", () => {
-    withSpeech(chromium(), <DeviceVoices device={memoryDevice().device} />);
+  it("says no voice for each language on the engine's own synthesis, which has none here", () => {
+    withSpeech(ownSynthesis(), <DeviceVoices device={memoryDevice().device} />);
     for (const name of ["English", "Russian"]) {
       expect(
         fieldset(name).getByText(
@@ -243,7 +245,8 @@ describe("the section Voicing of This device", () => {
   });
 
   it("asks for the leave on the browser's own synthesis where it runs on Linux", () => {
-    // The browser's one synthesis, as the app makes it: Chromium in the container is on Linux.
+    // The browser's one synthesis, as the app makes it, on the platform its engine names: Linux
+    // for Chromium and Firefox in the container, "other" for WebKit, whose `User-Agent` names a Mac.
     render(inLanguage(<DeviceVoices device={memoryDevice().device} />));
     const leave = platformOf(navigator) === "linux" || platformOf(navigator) === "android";
     expect(screen.queryByText(/the system chooses the voice/) !== null).toBe(leave);

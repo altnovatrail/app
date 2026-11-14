@@ -1,4 +1,4 @@
-// The storage of works on the server on a profile's page, in Chromium (R30 in docs/decisions.md;
+// The storage of works on the server on a profile's page, in the browser (R30 in docs/decisions.md;
 // R113, R127 and R131 in spec), with api on connect-es's router: off by default, the words that the
 // server keeps no work yet, the consent with the text storage-consent and what R127 in spec has it
 // say, the version shown named by SetWorkStorage, a version no longer current read and agreed to

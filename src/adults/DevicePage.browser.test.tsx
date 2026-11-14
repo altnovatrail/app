@@ -1,4 +1,4 @@
-// The page This device in Chromium (R04 with its 2026-11-12 amendment; section 3.2 of
+// The page This device in the browser (R04 with its 2026-11-12 amendment; section 3.2 of
 // docs/architecture.md): what each profile keeps here and about how much, the profile with nothing
 // here and the one that cannot be read, the warning of loss on every profile while api keeps no
 // copy (R113 in spec), with the storage on the server switched on too (R30), the browser's

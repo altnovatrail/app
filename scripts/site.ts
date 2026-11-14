@@ -9,14 +9,16 @@
 // - the headers section 3.7 asks of the hosting: at the page, the CSP header that csp.json of the
 //   build gives with the file's values, frame-ancestors 'none' with it, and no-cache; nowhere
 //   Cross-Origin-Opener-Policy: same-origin, which breaks the sign-in window;
-// - the page in Chromium, under the site's own header and with Google's own script: no violation
-//   of the CSP, nothing but app's origin asked before the tap of "Sign in with Google", after it
-//   no host section 3.7 does not name, and the window opened on the sign-in pages of authDomain,
-//   whose project lets the site's host sign in. The window is then closed: nobody signs in.
+// - the page in Chromium, WebKit and Firefox, under the site's own header and with Google's own
+//   script: no violation of the CSP, nothing but app's origin asked before the tap of "Sign in
+//   with Google" — but in WebKit, which the SDK takes for Safari, what it loads at every start —,
+//   after it no host section 3.7 does not name, and the window opened on the sign-in pages of
+//   authDomain, whose project lets the site's host sign in. The window is then closed: nobody
+//   signs in (R45).
 import { readFileSync } from "node:fs";
 import { gunzipSync } from "node:zlib";
 import type { Deployment } from "@altnovatrail/spec/deploymentv1";
-import { type Browser, type BrowserContext, chromium } from "playwright";
+import { type Browser, type BrowserContext, chromium, firefox, webkit } from "playwright";
 import { loadDeployment } from "../src/config/load.ts";
 import { tarFiles } from "./archive.ts";
 import { header, type Template, templateProblems } from "./csp.ts";
@@ -129,7 +131,10 @@ export function fetchAsk(origin: string, fetcher: typeof fetch = fetch): Ask {
   };
 }
 
-/** The hosts section 3.7 lets the page ask, beside the site's own. */
+/**
+ * The hosts section 3.7 lets the page ask, beside the site's own: Google's script, authDomain,
+ * Firebase Auth, and the host Google's page in the hidden iframe asks in WebKit (measurements 3).
+ */
 export function allowedHosts(origin: string, deployment: Deployment): ReadonlySet<string> {
   return new Set([
     new URL(origin).host,
@@ -137,7 +142,18 @@ export function allowedHosts(origin: string, deployment: Deployment): ReadonlySe
     deployment.signIn.authDomain,
     "identitytoolkit.googleapis.com",
     "securetoken.googleapis.com",
+    "www.googleapis.com",
   ]);
+}
+
+/**
+ * The hosts the page may ask before the tap, in an engine: none on a computer; where the SDK takes
+ * the browser for Safari, as in WebKit, gapi and the hidden iframe it loads at every start, and the
+ * host Google's page in it asks (section 3.7; measurements 3).
+ */
+export function hostsAtStart(engine: string, deployment: Deployment): ReadonlySet<string> {
+  if (engine !== "webkit") return new Set();
+  return new Set(["apis.google.com", deployment.signIn.authDomain, "www.googleapis.com"]);
 }
 
 /**
@@ -167,6 +183,7 @@ export async function browserProblems(
   origin: string,
   deployment: Deployment,
   open: () => Promise<BrowserContext>,
+  engine = "chromium",
 ): Promise<string[]> {
   const context = await open();
   try {
@@ -188,7 +205,8 @@ export async function browserProblems(
     await page.goto(`${origin}/`);
     const button = page.getByRole("button", { name: "Sign in with Google" });
     await button.waitFor({ timeout: STEP_MS });
-    const before = requests.filter((url) => url.origin !== origin);
+    const early = hostsAtStart(engine, deployment);
+    const before = requests.filter((url) => url.origin !== origin && !early.has(url.host));
     if (before.length > 0) {
       problems.push(`before the tap the page asked ${before.map((url) => url.host).join(", ")}`);
     }
@@ -210,11 +228,12 @@ export async function browserProblems(
     const opened = page.waitForEvent("popup", { timeout: STEP_MS });
     await button.click();
     const window = await opened;
-    const where = new URL(window.url());
+    // Whatever address the window has: once in WebKit, under Cross-Origin-Opener-Policy: same-origin,
+    // it was no URL at all (measurements 4).
+    const where = URL.parse(window.url());
+    const at = where === null ? `"${window.url()}"` : where.origin + where.pathname;
     const handler = `https://${deployment.signIn.authDomain}/__/auth/handler`;
-    if (where.origin + where.pathname !== handler) {
-      problems.push(`the window opened on ${where.origin}${where.pathname}, not ${handler}`);
-    }
+    if (at !== handler) problems.push(`the window opened on ${at}, not ${handler}`);
     const domains: unknown = ((await (await config).json()) as { authorizedDomains?: unknown })
       .authorizedDomains;
     const host = new URL(origin).hostname;
@@ -252,11 +271,14 @@ export function originProblem(origin: string): string | undefined {
   return `${origin} is no origin: a scheme and a host, with no path`;
 }
 
-/** The whole check of a site against an archive: the lines of what holds, and the problems. */
+/**
+ * The whole check of a site against an archive, the page in each of the browsers: the lines of
+ * what holds, and the problems, those of the page by its engine.
+ */
 export async function check(
   origin: string,
   archive: Buffer,
-  browser: Browser,
+  browsers: readonly Browser[],
   options: Options = {},
 ): Promise<{ lines: string[]; problems: string[] }> {
   const wrong = originProblem(origin);
@@ -272,14 +294,20 @@ export async function check(
   }
   const { deployment } = loaded;
   const problems = await siteProblems(files, deployment, fetchAsk(origin, fetcher));
-  const open = () => options.open?.(browser) ?? browser.newContext({ locale: "en-US" });
-  problems.push(...(await browserProblems(origin, deployment, open)));
+  const engines: string[] = [];
+  for (const browser of browsers) {
+    const engine = browser.browserType().name();
+    engines.push(engine);
+    const open = () => options.open?.(browser) ?? browser.newContext({ locale: "en-US" });
+    const found = await browserProblems(origin, deployment, open, engine);
+    problems.push(...found.map((problem) => `${engine}: ${problem}`));
+  }
   const assets = [...files.keys()].filter((path) => path.startsWith("assets/")).length;
   const lines = [
     `/deployment.json: app reads it; api ${deployment.api}, sign-in ${deployment.signIn.authDomain}`,
     `/ and /index.html: index.html of the release, with no-cache and the CSP header of csp.json`,
     `${files.size - 1} more files of the archive at their paths, ${assets} of them in assets/: the bytes of the release`,
-    `the page: no violation of the CSP, only /deployment.json and the build before the tap, the window on https://${deployment.signIn.authDomain}/__/auth/handler, and no host section 3.7 does not name`,
+    `the page in ${engines.join(", ")}: no violation of the CSP, only /deployment.json and the build before the tap — and in WebKit what the SDK loads for Safari —, the window on https://${deployment.signIn.authDomain}/__/auth/handler, and no host section 3.7 does not name`,
   ];
   return { lines, problems };
 }
@@ -302,11 +330,12 @@ export async function run(
     console.error(`site-check: ${wrong}`);
     return 1;
   }
-  let browser: Browser | undefined;
+  const browsers: Browser[] = [];
   try {
     const archive = readFileSync(archivePath);
-    browser = await chromium.launch({ headless: true });
-    const { lines, problems } = await check(origin, archive, browser, options);
+    for (const type of [chromium, webkit, firefox])
+      browsers.push(await type.launch({ headless: true }));
+    const { lines, problems } = await check(origin, archive, browsers, options);
     if (problems.length > 0) {
       for (const problem of problems) console.error(`site-check: ${problem}`);
       return 1;
@@ -318,7 +347,7 @@ export async function run(
     console.error(`site-check: ${error instanceof Error ? error.message : String(error)}`);
     return 1;
   } finally {
-    await browser?.close();
+    for (const browser of browsers) await browser.close();
   }
 }
 

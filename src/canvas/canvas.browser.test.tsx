@@ -8,7 +8,7 @@ import type * as open from "@altnovatrail/spec/formatv0/open";
 import { render, screen, waitFor } from "@testing-library/react";
 import { createRef } from "react";
 import { describe, expect, it, vi } from "vitest";
-import { userEvent } from "vitest/browser";
+import { server, userEvent } from "vitest/browser";
 
 describe("<novatrail-canvas> in JSX", () => {
   it("is the registered element, and takes its language as an attribute and media as a property", () => {
@@ -101,8 +101,17 @@ const printWidths = (element: CanvasElement) =>
     (text) => text.getBoundingClientRect().width,
   );
 
-/** The sum of widths. */
-const sum = (widths: readonly number[]) => widths.reduce((total, width) => total + width, 0);
+/**
+ * The width of the print from its leftmost piece to its rightmost. Not the sum of the pieces' boxes:
+ * a glyph's own box does not scale to the pixel — a lone «r» in Chromium, some 2 px of every box in
+ * Firefox (measurements 4).
+ */
+function printSpan(element: CanvasElement): number {
+  const boxes = [...(element.shadowRoot?.querySelectorAll(".print text") ?? [])].map((text) =>
+    text.getBoundingClientRect(),
+  );
+  return Math.max(...boxes.map((box) => box.right)) - Math.min(...boxes.map((box) => box.left));
+}
 
 /** Two frames of the page, for the element to have laid out what it was last given. */
 const settled = () =>
@@ -141,19 +150,17 @@ describe("what canvas declares for app's Accessibility page", () => {
     await waitFor(() => expect(printWidths(element).length).toBeGreaterThan(0));
     await settled();
     // The sheet fits the element's width, 20rem, below the sheet's cap.
-    const fit = { page: element.clientWidth, print: sum(printWidths(element)) };
+    const fit = { page: element.clientWidth, print: printSpan(element) };
     expect(fit.page).toBeGreaterThan(0);
     try {
       await pressToEnd(larger);
-      // Twice the fit, and not a step short of it: 150 % and 175 % are steps of the zoom too. The
-      // print by the sum of its pieces: a glyph's own box, as of a lone «r», does not scale to the
-      // pixel.
+      // Twice the fit, and not a step short of it: 150 % and 175 % are steps of the zoom too.
       // The zoomed sheet is wider than the element: a region of its own, named in the element's
       // language, which Left and Right scroll with a single pointer (2.5.1).
       await waitFor(() => expect(region(element)?.getAttribute("aria-label")).toBe("Тетрадь"));
       await waitFor(() => {
         expect((region(element)?.scrollWidth ?? 0) / fit.page).toBeCloseTo(2, 2);
-        expect(sum(printWidths(element)) / fit.print).toBeCloseTo(2, 1);
+        expect(printSpan(element) / fit.print).toBeCloseTo(2, 1);
       });
       expect((await rowButton(element, "Левее")).closest("[hidden]")).toBeNull();
       expect((await rowButton(element, "Правее")).closest("[hidden]")).toBeNull();
@@ -203,7 +210,9 @@ describe("what canvas declares for app's Accessibility page", () => {
       await waitFor(() => expect(region(element)?.getAttribute("aria-label")).toBe(name));
       const named = region(element) as HTMLElement;
       expect(named.hasAttribute("lang")).toBe(false);
-      expect(named.matches(`:lang(${lang})`)).toBe(true);
+      // Firefox matches no :lang() inside a shadow tree, whatever the host's language or the page's
+      // (measurements 4): there the name alone is held, and what a screen reader takes is Д10's.
+      if (server.browser !== "firefox") expect(named.matches(`:lang(${lang})`)).toBe(true);
       unmount();
     }
   });
