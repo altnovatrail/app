@@ -33,7 +33,7 @@ A task that touches the code ends with these green, locally and in CI (rule 6 of
 - then `/code-review high`, one round.
 
 What moves together:
-- `playwright` in `package.json`, the tag and digest of `mcr.microsoft.com/playwright` in `.devcontainer/Dockerfile`, and `PLAYWRIGHT_HEADLESS_SHELL_REVISION` beside it, one version for all three (R14). Until the container is rebuilt with a new revision, the browser tests run locally with that revision downloaded into a temporary folder named by `PLAYWRIGHT_BROWSERS_PATH`;
+- `playwright` in `package.json`, the tag and digest of `mcr.microsoft.com/playwright` in `.devcontainer/Dockerfile`, and `PLAYWRIGHT_HEADLESS_SHELL_REVISION`, `PLAYWRIGHT_WEBKIT_REVISION` and `PLAYWRIGHT_FIREFOX_REVISION` beside it, the revisions that version's `browsers.json` names (R14; R43). Until the container is rebuilt with a new revision, the browser tests run locally with that revision downloaded into a temporary folder named by `PLAYWRIGHT_BROWSERS_PATH`;
 - a new package or version in the lock file, and `NOTICE`, which `scripts/notice.ts` holds to it; a package the build ships needs a license compatible with Apache-2.0;
 - `@altnovatrail/contracts` and `@altnovatrail/spec`, at the tag of the `spec` submodule, with `@bufbuild/protobuf` at the version the contracts name (`scripts/pins.ts`; R15);
 - the words the screens show, in both `src/i18n/ru.ts` and `src/i18n/en.ts`.

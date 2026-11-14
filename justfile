@@ -14,7 +14,7 @@ bin := "node_modules/.bin"
 
 # The tag of the spec submodule, whose release the file in parts/ comes from: it moves with the
 # submodule, by the task that moves to a new tag.
-spec_tag := "v0.16.3"
+spec_tag := "v0.17.1"
 
 # Run the four checks CI runs, before a pull request.
 ci: ci-lint ci-test ci-vuln ci-licenses

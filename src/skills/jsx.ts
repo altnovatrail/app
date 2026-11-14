@@ -2,7 +2,7 @@
 // R04 in skill-map; section 3.1 of docs/architecture.md). The element's own types are the
 // package's: its properties take the open views by the types of the copy of @altnovatrail/spec the
 // package names, 0.15.0 for skill-map 0.1.5, and GetSkillMap's answer by app's own contracts. App
-// gives them its views by its own copy, 0.16.3, so ElementTakesViews below holds the two copies
+// gives them its views by its own copy, 0.17.1, so ElementTakesViews below holds the two copies
 // to one type, both ways: a form that drifted between them is a type error here, in ci-lint (R73
 // in spec; R34). React 19 sets a property the element has, and listens for an event by the name
 // after `on`, as the element sends it: lower case. `view`, `lang` and `heading-level` are
