@@ -20,7 +20,7 @@ import { DeviceVoices } from "./DeviceVoices.tsx";
 import { ReadAloud } from "./ReadAloud.tsx";
 import { type Speech, type SynthLike, speechOf, type UtteranceLike } from "./speech.ts";
 import { SpeechProvider, VoicingProvider, voicingChanged } from "./VoicingContext.tsx";
-import { platformOf } from "./voices.ts";
+import { mayUse, platformOf } from "./voices.ts";
 
 const SAMANTHA = voice("Samantha", "en-US", { isDefault: true });
 const DANIEL = voice("Daniel", "en-GB");
@@ -112,8 +112,8 @@ describe("Read aloud", () => {
   });
 
   it("says no voice on the engine's own synthesis, which has none here it may use", async () => {
-    // The container's engines list no local voice: the path is the one of a device with none.
-    expect(speechSynthesis.getVoices().filter((voice) => voice.localService)).toEqual([]);
+    // The container's engines list no voice app may use: the path is the one of a device with none.
+    expect(speechSynthesis.getVoices().filter(mayUse)).toEqual([]);
     withSpeech(ownSynthesis(), <ReadAloud phrases={PHRASES} language="en" />);
     expect(readAloud()).toHaveAttribute("aria-disabled", "true");
     expect(readAloud()).toHaveAccessibleDescription("This device has no voice for English");

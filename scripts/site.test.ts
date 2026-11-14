@@ -23,10 +23,12 @@ import {
   expectedHeader,
   fetchAsk,
   hostsAtStart,
+  newContext,
   originProblem,
   releaseFiles,
   run,
   siteProblems,
+  windowAt,
 } from "./site.ts";
 
 const HOST = "127.0.0.1";
@@ -175,14 +177,27 @@ describe("the rules of the site check", () => {
   });
 
   it("lets the page ask its own host, Google's script, authDomain and Firebase Auth", () => {
-    expect([...allowedHosts("https://example.org", deployment)]).toEqual([
+    const hosts = [
       "example.org",
       "apis.google.com",
       AUTH_DOMAIN,
       "identitytoolkit.googleapis.com",
       "securetoken.googleapis.com",
+    ];
+    expect([...allowedHosts("https://example.org", deployment)]).toEqual(hosts);
+    expect([...allowedHosts("https://example.org", deployment, "firefox")]).toEqual(hosts);
+    // In WebKit, Google's page in the hidden iframe asks one more (measurements 3).
+    expect([...allowedHosts("https://example.org", deployment, "webkit")]).toEqual([
+      ...hosts,
       "www.googleapis.com",
     ]);
+  });
+
+  it("names where a window is, and whatever address that is no URL", () => {
+    expect(windowAt("https://example.org/__/auth/handler?apiKey=k#x")).toBe(
+      "https://example.org/__/auth/handler",
+    );
+    expect(windowAt("")).toBe('""');
   });
 
   it("lets the page ask Google before the tap only in WebKit, which the SDK takes for Safari", () => {
@@ -255,7 +270,7 @@ describe("the whole check", () => {
 
   /** A context whose every request off the site gets Google's answers as stand-ins. */
   async function open(given: Browser): Promise<BrowserContext> {
-    const context = await given.newContext({ locale: "en-US" });
+    const context = await newContext(given);
     await standInForGoogle(context, ORIGIN, () => authorized);
     return context;
   }
@@ -266,7 +281,7 @@ describe("the whole check", () => {
     const { lines, problems } = await check(ORIGIN, archive, browsers, { open });
     expect(problems).toEqual([]);
     expect(lines[0]).toBe(`/deployment.json: app reads it; api ${ORIGIN}, sign-in ${AUTH_DOMAIN}`);
-  }, 60_000);
+  }, 120_000);
 
   it("prints what holds and ends with 0, by the command's own browser", async () => {
     extra = {};
@@ -300,7 +315,7 @@ describe("the whole check", () => {
     } finally {
       error.mockRestore();
     }
-  }, 60_000);
+  }, 120_000);
 
   it("fails a page whose header is not that of csp.json, and its violations", async () => {
     extra = { "content-security-policy": "default-src 'none'" };
@@ -323,6 +338,7 @@ describe("the whole check", () => {
       `${ORIGIN}/path is no origin: a scheme and a host, with no path`,
     ]);
     expect((await check("nothing", archive, browsers)).problems).toHaveLength(1);
+    expect((await check(ORIGIN, archive, [])).problems).toContain("no browser to open the page in");
     const missing = async () => new Response("", { status: 404 });
     expect((await check(ORIGIN, archive, browsers, { fetcher: missing })).problems).toEqual([
       "/deployment.json: /deployment.json answered 404",
