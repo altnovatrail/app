@@ -21,6 +21,7 @@ import {
   authorizes,
   check,
   expectedHeader,
+  expectedRefusal,
   fetchAsk,
   hostsAtStart,
   newContext,
@@ -209,6 +210,35 @@ describe("the rules of the site check", () => {
       "www.googleapis.com",
     ]);
   });
+
+  it("expects only connect-src refusing gapi's ping, and only in WebKit", () => {
+    // The two lines WebKit gave for it in CI, the event's and the console's (measurements 5).
+    const ping = "https://apis.google.com/js/gen_204?c=50%3A1";
+    const event = `connect-src ${ping}`;
+    const logged = `Refused to connect to ${ping} because it does not appear in the connect-src directive of the Content Security Policy.`;
+    for (const line of [event, logged, "connect-src https://apis.google.com/js/gen_204"]) {
+      expect(expectedRefusal("webkit", line)).toBe(true);
+      expect(expectedRefusal("chromium", line)).toBe(false);
+      expect(expectedRefusal("firefox", line)).toBe(false);
+      expect(expectedRefusal(undefined, line)).toBe(false);
+    }
+    for (const line of [
+      "connect-src https://apis.google.com/js/api.js",
+      "connect-src https://apis.google.com/js/gen_2045",
+      "connect-src https://apis.google.com.example.org/js/gen_204",
+      "connect-src http://apis.google.com/js/gen_204",
+      "connect-src https://example.org/js/gen_204",
+      `img-src ${ping}`,
+      `script-src ${ping}`,
+      `connect-src ${ping} ${ping}`,
+      `Refused to load ${ping} because it does not appear in the img-src directive of the Content Security Policy.`,
+      `Refused to connect to '${ping}' because it violates the following Content Security Policy directive: "connect-src 'self'".`,
+      "connect-src not a URL",
+      "connect-src ",
+    ]) {
+      expect(expectedRefusal("webkit", line), line).toBe(false);
+    }
+  });
 });
 
 describe("the whole check", () => {
@@ -281,6 +311,11 @@ describe("the whole check", () => {
     const { lines, problems } = await check(ORIGIN, archive, browsers, { open });
     expect(problems).toEqual([]);
     expect(lines[0]).toBe(`/deployment.json: app reads it; api ${ORIGIN}, sign-in ${AUTH_DOMAIN}`);
+    // The page line names what WebKit is let by: what the SDK loads for Safari, and gapi's ping.
+    expect(lines[3]).toContain(
+      "no violation of the CSP — in WebKit gapi's ping, if refused, is none —, only /deployment.json",
+    );
+    expect(lines[3]).toContain("— and in WebKit what the SDK loads for Safari —,");
   }, 120_000);
 
   it("prints what holds and ends with 0, by the command's own browser", async () => {

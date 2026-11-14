@@ -262,6 +262,16 @@ Read 2026-11-10 (architecture 3.2, 3.7 and 3.10; R19):
 - **`@firebase/app` 0.16.5**, the code in `node_modules`: the IndexedDB database `firebase-heartbeat-database`; `triggerHeartbeat` writes once a day the "Firebase user agent" — the versions of the SDK's packages, "not the browser user agent", — with the UTC date, at most 30 records, and `getHeartbeatsHeader` gives them in the header `X-Firebase-Client` of the requests of `@firebase/auth` to Firebase Auth and clears them after sending. There is no switch for this: `_getProvider` always calls `triggerHeartbeat`.
 - Checked by the test of the built page in Chrome Headless Shell 1248, with stubs for Google's answers: until "Sign in with Google" is tapped, the page calls no host of Google; after it — `apis.google.com`, the hidden iframe `https://<authDomain>/__/auth/iframe`, the popup `https://<authDomain>/__/auth/handler` and `identitytoolkit.googleapis.com`, without CSP violations; `vite preview` sends no header `Cross-Origin-Opener-Policy`. After the start there are two databases on the device — `firebaseLocalStorageDb` and `firebase-heartbeat-database`; `app` has none of its own.
 
+### 7.6. gapi's ping, 2026-11-14
+
+Read 2026-11-14 (architecture 3.7; R45), by `curl` with Safari's `User-Agent`. Google publishes neither the source of these scripts nor a text on the ping: what follows is read from their minified code, not from a document of Google's.
+- **`https://apis.google.com/js/api.js`**, 14,576 bytes, sha256 `0b457226090bfca08168d9e4d6dcaef5d483731bd19b57dbd7f5d18d4f3e61cc`: its configuration holds `gen204logger:{ interval: 30000, rate: 0.01, batch: false }`.
+- **Its module `gapi_iframes`**, the address `api.js` names for its modules with `m=gapi_iframes` in place of `m=__features__` — `https://apis.google.com/_/scs/abc-static/_/js/k=gapi.lb.en.etOqPKhAhvg.O/d=1/rs=AHpOoo-l5JrVgGKVELwC844E6riBHX86-w/m=gapi_iframes` —, 108,149 bytes, sha256 `574bd87b3a1632fa16ba158cf19820cd425bc3bad2b2d3fd7c1eb4c2e93f2ac4`:
+  - the logger's address is gapi's origin and `/js/gen_204`: `this.url=c+"/js/gen_204",c=_.vi("gen204logger")||{},this.Yu=c.interval,this.SW=c.rate`;
+  - it counts events by number, and with `batch: false` each count flushes at once: `a.Rz.set(b,new Oi(a.jI?void 0:function(){a.flush()}))`; it flushes also when the page's `visibilityState` becomes `hidden`. Counter 50 is counted at each call of the module's function of random numbers, `_.gj=function(){_.Zi(_.Yi(),50).yb();`;
+  - a flush sends the counters as `c=<number>:<count>` in one of a hundred cases, and nothing waits on the answer: `if(b!==""&&Math.random()<this.SW){…fetch(this.url+"?"+b,{method:"GET",mode:"no-cors",signal:p}).catch(function(){})`.
+- So the ping is a `fetch`, under `connect-src`, made wherever this module runs — in WebKit at every start, on a computer once "Sign in with Google" is tapped (sources 7.5) —, and its failure is gapi's own: the sign-in does not stand on it. What CI saw is measurements 5.
+
 ## 8. Interface languages and accessibility
 
 For architecture 3.8 and 3.9: standards, laws, libraries and checks.
