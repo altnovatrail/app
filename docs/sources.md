@@ -343,6 +343,15 @@ Read 2026-11-13 and 2026-11-14 (architecture 3.1 and 3.7; R43):
 - The npm registry, `npm view`, 2026-11-14: `@altnovatrail/spec` and `@altnovatrail/contracts` 0.17.1 are the latest, and `@altnovatrail/contracts` 0.17.1 names `@bufbuild/protobuf` 2.17.0 in `dependencies`.
 - `release-verify-npm` of the lock file accepted the six packages of `@altnovatrail`; `release-verify` of the part — "deployment-1.tar.gz: spec v0.17.1, signed by spec's release.yml".
 
+### 9.5. The move to `spec` v0.17.9, 2026-11-14
+
+Read 2026-11-14 (architecture 3.1, 3.9 and 3.10; R48):
+- `spec`, the tag v0.17.9, commit 2070352: `gh release list -R altnovatrail/spec` — v0.17.9 "Latest", 2026-11-14T20:52:43Z, after v0.17.2–v0.17.8 of the same day; `gh release verify v0.17.9 -R altnovatrail/spec` — "✓ Release v0.17.9 verified!". `git -C spec diff --stat v0.17.1 v0.17.9` — `CLAUDE.md`, `COORDINATION.md`, `DEBT.md`, `RUN.md`, `docs/` and `draft/` alone: `repo-template/`, `tools/`, `contracts/`, `types/`, `format/`, `deployment/` and `legal/` — no change. The archive `deployment-1.tar.gz` of the release v0.17.9 unpacks to the same files as that of v0.17.1.
+- `docs/decisions.md` of `spec` at v0.17.9 — R148 spec: «The look of `app` and of the tool panel of `canvas` follows the interface mockup in `draft/mockup/` (RUN.md, T156), and the documents keep the behaviour: where the mockup and the documents differ, the documents win»; its «The devices of the first slice are a phone, a tablet and a computer»; the second 2026-11-14 amendment to R90 spec: «the buttons "Up", "Down", "Left" and "Right" leave the row of `canvas`». `DEBT.md` of `spec`, Д242: «2.5.7 — объявленное несоответствие `canvas`, и `app` выносит его на страницу «Accessibility»»; «затем `app` — своим переходом на тег `canvas`». `RUN.md` of `spec`, T157, not done in the tag: «**Строка 6.18 `app`** — переход на тег `spec` с эталоном и эпик «Интерфейс по эталону»»; «место эпика среди E3 и E4 `app` решает автор, когда сессия `app` его записывает». `draft/mockup/` at v0.17.9 has `Main.dc.html`, `Paper.dc.html`, `Phone.dc.html`, `canvas.json` and a README of ten lines; the README with the rules of style is T156, not done in the tag.
+- Table 5 of `RUN.md` of `spec` at v0.17.9 holds none of the rows В62–В65 of `app`.
+- The npm registry, `npm view`, 2026-11-14: `@altnovatrail/spec` and `@altnovatrail/contracts` 0.17.9 are the latest, and `@altnovatrail/contracts` 0.17.9 names `@bufbuild/protobuf` 2.17.0.
+- `release-verify-npm` of the lock file accepted the six packages of `@altnovatrail`; `release-verify` of the part — "deployment-1.tar.gz: spec v0.17.9, signed by spec's release.yml".
+
 ## 10. MathTrail
 
 The texts of MathTrail on which the decisions of `app` relied.
