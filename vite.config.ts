@@ -13,8 +13,9 @@ const port = 5173;
 // sends to a local api: in deployment.local.json api is app's own origin, so that both layers of
 // the CSP let them through as 'self' (section 3.7). The local api is api's devcontainer by its name
 // on the Docker network novatrail-api, which app's container joins too (R19; Д21 closed by R44), or
-// wherever NOVATRAIL_API says.
-const apiTarget = process.env.NOVATRAIL_API || "http://api:8080";
+// wherever NOVATRAIL_API says. Plain HTTP: api's development server has no TLS, the requests stay
+// on the Docker network of this machine, and a release's build has no proxy (R44).
+const apiTarget = process.env.NOVATRAIL_API || "http://api:8080"; // NOSONAR: plain HTTP, see above
 const proxy = {
   "^/novatrail\\.": { target: apiTarget, changeOrigin: true },
   "^/packages/": { target: apiTarget, changeOrigin: true },

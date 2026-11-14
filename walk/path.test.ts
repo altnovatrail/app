@@ -1,7 +1,8 @@
 // The path of the first slice in a browser, without the author (R44 in docs/decisions.md; section
 // 3.7 of docs/architecture.md; R146 spec): the development server of vite.config.ts on port 5173,
-// with deployment.local.json, its proxy to the local api that NOVATRAIL_API names, and api's
-// development token, which the local build's sign-in takes instead of Google's window (R67 api).
+// with deployment.local.json, its proxy to the local api — `http://api:8080` unless NOVATRAIL_API
+// names another —, and api's development token, which the local build's sign-in takes instead of
+// Google's window (R67 api).
 // The path runs in each engine NOVATRAIL_WALK_ENGINES names, each in a new context: the sign-in,
 // the learner, My subjects with the line of the tutor's time, a lesson with a reload in it and its
 // task answered in handwriting — a square, a column and a row of strokes, which api's stub of tutor
@@ -302,11 +303,10 @@ describe.each(NAMED)("the path in %s", (name) => {
     const used = (await share.textContent()) ?? "";
     note(used);
     // With the day's quota spent, api gives no lesson and begins no task in handwriting (R59 api).
-    if (/used up/.test(used)) {
-      throw new Error(
-        "walk: the profile of dev-app has spent its tutor time of today: wait for the next day, or run api's just dev-app with API_DEV_APP_UID set to an account of its own (R67 api)",
-      );
-    }
+    expect(
+      used,
+      "walk: the profile of dev-app has spent its tutor time of today: wait for the next day, or run api's just dev-app with API_DEV_APP_UID set to an account of its own (R67 api)",
+    ).toMatch(/Tutor time today: \d+\s?% used/);
     const connected = page.getByRole("region", { name: "Connected" });
     if ((await connected.getByRole("article").count()) === 0) {
       await page
@@ -316,6 +316,7 @@ describe.each(NAMED)("the path in %s", (name) => {
         .click();
       await connected.getByRole("article").first().waitFor();
     }
+    expect(await connected.getByRole("article").count()).toBeGreaterThan(0);
   });
 
   it("walks a lesson: Continue, back by its bar, a reload in it, and its task", async () => {
@@ -445,7 +446,9 @@ describe.each(NAMED)("the path in %s", (name) => {
     await page.getByRole("button", { name: "See the progress" }).click();
     await page.getByRole("heading", { level: 1, name: "Progress: Dev" }).waitFor();
     // The lesson's attempt by the lesson's name, not its local ID (R40; Д20).
-    await page.getByRole("definition").filter({ hasText: lessonTitle }).first().waitFor();
+    const lesson = page.getByRole("definition").filter({ hasText: lessonTitle });
+    await lesson.first().waitFor();
+    expect(await lesson.count()).toBeGreaterThan(0);
     await page.getByRole("term").filter({ hasText: "Skills" }).first().waitFor();
     await page.getByRole("button", { name: "Back to the section" }).click();
     await page.getByRole("button", { name: "See what is on this device" }).click();
