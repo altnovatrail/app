@@ -10,14 +10,24 @@
 // stub of tutor reads as can't read this, wrong and right (R66 api) — with the tutor's words, a
 // task outside a lesson continued after a reload, the section for adults, the sign-out that erases
 // the account's data, and the erasure of everything. It asks no host but the origin and those
-// section 3.7 names for the sign-in, and nothing on the way logs an error. Its AI calls are api's
-// stub's alone.
+// section 3.7 names for the sign-in, and nothing on the way logs an error. A response of 4xx of the
+// origin is an error in every engine unless it is api's refusal with its cause, which the app reads
+// as the contract says; the line an engine logs for it is left to it. A lesson an earlier walk left
+// open is the lesson it walks.
+// Its AI calls are api's stub's alone.
 
 import { existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import {
+  type Account,
+  GetAccountResponseSchema,
+} from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
+import { Cause } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import { GetLegalTextsResponseSchema } from "@altnovatrail/contracts/novatrail/api/v1/legal_pb.js";
 import { fromBinary } from "@bufbuild/protobuf";
+import { Code, ConnectError } from "@connectrpc/connect";
+import { errorFromJsonBytes } from "@connectrpc/connect/protocol-connect";
 import {
   type Browser,
   type BrowserContext,
@@ -26,11 +36,13 @@ import {
   firefox,
   type Locator,
   type Page,
+  type Response,
   webkit,
 } from "playwright";
 import { createServer, type ViteDevServer } from "vite";
 import { afterAll, beforeAll, describe, expect, it, onTestFailed } from "vitest";
 import { TOKEN_FILE } from "../scripts/local-token.ts";
+import { refusalOf } from "../src/api/failure.ts";
 import { isPageText } from "../src/legal/texts.ts";
 
 const ORIGIN = "http://127.0.0.1:5173";
@@ -55,6 +67,13 @@ const STUB_WORDS =
   /Which step of your work would you check first\?|What does the task ask you to find\?|What is given in the task, in your own words\?/;
 /** The databases of the account that the sign-out erases (section 3.2). */
 const ACCOUNT_DATABASES = /^novatrail-(profile-.+|registry|cache)$/;
+/** The line Chromium and WebKit log for a response of 4xx, at the resource's address; Firefox none. */
+const FAILED_LOAD = /^Failed to load resource: the server responded with a status of 4\d\d\b/;
+/** Why the walk stops when the profile's quota of the day is spent (R55 and R59 api). */
+const QUOTA_SPENT =
+  "walk: the profile of dev-app has spent its tutor time of today: wait for the next day, or run api's just dev-app with API_DEV_APP_UID set to an account of its own (R67 api)";
+/** The address of api's GetAccount, through the development server's proxy. */
+const GET_ACCOUNT = `${ORIGIN}/novatrail.api.v1.AccountService/GetAccount`;
 
 let server: ViteDevServer;
 
@@ -76,28 +95,108 @@ afterAll(async () => {
   await server?.close();
 });
 
-/** A new context of the engine, with what its pages ask and what they log as errors. */
+/**
+ * What a response of 4xx of the origin was: api's refusal with a cause the build knows — `Refusal`
+ * in the details of Connect's error, read by the app's own `refusalOf` (section 15 of the text of
+ * the contracts) —, by the cause's name; or why it is none.
+ */
+async function failedResponse(
+  response: Response,
+): Promise<{ readonly refusal: string } | { readonly fault: string }> {
+  let body: Buffer;
+  try {
+    body = await response.body();
+  } catch {
+    return { fault: "its body could not be read" };
+  }
+  let error: ConnectError;
+  try {
+    error = errorFromJsonBytes(body, undefined, new ConnectError("not an error of Connect"));
+  } catch {
+    return { fault: "not an error of Connect" };
+  }
+  const refusal = refusalOf(error);
+  return refusal === undefined
+    ? { fault: `${Code[error.code]} with no refusal of a cause the build knows` }
+    : { refusal: `CAUSE_${Cause[refusal.cause]}` };
+}
+
+/** A new context of the engine: what its pages ask and log, and what api says of the account. */
 async function open(browser: Browser) {
   const context: BrowserContext = await browser.newContext({
     locale: "en-US",
     viewport: { width: 1280, height: 1200 },
   });
-  const foreign: string[] = [];
-  const errors: string[] = [];
+  const walk = {
+    context,
+    foreign: [] as string[],
+    errors: [] as string[],
+    /** api's refusals of the walk, each by its address and cause. */
+    refusals: [] as string[],
+    /** The reads of the responses' bodies, which the end of the walk waits for. */
+    reads: [] as Promise<void>[],
+    /** The account, as the last GetAccount gave it. */
+    account: undefined as Account | undefined,
+  };
+  let answers = 0;
+  let accountOrder = 0;
   context.on("request", (request) => {
     const url = new URL(request.url());
     if (url.protocol !== "http:" && url.protocol !== "https:") return;
-    if (url.origin !== ORIGIN && !SIGN_IN_HOSTS.has(url.host)) foreign.push(request.url());
+    if (url.origin !== ORIGIN && !SIGN_IN_HOSTS.has(url.host)) walk.foreign.push(request.url());
+  });
+  context.on("response", (response) => {
+    const url = response.url();
+    const status = response.status();
+    if (status >= 400 && status < 500 && url.startsWith(`${ORIGIN}/`)) {
+      // Every engine's, Firefox's too, which logs no line for it.
+      const at = `${status} at ${new URL(url).pathname}`;
+      const read = failedResponse(response).then((was) => {
+        if ("refusal" in was) walk.refusals.push(`${at}: api's refusal ${was.refusal}`);
+        else walk.errors.push(`${at}: ${was.fault}`);
+      });
+      walk.reads.push(read);
+    } else if (response.ok() && url === GET_ACCOUNT) {
+      // The bodies may come out of order: a later answer's account stays. A body gone with its
+      // page, or one that does not read, leaves the account of the answer before.
+      const order = ++answers;
+      const read = response
+        .body()
+        .then((body) => {
+          if (order < accountOrder) return;
+          accountOrder = order;
+          walk.account = fromBinary(GetAccountResponseSchema, body).account;
+        })
+        .catch(() => undefined);
+      walk.reads.push(read);
+    }
   });
   const watch = (page: Page) => {
     page.on("console", (message) => {
-      if (message.type() === "error") errors.push(`${page.url()}: ${message.text()}`);
+      if (message.type() !== "error") return;
+      // The line Chromium and WebKit log for a 4xx of the origin: its response says what it was.
+      if (FAILED_LOAD.test(message.text()) && message.location().url.startsWith(`${ORIGIN}/`)) {
+        return;
+      }
+      walk.errors.push(`${page.url()}: ${message.text()}`);
     });
-    page.on("pageerror", (error) => errors.push(`${page.url()}: ${String(error)}`));
+    page.on("pageerror", (error) => walk.errors.push(`${page.url()}: ${String(error)}`));
   };
   context.on("page", watch);
-  const page = await context.newPage();
-  return { context, page, foreign, errors };
+  return Object.assign(walk, { page: await context.newPage() });
+}
+
+/**
+ * The errors of the walk, once the responses' bodies are read: what the pages logged, and each
+ * response of 4xx of the origin that is not api's refusal with its cause. Each refusal is noted.
+ */
+async function loggedErrors(
+  walk: Awaited<ReturnType<typeof open>>,
+  note: (text: string) => void,
+): Promise<string[]> {
+  await Promise.all(walk.reads);
+  for (const refusal of walk.refusals) note(refusal);
+  return walk.errors;
 }
 
 /** The databases of the origin, read where no script of the app runs. */
@@ -235,11 +334,25 @@ async function answerByTap(page: Page) {
   throw new Error("no option of the task came back Correct");
 }
 
+/** A task's sheet, or the radios of a task by tap, which has no sheet. */
+function taskAnswer(page: Page): Locator {
+  return page.locator("novatrail-canvas").or(page.getByRole("radio"));
+}
+
+/**
+ * Once a task's attempt has begun, by what shows it — the sheet or the radios unless named: the
+ * steps' panel beside a sheet has buttons of its own. A beginning refused for the quota of the day
+ * stops the walk, as its first step does.
+ */
+async function attemptBegun(page: Page, ready: Locator = taskAnswer(page)) {
+  const spent = page.getByText(/Today's tutor time is used up/);
+  await ready.or(spent).first().waitFor();
+  expect(await spent.count(), QUOTA_SPENT).toBe(0);
+}
+
 /** A task answered: by its radios, or in handwriting by the stub's three readings. */
 async function answer(page: Page): Promise<"tap" | "handwriting"> {
-  // The task's answer comes once its attempt has begun: a sheet, or the radios of a task by tap,
-  // which has no sheet — the steps' panel beside a sheet has buttons of its own.
-  await page.locator("novatrail-canvas").or(page.getByRole("radio")).first().waitFor();
+  await attemptBegun(page);
   if ((await page.locator("novatrail-canvas").count()) === 0) {
     await answerByTap(page);
     return "tap";
@@ -253,7 +366,7 @@ async function answer(page: Page): Promise<"tap" | "handwriting"> {
  * walk spends the profile's quota of the day (R55 api) on the stub's three readings alone.
  */
 async function showSolution(page: Page) {
-  await page.locator("novatrail-canvas").or(page.getByRole("radio")).first().waitFor();
+  await attemptBegun(page);
   await page.getByRole("button", { name: "Show the solution" }).click();
   await page.getByRole("button", { name: "Show it", exact: true }).click();
   await page.getByRole("region", { name: "Solution" }).waitFor();
@@ -274,6 +387,8 @@ describe.each(NAMED)("the path in %s", (name) => {
   let browser: Browser;
   let walk: Awaited<ReturnType<typeof open>>;
   let lessonTitle = "";
+  // The line of the tutor's time at the start, for the messages of the steps after it.
+  let quotaLine = "";
   const note = (text: string) => console.log(`walk ${name}: ${text}`);
 
   beforeAll(async () => {
@@ -292,6 +407,7 @@ describe.each(NAMED)("the path in %s", (name) => {
       await walk.page.screenshot({ path, fullPage: true }).catch(() => undefined);
       console.error(`walk: the page at the failure is ${path}`);
       console.error(`walk: errors so far: ${JSON.stringify(walk.errors, null, 1)}`);
+      console.error(`walk: refusals so far: ${JSON.stringify(walk.refusals, null, 1)}`);
       console.error(`walk: at ${walk.page.url()}`);
     });
 
@@ -336,12 +452,10 @@ describe.each(NAMED)("the path in %s", (name) => {
     const share = page.getByText(/Tutor time today: \d+\s?% used|Today's tutor time is used up/);
     await share.waitFor({ timeout: 30_000 });
     const used = (await share.textContent()) ?? "";
+    quotaLine = used;
     note(used);
     // With the day's quota spent, api gives no lesson and begins no task in handwriting (R59 api).
-    expect(
-      used,
-      "walk: the profile of dev-app has spent its tutor time of today: wait for the next day, or run api's just dev-app with API_DEV_APP_UID set to an account of its own (R67 api)",
-    ).toMatch(/Tutor time today: \d+\s?% used/);
+    expect(used, QUOTA_SPENT).toMatch(/Tutor time today: \d+\s?% used/);
     const connected = page.getByRole("region", { name: "Connected" });
     if ((await connected.getByRole("article").count()) === 0) {
       await page
@@ -354,35 +468,61 @@ describe.each(NAMED)("the path in %s", (name) => {
     expect(await connected.getByRole("article").count()).toBeGreaterThan(0);
   });
 
-  it("walks a lesson: Continue, back by its bar, a reload in it, and its task", async () => {
+  it("walks a lesson, begun now or before: Continue, back by its bar, a reload in it, and its task", async () => {
     shoot();
     const { page } = walk;
-    // What's next may give a task first: it is answered, and the engine asked again.
-    for (let tries = 0; ; tries++) {
-      if (tries === 4) throw new Error("What's next gave no lesson");
-      // While a task of an earlier walk is open, the button is Something else, which asks first.
-      await page.getByRole("button", { name: /^(What's next|Something else)$/ }).click();
-      const goOn = page.getByRole("button", { name: "Go on", exact: true });
-      await goOn.or(page.locator("h1")).first().waitFor();
-      if (await goOn.isVisible()) await goOn.click();
-      await page.waitForURL(/#\/(lesson|task)$/, { timeout: 30_000 });
-      if (page.url().endsWith("#/lesson")) break;
-      await showSolution(page);
-      note("What's next gave a task, ended by its solution");
-      await page.getByRole("button", { name: "Back to My subjects" }).click();
-      await home(page);
+    await Promise.all(walk.reads);
+    const dev = walk.account?.profiles.find((profile) => profile.pseudonym === "Dev");
+    if (dev === undefined) throw new Error("walk: GetAccount named no profile Dev");
+    const begun = dev.openLessonRuns.length;
+    // A lesson an earlier walk left open is continued: What's next would not give a new one.
+    if (begun > 0) {
+      note(`api names ${begun} lesson(s) of Dev begun before: the walk continues one`);
+      await page
+        .getByRole("region", { name: "A lesson in progress" })
+        .getByRole("button", { name: "Continue the lesson" })
+        .first()
+        .click();
+      await page.waitForURL(/#\/lesson$/, { timeout: 30_000 });
+    } else {
+      // What's next may give a task first: it is answered, and the engine asked again.
+      for (let tries = 0; ; tries++) {
+        if (tries === 4) {
+          throw new Error(
+            `What's next gave no lesson in 4 tries, and none was open (${quotaLine})`,
+          );
+        }
+        // While a task of an earlier walk is open, the button is Something else, which asks first.
+        await page.getByRole("button", { name: /^(What's next|Something else)$/ }).click();
+        const goOn = page.getByRole("button", { name: "Go on", exact: true });
+        await goOn.or(page.locator("h1")).first().waitFor();
+        if (await goOn.isVisible()) await goOn.click();
+        await page.waitForURL(/#\/(lesson|task)$/, { timeout: 30_000 });
+        if (page.url().endsWith("#/lesson")) break;
+        await showSolution(page);
+        note("What's next gave a task, ended by its solution");
+        await page.getByRole("button", { name: "Back to My subjects" }).click();
+        await home(page);
+      }
     }
+    // The lesson's heading once its segment is shown: until then the heading may be My subjects'.
+    await segment(page).waitFor();
     lessonTitle = (await page.getByRole("heading", { level: 1 }).textContent()) ?? "";
     expect(lessonTitle).not.toBe("");
-    await segment(page).waitFor();
     const first = await place(page);
-    note(`the lesson "${lessonTitle}" opens at "${first}"`);
+    const how = begun > 0 ? "begun before" : "given by What's next";
+    note(`the lesson "${lessonTitle}", ${how}, opens at "${first}"`);
     const bar = page.getByRole("navigation", { name: "Segments of the lesson" });
     if (!/^Task · /.test(first)) {
       await page.getByRole("button", { name: "Continue", exact: true }).click();
       await expect.poll(() => place(page)).not.toBe(first);
-      // Back by the bar to the first segment, then on again.
-      await bar.getByRole("button").first().click();
+      // Back by the bar to the segment it opened at, the first or a later one, then on again.
+      const at = Number(/ · (\d+) of /.exec(first)?.[1]);
+      if (!Number.isInteger(at)) throw new Error(`the lesson opened at no segment: "${first}"`);
+      await bar
+        .getByRole("button")
+        .nth(at - 1)
+        .click();
       await expect.poll(() => place(page)).toBe(first);
       await page.getByRole("button", { name: "Continue", exact: true }).click();
       await expect.poll(() => place(page)).not.toBe(first);
@@ -408,6 +548,13 @@ describe.each(NAMED)("the path in %s", (name) => {
       if (now === "end") break;
       const onward = page.getByRole("button", { name: "Continue", exact: true });
       if (/^Task · /.test(now) && !(await onward.isVisible())) {
+        // A task an earlier walk left, or whose beginning failed, begins again, a new attempt.
+        const again = page.getByRole("button", { name: "Begin the task again" });
+        await attemptBegun(page, taskAnswer(page).or(again));
+        if (await again.isVisible()) {
+          await again.click();
+          note(`the lesson's task at "${now}" was left or not begun: begun again`);
+        }
         await showSolution(page);
         note(`the lesson's task at "${now}", ended by its solution`);
         await onward.waitFor();
@@ -445,7 +592,7 @@ describe.each(NAMED)("the path in %s", (name) => {
     await page.getByRole("region", { name: "Solution" }).waitFor();
     // Try it again opens a new attempt of the task.
     await page.getByRole("button", { name: "Try it again" }).click();
-    await page.getByRole("button", { name: "Check", exact: true }).waitFor();
+    await attemptBegun(page, page.getByRole("button", { name: "Check", exact: true }));
     if (kind === "tap") return;
     await expect.poll(() => strokes(page)).toBe(0);
     await write(page, "row");
@@ -536,8 +683,8 @@ describe.each(NAMED)("the path in %s", (name) => {
     walk.page = await context.newPage();
   });
 
-  it("asked no host but those of the sign-in, and logged no error on the way", () => {
+  it("asked no host but those of the sign-in, and logged no error on the way", async () => {
     expect(walk.foreign).toEqual([]);
-    expect(walk.errors).toEqual([]);
+    expect(await loggedErrors(walk, note)).toEqual([]);
   });
 });
