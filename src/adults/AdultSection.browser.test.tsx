@@ -98,6 +98,36 @@ afterEach(() => {
 });
 
 describe("the section's first page", () => {
+  it("leads to the page Own AI key at an owner profile of an adult, and has none without one", async () => {
+    const { api } = apiOf((request) => profile({ profileId: request.profileId }));
+    const section = (shown: Route, profiles: readonly Profile[], onOpenOwner?: () => void) =>
+      inLanguage(
+        <ApiProvider value={api}>
+          <AdultSection
+            route={shown}
+            device={memoryDevice().device}
+            profiles={profiles}
+            onSaved={() => {}}
+            onFailed={() => {}}
+            onEraseAll={async () => "erased"}
+            onLegal={() => {}}
+            {...(onOpenOwner === undefined ? {} : { onOpenOwner })}
+          />
+        </ApiProvider>,
+      );
+    const { rerender } = render(section({ screen: "adults", parts: [] }, [profile()]));
+    await userEvent.click(screen.getByRole("button", { name: "Set up an own AI key" }));
+    expect(window.location.hash).toBe("#/adults/own-key");
+    // No learner is chosen outside the gate: the page opens the owner profile.
+    const onOpenOwner = vi.fn();
+    rerender(section({ screen: "adults", parts: ["own-key"] }, [profile()], onOpenOwner));
+    expect(screen.getByRole("heading", { level: 1, name: "Own AI key" })).toBeTruthy();
+    await userEvent.click(screen.getByRole("button", { name: "Open my profile" }));
+    expect(onOpenOwner).toHaveBeenCalledOnce();
+    rerender(section({ screen: "adults", parts: [] }, [profile({ ageCategory: "under_13" })]));
+    expect(screen.queryByRole("button", { name: "Set up an own AI key" })).toBeNull();
+  });
+
   it("names each profile, the owner's first, and opens its page; the bar leads back and out", async () => {
     window.location.hash = "#/adults";
     const { api } = apiOf((request) => profile({ profileId: request.profileId }));

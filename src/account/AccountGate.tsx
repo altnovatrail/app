@@ -34,6 +34,7 @@ import type { Api } from "../api/client.ts";
 import type { Failure } from "../api/failure.ts";
 import { ReadFailure } from "../api/ReadFailure.tsx";
 import { failureText } from "../api/words.ts";
+import { described } from "../app/described.ts";
 import {
   ADULTS,
   HOME,
@@ -61,6 +62,7 @@ import {
   type Versions,
   versionsOf,
 } from "../legal/texts.ts";
+import { KeyHolderProvider, keyed, useTabHolder } from "../ownkey/OwnKeyContext.tsx";
 import { LicensePages } from "../packages/LicensePage.tsx";
 import { usePackages } from "../packages/PackagesContext.tsx";
 import { useSignIn } from "../signin/SignInContext.tsx";
@@ -108,6 +110,19 @@ export function AccountGate({ children }: { readonly children: ReactNode }) {
     return () => session.stop();
   }, [session]);
   const state = useSyncExternalStore(session.subscribe, session.snapshot);
+  // The own key is in memory while the owner profile of the category adult is the learner chosen,
+  // and leaves it with that profile: "Switch learner", the sign-out, another account (R47).
+  const holder = useTabHolder(device);
+  const owner = state.step === "learning" && keyed(state.learner) ? state.learner.profileId : "";
+  // Only whether the holder is open for the owner profile: a refusal noted renders nothing here.
+  const opened = useSyncExternalStore(holder.subscribe, () => {
+    const held = holder.snapshot();
+    return held.status === "open" && held.profileId === owner;
+  });
+  useEffect(() => {
+    if (owner === "") holder.close();
+    else void holder.open(owner);
+  }, [holder, owner]);
   const [leaving, setLeaving] = useState(false);
   const [left, setLeft] = useState(false);
   const { language, words } = useLanguage();
@@ -186,22 +201,27 @@ export function AccountGate({ children }: { readonly children: ReactNode }) {
   }
   if (open && route.screen === ADULTS.screen) {
     return (
-      <AdultSection
-        route={route}
-        device={device}
-        profiles={state.account.profiles}
-        onSaved={onSaved}
-        onFailed={onFailed}
-        onEraseAll={async () => {
-          const done = await session.signOut(true);
-          if (done === "failed") return "failed";
-          // The sign-in comes next, and after it home, not the page of a device erased.
-          setLeft(done === "left");
-          navigate(HOME);
-          return done;
-        }}
-        onLegal={(page) => openLegal(ADULTS, page)}
-      />
+      <KeyHolderProvider holder={holder}>
+        <AdultSection
+          route={route}
+          device={device}
+          profiles={state.account.profiles}
+          onSaved={onSaved}
+          onFailed={onFailed}
+          // The own key is the owner profile's: the page opens it, with no PIN while the account has
+          // no child (section 3.6).
+          {...(state.step === "choose" ? { onOpenOwner: () => session.choose() } : {})}
+          onEraseAll={async () => {
+            const done = await session.signOut(true);
+            if (done === "failed") return "failed";
+            // The sign-in comes next, and after it home, not the page of a device erased.
+            setLeft(done === "left");
+            navigate(HOME);
+            return done;
+          }}
+          onLegal={(page) => openLegal(ADULTS, page)}
+        />
+      </KeyHolderProvider>
     );
   }
   switch (state.step) {
@@ -261,18 +281,23 @@ export function AccountGate({ children }: { readonly children: ReactNode }) {
         />
       );
     case "learning":
+      // The learner's screens open once the key the owner profile keeps here is in memory: their
+      // first request already names its provider.
+      if (owner !== "" && !opened) return null;
       return (
-        <LearnerProvider
-          value={{
-            learner: state.learner,
-            switchLearner: () => session.switchLearner(),
-            signOut: () => setLeaving(true),
-            onSaved,
-            onFailed,
-          }}
-        >
-          {children}
-        </LearnerProvider>
+        <KeyHolderProvider holder={holder}>
+          <LearnerProvider
+            value={{
+              learner: state.learner,
+              switchLearner: () => session.switchLearner(),
+              signOut: () => setLeaving(true),
+              onSaved,
+              onFailed,
+            }}
+          >
+            {children}
+          </LearnerProvider>
+        </KeyHolderProvider>
       );
   }
 }
@@ -285,12 +310,6 @@ function FormFailure({ failure }: { readonly failure: Failure | undefined }) {
       {failureText(failure, words)}
     </p>
   );
-}
-
-/** The ID of a field's hint and error, as `aria-describedby` names them. */
-function described(...ids: (string | false)[]): string | undefined {
-  const named = ids.filter((id): id is string => id !== false);
-  return named.length === 0 ? undefined : named.join(" ");
 }
 
 /**

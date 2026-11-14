@@ -12,7 +12,10 @@ import { create } from "@bufbuild/protobuf";
 import { cleanup, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
+import { KeyHolder } from "../ownkey/holder.ts";
+import { KeyHolderProvider } from "../ownkey/OwnKeyContext.tsx";
 import type { SiteStorage } from "../storage/browser.ts";
+import { deviceKeyStore, keptKey } from "../storage/ownkey.ts";
 import { addProfile } from "../storage/profile.ts";
 import { readRegistry, setAccount } from "../storage/registry.ts";
 import { profileDatabase } from "../storage/schema.ts";
@@ -262,5 +265,65 @@ describe("the erasures of the page", () => {
     expect(document.activeElement).toBe(
       screen.getByRole("button", { name: "Erase everything on this device" }),
     );
+  });
+});
+
+describe("the own key on the page This device", () => {
+  const ADULT = { ...OWNER, ageCategory: "adult" };
+  // A synthetic key: no provider issued it.
+  const KEY = { provider: "anthropic", name: "Anthropic", key: "sk-ant-synthetic-0000-a1b2" };
+
+  async function keyed(keep: boolean) {
+    const { device } = await deviceWithWork();
+    const holder = new KeyHolder(deviceKeyStore(device));
+    await holder.open("p1");
+    await holder.connect("p1", KEY, keep);
+    render(
+      inLanguage(
+        <KeyHolderProvider holder={holder}>
+          <DevicePage
+            device={device}
+            profiles={[OTHER, ADULT]}
+            onEraseAll={async () => "erased"}
+            site={site()}
+          />
+        </KeyHolderProvider>,
+      ),
+    );
+    return { device, holder };
+  }
+
+  it("names the key kept at the owner profile by its provider and last four, and removes it, asked first", async () => {
+    const { device, holder } = await keyed(true);
+    const owner = within(section("Profile: Ёжик"));
+    expect(
+      await owner.findByText(
+        "Its own AI key is kept on this device: a key of Anthropic ending in a1b2",
+      ),
+    ).toBeTruthy();
+    expect(document.body.textContent).not.toContain(KEY.key);
+    expect(within(section("Profile: Аня")).queryByText(/own AI key/)).toBeNull();
+    await userEvent.click(owner.getByRole("button", { name: "Remove key" }));
+    await userEvent.click(owner.getByRole("button", { name: "Erase" }));
+    expect(await owner.findByText("The key is removed")).toBeTruthy();
+    expect(owner.queryByText(/own AI key is kept/)).toBeNull();
+    expect(await keptKey(device, "p1")).toBeUndefined();
+    expect(holder.routeFields("p1")).toEqual({});
+    cleanup();
+  });
+
+  it("names no key that is in memory alone, and takes it from memory with the profile's data", async () => {
+    const { holder } = await keyed(false);
+    const owner = within(section("Profile: Ёжик"));
+    expect(await owner.findByText("1 unfinished task")).toBeTruthy();
+    expect(owner.queryByText(/own AI key is kept/)).toBeNull();
+    expect(holder.routeFields("p1")).toEqual({ ownKeyProvider: "anthropic" });
+    await userEvent.click(
+      owner.getByRole("button", { name: "Erase the profile's data on this device" }),
+    );
+    await userEvent.click(owner.getByRole("button", { name: "Erase" }));
+    expect(await owner.findByText("Erased")).toBeTruthy();
+    expect(holder.routeFields("p1")).toEqual({});
+    cleanup();
   });
 });

@@ -72,7 +72,7 @@ import { SignInScreen } from "../signin/SignInScreen.tsx";
 import { moduleMapRoute, SkillMapRoute } from "../skills/SkillMapScreen.tsx";
 import { addProfile } from "../storage/profile.ts";
 import { addDatabase, setAccount } from "../storage/registry.ts";
-import { profileDatabase } from "../storage/schema.ts";
+import { PROFILE_SCHEMA, profileDatabase } from "../storage/schema.ts";
 import { SubjectsScreen } from "../subjects/MySubjects.tsx";
 import { AttemptProvider } from "../task/AttemptContext.tsx";
 import { NO_VERDICTS, verdictsOf } from "../task/attempt.ts";
@@ -313,7 +313,7 @@ async function seeded() {
   await addDatabase(device, profileDatabase("p2"), { kind: "profile", profileId: "p2" });
   await backend.open(
     profileDatabase("p2"),
-    { version: 2, stores: {} },
+    { version: PROFILE_SCHEMA.version + 1, stores: {} },
     {
       create: true,
       onLost: () => {},

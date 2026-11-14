@@ -3,12 +3,16 @@
 // of the legal texts (R46), the bar above the learner's screens and the sign-out, each screen by
 // its role and name, with api answering by the test's fetch and the sign-in service the test's own.
 import {
+  CheckOwnKeyRequestSchema,
+  CheckOwnKeyResponseSchema,
   CreateAccountRequestSchema,
   CreateAccountResponseSchema,
   CreateOwnerProfileRequestSchema,
   CreateOwnerProfileResponseSchema,
   GetAccountResponseSchema,
+  ListOwnKeyProvidersResponseSchema,
   Mode,
+  OwnKeyCheck,
   ProfileSchema,
   SetWorkStorageRequestSchema,
   SetWorkStorageResponseSchema,
@@ -24,6 +28,7 @@ import {
 } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import {
   BeginAttemptResponseSchema,
+  ChooseNextRequestSchema,
   ChooseNextResponseSchema,
   GetOpenAttemptResponseSchema,
 } from "@altnovatrail/contracts/novatrail/api/v1/learning_pb.js";
@@ -57,6 +62,7 @@ import { App } from "../app/App.tsx";
 import { Boot } from "../boot/Boot.tsx";
 import { en } from "../i18n/en.ts";
 import { ru } from "../i18n/ru.ts";
+import { OWN_KEY_CHANNEL } from "../ownkey/OwnKeyContext.tsx";
 import { addProfile } from "../storage/profile.ts";
 import { readRegistry } from "../storage/registry.ts";
 import { SETTINGS } from "../storage/schema.ts";
@@ -1008,6 +1014,61 @@ describe("the legal pages", () => {
     await userEvent.click(await screen.findByRole("button", { name: "Close" }));
     expect(window.location.hash).toBe("#/home");
     expect(await screen.findByRole("heading", { level: 1, name: "Sign in" })).toBeTruthy();
+  });
+});
+
+describe("the own key", () => {
+  afterEach(() => {
+    window.location.hash = "";
+  });
+
+  it("goes with the owner profile's requests once connected, and leaves memory on Switch learner", async () => {
+    const service = fakeSignIn("uid-1");
+    const account = { accountId: "account-1", profiles: [OWNER] };
+    const checked: ReturnType<typeof fromBinary<typeof CheckOwnKeyRequestSchema>>[] = [];
+    const chosen: ReturnType<typeof fromBinary<typeof ChooseNextRequestSchema>>[] = [];
+    const heard: unknown[] = [];
+    const other = new BroadcastChannel(OWN_KEY_CHANNEL);
+    other.onmessage = (event) => heard.push(event.data);
+    renderApp(
+      {
+        getAccount: () => message(GetAccountResponseSchema, { account }),
+        listOwnKeyProviders: () =>
+          message(ListOwnKeyProvidersResponseSchema, {
+            providers: [{ provider: "anthropic", name: "Anthropic" }],
+          }),
+        checkOwnKey: (body) => {
+          checked.push(fromBinary(CheckOwnKeyRequestSchema, body));
+          return message(CheckOwnKeyResponseSchema, { check: OwnKeyCheck.ACCEPTED });
+        },
+        chooseNext: (body) => {
+          chosen.push(fromBinary(ChooseNextRequestSchema, body));
+          return message(ChooseNextResponseSchema, { choice: { kind: ChoiceKind.NOTHING } });
+        },
+      },
+      service,
+    );
+    // From the choice of the learner: the page opens the owner profile, which holds the key.
+    await userEvent.click(await screen.findByRole("button", { name: "For grown-ups" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Set up an own AI key" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Open my profile" }));
+    // A synthetic key: no provider issued it.
+    await userEvent.fill(await screen.findByLabelText("Key"), "sk-ant-synthetic-0000-a1b2");
+    await userEvent.click(screen.getByRole("button", { name: "Connect" }));
+    expect(await screen.findByText("Connected: a key of Anthropic ending in a1b2")).toBeTruthy();
+    expect(checked[0]).toMatchObject({ profileId: "p1", ownKey: { provider: "anthropic" } });
+    await vi.waitFor(() => expect(heard).toEqual([{ profileId: "p1" }]));
+    await userEvent.click(screen.getByRole("button", { name: "Close the section" }));
+    await userEvent.click(await screen.findByRole("button", { name: "What's next" }));
+    await vi.waitFor(() => expect(chosen).toHaveLength(1));
+    expect(chosen[0]?.ownKeyProvider).toBe("anthropic");
+    // Switch learner closes the owner profile: the key, not kept here, is gone.
+    await userEvent.click(screen.getByRole("button", { name: "Switch learner" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Ёжик" }));
+    await userEvent.click(await screen.findByRole("button", { name: "What's next" }));
+    await vi.waitFor(() => expect(chosen).toHaveLength(2));
+    expect(chosen[1]?.ownKeyProvider).toBe("");
+    other.close();
   });
 });
 

@@ -7,9 +7,12 @@
 // the choice of the learner with the next versions of the legal texts api gives and the page of
 // each (R46), the learner, My subjects with the line of the tutor's time, a lesson with a reload in
 // it and its task answered in handwriting — a square, a column and a row of strokes, which api's
-// stub of tutor reads as can't read this, wrong and right (R66 api) — with the tutor's words, a
-// task outside a lesson continued after a reload, the section for adults, the sign-out that erases
-// the account's data, and the erasure of everything. It asks no host but the origin and those
+// stub of tutor reads as can't read this, wrong and right (R66 api) — with the tutor's words, an
+// own key api's stub checks by its ending (R73 api), refused and then accepted and kept on this
+// device, a task outside a lesson on that key and continued after a reload, the section for
+// adults with the key removed on This device, the sign-out that erases the account's data, and
+// the erasure of everything. The key goes with no request but those that call AI and its check,
+// and the provider alone with those that may give a choice (R47). It asks no host but the origin and those
 // section 3.7 names for the sign-in, and nothing on the way logs an error. A response of 4xx of the
 // origin is an error in every engine unless it is api's refusal with its cause, which the app reads
 // as the contract says; the line an engine logs for it is left to it. A lesson an earlier walk left
@@ -72,6 +75,19 @@ const FAILED_LOAD = /^Failed to load resource: the server responded with a statu
 /** Why the walk stops when the profile's quota of the day is spent (R55 and R59 api). */
 const QUOTA_SPENT =
   "walk: the profile of dev-app has spent its tutor time of today: wait for the next day, or run api's just dev-app with API_DEV_APP_UID set to an account of its own (R67 api)";
+/** A synthetic own key, which api's stub accepts by its ending; with `-invalid`, refuses (R73 api). */
+const OWN_KEY = "sk-ant-walk-synthetic-wxyz";
+/** The requests that may carry the own key: those that call AI, and its check (R47). */
+const KEYED = new Set([
+  "SubmitWork",
+  "GetRungWords",
+  "GetCorrectAnswerWords",
+  "ExplainDifferently",
+  "CheckOwnKey",
+]);
+/** Why the walk stops when api's dev-app opens no provider to an own key (R72 api). */
+const NO_PROVIDER =
+  "walk: api's dev-app lists no provider of an own key: run api v0.1.41 or newer, whose dev-app lists Anthropic (R72 api)";
 /** The address of api's GetAccount, through the development server's proxy. */
 const GET_ACCOUNT = `${ORIGIN}/novatrail.api.v1.AccountService/GetAccount`;
 
@@ -137,13 +153,26 @@ async function open(browser: Browser) {
     reads: [] as Promise<void>[],
     /** The account, as the last GetAccount gave it. */
     account: undefined as Account | undefined,
+    /** The methods of api whose requests carried the own key, and those that named its provider. */
+    keyed: new Set<string>(),
+    named: new Set<string>(),
   };
+  const key = new TextEncoder().encode(OWN_KEY);
+  const provider = new TextEncoder().encode("anthropic");
+  const holds = (body: Buffer | null, part: Uint8Array) =>
+    body !== null && Buffer.from(body).includes(Buffer.from(part));
   let answers = 0;
   let accountOrder = 0;
   context.on("request", (request) => {
     const url = new URL(request.url());
     if (url.protocol !== "http:" && url.protocol !== "https:") return;
     if (url.origin !== ORIGIN && !SIGN_IN_HOSTS.has(url.host)) walk.foreign.push(request.url());
+    if (url.origin === ORIGIN && url.pathname.startsWith("/novatrail.api.v1.")) {
+      const method = url.pathname.split("/").at(-1) ?? "";
+      const body = request.postDataBuffer();
+      if (holds(body, key) || request.url().includes(OWN_KEY)) walk.keyed.add(method);
+      else if (holds(body, provider)) walk.named.add(method);
+    }
   });
   context.on("response", (response) => {
     const url = response.url();
@@ -389,6 +418,8 @@ describe.each(NAMED)("the path in %s", (name) => {
   let lessonTitle = "";
   // The line of the tutor's time at the start, for the messages of the steps after it.
   let quotaLine = "";
+  // How the task outside a lesson was answered, on the own key.
+  let practised: "tap" | "handwriting" | undefined;
   const note = (text: string) => console.log(`walk ${name}: ${text}`);
 
   beforeAll(async () => {
@@ -566,6 +597,31 @@ describe.each(NAMED)("the path in %s", (name) => {
     await home(page);
   });
 
+  it("connects an own key the stub checks, kept on this device, once a wrong one is refused", async () => {
+    shoot();
+    const { page } = walk;
+    await page.getByRole("button", { name: "For grown-ups" }).click();
+    await page.getByRole("button", { name: "Set up an own AI key" }).click();
+    await page.getByRole("heading", { level: 1, name: "Own AI key" }).waitFor();
+    const field = page.getByLabel("Key", { exact: true });
+    const none = page.getByText(/No AI provider takes an own key on this server yet/);
+    const failed = page.getByRole("alert");
+    await field.or(none).or(failed).first().waitFor();
+    expect((await none.count()) + (await failed.count()), NO_PROVIDER).toBe(0);
+    await field.fill(`${OWN_KEY.slice(0, -4)}invalid`);
+    await page.getByRole("button", { name: "Connect" }).click();
+    await page.getByText(/it isn't valid, or it was revoked/).waitFor({ timeout: 30_000 });
+    await field.fill(OWN_KEY);
+    await page.getByRole("checkbox", { name: "Keep on this device" }).check();
+    await page.getByRole("button", { name: "Connect" }).click();
+    await page
+      .getByText(`Connected: a key of Anthropic ending in ${OWN_KEY.slice(-4)}`)
+      .waitFor({ timeout: 30_000 });
+    await page.getByText("The key is kept on this device").waitFor();
+    await page.getByRole("button", { name: "Close the section" }).click();
+    await home(page);
+  });
+
   it("answers a task outside a lesson as the stub reads it, and continues it after a reload", async () => {
     shoot();
     const { page } = walk;
@@ -588,7 +644,8 @@ describe.each(NAMED)("the path in %s", (name) => {
     await page.getByRole("heading", { level: 1, name: "Task" }).waitFor();
     // Can't read this, not right yet with the tutor's words and Explain differently, Correct.
     const kind = await answer(page);
-    note(`the skill map's task, answered ${kind}`);
+    practised = kind;
+    note(`the skill map's task, answered ${kind}, on the own key`);
     await page.getByRole("region", { name: "Solution" }).waitFor();
     // Try it again opens a new attempt of the task.
     await page.getByRole("button", { name: "Try it again" }).click();
@@ -634,10 +691,27 @@ describe.each(NAMED)("the path in %s", (name) => {
     await page.getByRole("term").filter({ hasText: "Skills" }).first().waitFor();
     await page.getByRole("button", { name: "Back to the section" }).click();
     await page.getByRole("button", { name: "See what is on this device" }).click();
-    await page
-      .getByRole("region", { name: "Profile: Dev" })
-      .getByText(/1 unfinished task/)
+    const dev = page.getByRole("region", { name: "Profile: Dev" });
+    await dev.getByText(/1 unfinished task/).waitFor();
+    // The own key kept here, by its last four alone, and its removal, asked first (R47).
+    await dev
+      .getByText(
+        `Its own AI key is kept on this device: a key of Anthropic ending in ${OWN_KEY.slice(-4)}`,
+      )
       .waitFor();
+    await dev.getByRole("button", { name: "Remove key" }).click();
+    await dev.getByRole("button", { name: "Erase", exact: true }).click();
+    await dev.getByText("The key is removed").waitFor();
+    // The key went with the requests that call AI and its check alone, and the provider alone with
+    // the choice and the beginning of a task (contract, section 15).
+    note(
+      `the own key went with ${[...walk.keyed].join(", ")}; its provider with ${[...walk.named].join(", ")}`,
+    );
+    expect([...walk.keyed].filter((method) => !KEYED.has(method))).toEqual([]);
+    expect(walk.keyed.has("CheckOwnKey")).toBe(true);
+    if (practised === "handwriting") expect(walk.keyed.has("SubmitWork")).toBe(true);
+    expect(walk.named.has("ChooseNext")).toBe(true);
+    expect(walk.named.has("BeginAttempt")).toBe(true);
     await page.getByRole("button", { name: "Close the section" }).click();
     await home(page);
   });

@@ -1,6 +1,7 @@
 import { OwnKeySchema } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
 import {
   Cause,
+  LimitCause,
   OutcomeSchema,
   OwnKeyLimitSchema,
 } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
@@ -12,7 +13,7 @@ import { dateTimeFormat } from "../i18n/intl.ts";
 import { WORDS } from "../i18n/words.ts";
 import type { Failure } from "./failure.ts";
 import { aiFields, clockOffsetMinutes, idempotencyKey } from "./keys.ts";
-import { closesPlatformAI, outcomeOf } from "./outcome.ts";
+import { closesAI, outcomeOf } from "./outcome.ts";
 import { CAUSE_KEYS, calendarDays, failureText, outcomeText } from "./words.ts";
 
 const DAY = new Date(Date.UTC(2026, 10, 11, 4, 0));
@@ -56,13 +57,15 @@ describe("outcomeOf", () => {
     });
   });
 
-  it("tells the quota and the limit of platform AI apart from a moment's failure and no admission", () => {
-    expect(closesPlatformAI({ cause: Cause.QUOTA, nextFamilyDay: DAY })).toBe(true);
-    expect(closesPlatformAI({ cause: Cause.PLATFORM_LIMIT })).toBe(true);
-    for (const cause of [Cause.AI_FAILURE, Cause.NOT_ADMITTED, Cause.KEY_REFUSED]) {
-      expect(closesPlatformAI({ cause })).toBe(false);
+  it("tells the quota and the limits, and the key refused, apart from a moment's failure and no admission", () => {
+    expect(closesAI({ cause: Cause.QUOTA, nextFamilyDay: DAY })).toBe(true);
+    expect(closesAI({ cause: Cause.PLATFORM_LIMIT })).toBe(true);
+    expect(closesAI({ cause: Cause.LIMIT_REACHED })).toBe(true);
+    expect(closesAI({ cause: Cause.KEY_REFUSED })).toBe(true);
+    for (const cause of [Cause.AI_FAILURE, Cause.NOT_ADMITTED, Cause.NO_OTHER_WORDS]) {
+      expect(closesAI({ cause })).toBe(false);
     }
-    expect(closesPlatformAI(undefined)).toBe(false);
+    expect(closesAI(undefined)).toBe(false);
   });
 });
 
@@ -140,6 +143,44 @@ describe("the words of what a call came to", () => {
     expect(outcomeText({ cause: Cause.NO_OTHER_WORDS }, WORDS.en)).toBe(
       "The tutor has no other words for this",
     );
+  });
+
+  it("words the own key's limit by which one ran out, and when access comes back", () => {
+    const limit = (cause: LimitCause, accessReturns?: Date) =>
+      create(OwnKeyLimitSchema, {
+        cause,
+        ...(accessReturns === undefined ? {} : { accessReturns: timestampFromDate(accessReturns) }),
+      });
+    expect(outcomeText({ cause: Cause.LIMIT_REACHED }, WORDS.en)).toBe(
+      "The limit of your AI key is used up",
+    );
+    expect(
+      outcomeText(
+        { cause: Cause.LIMIT_REACHED, ownKeyLimit: limit(LimitCause.UNSPECIFIED) },
+        WORDS.ru,
+      ),
+    ).toBe("Лимит вашего ключа ИИ исчерпан");
+    expect(
+      outcomeText({ cause: Cause.LIMIT_REACHED, ownKeyLimit: limit(LimitCause.LIMIT) }, WORDS.en),
+    ).toBe("The spending limit set for your AI key is reached");
+    expect(
+      outcomeText({ cause: Cause.LIMIT_REACHED, ownKeyLimit: limit(LimitCause.TIER) }, WORDS.ru),
+    ).toBe("Ваш ключ ИИ упёрся в предел своего уровня у поставщика");
+    expect(
+      outcomeText({ cause: Cause.LIMIT_REACHED, ownKeyLimit: limit(LimitCause.PAYMENT) }, WORDS.en),
+    ).toBe("The AI provider couldn't take the payment for your key");
+    // A cause the build does not know is the limit at large.
+    expect(
+      outcomeText({ cause: Cause.LIMIT_REACHED, ownKeyLimit: limit(99 as LimitCause) }, WORDS.en),
+    ).toBe("The limit of your AI key is used up");
+    const at = new Date(2026, 11, 1, 9, 0);
+    const time = dateTimeFormat("ru", { timeStyle: "short" }).format(at);
+    expect(
+      outcomeText(
+        { cause: Cause.LIMIT_REACHED, ownKeyLimit: limit(LimitCause.BALANCE, at) },
+        WORDS.ru,
+      ),
+    ).toBe(`На счёте вашего ключа ИИ кончились деньги. Доступ вернётся 1 декабря в ${time}`);
   });
 
   it("words each failure, and a cause with no words of its own by the common string", () => {

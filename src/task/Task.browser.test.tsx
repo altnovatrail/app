@@ -57,6 +57,8 @@ import { userEvent } from "vitest/browser";
 import { ApiProvider } from "../api/ApiContext.tsx";
 import { createApi } from "../api/client.ts";
 import { dateTimeFormat } from "../i18n/intl.ts";
+import { KeyHolder } from "../ownkey/holder.ts";
+import { KeyHolderProvider } from "../ownkey/OwnKeyContext.tsx";
 import type { PackageChecks } from "../packages/checks.ts";
 import { DeviceFiles } from "../packages/files.ts";
 import { PackagesProvider } from "../packages/PackagesContext.tsx";
@@ -192,6 +194,22 @@ interface Setup {
    */
   voicing?: { speech: ReturnType<typeof fakeSpeech>; on: boolean };
   voicingFails?: boolean;
+  /** The owner's own key is held for the learner, p1: its holder, opened with it (R47). */
+  ownKey?: boolean;
+}
+
+/** A synthetic own key: no provider issued it. */
+const OWN_KEY = { provider: "anthropic", name: "Anthropic", key: "sk-ant-synthetic-0000-a1b2" };
+
+/** A holder of the own key, open for p1 with the key. */
+async function heldKey(): Promise<KeyHolder> {
+  const holder = new KeyHolder({
+    read: async () => ({ ...OWN_KEY, last4: "a1b2" }),
+    keep: async () => "saved",
+    drop: async () => {},
+  });
+  await holder.open("p1");
+  return holder;
 }
 
 /** When the operator reviews a report by, in the tests: 3 days after 2026-11-12, at noon UTC. */
@@ -401,6 +419,9 @@ async function renderTask(setup: Setup = {}) {
     }),
   };
   const attempts: (string | undefined)[] = [];
+  const holder = setup.ownKey === true ? await heldKey() : undefined;
+  const keyed = (screen: ReactNode) =>
+    holder === undefined ? screen : <KeyHolderProvider holder={holder}>{screen}</KeyHolderProvider>;
   const voiced = (screen: ReactNode) =>
     setup.voicing === undefined ? (
       screen
@@ -426,15 +447,17 @@ async function renderTask(setup: Setup = {}) {
     inLanguage(
       <ApiProvider value={api}>
         <PackagesProvider value={packages}>
-          {voiced(
-            <Task
-              profileId="p1"
-              attemptId="a1"
-              defaultMode={setup.mode ?? Mode.BY_STEPS}
-              device={device}
-              adult={setup.adult ?? false}
-              onAttempt={(id) => attempts.push(id)}
-            />,
+          {keyed(
+            voiced(
+              <Task
+                profileId="p1"
+                attemptId="a1"
+                defaultMode={setup.mode ?? Mode.BY_STEPS}
+                device={device}
+                adult={setup.adult ?? false}
+                onAttempt={(id) => attempts.push(id)}
+              />,
+            ),
           )}
         </PackagesProvider>
       </ApiProvider>,
@@ -442,6 +465,7 @@ async function renderTask(setup: Setup = {}) {
   );
   return {
     device,
+    holder,
     asked,
     keys,
     begun,
@@ -2221,5 +2245,85 @@ describe("the task screen's voicing, once the screen is gone", () => {
     answer("Count the gaps between the rungs.");
     await new Promise((resolve) => setTimeout(resolve, 50));
     expect(speech.texts()).toEqual(["Not right yet: 2 items of 2"]);
+  });
+});
+
+describe("the task screen on the owner's own key", () => {
+  it("sends no key and no provider on platform AI", async () => {
+    const { submitted, rungs } = await renderTask({ mode: Mode.SELF });
+    await userEvent.click(await screen.findByRole("radio", { name: "4" }));
+    await userEvent.click(screen.getByRole("radio", { name: "No" }));
+    await userEvent.click(check());
+    await screen.findByText("Count the gaps between the rungs.");
+    expect(submitted[0]?.ownKeyProvider).toBe("");
+    expect(submitted[0]?.ownKey).toBeUndefined();
+    expect(rungs[0]?.ownKey).toBeUndefined();
+    expect(rungs[0]?.clockOffsetMinutes).toBe(-new Date().getTimezoneOffset() || 0);
+  });
+
+  it("names the provider alone with taps, a solution shown and a task begun again", async () => {
+    const { submitted, rungs, explains, shows, begun } = await renderTask({
+      mode: Mode.SELF,
+      adult: true,
+      ownKey: true,
+    });
+    await userEvent.click(await screen.findByRole("radio", { name: "4" }));
+    await userEvent.click(screen.getByRole("radio", { name: "No" }));
+    await userEvent.click(check());
+    await screen.findByText("Count the gaps between the rungs.");
+    // Taps alone: no work AI reads, so the provider, and neither the key nor the clock's offset.
+    expect(submitted[0]?.ownKeyProvider).toBe("anthropic");
+    expect(submitted[0]?.ownKey).toBeUndefined();
+    expect(submitted[0]?.clockOffsetMinutes).toBeUndefined();
+    // The rung's words and "Explain differently" call AI: the key, without the offset.
+    expect(rungs[0]?.ownKey).toMatchObject({ provider: "anthropic", key: OWN_KEY.key });
+    expect(rungs[0]?.clockOffsetMinutes).toBeUndefined();
+    await userEvent.click(panel().getByRole("button", { name: "Explain differently" }));
+    await screen.findByText("In other words: count the fruits one by one.");
+    expect(explains[0]?.ownKey?.key).toBe(OWN_KEY.key);
+    expect(explains[0]?.clockOffsetMinutes).toBeUndefined();
+    await userEvent.click(screen.getByRole("button", { name: "Show the solution" }));
+    await userEvent.click(screen.getByRole("button", { name: "Show it" }));
+    expect(await panel().findByText("Solution shown")).toBeVisible();
+    expect(shows[0]?.ownKeyProvider).toBe("anthropic");
+    await userEvent.click(await panel().findByRole("button", { name: "Try it again" }));
+    await vi.waitFor(() => expect(begun[0]?.ownKeyProvider).toBe("anthropic"));
+  });
+
+  it("sends a work with the key alone, never beside the provider, and words its refusal", async () => {
+    const { submitted, holder } = await renderTask({
+      task: SHEET_TASK,
+      history: WRITTEN,
+      mode: Mode.SELF,
+      ownKey: true,
+      answer: () => ({ ...sheetAnswer("unchecked"), outcome: { cause: Cause.KEY_REFUSED } }),
+    });
+    await vi.waitFor(() => expect(check()).toHaveAttribute("aria-disabled", "false"));
+    await userEvent.click(check());
+    expect(await screen.findByText("The AI service didn't accept your key")).toBeVisible();
+    const sent = submitted[0];
+    expect(sent?.work).toBeDefined();
+    expect(sent?.ownKey?.key).toBe(OWN_KEY.key);
+    expect(sent?.ownKeyProvider).toBe("");
+    expect(sent?.clockOffsetMinutes).toBeUndefined();
+    // The section for adults has it beside the key: nothing went to platform AI.
+    expect(holder?.snapshot()).toMatchObject({ refusal: { cause: Cause.KEY_REFUSED } });
+  });
+
+  it("says beside the fallback words of a rung that the key's limit ran out", async () => {
+    const { holder } = await renderTask({
+      mode: Mode.SELF,
+      ownKey: true,
+      rung: () => ({
+        rung: 1,
+        words: "Count the gaps between the rungs.",
+        outcome: { cause: Cause.LIMIT_REACHED },
+      }),
+    });
+    await userEvent.click(await screen.findByRole("radio", { name: "4" }));
+    await userEvent.click(screen.getByRole("radio", { name: "No" }));
+    await userEvent.click(check());
+    expect(await panel().findByText("The limit of your AI key is used up")).toBeVisible();
+    expect(holder?.snapshot()).toMatchObject({ refusal: { cause: Cause.LIMIT_REACHED } });
   });
 });

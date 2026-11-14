@@ -154,7 +154,31 @@ export interface LessonState {
 }
 
 const ATTEMPT_STORES = ["attempts", "history", "submissions"];
-const STORES = Object.keys(PROFILE_SCHEMA.stores);
+const OWN_KEY_STORE = "ownKey";
+const OWN_KEY = "key";
+/** The stores of the learner's work, whose size the page This device tells: not the own key. */
+const STORES = Object.keys(PROFILE_SCHEMA.stores).filter((store) => store !== OWN_KEY_STORE);
+
+/** The own key kept on this device: its provider by code and name, the key and its last four. */
+export interface KeptKey {
+  readonly provider: string;
+  readonly name: string;
+  readonly key: string;
+  readonly last4: string;
+}
+
+/** A kept key in the form this build writes; anything else is none. */
+function keptKeyOf(kept: unknown): KeptKey | undefined {
+  if (typeof kept !== "object" || kept === null) return undefined;
+  const { provider, name, key, last4 } = kept as Partial<Record<keyof KeptKey, unknown>>;
+  if (typeof provider !== "string" || typeof key !== "string" || key === "") return undefined;
+  return {
+    provider,
+    name: typeof name === "string" ? name : provider,
+    key,
+    last4: typeof last4 === "string" ? last4 : key.slice(-4),
+  };
+}
 
 async function eraseAttempt(tx: Transaction, attemptId: string): Promise<void> {
   await tx.delete("attempts", attemptId);
@@ -400,6 +424,26 @@ export class Profile {
       })
       .catch(() => undefined);
     return { unfinished, bytes };
+  }
+
+  /** The own key kept on this device; none when it is not kept, or its record cannot be read. */
+  async ownKey(): Promise<KeptKey | undefined> {
+    return keptKeyOf(
+      await this.connection.read([OWN_KEY_STORE], (tx) => tx.get(OWN_KEY_STORE, OWN_KEY)),
+    );
+  }
+
+  /** Keeps the own key on this device, in place of the one kept before (R47). */
+  keepOwnKey(kept: KeptKey): Promise<Saved> {
+    return this.save([OWN_KEY_STORE], async (tx) => {
+      await tx.put(OWN_KEY_STORE, OWN_KEY, { ...kept });
+      return "saved";
+    });
+  }
+
+  /** The own key is no more kept on this device. */
+  async dropOwnKey(): Promise<void> {
+    await this.connection.write([OWN_KEY_STORE], (tx) => tx.delete(OWN_KEY_STORE, OWN_KEY));
   }
 
   /** Attempts and lessons last changed at a time or before go, with all of an attempt's work. */

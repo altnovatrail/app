@@ -50,8 +50,8 @@ import type { MessageInitShape } from "@bufbuild/protobuf";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useApi } from "../api/ApiContext.tsx";
 import { type Failure, parseFailure } from "../api/failure.ts";
-import { aiFields, idempotencyKey } from "../api/keys.ts";
-import { closesPlatformAI, outcomeOf } from "../api/outcome.ts";
+import { idempotencyKey } from "../api/keys.ts";
+import { closesAI, outcomeOf } from "../api/outcome.ts";
 import { failureText, outcomeText } from "../api/words.ts";
 import { HOME, navigate, redirect } from "../app/router.ts";
 import { Screen } from "../app/Screen.tsx";
@@ -59,6 +59,7 @@ import { ReadFailed } from "../boot/Screens.tsx";
 import { keyFor } from "../i18n/codes.ts";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { NextStep } from "../next/NextStep.tsx";
+import { useKeyHolder } from "../ownkey/OwnKeyContext.tsx";
 import { usePackages } from "../packages/PackagesContext.tsx";
 import type { Device } from "../storage/device.ts";
 import { addProfile, attemptOver, openProfile, type Profile } from "../storage/profile.ts";
@@ -380,6 +381,7 @@ function useAgain(
   onAttempt: (attemptId: string | undefined) => void,
 ) {
   const api = useApi();
+  const holder = useKeyHolder();
   const key = useRef<string | undefined>(undefined);
   const [pending, setPending] = useState(false);
   const [failure, setFailure] = useState<Failure | undefined>(undefined);
@@ -392,6 +394,7 @@ function useAgain(
         profileId,
         idempotencyKey: key.current,
         start: { case: "previousAttemptId", value: attemptId },
+        ...holder.routeFields(profileId),
       })
       .then(
         (answer) => {
@@ -402,7 +405,7 @@ function useAgain(
         (reason: unknown) => setFailure(parseFailure(reason)),
       )
       .finally(() => setPending(false));
-  }, [api, profileId, attemptId, onAttempt]);
+  }, [api, holder, profileId, attemptId, onAttempt]);
   return { start, pending, failure };
 }
 
@@ -438,6 +441,8 @@ function OpenTask({
   onClosed,
 }: OpenTaskProps) {
   const api = useApi();
+  // The own key, or on platform AI the clock's offset, for each request that calls AI (R47).
+  const holder = useKeyHolder();
   const { views, files } = usePackages();
   const { language, words } = useLanguage();
   const { auto: say, prime, speech } = useVoicing();
@@ -620,6 +625,7 @@ function OpenTask({
       const asked = checks.current;
       // The words of an earlier check, or of an attempt that ended meanwhile, show nothing.
       const late = () => asked !== checks.current || over.current;
+      const ai = holder.aiFields(profileId);
       void api.attempt
         .getRungWords({
           profileId,
@@ -627,20 +633,19 @@ function OpenTask({
           idempotencyKey: idempotencyKey(),
           wrongAnswers,
           ...(of.contract === undefined ? {} : { work: of.contract }),
-          ...aiFields(),
+          ...ai,
         })
         .then(
           (answer) => {
-            if (late()) return;
             const read = outcomeOf(answer.outcome);
+            holder.noteOutcome(profileId, read, ai);
+            if (late()) return;
             if (answer.words !== "") {
               // The fallback text of the rung comes with an outcome: words all the same. Beside it
               // stands why, when platform AI is closed beyond this call — the quota, with when it
               // comes back, or its limit (R37).
               const why =
-                closesPlatformAI(read) && !closedAtCheck.current
-                  ? outcomeText(read, words)
-                  : undefined;
+                closesAI(read) && !closedAtCheck.current ? outcomeText(read, words) : undefined;
               setSaid({ text: answer.words, reply: TutorReply.RUNG, rung: answer.rung });
               if (why !== undefined) setWordsFailure(why);
               setWordsCame(true);
@@ -686,7 +691,19 @@ function OpenTask({
           if (asked === checks.current) setWordsWaiting(false);
         });
     },
-    [api, profileId, attemptId, task, words, markName, onClosed, auto, explanation, language],
+    [
+      api,
+      holder,
+      profileId,
+      attemptId,
+      task,
+      words,
+      markName,
+      onClosed,
+      auto,
+      explanation,
+      language,
+    ],
   );
 
   /**
@@ -695,24 +712,27 @@ function OpenTask({
    */
   const correctWords = useCallback(
     (of: Sent) => {
+      const ai = holder.aiFields(profileId);
       void api.attempt
         .getCorrectAnswerWords({
           profileId,
           attemptId,
           idempotencyKey: idempotencyKey(),
           ...(of.contract === undefined ? {} : { work: of.contract }),
-          ...aiFields(),
+          ...ai,
         })
         .then(
           (answer) => {
             if (answer.words !== undefined && answer.words !== "") {
+              holder.noteOutcome(profileId, undefined, ai);
               setSaid({ text: answer.words, reply: TutorReply.CORRECT_ANSWER, rung: 0 });
               setWordsCame(true);
               auto([{ text: answer.words, language: explanation }], verdictSaid.current);
               return;
             }
             const read = outcomeOf(answer.outcome);
-            if (!closesPlatformAI(read) || closedAtCheck.current) return;
+            holder.noteOutcome(profileId, read, ai);
+            if (!closesAI(read) || closedAtCheck.current) return;
             const why = outcomeText(read, words);
             setWordsFailure(why);
             auto([{ text: why, language }], verdictSaid.current);
@@ -723,7 +743,7 @@ function OpenTask({
           if (of.contract !== undefined) void profile?.wordsCame(attemptId).catch(() => {});
         });
     },
-    [api, profileId, attemptId, profile, auto, explanation, words, language],
+    [api, holder, profileId, attemptId, profile, auto, explanation, words, language],
   );
 
   /** The submission of what the sheet and the options hold now, or the one sent before, again. */
@@ -776,19 +796,25 @@ function OpenTask({
         setWordsCame(false);
         setMarks(undefined);
         const before = latest.current.state.wrongAnswers;
+        const ai = holder.aiFields(profileId);
         const answer = await api.attempt.submitWork({
           profileId,
           attemptId,
           idempotencyKey: of.key,
           tappedChoices: tappedChoices(task, latest.current.state.choices),
-          ...(of.contract === undefined ? {} : { work: of.contract, ...aiFields() }),
+          // A work AI reads goes with the key, or the clock's offset; taps alone name the provider
+          // of the key, and never beside a work (contract, section 15).
+          ...(of.contract === undefined
+            ? holder.routeFields(profileId)
+            : { work: of.contract, ...ai }),
         });
         sent.current = undefined;
         const verdicts = verdictsOf(answer.items, task);
         setVerdicts(verdicts);
         const read = outcomeOf(answer.outcome);
+        if (of.contract !== undefined) holder.noteOutcome(profileId, read, ai);
         if (read !== undefined) setOutcome(outcomeText(read, words));
-        closedAtCheck.current = closesPlatformAI(read);
+        closedAtCheck.current = closesAI(read);
         // The lines of the panel that came with the check, in the language of the screen.
         verdictSaid.current = auto(
           [
@@ -841,6 +867,7 @@ function OpenTask({
     })().finally(() => setPending(false));
   }, [
     api,
+    holder,
     views,
     words,
     profileId,
@@ -908,21 +935,23 @@ function OpenTask({
     // An answer that comes once a newer check began is of a rung that is no more the current.
     const asked = checks.current;
     const late = () => asked !== checks.current || over.current;
+    const ai = holder.aiFields(profileId);
     void api.attempt
       .explainDifferently({
         profileId,
         attemptId,
         idempotencyKey: explainKey.current,
         wrongAnswers: latest.current.state.wrongAnswers,
-        ...aiFields(),
+        ...ai,
       })
       .then(
         (answer) => {
           explainKey.current = undefined;
+          const read = outcomeOf(answer.outcome);
+          holder.noteOutcome(profileId, read, ai);
           if (late()) return;
           // The right to it on this rung is spent, whatever the words.
           setExplained(true);
-          const read = outcomeOf(answer.outcome);
           if (read !== undefined) setExplainNote(outcomeText(read, words));
           if (answer.words !== "" && read?.cause !== Cause.NO_OTHER_WORDS) {
             // The same rung in other words: the rung of the words they take the place of, which
@@ -961,7 +990,7 @@ function OpenTask({
         },
       )
       .finally(() => setExplaining(false));
-  }, [api, profileId, attemptId, words, onClosed, prime, auto, explanation]);
+  }, [api, holder, profileId, attemptId, words, onClosed, prime, auto, explanation]);
 
   /** "Show the solution": the attempt ends with the solution shown (R82 in spec). */
   const showSolution = useCallback(() => {
@@ -975,6 +1004,7 @@ function OpenTask({
         attemptId,
         idempotencyKey: showKey.current,
         action: Action.LEARNING,
+        ...holder.routeFields(profileId),
       })
       .then(
         async (answer) => {
@@ -1014,7 +1044,19 @@ function OpenTask({
         },
       )
       .finally(() => setPending(false));
-  }, [api, views, profileId, attemptId, profile, words, pause, onEnded, onClosed, comesNext]);
+  }, [
+    api,
+    holder,
+    views,
+    profileId,
+    attemptId,
+    profile,
+    words,
+    pause,
+    onEnded,
+    onClosed,
+    comesNext,
+  ]);
 
   // An adult may ask for the solution from the start of the attempt, a child from the fourth wrong
   // answer, once the ladder of hints is passed (R82 in spec).

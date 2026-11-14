@@ -7,7 +7,7 @@
 // not know go to the first page in place of themselves. In E3 the section opens with no PIN: the
 // account holds the owner's profile of the category `adult` alone; the PIN comes in front of it
 // with E4 (section 3.10). A page of the account or the device — This device, `#/adults/device`,
-// and the own key to come — takes a part of the hash and a button on the first page; a page of one
+// and Own AI key, `#/adults/own-key` (R47) — takes a part of the hash and a button on the first page; a page of one
 // profile — its modules, `#/adults/modules`, and its progress, `#/adults/progress` with the map of
 // each module below it, `#/adults/progress/<module>` (R35) — a part of the hash and a button on the
 // profile's page. The license of a module's version, `#/adults/license/<digest>`,
@@ -23,10 +23,12 @@ import { Screen } from "../app/Screen.tsx";
 import { LanguageButtons } from "../i18n/LanguageButtons.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { NextVersions } from "../legal/NextVersions.tsx";
+import { keyed } from "../ownkey/OwnKeyContext.tsx";
 import { digestOf, ModuleLicense } from "../packages/LicensePage.tsx";
 import type { Device } from "../storage/device.ts";
 import { DevicePage } from "./DevicePage.tsx";
 import { LICENSE_PART, MODULES_PAGE, ModulesPage } from "./ModulesPage.tsx";
+import { OWN_KEY_PAGE, OwnKeyPage } from "./OwnKeyPage.tsx";
 import { inOrder } from "./order.ts";
 import { ProfilePage } from "./ProfilePage.tsx";
 import { ProgressMap, ProgressPage } from "./ProgressPage.tsx";
@@ -66,6 +68,7 @@ export function SectionHome({
   const { language, words } = useLanguage();
   const sorted = useMemo(() => inOrder(profiles, language), [profiles, language]);
   const deviceHint = useId();
+  const keyHint = useId();
   const legalHint = useId();
   return (
     <Screen title={words.text("adults.title")}>
@@ -86,6 +89,18 @@ export function SectionHome({
           {words.text("device.open")}
         </button>
       </div>
+      {/* The own key is the owner's as an adult learner: an account with no such profile has none. */}
+      {profiles.some(keyed) ? (
+        <>
+          <h2>{words.text("ownkey.title")}</h2>
+          <p id={keyHint}>{words.text("ownkey.hint")}</p>
+          <div className="nt-buttons">
+            <button type="button" aria-describedby={keyHint} onClick={() => navigate(OWN_KEY_PAGE)}>
+              {words.text("ownkey.open")}
+            </button>
+          </div>
+        </>
+      ) : null}
       <h2>{words.text("adults.device-language")}</h2>
       <p>{words.text("adults.device-language-hint")}</p>
       <LanguageButtons />
@@ -109,6 +124,7 @@ export function AdultSection({
   onFailed,
   onEraseAll,
   onLegal,
+  onOpenOwner,
 }: {
   readonly route: Route;
   readonly device: Device;
@@ -122,6 +138,8 @@ export function AdultSection({
   readonly onEraseAll: () => Promise<"erased" | "left" | "failed">;
   /** Opens the legal pages — their list, or the page given —, whose bar comes back here. */
   readonly onLegal: (page?: Route) => void;
+  /** Opens the owner profile as the learner, for its own key, while no learner is chosen. */
+  readonly onOpenOwner?: () => void;
 }) {
   const { words } = useLanguage();
   const [chosen, setChosen] = useState<string | undefined>(undefined);
@@ -143,6 +161,10 @@ export function AdultSection({
     );
   } else if (page === "device") {
     shown = <DevicePage device={device} profiles={profiles} onEraseAll={onEraseAll} />;
+  } else if (page === OWN_KEY_PAGE.parts.join("/")) {
+    shown = (
+      <OwnKeyPage profiles={profiles} {...(onOpenOwner === undefined ? {} : { onOpenOwner })} />
+    );
   } else if (page === "profile" && profile !== undefined) {
     shown = (
       <ProfilePage

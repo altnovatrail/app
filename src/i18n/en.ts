@@ -45,6 +45,18 @@ export const en = {
   "api.limit-reached": "The limit of your AI key is used up",
   /** The provider refused the adult's own AI key. */
   "api.key-refused": "The AI service didn't accept your key",
+  /** The own key, or its provider, came with a profile that is not an adult's (R122 spec). */
+  "api.key-not-for-profile": "This profile can't use an own AI key",
+  /** The limit of the own key ran out: the spending limit the owner set at the provider. */
+  "api.limit-spend": "The spending limit set for your AI key is reached",
+  /** The same: the provider's limit of the key's usage tier. */
+  "api.limit-tier": "Your AI key has reached the limit of its usage tier at the provider",
+  /** The same: the balance of the key's account at the provider ran out. */
+  "api.limit-balance": "The balance of your AI key's account has run out",
+  /** The same: the provider could not take the payment. */
+  "api.limit-payment": "The AI provider couldn't take the payment for your key",
+  /** After one of the four above, when the provider named the moment access comes back. */
+  "api.access-returns": "Access comes back on {date} at {time}",
   "api.no-consent": "A grown-up's consent is needed first",
   /** The version of the module was withdrawn, or the learner has no current version of it. */
   "api.version-gone": "This version of the module is no longer given",
@@ -635,6 +647,60 @@ export const en = {
   "quota.renews": "Tutor time renews on {date} at {time}",
   /** The account's tariff has no caps: platform AI is closed to it, and there is no share. */
   "quota.closed": "The platform's AI has no tutor time on this account now: it is closed to it",
+  /** The page Own AI key (R08; section 3.6): its heading, and its place on the first page. */
+  "ownkey.title": "Own AI key",
+  "ownkey.hint": "Your own key at an AI provider, for the tutor's requests of your profile",
+  "ownkey.open": "Set up an own AI key",
+  /** The owner's profile as a learner is not open: the key is its, and goes with its requests. */
+  "ownkey.not-open":
+    "The key belongs to your profile as a learner and goes with its requests. Open your profile first",
+  "ownkey.open-profile": "Open my profile",
+  /** The account has no owner's profile of an adult as a learner (R122 spec). */
+  "ownkey.no-profile": "Only your own profile as an adult learner can have an own AI key",
+  /** What happens to the key, said before its field, in words and with no links (section 3.6). */
+  "ownkey.server":
+    "The key goes to NovaTrail's server with each request of your profile that calls the AI, and lives there only while the request runs: not in the database and not in the logs",
+  "ownkey.billing":
+    "The provider links each such request to your account with it and to your terms with it",
+  "ownkey.not-protected":
+    "A PIN doesn't protect the key, and the browser doesn't encrypt it: whoever holds this device can get at a key kept on it",
+  /** How to limit the damage: the advice of section 3.6, for OpenAI and Anthropic. */
+  "ownkey.limits":
+    "To limit the damage, make the key in a separate OpenAI project with a hard spending limit, or bind it to a separate Anthropic workspace with a monthly limit, not the default workspace, where no limit can be set. Give the key a lifetime, and if it may have fallen into other hands, revoke it at the provider",
+  "ownkey.provider": "AI provider",
+  "ownkey.provider-choose": "Choose the provider",
+  /** The server opens no provider to an own key: on a deployment, until its models are admitted. */
+  "ownkey.no-providers":
+    "No AI provider takes an own key on this server yet. Your profile's requests go to the platform's AI",
+  "ownkey.key": "Key",
+  "ownkey.key-needed": "Enter the key",
+  "ownkey.keep": "Keep on this device",
+  "ownkey.keep-hint":
+    "Without this mark the key stays only in this tab's memory until you switch the learner or reload, and then you enter it again",
+  "ownkey.connect": "Connect",
+  /** The answers of the check of a new key; the former key, if any, stays as it was. */
+  "ownkey.invalid": "The provider doesn't accept this key: it isn't valid, or it was revoked",
+  "ownkey.no-permission": "The key is valid, but it has no right to the models the tutor uses",
+  "ownkey.provider-closed": "This provider doesn't take an own key for your profile",
+  "ownkey.check-failed": "The key couldn't be checked. Try again",
+  /** The key connected: {provider} is the provider's name, {last4} the key's last four characters. */
+  "ownkey.connected": "Connected: a key of {provider} ending in {last4}",
+  "ownkey.kept": "The key is kept on this device",
+  "ownkey.in-memory": "The key is in this tab's memory alone",
+  "ownkey.not-saved": "The key couldn't be kept on this device: it is in this tab's memory alone",
+  "ownkey.replace": "Replace the key",
+  "ownkey.replace-hint": "The key now connected stays until the new one passes the check",
+  "ownkey.remove": "Remove key",
+  /** The one way back to platform AI: the owner's action, never the app's (section 3.6). */
+  "ownkey.remove-hint":
+    "Your profile's requests then go to the platform's AI and spend its tutor time. The key keeps working at the provider: revoke it there if you no longer need it",
+  "ownkey.remove-confirm": "The key is erased from this tab and from this device",
+  "ownkey.removed": "The key is removed",
+  /** What the last request on the key came to, and what the owner can do about it. */
+  "ownkey.refused":
+    "The provider refused the key at the last request. Replace the key, or remove it to go to the platform's AI",
+  "ownkey.limit":
+    "The key's limit at the provider is used up. Raise the limit or top up the balance there, replace the key, or remove it to go to the platform's AI",
   /** The page This device (R04; section 3.2): its heading, and its place on the first page. */
   "device.title": "This device",
   "device.hint": "What the app keeps on this device, and how to erase it",
@@ -651,6 +717,8 @@ export const en = {
   /** While no copy of the profile's work is on the server (R113): the warning of its loss. */
   "device.only-here":
     "Its work is on this device alone: if the site's data is erased, the work is lost",
+  /** The owner's own key kept on this device: {provider} is the provider's name. */
+  "device.own-key": "Its own AI key is kept on this device: a key of {provider} ending in {last4}",
   "device.erase-profile": "Erase the profile's data on this device",
   /** The question before the profile's data goes: the pseudonym is not declined. */
   "device.erase-profile-confirm":

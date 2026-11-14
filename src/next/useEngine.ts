@@ -7,7 +7,8 @@
 // close the attempt open outside a lesson for good, and once closed its work on the device goes:
 // the screen asks first. Each action has one idempotency key, the same with its repeats, and only a
 // refusal ends it; a skill other than the one asked for last is another action, with a key of its
-// own.
+// own. On the owner's own key both name its provider, so that api chooses by the key's route and not
+// by platform AI's quota (R47; section 15 of the text of the contracts).
 import { Cause, type EngineChoice } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import { Code } from "@connectrpc/connect";
 import { useCallback, useRef } from "react";
@@ -16,6 +17,7 @@ import { ApiError, parseFailure } from "../api/failure.ts";
 import { idempotencyKey } from "../api/keys.ts";
 import { LESSON, navigate, TASK } from "../app/router.ts";
 import { useLessons } from "../lesson/LessonContext.tsx";
+import { useKeyHolder } from "../ownkey/OwnKeyContext.tsx";
 import type { Device } from "../storage/device.ts";
 import { attemptOver } from "../storage/profile.ts";
 import { useAttempt } from "../task/AttemptContext.tsx";
@@ -36,6 +38,7 @@ export interface Engine {
 
 export function useEngine(profileId: string, device: Device | undefined): Engine {
   const api = useApi();
+  const holder = useKeyHolder();
   const lessons = useLessons();
   const setAttempt = useAttempt()?.setAttempt;
   // One key for the choice of a skill, or of none, and one for the beginning of a task chosen.
@@ -61,6 +64,7 @@ export function useEngine(profileId: string, device: Device | undefined): Engine
           profileId,
           idempotencyKey: chooseKey.current.key,
           skill,
+          ...holder.routeFields(profileId),
         });
       } catch (reason) {
         if (parseFailure(reason).kind === "refused") chooseKey.current = undefined;
@@ -70,7 +74,7 @@ export function useEngine(profileId: string, device: Device | undefined): Engine
       await left(leaving);
       return answer.choice;
     },
-    [api, profileId, left],
+    [api, holder, profileId, left],
   );
 
   /** A task chosen begins; one begun already by this choice is the profile's open attempt. */
@@ -83,6 +87,7 @@ export function useEngine(profileId: string, device: Device | undefined): Engine
           profileId,
           idempotencyKey: beginKey.current,
           start: { case: "choiceId", value: choiceId },
+          ...holder.routeFields(profileId),
         });
         beginKey.current = undefined;
         attemptId = answer.attempt?.attemptId;
@@ -104,7 +109,7 @@ export function useEngine(profileId: string, device: Device | undefined): Engine
       setAttempt?.(attemptId);
       navigate(TASK);
     },
-    [api, profileId, setAttempt, left],
+    [api, holder, profileId, setAttempt, left],
   );
 
   const act = useCallback(
