@@ -5,7 +5,13 @@ import { userEvent } from "vitest/browser";
 import { LanguageButtons } from "../i18n/LanguageButtons.tsx";
 import { addProfile } from "../storage/profile.ts";
 import { setAccount, setSignIn } from "../storage/registry.ts";
-import { FIREBASE_AUTH, profileDatabase, REGISTRY, SETTINGS } from "../storage/schema.ts";
+import {
+  FIREBASE_AUTH,
+  PROFILE_SCHEMA,
+  profileDatabase,
+  REGISTRY,
+  SETTINGS,
+} from "../storage/schema.ts";
 import { readLanguage, writeLanguage } from "../storage/settings.ts";
 import { memoryDevice } from "../test/device.ts";
 import { fakeSignIn } from "../test/signin.ts";
@@ -513,7 +519,7 @@ describe("Boot and the storage", () => {
     await act(async () => {
       await backend.open(
         profileDatabase("p1"),
-        { version: 2, stores: {} },
+        { version: PROFILE_SCHEMA.version + 1, stores: {} },
         { create: true, onLost: () => {} },
       );
     });

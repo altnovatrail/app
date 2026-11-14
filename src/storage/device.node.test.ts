@@ -26,7 +26,11 @@ describe("Device", () => {
     const events: DeviceEvent[] = [];
     const stop = device.listen((event) => events.push(event));
     await device.connect("db", PROFILE_SCHEMA, true);
-    await backend.open("db", { version: 2, stores: {} }, { create: true, onLost: () => {} });
+    await backend.open(
+      "db",
+      { version: PROFILE_SCHEMA.version + 1, stores: {} },
+      { create: true, onLost: () => {} },
+    );
     await expect(device.connect("db", PROFILE_SCHEMA, true)).rejects.toBeInstanceOf(
       NewerSchemaError,
     );

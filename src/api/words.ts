@@ -4,8 +4,10 @@
 // spec) — and the common string for a cause with no words here: a screen whose own causes they
 // are words them itself (T22, T26, T27, T32). The quota says when the tutor comes back by the
 // device's clock: today, tomorrow, or on the date of a family day that begins later (R37), and so
-// does any other line of when the next family day begins, by phrases of its own. No DOM.
-import { Cause } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
+// does any other line of when the next family day begins, by phrases of its own. The limit of the
+// own key reached says which limit, when the provider named it, and when access comes back (R47).
+// No DOM.
+import { Cause, LimitCause } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import { timestampDate } from "@bufbuild/protobuf/wkt";
 import { keyFor } from "../i18n/codes.ts";
 import { dateTimeFormat } from "../i18n/intl.ts";
@@ -21,6 +23,7 @@ export const CAUSE_KEYS = {
   [Cause.NOT_ADMITTED]: "api.not-admitted",
   [Cause.LIMIT_REACHED]: "api.limit-reached",
   [Cause.KEY_REFUSED]: "api.key-refused",
+  [Cause.KEY_NOT_FOR_PROFILE]: "api.key-not-for-profile",
   [Cause.NO_CONSENT]: "api.no-consent",
   [Cause.VERSION_NOT_GIVEN]: "api.version-gone",
   [Cause.NO_CURRENT_VERSION]: "api.version-gone",
@@ -101,8 +104,31 @@ function causeText(cause: Cause, nextFamilyDay: Date | undefined, words: Words, 
   return dayText(QUOTA_PHRASES, nextFamilyDay, words, now);
 }
 
+/** Which limit of the own key ran out, by its key; none named is the limit of the key at large. */
+const LIMIT_KEYS = {
+  [LimitCause.LIMIT]: "api.limit-spend",
+  [LimitCause.TIER]: "api.limit-tier",
+  [LimitCause.BALANCE]: "api.limit-balance",
+  [LimitCause.PAYMENT]: "api.limit-payment",
+} as const;
+
+/** The limit of the own key reached: which one, and when access comes back if the provider said. */
+function limitText(outcome: ReadOutcome, words: Words): string {
+  const limit = outcome.ownKeyLimit;
+  const known = limit !== undefined && limit.cause in LIMIT_KEYS;
+  const line = words.text(
+    known ? LIMIT_KEYS[limit.cause as keyof typeof LIMIT_KEYS] : "api.limit-reached",
+  );
+  if (limit?.accessReturns === undefined) return line;
+  const at = timestampDate(limit.accessReturns);
+  const date = dateTimeFormat(words.language, { day: "numeric", month: "long" }).format(at);
+  const time = dateTimeFormat(words.language, { timeStyle: "short" }).format(at);
+  return `${line}. ${words.text("api.access-returns", { date, time })}`;
+}
+
 /** The words of an outcome of AI, as of `now`. */
 export function outcomeText(outcome: ReadOutcome, words: Words, now: Date = new Date()): string {
+  if (outcome.cause === Cause.LIMIT_REACHED) return limitText(outcome, words);
   return causeText(outcome.cause, outcome.nextFamilyDay, words, now);
 }
 

@@ -38,6 +38,8 @@ import { userEvent } from "vitest/browser";
 import { ApiProvider } from "../api/ApiContext.tsx";
 import { createApi } from "../api/client.ts";
 import { dateTimeFormat } from "../i18n/intl.ts";
+import { KeyHolder } from "../ownkey/holder.ts";
+import { KeyHolderProvider } from "../ownkey/OwnKeyContext.tsx";
 import type { PackageChecks } from "../packages/checks.ts";
 import { DeviceFiles } from "../packages/files.ts";
 import { PackagesProvider } from "../packages/PackagesContext.tsx";
@@ -188,6 +190,8 @@ interface Setup {
   readonly adult?: boolean;
   /** The profile's database does not open. */
   readonly noDatabase?: boolean;
+  /** The owner's own key is held for p1 (R47). */
+  readonly ownKey?: boolean;
 }
 
 const RUN: RunRef = { lessonRunId: "r1", lesson: GAPS_ID, packageDigest: D1 };
@@ -218,6 +222,8 @@ async function renderLesson(setup: Setup = {}) {
   const ended = [...(setup.ended ?? [])];
   let openAttempt = setup.openAttempt;
   const asked: string[] = [];
+  // The provider each request that may give a choice named, by the request: "" on platform AI.
+  const providers: string[] = [];
   const begun: BeginAttemptRequest[] = [];
   const submitted: SubmitWorkRequest[] = [];
   let attempts = 0;
@@ -244,16 +250,19 @@ async function renderLesson(setup: Setup = {}) {
     router.service(LearningService, {
       getLessonRun(request) {
         asked.push(`run ${request.lessonRunId}`);
+        providers.push(`run ${request.ownKeyProvider}`);
         setup.run?.(reads++);
         return { run: runOf() };
       },
       openLesson(request) {
         asked.push(`open lesson ${request.choiceId}`);
+        providers.push(`open ${request.ownKeyProvider}`);
         setup.run?.(reads++);
         return { run: runOf() };
       },
       completeLesson(request) {
         asked.push("lesson done");
+        providers.push(`done ${request.ownKeyProvider}`);
         setup.complete?.(request);
         return setup.noEnd === true
           ? {}
@@ -266,6 +275,7 @@ async function renderLesson(setup: Setup = {}) {
       },
       beginAttempt(request) {
         begun.push(request);
+        providers.push(`begin ${request.ownKeyProvider}`);
         setup.begin?.(request);
         if (setup.emptyBegin === true) return {};
         const segment = request.start.case === "segment" ? request.start.value.segment : 0;
@@ -378,21 +388,32 @@ async function renderLesson(setup: Setup = {}) {
   const began: RunRef[] = [];
   const endedRuns: string[] = [];
   const left = vi.fn();
+  const holder = new KeyHolder({
+    read: async () =>
+      setup.ownKey === true
+        ? { provider: "anthropic", name: "Anthropic", key: "sk-ant-synthetic-0000", last4: "0000" }
+        : undefined,
+    keep: async () => "saved",
+    drop: async () => {},
+  });
+  await holder.open("p1");
   const rendered = render(
     inLanguage(
       <ApiProvider value={api}>
-        <PackagesProvider value={packages}>
-          <Lesson
-            profileId="p1"
-            open={setup.open ?? { kind: "run", run: RUN }}
-            device={device}
-            defaultMode={Mode.SELF}
-            adult={setup.adult ?? false}
-            onBegan={(run) => began.push(run)}
-            onEnded={(runId) => endedRuns.push(runId)}
-            onAttempt={left}
-          />
-        </PackagesProvider>
+        <KeyHolderProvider holder={holder}>
+          <PackagesProvider value={packages}>
+            <Lesson
+              profileId="p1"
+              open={setup.open ?? { kind: "run", run: RUN }}
+              device={device}
+              defaultMode={Mode.SELF}
+              adult={setup.adult ?? false}
+              onBegan={(run) => began.push(run)}
+              onEnded={(runId) => endedRuns.push(runId)}
+              onAttempt={left}
+            />
+          </PackagesProvider>
+        </KeyHolderProvider>
       </ApiProvider>,
     ),
   );
@@ -404,6 +425,7 @@ async function renderLesson(setup: Setup = {}) {
   return {
     device,
     asked,
+    providers,
     begun,
     submitted,
     check,
@@ -585,6 +607,30 @@ describe("the lesson player", () => {
     await userEvent.click(await continueButton());
     expect(await screen.findByText("Lesson complete")).toBeVisible();
     expect(asked.filter((a) => a === "lesson done")).toHaveLength(1);
+  });
+
+  it("names the own key's provider with every request of the run that may give a choice", async () => {
+    for (const ownKey of [false, true]) {
+      const { providers, unmount } = await renderLesson({
+        lesson: REMAINDERS,
+        next: { next: { case: "segmentsEnded", value: true } },
+        open: { kind: "choice", choiceId: "c1" },
+        ownKey,
+      });
+      await waitFor(() => expect(canvas().workedExample?.canvas.kind).toBe("workbook"));
+      await userEvent.click(await canvasButton("Next"));
+      await userEvent.click(await canvasButton("Next"));
+      await userEvent.click(await continueButton());
+      await solve();
+      await userEvent.click(await continueButton());
+      expect(await screen.findByText("Lesson complete")).toBeVisible();
+      const named = ownKey ? "anthropic" : "";
+      expect(providers).toContain(`open ${named}`);
+      expect(providers).toContain(`begin ${named}`);
+      expect(providers).toContain(`done ${named}`);
+      expect(providers.every((each) => each.endsWith(` ${named}`))).toBe(true);
+      unmount();
+    }
   });
 
   it("asks the run again when api said nothing of what comes next", async () => {

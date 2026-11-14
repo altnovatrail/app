@@ -30,6 +30,7 @@ import { Screen } from "../app/Screen.tsx";
 import { ReadFailed } from "../boot/Screens.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { NextStep } from "../next/NextStep.tsx";
+import { useKeyHolder } from "../ownkey/OwnKeyContext.tsx";
 import { usePackages } from "../packages/PackagesContext.tsx";
 import type { Device } from "../storage/device.ts";
 import { addProfile, type LessonState, openProfile, type Profile } from "../storage/profile.ts";
@@ -110,6 +111,8 @@ export interface LessonProps {
 export function Lesson(props: LessonProps) {
   const { profileId, open: what, device, onBegan, onEnded } = props;
   const api = useApi();
+  // On the owner's own key, each request that may give a choice names its provider (R47).
+  const holder = useKeyHolder();
   const { views, checks } = usePackages();
   const [read, setRead] = useState<Read>({ status: "loading" });
   const [attempt, setAttempt] = useState(0);
@@ -155,8 +158,16 @@ export function Lesson(props: LessonProps) {
     async function load(): Promise<Opened> {
       const run = (
         what.kind === "run"
-          ? await api.learning.getLessonRun({ profileId, lessonRunId: what.run.lessonRunId })
-          : await api.learning.openLesson({ profileId, choiceId: what.choiceId })
+          ? await api.learning.getLessonRun({
+              profileId,
+              lessonRunId: what.run.lessonRunId,
+              ...holder.routeFields(profileId),
+            })
+          : await api.learning.openLesson({
+              profileId,
+              choiceId: what.choiceId,
+              ...holder.routeFields(profileId),
+            })
       ).run;
       if (run?.lesson === undefined) throw new Error("api: a lesson run without its lesson");
       const lesson = views.parseView(
@@ -190,7 +201,7 @@ export function Lesson(props: LessonProps) {
         attempt: attemptOf(run),
       };
     }
-  }, [api, views, device, profileId, what, attempt]);
+  }, [api, holder, views, device, profileId, what, attempt]);
 
   if (read.status === "loading") return null;
   if (read.status === "failed") {
@@ -258,6 +269,7 @@ function OpenLesson({
   opened,
 }: LessonProps & { readonly opened: Opened }) {
   const api = useApi();
+  const holder = useKeyHolder();
   const { checks, files } = usePackages();
   const { words } = useLanguage();
   const { lesson, digest, manifest, id, profile, runId } = opened;
@@ -383,7 +395,13 @@ function OpenLesson({
   const refresh = useCallback(
     async (toward: Toward = "on"): Promise<number | undefined> => {
       try {
-        const run = (await api.learning.getLessonRun({ profileId, lessonRunId: runId })).run;
+        const run = (
+          await api.learning.getLessonRun({
+            profileId,
+            lessonRunId: runId,
+            ...holder.routeFields(profileId),
+          })
+        ).run;
         return run === undefined ? undefined : learn(run.endedSegments, attemptOf(run), toward);
       } catch (reason) {
         const failure = parseFailure(reason);
@@ -393,7 +411,7 @@ function OpenLesson({
         return undefined;
       }
     },
-    [api, profileId, runId, learn, finish, words],
+    [api, holder, profileId, runId, learn, finish, words],
   );
 
   /**
@@ -418,6 +436,7 @@ function OpenLesson({
           profileId,
           idempotencyKey: beginKey.current,
           start: { case: "segment", value: { lessonRunId: runId, segment } },
+          ...holder.routeFields(profileId),
         })
         .then(
           (answer) => {
@@ -451,7 +470,7 @@ function OpenLesson({
           beginning.current = false;
         });
     },
-    [api, profileId, runId, onAttempt, finish, settle],
+    [api, holder, profileId, runId, onAttempt, finish, settle],
   );
 
   // A task segment reached begins its attempt: the learner went on to it.
@@ -502,7 +521,7 @@ function OpenLesson({
     setPending(true);
     setCompleteFailure(undefined);
     void api.learning
-      .completeLesson({ profileId, lessonRunId: runId })
+      .completeLesson({ profileId, lessonRunId: runId, ...holder.routeFields(profileId) })
       .then(
         (answer) => void finish(answer.end?.reason ?? RunEndReason.PASSED, answer.end?.choice),
         async (reason: unknown) => {
@@ -520,7 +539,7 @@ function OpenLesson({
         },
       )
       .finally(() => setPending(false));
-  }, [api, profileId, runId, finish, settle, goTo, words]);
+  }, [api, holder, profileId, runId, finish, settle, goTo, words]);
 
   const onContinue = useCallback(() => {
     const to = continueFrom(course, place, shown);

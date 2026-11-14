@@ -5,16 +5,20 @@
 // for advice. A profile's data and everything are erased here, each asked first (WCAG 3.3.4);
 // everything signs out too. While api keeps no copy of a profile's work, the page says that the
 // work is on this device alone (R113 in spec). After the profiles, the voices of the device and on
-// Android and Linux the leave for voicing (R07; ../voice/DeviceVoices.tsx). The places of what comes
-// later are marked: the essays (T47) and the own key (T46).
+// Android and Linux the leave for voicing (R07; ../voice/DeviceVoices.tsx). At the owner profile,
+// its own key when it is kept here, by its provider and last four, and "Remove key" — the action of
+// the page Own AI key (R47). Erasing a profile's data takes its key from memory too. The place of
+// what comes later is marked: the essays (T47).
 import type { Profile } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { Screen } from "../app/Screen.tsx";
 import { sizeText } from "../i18n/intl.ts";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
+import { keyed, useHeldKey, useKeyHolder } from "../ownkey/OwnKeyContext.tsx";
 import { type SiteStorage, siteStorage } from "../storage/browser.ts";
 import type { Device } from "../storage/device.ts";
 import { eraseProfile } from "../storage/erase.ts";
+import { keptKey } from "../storage/ownkey.ts";
 import { profileUsage, type Usage } from "../storage/profile.ts";
 import { DeviceVoices } from "../voice/DeviceVoices.tsx";
 import { inOrder } from "./order.ts";
@@ -53,7 +57,7 @@ async function onDevice(device: Device, profileId: string): Promise<OnDevice> {
  * A button that erases, and the question it asks first: the question takes the focus, and gives it
  * back when it is answered no, or yes and the button is still there.
  */
-function Erase({
+export function Erase({
   label,
   question,
   onErase,
@@ -135,6 +139,60 @@ function Saying({ said }: { readonly said: Said | undefined }) {
   );
 }
 
+/** The own key kept for the owner profile on this device, and "Remove key"; nothing when none is. */
+function KeptKeyLine({
+  device,
+  profileId,
+  read,
+}: {
+  readonly device: Device;
+  readonly profileId: string;
+  /** What the page read of the profile: the key is read again with it. */
+  readonly read: OnDevice | undefined;
+}) {
+  const holder = useKeyHolder();
+  const state = useHeldKey();
+  const { words } = useLanguage();
+  // Its provider's name and last four alone: never the key.
+  const [kept, setKept] = useState<{ readonly name: string; readonly last4: string }>();
+  const [said, setSaid] = useState<Said | undefined>(undefined);
+  // What of the key may change what the device keeps: a refusal or the opening does not.
+  const changed =
+    state.status === "open" && state.profileId === profileId
+      ? `${state.key?.last4} ${state.key?.kept}`
+      : state.status;
+  // biome-ignore lint/correctness/useExhaustiveDependencies: read again when the page or the key changes.
+  useEffect(() => {
+    let current = true;
+    void keptKey(device, profileId).then((found) => {
+      if (current)
+        setKept(found === undefined ? undefined : { name: found.name, last4: found.last4 });
+    });
+    return () => {
+      current = false;
+    };
+  }, [device, profileId, read, changed]);
+  return (
+    <>
+      {kept === undefined ? null : (
+        <>
+          <p>{words.text("device.own-key", { provider: kept.name, last4: kept.last4 })}</p>
+          <Erase
+            label={words.text("ownkey.remove")}
+            question={words.text("ownkey.remove-confirm")}
+            onErase={async () => {
+              await holder.remove(profileId);
+              setKept(undefined);
+              setSaid({ status: words.text("ownkey.removed") });
+            }}
+          />
+        </>
+      )}
+      <Saying said={said} />
+    </>
+  );
+}
+
 /** A profile on this device: what it keeps here, and its erasure. */
 function ProfileOnDevice({
   device,
@@ -149,6 +207,7 @@ function ProfileOnDevice({
   readonly onErased: () => void;
 }) {
   const { language, words } = useLanguage();
+  const holder = useKeyHolder();
   const id = useId();
   const heading = useRef<HTMLHeadingElement>(null);
   const [said, setSaid] = useState<Said | undefined>(undefined);
@@ -176,7 +235,9 @@ function ProfileOnDevice({
         <p>{words.text("device.unreadable")}</p>
       ) : null}
       {/* T47: the profile's essays, each with its own Erase (R04). */}
-      {/* T46: on the owner's profile, the own key kept on this device and Remove key (R08). */}
+      {keyed(profile) ? (
+        <KeptKeyLine device={device} profileId={profile.profileId} read={kept} />
+      ) : null}
       {copiedOnServer(profile) ? null : <p>{words.text("device.only-here")}</p>}
       {kept === undefined || kept.kind === "none" || gone ? null : (
         <Erase
@@ -186,6 +247,8 @@ function ProfileOnDevice({
             setSaid(undefined);
             try {
               const all = await eraseProfile(device, profile.profileId);
+              // The own key goes from memory with the profile's data, in every tab (section 3.6).
+              if (keyed(profile)) await holder.remove(profile.profileId);
               setSaid({ status: words.text(all ? "device.erased" : "device.left") });
               if (all) setGone(true);
               onErased();

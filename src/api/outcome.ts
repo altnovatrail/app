@@ -27,17 +27,24 @@ export interface ReadOutcome {
   readonly ownKeyLimit?: OwnKeyLimit;
 }
 
+/** The causes that close AI beyond the call: platform AI's quota and limit, the own key's (R47). */
+const CLOSING: ReadonlySet<Cause> = new Set([
+  Cause.QUOTA,
+  Cause.PLATFORM_LIMIT,
+  Cause.LIMIT_REACHED,
+  Cause.KEY_REFUSED,
+]);
+
 /**
- * Whether an outcome tells that platform AI is closed beyond this call — its quota for the family
- * day is spent, or its provider's limit ran out —, which the screen says beside words that came
- * without AI, too: the fallback text of a rung, or no words after a correct answer (R37). A failure
- * of AI is a moment's, and "not admitted" the standing state of a deployment that admits no words
- * yet: beside every fallback text and every correct answer, its line would say nothing new.
+ * Whether an outcome tells that the learner's AI is closed beyond this call — the quota of platform
+ * AI for the family day is spent, or its provider's limit ran out; the own key's limit ran out, or
+ * its provider refused it —, which the screen says beside words that came without AI, too: the
+ * fallback text of a rung, or no words after a correct answer (R37; R47). A failure of AI is a
+ * moment's, and "not admitted" the standing state of a deployment that admits no words yet: beside
+ * every fallback text and every correct answer, its line would say nothing new.
  */
-export function closesPlatformAI(
-  outcome: ReadOutcome | undefined,
-): outcome is ReadOutcome & { readonly cause: Cause.QUOTA | Cause.PLATFORM_LIMIT } {
-  return outcome?.cause === Cause.QUOTA || outcome?.cause === Cause.PLATFORM_LIMIT;
+export function closesAI(outcome: ReadOutcome | undefined): outcome is ReadOutcome {
+  return outcome !== undefined && CLOSING.has(outcome.cause);
 }
 
 /** The outcome of an answer, read; `undefined` when the call of AI gave what it was for. */

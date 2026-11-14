@@ -28,6 +28,8 @@ import { userEvent } from "vitest/browser";
 import { ApiProvider } from "../api/ApiContext.tsx";
 import { createApi } from "../api/client.ts";
 import { LessonProvider, useLessons } from "../lesson/LessonContext.tsx";
+import { KeyHolder } from "../ownkey/holder.ts";
+import { KeyHolderProvider } from "../ownkey/OwnKeyContext.tsx";
 import { addProfile, openProfile } from "../storage/profile.ts";
 import { setAccount } from "../storage/registry.ts";
 import { AttemptProvider, useAttempt } from "../task/AttemptContext.tsx";
@@ -62,6 +64,8 @@ interface Setup {
   /** The attempt open outside a lesson, which "Something else" and a task begun close. */
   readonly leaving?: string;
   readonly secondary?: boolean;
+  /** The owner's own key is held for p1 (R47). */
+  readonly ownKey?: boolean;
 }
 
 /** What the screen around the step knows: the attempt open and the lesson chosen. */
@@ -143,20 +147,31 @@ async function renderStep(setup: Setup = {}) {
     profileId: "p1",
     ...(setup.leaving === undefined ? {} : { openAttempt: { attemptId: setup.leaving } }),
   });
+  const holder = new KeyHolder({
+    read: async () =>
+      setup.ownKey === true
+        ? { provider: "anthropic", name: "Anthropic", key: "sk-ant-synthetic-0000", last4: "0000" }
+        : undefined,
+    keep: async () => "saved",
+    drop: async () => {},
+  });
+  await holder.open("p1");
   render(
     inLanguage(
       <ApiProvider value={api}>
-        <AttemptProvider learner={learner}>
-          <LessonProvider learner={learner}>
-            <NextStep
-              profileId="p1"
-              device={device}
-              {...(setup.choice === undefined ? {} : { choice: setup.choice })}
-              {...(setup.secondary === undefined ? {} : { secondary: setup.secondary })}
-            />
-            <Probe />
-          </LessonProvider>
-        </AttemptProvider>
+        <KeyHolderProvider holder={holder}>
+          <AttemptProvider learner={learner}>
+            <LessonProvider learner={learner}>
+              <NextStep
+                profileId="p1"
+                device={device}
+                {...(setup.choice === undefined ? {} : { choice: setup.choice })}
+                {...(setup.secondary === undefined ? {} : { secondary: setup.secondary })}
+              />
+              <Probe />
+            </LessonProvider>
+          </AttemptProvider>
+        </KeyHolderProvider>
       </ApiProvider>,
     ),
   );
@@ -186,6 +201,16 @@ describe("the way to what the engine chose", () => {
     await waitFor(() => expect(window.location.hash).toBe("#/task"));
     await waitFor(() => expect(probe()).toHaveTextContent("attempt a9; lesson none"));
     expect(begun[0]?.start).toEqual({ case: "choiceId", value: "c2" });
+    expect(begun[0]?.ownKeyProvider).toBe("");
+  });
+
+  it("names the own key's provider with the choice and the task it begins, and never the key", async () => {
+    const { chosen, begun } = await renderStep({ choose: () => TASK, ownKey: true });
+    await userEvent.click(screen.getByRole("button", { name: "What's next" }));
+    await waitFor(() => expect(window.location.hash).toBe("#/task"));
+    expect(chosen[0]?.ownKeyProvider).toBe("anthropic");
+    expect(begun[0]?.ownKeyProvider).toBe("anthropic");
+    expect(JSON.stringify([...chosen, ...begun])).not.toContain("sk-ant");
   });
 
   it("says when there is nothing to give, with why when the AI is closed, and asks again", async () => {
