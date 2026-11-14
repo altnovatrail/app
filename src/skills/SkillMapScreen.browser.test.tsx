@@ -1,4 +1,4 @@
-// The skill map in Chromium (R34; section 3.10 of docs/architecture.md; architecture 3.3 in spec):
+// The skill map in the browser (R34; section 3.10 of docs/architecture.md; architecture 3.3 in spec):
 // the element of skill-map in JSX, the list of the maps of the modules connected, a module's map
 // with the learner's view in the learner's language, Practise to ChooseNext with the skill and to
 // what the engine gives, the question while an attempt is open, nothing to give, the modules that

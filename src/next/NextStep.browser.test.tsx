@@ -1,4 +1,4 @@
-// The way to what the engine chose, in Chromium (section 3.4 of docs/architecture.md; R24): each
+// The way to what the engine chose, in the browser (section 3.4 of docs/architecture.md; R24): each
 // kind of choice — a lesson, a task, nothing with and without why, one this build does not know —,
 // the choice an answer gave, a task begun already by its choice, "Something else" with its
 // question and the attempt it closes, and one key for each action until a refusal ends it — with

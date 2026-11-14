@@ -1,4 +1,4 @@
-// The parts of the task screen on their edges, in Chromium: a solution without pictures' sizes, a
+// The parts of the task screen on their edges, in the browser: a solution without pictures' sizes, a
 // picture whose file does not come, a module without a language, a step without a description, a
 // task with only the unknown, a technique the catalog does not name, the last step, an item without
 // text and with two slots, and a workbook, whose lines the canvas shows.

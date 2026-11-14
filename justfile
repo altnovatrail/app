@@ -29,13 +29,15 @@ ci-lint: _install
     node scripts/versions.ts
     node scripts/icons.ts --check
 
-# The tests, in Node and in Chromium, with the coverage report coverage/lcov.info, which the shared
-# typescript.yml sends to Codecov. The build comes first: typescript.yml runs no build of its own,
-# so a build that fails fails this check (R14). Then the release's archive of that build and of a
-# second build of the same tree, in a folder of its own: the same bytes, in the layout infra's
-# rollout reads (R25).
+# The tests in Node and in Chromium, with the coverage report coverage/lcov.info, which the shared
+# typescript.yml sends to Codecov; then the screens in WebKit and Firefox, without it: Vitest's v8
+# coverage works in Chromium alone (R45; sources 2.5). The build comes first: typescript.yml runs
+# no build of its own, so a build that fails fails this check (R14). Then the release's archive of
+# that build and of a second build of the same tree, in a folder of its own: the same bytes, in the
+# layout infra's rollout reads (R25).
 ci-test: build
-    {{ bin }}/vitest run --coverage
+    {{ bin }}/vitest run --coverage --project node --project '*(chromium)'
+    {{ bin }}/vitest run --project '*(webkit)' --project '*(firefox)'
     again="$(mktemp -d)"; trap 'rm -rf "$again"' EXIT; {{ bin }}/vite build --outDir "$again" --emptyOutDir --logLevel warn && node scripts/release.ts --check "$again"
 
 # npm audit reads the lock file and asks the registry, so nothing is installed first. Only what
@@ -88,7 +90,8 @@ preview: build
 # Check a deployed site against the release of app it serves, as section 3.7 has it (R42): the
 # archive and its signature from the release, the archive accepted by spec's release-verify, then
 # scripts/site.ts — every file of the build at its path, /deployment.json as app reads it, the
-# headers, and the page in Chromium up to the sign-in window, which it closes with nobody signed in.
+# headers, and the page in Chromium, WebKit and Firefox up to the sign-in window, which it closes
+# with nobody signed in (R45).
 # For the platform: just site-check https://novatrail.web.app <the release in infra's list>.
 site-check origin version: _install (_release-version version)
     #!/usr/bin/env bash

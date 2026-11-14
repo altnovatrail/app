@@ -1,4 +1,4 @@
-// The section for adults in Chromium (R29 in docs/decisions.md; section 3.10 of
+// The section for adults in the browser (R29 in docs/decisions.md; section 3.10 of
 // docs/architecture.md): its first page with the profiles and the device's language, a profile's
 // page and its form — only what changed goes to UpdateProfile, nothing when nothing did, the
 // pseudonym checked first, a failure said, the language the build does not have named — and what

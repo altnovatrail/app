@@ -87,6 +87,13 @@ Read 2026-11-12 (architecture 3.1, 3.7, 3.8 and 3.9; the third 2026-11-12 amendm
 - **`spec`, the branch `e10-2`** (not merged, `gh api`, commit 63233b2): DEBT.md, Д218 — «переходом на `@altnovatrail/canvas` 0.3.13 или новее … снять несоответствие 1.4.4 со страницы «Доступность» поправкой к R11 app, взять туда 1.4.12 и 3.1.2 из architecture 3.10 canvas, а «Крупнее», «Мельче», «Левее» и «Правее» — в свой список подписей `canvas` (architecture 3.8 app)».
 - Read again 2026-11-12, `spec`, the tag v0.16.3 (commit 664398e): Д218 is in the tag's `DEBT.md`, with the same text; the amendment and the second amendment of 2026-11-12 to R90 spec — 1.4.4 goes, and `app` with canvas 0.3.14 or newer takes onto the page "Accessibility" only 1.4.12; the table of words of architecture 6 spec — «Крупнее», «Мельче», «Левее» and «Правее» for `canvas` and `app`, the same words as canvas 0.3.15 has (R38).
 
+### 2.5. Vitest 5.1.0: v8 coverage and the engines, 2026-11-14
+
+Read 2026-11-14 (architecture 3.1; R45) — the code of `vitest` 5.1.0 in `node_modules`, `dist/chunks/index.Di8au7q4.js`, an inference from code, not a page of its documentation:
+- the instances of a browser project are first filtered by `--project`: "browser project … is dropped: no instances match the --project filter", and only the instances left are checked;
+- each left instance whose provider or browser is not Chromium — `if (provider === "preview" || !isChromiumName(provider, browser))`, under the comment "Browser-mode CDP only features" — fails the run when the coverage is on with v8, by the error "@vitest/coverage-v8 does not work with", then the instance's configuration, "Use either:" with Chromium's, and "...or change your coverage provider to:" with `provider: 'istanbul'`;
+- so a run with `--coverage` takes WebKit and Firefox only where `--project` leaves them out, and a run without it takes all three.
+
 ## 3. Storage on the device
 
 For architecture 3.2: the browser's storages, their quotas and clearing, IndexedDB and the sign-in session on the device.

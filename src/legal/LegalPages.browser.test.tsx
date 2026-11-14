@@ -1,4 +1,4 @@
-// The legal pages in Chromium (R31 in docs/decisions.md), with api on connect-es's router: their
+// The legal pages in the browser (R31 in docs/decisions.md), with api on connect-es's router: their
 // list and bar, a text as a page in the language of the screen — its version, its gist, the line
 // that the English text is in force, its translation and its body —, a text with no version in
 // force, a read that failed, the page Accessibility with the places R11 declares, the notices of

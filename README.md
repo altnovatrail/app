@@ -48,7 +48,7 @@ Report a bug or propose a change in an [issue](https://github.com/altnovatrail/a
 Work in the devcontainer: open the repository in VS Code and choose "Reopen in Container". It holds every tool at the version the repository pins, and the packages are those `package-lock.json` pins. The checks are recipes of the [justfile](justfile), and `just --list` names each with its arguments:
 
 - `just ci-lint` — Biome, the TypeScript compiler on the app and on the scripts and tests in Node, that every version in `package.json` is exact, and that the module of icons is what `scripts/icons.ts` writes;
-- `just ci-test` — the build, then every test with Vitest, in Node and in Chromium, among them the accessibility checks of every screen with axe-core; it writes the coverage to `coverage/lcov.info`, then builds the tree again and checks that both archives of a release are the same bytes;
+- `just ci-test` — the build, then every test with Vitest, in Node and in Chromium, WebKit and Firefox, among them the accessibility checks of every screen with axe-core; it writes the coverage of Node and Chromium to `coverage/lcov.info`, then builds the tree again and checks that both archives of a release are the same bytes;
 - `just ci-vuln` — `npm audit` of what ships; `just ci-licenses` — the licenses of the lock file against spec's list, the signatures of the packages of `@altnovatrail`, the file of spec's release the build takes the deployment format from, and that `NOTICE` names every package the build ships;
 - `just walk` — the path of the first slice in Chromium, WebKit and Firefox, against api's `just dev-app`, with no one at the keyboard; not in CI;
 - `just build` — the app into `build/`; `just release-files <version>` — the archive of a release into `dist/`.

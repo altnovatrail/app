@@ -8,7 +8,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { gzipSync } from "node:zlib";
 import type { Deployment } from "@altnovatrail/spec/deploymentv1";
-import { type Browser, type BrowserContext, chromium } from "playwright";
+import { type Browser, type BrowserContext, chromium, firefox, webkit } from "playwright";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { tar } from "./archive.ts";
 import { header, type Template } from "./csp.ts";
@@ -22,10 +22,13 @@ import {
   check,
   expectedHeader,
   fetchAsk,
+  hostsAtStart,
+  newContext,
   originProblem,
   releaseFiles,
   run,
   siteProblems,
+  windowAt,
 } from "./site.ts";
 
 const HOST = "127.0.0.1";
@@ -174,12 +177,36 @@ describe("the rules of the site check", () => {
   });
 
   it("lets the page ask its own host, Google's script, authDomain and Firebase Auth", () => {
-    expect([...allowedHosts("https://example.org", deployment)]).toEqual([
+    const hosts = [
       "example.org",
       "apis.google.com",
       AUTH_DOMAIN,
       "identitytoolkit.googleapis.com",
       "securetoken.googleapis.com",
+    ];
+    expect([...allowedHosts("https://example.org", deployment)]).toEqual(hosts);
+    expect([...allowedHosts("https://example.org", deployment, "firefox")]).toEqual(hosts);
+    // In WebKit, Google's page in the hidden iframe asks one more (measurements 3).
+    expect([...allowedHosts("https://example.org", deployment, "webkit")]).toEqual([
+      ...hosts,
+      "www.googleapis.com",
+    ]);
+  });
+
+  it("names where a window is, and whatever address that is no URL", () => {
+    expect(windowAt("https://example.org/__/auth/handler?apiKey=k#x")).toBe(
+      "https://example.org/__/auth/handler",
+    );
+    expect(windowAt("")).toBe('""');
+  });
+
+  it("lets the page ask Google before the tap only in WebKit, which the SDK takes for Safari", () => {
+    expect([...hostsAtStart("chromium", deployment)]).toEqual([]);
+    expect([...hostsAtStart("firefox", deployment)]).toEqual([]);
+    expect([...hostsAtStart("webkit", deployment)]).toEqual([
+      "apis.google.com",
+      AUTH_DOMAIN,
+      "www.googleapis.com",
     ]);
   });
 });
@@ -198,7 +225,8 @@ describe("the whole check", () => {
   /** The domains the project of the stand-in lets sign in. */
   let authorized = [HOST];
   let server: Server;
-  let browser: Browser;
+  /** The page's three engines, as the command launches them. */
+  const browsers: Browser[] = [];
 
   beforeAll(async () => {
     writeFileSync(archivePath, archive);
@@ -230,18 +258,19 @@ describe("the whole check", () => {
       response.end(body);
     });
     await new Promise<void>((resolve) => server.listen(PORT, HOST, resolve));
-    browser = await chromium.launch({ headless: true });
+    for (const type of [chromium, webkit, firefox])
+      browsers.push(await type.launch({ headless: true }));
   }, 60_000);
 
   afterAll(async () => {
-    await browser?.close();
+    for (const browser of browsers) await browser.close();
     await new Promise((resolve) => server?.close(resolve));
     rmSync(folder, { recursive: true, force: true });
   });
 
   /** A context whose every request off the site gets Google's answers as stand-ins. */
   async function open(given: Browser): Promise<BrowserContext> {
-    const context = await given.newContext({ locale: "en-US" });
+    const context = await newContext(given);
     await standInForGoogle(context, ORIGIN, () => authorized);
     return context;
   }
@@ -249,10 +278,10 @@ describe("the whole check", () => {
   it("passes a site that serves the release as section 3.7 has it", async () => {
     extra = {};
     authorized = [HOST];
-    const { lines, problems } = await check(ORIGIN, archive, browser, { open });
+    const { lines, problems } = await check(ORIGIN, archive, browsers, { open });
     expect(problems).toEqual([]);
     expect(lines[0]).toBe(`/deployment.json: app reads it; api ${ORIGIN}, sign-in ${AUTH_DOMAIN}`);
-  }, 60_000);
+  }, 120_000);
 
   it("prints what holds and ends with 0, by the command's own browser", async () => {
     extra = {};
@@ -266,7 +295,7 @@ describe("the whole check", () => {
     } finally {
       log.mockRestore();
     }
-  }, 60_000);
+  }, 120_000);
 
   it("fails a site that breaks the sign-in window, or whose project does not let it in", async () => {
     extra = { "cross-origin-opener-policy": "same-origin" };
@@ -278,39 +307,46 @@ describe("the whole check", () => {
       expect(said).toContain(
         "site-check: / sent Cross-Origin-Opener-Policy: same-origin, which breaks the sign-in window",
       );
-      expect(said).toContain(`site-check: the project's authorized domains do not hold ${HOST}`);
+      for (const engine of ["chromium", "webkit", "firefox"]) {
+        expect(said).toContain(
+          `site-check: ${engine}: the project's authorized domains do not hold ${HOST}`,
+        );
+      }
     } finally {
       error.mockRestore();
     }
-  }, 60_000);
+  }, 120_000);
 
   it("fails a page whose header is not that of csp.json, and its violations", async () => {
     extra = { "content-security-policy": "default-src 'none'" };
     authorized = [HOST];
-    const { problems } = await check(ORIGIN, archive, browser, { open });
+    // One engine: the header is the site's, and the page waits out a whole step for the button.
+    const { problems } = await check(ORIGIN, archive, browsers.slice(0, 1), { open });
     expect(problems[0]).toBe(`/ sent content-security-policy: default-src 'none', not ${csp}`);
     // Under default-src 'none' the build's own script does not run: no button to tap.
     expect(
       problems.some(
         (line) =>
-          line.startsWith("a violation of the CSP") || line.startsWith("the page in the browser"),
+          line.startsWith("chromium: a violation of the CSP") ||
+          line.startsWith("chromium: the page in the browser"),
       ),
     ).toBe(true);
   }, 90_000);
 
   it("stops at what is not an origin, or a deployment.json app does not read", async () => {
-    expect((await check(`${ORIGIN}/path`, archive, browser)).problems).toEqual([
+    expect((await check(`${ORIGIN}/path`, archive, browsers)).problems).toEqual([
       `${ORIGIN}/path is no origin: a scheme and a host, with no path`,
     ]);
-    expect((await check("nothing", archive, browser)).problems).toHaveLength(1);
+    expect((await check("nothing", archive, browsers)).problems).toHaveLength(1);
+    expect((await check(ORIGIN, archive, [])).problems).toContain("no browser to open the page in");
     const missing = async () => new Response("", { status: 404 });
-    expect((await check(ORIGIN, archive, browser, { fetcher: missing })).problems).toEqual([
+    expect((await check(ORIGIN, archive, browsers, { fetcher: missing })).problems).toEqual([
       "/deployment.json: /deployment.json answered 404",
     ]);
     const down = async (): Promise<Response> => {
       throw new TypeError("fetch failed");
     };
-    expect((await check(ORIGIN, archive, browser, { fetcher: down })).problems).toEqual([
+    expect((await check(ORIGIN, archive, browsers, { fetcher: down })).problems).toEqual([
       "/deployment.json: cannot be read",
     ]);
   });

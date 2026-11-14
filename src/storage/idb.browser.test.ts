@@ -1,7 +1,8 @@
-// The backend on Chromium's own IndexedDB: what the store in memory stands in for in Node; and the
+// The backend on the engine's own IndexedDB: what the store in memory stands in for in Node; and the
 // work kept as bytes, with a Blob that schema version 1 kept read after it (the 2026-11-12
 // amendment to R16).
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { server } from "vitest/browser";
 import { type Connection, NewerSchemaError, type Schema, within } from "./backend.ts";
 import { browserDevice, siteStorage } from "./browser.ts";
 import { indexedDbBackend } from "./idb.ts";
@@ -187,29 +188,34 @@ describe("the work in a profile's database on IndexedDB", () => {
     expect(await cell?.png.text()).toBe("box");
   });
 
-  it("reads a Blob that schema version 1 kept before the bytes", async () => {
-    const device = browserDevice();
-    await setAccount(device, "account-1");
-    const profile = await addProfile(device, "p1");
-    await profile?.beginAttempt({ attemptId: "a1", digest: "d1" });
-    const connection = await device.connect(profileDatabase("p1"), PROFILE_SCHEMA, false);
-    await connection?.write(["submissions"], (tx) =>
-      tx.put("submissions", ["a1", 0], {
-        context: CONTEXT,
-        historyLength: 0,
-        work: { png: new Blob(["old crop"], { type: "image/png" }) },
-      }),
-    );
-    expect((await record(profileDatabase("p1"))).work).toEqual({ png: expect.any(Blob) });
-    const [read] = (await profile?.readAttempt("a1"))?.submissions ?? [];
-    const png = read?.work !== undefined && "png" in read.work ? read.work.png : undefined;
-    expect(await png?.text()).toBe("old crop");
-    expect(png?.type).toBe("image/png");
-  });
+  // WebKit writes no Blob in an ephemeral session, and a context of Playwright is one (measurements
+  // 2): schema version 1 could keep none there, so there is none to read.
+  it.skipIf(server.browser === "webkit")(
+    "reads a Blob that schema version 1 kept before the bytes",
+    async () => {
+      const device = browserDevice();
+      await setAccount(device, "account-1");
+      const profile = await addProfile(device, "p1");
+      await profile?.beginAttempt({ attemptId: "a1", digest: "d1" });
+      const connection = await device.connect(profileDatabase("p1"), PROFILE_SCHEMA, false);
+      await connection?.write(["submissions"], (tx) =>
+        tx.put("submissions", ["a1", 0], {
+          context: CONTEXT,
+          historyLength: 0,
+          work: { png: new Blob(["old crop"], { type: "image/png" }) },
+        }),
+      );
+      expect((await record(profileDatabase("p1"))).work).toEqual({ png: expect.any(Blob) });
+      const [read] = (await profile?.readAttempt("a1"))?.submissions ?? [];
+      const png = read?.work !== undefined && "png" in read.work ? read.work.png : undefined;
+      expect(await png?.text()).toBe("old crop");
+      expect(png?.type).toBe("image/png");
+    },
+  );
 });
 
 describe("what the browser tells of the site's storage", () => {
-  it("gives Chromium's estimate and whether it keeps the data, and nothing when it throws", async () => {
+  it("gives the engine's estimate and whether it keeps the data, and nothing when it throws", async () => {
     const estimate = await siteStorage.estimate();
     expect(estimate?.quota).toBeGreaterThan(0);
     expect(typeof (await siteStorage.persisted())).toBe("boolean");

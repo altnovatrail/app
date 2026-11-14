@@ -1,4 +1,4 @@
-// The checks of accessibility every screen's test runs in Chromium (section 3.9 of
+// The checks of accessibility every screen's test runs in each engine (section 3.9 of
 // docs/architecture.md; R11 in docs/decisions.md): axe-core by the rules of WCAG 2.2 A and AA,
 // outside the canvas element, whose own CI checks it; each target at least 44 × 44 CSS px; and a
 // page that does not scroll sideways, with no text cut or spilling out of its box.

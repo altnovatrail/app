@@ -1,4 +1,4 @@
-// The task screen in Chromium, with the canvas element itself (sections 3.2 and 3.3 of
+// The task screen in the browser, with the canvas element itself (sections 3.2 and 3.3 of
 // docs/architecture.md; R05, R20): the steps, the chips and the technique api gives once, the mode,
 // the options tapped and Check from the keyboard, "Not yet" and "Correct" with the solution, one
 // idempotency key for a check and its repeat, an attempt api closed meanwhile, the history of writing

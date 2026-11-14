@@ -1,4 +1,4 @@
-// The progress of a profile in the section for adults in Chromium (R35 in docs/decisions.md;
+// The progress of a profile in the section for adults in the browser (R35 in docs/decisions.md;
 // section 3.10 of docs/architecture.md): the way to it from the profile's page, the skill maps of
 // the modules connected with the adult's view of a module's map, the traps that repeat from the
 // first page alone, the attempts page by page with "Show more" and the focus, each with how it
