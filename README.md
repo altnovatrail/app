@@ -32,8 +32,8 @@ The first app runs against a local api, in api's own devcontainer, with the dev 
 
 1. In the dev project of Firebase, register a Web App for app, if there is none yet, and put `127.0.0.1` among the authorized domains of Authentication.
 2. Copy `deployment.example.json` to `deployment.local.json` and fill in the parameters of that Web App's config, `apiKey` included, from the project settings of Firebase; `api` stays `http://127.0.0.1:5173`, app's own origin, whose paths of api the development server sends on.
-3. In api's container: `just dev migrate`, `just dev countries allow <XX>` for the owner's country, `just dev invite` for an invite code — a new one each time the account was deleted — then `just dev serve`, and `hostname -i` for the address of the container.
-4. In this container, which is on api's network too: `NOVATRAIL_API=http://<that address>:8080 just dev`, then open `http://127.0.0.1:5173`. VS Code forwards the port by itself when `just dev` runs in its terminal; otherwise forward 5173 in its Ports panel, to the same port 5173 on the host: the origin is app's, and the authorized domain of Firebase.
+3. In api's container: `just dev migrate`, `just dev countries allow <XX>` for the owner's country, `just dev invite` for an invite code — a new one each time the account was deleted — then `just dev serve`. Or `just dev-app`, which does all of it for its own test account, on the stub of tutor, and keeps that account's sign-in token in a volume this container reads: then app's button «Sign in with Google» signs in by that token, with no Google window.
+4. In this container, which is on api's network too: `just dev`, whose proxy finds api's container by its name, `http://api:8080` — `NOVATRAIL_API` names another address —, then open `http://127.0.0.1:5173`. VS Code forwards the port by itself when `just dev` runs in its terminal; otherwise forward 5173 in its Ports panel, to the same port 5173 on the host: the origin is app's, and the authorized domain of Firebase.
 
 ## Releases
 
@@ -50,6 +50,7 @@ Work in the devcontainer: open the repository in VS Code and choose "Reopen in C
 - `just ci-lint` — Biome, the TypeScript compiler on the app and on the scripts and tests in Node, that every version in `package.json` is exact, and that the module of icons is what `scripts/icons.ts` writes;
 - `just ci-test` — the build, then every test with Vitest, in Node and in Chromium, among them the accessibility checks of every screen with axe-core; it writes the coverage to `coverage/lcov.info`, then builds the tree again and checks that both archives of a release are the same bytes;
 - `just ci-vuln` — `npm audit` of what ships; `just ci-licenses` — the licenses of the lock file against spec's list, the signatures of the packages of `@altnovatrail`, the file of spec's release the build takes the deployment format from, and that `NOTICE` names every package the build ships;
+- `just walk` — the path of the first slice in Chromium, WebKit and Firefox, against api's `just dev-app`, with no one at the keyboard; not in CI;
 - `just build` — the app into `build/`; `just release-files <version>` — the archive of a release into `dist/`.
 
 A check exits with a non-zero status when it finds a problem. CI runs them all on every pull request and on `main`, and a pull request merges only when they pass. Documents are checked by `just -f spec/justfile docs-check-repo`.

@@ -83,9 +83,11 @@ export function NextStep({ profileId, choice, device, secondary = false }: NextS
 
   return (
     <div className="nt-next">
+      {/* The strings have no full stop of their own: two in one line are two sentences (T57). */}
       <p role="status" className="nt-hint">
-        {nothing ? words.text("next.nothing") : ""}
-        {outcome === undefined ? "" : ` ${outcomeText(outcome, words)}`}
+        {[nothing ? words.text("next.nothing") : "", outcome ? outcomeText(outcome, words) : ""]
+          .filter((sentence) => sentence !== "")
+          .join(". ")}
       </p>
       {failure === undefined ? null : (
         <p role="alert" className="nt-error">

@@ -2,6 +2,7 @@
 paths:
   - "/src/**"
   - "/scripts/**"
+  - "/walk/**"
   - "/package.json"
   - "/package-lock.json"
   - "/vite.config.ts"

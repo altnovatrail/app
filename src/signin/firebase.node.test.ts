@@ -1,6 +1,7 @@
 // The adapter of Firebase Auth on mocks of its packages (section 3.7 of docs/architecture.md): the
 // parameters of the file explicitly, indexedDBLocalPersistence alone and the popup resolver, Google's
-// window, the language of the window, the tokens, and what each error of the window comes to.
+// window, the language of the window, the tokens, and what each error of the window comes to; and,
+// as Vitest runs it with import.meta.env.DEV, the local build's sign-in by the development token.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const auth = vi.hoisted(() => ({
@@ -8,8 +9,14 @@ const auth = vi.hoisted(() => ({
   currentUser: null as null | { getIdToken: (refresh: boolean) => Promise<string> },
   listener: undefined as undefined | ((user: { uid: string } | null) => void),
 }));
-const calls = vi.hoisted(() => ({ app: [] as unknown[], auth: [] as unknown[], popup: 0 }));
+const calls = vi.hoisted(() => ({
+  app: [] as unknown[],
+  auth: [] as unknown[],
+  popup: 0,
+  custom: [] as string[],
+}));
 const popup = vi.hoisted(() => ({ error: undefined as unknown }));
+const custom = vi.hoisted(() => ({ error: undefined as unknown }));
 
 vi.mock("@firebase/app", () => ({
   initializeApp: (options: unknown) => {
@@ -36,10 +43,22 @@ vi.mock("@firebase/auth", () => ({
     expect(provider.providerId).toBe("google.com");
     if (popup.error !== undefined) throw popup.error;
   },
+  signInWithCustomToken: async (_auth: unknown, token: string) => {
+    calls.custom.push(token);
+    if (custom.error !== undefined) throw custom.error;
+  },
   signOut: async () => {
     auth.listener?.(null);
   },
 }));
+
+// The development server: no token unless a test gives one.
+const server = vi.hoisted(() => ({ token: undefined as string | undefined }));
+vi.stubGlobal("fetch", async (path: string) =>
+  path === "/__novatrail/custom-token" && server.token !== undefined
+    ? new Response(server.token, { headers: { "Content-Type": "text/plain" } })
+    : new Response(null, { status: 404 }),
+);
 
 const { firebaseSignIn, resultOf } = await import("./firebase.ts");
 
@@ -54,7 +73,11 @@ const SIGN_IN = {
 beforeEach(() => {
   calls.app.length = 0;
   calls.auth.length = 0;
+  calls.custom.length = 0;
+  calls.popup = 0;
   popup.error = undefined;
+  custom.error = undefined;
+  server.token = undefined;
   auth.currentUser = null;
 });
 
@@ -118,6 +141,18 @@ describe("firebaseSignIn", () => {
     expect(await service.signIn()).toEqual({ kind: "done" });
     popup.error = { code: "auth/popup-blocked" };
     expect(await service.signIn()).toEqual({ kind: "blocked" });
+    expect(calls.custom).toEqual([]);
+  });
+
+  it("in the local build, signs in by the development server's token, without the window", async () => {
+    const service = firebaseSignIn(SIGN_IN);
+    server.token = "header.payload.signature\n";
+    expect(await service.signIn()).toEqual({ kind: "done" });
+    expect(calls.custom).toEqual(["header.payload.signature"]);
+    expect(calls.popup).toBe(0);
+    custom.error = { code: "auth/network-request-failed" };
+    expect(await service.signIn()).toEqual({ kind: "offline" });
+    expect(calls.popup).toBe(0);
   });
 });
 

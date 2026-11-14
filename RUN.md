@@ -171,10 +171,11 @@
 
 Строки В1–В61 закрыты. Где лёг ответ каждой, — в архивах эпиков, разделы о закрытых строках таблицы 3: [docs/plan/E1.md](docs/plan/E1.md), [docs/plan/E2.md](docs/plan/E2.md) и [docs/plan/E3.md](docs/plan/E3.md).
 
-Номера не переиспользуются: следующий — В62.
+Номера не переиспользуются: следующий — В63.
 
 | ID | Вопрос | Откуда | Варианты | Рекомендация |
 |---|---|---|---|---|
+| В62 | «В реестр spec». Строка «sign-in service» architecture 3.12 spec называет, куда ходит устройство при входе: `apis.google.com`, iframe и окно на `<authDomain>`, `identitytoolkit.googleapis.com` и `securetoken.googleapis.com`. Прогон пути T57 в WebKit — с `User-Agent` Safari, где SDK грузит gapi и скрытый iframe при каждом старте, — видит ещё запрос самого iframe к `https://www.googleapis.com/identitytoolkit/v3/relyingparty/getProjectConfig`, дважды за путь; в коде `@firebase/auth` 1.13.9 этого адреса нет, его зовёт код страницы Google на `<authDomain>` ([docs/measurements.md](docs/measurements.md), раздел 3). Устройство отдаёт этому хосту свой IP-адрес, на iPad — при каждом запуске. Назвать его? | T57 | (а) `spec` добавляет `www.googleapis.com` в строку architecture 3.12 spec — той же службе входа, Google, — и в то, что на неё опирается (DPIA, privacy 2 spec), а `app` называет его в разделе 3.7 и в хостах `site-check`; (б) не называть: запрос делает страница Google в своём iframe, а не `app` | (а): список — то, что устройство отдаёт наружу, и на iPad это каждый запуск; `app` уже назвал хост в 3.7 и в сценарии пути (R44), а в `site-check` — с тремя движками (T57, часть C) |
 
 ## Таблица 4. Технический долг
 

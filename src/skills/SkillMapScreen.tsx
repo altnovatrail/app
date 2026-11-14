@@ -315,10 +315,15 @@ function MapOfModule({
         <>
           <p>{words.text("skillmap.hint")}</p>
           {/* A press of Practise while a choice is under way does nothing, and this line says why. */}
+          {/* The strings have no full stop of their own: two in one line are two sentences. */}
           <p role="status" className="nt-hint">
-            {pending ? words.text("skillmap.choosing") : ""}
-            {nothing === undefined ? "" : words.text("next.nothing")}
-            {outcome === undefined ? "" : ` ${outcomeText(outcome, words)}`}
+            {[
+              pending ? words.text("skillmap.choosing") : "",
+              nothing === undefined ? "" : words.text("next.nothing"),
+              outcome === undefined ? "" : outcomeText(outcome, words),
+            ]
+              .filter((sentence) => sentence !== "")
+              .join(". ")}
           </p>
           {failure === undefined ? null : (
             <p role="alert" className="nt-error">
