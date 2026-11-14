@@ -4,15 +4,20 @@
 // names another —, and api's development token, which the local build's sign-in takes instead of
 // Google's window (R67 api).
 // The path runs in each engine NOVATRAIL_WALK_ENGINES names, each in a new context: the sign-in,
-// the learner, My subjects with the line of the tutor's time, a lesson with a reload in it and its
-// task answered in handwriting — a square, a column and a row of strokes, which api's stub of tutor
-// reads as can't read this, wrong and right (R66 api) — with the tutor's words, a task outside a
-// lesson continued after a reload, the section for adults, the sign-out that erases the account's
-// data, and the erasure of everything. It asks no host but the origin and those section 3.7 names
-// for the sign-in, and nothing on the way logs an error. Its AI calls are api's stub's alone.
+// the choice of the learner with the next versions of the legal texts api gives and the page of
+// each (R46), the learner, My subjects with the line of the tutor's time, a lesson with a reload in
+// it and its task answered in handwriting — a square, a column and a row of strokes, which api's
+// stub of tutor reads as can't read this, wrong and right (R66 api) — with the tutor's words, a
+// task outside a lesson continued after a reload, the section for adults, the sign-out that erases
+// the account's data, and the erasure of everything. It asks no host but the origin and those
+// section 3.7 names for the sign-in, and nothing on the way logs an error. Its AI calls are api's
+// stub's alone.
+
 import { existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { GetLegalTextsResponseSchema } from "@altnovatrail/contracts/novatrail/api/v1/legal_pb.js";
+import { fromBinary } from "@bufbuild/protobuf";
 import {
   type Browser,
   type BrowserContext,
@@ -26,6 +31,7 @@ import {
 import { createServer, type ViteDevServer } from "vite";
 import { afterAll, beforeAll, describe, expect, it, onTestFailed } from "vitest";
 import { TOKEN_FILE } from "../scripts/local-token.ts";
+import { isPageText } from "../src/legal/texts.ts";
 
 const ORIGIN = "http://127.0.0.1:5173";
 const ENGINES: Readonly<Record<string, BrowserType>> = { chromium, webkit, firefox };
@@ -294,7 +300,36 @@ describe.each(NAMED)("the path in %s", (name) => {
     const { page } = walk;
     await page.goto(`${ORIGIN}/`);
     await page.getByRole("heading", { name: "Sign in" }).waitFor();
+    // The choice of the learner reads the legal texts: what api gives, the screen tells of (R46).
+    const legal = page.waitForResponse((response) => response.url().includes("/GetLegalTexts"));
     await page.getByRole("button", { name: "Sign in with Google" }).click();
+    await page.getByRole("heading", { name: "Who is learning?" }).waitFor();
+    const given = fromBinary(GetLegalTextsResponseSchema, await (await legal).body());
+    // The notice tells of the texts that are legal pages; a family's waits for its screens, E4.
+    const pages = given.nextTexts.filter((text) => isPageText(text.id));
+    const policy = pages.find((text) => text.id === "privacy-policy");
+    const notice = page.getByRole("heading", { name: "New versions of the texts" });
+    if (pages.length === 0) {
+      note("api gives no next version of a legal page's text");
+      // Nothing to tell, once the answer has been read and the screen drawn twice after it.
+      await (await legal).finished();
+      await page.evaluate(
+        "new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done)))",
+      );
+      expect(await notice.count()).toBe(0);
+    } else {
+      note(`api gives ${pages.map((text) => `${text.id} ${text.version}`).join(", ")}`);
+      await notice.waitFor();
+    }
+    if (policy !== undefined) {
+      const { version, inForceSince } = policy;
+      note(`the privacy policy's version ${version} applies from ${inForceSince}`);
+      const read = `Read Privacy Policy, version ${version}`;
+      await page.getByRole("button", { name: read, exact: true }).click();
+      await page.getByRole("heading", { name: "Privacy Policy: the next version" }).waitFor();
+      await page.getByText(new RegExp(`^Version ${version}, applies from `)).waitFor();
+      await page.getByRole("button", { name: "Close", exact: true }).click();
+    }
     await chooseDev(page);
     await home(page);
     // The platform AI quota share of the profile today (R40; Д20).

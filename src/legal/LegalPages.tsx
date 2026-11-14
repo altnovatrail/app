@@ -1,12 +1,13 @@
-// The legal pages (R31 in docs/decisions.md; sections 3.8, 3.9 and 3.10 of docs/architecture.md):
-// their list, `#/legal`, and each page, `#/legal/<page>` — the privacy policy, the terms of use and
-// the consent to keeping works, as GetLegalTexts gives them in force; the page Accessibility; and
-// the notices of third-party code, NOTICE and LICENSE of the build (R25). They show before signing
-// in as well as after, in the language of the device (R10), below a bar that names them, leads
-// back to their list and closes them back to where they were opened from. Nothing on them leads
-// out of app (privacy 7 in spec): a text's own words lead nowhere (R27), and the operator of the
-// copy, whom the page Accessibility names for a problem, is reached as the privacy policy says.
-import type { LegalText as Text } from "@altnovatrail/contracts/novatrail/api/v1/legal_pb.js";
+// The legal pages (R31 and R46 in docs/decisions.md; sections 3.8, 3.9 and 3.10 of
+// docs/architecture.md): their list, `#/legal`, and each page, `#/legal/<page>` — the privacy
+// policy, the terms of use and the consent to keeping works, as GetLegalTexts gives them in force,
+// and the next version of each, `#/legal/<text>/next`, before the day it applies from; who runs
+// this copy, `#/legal/operator` — the section Who we are of the privacy policy in force; the page
+// Accessibility; and the notices of third-party code, NOTICE and LICENSE of the build (R25). They
+// show before signing in as well as after, in the language of the device (R10), below a bar that
+// names them, leads back to their list and closes them back to where they were opened from.
+// Nothing on them leads out of app (privacy 7 in spec): a text's own words lead nowhere (R27), and
+// the operator of the copy, whom a page names, is reached as the section Who we are says.
 import { type ReactNode, useCallback, useEffect, useId } from "react";
 import { useRequest } from "../api/ApiContext.tsx";
 import type { Api } from "../api/client.ts";
@@ -14,40 +15,50 @@ import { ReadFailure } from "../api/ReadFailure.tsx";
 import { PageBar } from "../app/PageBar.tsx";
 import { LEGAL, navigate, type Route, redirect } from "../app/router.ts";
 import { Screen } from "../app/Screen.tsx";
-import { dateTimeFormat } from "../i18n/intl.ts";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
-import type { Language } from "../i18n/language.ts";
-import { LegalContent } from "./LegalText.tsx";
+import { OPERATOR_SECTION, sectionOf } from "./body.ts";
+import { LegalContent, LegalOriginal } from "./LegalText.tsx";
 import { LICENSE, NOTICE } from "./notices.ts";
-import { isPageText, PAGE_TEXTS, type PageText, readTexts } from "./texts.ts";
+import {
+  dayText,
+  isPageText,
+  PAGE_TEXTS,
+  type PageText,
+  readLegal,
+  type Versions,
+  versionsOf,
+} from "./texts.ts";
 
 /** The page Accessibility (R11). */
 export const ACCESSIBILITY = "accessibility";
 /** The page of the notices of third-party code (R25). */
 export const NOTICES = "notices";
+/** The page of who runs this copy: the section Who we are of the privacy policy in force (R46). */
+export const OPERATOR = "operator";
+/** The part of the hash after a text's ID that names its next version (R46). */
+const NEXT = "next";
 
-/** A legal page: a text's by its ID, or one of the two above. */
-export type LegalPage = PageText | typeof ACCESSIBILITY | typeof NOTICES;
+/** A legal page: a text's by its ID, or one of the three above. */
+export type LegalPage = PageText | typeof OPERATOR | typeof ACCESSIBILITY | typeof NOTICES;
 
 /** The legal pages in the order of their list. */
-const PAGES: readonly LegalPage[] = [...PAGE_TEXTS, ACCESSIBILITY, NOTICES];
+const PAGES: readonly LegalPage[] = [...PAGE_TEXTS, OPERATOR, ACCESSIBILITY, NOTICES];
 
 /** The route of a legal page. */
 export function legalPage(page: LegalPage): Route {
   return { screen: LEGAL.screen, parts: [page] };
 }
 
+/** The route of the page of a text's next version. */
+export function nextPage(id: PageText): Route {
+  return { screen: LEGAL.screen, parts: [id, NEXT] };
+}
+
+/** The policy whose section Who we are names the operator of the copy (R115 in spec). */
+const POLICY: PageText = "privacy-policy";
+
 /** The places where the app does not meet its standard yet, as R11 declares them. */
 const GAPS = ["handwriting", "print", "check"] as const;
-
-/** The day a version came into force, `YYYY-MM-DD`, as the screen's language writes it. */
-export function dayText(language: Language, day: string): string {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return day;
-  const date = new Date(`${day}T00:00:00Z`);
-  // A day the calendar does not have, such as 02-30, which the engine would roll over: as it came.
-  if (Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== day) return day;
-  return dateTimeFormat(language, { dateStyle: "long", timeZone: "UTC" }).format(date);
-}
 
 /** The bar above each legal page: their name, the way to their list, and back out of them. */
 function LegalBar({ first, back }: { readonly first: boolean; readonly back: Route }) {
@@ -81,45 +92,167 @@ export function LegalHome() {
 }
 
 /**
- * A legal text as a page: its version and the day it came into force, then what the text holds,
- * open — the gist, the line that the English text is in force, the translation and the body. The
- * text is read in the language of the screen each time the page opens, past the HTTP cache (R27).
+ * The versions of a text, read in the language of the screen each time its page opens, past the
+ * HTTP cache (R27); a failure is its words and Try again.
+ */
+function useVersions(id: PageText) {
+  const { language } = useLanguage();
+  const read = useCallback(
+    async (api: Api): Promise<Versions> => versionsOf(await readLegal(api, language), id),
+    [language, id],
+  );
+  return useRequest(read);
+}
+
+/**
+ * A legal text as a page: its version and the day it came into force; its next version, if it has
+ * one, with the day it applies from and the way to its page; then what the text holds, open — the
+ * gist, the line that the English text is in force, the translation and the body.
  */
 export function TextPage({ id }: { readonly id: PageText }) {
   const { language, words } = useLanguage();
-  const read = useCallback(
-    async (api: Api): Promise<Text | undefined> =>
-      (await readTexts(api, language)).find((text) => text.id === id),
-    [language, id],
-  );
-  const text = useRequest(read);
+  const hint = useId();
+  const versions = useVersions(id);
   let shown: ReactNode = null;
-  if (text.status === "failed") {
-    shown = <ReadFailure failure={text.failure} onRetry={text.retry} />;
-  } else if (text.status === "done") {
+  if (versions.status === "failed") {
+    shown = <ReadFailure failure={versions.failure} onRetry={versions.retry} />;
+  } else if (versions.status === "done") {
+    const { current, next } = versions.value;
+    shown = (
+      <>
+        {current === undefined ? (
+          <p>{words.text("legal.none")}</p>
+        ) : (
+          <p>
+            {words.text("legal.version", {
+              version: String(current.version),
+              date: dayText(language, current.inForceSince),
+            })}
+          </p>
+        )}
+        {next === undefined ? null : (
+          <>
+            <p id={hint}>
+              {words.text("legal.next-coming", {
+                version: String(next.version),
+                date: dayText(language, next.inForceSince),
+              })}
+            </p>
+            <div className="nt-buttons">
+              <button type="button" aria-describedby={hint} onClick={() => navigate(nextPage(id))}>
+                {words.text("legal.next-read", { version: String(next.version) })}
+              </button>
+            </div>
+          </>
+        )}
+        {current === undefined ? null : <LegalContent text={current} level={2} />}
+      </>
+    );
+  }
+  return <Screen title={words.text(`legal.${id}`)}>{shown}</Screen>;
+}
+
+/**
+ * A text's next version as a page of its own, before the day it applies from (R46): that day, the
+ * version in force until then and the way back to it, what can be withdrawn before it, and what
+ * the version holds, open, as the page of the current one shows it.
+ */
+export function NextTextPage({ id }: { readonly id: PageText }) {
+  const { language, words } = useLanguage();
+  const versions = useVersions(id);
+  const back = (
+    <div className="nt-buttons">
+      <button type="button" className="nt-secondary" onClick={() => navigate(legalPage(id))}>
+        {words.text("legal.current-read")}
+      </button>
+    </div>
+  );
+  let shown: ReactNode = null;
+  if (versions.status === "failed") {
+    shown = <ReadFailure failure={versions.failure} onRetry={versions.retry} />;
+  } else if (versions.status === "done") {
+    const { current, next } = versions.value;
     shown =
-      text.value === undefined ? (
-        <p>{words.text("legal.none")}</p>
+      next === undefined ? (
+        <>
+          <p>{words.text("legal.next-none")}</p>
+          {back}
+        </>
       ) : (
         <>
           <p>
-            {words.text("legal.version", {
-              version: String(text.value.version),
-              date: dayText(language, text.value.inForceSince),
+            {words.text("legal.next-version", {
+              version: String(next.version),
+              date: dayText(language, next.inForceSince),
             })}
           </p>
-          <LegalContent text={text.value} level={2} />
+          {current === undefined ? null : (
+            <p>{words.text("legal.next-until", { version: String(current.version) })}</p>
+          )}
+          <p>{words.text("legal.next-withdraw")}</p>
+          {current === undefined ? null : back}
+          <LegalContent text={next} level={2} />
         </>
       );
   }
-  return <Screen title={words.text(`legal.${id}`)}>{shown}</Screen>;
+  return (
+    <Screen title={words.text("legal.next-page", { text: words.text(`legal.${id}`) })}>
+      {shown}
+    </Screen>
+  );
+}
+
+/**
+ * Who runs this copy (R46; the 2026-11-12 amendment to R115 in spec): the section Who we are of the
+ * privacy policy in force, in English as it is — the contract has no field for the operator —,
+ * with the version it comes from and the way to the whole policy. A policy with no such section,
+ * and a copy with no policy in force, say so.
+ */
+export function OperatorPage() {
+  const { language, words } = useLanguage();
+  const versions = useVersions(POLICY);
+  let shown: ReactNode = null;
+  if (versions.status === "failed") {
+    shown = <ReadFailure failure={versions.failure} onRetry={versions.retry} />;
+  } else if (versions.status === "done") {
+    const policy = versions.value.current;
+    const section = policy === undefined ? undefined : sectionOf(policy.body, OPERATOR_SECTION);
+    shown =
+      policy === undefined ? (
+        <p>{words.text("legal.operator-no-policy")}</p>
+      ) : (
+        <>
+          <p>
+            {words.text("legal.operator-from", {
+              version: String(policy.version),
+              date: dayText(language, policy.inForceSince),
+            })}
+          </p>
+          {section === undefined ? (
+            <p>{words.text("legal.operator-none")}</p>
+          ) : (
+            <>
+              {language === "en" ? null : <p>{words.text("legal.english-in-force")}</p>}
+              <LegalOriginal body={section} level={1} />
+            </>
+          )}
+          <div className="nt-buttons">
+            <button type="button" onClick={() => navigate(legalPage(POLICY))}>
+              {words.text("legal.operator-policy")}
+            </button>
+          </div>
+        </>
+      );
+  }
+  return <Screen title={words.text("legal.operator")}>{shown}</Screen>;
 }
 
 /**
  * The page Accessibility (R11; section 3.9 of docs/architecture.md): the standard, each place where
  * the app does not meet it yet — its criteria, why, what there is instead and when it goes — in
  * the set of the 2026-11-12 amendment to R11, how it is checked, and whom to write to: the
- * operator of this copy, whose contacts its privacy policy gives (R115, R131 in spec).
+ * operator of this copy, whose contacts the section Who we are of its privacy policy gives (R115,
+ * R131 in spec; R46).
  */
 export function AccessibilityPage() {
   const { words } = useLanguage();
@@ -150,8 +283,8 @@ export function AccessibilityPage() {
       <h2>{words.text("accessibility.contact")}</h2>
       <p>{words.text("accessibility.contact-text")}</p>
       <div className="nt-buttons">
-        <button type="button" onClick={() => navigate(legalPage("privacy-policy"))}>
-          {words.text("accessibility.policy")}
+        <button type="button" onClick={() => navigate(legalPage(OPERATOR))}>
+          {words.text("accessibility.operator")}
         </button>
       </div>
     </Screen>
@@ -182,9 +315,13 @@ export function NoticesPage() {
  */
 export function LegalPages({ route, back }: { readonly route: Route; readonly back: Route }) {
   const page = route.parts.join("/");
+  const [first = "", ...rest] = route.parts;
   let shown: ReactNode;
   if (page === "") shown = <LegalHome />;
   else if (isPageText(page)) shown = <TextPage key={page} id={page} />;
+  else if (isPageText(first) && rest.join("/") === NEXT) {
+    shown = <NextTextPage key={first} id={first} />;
+  } else if (page === OPERATOR) shown = <OperatorPage />;
   else if (page === ACCESSIBILITY) shown = <AccessibilityPage />;
   else if (page === NOTICES) shown = <NoticesPage />;
   const known = shown !== undefined;

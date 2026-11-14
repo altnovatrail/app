@@ -1,8 +1,9 @@
 // The section for adults in the browser (R29 in docs/decisions.md; section 3.10 of
 // docs/architecture.md): its first page with the profiles and the device's language, a profile's
 // page and its form — only what changed goes to UpdateProfile, nothing when nothing did, the
-// pseudonym checked first, a failure said, the language the build does not have named — and what
-// another tab saved meanwhile, with api on connect-es's router.
+// pseudonym checked first, a failure said, the language the build does not have named —, what
+// another tab saved meanwhile, and the next versions of the legal texts on the first page (R46),
+// with api on connect-es's router.
 import {
   AccountService,
   Mode,
@@ -12,6 +13,11 @@ import {
   VoicingSpeed,
 } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import { Cause, RefusalSchema } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
+import {
+  LegalService,
+  type LegalText,
+  LegalTextSchema,
+} from "@altnovatrail/contracts/novatrail/api/v1/legal_pb.js";
 import { create, type MessageInitShape } from "@bufbuild/protobuf";
 import { Code, ConnectError, type ConnectRouter, createRouterTransport } from "@connectrpc/connect";
 import { render, screen, within } from "@testing-library/react";
@@ -134,17 +140,20 @@ describe("the section's first page", () => {
 
   it("opens This device from the first page", async () => {
     window.location.hash = "#/adults";
+    const { api } = apiOf((request) => profile({ profileId: request.profileId }));
     const section = (shown: Route) =>
       inLanguage(
-        <AdultSection
-          route={shown}
-          device={memoryDevice().device}
-          profiles={[profile()]}
-          onSaved={() => {}}
-          onFailed={() => {}}
-          onEraseAll={async () => "erased"}
-          onLegal={() => {}}
-        />,
+        <ApiProvider value={api}>
+          <AdultSection
+            route={shown}
+            device={memoryDevice().device}
+            profiles={[profile()]}
+            onSaved={() => {}}
+            onFailed={() => {}}
+            onEraseAll={async () => "erased"}
+            onLegal={() => {}}
+          />
+        </ApiProvider>,
       );
     const { rerender } = render(section({ screen: "adults", parts: [] }));
     const open = screen.getByRole("button", { name: "See what is on this device" });
@@ -157,6 +166,91 @@ describe("the section's first page", () => {
     expect(screen.getByRole("heading", { level: 1, name: "This device" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Back to the section" })).toBeTruthy();
     expect(await screen.findByText("Nothing of this profile is kept on this device")).toBeTruthy();
+  });
+
+  it("tells of the next versions of the texts, and that a profile's storage can be switched off first", async () => {
+    const next = create(LegalTextSchema, {
+      id: "privacy-policy",
+      version: 3,
+      inForceSince: "2026-11-27",
+      body: "# Privacy policy\n\nText.\n",
+      summary: "In short.",
+      summaryLanguage: "en",
+    });
+    const opened: (Route | undefined)[] = [];
+    let reads = 0;
+    const first = (profiles: Profile[], nextTexts: LegalText[] | Error) => {
+      const api = createApi({
+        baseUrl: "https://api.example.org",
+        tokens: { token: async () => "t", signOut: async () => {} },
+        on: { stale: () => {}, accountGone: async () => {}, noAccess: async () => {} },
+        sleep: async () => {},
+        transport: (interceptors) =>
+          createRouterTransport(
+            (router: ConnectRouter) =>
+              router.service(LegalService, {
+                getLegalTexts() {
+                  reads += 1;
+                  if (nextTexts instanceof Error) throw nextTexts;
+                  return { texts: [], nextTexts };
+                },
+              }),
+            { transport: { interceptors } },
+          ),
+      });
+      return render(
+        inLanguage(
+          <ApiProvider value={api}>
+            <AdultSection
+              route={{ screen: "adults", parts: [] }}
+              device={memoryDevice().device}
+              profiles={profiles}
+              onSaved={() => {}}
+              onFailed={() => {}}
+              onEraseAll={async () => "erased"}
+              onLegal={(page) => opened.push(page)}
+            />
+          </ApiProvider>,
+        ),
+      );
+    };
+    first([profile(), profile({ profileId: "p2", owner: false, workStorage: true })], [next]);
+    expect(
+      await screen.findByRole("heading", { level: 2, name: "New versions of the texts" }),
+    ).toBeTruthy();
+    const read = screen.getByRole("button", { name: "Read Privacy Policy, version 3" });
+    expect(read).toHaveAccessibleDescription(
+      "Privacy Policy: version 3 applies from November 27, 2026",
+    );
+    expect(screen.getByText(/Keeping works on the server is on for a profile/)).toBeTruthy();
+    await userEvent.click(read);
+    await userEvent.click(
+      screen.getByRole("button", { name: "Read the privacy policy and other texts" }),
+    );
+    expect(opened).toEqual([{ screen: "legal", parts: ["privacy-policy", "next"] }, undefined]);
+    document.body.innerHTML = "";
+    // No profile keeps its works on the server: nothing to switch off. Two texts whose next
+    // versions have one number, each in the order of the pages, each button named by its text.
+    first([profile()], [{ ...next, id: "terms-of-use" }, next]);
+    expect(
+      await screen.findByRole("button", { name: "Read Privacy Policy, version 3" }),
+    ).toBeTruthy();
+    expect(
+      screen.getAllByRole("button", { name: /, version 3$/ }).map((each) => each.textContent),
+    ).toEqual(["Read Privacy Policy, version 3", "Read Terms of Use, version 3"]);
+    expect(screen.queryByText(/Keeping works on the server is on/)).toBeNull();
+    document.body.innerHTML = "";
+    // No next version, or a read that failed: no part at all, and no Try again.
+    for (const none of [[], new ConnectError("broken", Code.Internal)]) {
+      const before = reads;
+      first([profile({ workStorage: true })], none);
+      await vi.waitFor(() => expect(reads).toBeGreaterThan(before));
+      // The answer, or the failure, has come to the page.
+      await new Promise((settled) => setTimeout(settled, 50));
+      expect(screen.queryByRole("heading", { name: "New versions of the texts" })).toBeNull();
+      expect(screen.queryByRole("button", { name: "Try again" })).toBeNull();
+      document.body.innerHTML = "";
+    }
   });
 });
 

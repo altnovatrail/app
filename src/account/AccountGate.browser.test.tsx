@@ -1,7 +1,7 @@
 // The way in, through Boot, in the browser (sections 3.2, 3.6 and 3.10 of docs/architecture.md): the
-// sign-in, the invite code, the owner's profile, the choice of the learner, the bar above the
-// learner's screens and the sign-out, each screen by its role and name, with api answering by the
-// test's fetch and the sign-in service the test's own.
+// sign-in, the invite code, the owner's profile, the choice of the learner with the next versions
+// of the legal texts (R46), the bar above the learner's screens and the sign-out, each screen by
+// its role and name, with api answering by the test's fetch and the sign-in service the test's own.
 import {
   CreateAccountRequestSchema,
   CreateAccountResponseSchema,
@@ -103,6 +103,22 @@ function texts(language: string, policy = 2) {
         summaryLanguage: ru ? "ru" : "en",
       },
     ],
+  });
+}
+
+/** The policy in force with its section Who we are, and its next version, synthetic. */
+function withNext() {
+  const policy = (version: number, inForceSince: string) => ({
+    id: "privacy-policy",
+    version,
+    inForceSince,
+    body: `# Privacy Policy\n\n## Who we are\n\nThe operator of version ${version}.\n`,
+    summary: `Version ${version} in short.`,
+    summaryLanguage: "en",
+  });
+  return message(GetLegalTextsResponseSchema, {
+    texts: [policy(2, "2026-11-11")],
+    nextTexts: [policy(3, "2026-11-27")],
   });
 }
 
@@ -337,8 +353,9 @@ describe("the way in", () => {
     await userEvent.click(screen.getByRole("button", { name: "Switch learner" }));
     expect(await screen.findByRole("heading", { level: 1, name: "Who is learning?" })).toBeTruthy();
     expect(screen.queryByText("Learners' work is kept on this device")).toBeNull();
-    // Each request of the way in, then the learner's home — its lists and the share of the
-    // quota —, and no other: CheckPackages has no package to ask about.
+    // Each request of the way in — the choice of the learner reads the texts' next versions each
+    // time it shows (R46) —, then the learner's home — its lists and the share of the quota —, and
+    // no other: CheckPackages has no package to ask about.
     expect(asked).toEqual([
       "GetAccount",
       "GetLegalTexts",
@@ -347,9 +364,11 @@ describe("the way in", () => {
       "CreateOwnerProfile",
       "CreateOwnerProfile",
       "GetAccount",
+      "GetLegalTexts",
       "ListConnectedModules",
       "ListCatalog",
       "GetQuota",
+      "GetLegalTexts",
     ]);
     // Some twenty steps of the way in: under the load of the whole suite they outlast 15 s.
   }, 30_000);
@@ -949,6 +968,29 @@ describe("the legal pages", () => {
     expect(window.location.hash).toBe("#/adults");
   });
 
+  it("tell of a next version on the choice of the learner, and close its page back to the choice", async () => {
+    const service = fakeSignIn("uid-1");
+    const account = { accountId: "account-1", profiles: [{ ...OWNER, workStorage: true }] };
+    renderApp(
+      { getAccount: () => message(GetAccountResponseSchema, { account }), getLegalTexts: withNext },
+      service,
+    );
+    expect(await screen.findByRole("heading", { level: 1, name: "Who is learning?" })).toBeTruthy();
+    expect(
+      await screen.findByRole("heading", { level: 2, name: "New versions of the texts" }),
+    ).toBeTruthy();
+    expect(screen.getByText(/Keeping works on the server is on for a profile/)).toBeTruthy();
+    await userEvent.click(screen.getByRole("button", { name: "Read Privacy Policy, version 3" }));
+    expect(window.location.hash).toBe("#/legal/privacy-policy/next");
+    expect(
+      await screen.findByRole("heading", { level: 1, name: "Privacy Policy: the next version" }),
+    ).toBeTruthy();
+    expect(await screen.findByText("Version 3 in short.")).toBeTruthy();
+    await userEvent.click(screen.getByRole("button", { name: "Close" }));
+    expect(await screen.findByRole("heading", { level: 1, name: "Who is learning?" })).toBeTruthy();
+    expect(window.location.hash).toBe("#/home");
+  });
+
   it("close home, not to the section, once the account that opened them has gone", async () => {
     const service = fakeSignIn("uid-1");
     const account = { accountId: "account-1", profiles: [OWNER] };
@@ -1175,6 +1217,62 @@ describe("the page on the AI tutor", () => {
     expect(screen.getByText(/call your country's emergency number/)).toBeTruthy();
     await userEvent.click(screen.getByRole("button", { name: "Close" }));
     expect(await screen.findByRole("heading", { level: 1, name: "Sign in" })).toBeTruthy();
+  });
+});
+
+describe("the page on the AI tutor and who runs this copy", () => {
+  afterEach(() => {
+    window.location.hash = "";
+  });
+
+  it("leads to who runs this copy where it names the operator, and back to itself", async () => {
+    const service = fakeSignIn("uid-1");
+    renderApp(
+      {
+        getAccount: () =>
+          message(GetAccountResponseSchema, {
+            account: {
+              accountId: "account-1",
+              profiles: [{ ...OWNER, interfaceLanguage: "ru" }],
+            },
+          }),
+        listConnectedModules: () => message(ListConnectedModulesResponseSchema, { modules: [] }),
+        getLegalTexts: withNext,
+      },
+      service,
+    );
+    await userEvent.click(await screen.findByRole("button", { name: "Ёжик" }));
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Как безопасно пользоваться наставником" }),
+    );
+    await userEvent.click(await screen.findByRole("button", { name: "Кто ведёт приложение" }));
+    expect(window.location.hash).toBe("#/legal/operator");
+    // The legal pages are in the device's language.
+    expect(
+      await screen.findByRole("heading", { level: 1, name: "Who runs this copy of the app" }),
+    ).toBeTruthy();
+    expect(await screen.findByText("The operator of version 2.")).toBeTruthy();
+    await userEvent.click(screen.getByRole("button", { name: "Close" }));
+    expect(window.location.hash).toBe("#/tutor");
+    expect(
+      await screen.findByRole("heading", {
+        level: 1,
+        name: "Как безопасно пользоваться ИИ-наставником",
+      }),
+    ).toBeTruthy();
+  });
+
+  it("closes who runs this copy back to the page on the AI tutor before signing in too", async () => {
+    renderApp({ getLegalTexts: withNext }, fakeSignIn());
+    expect(await screen.findByRole("heading", { level: 1, name: "Sign in" })).toBeTruthy();
+    window.location.hash = "#/tutor";
+    await userEvent.click(await screen.findByRole("button", { name: "Who runs the app" }));
+    expect(await screen.findByText("The operator of version 2.")).toBeTruthy();
+    await userEvent.click(screen.getByRole("button", { name: "Close" }));
+    expect(window.location.hash).toBe("#/tutor");
+    expect(
+      await screen.findByRole("heading", { level: 1, name: "How to use the AI tutor safely" }),
+    ).toBeTruthy();
   });
 });
 
