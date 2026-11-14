@@ -48,3 +48,13 @@ The tests of the screens and of the built page, and the site check, on Chromium,
   - A frame under `frame-ancestors 'none'`: Chromium puts `chrome-error://chromewebdata/` in it, WebKit keeps app's address, `http://127.0.0.1:5181/`, with nothing run, Firefox leaves no address; none asks for `/deployment.json`.
   - The site check, on its test's stand-ins: under `Cross-Origin-Opener-Policy: same-origin` the window opened on `authDomain` in all three engines; once in WebKit the check stopped on the window's address, "Invalid URL", and in the next runs it did not: the check now names whatever address the window has.
 - **The coverage** goes to Codecov from Node and Chromium alone: Vitest's v8 coverage refuses any other engine (sources 2.5).
+
+## 5. gapi's ping in CI, T59, 2026-11-14
+
+What failed the test of the built page in WebKit on `main`, by the logs of CI (R45; architecture 3.7).
+- **On what.** The job "TypeScript / test" of CI, WebKit 27.2 of Playwright 1.65.0 (revision 2388), with Safari in `User-Agent`; the page under the header of `csp.json` and Google's real `apis.google.com`, which the SDK loads at the start (measurements 4).
+- **The runs.** Of the merge of T57, `2a5eedf`, run 43548292197, 2026-11-14 02:48 UTC — the test "takes the canvas element under the header"; of the merge of T58, `408a231`, run 43556088980, attempt 1 — the test "shows the page on the AI tutor by its address"; its attempt 2 passed. The same code had passed on its pull requests.
+- **What they recorded**, in both the same two lines, the console's and the event's:
+  - `Refused to connect to https://apis.google.com/js/gen_204?c=50%3A1 because it does not appear in the connect-src directive of the Content Security Policy.`
+  - `connect-src https://apis.google.com/js/gen_204?c=50%3A1`
+- **Why now and then.** gapi sends the ping at one flush of a hundred (sources 7.6): counter 50 counted once, and the sample took it. No other violation was in those runs.

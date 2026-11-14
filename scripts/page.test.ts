@@ -1,7 +1,8 @@
 // The test of the built page (section 3.7 of docs/architecture.md; Д8 and Д9 in DEBT.md): `vite
 // preview` serves build/ — ci-test builds it first — with app's own plugin, and Chrome Headless
 // Shell, WebKit and Firefox, from the image the toolchain stage takes them from, open it, each in
-// turn (R45). A violation of either layer of the CSP fails the test, and so does any request
+// turn (R45). A violation of either layer of the CSP fails the test — but in WebKit the header's
+// refusal of gapi's ping, which section 3.7 expects there —, and so does any request
 // before /deployment.json. The sign-in window goes under the header too, with what Google would
 // answer stubbed, and a request to a host section 3.7 does not name fails it. So do a module's
 // license and its files from api (R32), and the skill map's element (R34). No file of the build
@@ -19,7 +20,7 @@ import { LOCAL_TOKEN_PATH } from "../src/signin/token-path.ts";
 import { deploymentPart, partText } from "./archive.ts";
 import { deployment, layerIsFirst } from "./deployment-plugin.ts";
 import { standInForGoogle } from "./google-stub.ts";
-import { allowedHosts, hostsAtStart } from "./site.ts";
+import { allowedHosts, hostsAtStart, recordViolations } from "./site.ts";
 
 const HOST = "127.0.0.1";
 /** Ports of their own, beside the 5173 of `just dev` and `just preview`. */
@@ -76,7 +77,8 @@ afterAll(async () => {
 /**
  * A page that records every violation of the CSP, every request to app's own origins by its path,
  * and the host of every other request, in their order. Apart: WebKit, whose user agent names
- * Safari, has the SDK load gapi and the hidden iframe at every start (section 3.7).
+ * Safari, has the SDK load gapi and the hidden iframe at every start, and gapi's ping refused now
+ * and then is no violation there (section 3.7).
  */
 async function open(locale = "en-US"): Promise<{
   page: Page;
@@ -86,17 +88,9 @@ async function open(locale = "en-US"): Promise<{
 }> {
   const context = await browser.newContext({ locale });
   const page = await context.newPage();
-  const violations: string[] = [];
+  const violations = await recordViolations(page, browser.browserType().name());
   const requests: string[] = [];
   const others: string[] = [];
-  await page.exposeFunction("reportViolation", (line: string) => violations.push(line));
-  // The page's own script, as text: this program of tsc sees Node, not the DOM.
-  await page.addInitScript(`document.addEventListener("securitypolicyviolation", (event) => {
-    window.reportViolation(event.effectiveDirective + " " + event.blockedURI);
-  });`);
-  page.on("console", (message) => {
-    if (message.text().includes("Content Security Policy")) violations.push(message.text());
-  });
   page.on("request", (request) => {
     const url = new URL(request.url());
     if (url.origin === ORIGIN || url.origin === BARE_ORIGIN) requests.push(url.pathname);
@@ -173,6 +167,35 @@ describe.each(ENGINES.map((type) => [type.name(), type] as const))(
         await page.evaluate("indexedDB.databases().then((all) => all.map((db) => db.name).sort())"),
       ).toEqual(["firebase-heartbeat-database", "firebaseLocalStorageDb"]);
       expect(violations).toEqual([]);
+      await page.context().close();
+    }, 60_000);
+
+    it("refuses gapi's ping under the header, and lets the refusal by in WebKit alone (section 3.7)", async () => {
+      writeFileSync(local, JSON.stringify(file(ORIGIN)));
+      const { page, violations } = await open();
+      await page.goto(`${ORIGIN}/`);
+      await page.getByRole("heading", { name: "Sign in" }).waitFor();
+      // The ping as gapi sends it, then gapi's own script asked as connect-src: refused alike, as
+      // the page's own listener sees, past the recorder's rule.
+      await page.evaluate(`(async () => {
+        window.refused = [];
+        document.addEventListener("securitypolicyviolation", (event) => {
+          window.refused.push(event.effectiveDirective + " " + event.blockedURI);
+        });
+        await fetch("https://apis.google.com/js/gen_204?c=50%3A1", { mode: "no-cors" }).catch(() => {});
+        await fetch("https://apis.google.com/js/api.js", { mode: "no-cors" }).catch(() => {});
+      })()`);
+      await expect.poll(() => violations.some((line) => line.includes("/js/api.js"))).toBe(true);
+      await expect
+        .poll(() => page.evaluate("window.refused"))
+        .toEqual(
+          // In WebKit gapi itself may ping meanwhile: the two are among what was refused.
+          expect.arrayContaining([
+            "connect-src https://apis.google.com/js/gen_204?c=50%3A1",
+            "connect-src https://apis.google.com/js/api.js",
+          ]),
+        );
+      expect(violations.some((line) => line.includes("/js/gen_204"))).toBe(engine !== "webkit");
       await page.context().close();
     }, 60_000);
 

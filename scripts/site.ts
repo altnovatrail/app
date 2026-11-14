@@ -11,14 +11,21 @@
 //   Cross-Origin-Opener-Policy: same-origin, which breaks the sign-in window;
 // - the page in Chromium, WebKit and Firefox, under the site's own header and with Google's own
 //   script: no violation of the CSP, nothing but app's origin asked before the tap of "Sign in
-//   with Google" — but in WebKit, which the SDK takes for Safari, what it loads at every start —,
-//   after it no host section 3.7 does not name, and the window opened on the sign-in pages of
-//   authDomain, whose project lets the site's host sign in. The window is then closed: nobody
+//   with Google" — but in WebKit, which the SDK takes for Safari, what it loads at every start,
+//   and the refusal of gapi's ping —, after it no host section 3.7 does not name, and the window
+//   opened on the sign-in pages of authDomain, whose project lets the site's host sign in. The window is then closed: nobody
 //   signs in (R45).
 import { readFileSync } from "node:fs";
 import { gunzipSync } from "node:zlib";
 import type { Deployment } from "@altnovatrail/spec/deploymentv1";
-import { type Browser, type BrowserContext, chromium, firefox, webkit } from "playwright";
+import {
+  type Browser,
+  type BrowserContext,
+  chromium,
+  firefox,
+  type Page,
+  webkit,
+} from "playwright";
 import { loadDeployment } from "../src/config/load.ts";
 import { tarFiles } from "./archive.ts";
 import { header, type Template, templateProblems } from "./csp.ts";
@@ -131,6 +138,48 @@ export function fetchAsk(origin: string, fetcher: typeof fetch = fetch): Ask {
   };
 }
 
+/** gapi's ping, which the header's connect-src refuses (section 3.7; sources 7.6). */
+const GAPI_PING = new URL("https://apis.google.com/js/gen_204");
+
+/** A refusal of connect-src as the event gives it, and as WebKit writes it in the console. */
+const REFUSALS = [
+  /^connect-src (\S+)$/,
+  /^Refused to connect to (\S+) because it does not appear in the connect-src directive of the Content Security Policy\.$/,
+];
+
+/**
+ * Whether a line of a violation is the one refusal of the CSP the page test and the site check
+ * expect: in WebKit, which the SDK takes for Safari and so loads gapi at every start, connect-src
+ * refusing gapi's ping, whatever its query. Sent now and then, it is no violation there; in any
+ * other engine, and any other refusal, is (section 3.7; R45).
+ */
+export function expectedRefusal(engine: string | undefined, line: string): boolean {
+  if (engine !== "webkit") return false;
+  const address = REFUSALS.map((form) => form.exec(line)?.[1]).find((found) => found !== undefined);
+  const url = address === undefined ? null : URL.parse(address);
+  return url?.origin === GAPI_PING.origin && url.pathname === GAPI_PING.pathname;
+}
+
+/**
+ * The violations of the CSP a page records from now on, by the event and by the console, in their
+ * order: every one but the refusal an engine is expected to make.
+ */
+export async function recordViolations(page: Page, engine: string | undefined): Promise<string[]> {
+  const violations: string[] = [];
+  const record = (line: string) => {
+    if (!expectedRefusal(engine, line)) violations.push(line);
+  };
+  await page.exposeFunction("reportViolation", record);
+  // The page's own script, as text: this program of tsc sees Node, not the DOM.
+  await page.addInitScript(`document.addEventListener("securitypolicyviolation", (event) => {
+    window.reportViolation(event.effectiveDirective + " " + event.blockedURI);
+  });`);
+  page.on("console", (message) => {
+    if (message.text().includes("Content Security Policy")) record(message.text());
+  });
+  return violations;
+}
+
 /**
  * The hosts section 3.7 lets the page ask in an engine, beside the site's own: Google's script,
  * authDomain and Firebase Auth, and in WebKit the host Google's page in the hidden iframe asks there
@@ -211,16 +260,8 @@ export async function browserProblems(
   const engine = context.browser()?.browserType().name();
   try {
     const page = await context.newPage();
-    const violations: string[] = [];
+    const violations = await recordViolations(page, engine);
     const requests: URL[] = [];
-    await page.exposeFunction("reportViolation", (line: string) => violations.push(line));
-    // The page's own script, as text: this program of tsc sees Node, not the DOM.
-    await page.addInitScript(`document.addEventListener("securitypolicyviolation", (event) => {
-      window.reportViolation(event.effectiveDirective + " " + event.blockedURI);
-    });`);
-    page.on("console", (message) => {
-      if (message.text().includes("Content Security Policy")) violations.push(message.text());
-    });
     // Every request of the page and of its frames; the window is a page of its own.
     page.on("request", (request) => requests.push(new URL(request.url())));
     const problems: string[] = [];
@@ -327,12 +368,13 @@ export async function check(
     problems.push(...found.map((problem) => `${engine}: ${problem}`));
   }
   const engines = pages.map((page) => page.engine);
+  const inWebkit = engines.includes("webkit");
   const assets = [...files.keys()].filter((path) => path.startsWith("assets/")).length;
   const lines = [
     `/deployment.json: app reads it; api ${deployment.api}, sign-in ${deployment.signIn.authDomain}`,
     `/ and /index.html: index.html of the release, with no-cache and the CSP header of csp.json`,
     `${files.size - 1} more files of the archive at their paths, ${assets} of them in assets/: the bytes of the release`,
-    `the page in ${engines.join(", ")}: no violation of the CSP, only /deployment.json and the build before the tap${engines.includes("webkit") ? " — and in WebKit what the SDK loads for Safari —," : ","} the window on https://${deployment.signIn.authDomain}/__/auth/handler, and no host section 3.7 does not name`,
+    `the page in ${engines.join(", ")}: no violation of the CSP${inWebkit ? " — in WebKit gapi's ping, if refused, is none —" : ""}, only /deployment.json and the build before the tap${inWebkit ? " — and in WebKit what the SDK loads for Safari —," : ","} the window on https://${deployment.signIn.authDomain}/__/auth/handler, and no host section 3.7 does not name`,
   ];
   return { lines, problems };
 }
