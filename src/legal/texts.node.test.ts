@@ -1,6 +1,7 @@
-// The legal texts from api on connect-es's router (section 15 of the text of the contracts; R27):
-// asked in the language of the screen, those of the account in their order, the versions a consent
-// names, an api with no LegalService as no text in force, and the title and tokens of a body.
+// The legal texts from api on connect-es's router (section 15 of the text of the contracts; R27 and
+// R46): asked in the language of the screen, those of the account in their order, the versions a
+// consent names, the next versions, an api with no LegalService as no text in force, and the
+// title, tokens and the section Who we are of a body.
 import {
   LegalService,
   type LegalText,
@@ -11,16 +12,19 @@ import { Code, ConnectError, type ConnectRouter, createRouterTransport } from "@
 import { describe, expect, it, vi } from "vitest";
 import { createApi } from "../api/client.ts";
 import { ApiError } from "../api/failure.ts";
-import { titleOf, tokensOf } from "./body.ts";
+import { OPERATOR_SECTION, sectionOf, titleOf, tokensOf } from "./body.ts";
 import {
   ACCOUNT_TEXTS,
   accountTexts,
   isPageText,
+  nextOf,
   PAGE_TEXTS,
+  pageNext,
+  readLegal,
   readTexts,
   refsOf,
   STORAGE_TEXT,
-  storageText,
+  versionsOf,
 } from "./texts.ts";
 
 function text(id: string, version: number): LegalText {
@@ -68,10 +72,43 @@ describe("the legal texts", () => {
     expect(accountTexts([text("terms-of-use", 1)]).map((t) => t.id)).toEqual(["terms-of-use"]);
   });
 
-  it("finds the consent to the storage of works, and none while it has no version in force", () => {
-    const texts = [text("privacy-policy", 2), text(STORAGE_TEXT, 3)];
-    expect(storageText(texts)).toMatchObject({ id: "storage-consent", version: 3 });
-    expect(storageText([text("privacy-policy", 2)])).toBeUndefined();
+  it("reads the next versions beside the current ones, and none from an api that gives none", async () => {
+    let next = true;
+    const { api } = harness(({ service }) =>
+      service(LegalService, {
+        getLegalTexts() {
+          return {
+            texts: [text("privacy-policy", 2)],
+            ...(next ? { nextTexts: [text("parent-consent", 2), text("privacy-policy", 3)] } : {}),
+          };
+        },
+      }),
+    );
+    const read = await readLegal(api, "en");
+    expect(read.texts.map((t) => t.version)).toEqual([2]);
+    expect(read.next.map((t) => [t.id, t.version])).toEqual([
+      ["parent-consent", 2],
+      ["privacy-policy", 3],
+    ]);
+    // The pages' own, in their order: a family's text has no page in E3.
+    expect(pageNext(read.next).map((t) => t.id)).toEqual(["privacy-policy"]);
+    expect(nextOf(read.next, "privacy-policy")?.version).toBe(3);
+    expect(nextOf(read.next, STORAGE_TEXT)).toBeUndefined();
+    next = false;
+    expect((await readLegal(api, "en")).next).toEqual([]);
+    expect(await readTexts(api, "en")).toHaveLength(1);
+  });
+
+  it("finds a text's current and next versions, and none while it has no version", () => {
+    const legal = { texts: [text("privacy-policy", 2), text(STORAGE_TEXT, 3)], next: [] };
+    expect(versionsOf(legal, STORAGE_TEXT).current).toMatchObject({
+      id: "storage-consent",
+      version: 3,
+    });
+    expect(versionsOf(legal, STORAGE_TEXT).next).toBeUndefined();
+    const only = { texts: [text("privacy-policy", 2)], next: [text(STORAGE_TEXT, 4)] };
+    expect(versionsOf(only, STORAGE_TEXT).current).toBeUndefined();
+    expect(versionsOf(only, STORAGE_TEXT).next?.version).toBe(4);
   });
 
   it("makes pages of the account's texts and the consent to the storage, not of a family's", () => {
@@ -84,6 +121,7 @@ describe("the legal texts", () => {
   it("reads an api with no LegalService as no text in force, and offers it no reload", async () => {
     const { api, on } = harness(() => {});
     expect(await readTexts(api, "en")).toEqual([]);
+    expect(await readLegal(api, "en")).toEqual({ texts: [], next: [] });
     expect(on.stale).not.toHaveBeenCalled();
   });
 
@@ -109,6 +147,34 @@ describe("a body of Markdown", () => {
     // Its words alone, with no markup, and a code span as written.
     expect(titleOf("# Terms of **Use** \\*draft\\* `&amp;`")).toBe("Terms of Use *draft* &amp;");
     expect(titleOf("# &laquo;Оператор&raquo; &mdash; &unknown;")).toBe("«Оператор» — &unknown;");
+  });
+
+  it("gives the section Who we are, up to the next heading of its level, and none without it", () => {
+    const body = [
+      "# Privacy policy",
+      "Intro.",
+      "## Who we are",
+      "The operator, by post:",
+      "- an address;",
+      "### By email",
+      "An address.",
+      "## What we collect",
+      "Little.",
+    ].join("\n\n");
+    expect(sectionOf(body, OPERATOR_SECTION)).toBe(
+      "## Who we are\n\nThe operator, by post:\n\n- an address;\n\n### By email\n\nAn address.\n\n",
+    );
+    // To the end, when it is the last section.
+    expect(sectionOf("# P\n\n## Who we are\n\nUs.\n", OPERATOR_SECTION)).toBe(
+      "## Who we are\n\nUs.\n",
+    );
+    // Only a heading of the second level that reads exactly so.
+    expect(sectionOf("# P\n\n### Who we are\n\nUs.\n", OPERATOR_SECTION)).toBeUndefined();
+    expect(sectionOf("# P\n\n## Who we are now\n\nUs.\n", OPERATOR_SECTION)).toBeUndefined();
+    expect(sectionOf("# P\n\n## **Who** we are\n\nUs.\n", OPERATOR_SECTION)).toBe(
+      "## **Who** we are\n\nUs.\n",
+    );
+    expect(sectionOf("# P\n\nNo sections.\n", OPERATOR_SECTION)).toBeUndefined();
   });
 
   it("reads the tables of GitHub's flavour", () => {

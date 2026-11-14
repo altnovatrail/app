@@ -1,6 +1,6 @@
 // The body of a legal text as marked reads it (R27 in docs/decisions.md): CommonMark with the tables
-// of GitHub's flavour, its title, and the character references it may hold. ./Markdown.tsx draws
-// it. No DOM.
+// of GitHub's flavour, its title, the character references it may hold, and the section of the
+// privacy policy that names its operator (R46). ./Markdown.tsx draws it. No DOM.
 import { Lexer, type Token } from "marked";
 
 /**
@@ -63,4 +63,32 @@ export function plainText(tokens: readonly Token[] = []): string {
 export function titleOf(body: string): string | undefined {
   const first = tokensOf(body).find((token) => token.type !== "space");
   return first?.type === "heading" && first.depth === 1 ? plainText(first.tokens) : undefined;
+}
+
+/**
+ * The section of the privacy policy that names its operator and how to reach it: a heading of the
+ * second level that reads exactly so, in every version of the policy (`legal.operator` of the
+ * legal part; the 2026-11-13 amendment to R115 in spec; R46).
+ */
+export const OPERATOR_SECTION = "Who we are";
+
+/**
+ * A section of a body, as Markdown: from the heading of the second level whose words are `heading`
+ * up to the next heading of the first or the second level, or the end; none when it has no such
+ * heading. A heading of a lower level with the same words is part of another section.
+ */
+export function sectionOf(body: string, heading: string): string | undefined {
+  const tokens = tokensOf(body);
+  const from = tokens.findIndex(
+    (token) => token.type === "heading" && token.depth === 2 && plainText(token.tokens) === heading,
+  );
+  if (from < 0) return undefined;
+  const after = tokens
+    .slice(from + 1)
+    .findIndex((token) => token.type === "heading" && token.depth <= 2);
+  const to = after < 0 ? tokens.length : from + 1 + after;
+  return tokens
+    .slice(from, to)
+    .map((token) => token.raw)
+    .join("");
 }

@@ -359,12 +359,19 @@ describe.each(ENGINES.map((type) => [type.name(), type] as const))(
       await page.getByRole("button", { name: "Back to the list" }).click();
       await page.getByRole("button", { name: "Accessibility" }).click();
       await page.getByRole("heading", { name: "Answering in handwriting" }).waitFor();
-      await page.getByRole("button", { name: "Open the privacy policy" }).click();
+      await page.getByRole("button", { name: "Who runs this copy and how to reach them" }).click();
       // vite preview has no api on its origin: its 404 is no LegalService, so no text in force.
+      await page.getByText("This copy of the app has no privacy policy in force").waitFor();
+      await page.getByRole("button", { name: "Back to the list" }).click();
+      await page.getByRole("button", { name: "Privacy Policy", exact: true }).click();
       await page.getByText("This copy of the app has no version of this text in force").waitFor();
       expect(await page.locator("a").count()).toBe(0);
       const own = requests.filter((path) => !path.startsWith("/assets/") && path !== "/");
-      expect(own).toEqual(["/deployment.json", "/novatrail.api.v1.LegalService/GetLegalTexts"]);
+      expect(own).toEqual([
+        "/deployment.json",
+        "/novatrail.api.v1.LegalService/GetLegalTexts",
+        "/novatrail.api.v1.LegalService/GetLegalTexts",
+      ]);
       expect(violations).toEqual([]);
       await page.context().close();
     }, 60_000);

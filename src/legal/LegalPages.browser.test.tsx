@@ -1,8 +1,9 @@
-// The legal pages in the browser (R31 in docs/decisions.md), with api on connect-es's router: their
-// list and bar, a text as a page in the language of the screen — its version, its gist, the line
-// that the English text is in force, its translation and its body —, a text with no version in
-// force, a read that failed, the page Accessibility with the places R11 declares, the notices of
-// the build as they are, a page this build does not know, and no link on any of them.
+// The legal pages in the browser (R31 and R46 in docs/decisions.md), with api on connect-es's router:
+// their list and bar, a text as a page in the language of the screen — its version, its gist, the
+// line that the English text is in force, its translation and its body —, a text with no version
+// in force, its next version and the page of it, who runs this copy, a read that failed, the page
+// Accessibility with the places R11 declares, the notices of the build as they are, a page this
+// build does not know, and no link on any of them.
 import {
   LegalService,
   type LegalText,
@@ -18,8 +19,9 @@ import { createApi } from "../api/client.ts";
 import { ADULTS, type Route } from "../app/router.ts";
 import type { Language } from "../i18n/language.ts";
 import { inLanguage } from "../test/language.tsx";
-import { dayText, LegalPages } from "./LegalPages.tsx";
+import { LegalPages } from "./LegalPages.tsx";
 import { LICENSE, NOTICE } from "./notices.ts";
+import { dayText } from "./texts.ts";
 
 const POLICY = create(LegalTextSchema, {
   id: "privacy-policy",
@@ -32,10 +34,26 @@ const POLICY = create(LegalTextSchema, {
   translationLanguage: "ru",
 });
 
+/** The policy's next version, which applies from a day still to come. */
+const NEXT_POLICY = create(LegalTextSchema, {
+  id: "privacy-policy",
+  version: 3,
+  inForceSince: "2026-11-27",
+  body: "# Privacy policy\n\n## Who we are\n\nThe operator, with the task's key too.\n",
+  summary: "We keep little, and tell more.",
+  summaryLanguage: "en",
+});
+
+/** The current versions of the texts, and their next ones. */
+interface Given {
+  readonly texts: LegalText[];
+  readonly nextTexts: LegalText[];
+}
+
 /** The pages at a route, api giving the texts of each reading; no LegalService when left out. */
 function renderPages(
   route: Route,
-  texts?: (reading: number) => LegalText[] | Promise<LegalText[]>,
+  texts?: (reading: number) => LegalText[] | Given | Promise<LegalText[]>,
   language: Language = "en",
 ) {
   const read: string[] = [];
@@ -51,7 +69,8 @@ function renderPages(
           router.service(LegalService, {
             async getLegalTexts(request) {
               read.push(request.interfaceLanguage);
-              return { texts: await texts(read.length) };
+              const given = await texts(read.length);
+              return Array.isArray(given) ? { texts: given } : given;
             },
           });
         },
@@ -92,12 +111,14 @@ describe("the legal pages", () => {
       "Privacy Policy",
       "Terms of Use",
       "Consent to keeping works on the server",
+      "Who runs this copy of the app",
       "Accessibility",
       "Licenses and third-party notices",
     ]);
     for (const [name, hash] of [
       ["Terms of Use", "#/legal/terms-of-use"],
       ["Consent to keeping works on the server", "#/legal/storage-consent"],
+      ["Who runs this copy of the app", "#/legal/operator"],
       ["Accessibility", "#/legal/accessibility"],
       ["Licenses and third-party notices", "#/legal/notices"],
       ["Privacy Policy", "#/legal/privacy-policy"],
@@ -162,6 +183,140 @@ describe("the legal pages", () => {
     ).toBeNull();
   });
 
+  it("tell of a text's next version, and lead to its page and back", async () => {
+    window.location.hash = "#/legal/privacy-policy";
+    const { show, read } = renderPages(
+      legal("privacy-policy"),
+      () => ({ texts: [POLICY], nextTexts: [NEXT_POLICY] }),
+      "ru",
+    );
+    expect(await screen.findByText("Версия 2, в силе с 11 ноября 2026 г.")).toBeTruthy();
+    const coming = screen.getByText("Версия 3 этого текста применяется с 27 ноября 2026 г.");
+    const open = screen.getByRole("button", { name: "Прочитать версию 3" });
+    expect(open).toHaveAccessibleDescription(coming.textContent ?? "");
+    // The current version is the page's: its body, not the next one's.
+    expect(screen.getByText("Мы храним мало.")).toBeTruthy();
+    expect(screen.queryByText("We keep little, and tell more.")).toBeNull();
+    await userEvent.click(open);
+    expect(window.location.hash).toBe("#/legal/privacy-policy/next");
+    show(legal("privacy-policy", "next"));
+    expect(
+      screen.getByRole("heading", {
+        level: 1,
+        name: "Политика конфиденциальности: следующая версия",
+      }),
+    ).toBeTruthy();
+    expect(await screen.findByText("Версия 3, применяется с 27 ноября 2026 г.")).toBeTruthy();
+    expect(screen.getByText("До этого дня в силе версия 2")).toBeTruthy();
+    expect(screen.getByText(/можно отозвать согласие, данное в приложении/)).toBeTruthy();
+    expect(screen.getByText("We keep little, and tell more.")).toHaveAttribute("lang", "en");
+    const original = screen.getByRole("region", { name: "Текст в силе, на английском" });
+    expect(
+      within(original).getByRole("heading", { level: 2, name: "Privacy policy" }),
+    ).toBeTruthy();
+    expect(within(original).getByText("The operator, with the task's key too.")).toBeTruthy();
+    expect(document.querySelectorAll("a")).toHaveLength(0);
+    expect(read).toEqual(["ru", "ru"]);
+    await userEvent.click(screen.getByRole("button", { name: "Прочитать версию в силе" }));
+    expect(window.location.hash).toBe("#/legal/privacy-policy");
+  });
+
+  it("say so of a next version's page when the text has none, and of a text with only a next one", async () => {
+    window.location.hash = "#/legal/privacy-policy/next";
+    renderPages(legal("privacy-policy", "next"), () => [POLICY]);
+    expect(await screen.findByText("This text has no next version now")).toBeTruthy();
+    await userEvent.click(screen.getByRole("button", { name: "Read the version in force" }));
+    expect(window.location.hash).toBe("#/legal/privacy-policy");
+    document.body.innerHTML = "";
+    const terms = create(LegalTextSchema, {
+      id: "terms-of-use",
+      version: 1,
+      inForceSince: "2026-12-01",
+      body: "# Terms of Use\n\nText.\n",
+      summary: "The terms.",
+      summaryLanguage: "en",
+    });
+    const { show } = renderPages(legal("terms-of-use"), () => ({
+      texts: [POLICY],
+      nextTexts: [terms],
+    }));
+    expect(
+      await screen.findByText("This copy of the app has no version of this text in force"),
+    ).toBeTruthy();
+    expect(screen.getByText("Version 1 of this text applies from December 1, 2026")).toBeTruthy();
+    show(legal("terms-of-use", "next"));
+    expect(await screen.findByText("Version 1, applies from December 1, 2026")).toBeTruthy();
+    // No version is in force until then, and there is none to go back to.
+    expect(screen.queryByText(/is in force/)).toBeNull();
+    expect(screen.queryByRole("button", { name: "Read the version in force" })).toBeNull();
+  });
+
+  it("show who runs this copy: the section Who we are of the policy in force, and the way to all of it", async () => {
+    window.location.hash = "#/legal/operator";
+    const policy = create(LegalTextSchema, {
+      ...POLICY,
+      body: "# Privacy policy\n\nIntro.\n\n## Who we are\n\nALT EdTech LLC, by post.\n\n### Contacts\n\nBy email.\n\n## What we collect\n\nLittle.\n",
+    });
+    renderPages(legal("operator"), () => ({ texts: [policy], nextTexts: [NEXT_POLICY] }), "ru");
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Кто ведёт эту копию приложения" }),
+    ).toBeTruthy();
+    expect(
+      await screen.findByText(
+        "Из политики конфиденциальности, версия 2, в силе с 11 ноября 2026 г.",
+      ),
+    ).toBeTruthy();
+    expect(screen.getByText("Текст — на английском, и в силе английский текст")).toBeTruthy();
+    const section = screen.getByRole("region", { name: "Текст в силе, на английском" });
+    expect(section).toHaveAttribute("lang", "en");
+    expect(within(section).getByRole("heading", { level: 2, name: "Who we are" })).toBeTruthy();
+    expect(within(section).getByRole("heading", { level: 3, name: "Contacts" })).toBeTruthy();
+    expect(within(section).getByText("By email.")).toBeTruthy();
+    // Nothing of the rest of the policy, nor of its next version.
+    expect(screen.queryByText("Intro.")).toBeNull();
+    expect(screen.queryByText("Little.")).toBeNull();
+    expect(screen.queryByText("The operator, with the task's key too.")).toBeNull();
+    expect(document.querySelectorAll("a")).toHaveLength(0);
+    await userEvent.click(
+      screen.getByRole("button", { name: "Прочитать всю политику конфиденциальности" }),
+    );
+    expect(window.location.hash).toBe("#/legal/privacy-policy");
+  });
+
+  it("say so of a policy with no section Who we are, and of a copy with no policy in force", async () => {
+    const policy = create(LegalTextSchema, { ...POLICY, body: "# Privacy policy\n\nText.\n" });
+    renderPages(legal("operator"), () => [policy]);
+    expect(
+      await screen.findByText("This copy's privacy policy has no section on who runs it"),
+    ).toBeTruthy();
+    expect(
+      screen.getByText("From the Privacy Policy, version 2, in force since November 11, 2026"),
+    ).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Read the whole privacy policy" })).toBeTruthy();
+    // On an English screen there is no line that the text is in English.
+    expect(screen.queryByText(/The text is in English/)).toBeNull();
+    document.body.innerHTML = "";
+    renderPages(legal("operator"));
+    expect(
+      await screen.findByText("This copy of the app has no privacy policy in force"),
+    ).toBeTruthy();
+  });
+
+  it("say what came of a read that failed, on a next version's page and on who runs this copy", async () => {
+    for (const parts of [["privacy-policy", "next"], ["operator"]]) {
+      let down = true;
+      renderPages(legal(...parts), () => {
+        if (down) throw new ConnectError("down", Code.Unavailable);
+        return { texts: [POLICY], nextTexts: [NEXT_POLICY] };
+      });
+      expect(await screen.findByRole("alert")).toBeTruthy();
+      down = false;
+      await userEvent.click(screen.getByRole("button", { name: "Try again" }));
+      expect(await screen.findByText(/^(Version 3, applies|From the Privacy Policy)/)).toBeTruthy();
+      document.body.innerHTML = "";
+    }
+  });
+
   it("show Accessibility: the standard, the places R11 declares, how it is checked, and whom to write to", async () => {
     window.location.hash = "#/legal/accessibility";
     renderPages(legal("accessibility"));
@@ -200,8 +355,10 @@ describe("the legal pages", () => {
       ).toEqual(["Criteria", "Why", "What there is instead", "When this changes"]);
     }
     expect(document.querySelectorAll("a")).toHaveLength(0);
-    await userEvent.click(screen.getByRole("button", { name: "Open the privacy policy" }));
-    expect(window.location.hash).toBe("#/legal/privacy-policy");
+    await userEvent.click(
+      screen.getByRole("button", { name: "Who runs this copy and how to reach them" }),
+    );
+    expect(window.location.hash).toBe("#/legal/operator");
   });
 
   it("show the notices of the build, NOTICE and LICENSE, in English as they are", () => {

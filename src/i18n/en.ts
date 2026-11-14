@@ -127,10 +127,41 @@ export const en = {
   "legal.storage-consent": "Consent to keeping works on the server",
   "legal.accessibility": "Accessibility",
   "legal.notices": "Licenses and third-party notices",
+  /** The page of the section Who we are of the privacy policy in force, and its button (R46). */
+  "legal.operator": "Who runs this copy of the app",
   /** Below a legal text's heading: the number of its version and the day it came into force. */
   "legal.version": "Version {version}, in force since {date}",
   /** api gives no version of the text in force: none was approved, or this copy has none. */
   "legal.none": "This copy of the app has no version of this text in force",
+  /** On a text's page: its next version, which does not apply yet (R46). */
+  "legal.next-coming": "Version {version} of this text applies from {date}",
+  "legal.next-read": "Read version {version}",
+  /** The title of the page of a text's next version; {text} is the text's name. */
+  "legal.next-page": "{text}: the next version",
+  /** Below the heading of a next version: the number of its version and the day it applies from. */
+  "legal.next-version": "Version {version}, applies from {date}",
+  /** Below it: the version that is in force until that day. */
+  "legal.next-until": "Until then, version {version} is in force",
+  /** What a learner's adult can withdraw before a next version applies: in E3, the keeping of works. */
+  "legal.next-withdraw":
+    "Before it applies, you can withdraw a consent you gave in the app: keeping works on the server is switched off on a profile's page in the section for adults",
+  "legal.next-none": "This text has no next version now",
+  "legal.current-read": "Read the version in force",
+  /** In the title of a next version shown in place, after the text's own title. */
+  "legal.next-summary": "version {version}, applies from {date}",
+  /** After signing in, on the choice of the learner and in the section for adults. */
+  "legal.next-title": "New versions of the texts",
+  /** {text} is the text's name. */
+  "legal.next-line": "{text}: version {version} applies from {date}",
+  /** Its button, which names the text too: two texts may have next versions of one number. */
+  "legal.next-open": "Read {text}, version {version}",
+  "legal.next-storage":
+    "Keeping works on the server is on for a profile of this account. Before the new version applies, you can switch it off on the profile's page in the section for adults",
+  /** On the page Who runs this copy: which version of the policy the section is from. */
+  "legal.operator-from": "From the Privacy Policy, version {version}, in force since {date}",
+  "legal.operator-none": "This copy's privacy policy has no section on who runs it",
+  "legal.operator-no-policy": "This copy of the app has no privacy policy in force",
+  "legal.operator-policy": "Read the whole privacy policy",
   "legal.notices-intro":
     "The app is free software under the Apache License, Version 2.0. Its build includes software by others, each under its own license. Below are their notices and the text of the license, in English, as they come with the app",
   /** The heading above the file NOTICE, as it is; the name of the file stays. */
@@ -198,7 +229,8 @@ export const en = {
   "accessibility.contact": "If something is hard to use",
   "accessibility.contact-text":
     "Write to the operator of this copy of the app if something in it is hard to use, or if you need what this page says in another form. How to reach the operator is in the privacy policy. Please write no personal details of a child",
-  "accessibility.policy": "Open the privacy policy",
+  /** The button to the section Who we are of the privacy policy in force (R46). */
+  "accessibility.operator": "Who runs this copy and how to reach them",
   /** The heading of the screen that makes the owner's own profile as a learner. */
   "profile.title": "Your learner profile",
   /** The name a learner goes by: never a real one. */
@@ -725,6 +757,8 @@ export const en = {
     "Beside each reply of the tutor, the adult of the account can press Report a problem. The report goes to the operator of the app, who reviews it within 3 days",
   "tutor.problem-2":
     "The report keeps the tutor's words and what is written in it as they are, so write no names in it",
+  /** The button to the section Who we are of the privacy policy in force (R46). */
+  "tutor.operator": "Who runs the app",
   /** Beside each reply of the tutor, for the adult of the account (R123 spec). */
   "report.button": "Report a problem",
   /** The heading of the form of a report, below the words it is about. */

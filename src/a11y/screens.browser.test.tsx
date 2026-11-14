@@ -254,27 +254,45 @@ const JUDGED = verdictsOf(
   TASK,
 );
 
-/** The legal texts of the account, synthetic: the policy with a translation and a table. */
+/** The policy's next version, synthetic, which applies from a day still to come. */
+const NEXT_POLICY = create(LegalTextSchema, {
+  id: "privacy-policy",
+  version: 3,
+  inForceSince: "2026-11-27",
+  body: "# Privacy policy\n\n## Who we are\n\nThe operator, by post and by email.\n",
+  summary: "We keep little, and say more of it.",
+  summaryLanguage: "en",
+  translation: "# Политика конфиденциальности\n\nМы храним мало.\n",
+  translationLanguage: "ru",
+});
+
+/**
+ * The legal texts of the account, synthetic: the policy with a translation and a table, and its
+ * next version.
+ */
 const TEXTS: TextsRead = {
   status: "done",
-  value: [
-    create(LegalTextSchema, {
-      id: "privacy-policy",
-      version: 2,
-      body: "# Privacy Policy\n\n## What we keep\n\nLittle, and **not** for long.\n\n- one\n- two\n",
-      summary: "We keep little.",
-      summaryLanguage: "en",
-      translation: "# Политика конфиденциальности\n\nМы храним мало.\n",
-      translationLanguage: "ru",
-    }),
-    create(LegalTextSchema, {
-      id: "terms-of-use",
-      version: 1,
-      body: "# Terms of Use\n\n| Who | What |\n|---|---|\n| You | Learn |\n",
-      summary: "The terms.",
-      summaryLanguage: "en",
-    }),
-  ],
+  value: {
+    next: [NEXT_POLICY],
+    texts: [
+      create(LegalTextSchema, {
+        id: "privacy-policy",
+        version: 2,
+        body: "# Privacy Policy\n\n## What we keep\n\nLittle, and **not** for long.\n\n- one\n- two\n",
+        summary: "We keep little.",
+        summaryLanguage: "en",
+        translation: "# Политика конфиденциальности\n\nМы храним мало.\n",
+        translationLanguage: "ru",
+      }),
+      create(LegalTextSchema, {
+        id: "terms-of-use",
+        version: 1,
+        body: "# Terms of Use\n\n| Who | What |\n|---|---|\n| You | Learn |\n",
+        summary: "The terms.",
+        summaryLanguage: "en",
+      }),
+    ],
+  },
   retry: () => {},
 };
 
@@ -321,16 +339,20 @@ function devicePage() {
   );
 }
 
-/** An api that gives the privacy policy with its translation and a table, as version 2 does. */
+/**
+ * An api that gives the privacy policy with its translation and a table, as version 2 does, and its
+ * next version.
+ */
 const POLICY_API = {
   legal: {
     getLegalTexts: async () => ({
+      nextTexts: [NEXT_POLICY],
       texts: [
         create(LegalTextSchema, {
           id: "privacy-policy",
           version: 2,
           inForceSince: "2026-11-11",
-          body: "# Privacy policy\n\n## How long we keep it\n\n| What we keep | How long |\n|---|---|\n| Messages to the operator's email, and our replies | 1 year after the message came or after our last reply to it, whichever is later |\n",
+          body: "# Privacy policy\n\n## Who we are\n\nALT EdTech LLC, a company, which you can reach:\n\n- by post;\n- by email.\n\n## How long we keep it\n\n| What we keep | How long |\n|---|---|\n| Messages to the operator's email, and our replies | 1 year after the message came or after our last reply to it, whichever is later |\n",
           summary: "Мы храним только то, без чего NovaTrail не работает.",
           summaryLanguage: "ru",
           translation: "# Политика конфиденциальности\n\nМы храним мало данных.\n",
@@ -345,6 +367,7 @@ const POLICY_API = {
 const STORAGE_API = {
   legal: {
     getLegalTexts: async () => ({
+      nextTexts: [],
       texts: [
         create(LegalTextSchema, {
           id: "storage-consent",
@@ -586,8 +609,21 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
     submit,
   ],
   [
-    "choice of the learner on the first sign-in",
-    () => <ChooseScreen profiles={[OWNER]} first onChoose={() => {}} onSignOut={() => {}} />,
+    "choice of the learner on the first sign-in, with the next version of a text",
+    () => (
+      <ApiProvider value={POLICY_API}>
+        <ChooseScreen
+          profiles={[{ ...OWNER, workStorage: true }]}
+          first
+          onChoose={() => {}}
+          onSignOut={() => {}}
+          onLegal={() => {}}
+        />
+      </ApiProvider>
+    ),
+    async () => {
+      await vi.waitFor(() => expect(document.querySelectorAll("h2")).toHaveLength(1));
+    },
   ],
   [
     "sign-out",
@@ -955,6 +991,28 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
     },
   ],
   [
+    "the next version of the privacy policy as a page",
+    () => (
+      <ApiProvider value={POLICY_API}>
+        <LegalPages route={{ ...LEGAL, parts: ["privacy-policy", "next"] }} back={HOME} />
+      </ApiProvider>
+    ),
+    async () => {
+      await vi.waitFor(() => expect(document.querySelectorAll("section[lang]")).toHaveLength(2));
+    },
+  ],
+  [
+    "who runs this copy, from the privacy policy",
+    () => (
+      <ApiProvider value={POLICY_API}>
+        <LegalPages route={{ ...LEGAL, parts: ["operator"] }} back={HOME} />
+      </ApiProvider>
+    ),
+    async () => {
+      await vi.waitFor(() => expect(document.querySelector("section[lang] ul")).not.toBeNull());
+    },
+  ],
+  [
     "Accessibility",
     () => <LegalPages route={{ ...LEGAL, parts: ["accessibility"] }} back={HOME} />,
   ],
@@ -963,18 +1021,23 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
     () => <LegalPages route={{ ...LEGAL, parts: ["notices"] }} back={HOME} />,
   ],
   [
-    "the section for adults, below its bar",
+    "the section for adults, below its bar, with the next version of a text",
     () => (
-      <AdultSection
-        route={{ screen: "adults", parts: [] }}
-        device={memoryDevice().device}
-        profiles={[OWNER]}
-        onSaved={() => {}}
-        onFailed={() => {}}
-        onEraseAll={async () => "erased"}
-        onLegal={() => {}}
-      />
+      <ApiProvider value={POLICY_API}>
+        <AdultSection
+          route={{ screen: "adults", parts: [] }}
+          device={memoryDevice().device}
+          profiles={[OWNER]}
+          onSaved={() => {}}
+          onFailed={() => {}}
+          onEraseAll={async () => "erased"}
+          onLegal={() => {}}
+        />
+      </ApiProvider>
     ),
+    async () => {
+      await vi.waitFor(() => expect(document.querySelectorAll("h2")).toHaveLength(5));
+    },
   ],
   [
     "This device, with a profile that keeps work and one that cannot be read",
@@ -1133,7 +1196,10 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
       await vi.waitFor(() => expect(root.querySelector("button.practise")).not.toBeNull());
     },
   ],
-  ["the page on the AI tutor, below its bar", () => <TutorPages route={TUTOR} />],
+  [
+    "the page on the AI tutor, below its bar",
+    () => <TutorPages route={TUTOR} onOperator={() => {}} />,
+  ],
   [
     "the license of a module, below its bar",
     () => (

@@ -185,10 +185,11 @@ describe("Boot and the packages", () => {
     );
     expect(await screen.findByRole("heading", { name: "Who is learning?" })).toBeTruthy();
     await vi.waitFor(async () => expect(await cache?.get(digest, "manifest")).toBeUndefined());
-    expect(apiFetch.mock.calls.map(([input]) => String(input).split("/").at(-1))).toEqual([
-      "GetAccount",
-      "CheckPackages",
-    ]);
+    const methods = apiFetch.mock.calls.map(([input]) => new URL(String(input)).pathname);
+    // The choice of the learner reads the legal texts too, for their next versions (R46).
+    expect(
+      methods.map((path) => path.split("/").at(-1)).filter((method) => method !== "GetLegalTexts"),
+    ).toEqual(["GetAccount", "CheckPackages"]);
   });
 
   it("are there only below Boot", () => {

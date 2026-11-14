@@ -7,15 +7,14 @@
 // above the learner's screens, in place of either, while the account is open (R29); a profile it
 // changes, the other tabs hear of by BroadcastChannel, and a change they tell of comes here. The
 // legal pages show at any step, before signing in too, from the sign-in screen and from the
-// section's first page, and their bar goes back to where they were opened from (R31). So does the
-// license of a module's version, opened from a card of My subjects, in the language of the
-// learner's screens while a learner is chosen, and closed home (R32); and so does the page on the AI
-// tutor, opened from My subjects too (R33).
+// section's first page, and their bar goes back to where they were opened from (R31); the choice
+// of the learner and the section's first page tell of a text's next version and open its page
+// (R46). So does the license of a module's version, opened from a card of My subjects, in the
+// language of the learner's screens while a learner is chosen, and closed home (R32); and so does
+// the page on the AI tutor, opened from My subjects too (R33), which opens the page of who runs
+// this copy, whose bar comes back to it (R46).
 import type { Profile } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
-import type {
-  LegalText as LegalTextOf,
-  LegalTextRef,
-} from "@altnovatrail/contracts/novatrail/api/v1/legal_pb.js";
+import type { LegalTextRef } from "@altnovatrail/contracts/novatrail/api/v1/legal_pb.js";
 import {
   createContext,
   type FormEvent,
@@ -50,9 +49,18 @@ import { useDeployment, useStorage } from "../boot/Boot.tsx";
 import { Offline, StorageGone } from "../boot/Screens.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { LearnerLanguage } from "../i18n/LearnerLanguage.tsx";
-import { LegalPages } from "../legal/LegalPages.tsx";
-import { LegalText } from "../legal/LegalText.tsx";
-import { accountTexts, readTexts, refsOf } from "../legal/texts.ts";
+import { LegalPages, legalPage, OPERATOR } from "../legal/LegalPages.tsx";
+import { LegalText, NextLegalText } from "../legal/LegalText.tsx";
+import { NextVersions } from "../legal/NextVersions.tsx";
+import {
+  ACCOUNT_TEXTS,
+  accountTexts,
+  type Legal,
+  readLegal,
+  refsOf,
+  type Versions,
+  versionsOf,
+} from "../legal/texts.ts";
 import { LicensePages } from "../packages/LicensePage.tsx";
 import { usePackages } from "../packages/PackagesContext.tsx";
 import { useSignIn } from "../signin/SignInContext.tsx";
@@ -107,9 +115,9 @@ export function AccountGate({ children }: { readonly children: ReactNode }) {
   // Where the legal pages' bar goes back to: home, unless the section opened them. Memory alone,
   // as the profile the section chose: after a reload, home.
   const [legalBack, setLegalBack] = useState<Route>(HOME);
-  const openLegal = useCallback((back: Route) => {
+  const openLegal = useCallback((back: Route, page: Route = LEGAL) => {
     setLegalBack(back);
-    navigate(LEGAL);
+    navigate(page);
   }, []);
   // One channel for the tab, which tells the others of a profile api changed here and hears theirs.
   const channel = useRef<BroadcastChannel | undefined>(undefined);
@@ -162,13 +170,19 @@ export function AccountGate({ children }: { readonly children: ReactNode }) {
   // The screen they close to is My subjects while a learner is chosen, in their language.
   if (route.screen === MODULE_LICENSE.screen || route.screen === TUTOR.screen) {
     const pages =
-      route.screen === TUTOR.screen ? <TutorPages route={route} /> : <LicensePages route={route} />;
+      route.screen === TUTOR.screen ? (
+        <TutorPages route={route} onOperator={() => openLegal(TUTOR, legalPage(OPERATOR))} />
+      ) : (
+        <LicensePages route={route} />
+      );
     if (state.step !== "learning") return pages;
     return <LearnerLanguage field={state.learner.interfaceLanguage}>{pages}</LearnerLanguage>;
   }
-  // Back to the section only while its account is open: once it has gone, home.
+  // Back to the section only while its account is open: once it has gone, home. The page on the AI
+  // tutor shows at any step, and so is gone back to at any step.
   if (route.screen === LEGAL.screen) {
-    return <LegalPages route={route} back={open ? legalBack : HOME} />;
+    const back = open || legalBack.screen === TUTOR.screen ? legalBack : HOME;
+    return <LegalPages route={route} back={back} />;
   }
   if (open && route.screen === ADULTS.screen) {
     return (
@@ -186,7 +200,7 @@ export function AccountGate({ children }: { readonly children: ReactNode }) {
           navigate(HOME);
           return done;
         }}
-        onLegal={() => openLegal(ADULTS)}
+        onLegal={(page) => openLegal(ADULTS, page)}
       />
     );
   }
@@ -243,6 +257,7 @@ export function AccountGate({ children }: { readonly children: ReactNode }) {
           first={state.first}
           onChoose={() => session.choose()}
           onSignOut={() => setLeaving(true)}
+          onLegal={(page) => openLegal(HOME, page)}
         />
       );
     case "learning":
@@ -278,11 +293,17 @@ function described(...ids: (string | false)[]): string | undefined {
   return named.length === 0 ? undefined : named.join(" ");
 }
 
-/** The legal texts of the account, read in the language of the screen, and the screen with them. */
+/**
+ * The legal texts of the account, read in the language of the screen — the current versions and
+ * the next ones —, and the screen with them.
+ */
 function InviteStep({ session }: { readonly session: Session }) {
   const { language } = useLanguage();
   const read = useCallback(
-    async (api: Api) => accountTexts(await readTexts(api, language)),
+    async (api: Api): Promise<Legal> => {
+      const { texts, next } = await readLegal(api, language);
+      return { texts: accountTexts(texts), next: accountTexts(next) };
+    },
     [language],
   );
   const texts = useRequest(read);
@@ -295,13 +316,18 @@ function InviteStep({ session }: { readonly session: Session }) {
 }
 
 /** The legal texts as a read gives them: read, being read, or a failure with its retry. */
-export type TextsRead = RequestState<readonly LegalTextOf[]> & { readonly retry: () => void };
+export type TextsRead = RequestState<Legal> & { readonly retry: () => void };
+
+/** No text: before the first read, and after a failure. */
+const NO_TEXTS: Legal = { texts: [], next: [] };
 
 /**
  * The invite code, the owner's statement of being 18 or older (R118 in spec), and their acceptance
  * of the privacy policy and the terms of use in force, each open in place (R131 in spec; R27). While
  * none is in force there is nothing to accept; while the texts are not read, nothing is sent. The
- * acceptance holds for the versions it was given for: other versions shown take it back.
+ * acceptance holds for the versions it was given for: other versions shown take it back. A text's
+ * next version shows in place below it, with the day it applies from, and is accepted by no one:
+ * a consent names the current version (R46).
  */
 export function InviteScreen({
   texts,
@@ -319,10 +345,11 @@ export function InviteScreen({
   const adultField = useRef<HTMLInputElement>(null);
   const textsField = useRef<HTMLInputElement>(null);
   // While the texts are read anew, those read before stay, so that the checkbox keeps its place.
-  const before = useRef<readonly LegalTextOf[]>([]);
+  const before = useRef<Legal>(NO_TEXTS);
   if (texts.status === "done") before.current = texts.value;
-  const shown =
-    texts.status === "failed" ? [] : texts.status === "done" ? texts.value : before.current;
+  const legal =
+    texts.status === "failed" ? NO_TEXTS : texts.status === "done" ? texts.value : before.current;
+  const shown = legal.texts;
   const [code, setCode] = useState("");
   const [adult, setAdult] = useState(false);
   // The versions the owner ticked the checkbox for, as one key: other versions shown are unticked.
@@ -412,28 +439,35 @@ export function InviteScreen({
         {texts.status === "failed" ? (
           <ReadFailure failure={texts.failure} onRetry={texts.retry} />
         ) : null}
-        {shown.length === 0 ? null : (
+        {shown.length === 0 && legal.next.length === 0 ? null : (
           <div className="nt-field">
             <h2>{words.text("account.texts-title")}</h2>
-            {shown.map((text) => (
-              <LegalText key={text.id} text={text} level={3} />
+            {ACCOUNT_TEXTS.map((text) => (
+              <AccountText key={text} {...versionsOf(legal, text)} />
             ))}
-            <div className="nt-check">
-              <input
-                ref={textsField}
-                id={`${id}-texts`}
-                type="checkbox"
-                checked={accepted}
-                aria-invalid={textsError !== undefined}
-                aria-describedby={described(textsError !== undefined && `${id}-texts-error`)}
-                onChange={(event) => setAcceptedFor(event.target.checked ? versions : undefined)}
-              />
-              <label htmlFor={`${id}-texts`}>{words.text("account.texts")}</label>
-            </div>
-            {textsError === undefined ? null : (
-              <p id={`${id}-texts-error`} className="nt-error">
-                {textsError}
-              </p>
+            {/* A next version alone, before its day, is accepted by no one: no checkbox for it. */}
+            {shown.length === 0 ? null : (
+              <>
+                <div className="nt-check">
+                  <input
+                    ref={textsField}
+                    id={`${id}-texts`}
+                    type="checkbox"
+                    checked={accepted}
+                    aria-invalid={textsError !== undefined}
+                    aria-describedby={described(textsError !== undefined && `${id}-texts-error`)}
+                    onChange={(event) =>
+                      setAcceptedFor(event.target.checked ? versions : undefined)
+                    }
+                  />
+                  <label htmlFor={`${id}-texts`}>{words.text("account.texts")}</label>
+                </div>
+                {textsError === undefined ? null : (
+                  <p id={`${id}-texts-error`} className="nt-error">
+                    {textsError}
+                  </p>
+                )}
+              </>
             )}
           </div>
         )}
@@ -449,6 +483,16 @@ export function InviteScreen({
         <FormFailure failure={failure} />
       </form>
     </Screen>
+  );
+}
+
+/** A text of the account on the invite code's screen: its current version, then its next one. */
+function AccountText({ current, next }: Versions) {
+  return (
+    <>
+      {current === undefined ? null : <LegalText text={current} level={3} />}
+      {next === undefined ? null : <NextLegalText text={next} current={current} level={3} />}
+    </>
   );
 }
 
@@ -562,19 +606,23 @@ async function persist(): Promise<Kept> {
 
 /**
  * The choice of the learner: the owner's profile with no PIN while the account has no child
- * (section 3.6), and on the first sign-in the line that learners' work is kept here (section 3.2);
- * below, the way into the section for adults and the sign-out.
+ * (section 3.6), on the first sign-in the line that learners' work is kept here (section 3.2), and
+ * the next versions of the legal texts, which the adult sees here at each start (R46); below, the
+ * way into the section for adults and the sign-out.
  */
 export function ChooseScreen({
   profiles,
   first,
   onChoose,
   onSignOut,
+  onLegal,
 }: {
   readonly profiles: readonly Profile[];
   readonly first: boolean;
   readonly onChoose: (profile: Profile) => void;
   readonly onSignOut: () => void;
+  /** Opens a legal page, whose bar comes back here. */
+  readonly onLegal: (page: Route) => void;
 }) {
   const { words } = useLanguage();
   const [kept, setKept] = useState<Kept | undefined>(undefined);
@@ -604,6 +652,7 @@ export function ChooseScreen({
           <p role="status">{kept === undefined ? null : words.text(`persist.${kept}`)}</p>
         </section>
       ) : null}
+      <NextVersions storing={profiles.some((profile) => profile.workStorage)} onRead={onLegal} />
       <div className="nt-buttons">
         <button type="button" className="nt-secondary" onClick={() => navigate(ADULTS)}>
           {words.text("adults.title")}

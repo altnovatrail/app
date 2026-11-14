@@ -7,7 +7,8 @@
 // decides the verdict, what goes to the AI and what never does, and how a problem is reported. The
 // page is `#/tutor`, at any step, opened from My subjects below a bar that closes it home, in the
 // language of the learner's screens while a learner is chosen; nothing on it leads out of app
-// (privacy 7 in spec).
+// (privacy 7 in spec). Where it names the operator of the app, it leads to the page of who runs
+// this copy, the section Who we are of the privacy policy in force (R46).
 import { useEffect, useId } from "react";
 import { PageBar } from "../app/PageBar.tsx";
 import { HOME, type Route, redirect, TUTOR } from "../app/router.ts";
@@ -24,8 +25,8 @@ const SECTIONS = [
   ["tutor.problem", ["tutor.problem-1", "tutor.problem-2", "report.danger"]],
 ] as const;
 
-/** The page itself, below its bar. */
-export function TutorPage() {
+/** The page itself, below its bar; `onOperator` opens the page of who runs this copy. */
+export function TutorPage({ onOperator }: { readonly onOperator: () => void }) {
   const { words } = useLanguage();
   const id = useId();
   return (
@@ -36,6 +37,13 @@ export function TutorPage() {
           {paragraphs.map((paragraph) => (
             <p key={paragraph}>{words.text(paragraph)}</p>
           ))}
+          {heading === "tutor.problem" ? (
+            <div className="nt-buttons">
+              <button type="button" className="nt-secondary" onClick={onOperator}>
+                {words.text("tutor.operator")}
+              </button>
+            </div>
+          ) : null}
         </section>
       ))}
     </Screen>
@@ -43,7 +51,14 @@ export function TutorPage() {
 }
 
 /** `#/tutor` with its bar; a route with parts this build does not know goes to it in place. */
-export function TutorPages({ route }: { readonly route: Route }) {
+export function TutorPages({
+  route,
+  onOperator,
+}: {
+  readonly route: Route;
+  /** Opens the page of who runs this copy, whose bar comes back here. */
+  readonly onOperator: () => void;
+}) {
   const { words } = useLanguage();
   const known = route.parts.length === 0;
   useEffect(() => {
@@ -56,7 +71,7 @@ export function TutorPages({ route }: { readonly route: Route }) {
         title={words.text("tutor.bar")}
         close={{ text: words.text("tutor.close"), to: HOME }}
       />
-      <TutorPage />
+      <TutorPage onOperator={onOperator} />
     </>
   );
 }

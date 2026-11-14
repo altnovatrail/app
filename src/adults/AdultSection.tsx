@@ -13,7 +13,7 @@
 // profile's page. The license of a module's version, `#/adults/license/<digest>`,
 // is a page of the section by the digest in the hash, opened from the profile's modules (R32). The
 // legal pages are not the section's: they show before signing in too, and the first page leads to
-// them (R31).
+// them (R31), and to the page of a text's next version, of which it tells (R46).
 import type { Profile } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import { type ReactNode, useEffect, useId, useMemo, useState } from "react";
 import type { Failure } from "../api/failure.ts";
@@ -22,6 +22,7 @@ import { ADULTS, HOME, navigate, type Route, redirect } from "../app/router.ts";
 import { Screen } from "../app/Screen.tsx";
 import { LanguageButtons } from "../i18n/LanguageButtons.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
+import { NextVersions } from "../legal/NextVersions.tsx";
 import { digestOf, ModuleLicense } from "../packages/LicensePage.tsx";
 import type { Device } from "../storage/device.ts";
 import { DevicePage } from "./DevicePage.tsx";
@@ -49,8 +50,8 @@ function SectionBar({ first }: { readonly first: boolean }) {
 }
 
 /**
- * The first page: the account's profiles, the owner's first, This device, its language, and the
- * way to the legal pages.
+ * The first page: the account's profiles, the owner's first, This device, its language, the way to
+ * the legal pages, and the next versions of the texts, before the day they apply from (R46).
  */
 export function SectionHome({
   profiles,
@@ -59,7 +60,8 @@ export function SectionHome({
 }: {
   readonly profiles: readonly Profile[];
   readonly onProfile: (profile: Profile) => void;
-  readonly onLegal: () => void;
+  /** Opens the legal pages — their list, or the page given. */
+  readonly onLegal: (page?: Route) => void;
 }) {
   const { language, words } = useLanguage();
   const sorted = useMemo(() => inOrder(profiles, language), [profiles, language]);
@@ -90,10 +92,11 @@ export function SectionHome({
       <h2>{words.text("legal.title")}</h2>
       <p id={legalHint}>{words.text("legal.hint")}</p>
       <div className="nt-buttons">
-        <button type="button" aria-describedby={legalHint} onClick={onLegal}>
+        <button type="button" aria-describedby={legalHint} onClick={() => onLegal()}>
           {words.text("legal.open")}
         </button>
       </div>
+      <NextVersions storing={profiles.some((profile) => profile.workStorage)} onRead={onLegal} />
     </Screen>
   );
 }
@@ -117,8 +120,8 @@ export function AdultSection({
   readonly onFailed: (failure: Failure) => void;
   /** "Erase everything on this device", on the page This device: the sign-out, and more. */
   readonly onEraseAll: () => Promise<"erased" | "left" | "failed">;
-  /** Opens the legal pages, whose bar comes back here. */
-  readonly onLegal: () => void;
+  /** Opens the legal pages — their list, or the page given —, whose bar comes back here. */
+  readonly onLegal: (page?: Route) => void;
 }) {
   const { words } = useLanguage();
   const [chosen, setChosen] = useState<string | undefined>(undefined);

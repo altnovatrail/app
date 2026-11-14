@@ -3,7 +3,8 @@
 // contracts, "The storage of works" and "The versions of the texts"): off unless an adult switched
 // it on, as `Profile.work_storage` says. Switching it on is a consent: the text `storage-consent`
 // as `GetLegalTexts` gives it in the language of the section, in place, with what R127 in spec has
-// the switch say, and a checkbox ticked for the version shown; `SetWorkStorage` names that version,
+// the switch say, its next version below it with the day it applies from (R46), and a checkbox
+// ticked for the version shown; `SetWorkStorage` names that version — the current one —,
 // and a version no longer current reads the text again and asks again, as the invite code does
 // (R27). Switching it off goes at once, with no question. While api keeps no copy of a work — and
 // the contract has no request that would send one (Д12 api; В53 in RUN.md) — the section says that
@@ -12,7 +13,6 @@
 import type { Profile } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import { Action } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
 import { Cause } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
-import type { LegalText as Text } from "@altnovatrail/contracts/novatrail/api/v1/legal_pb.js";
 import {
   type FormEvent,
   type ReactNode,
@@ -28,13 +28,16 @@ import { ApiError, type Failure, parseFailure, refusedWith } from "../api/failur
 import { ReadFailure } from "../api/ReadFailure.tsx";
 import { failureText } from "../api/words.ts";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
-import { LegalText } from "../legal/LegalText.tsx";
-import { readTexts, storageText } from "../legal/texts.ts";
+import { LegalText, NextLegalText } from "../legal/LegalText.tsx";
+import { readLegal, STORAGE_TEXT, type Versions, versionsOf } from "../legal/texts.ts";
+
+/** No text: before the first read, and after a failure. */
+const NO_TEXT: Versions = { current: undefined, next: undefined };
 
 /**
  * The consent, in place of the button that switches the storage on: the text in force, read when
- * it opens, and the checkbox that holds for the version it was ticked for. While the text is read
- * again, the one read before stays, so that the checkbox keeps its place.
+ * it opens, its next version, and the checkbox that holds for the version it was ticked for. While
+ * the text is read again, the one read before stays, so that the checkbox keeps its place.
  */
 function Consent({
   profile,
@@ -53,14 +56,15 @@ function Consent({
   const heading = useRef<HTMLHeadingElement>(null);
   const field = useRef<HTMLInputElement>(null);
   const read = useCallback(
-    async (of: Api) => storageText(await readTexts(of, language)),
+    async (of: Api): Promise<Versions> => versionsOf(await readLegal(of, language), STORAGE_TEXT),
     [language],
   );
   const texts = useRequest(read);
-  const before = useRef<Text | undefined>(undefined);
+  const before = useRef<Versions>(NO_TEXT);
   if (texts.status === "done") before.current = texts.value;
-  const shown =
-    texts.status === "failed" ? undefined : texts.status === "done" ? texts.value : before.current;
+  const consent =
+    texts.status === "failed" ? NO_TEXT : texts.status === "done" ? texts.value : before.current;
+  const shown = consent.current;
   // The version the checkbox was ticked for: another version shown unticks it.
   const version = shown === undefined ? "" : `${shown.id} ${shown.version}`;
   const [agreedTo, setAgreedTo] = useState<string | undefined>(undefined);
@@ -119,6 +123,9 @@ function Consent({
         <ReadFailure failure={texts.failure} onRetry={texts.retry} />
       ) : null}
       {shown === undefined ? null : <LegalText text={shown} level={4} />}
+      {consent.next === undefined ? null : (
+        <NextLegalText text={consent.next} current={shown} level={4} />
+      )}
       <p id={`${id}-what`}>{words.text("storage.what")}</p>
       <div className="nt-field">
         <div className="nt-check">
