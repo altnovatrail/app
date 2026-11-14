@@ -370,6 +370,19 @@ describe("a module's map", () => {
     expect(window.location.hash).toBe("");
   });
 
+  it("says why there is nothing when the AI is closed, as a sentence of its own (T57)", async () => {
+    await renderMap(moduleMapRoute(SHARES), {
+      choice: () => ({ kind: ChoiceKind.NOTHING, outcome: { cause: Cause.QUOTA } }),
+    });
+    await practise(await drawn(), "Counting");
+    expect(
+      await screen.findByText(
+        /^There is nothing more to offer for now\. The tutor can't answer right now$/,
+        { selector: "[role=status]" },
+      ),
+    ).toBeVisible();
+  });
+
   it("says a choice is under way, and takes no other press of Practise meanwhile", async () => {
     let give: (choice: { kind: ChoiceKind }) => void = () => {};
     const { chosen } = await renderMap(moduleMapRoute(SHARES), {

@@ -4,5 +4,11 @@
     "lib": ["ES2022"],
     "types": ["node"]
   },
-  "include": ["vite.config.ts", "vitest.config.ts", "scripts/**/*.ts", "src/**/*.node.test.ts"]
+  "include": [
+    "vite.config.ts",
+    "vitest.config.ts",
+    "scripts/**/*.ts",
+    "walk/**/*.ts",
+    "src/**/*.node.test.ts"
+  ]
 }

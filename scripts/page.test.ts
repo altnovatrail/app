@@ -4,8 +4,9 @@
 // either layer of the CSP fails the test, and so does any request before /deployment.json. The
 // sign-in window goes under the header too, with what Google would answer stubbed, and a request to
 // a host section 3.7 does not name fails it. So do a module's license and its files from api (R32),
-// and the skill map's element (R34).
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+// and the skill map's element (R34). No file of the build names the route to api's development
+// token, which the local build's sign-in takes (R44).
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { GetManifestResponseSchema } from "@altnovatrail/contracts/novatrail/api/v1/package_pb.js";
@@ -14,6 +15,7 @@ import { create, toBinary } from "@bufbuild/protobuf";
 import { type Browser, chromium, type Page } from "playwright";
 import { type PreviewServer, preview } from "vite";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { LOCAL_TOKEN_PATH } from "../src/signin/token-path.ts";
 import { deploymentPart, partText } from "./archive.ts";
 import { deployment, layerIsFirst } from "./deployment-plugin.ts";
 import { standInForGoogle } from "./google-stub.ts";
@@ -106,6 +108,15 @@ describe("the built page", () => {
     expect(readFileSync("build/deployment.schema.json", "utf8")).toBe(
       partText(deploymentPart(), "schemas/deployment.schema.json"),
     );
+  });
+
+  it("holds nothing of the local build's sign-in by the development token (R44)", () => {
+    const files = readdirSync("build", { recursive: true, withFileTypes: true })
+      .filter((entry) => entry.isFile())
+      .map((entry) => join(entry.parentPath, entry.name));
+    expect(files.length).toBeGreaterThan(3);
+    const naming = files.filter((path) => readFileSync(path).includes(LOCAL_TOKEN_PATH));
+    expect(naming).toEqual([]);
   });
 
   it("starts under both layers of the CSP with the file, and asks for it before anything else", async () => {

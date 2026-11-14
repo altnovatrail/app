@@ -3,7 +3,8 @@
 // `initializeAuth` with indexedDBLocalPersistence alone and the popup resolver — never `getAuth`,
 // which looks for parameters and an emulator in the environment. The sign-in is Google's window,
 // in the language of the screen. Nothing of it asks the network before the sign-in window on a
-// computer: the script of gapi and the hidden iframe come with the window (section 4).
+// computer: the script of gapi and the hidden iframe come with the window (section 4). The local
+// build signs in by api's development token instead, when the development server has one (R44).
 import { initializeApp } from "@firebase/app";
 import {
   type Auth,
@@ -77,6 +78,12 @@ export function firebaseSignIn(signIn: Deployment["signIn"]): SignInService {
     },
     async signIn() {
       try {
+        // A release's build has import.meta.env.DEV false: the branch and its module drop out, and
+        // the window opens with nothing awaited before it.
+        if (import.meta.env.DEV) {
+          const { signInLocally } = await import("./local.ts");
+          if (await signInLocally(auth)) return { kind: "done" };
+        }
         await signInWithPopup(auth, new GoogleAuthProvider());
         return { kind: "done" };
       } catch (error) {

@@ -199,7 +199,10 @@ describe("the way to what the engine chose", () => {
     const { chosen } = await renderStep({ choose: () => answer });
     await userEvent.click(screen.getByRole("button", { name: "What's next" }));
     expect(await screen.findByText(/There is nothing more to offer for now/)).toBeVisible();
-    expect(screen.getByText(/Today's tutor time is used up/)).toBeVisible();
+    // Two sentences, not one run on (T57).
+    expect(
+      screen.getByText(/^There is nothing more to offer for now\. Today's tutor time is used up\./),
+    ).toBeVisible();
     // A kind this build does not know is nothing too, with no why.
     answer = { choiceId: "c7", kind: 99 as ChoiceKind };
     await userEvent.click(screen.getByRole("button", { name: "What's next" }));

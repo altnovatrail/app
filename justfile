@@ -102,6 +102,20 @@ site-check origin version: _install (_release-version version)
     {{ quote(just_executable()) }} -f spec/justfile release-verify app {{ quote(version) }} "$work/$name"
     node scripts/site.ts {{ quote(origin) }} "$work/$name"
 
+# The path of the first slice in a browser, without the author (R44 in docs/decisions.md; section
+# 3.7 of docs/architecture.md): walk/path.test.ts on the development server, against the api of
+# api's just dev-app at http://api:8080, signed in by its development token, in each engine named —
+# all three unless given, e.g. just walk webkit. Not in CI: it needs api's container. Its AI calls
+# go to api's stub and spend the quota of the day of dev-app's profile (R55 and R67 in api).
+walk *engines="chromium webkit firefox": _install
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [[ ! -s /home/vscode/.novatrail-token/custom-token ]]; then
+        echo "walk: no development token in /home/vscode/.novatrail-token: run just dev-app in api's container" >&2
+        exit 1
+    fi
+    NOVATRAIL_WALK_ENGINES={{ quote(engines) }} {{ bin }}/vitest run --config walk/vitest.config.ts
+
 # Write src/app/icons.ts again from the set of icons package-lock.json pins.
 icons: _install
     node scripts/icons.ts

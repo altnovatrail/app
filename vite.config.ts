@@ -3,6 +3,7 @@ import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 import { canvasCopy } from "./scripts/canvas-dev.ts";
 import { deployment } from "./scripts/deployment-plugin.ts";
+import { localToken } from "./scripts/local-token.ts";
 
 // One port for the development server and for `vite preview`, which neither moves off quietly:
 // the local deployment configuration names the origin (section 3.7).
@@ -10,15 +11,14 @@ const port = 5173;
 
 // The paths of api — its services and the files of packages' device parts — which a local run
 // sends to a local api: in deployment.local.json api is app's own origin, so that both layers of
-// the CSP let them through as 'self' (section 3.7). Where the local api is, NOVATRAIL_API says; how
-// app's container reaches it is T22's.
-const apiTarget = process.env.NOVATRAIL_API;
-const proxy = apiTarget
-  ? {
-      "^/novatrail\\.": { target: apiTarget, changeOrigin: true },
-      "^/packages/": { target: apiTarget, changeOrigin: true },
-    }
-  : undefined;
+// the CSP let them through as 'self' (section 3.7). The local api is api's devcontainer by its name
+// on the Docker network novatrail-api, which app's container joins too (R19; Д21 closed by R44), or
+// wherever NOVATRAIL_API says.
+const apiTarget = process.env.NOVATRAIL_API || "http://api:8080";
+const proxy = {
+  "^/novatrail\\.": { target: apiTarget, changeOrigin: true },
+  "^/packages/": { target: apiTarget, changeOrigin: true },
+};
 
 export default defineConfig(({ command, isPreview }) => {
   // A working copy of canvas, on the development server alone, by `just dev-canvas` (Д3 in RUN.md);
@@ -26,7 +26,8 @@ export default defineConfig(({ command, isPreview }) => {
   const folder = process.env.NOVATRAIL_CANVAS;
   const copy = command === "serve" && isPreview !== true && folder ? canvasCopy(folder) : undefined;
   return {
-    plugins: [react(), deployment()],
+    // The route to api's development token, on the development server alone (R44).
+    plugins: [react(), deployment(), localToken()],
     resolve: { alias: copy?.aliases ?? [] },
     // No fallback to index.html for a path that is not there, as on a hosting with no rules: the
     // screens live in the hash (R14), and a missing /deployment.json answers 404, not the page.
