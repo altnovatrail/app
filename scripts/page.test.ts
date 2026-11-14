@@ -188,7 +188,9 @@ describe.each(ENGINES.map((type) => [type.name(), type] as const))(
       // On a computer the SDK asks Google nothing before the window (section 4); where it takes the
       // browser for Safari, as in WebKit, it loads gapi and the hidden iframe at the start.
       if (early.size > 0) {
-        await expect.poll(() => google.includes("example-project.firebaseapp.com")).toBe(true);
+        await expect
+          .poll(() => google.some((host) => host === "example-project.firebaseapp.com"))
+          .toBe(true);
       }
       expect(
         google.every((host) => early.has(host)),
