@@ -18,6 +18,12 @@
     // alone, publishes no port, and listens on every interface.
     "runArgs": [
         "--network=novatrail-app",
+        // The container's name in its network, the repository's: a container that joins the
+        // network too — app's, on api's — reaches it by that name, as http://api:8080, whatever
+        // address a rebuild gives it. Docker gives it the first --network alone, so the
+        // repository's own network stays first; and one container of a repository runs at a
+        // time, since a second would take the same name.
+        "--network-alias=app",
         "--network=novatrail-api"
     ],
     "mounts": [
@@ -36,7 +42,12 @@
         // downloads every extension again, and an install cut short by a reload is never
         // finished: extensions are installed only when the container is created. With it the
         // next rebuild finds them in place and installs only what is missing.
-        "source=novatrail-vscode-extensions-${devcontainerId},target=/home/vscode/.vscode-server/extensions,type=volume"
+        "source=novatrail-vscode-extensions-${devcontainerId},target=/home/vscode/.vscode-server/extensions,type=volume",
+        // The custom token of api's development account, which api's just dev-app writes into
+        // this volume, shared with api's container, every half hour, and removes when it stops
+        // (R67 api). The development server hands it to the local build's sign-in (R43 in
+        // docs/decisions.md); here it is only read.
+        "source=novatrail-dev-token,target=/home/vscode/.novatrail-token,type=volume,readonly"
     ],
     "containerEnv": {
         // Tells an agent's session, Claude's or Codex's, that it runs in here, the one place
