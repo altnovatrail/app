@@ -94,7 +94,7 @@ A task starts with «Выполни задачу T01 из RUN.md» in a new sess
 | [x] | T64 | Переход на `spec` v0.18.3: таблицы плана в `run/` и план на английском | Claude | — | T63 |
 | [x] | T65 | CI на общих процессах `.github` v0.1.24 | Claude | — | T64 |
 | [x] | T66 | Слова отказа `CAUSE_KEY_CHECKS_EXHAUSTED` — Д28 | Claude | — | — |
-| [ ] | T67 | Скорость CI: строка 7.22 | Claude | — | — |
+| [x] | T67 | Скорость CI: строка 7.22 | Claude | — | — |
 | [x] | T68 | Скорость CI: WebKit и Firefox своей проверкой — строка 7.22 | Claude | — | T67 |
 | [x] | T69 | Скорость CI: переход на `spec` со стадией `toolchain-core` — строка 7.22 | Claude | — | T68 |
 
