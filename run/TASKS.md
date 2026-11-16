@@ -20,16 +20,3 @@ Open tasks outside the current epic, each as its body, in Russian (R154 spec, R1
   4. Если сейчас делать нечего — запиши задачу с её частью, что ждёт, и верни done без pull request.
 - **Как проверить:** проверки тронутых частей по правилам этого репозитория; CI pull request зелёный; время изменённых job до и после — в отчёте, по прогонам `main` и этого pull request; `/code-review high`, один круг.
 - **Разделы:** строка 7.22 COORDINATION.md spec; measurements 3.1 spec; R76 spec, R156 spec.
-
-#### T69. Скорость CI: переход на `spec` со стадией `toolchain-core` — строка 7.22
-
-- **Цель:** `app` — на теге `spec` строки 7.14: релиз строится в стадии `toolchain-core`, без браузеров и apt; apt контейнера — только из источников снимка; что проверки доказывают, не меняется.
-- **Почему:** строка 7.22 [COORDINATION.md](../spec/COORDINATION.md): «Work out the version» релиза `app` — 391 с, сборка всей стадии с браузерами и apt ради `release-version`, а `apt-get update --snapshot` тянет и живой архив, и снимок (measurements 3.1 spec). Стадию `toolchain-core` и apt шаблона по снимку даёт тег `spec` строки 7.14 (T166 spec), а релиз в ней — релиз `.github` строки 7.13.
-- **Ждёт:** тега `spec` строки 7.14 и релиза `.github` строки 7.13, где релиз и проверки без браузера идут в `toolchain-core`.
-- **Сделать:**
-  - переход на тег, как T63 (R49): подмодуль, `@altnovatrail/spec` и `@altnovatrail/contracts`, `parts/deployment-1.tar.gz`, `spec_tag` в `justfile`; `.devcontainer/` — по выводу `just new-repo-draft app typescript 3.1 <тег>` в клоне `spec` вне репозитория, со стадией `toolchain-core` и apt только по снимку, а различия `app` — те же (R19, R43);
-  - `uses:` — на SHA релиза `.github`, если T68 взяла не его;
-  - новая запись журнала о теге; поправки к R14 и R25; [docs/architecture.md](../docs/architecture.md), раздел 3.1; [.claude/rules/code.md](../.claude/rules/code.md);
-  - что тег решил за `app` сверх этого — строками [run/DEBT.md](DEBT.md) или задачами плана.
-- **Как проверить:** CI и пробный прогон Release pull request зелёные; время «Work out the version» и job тестов до и после — в отчёте; `/code-review high`, один круг.
-- **Разделы:** строка 7.22 COORDINATION.md spec; measurements 3.1 spec; T166 spec; R14, R25, R49; R76 spec, R156 spec.

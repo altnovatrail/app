@@ -34,6 +34,8 @@ A task that touches the code ends with these green, locally and in CI (rule 6 of
 - `codecov/patch` on the pull request: at least 90% of the changed lines covered (R48 spec);
 - then `/code-review high`, one round.
 
+Which stage of `.devcontainer/Dockerfile` a tool goes into: CI runs `ci-lint`, `ci-vuln` and `ci-licenses`, and the release `release-files`, in `toolchain-core` — Node, just, Go and buf —, and `ci-test` and `ci-engines` in `toolchain`, built over it with the browsers. A tool those four need goes into the core, one only the tests need into `toolchain` (R51).
+
 What moves together:
 - `playwright` in `package.json`, the tag and digest of `mcr.microsoft.com/playwright` in `.devcontainer/Dockerfile`, and `PLAYWRIGHT_HEADLESS_SHELL_REVISION`, `PLAYWRIGHT_WEBKIT_REVISION` and `PLAYWRIGHT_FIREFOX_REVISION` beside it, the revisions that version's `browsers.json` names (R14; R43). Until the container is rebuilt with a new revision, the browser tests run locally with that revision downloaded into a temporary folder named by `PLAYWRIGHT_BROWSERS_PATH`;
 - a new package or version in the lock file, and `NOTICE`, which `scripts/notice.ts` holds to it; a package the build ships needs a license compatible with Apache-2.0;

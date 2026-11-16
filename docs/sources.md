@@ -367,6 +367,14 @@ Read 2026-11-16 (architecture 3.1 and 3.10; R49):
 - The npm registry, `npm view`, 2026-11-16: `@altnovatrail/spec` and `@altnovatrail/contracts` 0.18.3 are the latest, and `@altnovatrail/contracts` 0.18.3 names `@bufbuild/protobuf` 2.17.0.
 - `release-verify-npm` of the lock file accepted the six packages of `@altnovatrail`; `release-verify` of the part — "deployment-1.tar.gz: spec v0.18.3, signed by spec's release.yml".
 
+### 9.7. The move to `spec` v0.18.4 and `.github` v0.1.31, 2026-11-16
+
+Read 2026-11-16 (architecture 3.1; R51):
+- `spec`, the tag v0.18.4, commit 5867a6c: `gh release list -R altnovatrail/spec` — v0.18.4 "Latest", 2026-11-16T07:08:28Z, after v0.18.3; `gh release verify v0.18.4 -R altnovatrail/spec` — "✓ Release v0.18.4 verified!". `git -C spec log v0.18.3..v0.18.4` — four commits, T166 `spec`; `git -C spec diff --stat v0.18.3 v0.18.4` — of `repo-template/` only `kinds/typescript.Dockerfile`, and no file of `contracts/`, `types/`, `format/`, `deployment/`, `legal/`, RULES.md or the card. The 2026-11-16 amendment to R31 spec: «the release builds the stage `toolchain-core` of `.devcontainer/Dockerfile` — Node, just, Go and buf —, from the Dockerfile and with no cache, as before»; the 2026-11-16 amendment to R40 spec: «`apt` reads the snapshot alone». The archive `deployment-1.tar.gz` of the release v0.18.4 unpacks to the same files as that of v0.18.3, with other times of its entries.
+- `.github`, the tag v0.1.31, commit 93c848fb51a10a245968cf730b99cc709a7748bf (`gh api repos/altnovatrail/.github/git/ref/tags/v0.1.31`): `gh release list -R altnovatrail/.github` — v0.1.31 "Latest", 2026-11-16T16:11:02Z, after v0.1.30. Its `typescript.yml`: «lint, vuln and licenses, which start no browser and run no test, run in the stage toolchain-core, Node, just, Go and buf, where the Dockerfile has one that holds less than toolchain, by an image of its own (R47)»; its `release.yml`, the step "Work out the version": `TOOLCHAIN_STAGE: toolchain-core`. `run/QUESTIONS.md` of `.github`, row В40: «a caller's move to a tag with T166 … then has to keep in the core what its release and those checks need … and put in `toolchain` only what its tests need, as nss_wrapper of `api` and the browsers of the kind `typescript` (`sources 13.8`)».
+- The npm registry, `npm view`, 2026-11-16: `@altnovatrail/spec` and `@altnovatrail/contracts` 0.18.4 are the latest, and `@altnovatrail/contracts` 0.18.4 names `@bufbuild/protobuf` 2.17.0.
+- `release-verify-npm` of the lock file accepted the six packages of `@altnovatrail`; `release-verify` of the part — "deployment-1.tar.gz: spec v0.18.4, signed by spec's release.yml".
+
 ## 10. MathTrail
 
 The texts of MathTrail on which the decisions of `app` relied.

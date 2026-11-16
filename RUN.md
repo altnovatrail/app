@@ -1,6 +1,6 @@
 # RUN.md — work plan of app
 
-What app does, does not do and has still to decide — [docs/architecture.md](docs/architecture.md); why — [docs/decisions.md](docs/decisions.md). The platform is in `spec/`, a submodule at tag v0.18.3: the component's card — architecture 3.1 spec; the order of repositories — repositories 6 spec; learners' data and law — privacy spec; the platform's decisions — spec's log. Small tasks, one at a time, each reviewed by the author; only the current epic is in detail (R19 spec). Other tables, each a file opening with its rules (R153 spec): 2, epics for later — [run/EPICS.md](run/EPICS.md); 3, questions to the author — [run/QUESTIONS.md](run/QUESTIONS.md); 4, debt — [run/DEBT.md](run/DEBT.md). Open tasks outside an epic — [run/TASKS.md](run/TASKS.md) (R155 spec). «Как пользоваться» in older texts is Rules, «Как устроен план: эпики» is Epics, and «таблица 2, 3, 4» names the file above (R50).
+What app does, does not do and has still to decide — [docs/architecture.md](docs/architecture.md); why — [docs/decisions.md](docs/decisions.md). The platform is in `spec/`, a submodule at tag v0.18.4: the component's card — architecture 3.1 spec; the order of repositories — repositories 6 spec; learners' data and law — privacy spec; the platform's decisions — spec's log. Small tasks, one at a time, each reviewed by the author; only the current epic is in detail (R19 spec). Other tables, each a file opening with its rules (R153 spec): 2, epics for later — [run/EPICS.md](run/EPICS.md); 3, questions to the author — [run/QUESTIONS.md](run/QUESTIONS.md); 4, debt — [run/DEBT.md](run/DEBT.md). Open tasks outside an epic — [run/TASKS.md](run/TASKS.md) (R155 spec). «Как пользоваться» in older texts is Rules, «Как устроен план: эпики» is Epics, and «таблица 2, 3, 4» names the file above (R50).
 
 Language (R154 spec): rules and tables in English, terse, for the session; the bodies of tasks in table 1 and in `run/TASKS.md` in Russian — the author writes and reviews them.
 
@@ -96,7 +96,7 @@ A task starts with «Выполни задачу T01 из RUN.md» in a new sess
 | [x] | T66 | Слова отказа `CAUSE_KEY_CHECKS_EXHAUSTED` — Д28 | Claude | — | — |
 | [ ] | T67 | Скорость CI: строка 7.22 | Claude | — | — |
 | [x] | T68 | Скорость CI: WebKit и Firefox своей проверкой — строка 7.22 | Claude | — | T67 |
-| [ ] | T69 | Скорость CI: переход на `spec` со стадией `toolchain-core` — строка 7.22 | Claude | — | T68 |
+| [x] | T69 | Скорость CI: переход на `spec` со стадией `toolchain-core` — строка 7.22 | Claude | — | T68 |
 
 «Зависит от» names only tasks of this plan. What a task waits for from other repositories is its body's «Ждёт»: it is taken once the neighbour has done that, and until then the queue goes on.
 
@@ -105,7 +105,6 @@ A code task ends with the checks of rule 6: the recipes `ci-lint`, `ci-test`, `c
 **Почему такой порядок.**
 - T47 и T48 ждут соседей: сочинения и тетрадь — их допуска в `api`. Их порядок — тот, в каком соседи их откроют.
 - T62 ждёт `canvas`: картинку работы для `PutWork` рисует канва, а её метода ещё нет (В66).
-- T69 ждёт соседей по строке 7.22 [COORDINATION.md](spec/COORDINATION.md): тега `spec` строки 7.14 и релиза `.github` с `toolchain-core`. Она меняет `.devcontainer/` и потому идёт последней.
 - T52 — итог эпика, когда сделано остальное.
 
 ## Epic E3. Первый срез со взрослыми учениками
