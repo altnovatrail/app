@@ -1,8 +1,9 @@
 # app's own recipes: the build of the app, and the five checks .github's typescript.yml runs in CI
-# with its input engines, one job each, in a new container of the toolchain stage of
-# .devcontainer/Dockerfile — as the runner's user, with HOME=/tmp and with CI from the step's
-# environment (R14 and R45 in docs/decisions.md; section 3.1 of docs/architecture.md). Of the five
-# only ci-licenses reads spec/:
+# with its input engines, one job each, in a new container of a stage of .devcontainer/Dockerfile:
+# ci-lint, ci-vuln and ci-licenses in toolchain-core, ci-test and ci-engines in toolchain, with the
+# browsers (R51 in docs/decisions.md). Each runs as the runner's user, with HOME=/tmp and with CI
+# from the step's environment (R14 and R45 in docs/decisions.md; section 3.1 of
+# docs/architecture.md). Of the five only ci-licenses reads spec/:
 # it runs spec's recipes licenses-check-repo and release-verify-npm, and the licenses job alone gets
 # the submodule; site-check, by hand and not in CI, runs spec's release-verify too. The documents
 # are checked by spec's own recipe, just -f spec/justfile docs-check-repo.
@@ -15,7 +16,7 @@ bin := "node_modules/.bin"
 
 # The tag of the spec submodule, whose release the file in parts/ comes from: it moves with the
 # submodule, by the task that moves to a new tag.
-spec_tag := "v0.18.3"
+spec_tag := "v0.18.4"
 
 # Run the five checks CI runs, before a pull request.
 ci: ci-lint ci-test ci-engines ci-vuln ci-licenses
@@ -65,11 +66,12 @@ ci-licenses: _install
 build: _install
     {{ bin }}/vite build
 
-# The files of a release, for .github's release.yml, which runs this in the toolchain stage on the
-# tree of the commit alone — no git, no spec submodule, no token — with the version as v0.1.0: the
-# archive of the build, app_<version>.tar.gz, the one file of dist/, with NOTICE and LICENSE at its
-# root, checked before it is written (R25 in docs/decisions.md; section 3.1 of
-# docs/architecture.md). The build reads spec's part from parts/, which git holds.
+# The files of a release, for .github's release.yml, which runs this in the stage toolchain-core,
+# without the browsers, on the tree of the commit alone — no git, no spec submodule, no token —
+# with the version as v0.1.0: the archive of the build, app_<version>.tar.gz, the one file of
+# dist/, with NOTICE and LICENSE at its root, checked before it is written (R25 and R51 in
+# docs/decisions.md; section 3.1 of docs/architecture.md). The build reads spec's part from
+# parts/, which git holds.
 release-files version: (_release-version version) build
     rm -rf dist
     node scripts/release.ts {{ quote(version) }}

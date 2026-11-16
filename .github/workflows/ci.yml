@@ -18,28 +18,30 @@ concurrency:
 jobs:
   secrets:
     name: Secrets
-    uses: altnovatrail/.github/.github/workflows/secrets.yml@8311cbfc01082e9b196c0af8d7b49192115cc84c # v0.1.30
+    uses: altnovatrail/.github/.github/workflows/secrets.yml@93c848fb51a10a245968cf730b99cc709a7748bf # v0.1.31
 
   # A pull request's commits are what it checks; a push to main has been checked as one.
   dco:
     name: DCO
     if: github.event_name == 'pull_request'
-    uses: altnovatrail/.github/.github/workflows/dco.yml@8311cbfc01082e9b196c0af8d7b49192115cc84c # v0.1.30
+    uses: altnovatrail/.github/.github/workflows/dco.yml@93c848fb51a10a245968cf730b99cc709a7748bf # v0.1.31
 
   documents:
     name: Documents
-    uses: altnovatrail/.github/.github/workflows/documents.yml@8311cbfc01082e9b196c0af8d7b49192115cc84c # v0.1.30
+    uses: altnovatrail/.github/.github/workflows/documents.yml@93c848fb51a10a245968cf730b99cc709a7748bf # v0.1.31
 
-  # The app's TypeScript code, by its own ci- recipes in its toolchain stage, and the coverage of
-  # its tests, which the shared workflow sends to Codecov (R19 .github). id-token: write is for its
-  # coverage job alone, which asks for an OIDC token: a called workflow can only lower what this job
-  # gives it. With engines, the tests in WebKit and Firefox are the check "TypeScript / engines", by
-  # the recipe ci-engines, beside "TypeScript / test" in Node and Chromium (R45).
+  # The app's TypeScript code, by its own ci- recipes, and the coverage of its tests, which the
+  # shared workflow sends to Codecov (R19 .github). lint, vuln and licenses run in the stage
+  # toolchain-core, test and engines in toolchain, with the browsers (R47 .github; R51).
+  # id-token: write is for its coverage job alone, which asks for an OIDC token: a called workflow
+  # can only lower what this job gives it. With engines, the tests in WebKit and Firefox are the
+  # check "TypeScript / engines", by the recipe ci-engines, beside "TypeScript / test" in Node and
+  # Chromium (R45).
   typescript:
     name: TypeScript
     permissions:
       contents: read
       id-token: write
-    uses: altnovatrail/.github/.github/workflows/typescript.yml@8311cbfc01082e9b196c0af8d7b49192115cc84c # v0.1.30
+    uses: altnovatrail/.github/.github/workflows/typescript.yml@93c848fb51a10a245968cf730b99cc709a7748bf # v0.1.31
     with:
       engines: true
