@@ -96,7 +96,7 @@ A task starts with «Выполни задачу T01 из RUN.md» in a new sess
 | [x] | T66 | Слова отказа `CAUSE_KEY_CHECKS_EXHAUSTED` — Д28 | Claude | — | — |
 | [ ] | T67 | Скорость CI: строка 7.22 | Claude | — | — |
 | [x] | T68 | Скорость CI: WebKit и Firefox своей проверкой — строка 7.22 | Claude | — | T67 |
-| [ ] | T69 | Скорость CI: переход на `spec` со стадией `toolchain-core` — строка 7.22 | Claude | — | T68 |
+| [x] | T69 | Скорость CI: переход на `spec` со стадией `toolchain-core` — строка 7.22 | Claude | — | T68 |
 
 «Зависит от» names only tasks of this plan. What a task waits for from other repositories is its body's «Ждёт»: it is taken once the neighbour has done that, and until then the queue goes on.
 
@@ -105,7 +105,6 @@ A code task ends with the checks of rule 6: the recipes `ci-lint`, `ci-test`, `c
 **Почему такой порядок.**
 - T47 и T48 ждут соседей: сочинения и тетрадь — их допуска в `api`. Их порядок — тот, в каком соседи их откроют.
 - T62 ждёт `canvas`: картинку работы для `PutWork` рисует канва, а её метода ещё нет (В66).
-- T69 ждёт соседей по строке 7.22 [COORDINATION.md](spec/COORDINATION.md): тега `spec` строки 7.14 и релиза `.github` с `toolchain-core`. Она меняет `.devcontainer/` и потому идёт последней.
 - T52 — итог эпика, когда сделано остальное.
 
 ## Epic E3. Первый срез со взрослыми учениками

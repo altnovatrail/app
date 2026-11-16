@@ -43,7 +43,7 @@ A release holds the archive of the build, `app_<version>.tar.gz`, signed with co
 
 ## Contributing
 
-Report a bug or propose a change in an [issue](https://github.com/altnovatrail/app/issues), in English or Russian, and open one before a pull request unless the pull request fixes a typo or a broken link. How a change comes in, with every commit signed off, and what every change keeps to are in the organization's [CONTRIBUTING.md](https://github.com/altnovatrail/.github/blob/main/CONTRIBUTING.md); the rules every NovaTrail repository shares are in spec's [RULES.md](https://github.com/altnovatrail/spec/blob/v0.18.3/RULES.md): code comes with its tests, and no learner's data, not even in examples. Report a vulnerability privately, as the [security policy](https://github.com/altnovatrail/app/security/policy) says, never in a public issue.
+Report a bug or propose a change in an [issue](https://github.com/altnovatrail/app/issues), in English or Russian, and open one before a pull request unless the pull request fixes a typo or a broken link. How a change comes in, with every commit signed off, and what every change keeps to are in the organization's [CONTRIBUTING.md](https://github.com/altnovatrail/.github/blob/main/CONTRIBUTING.md); the rules every NovaTrail repository shares are in spec's [RULES.md](https://github.com/altnovatrail/spec/blob/v0.18.4/RULES.md): code comes with its tests, and no learner's data, not even in examples. Report a vulnerability privately, as the [security policy](https://github.com/altnovatrail/app/security/policy) says, never in a public issue.
 
 Work in the devcontainer: open the repository in VS Code and choose "Reopen in Container". It holds every tool at the version the repository pins, and the packages are those `package-lock.json` pins. The checks are recipes of the [justfile](justfile), and `just --list` names each with its arguments:
 
@@ -65,7 +65,7 @@ The documents and the work plan are in English; the bodies of the plan's tasks a
 - [RUN.md](RUN.md) — the work plan, in epics.
 - `run/` — the plan's other tables: [the epics for later](run/EPICS.md), [the open questions](run/QUESTIONS.md), [the technical debt](run/DEBT.md) and [the tasks outside an epic](run/TASKS.md).
 
-The working rules, for people and coding agents alike, are in [CLAUDE.md](CLAUDE.md) and [AGENTS.md](AGENTS.md). The platform's shared vocabulary, formats, contracts and decisions are in [spec](https://github.com/altnovatrail/spec/tree/v0.18.4), checked out here as a git submodule at `v0.18.3`: clone this repository with `git clone --recurse-submodules`.
+The working rules, for people and coding agents alike, are in [CLAUDE.md](CLAUDE.md) and [AGENTS.md](AGENTS.md). The platform's shared vocabulary, formats, contracts and decisions are in [spec](https://github.com/altnovatrail/spec/tree/v0.18.4), checked out here as a git submodule at `v0.18.4`: clone this repository with `git clone --recurse-submodules`.
 
 ## License
 
