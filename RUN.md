@@ -95,17 +95,17 @@ A task starts with «Выполни задачу T01 из RUN.md» in a new sess
 | [x] | T65 | CI на общих процессах `.github` v0.1.24 | Claude | — | T64 |
 | [x] | T66 | Слова отказа `CAUSE_KEY_CHECKS_EXHAUSTED` — Д28 | Claude | — | — |
 | [ ] | T67 | Скорость CI: строка 7.22 | Claude | — | — |
-| [ ] | T68 | Скорость CI: WebKit и Firefox своей проверкой — строка 7.22 | Claude | — | T67 |
+| [x] | T68 | Скорость CI: WebKit и Firefox своей проверкой — строка 7.22 | Claude | — | T67 |
 | [ ] | T69 | Скорость CI: переход на `spec` со стадией `toolchain-core` — строка 7.22 | Claude | — | T68 |
 
 «Зависит от» names only tasks of this plan. What a task waits for from other repositories is its body's «Ждёт»: it is taken once the neighbour has done that, and until then the queue goes on.
 
-A code task ends with the checks of rule 6: the recipes `ci-lint`, `ci-test`, `ci-vuln`, `ci-licenses` and `build` green locally and in CI; `codecov/patch` at least 90 % of the changed lines; `just -f spec/justfile docs-check-repo` green; then `/code-review high`, one round. A task's «Как проверить» names only what goes beyond them.
+A code task ends with the checks of rule 6: the recipes `ci-lint`, `ci-test`, `ci-engines`, `ci-vuln`, `ci-licenses` and `build` green locally and in CI; `codecov/patch` at least 90 % of the changed lines; `just -f spec/justfile docs-check-repo` green; then `/code-review high`, one round. A task's «Как проверить» names only what goes beyond them.
 
 **Почему такой порядок.**
 - T47 и T48 ждут соседей: сочинения и тетрадь — их допуска в `api`. Их порядок — тот, в каком соседи их откроют.
 - T62 ждёт `canvas`: картинку работы для `PutWork` рисует канва, а её метода ещё нет (В66).
-- T68 и T69 ждут соседей по строке 7.22 [COORDINATION.md](spec/COORDINATION.md): T68 — релиза `.github` строки 7.13, T69 — тега `spec` строки 7.14 и релиза `.github` с `toolchain-core`. T69 меняет `.devcontainer/` и потому идёт последней.
+- T69 ждёт соседей по строке 7.22 [COORDINATION.md](spec/COORDINATION.md): тега `spec` строки 7.14 и релиза `.github` с `toolchain-core`. Она меняет `.devcontainer/` и потому идёт последней.
 - T52 — итог эпика, когда сделано остальное.
 
 ## Epic E3. Первый срез со взрослыми учениками

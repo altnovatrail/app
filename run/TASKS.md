@@ -21,19 +21,6 @@ Open tasks outside the current epic, each as its body, in Russian (R154 spec, R1
 - **Как проверить:** проверки тронутых частей по правилам этого репозитория; CI pull request зелёный; время изменённых job до и после — в отчёте, по прогонам `main` и этого pull request; `/code-review high`, один круг.
 - **Разделы:** строка 7.22 COORDINATION.md spec; measurements 3.1 spec; R76 spec, R156 spec.
 
-#### T68. Скорость CI: WebKit и Firefox своей проверкой — строка 7.22
-
-- **Цель:** тесты экранов в WebKit и Firefox — своей проверкой CI, рядом с проверкой Chromium, а не после неё в одном job; покрытие — по-прежнему Node и Chromium; что проверки доказывают, не меняется.
-- **Почему:** строка 7.22 [COORDINATION.md](../spec/COORDINATION.md): job TypeScript / test — самый долгий в CI `app`, 278 с, из них Chromium с покрытием 88 с и WebKit с Firefox 120 с, один за другим (measurements 3.1 spec). Вход для этого даёт `typescript.yml` релиза `.github` строки 7.13; T67 сделала то, что его не ждёт.
-- **Ждёт:** релиза `.github` строки 7.13 со входом `typescript.yml` для WebKit и Firefox своей проверкой.
-- **Сделать:**
-  - каждый `uses:` `.github/workflows/` — на SHA этого релиза с комментарием версии; что ещё изменили входы и права общих процессов с v0.1.24 — `gh api repos/altnovatrail/.github/compare/v0.1.24...<релиз>` — взять в вызовы;
-  - `ci-test` и рецепт движков в `justfile` — так, как вход релиза их зовёт: Chromium с покрытием, сборка и архив релиза дважды — в одном, WebKit и Firefox без покрытия — в другом;
-  - поправки к R45 и к R14; [docs/architecture.md](../docs/architecture.md), раздел 3.1; [.claude/rules/code.md](../.claude/rules/code.md).
-- **Не делать:** `.devcontainer/` не трогать — его меняет T69.
-- **Как проверить:** CI pull request зелёный, обе проверки тестов — в нём; время job тестов до и после — в отчёте, по прогонам `main` и pull request; `/code-review high`, один круг.
-- **Разделы:** строка 7.22 COORDINATION.md spec; measurements 3.1 spec; R14, R45; R76 spec, R156 spec.
-
 #### T69. Скорость CI: переход на `spec` со стадией `toolchain-core` — строка 7.22
 
 - **Цель:** `app` — на теге `spec` строки 7.14: релиз строится в стадии `toolchain-core`, без браузеров и apt; apt контейнера — только из источников снимка; что проверки доказывают, не меняется.
