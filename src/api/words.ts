@@ -5,7 +5,8 @@
 // are words them itself (T22, T26, T27, T32). The quota says when the tutor comes back by the
 // device's clock: today, tomorrow, or on the date of a family day that begins later (R37), and so
 // does any other line of when the next family day begins, by phrases of its own. The limit of the
-// own key reached says which limit, when the provider named it, and when access comes back (R47).
+// own key reached says which limit, when the provider named it, and when access comes back, and
+// the checks of an own key exhausted say when the next check opens, by phrases of their own (R47).
 // No DOM.
 import { Cause, LimitCause } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import { timestampDate } from "@bufbuild/protobuf/wkt";
@@ -44,6 +45,8 @@ export const CAUSE_KEYS = {
   [Cause.AGE_NEEDED]: "api.age-needed",
   [Cause.TEXT_NOT_CURRENT]: "api.text-not-current",
   [Cause.LEARNER_DECIDES]: "api.learner-decides",
+  // The checks of an own key beyond the account's (R47): with when the next one opens, below.
+  [Cause.KEY_CHECKS_EXHAUSTED]: "api.key-checks",
 } as const;
 
 /** How many days of the device's calendar lie from one moment to another: 0 on the same date. */
@@ -58,8 +61,9 @@ type KeyWith<P extends string> = {
 }[Key];
 
 /**
- * The three phrases of a line that says when the next family day begins, each a whole phrase of
- * the dictionary, not glued from pieces (R37): today at its time, tomorrow at it, or on its date.
+ * The three phrases of a line that says when a moment comes — the next family day, or the next
+ * check of an own key —, each a whole phrase of the dictionary, not glued from pieces (R37): today
+ * at its time, tomorrow at it, or on its date.
  */
 export interface DayPhrases {
   readonly today: KeyWith<"time">;
@@ -74,25 +78,30 @@ const QUOTA_PHRASES = {
   later: "api.quota",
 } as const satisfies DayPhrases;
 
+/** The checks of an own key exhausted, and when the next one opens (R47). */
+const KEY_CHECK_PHRASES = {
+  today: "api.key-checks-today",
+  tomorrow: "api.key-checks-tomorrow",
+  later: "api.key-checks-later",
+} as const satisfies DayPhrases;
+
 /**
- * A line of when the next family day begins on the device's clock: today — a time of today the
- * clock has passed, too, when it runs ahead of api's —, tomorrow, or on its date, when a change of
- * the clock's offset made the family day longer than the device's (R56 api), and when a clock far
- * off puts it on a day before today.
+ * A line of when a moment of api comes, on the device's clock: today — a time of today the clock
+ * has passed, too, when it runs ahead of api's —, tomorrow, or on its date: later, as when a change
+ * of the clock's offset made the family day longer than the device's (R56 api), and when a clock
+ * far off puts it on a day before today.
  */
 export function dayText(
   phrases: DayPhrases,
-  nextFamilyDay: Date,
+  at: Date,
   words: Words,
   now: Date = new Date(),
 ): string {
-  const time = dateTimeFormat(words.language, { timeStyle: "short" }).format(nextFamilyDay);
-  const days = calendarDays(now, nextFamilyDay);
+  const time = dateTimeFormat(words.language, { timeStyle: "short" }).format(at);
+  const days = calendarDays(now, at);
   if (days === 0) return words.text(phrases.today, { time });
   if (days === 1) return words.text(phrases.tomorrow, { time });
-  const date = dateTimeFormat(words.language, { day: "numeric", month: "long" }).format(
-    nextFamilyDay,
-  );
+  const date = dateTimeFormat(words.language, { day: "numeric", month: "long" }).format(at);
   return words.text(phrases.later, { date, time });
 }
 
@@ -136,8 +145,13 @@ export function outcomeText(outcome: ReadOutcome, words: Words, now: Date = new 
 export function failureText(failure: Failure, words: Words, now: Date = new Date()): string {
   switch (failure.kind) {
     case "refused": {
-      const day =
-        failure.data.case === "nextFamilyDay" ? timestampDate(failure.data.value) : undefined;
+      const { data } = failure;
+      // The moment comes beside this cause alone, so a refusal that carries it is this one, even
+      // when the cause says less (contract; R47).
+      if (data.case === "nextKeyCheck") {
+        return dayText(KEY_CHECK_PHRASES, timestampDate(data.value), words, now);
+      }
+      const day = data.case === "nextFamilyDay" ? timestampDate(data.value) : undefined;
       return causeText(failure.cause, day, words, now);
     }
     case "offline":

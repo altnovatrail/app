@@ -225,4 +225,45 @@ describe("the words of what a call came to", () => {
     );
     expect(typeof failureText(quota, WORDS.ru)).toBe("string");
   });
+
+  it("words the checks of an own key exhausted with when the next one opens, or without it", () => {
+    const exhausted = (next?: Date): Failure => ({
+      kind: "refused",
+      cause: Cause.KEY_CHECKS_EXHAUSTED,
+      data:
+        next === undefined
+          ? { case: undefined }
+          : { case: "nextKeyCheck", value: timestampFromDate(next) },
+      code: Code.ResourceExhausted,
+    });
+    const evening = new Date(2026, 10, 12, 18, 0);
+    const later = new Date(2026, 10, 12, 18, 45);
+    const midnight = new Date(2026, 10, 13, 0, 0);
+    const after = new Date(2026, 10, 15, 9, 30);
+    const time = (language: "en" | "ru", at: Date) =>
+      dateTimeFormat(language, { timeStyle: "short" }).format(at);
+    expect(failureText(exhausted(later), WORDS.en, evening)).toBe(
+      `You've checked keys too many times. You can check again today at ${time("en", later)}`,
+    );
+    expect(failureText(exhausted(midnight), WORDS.ru, evening)).toBe(
+      `Ключи проверялись слишком много раз. Проверить снова можно завтра в ${time("ru", midnight)}`,
+    );
+    expect(failureText(exhausted(after), WORDS.en, evening)).toBe(
+      `You've checked keys too many times. You can check again on November 15 at ${time("en", after)}`,
+    );
+    expect(failureText(exhausted(after), WORDS.ru, evening)).toBe(
+      `Ключи проверялись слишком много раз. Проверить снова можно 15 ноября в ${time("ru", after)}`,
+    );
+    expect(failureText(exhausted(), WORDS.en)).toBe(
+      "You've checked keys too many times. Try again later",
+    );
+    expect(failureText(exhausted(), WORDS.ru)).toBe(
+      "Ключи проверялись слишком много раз. Попробуйте позже",
+    );
+    // The moment beside a cause that says less is still this refusal.
+    const unnamed: Failure = { ...exhausted(later), cause: Cause.UNSPECIFIED } as Failure;
+    expect(failureText(unnamed, WORDS.en, evening)).toBe(
+      `You've checked keys too many times. You can check again today at ${time("en", later)}`,
+    );
+  });
 });
