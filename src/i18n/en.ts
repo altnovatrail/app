@@ -57,6 +57,16 @@ export const en = {
   "api.limit-payment": "The AI provider couldn't take the payment for your key",
   /** After one of the four above, when the provider named the moment access comes back. */
   "api.access-returns": "Access comes back on {date} at {time}",
+  /** The owner checked own keys as many times as api lets an account in its window (R47). */
+  "api.key-checks": "You've checked keys too many times. Try again later",
+  /** The same, when the next check opens on {date} at {time}, later than tomorrow. */
+  "api.key-checks-later":
+    "You've checked keys too many times. You can check again on {date} at {time}",
+  /** The same, when the next check opens today on the device's clock, at {time}. */
+  "api.key-checks-today": "You've checked keys too many times. You can check again today at {time}",
+  /** The same, when the next check opens tomorrow on the device's clock, at {time}. */
+  "api.key-checks-tomorrow":
+    "You've checked keys too many times. You can check again tomorrow at {time}",
   "api.no-consent": "A grown-up's consent is needed first",
   /** The version of the module was withdrawn, or the learner has no current version of it. */
   "api.version-gone": "This version of the module is no longer given",

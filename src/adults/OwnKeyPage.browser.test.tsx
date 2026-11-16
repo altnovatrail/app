@@ -3,8 +3,8 @@
 // IndexedDB: the words before the field, the providers api gives and none, the five answers of the
 // check and one this build does not know, a key not accepted that leaves the former one, the key
 // shown by its last four alone, the mark that keeps it on the device and the key in none of the
-// browser's storages without it, its replacement and removal, a refusal beside it, and the owner
-// profile opened from the page.
+// browser's storages without it, its replacement and removal, a refusal beside it, the account's
+// checks exhausted with when the next one opens, and the owner profile opened from the page.
 import {
   AccountService,
   type CheckOwnKeyRequest,
@@ -13,14 +13,16 @@ import {
   type Profile,
   ProfileSchema,
 } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
-import { Cause } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
+import { Cause, RefusalSchema } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import { create, type MessageInitShape } from "@bufbuild/protobuf";
+import { timestampFromDate } from "@bufbuild/protobuf/wkt";
 import { Code, ConnectError, type ConnectRouter, createRouterTransport } from "@connectrpc/connect";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 import { ApiProvider } from "../api/ApiContext.tsx";
 import { createApi } from "../api/client.ts";
+import { dateTimeFormat } from "../i18n/intl.ts";
 import { KeyHolder } from "../ownkey/holder.ts";
 import { KeyHolderProvider } from "../ownkey/OwnKeyContext.tsx";
 import { browserDevice } from "../storage/browser.ts";
@@ -268,6 +270,33 @@ describe("the page Own AI key", () => {
     await enter(KEY);
     expect(await screen.findByRole("alert")).toHaveTextContent("No connection");
     expect(keyField()).toHaveValue(KEY);
+  });
+
+  it("says when the next check opens once the account's checks are exhausted", async () => {
+    // Noon three days on by the device's calendar: on its date, at whatever moment the page reads.
+    const today = new Date();
+    const next = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 3, 12, 0);
+    const time = dateTimeFormat("en", { timeStyle: "short" }).format(next);
+    const date = dateTimeFormat("en", { day: "numeric", month: "long" }).format(next);
+    const { checked } = await renderPage({
+      check: () => {
+        throw new ConnectError("refused", Code.ResourceExhausted, undefined, [
+          {
+            desc: RefusalSchema,
+            value: create(RefusalSchema, {
+              cause: Cause.KEY_CHECKS_EXHAUSTED,
+              data: { case: "nextKeyCheck", value: timestampFromDate(next) },
+            }),
+          },
+        ]);
+      },
+    });
+    await enter(KEY);
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      `You've checked keys too many times. You can check again on ${date} at ${time}`,
+    );
+    expect(keyField()).toHaveValue(KEY);
+    expect(checked).toHaveLength(1);
   });
 
   it("replaces the key only once the new one is accepted, and removes it, asked first", async () => {

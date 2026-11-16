@@ -93,6 +93,7 @@ A task starts with «Выполни задачу T01 из RUN.md» in a new sess
 | [x] | T63 | Переход на `spec` v0.18.3: тег, пакеты и контейнер | Claude | да | — |
 | [x] | T64 | Переход на `spec` v0.18.3: таблицы плана в `run/` и план на английском | Claude | — | T63 |
 | [x] | T65 | CI на общих процессах `.github` v0.1.24 | Claude | — | T64 |
+| [x] | T66 | Слова отказа `CAUSE_KEY_CHECKS_EXHAUSTED` — Д28 | Claude | — | — |
 
 «Зависит от» names only tasks of this plan. What a task waits for from other repositories is its body's «Ждёт»: it is taken once the neighbour has done that, and until then the queue goes on.
 
