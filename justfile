@@ -1,7 +1,8 @@
-# app's own recipes: the build of the app, and the four checks .github's typescript.yml runs in CI,
-# one job each, in a new container of the toolchain stage of .devcontainer/Dockerfile — as the
-# runner's user, with HOME=/tmp and with CI from the step's environment (R14 in
-# docs/decisions.md; section 3.1 of docs/architecture.md). Of the four only ci-licenses reads spec/:
+# app's own recipes: the build of the app, and the five checks .github's typescript.yml runs in CI
+# with its input engines, one job each, in a new container of the toolchain stage of
+# .devcontainer/Dockerfile — as the runner's user, with HOME=/tmp and with CI from the step's
+# environment (R14 and R45 in docs/decisions.md; section 3.1 of docs/architecture.md). Of the five
+# only ci-licenses reads spec/:
 # it runs spec's recipes licenses-check-repo and release-verify-npm, and the licenses job alone gets
 # the submodule; site-check, by hand and not in CI, runs spec's release-verify too. The documents
 # are checked by spec's own recipe, just -f spec/justfile docs-check-repo.
@@ -16,8 +17,8 @@ bin := "node_modules/.bin"
 # submodule, by the task that moves to a new tag.
 spec_tag := "v0.18.3"
 
-# Run the four checks CI runs, before a pull request.
-ci: ci-lint ci-test ci-vuln ci-licenses
+# Run the five checks CI runs, before a pull request.
+ci: ci-lint ci-test ci-engines ci-vuln ci-licenses
 
 # Fail on code Biome would format or flag, on a type error in either program — the app sees the
 # DOM, the configuration, the scripts and the tests in Node see Node —, on a version in
@@ -30,15 +31,19 @@ ci-lint: _install
     node scripts/icons.ts --check
 
 # The tests in Node and in Chromium, with the coverage report coverage/lcov.info, which the shared
-# typescript.yml sends to Codecov; then the screens in WebKit and Firefox, without it: Vitest's v8
-# coverage works in Chromium alone (R45; sources 2.5). The build comes first: typescript.yml runs
-# no build of its own, so a build that fails fails this check (R14). Then the release's archive of
-# that build and of a second build of the same tree, in a folder of its own: the same bytes, in the
-# layout infra's rollout reads (R25).
+# typescript.yml sends to Codecov; the screens in WebKit and Firefox are ci-engines' (R45). The build
+# comes first: typescript.yml runs no build of its own, so a build that fails fails this check
+# (R14). Then the release's archive of that build and of a second build of the same tree, in a
+# folder of its own: the same bytes, in the layout infra's rollout reads (R25).
 ci-test: build
     {{ bin }}/vitest run --coverage --project node --project '*(chromium)'
-    {{ bin }}/vitest run --project '*(webkit)' --project '*(firefox)'
     again="$(mktemp -d)"; trap 'rm -rf "$again"' EXIT; {{ bin }}/vite build --outDir "$again" --emptyOutDir --logLevel warn && node scripts/release.ts --check "$again"
+
+# The screens in WebKit and Firefox, without the coverage: Vitest's v8 coverage works in Chromium
+# alone (sources 2.5). typescript.yml runs this as the check "TypeScript / engines", beside ci-test,
+# so that the two take their time side by side (R45). No build: no test in a browser reads build/.
+ci-engines: _install
+    {{ bin }}/vitest run --project '*(webkit)' --project '*(firefox)'
 
 # npm audit reads the lock file and asks the registry, so nothing is installed first. Only what
 # ships: the tools of development do not reach a learner (R39 in spec).

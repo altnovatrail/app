@@ -25,9 +25,10 @@ The web app is React and TypeScript under `src/`, built by Vite into `build/`, w
 
 A task that touches the code ends with these green, locally and in CI (rule 6 of [RUN.md](../../RUN.md)):
 
-- `just ci`, which runs the four recipes CI runs, one job each:
+- `just ci`, which runs the five recipes CI runs, one job each:
   - `ci-lint` — Biome, both TypeScript programs, exact versions in `package.json`, and the icons module as `scripts/icons.ts` writes it;
-  - `ci-test` — the build, the tests in Node and Chromium with coverage, then in WebKit and Firefox without it, and the release's archive built twice to the same bytes (R25; R45);
+  - `ci-test` — the build, the tests in Node and Chromium with coverage, and the release's archive built twice to the same bytes (R25; R45);
+  - `ci-engines` — the tests in WebKit and Firefox, without coverage, the check "TypeScript / engines" beside "TypeScript / test" (R45);
   - `ci-vuln` — `npm audit` of what ships;
   - `ci-licenses` — the licenses of the lock file against spec's list and `licenses.json`, `release-verify-npm` of the packages of `@altnovatrail`, `release-verify` of `parts/deployment-1.tar.gz` at `spec_tag`, and `node scripts/notice.ts`;
 - `codecov/patch` on the pull request: at least 90% of the changed lines covered (R48 spec);

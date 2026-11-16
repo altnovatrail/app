@@ -18,25 +18,28 @@ concurrency:
 jobs:
   secrets:
     name: Secrets
-    uses: altnovatrail/.github/.github/workflows/secrets.yml@fab102d8bbb4659575e107ee488e072aaaa71821 # v0.1.24
+    uses: altnovatrail/.github/.github/workflows/secrets.yml@8311cbfc01082e9b196c0af8d7b49192115cc84c # v0.1.30
 
   # A pull request's commits are what it checks; a push to main has been checked as one.
   dco:
     name: DCO
     if: github.event_name == 'pull_request'
-    uses: altnovatrail/.github/.github/workflows/dco.yml@fab102d8bbb4659575e107ee488e072aaaa71821 # v0.1.24
+    uses: altnovatrail/.github/.github/workflows/dco.yml@8311cbfc01082e9b196c0af8d7b49192115cc84c # v0.1.30
 
   documents:
     name: Documents
-    uses: altnovatrail/.github/.github/workflows/documents.yml@fab102d8bbb4659575e107ee488e072aaaa71821 # v0.1.24
+    uses: altnovatrail/.github/.github/workflows/documents.yml@8311cbfc01082e9b196c0af8d7b49192115cc84c # v0.1.30
 
   # The app's TypeScript code, by its own ci- recipes in its toolchain stage, and the coverage of
   # its tests, which the shared workflow sends to Codecov (R19 .github). id-token: write is for its
   # coverage job alone, which asks for an OIDC token: a called workflow can only lower what this job
-  # gives it.
+  # gives it. With engines, the tests in WebKit and Firefox are the check "TypeScript / engines", by
+  # the recipe ci-engines, beside "TypeScript / test" in Node and Chromium (R45).
   typescript:
     name: TypeScript
     permissions:
       contents: read
       id-token: write
-    uses: altnovatrail/.github/.github/workflows/typescript.yml@fab102d8bbb4659575e107ee488e072aaaa71821 # v0.1.24
+    uses: altnovatrail/.github/.github/workflows/typescript.yml@8311cbfc01082e9b196c0af8d7b49192115cc84c # v0.1.30
+    with:
+      engines: true
