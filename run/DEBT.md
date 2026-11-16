@@ -8,7 +8,7 @@ Table 4 of [RUN.md](../RUN.md): what was put off on purpose, its risk, when to r
 
 ## Table 4. Technical debt
 
-Numbers are not reused: next — Д32.
+Numbers are not reused: next — Д33.
 
 | ID | Debt | From | Risk while open | When to return |
 |---|---|---|---|---|
@@ -31,3 +31,4 @@ Numbers are not reused: next — Д32.
 | Д29 | After a correct answer `app` asks for the tutor's words once: an answer without words drops the work (`wordsCame` in `src/task/Task.tsx`), while contract 0.18 keeps the right until an answer with words — a new request with a new idempotency key sends the work again (`GetCorrectAnswerWords`, `attempt.proto`; R49) | T63 | An AI failure on the words after a correct answer deprives the learner of words the contract still gives | A task of its own, once the author decides whether to let the learner «ask again»: the platform AI quota and the own key's limit are spent on each repeat |
 | Д30 | The answers of `PutWork` of contract 0.18 (the second 2026-11-15 amendment to R113 spec; Д246 `spec`): a message over 11 MiB — `resource_exhausted` without a `Refusal`, which `app` reads as `CAUSE_WORK_TOO_LARGE`; `CAUSE_PACKAGE_UNKNOWN` if `api`'s image index does not know the attempt's package; `CAUSE_VERSION_NOT_GIVEN` if the version is outside the window of formats and there is no earlier work. On each refusal the work stays on the device only (R49) | T63 | The task that sends works to the server would take the answers of v0.17, and a refusal without a cause would come out as a failure | In the task that closes Д16: each answer with a test in Node |
 | Д31 | On `novatrail` the catalog is `novatrail/olympiad-math` and `novatrail/check-board`, the essays leave the site (R150 spec), and row 6.14 of [COORDINATION.md](../spec/COORDINATION.md) at v0.18.3 says E3 waits for neither T47 nor T48: the site has no such modules. Yet in table 1 T52 depends on T35–T50, T47 and T48 too (R49) | T63 | E3's summary would wait for tasks the site will not show | In T52: the author decides whether T47 and T48 leave E3, and where to |
+| Д32 | The ruleset `main` requires "TypeScript / test" but not "TypeScript / engines", which T68 made the check of the tests in WebKit and Firefox (the 2026-11-16 amendment to R45): a check enters the ruleset once it has come to `main` (architecture 3.3 .github), and GitHub's settings are the author's (RUN.md, rule 4). The step: add the context `TypeScript / engines` to the required status checks of the ruleset `main` (id 25506242), beside `TypeScript / test`. | T68 | A pull request with WebKit or Firefox red could merge: the orchestrator merges on green checks, but a hand merge sees only the required ones | Once T68's pull request is on `main` |
