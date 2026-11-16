@@ -92,7 +92,7 @@ A task starts with «Выполни задачу T01 из RUN.md» in a new sess
 | [ ] | T62 | Работы на сервере: `PutWork` | Claude | — | T39, T46 |
 | [x] | T63 | Переход на `spec` v0.18.3: тег, пакеты и контейнер | Claude | да | — |
 | [x] | T64 | Переход на `spec` v0.18.3: таблицы плана в `run/` и план на английском | Claude | — | T63 |
-| [ ] | T65 | CI на общих процессах `.github` v0.1.24 | Claude | — | T64 |
+| [x] | T65 | CI на общих процессах `.github` v0.1.24 | Claude | — | T64 |
 
 «Зависит от» names only tasks of this plan. What a task waits for from other repositories is its body's «Ждёт»: it is taken once the neighbour has done that, and until then the queue goes on.
 
@@ -101,7 +101,6 @@ A code task ends with the checks of rule 6: the recipes `ci-lint`, `ci-test`, `c
 **Почему такой порядок.**
 - T47 и T48 ждут соседей: сочинения и тетрадь — их допуска в `api`. Их порядок — тот, в каком соседи их откроют.
 - T62 ждёт `canvas`: картинку работы для `PutWork` рисует канва, а её метода ещё нет (В66).
-- T65 — вне эпика, за T64: CI на `.github` v0.1.24 (R49). Она переписывает `.github/workflows/`, которые правят и задачи эпика, и идёт до них. Тело — [run/TASKS.md](run/TASKS.md).
 - T52 — итог эпика, когда сделано остальное.
 
 ## Epic E3. Первый срез со взрослыми учениками
