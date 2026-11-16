@@ -106,7 +106,7 @@ export function needsLeave(platform: Platform): boolean {
 
 /**
  * The rate of the slow speed: three quarters of the voice's own, which the rate `1` is. Not tuned
- * on devices yet: each engine maps the rate its own way, and T51 tunes it (Д5 in RUN.md).
+ * on devices yet: each engine maps the rate its own way, and T51 tunes it (Д5 in run/DEBT.md).
  */
 export const SLOW_RATE = 0.75;
 

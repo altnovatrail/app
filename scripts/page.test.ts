@@ -1,4 +1,4 @@
-// The test of the built page (section 3.7 of docs/architecture.md; Д8 and Д9 in DEBT.md): `vite
+// The test of the built page (section 3.7 of docs/architecture.md; Д8 and Д9 in run/DEBT.md): `vite
 // preview` serves build/ — ci-test builds it first — with app's own plugin, and Chrome Headless
 // Shell, WebKit and Firefox, from the image the toolchain stage takes them from, open it, each in
 // turn (R45). A violation of either layer of the CSP fails the test — but in WebKit the header's

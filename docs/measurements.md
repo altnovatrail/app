@@ -22,7 +22,7 @@ Checked 2026-11-11 — WebKit and Firefox, once, outside CI (T34; Д8, Д9, Д10
 
 ## 3. The path in three engines, T57, 2026-11-14
 
-The path of the first slice in a browser with no one at the keyboard — `just walk`, `walk/path.test.ts` (R44; architecture 3.7, "Tests"), — for Д13, Д14 and Д20 of DEBT.md.
+The path of the first slice in a browser with no one at the keyboard — `just walk`, `walk/path.test.ts` (R44; architecture 3.7, "Tests"), — for Д13, Д14 and Д20 of run/DEBT.md.
 - **On what.** The builds of Playwright 1.65.0 in the container — Chrome Headless Shell 158.0.8127.18 (revision 1254), WebKit 27.2 (2388) and Firefox 159.0 (1572) —, each in a new context, `en-US`, 1280 × 1200; the development server of `vite.config.ts` with `deployment.local.json` of the dev project of Firebase; `api` with its T74, whose container has the name `api`, by `API_DEV_APP_UID=dev-app-t57 just dev-app`: the stub of `tutor`, the plan `closed_slice`, the owner's profile «Dev» (R66 and R67 api). The sign-in is real Firebase Auth by the development token. No call of a real AI: the stub prices each call as the real one would, and spends the quota of the profile's day (R55 api).
 - **Runs.** The whole path in the three engines, one after another: 20 tests of 21 in 235 s; the one that did not pass is WebKit's heartbeats below. Then WebKit alone twice, 7 of 7 each, about 70 s. The quota at each engine's start: Chromium 0%, WebKit 12%, Firefox 25%, then WebKit 38% and 51% — about 13% of $0.50, some $0.065, per engine and path, by the line «Tutor time today» itself.
 - **What the engine gave.** Lessons of three modules — «Arithmetic with a trick: first steps» in Chromium, «Counting figures: first steps» in WebKit, «Cubes and paper: first steps» in Firefox —, each with three tasks among its last segments, ended by their solution; the first task of the skill map was in handwriting in every run. No task by tap came, so its answers were not walked.
@@ -36,7 +36,7 @@ The path of the first slice in a browser with no one at the keyboard — `just w
 
 ## 4. Three engines in CI, T57, 2026-11-14
 
-The tests of the screens and of the built page, and the site check, on Chromium, WebKit and Firefox (R45; architecture 3.1), for Д5, Д8–Д10 and Д13 of DEBT.md.
+The tests of the screens and of the built page, and the site check, on Chromium, WebKit and Firefox (R45; architecture 3.1), for Д5, Д8–Д10 and Д13 of run/DEBT.md.
 - **On what.** The builds of Playwright 1.65.0 in the container: Chrome Headless Shell 158.0.8127.18 (revision 1254), WebKit 27.2 (2388) and Firefox 159.0 (1572); `vitest` 5.1.0 with `@vitest/browser-playwright`. These are the engines on Linux, not Safari on an iPad or Firefox on Windows.
 - **The run.** `just ci-test` in the container: Node and Chromium with the coverage — 85 files, 1,153 tests, 47 s, among them the test of the built page, 2 tests of the build and 13 per engine, and the site check's, 16 tests with the page in three engines; then the screens in WebKit and Firefox — 61 files, 1,119 tests and 1 skipped, 46 s. In CI the job "TypeScript / test" took 4 min 17 s with the three engines, against 1 min 56 s before them (pull requests 52 and 51).
 - **What failed at first, of some 560 tests per engine, and what came of it:**
