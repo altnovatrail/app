@@ -10,7 +10,20 @@
   },
   "linter": {
     "rules": {
-      "preset": "recommended"
+      "preset": "recommended",
+      "style": {
+        "noRestrictedImports": {
+          "level": "error",
+          "options": {
+            "paths": {
+              "react": {
+                "importNames": ["act"],
+                "message": "Take act from @testing-library/react: it turns IS_REACT_ACT_ENVIRONMENT on for its own time, which the tests in the browser keep off (src/test/browser.setup.ts)."
+              }
+            }
+          }
+        }
+      }
     }
   }
 }

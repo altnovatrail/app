@@ -1,5 +1,4 @@
-import { render, screen } from "@testing-library/react";
-import { act } from "react";
+import { act, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { inLanguage } from "../test/language.tsx";
 import { App } from "./App.tsx";
