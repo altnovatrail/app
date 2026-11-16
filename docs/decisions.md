@@ -4,7 +4,7 @@
 >
 > **Rule:** do not re-propose what was rejected without new facts. If a decision has to change, ask the author and update this file. An entry is not rewritten: a dated amendment at the end of the entry corrects it, or a new entry replaces it, and the old one stays in place marked "Superseded".
 >
-> The repository was set up on 2026-10-19 from the template of `spec` v0.1.0 (R21 spec), moved on 2026-10-20 to `spec` v0.2.9 (R01), on 2026-11-02 to v0.6.2 (R02) and on the same day to v0.6.6 (R12), on 2026-11-10 to v0.13.0 (R13), on 2026-11-11 to v0.15.0 (R26) and on the same day to v0.15.1 (R28), on 2026-11-12 to v0.16.3 (R38), and on 2026-11-14 to v0.17.1 (R43) and on the same day to v0.17.9 (R48). How it comes to differ from the template — by the tools in the devcontainer, the rules in RUN.md — is recorded here as a decision, as R46 canvas-api recorded the differences from its model. Next number — R49.
+> The repository was set up on 2026-10-19 from the template of `spec` v0.1.0 (R21 spec), moved on 2026-10-20 to `spec` v0.2.9 (R01), on 2026-11-02 to v0.6.2 (R02) and on the same day to v0.6.6 (R12), on 2026-11-10 to v0.13.0 (R13), on 2026-11-11 to v0.15.0 (R26) and on the same day to v0.15.1 (R28), on 2026-11-12 to v0.16.3 (R38), and on 2026-11-14 to v0.17.1 (R43) and on the same day to v0.17.9 (R48), and on 2026-11-16 to v0.18.3 (R49). How it comes to differ from the template — by the tools in the devcontainer, the rules in RUN.md — is recorded here as a decision, as R46 canvas-api recorded the differences from its model. Next number — R50.
 >
 > Here entries are cited as `R03`, in other repositories as `R03 app`. Decisions of `spec` are cited as "R18 spec", MathTrail's decisions as "R37 canvas-api", and in a list as "canvas-api: R37, R38". Each log has its own numbers.
 >
@@ -614,6 +614,8 @@ An answer in handwriting — 2.1.1, 2.5.1 and 2.5.7 — and the submission by "C
 — *Amendment 2026-11-14:* `@altnovatrail/contracts` and `@altnovatrail/spec` are 0.17.1, the same version as the submodule's tag, and `@bufbuild/protobuf` stays 2.17.0, which the contracts 0.17.1 name in `dependencies` (R43). `release-verify-npm` accepted all six packages of `@altnovatrail` of the lock file; `NOTICE` has the line of the contracts 0.17.1. — `package.json`; `NOTICE`; [architecture.md](architecture.md), section 3.1.
 
 — *Second amendment 2026-11-14:* `@altnovatrail/contracts` and `@altnovatrail/spec` are 0.17.9, the same version as the submodule's tag, and `@bufbuild/protobuf` stays 2.17.0, which the contracts 0.17.9 name (R48). The contracts and the types are the same as at 0.17.1, and the code needs no change. `release-verify-npm` accepted all six packages of `@altnovatrail` of the lock file; `NOTICE` has the line of the contracts 0.17.9. — `package.json`; `NOTICE`; [architecture.md](architecture.md), section 3.1.
+
+— *Amendment 2026-11-16:* `@altnovatrail/contracts` and `@altnovatrail/spec` are 0.18.3, the same version as the submodule's tag, and `@bufbuild/protobuf` stays 2.17.0, which the contracts 0.18.3 name (R49). The contracts 0.18 add `CAUSE_KEY_CHECKS_EXHAUSTED` and `Refusal.next_key_check` and change comments alone besides; `types/formatv0` and `types/canvas` did not change, and the code needs no change: `just ci` is green. `release-verify-npm` accepted all six packages of `@altnovatrail` of the lock file; `NOTICE` has the line of the contracts 0.18.3. — `package.json`; `NOTICE`; [architecture.md](architecture.md), section 3.1.
 
 ## Storage on the device: the schema and the code
 
@@ -1481,6 +1483,8 @@ An answer in handwriting — 2.1.1, 2.5.1 and 2.5.7 — and the submission by "C
 
 — *Amendment 2026-11-14:* `app` stands on `spec` v0.17.9 (R48): the submodule, the packages and the part `deployment/` are at that tag. Everything else this entry says holds as written: the template, the contract and the parts did not change between v0.17.1 and v0.17.9, and `.devcontainer/` differs from the template by the same network and volume. — RUN.md, T61.
 
+— *Amendment 2026-11-16:* `app` stands on `spec` v0.18.3 (R49). `.devcontainer/` differs from the template by the same network and volume; the base image is 3.0.13-noble, as the template has it, and the Dockerfile's opening comment is the template's, on spec's stage `orchestrator` that a copy leaves out. — RUN.md, T63.
+
 ## The path in a browser without the author
 
 **R44. The local build signs in by `api`'s development token, and the path of the first slice runs in a browser with no one at the keyboard: `just walk`, by hand and not in CI, on Chromium, WebKit and Firefox against `api`'s `just dev-app`. Its AI calls go to the stub of `tutor`, and no real one is made. The proxy of the development server goes to `api` by its name.** The plan of T57, part B, which the author approved with it (RUN.md, T57; Д227 `spec`, the answer to В52).
@@ -1606,3 +1610,30 @@ An answer in handwriting — 2.1.1, 2.5.1 and 2.5.7 — and the submission by "C
 - the nonconformance 2.5.7 on the page now — `canvas` 0.3.15 still has the buttons, and the page would name what does not happen with `app`.
 
 — *Consequence:* RUN.md — T61 and table 1; the 2026-11-14 amendment to R43 and the second 2026-11-14 amendment to R15; DEBT.md — Д24 and Д25; CLAUDE.md; README.md; `justfile`; `parts/`; `NOTICE`; `package.json`; the comments of `src/canvas/jsx.ts` and `src/skills/jsx.ts`; [architecture.md](architecture.md), sections 3.1, 3.9 and 3.10; [sources.md](sources.md), 9.5.
+
+— *Amendment 2026-11-16:* `app` stands on `spec` v0.18.3 (R49), and "no row «в реестр spec» of `app` is closed" above no longer holds: `spec` recorded В62, В63 and В65, and R49 closes them; В64 is no row «в реестр spec». — RUN.md, T63.
+
+## The move to `spec` v0.18.3
+
+**R49. `app` stands on `spec` v0.18.3: the submodule `spec/`, the packages `@altnovatrail/spec` and `@altnovatrail/contracts` with `@bufbuild/protobuf` 2.17.0, and the part `deployment/` are at this tag, and the devcontainer takes the template's base image `mcr.microsoft.com/devcontainers/base` 3.0.13-noble. The move is in two tasks by rule 11 of RUN.md: this one, T63, takes the tag, the packages, the container and what the tag decided for `app`; the plan's new layout and language — tables 2–4 as files of `run/`, the plan in English and the tasks outside an epic in `run/TASKS.md` (R153–R155 spec; Д250 `spec`), with the line of the orchestrator's contract in the rules (R156 spec) — are T64, and the shared workflows of `.github` v0.1.24 are T65. The rows «в реестр spec» В62, В63 and В65 are closed: `spec` recorded them.** The orchestrator's wave 0 of epic E14 of `spec`, the author's word of 2026-11-16 (R156 spec; RUN.md, T63).
+- **What the tag brings `app`** (`git -C spec log v0.17.9..v0.18.3`, read 2026-11-16; [sources.md](sources.md), 9.6). The card, architecture 3.1 spec, did not change. Beyond the plan's files and the orchestrator:
+  - the contract 0.18: `CheckOwnKey` beyond the checks `api` lets an account make is refused `CAUSE_KEY_CHECKS_EXHAUSTED`, code `resource_exhausted`, with `Refusal.next_key_check`, and `ListOwnKeyProviders` names only the providers `tutor` admits at the profile for one kind of call at least (the 2026-11-15 amendment to R84 spec); the right to the words after a correct answer is spent only by an answer with words, so a request with a new idempotency key may ask again; `PutWork` gets `resource_exhausted` without a `Refusal` over the 11 MiB `api` reads, which `app` reads as `CAUSE_WORK_TOO_LARGE`, and `CAUSE_PACKAGE_UNKNOWN` and `CAUSE_VERSION_NOT_GIVEN` (the second 2026-11-15 amendment to R113 spec); the learner's `ListWorks` and `GetWork` while the profile waits for a consent. Nothing of it fails `app` as it is: a cause the build does not word reads as the common phrase, and `app` sends no `PutWork` yet;
+  - version 3 of `export/`: the stored works are files of the export beside `api.zip`, which `app` reads one at a time by `GetWork` (R151 spec);
+  - on `novatrail` platform AI opens to adults at the rung "author" (R149 spec), and the catalog is `novatrail/olympiad-math` and `novatrail/check-board`: the essays leave the site (R150 spec), and row 6.14 of [COORDINATION.md](../spec/COORDINATION.md) has E3 wait for neither T47 nor T48;
+  - the template: the base image 3.0.13-noble and a comment on spec's stage `orchestrator`, which a copy leaves out; CLAUDE.md, RUN.md and README.md by R153–R156 spec — T64;
+  - `legal/` holds version 4 of `privacy-policy` and new texts of the measurement and the eval set: `app` gets its texts from `api` (R31), and builds none of them in.
+- **What changes here:**
+  - `spec/` is at v0.18.3, commit 922886a; `gh release verify v0.18.3 -R altnovatrail/spec` gives "✓ Release v0.18.3 verified!"; `spec_tag` is v0.18.3, and `parts/deployment-1.tar.gz` with its signature comes from the release v0.18.3, the same files as before: `release-verify` gives "deployment-1.tar.gz: spec v0.18.3, signed by spec's release.yml";
+  - `@altnovatrail/contracts` and `@altnovatrail/spec` are 0.18.3, `@bufbuild/protobuf` stays 2.17.0 (the 2026-11-16 amendment to R15); `NOTICE` has the line of the contracts 0.18.3;
+  - `.devcontainer/` — `diff` with the output of `just new-repo-draft app typescript 3.1 v0.18.3`, run in a clone of `spec` at v0.18.3 outside the repository, gives only the second network `novatrail-api` (R19) and the volume of the token (R43); `.claude/` is as in the recipe's output, but for `rules/code.md` (R39);
+  - CLAUDE.md, README, RUN.md and the comments of `src/canvas/jsx.ts` and `src/skills/jsx.ts` name v0.18.3; architecture 3.1 names the packages 0.18.3, and 3.10 the export of version 3; table 2 of RUN.md has the export of version 3 in E4;
+  - DEBT.md — Д23 by R149 spec; Д28, the limit of checks of an own key; Д29, the words after a correct answer asked again; Д30, the answers of `PutWork` for the task of Д16; Д31, E3 without the essays and the workbook.
+
+— *Why now:* v0.18.3 is the latest release (`gh release list -R altnovatrail/spec`, 2026-11-16), and wave 0 of the orchestrator moves each repository of an epic to it first (R156 spec). The move is split because the plan's translation and new layout rewrite RUN.md and DEBT.md whole, a review of their own, while this part changes the packages and the container.
+
+— *Rejected:*
+- the plan's layout and language in this task — two reviews' reading in one (rule 11), and RUN.md and DEBT.md rewritten beside the move's own changes would hide them;
+- wording `CAUSE_KEY_CHECKS_EXHAUSTED` and asking for the words again in this task — behaviour with tests of its own, while nothing fails without them (Д28, Д29);
+- the base image 3.0.12-noble kept — the template raised it, and a copy that lags behind the template is a difference no decision holds.
+
+— *Consequence:* RUN.md — T63, T64, T65 and tables 1, 2 and 3; the 2026-11-16 amendments to R15, R43 and R48; DEBT.md — Д23 and Д28–Д31; [plan/E3.md](plan/E3.md) — T63 and the closed rows В62, В63 and В65; CLAUDE.md; README.md; `justfile`; `parts/`; `NOTICE`; `package.json`; `.devcontainer/Dockerfile`; the comments of `src/canvas/jsx.ts` and `src/skills/jsx.ts`; [architecture.md](architecture.md), sections 3.1 and 3.10; [sources.md](sources.md), 9.6.

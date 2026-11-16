@@ -18,7 +18,7 @@
 
 The NovaTrail web app for learners and the adults beside them, on a tablet or a computer. It is the shell around the learner's work: signing in and choosing the learner on a shared device, the lesson player and the task screen with the canvas, the answer slots and the tutor's panel, progress and the skill map, and the adults' section behind a PIN. It builds in the canvas and skill-map UI packages at exact versions and talks only to api and the sign-in service: it gets a task's open view but never its key, solution or traps while the task is unsolved, it never decides a verdict or calls an AI provider, and the learner's strokes stay on the device.
 
-A component of [NovaTrail](https://github.com/altnovatrail/spec/tree/v0.17.9), a universal open platform for adaptive learning, interactive lessons and AI tutoring. It belongs to stage 2, First slice with learners, with tutor, canvas, api, skill-map and infra.
+A component of [NovaTrail](https://github.com/altnovatrail/spec/tree/v0.18.3), a universal open platform for adaptive learning, interactive lessons and AI tutoring. It belongs to stage 2, First slice with learners, with tutor, canvas, api, skill-map and infra.
 
 ## Status
 
@@ -39,7 +39,7 @@ The first app runs against a local api, in api's own devcontainer, with the dev 
 
 A release comes out by itself once the checks pass on `main` and a change touches what the build is made from: the next patch of the line 0.1, tagged `vX.Y.Z` with the release, and nobody tags by hand. Releases are immutable, and a ruleset keeps every tag `v*` on its commit.
 
-A release holds the archive of the build, `app_<version>.tar.gz`, signed with cosign by NovaTrail's shared release workflow, and beside it its bundle, `app_<version>.tar.gz.sigstore.json`, which the check of the signature reads. At the archive's root are `index.html`, `assets/`, `deployment.schema.json` — the schema of the deployment configuration, `/deployment.json`, which the page reads at every start and the archive does not hold —, `csp.json` — the template of the Content-Security-Policy header the host sends —, and `NOTICE` and `LICENSE`. The same build serves the platform and every self-hosted copy. infra deploys it; whoever hosts it takes it at an exact tag, checks it before serving it with spec's `just -f spec/justfile release-verify app <tag> <file>`, which checks the signature against Sigstore's trust root and everything its certificate names (R77 spec), and writes `deployment.json` of their own by spec's [part `deployment/`](https://github.com/altnovatrail/spec/tree/v0.17.9/deployment).
+A release holds the archive of the build, `app_<version>.tar.gz`, signed with cosign by NovaTrail's shared release workflow, and beside it its bundle, `app_<version>.tar.gz.sigstore.json`, which the check of the signature reads. At the archive's root are `index.html`, `assets/`, `deployment.schema.json` — the schema of the deployment configuration, `/deployment.json`, which the page reads at every start and the archive does not hold —, `csp.json` — the template of the Content-Security-Policy header the host sends —, and `NOTICE` and `LICENSE`. The same build serves the platform and every self-hosted copy. infra deploys it; whoever hosts it takes it at an exact tag, checks it before serving it with spec's `just -f spec/justfile release-verify app <tag> <file>`, which checks the signature against Sigstore's trust root and everything its certificate names (R77 spec), and writes `deployment.json` of their own by spec's [part `deployment/`](https://github.com/altnovatrail/spec/tree/v0.18.3/deployment).
 
 ## Contributing
 
@@ -65,7 +65,7 @@ The documents are in English; the work plan, its technical debt and the archives
 - [RUN.md](RUN.md) — the work plan, in epics.
 - [DEBT.md](DEBT.md) — the technical debt, in Russian: table 4 of the work plan.
 
-The working rules, for people and coding agents alike, are in [CLAUDE.md](CLAUDE.md) and [AGENTS.md](AGENTS.md). The platform's shared vocabulary, formats, contracts and decisions are in [spec](https://github.com/altnovatrail/spec/tree/v0.17.9), checked out here as a git submodule at `v0.17.9`: clone this repository with `git clone --recurse-submodules`.
+The working rules, for people and coding agents alike, are in [CLAUDE.md](CLAUDE.md) and [AGENTS.md](AGENTS.md). The platform's shared vocabulary, formats, contracts and decisions are in [spec](https://github.com/altnovatrail/spec/tree/v0.18.3), checked out here as a git submodule at `v0.17.9`: clone this repository with `git clone --recurse-submodules`.
 
 ## License
 
