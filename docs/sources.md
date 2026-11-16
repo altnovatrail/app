@@ -352,6 +352,15 @@ Read 2026-11-14 (architecture 3.1, 3.9 and 3.10; R48):
 - The npm registry, `npm view`, 2026-11-14: `@altnovatrail/spec` and `@altnovatrail/contracts` 0.17.9 are the latest, and `@altnovatrail/contracts` 0.17.9 names `@bufbuild/protobuf` 2.17.0.
 - `release-verify-npm` of the lock file accepted the six packages of `@altnovatrail`; `release-verify` of the part — "deployment-1.tar.gz: spec v0.17.9, signed by spec's release.yml".
 
+### 9.6. The move to `spec` v0.18.3, 2026-11-16
+
+Read 2026-11-16 (architecture 3.1 and 3.10; R49):
+- `spec`, the tag v0.18.3, commit 922886a: `gh release list -R altnovatrail/spec` — v0.18.3 "Latest", 2026-11-16T00:42:28Z, after v0.17.10–v0.18.2; `gh release verify v0.18.3 -R altnovatrail/spec` — "✓ Release v0.18.3 verified!". `git -C spec diff v0.17.9 v0.18.3`: section 3.1 of `docs/architecture.md` — no change; `repo-template/` — `run/EPICS.md`, `run/QUESTIONS.md`, `run/DEBT.md` and `run/TASKS.md` in place of `DEBT.md`, an English RUN.md, and in `.devcontainer/Dockerfile` `mcr.microsoft.com/devcontainers/base:3.0.13-noble@sha256:48be4adec1c1ecbe030064700aef85382f5205786a8f82937fc44a7473717eae`; the contract — `CAUSE_KEY_CHECKS_EXHAUSTED = 45`, «Beside `CAUSE_KEY_CHECKS_EXHAUSTED`: when the next check of an own key opens» (`next_key_check = 9`), «The right is one answer with words: `api` spends it when it gives the words, and only then» (`GetCorrectAnswerWords`), «A message larger than `api` reads gets the code `resource_exhausted` with no `Refusal`, before it is parsed, and `app` reads it as `CAUSE_WORK_TOO_LARGE`» (`PutWork`); `types/exportv3` in place of `types/exportv2`; `legal/legal.yaml` — `privacy-policy` version 4 with `in_force_since: "2026-11-28"`; `deployment/` and `types/formatv0` and `types/canvas` — no change. The archive `deployment-1.tar.gz` of the release v0.18.3 unpacks to the same files as that of v0.17.9.
+- `docs/decisions.md` of `spec` at v0.18.3 — R150 spec: «On `novatrail` the list is `novatrail/olympiad-math` and `novatrail/check-board`: "Short essays in English" leaves the site»; R151 spec: «`app` reads each by `GetWork`, one at a time, and writes it into the ZIP»; R156 spec: «Wave 0 moves each repository of the epic that is not on the latest tag of spec to it». [COORDINATION.md](../spec/COORDINATION.md) at v0.18.3, row 6.14: «E3 их не ждёт: на сайте таких модулей нет»; «Д23 `app` устарел — «`ListOwnKeyProviders` пуст до П-16 (R72 api)», а со ступенью `author` в нём Anthropic».
+- Table 5 of `spec`, `run/INBOX.md` at v0.18.3, holds the rows В62, В63 and В65 of `app`.
+- The npm registry, `npm view`, 2026-11-16: `@altnovatrail/spec` and `@altnovatrail/contracts` 0.18.3 are the latest, and `@altnovatrail/contracts` 0.18.3 names `@bufbuild/protobuf` 2.17.0.
+- `release-verify-npm` of the lock file accepted the six packages of `@altnovatrail`; `release-verify` of the part — "deployment-1.tar.gz: spec v0.18.3, signed by spec's release.yml".
+
 ## 10. MathTrail
 
 The texts of MathTrail on which the decisions of `app` relied.
