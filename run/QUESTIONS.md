@@ -1,0 +1,16 @@
+# QUESTIONS.md — questions to the author of `app`
+
+Table 3 of [RUN.md](../RUN.md): the author's open questions from tasks' «Открыто» (R153 spec, R154 spec).
+
+- Never read whole: take the rows the task and its sections name — `grep -n '^| В64 ' run/QUESTIONS.md`.
+- A row comes from a task's «Открыто» (RUN.md rule 9). Record the author's answer where it belongs — the task, a document or [DEBT.md](DEBT.md) — and delete the row.
+- A row whose question opens with the mark «В реестр spec» is for `spec`: its session finds it on `main` (R81 spec; RULES.md, Across repositories). It leaves once `spec` has recorded it: the task that rests on it names its number.
+
+## Table 3. Questions to the author
+
+Numbers are not reused: next — В67.
+
+| ID | Question | From | Options | Recommendation |
+|---|---|---|---|---|
+| В66 | «В реестр spec». `PutWork` needs `StoredWork.picture` — «the PNG of the strokes the surface shows at the end, as the device draws it» (`work.proto`; [the contracts' text](../spec/contracts/README.md), section 15) —, and nobody draws it. The canvas draws the sheet and the crop but gives no such picture: R27 canvas removed `exportPNG()`, and releases up to v0.3.18 do not have it, while `exportWork()` gives only the crop for a check, on a workbook the crops of the slots. Without the picture `app` cannot put a work: `api` checks its PNG signature | T62 | (a) `canvas` gives a method — the PNG of the strokes the sheet's or the workbook's surface shows, with no condition —, and architecture 3.2 spec names it; (b) `app` draws it itself by `replay(history)`; (c) the contract takes the crop of the last submission | (a) — the author decided so for `app` on 2026-11-14 (T62): whoever draws the sheet and the crop draws it, and they look the same; (b) is a second drawing of the same work; (c) on a workbook it is not one picture, and before the first submission there is nothing to send |
+| В64 | The ping `https://apis.google.com/js/gen_204` is sent by the module `gapi_iframes` wherever it runs — once in a hundred resets of the counter ([docs/sources.md](../docs/sources.md), section 7.6) —, not only in WebKit: on a computer, after the tap on «Sign in with Google». The built-page test gives Chromium and Firefox a gapi stub, while `site-check` gets Google's real script, and there the same `connect-src` refusal will now and then fail the check: by T59's decision the refusal is expected only in WebKit (the 2026-11-14 amendment to R45). Expect it in `site-check` in every engine? | T59 | (a) in `site-check` a refused ping is no violation in any engine, and in the built-page test, as now, only in WebKit: there Chromium and Firefox have a gapi stub; (b) keep WebKit alone and rerun `site-check` if it fails on the ping | (a): the CSP refuses the ping in every engine, telling engines apart protects nothing, and a false failure of the check after a rollout confuses more than a rerun |

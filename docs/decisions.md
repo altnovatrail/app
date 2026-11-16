@@ -4,7 +4,7 @@
 >
 > **Rule:** do not re-propose what was rejected without new facts. If a decision has to change, ask the author and update this file. An entry is not rewritten: a dated amendment at the end of the entry corrects it, or a new entry replaces it, and the old one stays in place marked "Superseded".
 >
-> The repository was set up on 2026-10-19 from the template of `spec` v0.1.0 (R21 spec), moved on 2026-10-20 to `spec` v0.2.9 (R01), on 2026-11-02 to v0.6.2 (R02) and on the same day to v0.6.6 (R12), on 2026-11-10 to v0.13.0 (R13), on 2026-11-11 to v0.15.0 (R26) and on the same day to v0.15.1 (R28), on 2026-11-12 to v0.16.3 (R38), and on 2026-11-14 to v0.17.1 (R43) and on the same day to v0.17.9 (R48), and on 2026-11-16 to v0.18.3 (R49). How it comes to differ from the template — by the tools in the devcontainer, the rules in RUN.md — is recorded here as a decision, as R46 canvas-api recorded the differences from its model. Next number — R50.
+> The repository was set up on 2026-10-19 from the template of `spec` v0.1.0 (R21 spec), moved on 2026-10-20 to `spec` v0.2.9 (R01), on 2026-11-02 to v0.6.2 (R02) and on the same day to v0.6.6 (R12), on 2026-11-10 to v0.13.0 (R13), on 2026-11-11 to v0.15.0 (R26) and on the same day to v0.15.1 (R28), on 2026-11-12 to v0.16.3 (R38), and on 2026-11-14 to v0.17.1 (R43) and on the same day to v0.17.9 (R48), and on 2026-11-16 to v0.18.3 (R49), its plan laid out by R50. How it comes to differ from the template — by the tools in the devcontainer, the rules in RUN.md — is recorded here as a decision, as R46 canvas-api recorded the differences from its model. Next number — R51.
 >
 > Here entries are cited as `R03`, in other repositories as `R03 app`. Decisions of `spec` are cited as "R18 spec", MathTrail's decisions as "R37 canvas-api", and in a list as "canvas-api: R37, R38". Each log has its own numbers.
 >
@@ -547,6 +547,8 @@ An answer in handwriting — 2.1.1, 2.5.1 and 2.5.7 — and the submission by "C
 — *Amendment 2026-11-14:* when there is no current epic, a done task outside an epic goes to the archive of the last done epic, into its section «Задачи вне эпика, сделанные после него», and its summary sentence goes to the end of RUN.md, where its body stood, and leaves with the archive of the next epic: rule 9 of the template of `spec` v0.17.1 (the 2026-11-13 amendment to R19 spec), which R43 took in the words of R41. — RUN.md, rule 9 and «Как устроен план: эпики».
 
 — *Amendment 2026-11-16:* the base image `mcr.microsoft.com/devcontainers/base` is 3.0.13-noble by digest, as the template of v0.18.3 has it (R49). — `.devcontainer/Dockerfile`.
+
+— *Amendment 2026-11-16:* the body of an open task outside an epic is in `run/TASKS.md`, not in RUN.md, and its row stays in table 1 (R50; R155 spec); once done, its body goes to the same section of the archive as before, and its summary sentence with it, to the start of that section; RUN.md keeps neither (R153 spec). — RUN.md, rule 9 and Epics; `run/TASKS.md`.
 
 ## The app's skeleton
 
@@ -1377,6 +1379,8 @@ An answer in handwriting — 2.1.1, 2.5.1 and 2.5.7 — and the submission by "C
 
 — *Consequence:* `DEBT.md`; [plan/E3.md](plan/E3.md); `docs/sources.md`; `docs/measurements.md`; `.claude/rules/code.md`; the 2026-11-12 amendment to R13; CLAUDE.md; RUN.md — «Как пользоваться», rules 2, 6, 9 and 10, «Как устроен план: эпики», table 1, T53–T55; [architecture.md](architecture.md), section 4 and the links to the records.
 
+— *Amendment 2026-11-16:* table 4 is `run/DEBT.md`, in English, and `DEBT.md` is gone; tables 2 and 3 are `run/EPICS.md` and `run/QUESTIONS.md`; a done task's summary sentence goes to the archive with its body, and RUN.md keeps neither; CLAUDE.md, Documents, follows the template of v0.18.3 (R50). `DEBT.md` in this entry reads `run/DEBT.md`. — `run/`; RUN.md; CLAUDE.md.
+
 ## Names in the progress and the quota share
 
 **R40. The adult's progress names a lesson by its name, and a solved attempt also by the skills of its task, by their names. `app` takes the platform AI quota share by `GetQuota`: for the learner, as a line under the heading "My subjects", the share of the learner's own profile, and when the cap is reached, the words of the quota refusal (R37); for the adult, as the section "Tutor time" at the bottom of the profile page: the shares of the profile and of the account, that the cap is reached, and when the next family day begins. From an `api` without `GetQuota`, neither the line nor the section.** The author's decision of 2026-11-12 in the planning of T53 — the code for the new contract in T53 at once, though `api` does not give it yet; the design is the executor's proposals (RUN.md, T53). The contract is v0.16.3 (R38): the 2026-11-12 amendments to R98 and R99 spec, Д228 and Д229 `spec`, [the contracts' text](../spec/contracts/README.md), section 15.
@@ -1426,6 +1430,8 @@ An answer in handwriting — 2.1.1, 2.5.1 and 2.5.7 — and the submission by "C
 — *Consequence:* RUN.md — rule 9, «Как устроен план: эпики», the opening, tables 1–3 and the part of E3; [plan/E3.md](plan/E3.md); the 2026-11-13 amendment to R13.
 
 — *Amendment 2026-11-14:* the template of `spec` v0.17.1 names where a done task outside an epic goes when there is no epic: to the archive of the last done epic, into its section «Задачи вне эпика, сделанные после него» (the 2026-11-13 amendment to R19 spec). `app` took its sentence into rule 9 with R43, in the words of this entry: the summary sentence goes to the end of RUN.md, where the body stood, and the sentences of such tasks leave with the archive of the next epic. — RUN.md, rule 9 and «Как устроен план: эпики».
+
+— *Amendment 2026-11-16:* the summary sentences of done tasks no longer stand in RUN.md: each goes to the archive with its body, at the start of the section that receives it (R153 spec), and the body of an open task outside an epic is in `run/TASKS.md`, not in the epic's part or at the end of the file (R155 spec). The difference from the template is gone: the template of v0.18.3 has no section «Задачи вне эпика» in RUN.md either, and a task of analysis by R145 spec goes to `run/TASKS.md`, as any task outside an epic (R50). — RUN.md, rule 9 and Epics.
 
 **R42. The deployment of `app` is checked by `app` itself, by the recipe `just site-check <origin> <version>`: the release's archive, accepted by `release-verify`, against what the site serves to anyone — every file of the archive byte for byte, `/deployment.json` as the code of `app` reads it, the headers section 3.7 of [architecture.md](architecture.md) asks of the hosting, and the page in Chromium under the site's own header up to the sign-in window, which it closes before anyone signs in. The sign-in with an account, the invite code and a task on the deployment are not walked again: T24 `infra` walked them. The platform's domain is `novatrail.web.app`.** The author's answers of 2026-11-13 in the planning of T50, the first by the recommendation and the second not by it: T24 `infra` rolled out `app` v0.1.0 with `api` v0.1.22 on 2026-11-12, and the author signed in there with Google and made the account by a code of `api invite`. The newest release of `app` is v0.1.3, on `spec` v0.16.3, and its pair is `api` v0.1.29. To raise the list is E6 of `infra`, and a session of `app` changes no other repository (RULES.md, Across repositories).
 - **What the rollout of `infra` checks and what `app` checks.** The rollout holds the archive to the list's digest and to its layout, `/deployment.json` to the schema and to `api_origin`, and after the release of the site the page at `/` and at a path of the SPA, one file of `assets/`, a 404 under `/assets/`, `/deployment.json`, `/NOTICE` and `/LICENSE`, with their headers (`tools/deploy/app.mjs` of `infra`, `main` on 2026-11-13). `site-check` adds:
@@ -1486,6 +1492,8 @@ An answer in handwriting — 2.1.1, 2.5.1 and 2.5.7 — and the submission by "C
 — *Amendment 2026-11-14:* `app` stands on `spec` v0.17.9 (R48): the submodule, the packages and the part `deployment/` are at that tag. Everything else this entry says holds as written: the template, the contract and the parts did not change between v0.17.1 and v0.17.9, and `.devcontainer/` differs from the template by the same network and volume. — RUN.md, T61.
 
 — *Amendment 2026-11-16:* `app` stands on `spec` v0.18.3 (R49). `.devcontainer/` differs from the template by the same network and volume; the base image is 3.0.13-noble, as the template has it, and the Dockerfile's opening comment is the template's, on spec's stage `orchestrator` that a copy leaves out. — RUN.md, T63.
+
+— *Amendment 2026-11-16:* the rules of RUN.md are the template's of v0.18.3, in English (R50): rule 9's sentence for when there is no epic is the template's, and the summary sentence goes to the archive with the body, not to the end of RUN.md. — RUN.md, rule 9.
 
 ## The path in a browser without the author
 
@@ -1639,3 +1647,28 @@ An answer in handwriting — 2.1.1, 2.5.1 and 2.5.7 — and the submission by "C
 - the base image 3.0.12-noble kept — the template raised it, and a copy that lags behind the template is a difference no decision holds.
 
 — *Consequence:* RUN.md — T63, T64, T65 and tables 1, 2 and 3; the 2026-11-16 amendments to R13, R15, R43 and R48; DEBT.md — Д23 and Д28–Д31; [plan/E3.md](plan/E3.md) — T63 and the closed rows В62, В63 and В65; CLAUDE.md; README.md; `justfile`; `parts/`; `NOTICE`; `package.json`; `.devcontainer/Dockerfile`; the comments of `src/canvas/jsx.ts` and `src/skills/jsx.ts`; [architecture.md](architecture.md), sections 3.1 and 3.10; [sources.md](sources.md), 9.6.
+
+— *Amendment 2026-11-16:* T64 laid the plan out in `run/` and translated it, with the line of the orchestrator's contract in rule 7 (R50). — RUN.md; `run/`.
+
+## The plan's files and language
+
+**R50. `app`'s work plan is laid out and worded by R153–R156 spec, as the template of `spec` v0.18.3 has it: tables 2, 3 and 4 are `run/EPICS.md`, `run/QUESTIONS.md` and `run/DEBT.md` — the former `DEBT.md` —, the open tasks outside an epic are `run/TASKS.md`, and RUN.md holds its rules and the current epic. The rules, the tables' openings and rows and the headings are in English, terse, for the session; the bodies of tasks, the epic's description and the rows of table 1 stay in Russian. A done task's summary sentence goes to the archive with its body. A task outside an epic keeps its row in table 1 — a difference from the template that R13 holds.** The second part of the move to v0.18.3 by rule 11 (R49), T64, in the orchestrator's wave 0 of epic E14 of `spec` (R156 spec); the wording is the executor's, from the output of `just new-repo-draft app typescript 3.1 v0.18.3` in a clone of `spec` at v0.18.3 outside the repository (Д250 `spec`).
+- **The files.** Each opens with the template's rules and its next free number, without the record of closed rows: that is in the archives' sections «Закрытые строки таблицы 3» and in the «Сделано» of the task that closed a row (R154 spec). The rows are translated whole, the author's decisions in them kept — Д16, Д26 and Д27 name the author's decision of 2026-11-14 in T62, В66 the option the author chose. Relative links lead from `run/`. `run/TASKS.md` holds T65.
+- **RUN.md.** The rules are the template's, numbered as before, and the opening names the four files. The summary sentences of T35–T61 and T63 went to the start of «Задачи эпика» and «Задачи вне эпика, сделанные за его время» of [plan/E3.md](plan/E3.md), without their «Тело — …», which there leads to itself; the pointer «Таблица 4» left. RUN.md went 60,592 → 32,765 bytes, table 4 32,506 → 22,684.
+- **What differs from the template**, each held by an entry or by the epic:
+  - a task outside an epic has its row in table 1, with or without an epic (R13 and its amendments): the epic's archive lists them with its own, and «Зависит от» cites them;
+  - rule 7 names E3's word that the executor also merges, in a session the author started — the author's decision of 2026-11-12 in the epic's description; in an orchestrator's run the orchestrator merges (R156 spec);
+  - under table 1, what «Зависит от» and «Ждёт» mean and the checks every code task ends with, from the plan of E2 and E3, translated; rule 6 points to them;
+  - Epics names the archives of E1, E2 and E3, since the done epics' list left with the history.
+- **Older texts** are not edited, but for links in the archives (R153 spec): «Как пользоваться» is Rules, «Как устроен план: эпики» is Epics, «таблица 2, 3, 4» or «Д… в таблице 4 RUN.md» names the file of `run/`, and `DEBT.md` in the log and the archives is `run/DEBT.md`. The links of [plan/E3.md](plan/E3.md) and of [architecture.md](architecture.md) to `DEBT.md` lead to `run/DEBT.md`.
+- **CLAUDE.md and README.md**, Documents, are the template's: RUN.md and `run/` in place of `DEBT.md`; CLAUDE.md keeps its line of `docs/measurements.md`, which `app` has (R39).
+- **The checks.** `docs-check-repo` reads «В» and «Д» from `run/`, and a table left in RUN.md or `DEBT.md` beside it would be a second copy (R153 spec). The limits of `run/` are those of `spec`'s block `repository`; `docs-budgets.json` needs none of its own.
+
+— *Why:* R153–R155 spec ask each repository to move its plan with its move to a tag that has them (Д250 `spec`), and every task reads RUN.md whole: tables 2 and 3, the summary sentences and the Russian rules were bytes no task needs. The row in table 1 stays because `app`'s epics list their tasks outside an epic there, and the table of the archive keeps them with the epic.
+
+— *Rejected:*
+- dropping the rows of tasks outside an epic from table 1, as `spec`'s own RUN.md has none — T65 is cited by «Почему такой порядок», and E3's table of tasks would lose T53–T55, T61, T63 and T64 when it goes to the archive;
+- translating the bodies of tasks or the archives — R154 spec keeps them in Russian: the author writes and reads them;
+- keeping «Сделанные задачи» in RUN.md until the archive of E3 — R153 spec, and 6 KB in every task.
+
+— *Consequence:* RUN.md; `run/EPICS.md`, `run/QUESTIONS.md`, `run/DEBT.md`, `run/TASKS.md`; `DEBT.md` removed; [plan/E3.md](plan/E3.md) — the summary sentences, the links and T64; CLAUDE.md and README.md, Documents; [architecture.md](architecture.md), sections 3.2, 3.5 and 3.6, and [measurements.md](measurements.md) — the name of `run/DEBT.md`; the comment of `scripts/page.test.ts`; the 2026-11-16 amendments to R13, R39, R41, R43 and R49. — RUN.md, T64.

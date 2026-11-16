@@ -1,109 +1,53 @@
-# RUN.md — план работ app
+# RUN.md — work plan of app
 
-> Что делает app, чего не делает и что о нём ещё предстоит решить — [docs/architecture.md](docs/architecture.md); почему он устроен именно так — [docs/decisions.md](docs/decisions.md). Платформа целиком — в `spec/`, подмодуле на теге v0.18.3: карточка компонента — architecture 3.1 spec, порядок репозиториев — repositories 6 spec, данные учеников и законы — privacy spec, решения платформы — журнал `spec`.
->
-> Этот файл задаёт порядок работы: маленькие задачи, которые запускаются по одной. После каждой задачи я проверяю результат и только потом запускаю следующую. Задачи собраны в эпики. Подробно расписан только текущий эпик, остальные расписываются, когда до них доходит очередь (R19 spec).
->
-> Сделанные эпики и их архивы — в списке «Сделанные эпики» ниже. Текущий — E3 «Первый срез со взрослыми учениками», в таблице 1 (R19 spec; repositories 2.2 spec).
+What app does, does not do and has still to decide — [docs/architecture.md](docs/architecture.md); why — [docs/decisions.md](docs/decisions.md). The platform is in `spec/`, a submodule at tag v0.18.3: the component's card — architecture 3.1 spec; the order of repositories — repositories 6 spec; learners' data and law — privacy spec; the platform's decisions — spec's log. Small tasks, one at a time, each reviewed by the author; only the current epic is in detail (R19 spec). Other tables, each a file opening with its rules (R153 spec): 2, epics for later — [run/EPICS.md](run/EPICS.md); 3, questions to the author — [run/QUESTIONS.md](run/QUESTIONS.md); 4, debt — [run/DEBT.md](run/DEBT.md). Open tasks outside an epic — [run/TASKS.md](run/TASKS.md) (R155 spec). «Как пользоваться» in older texts is Rules, «Как устроен план: эпики» is Epics, and «таблица 2, 3, 4» names the file above (R50).
 
-## Как пользоваться
+Language (R154 spec): rules and tables in English, terse, for the session; the bodies of tasks in table 1 and in `run/TASKS.md` in Russian — the author writes and reviews them.
 
-Задача запускается одной фразой в новой сессии Claude Code внутри devcontainer:
+## Rules
 
-```
-Выполни задачу T01 из RUN.md
-```
+A task starts with «Выполни задачу T01 из RUN.md» in a new session in the devcontainer. One task — one session (R143 spec): the hook `UserPromptSubmit` of [.claude/settings.json](.claude/settings.json) — `spec/tools/session/` — stops «Выполни задачу T…» or «планируй T…» of another task in the same session and names `/clear`; the same task passes. An epic across repositories runs as «Сделай эпик E…» in spec's orchestrator: each task a fresh `claude -p` in this container (R156 spec).
 
-Одна задача — одна сессия (R143 spec): её планирование и выполнение идут в одной сессии, а следующая задача — в новой сессии или после `/clear`. Фразу «Выполни задачу T…» или «планируй T…», которая начинает другую задачу в той же сессии, останавливает хук `UserPromptSubmit` из [.claude/settings.json](.claude/settings.json) — `spec/tools/session/` — и называет `/clear`. Та же задача проходит.
+1. Do only the named task; touch other tasks' files only where it requires.
+2. Read first: [CLAUDE.md](CLAUDE.md) with the rules it imports (RULES.md of `spec/`), the task — in table 1, or only its own body of `run/TASKS.md` (its opening says how) —, the sections it cites — its own and spec's —, [docs/decisions.md](docs/decisions.md).
+   - Conflict with the documents or something missing — stop and ask; never guess.
+   - A gap in the component itself — a subsection of [docs/architecture.md](docs/architecture.md), section 2. A gap across repositories — a row of [run/QUESTIONS.md](run/QUESTIONS.md) whose question opens with the mark «В реестр spec»: spec's session finds it on `main`, and it gets its О-, П- or Т- number once the author decides it there (R81 spec; RULES.md, Across repositories).
+   - From `run/DEBT.md` and `run/QUESTIONS.md` take only the rows the task and its sections name and those `grep -n` finds by the paths and parts it changes (R143 spec).
+3. **Devcontainer only.** If `NOVATRAIL_DEVCONTAINER` is not `1`, stop before the first edit and ask to reopen in the container; "only documents" is no reason to go on. If `spec/` is empty, ask for `git submodule update --init`. Exception: a cloud session the author started for the task runs the checks it can reach, and its report names each one that did not run.
+4. Outside this repository — editing `spec` or other repositories, their settings, anything that costs money — only after a warning (what, where, cost) and the author's confirmation. `spec/` is read only here; a task of its own moves it to a new tag.
+   - Exception, no confirmation: the task's checks by R146 spec — browser: Playwright in the devcontainer, custom-token sign-in of a stand-in user on the dev project; AI: the `tutor` stub in `api` dev mode. A real AI call only where the task checks the model's words: dev key under the author's spend limit at the provider, within the task's ceiling, or with confirmation where it has none; «Сделано» names the provider, the calls and the cost.
+   - Nothing on devices: engines are Chromium, WebKit and Firefox in CI; what only a device shows — pen, device voices, VoiceOver and TalkBack, the home screen — stays a row of [run/DEBT.md](run/DEBT.md) until the author decides otherwise.
+5. Facts on AI providers, laws, prices and other platforms — from the primary source, with quote and date read (RULES.md). What is not confirmed is not stated: it becomes an open question.
+6. End with the checks of what the task changed. Documents: `just -f spec/justfile docs-check-repo` (R32 spec) — relative links lead to existing files and headings; each spec section and number — «architecture 3.5 spec», «R18 spec», О-, П-, Т- — exists in `spec/` at its tag; own sections exist, R numbers have no gaps or repeats and the log's opening names the next free one; numbers В in [run/QUESTIONS.md](run/QUESTIONS.md) and Д in [run/DEBT.md](run/DEBT.md) do not repeat and the next free one is above each. If the tag of `spec` is older than this check, check the same by hand. A code task also ends with the checks under table 1.
 
-**Правила для исполнителя (Claude):**
+   Then `/code-review high`, one round: fix the findings, do not rerun. A small change may skip the review even if «Как проверить» names it.
+7. Do not commit: the author commits after review. A run of spec's orchestrator, «Сделай эпик E…», is the author's word otherwise: its executor works by the contract `spec/tools/orchestrator/executor.md` — commits, pushes and opens the pull request, never merges (R156 spec). In a session the author started, not an orchestrator's run, the executor of E3 also merges, by the author's decision in the epic's description.
+8. End with a short report in Russian: what was done, files, how to check, what the review found or why there was none, what is open and what goes «в реестр spec».
+9. When done: table 1 `[ ]` → `[x]`; append to the body «Сделано (дата)» — what was done, how checked — and «Открыто». A question for the author from «Открыто» is also a row of [run/QUESTIONS.md](run/QUESTIONS.md); what is put off, a row of [run/DEBT.md](run/DEBT.md).
+   - Then move the body verbatim, relative links fixed, to the epic archive `docs/plan/<epic>.md`, with a gist sentence — an unheaded list item at the start of the receiving section: «T01 — сделана <дата>: <итог одной фразой>». Neither stays here, and a search by heading finds one body, in the archive (R153 spec).
+   - A task outside an epic leaves `run/TASKS.md` for the current epic's archive, section «Задачи вне эпика, сделанные за его время»; with no current epic, to the last done epic's archive, section «Задачи вне эпика, сделанные после него» (R19 spec and its 2026-11-13 amendment). Its row of table 1 stays (R13).
+10. Language (R14 spec, R42 spec, R143 spec, R154 spec): this plan and `run/` in English, the bodies of tasks, the epic archives `docs/plan/` and the reports in Russian; `docs/` in English; README, CLAUDE.md, AGENTS.md, code, comments, schema descriptions, prompts and normative texts for authors in English.
+11. A task larger than one review (≈ 30–60 minutes of reading): propose a split before starting.
+12. Before a new task, close the findings on the previous one, once SonarCloud, CodeQL and Scorecard run here (R30 spec); an allowed departure from rule 1. SonarCloud sees merged code: its verdict on the previous task is in [New Code](https://sonarcloud.io/summary/new_code?id=altnovatrail_app); CodeQL and Scorecard — the Security tab, `gh api 'repos/altnovatrail/app/code-scanning/alerts?state=open'`. Fix in code first; "false positive" is the last resort, with the reason in words; what a change cannot close stays open — shared reasons in R33 spec, own ones in the log, like R51 canvas-api. Never skip silently. Report these fixes in a separate paragraph: the author commits them apart from the task.
 
-1. Делать только указанную задачу. Файлы других задач не трогать, кроме того, что задача прямо требует.
-2. **Сначала прочитать** [CLAUDE.md](CLAUDE.md) вместе с правилами, которые он импортирует (RULES.md из `spec/`), саму задачу, разделы документов — своих и `spec`, — на которые она ссылается, и [docs/decisions.md](docs/decisions.md).
-   - Если задача противоречит документам или чего-то не хватает — остановиться и спросить, а не додумывать.
-   - Дыра в самом компоненте становится подразделом [docs/architecture.md](docs/architecture.md), раздел 2. Дыра, которая касается нескольких репозиториев, — строкой таблицы 3, чей вопрос открывается пометкой «В реестр spec». Сессия `spec` найдёт её сама, на `main` этого репозитория, а номер О-, П- или Т- она получит, когда я решу её там (R81 spec; RULES.md, Across repositories).
-   - Долг, который касается задачи, — в таблице 4, [DEBT.md](DEBT.md). Его не читают целиком: задача берёт строки, которые называют она сама и её разделы, и строки, которые `grep -n` находит по путям и частям её правки (R143 spec).
-3. **Только внутри devcontainer.** Если `NOVATRAIL_DEVCONTAINER` не равен `1`, остановиться до первой правки и попросить открыть проект в контейнере. «Правка — только документы» — не повод продолжать. Если `spec/` пуст, остановиться и попросить `git submodule update --init`. Единственное исключение — облачная сессия Claude Code, которую я запустил для задачи: она работает без контейнера, прогоняет те проверки, до которых дотягивается, а отчёт называет каждую, что не шла.
-4. **Действия вне этого репозитория — только после предупреждения и моего подтверждения.** Это правка `spec` и других репозиториев, их настроек и всё, что стоит денег. Предупреждение называет, что именно, где и сколько это стоит. `spec/` здесь только читается; на новый тег его переводит отдельная задача.
-   - **Исключение — проверки задачи по R146 spec:** их исполнитель проводит без меня. Путь в браузере — Playwright в devcontainer, вход локальной сборки — custom token условного пользователя на dev-проекте. Вызовы ИИ — на заглушке `tutor` в режиме разработки `api`.
-   - Настоящий вызов ИИ — только там, где задача проверяет слова модели: на dev-ключе, у которого есть свой лимит трат у поставщика, поставленный мной, и в пределах потолка, который называет текст задачи. Без потолка в задаче настоящий вызов ждёт подтверждения, как всё прочее, что стоит денег.
-   - «Сделано» такой задачи называет, что потрачено: поставщик, число вызовов и сумма.
-   - На устройствах исполнитель ничего не проверяет: движки проверяют Chromium, WebKit и Firefox в CI, а то, что видно только на устройстве, — перо, голоса устройства, VoiceOver и TalkBack, экран «Домой», — остаётся долгом в таблице 4, [DEBT.md](DEBT.md), пока я не решу иначе.
-5. Факты о поставщиках ИИ, законах, ценах и чужих платформах — из первоисточника, с цитатой и датой прочтения (RULES.md). Что не подтвердилось — не утверждается, а становится открытым вопросом.
-6. **Задача заканчивается проверками** — теми, что касаются её правок. Документы проверяет `just -f spec/justfile docs-check-repo` (R32 spec):
-   - относительные ссылки ведут на существующие файлы и заголовки;
-   - каждый раздел и номер `spec` — «architecture 3.5 spec», «R18 spec», О-, П-, Т- — есть в `spec/` на его теге;
-   - свои разделы существуют, номера R идут без пропусков и повторов, а начало журнала называет следующий свободный;
-   - номера В в таблице 3 и Д в таблице 4, [DEBT.md](DEBT.md), не повторяются, а следующий свободный больше каждого из них.
+**Statuses:** `[ ]` not started; `[x]` done, the executor marks it; `[-]` not done — the author's decision, reason in the task; `[?]` deferred — the author's decision, reason and when to return in the task. A task that fails the author's review returns to `[ ]` with what to fix.
 
-   Если тег `spec` в подмодуле старше этой проверки, исполнитель сверяет то же руками.
+**Who:** «Claude» — the executor does it, the author reviews; «Claude, проверяю я» — texts the author reads line by line; «я + Claude» — the author does some steps: decisions, sign-ins, GitHub settings, confirmations by rule 4.
 
-   Затем задача проходит `/code-review high`, один круг: исправив его находки, исполнитель ревью не повторяет. Небольшую правку он может сдать без ревью — это решает он сам, даже если «Как проверить» задачи называет `/code-review high`.
-7. Не коммитить. Коммит делаю я после проверки.
-8. В конце — короткий отчёт по-русски: что сделано, какие файлы, как проверить, что нашло ревью или почему его не было, что осталось открытым и что уходит «в реестр spec».
-9. После выполнения отметить задачу в таблице 1 (`[ ]` → `[x]`) и дописать в её тело «Сделано (дата)» — что сделано и чем проверено — и «Открыто». Вопрос ко мне из «Открыто» встаёт ещё и строкой в таблицу 3, а то, что отложено, — в таблицу 4, [DEBT.md](DEBT.md).
-   - Затем тело задачи уходит в архив эпика, `docs/plan/<эпик>.md`, дословно, с поправленными относительными ссылками, а здесь от него остаётся фраза итога — пункт списка в начале её части эпика: «T01 — сделана <дата>: <итог одной фразой>. Тело — `docs/plan/E1.md`», со ссылкой на архив. Заголовка задачи здесь не остаётся, и поиск по заголовку находит одно тело — в архиве.
-   - Задача вне эпика уходит в архив текущего эпика, в его раздел «Задачи вне эпика, сделанные за его время», а её фраза — в список сделанных задач части текущего эпика, с пометкой «вне эпика» (R19 spec; R41). Когда текущего эпика нет, тело уходит в архив последнего сделанного эпика, в его раздел «Задачи вне эпика, сделанные после него», а фраза встаёт в конец этого файла, где стояло тело, и уходит отсюда с архивом следующего эпика (поправка 2026-11-13 к R19 spec; R41).
-10. Язык (R14 spec, R19 spec, R42 spec, R143 spec): этот план, [DEBT.md](DEBT.md), архивы эпиков `docs/plan/` и отчёты — на русском; документы в `docs/`, кроме архивов эпиков, — на английском; README, CLAUDE.md, AGENTS.md, код, комментарии, описания схем, промпты и нормативные тексты для авторов — на английском.
-11. Если задача оказалась больше, чем на одну проверку (≈ 30–60 минут чтения), — до начала предложить, как её разбить.
-12. **Перед новой задачей — закрыть находки по прошлой**, когда в репозитории работают SonarCloud, CodeQL и Scorecard (R30 spec). Это разрешённое отступление от правила 1.
-    - SonarCloud смотрит уже смерженный код, поэтому его вердикт приходит, когда задача слита: открыть [New Code](https://sonarcloud.io/summary/new_code?id=altnovatrail_app) и исправить найденное по прошлой задаче.
-    - Так же закрываются находки CodeQL и Scorecard во вкладке Security: `gh api 'repos/altnovatrail/app/code-scanning/alerts?state=open'` их показывает.
-    - Находку сначала чинить кодом. Пометка «ложное» — крайняя мера, с причиной, названной словами. Находка, которую правка закрыть не может, остаётся открытой. Общие для всех репозиториев причины записаны в R33 spec, а свои записываются в журнал решений, как R51 canvas-api. Молча находку не пропускать.
-    - Эти правки идут в отчёт отдельным абзацем: я коммичу их отдельно от задачи.
+**Plan:** «да» — plan mode first: decisions missing from the documents, or larger than one review (rule 11); «—» — run at once.
 
-**Статусы:**
-- `[ ]` — не начата;
-- `[x]` — выполнена, отмечает исполнитель;
-- `[-]` — не делаем: решение автора, причина — в задаче;
-- `[?]` — отложена: решение автора, в задаче — причина и когда вернуться.
+**Task body** (Russian): «Цель», «Сделать», «Как проверить», «Разделы»; as needed «Не делать», «Решить при планировании», «Мой шаг», «Стоимость», «Риски», «Ждёт»; from planning «Почему», «Решено автором (дата)», «Выяснилось при планировании»; when done «Сделано (дата)», «Открыто» (rule 9).
 
-Если при проверке что-то не так, возвращаю задачу в `[ ]` и пишу, что поправить.
+**Citations.** Own sections — `architecture 2`, own decisions — `R03`; spec's sections and decisions — «architecture 3.5 spec», «R18 spec», its open questions — «Т-22», «П-7», «О-2»: the repository keeps no registers; other NovaTrail repositories' decisions — «R03 api»; MathTrail's — «R44 canvas-api», «R163 standalone», in a list «canvas-api: R44, R59». Each log numbers its own: «R19 spec» and `R19` of this log differ. A task — «T03», from another repository «T03 app»; one not here is in `run/TASKS.md` or an archive: `grep -n '^#### T03\.' RUN.md run/TASKS.md docs/plan/*.md`. Task numbers are global and never reused: take the one free when writing it down.
 
-**Кто:**
-- «Claude» — делает исполнитель, я проверяю;
-- «Claude, проверяю я» — тексты, которые я вычитываю построчно;
-- «я + Claude» — часть шагов делаю я: решения, вход в сервисы, настройки GitHub, подтверждения по правилу 4.
+## Epics
 
-**План:**
-- «да» — задачу стоит сначала прогнать в режиме планирования. До работы в ней нужно принять решения, которых нет в документах, или она заведомо больше одной проверки (правило 11).
-- «—» — запускать сразу: результат определён документами.
+- **Table 1** is the current epic: its tasks in detail, run one at a time. A task outside an epic — a move to a tag of `spec` (RULES.md, Across repositories), a task of analysis by R145 spec — has its row in table 1 too, with or without an epic, and its body in `run/TASKS.md` (R13, R50).
+- **Next epic.** Once table 1 is all checked, the author picks the next epic from [run/EPICS.md](run/EPICS.md) and splits it with Claude in plan mode into tasks of one review each, into table 1 and this file.
+- **A done epic** goes to `docs/plan/<epic>.md` (R59 canvas-api): bodies and gist sentences are there already (rule 9); move its description and table of tasks verbatim; questions and debt stay in `run/`; until the next epic, table 1 reads «Current epic — none» and names it as the last done epic; measure the epic's sessions — `just -f spec/justfile tokens-report --since <first day of the epic> --row` — as a row of the table of measurements of [docs/measurements.md](docs/measurements.md), after measurements 1.9 spec; a new analysis by the threshold of R145 spec. Never read an archive whole: take the task cited.
+- **Archives:** E1 — [docs/plan/E1.md](docs/plan/E1.md); E2 — [docs/plan/E2.md](docs/plan/E2.md); E3, under way — [docs/plan/E3.md](docs/plan/E3.md).
 
-**Тело задачи** — разделы «Цель», «Сделать», «Как проверить» и «Разделы», а где нужно — «Не делать», «Решить при планировании», «Мой шаг», «Стоимость» и «Риски».
-- При планировании в задачу пишутся ещё «Почему», «Решено автором (дата)» и «Выяснилось при планировании».
-- Исполнитель после выполнения дописывает «Сделано (дата)» и «Открыто» (правило 9).
-
-**Ссылки.** Задачи ссылаются:
-- на свои разделы — `architecture 2`; на свои решения — `R03`;
-- на разделы и решения `spec` — «architecture 3.5 spec», «R18 spec»; на открытые вопросы `spec` — «Т-22», «П-7», «О-2»: своих реестров у репозитория нет;
-- на решения других репозиториев NovaTrail — «R03 api»; на решения MathTrail — «R44 canvas-api», «R163 standalone», а списком — «canvas-api: R44, R59». У каждого журнала свои номера: «R19 spec» и `R19` этого журнала — разные решения.
-
-## Как устроен план: эпики
-
-- **Таблица 1 — текущий эпик.** Его задачи расписаны подробно и запускаются по одной, по правилам выше.
-- **Задачи вне эпика** — например, переход на новый тег `spec` своей задачей (RULES.md, Across repositories) — встают в таблицу 1 и тогда, когда эпика нет. Своего раздела у них нет: тело встаёт в часть текущего эпика, рядом с телами его задач, а когда эпика нет — в конец файла, под своим заголовком задачи. Задача анализа по порогу R145 spec, которую тот ставит в «Задачи вне эпика», встаёт так же. Сделанная уходит в архив текущего эпика, в его раздел «Задачи вне эпика, сделанные за его время», а её фраза итога — в список сделанных задач части эпика, с пометкой «вне эпика»; когда эпика нет — в архив последнего сделанного эпика, в раздел «Задачи вне эпика, сделанные после него» (правило 9; R13, поправки к нему; R41).
-- **Таблица 2 — эпики на потом.** У каждого — результат и основа, но ещё не задачи. Порядок строк — порядок, в котором эпики берутся, пока я не решу иначе.
-- **Таблица 3 — вопросы автору без ответа**, из «Открыто» задач. Мой ответ записывается туда, куда он относится, — в задачу, документ или таблицу 4, — и строка уходит. Строка с пометкой «в реестр spec» уходит, когда вопрос записан в `spec`: задача, которая на него опирается, называет его номер.
-- **Таблица 4 — технический долг**, в своём файле [DEBT.md](DEBT.md) (R19 spec; R39): что отложено сознательно, чем это грозит и когда вернуться. Строка уходит, когда долг закрыт.
-- **Следующий эпик.** Когда в таблице 1 отмечены все задачи, я выбираю следующий эпик из таблицы 2.
-  - Вместе с Claude в режиме планирования продумываю его и дроблю на задачи. Каждая задача — на одну проверку, ≈ 30–60 минут чтения.
-  - Задачи встают в таблицу 1 и в тело этого файла, а строка эпика уходит из таблицы 2.
-- **Сделанный эпик уходит в архив** — свой файл `docs/plan/<эпик>.md`, как в canvas-api (R59 canvas-api):
-  - тела задач уже там: каждое ушло, когда задачу сделали (правило 9). С эпиком туда дословно переезжает остальное, что есть о нём в таблице 1 и в теле файла: описание и таблица задач, а фразы итога уходят — их заменяет таблица задач;
-  - фразы итога задач вне эпика, сделанных за его время и перед ним, между эпиками, уходят отсюда вместе с ним: тела первых уже в его архиве, вторых — в архиве эпика перед ним;
-  - здесь от эпика остаётся строка в списке «Сделанные эпики» со ссылкой на архив;
-  - замер расхода токенов сессиями эпика — `just -f spec/justfile tokens-report --since <первый день эпика> --row` — строкой в таблицу замеров [docs/measurements.md](docs/measurements.md), по образцу measurements 1.9 spec, а повторный анализ — по порогу R145 spec;
-  - вопросы и долги эпика остаются в таблице 3 и в таблице 4, [DEBT.md](DEBT.md), пока их не закроют.
-
-  Здесь остаётся только живое: правила, текущий эпик, фразы итога его сделанных задач и таблицы 2 и 3. Архив целиком не читается: из него берут задачу, на которую есть ссылка.
-- **Ссылка на задачу** — её номер: «T03», а из другого репозитория — «T03 app». Задачу, которой здесь нет, ищут в архиве по заголовку: `grep -n '^#### T03\.' RUN.md docs/plan/*.md`.
-- **Номера задач** сквозные и не переиспользуются. Новая задача получает номер, свободный в момент записи: параллельная сессия может занять следующий.
-
-**Сделанные эпики:**
-- E1. Детализация — T01–T12; сделан 2026-11-02. Архив — [docs/plan/E1.md](docs/plan/E1.md).
-- E2. Первое приложение — T15–T31, а вне эпика T13, T14 и T32–T34; сделан 2026-11-12. Архив — [docs/plan/E2.md](docs/plan/E2.md).
-
-## Таблица 1. Текущий эпик — E3. Первый срез со взрослыми учениками
+## Table 1. Current epic — E3. Первый срез со взрослыми учениками
 
 **Результат:**
 - сборку `app` выкатил `infra` вместе с `api` (R106 spec; строка 6.9 [COORDINATION.md](spec/COORDINATION.md)), и на ней учатся взрослые ученики — я, а по инвайт-кодам и другие взрослые, — с iPad, Android и компьютера;
@@ -147,49 +91,20 @@
 | [x] | T61 | Переход на `spec` v0.17.9 | Claude | — | — |
 | [ ] | T62 | Работы на сервере: `PutWork` | Claude | — | T39, T46 |
 | [x] | T63 | Переход на `spec` v0.18.3: тег, пакеты и контейнер | Claude | да | — |
-| [ ] | T64 | Переход на `spec` v0.18.3: таблицы плана в `run/` и план на английском | Claude | — | T63 |
+| [x] | T64 | Переход на `spec` v0.18.3: таблицы плана в `run/` и план на английском | Claude | — | T63 |
 | [ ] | T65 | CI на общих процессах `.github` v0.1.24 | Claude | — | T64 |
 
-«Зависит от» называет только задачи этого файла. Чего задача ждёт от других репозиториев, называет её строка «Ждёт»: такая задача берётся, когда сосед это сделал, а до тех пор очередь идёт дальше.
+«Зависит от» names only tasks of this plan. What a task waits for from other repositories is its body's «Ждёт»: it is taken once the neighbour has done that, and until then the queue goes on.
 
-Каждая задача кода кончается проверками правила 6:
-- рецепты `ci-lint`, `ci-test`, `ci-vuln`, `ci-licenses` и `build` зелёные локально и в CI;
-- `codecov/patch` — не меньше 90 % изменённых строк;
-- `just -f spec/justfile docs-check-repo` — зелёный;
-- затем `/code-review high`, один круг.
-
-«Как проверить» задачи называет только то, что сверх них.
+A code task ends with the checks of rule 6: the recipes `ci-lint`, `ci-test`, `ci-vuln`, `ci-licenses` and `build` green locally and in CI; `codecov/patch` at least 90 % of the changed lines; `just -f spec/justfile docs-check-repo` green; then `/code-review high`, one round. A task's «Как проверить» names only what goes beyond them.
 
 **Почему такой порядок.**
 - T47 и T48 ждут соседей: сочинения и тетрадь — их допуска в `api`. Их порядок — тот, в каком соседи их откроют.
 - T62 ждёт `canvas`: картинку работы для `PutWork` рисует канва, а её метода ещё нет (В66).
-- T64 и T65 — вне эпика, по очереди за T63: вторая часть перехода на v0.18.3 и CI на `.github` v0.1.24 (R49). Обе переписывают файлы, которые правят и задачи эпика, — RUN.md и DEBT.md, `.github/workflows/`, — и идут до них.
+- T65 — вне эпика, за T64: CI на `.github` v0.1.24 (R49). Она переписывает `.github/workflows/`, которые правят и задачи эпика, и идёт до них. Тело — [run/TASKS.md](run/TASKS.md).
 - T52 — итог эпика, когда сделано остальное.
 
-## Таблица 2. Эпики на потом
-
-Порядок эпиков кода — E2, E3, E4 — предложила T08, а что из решений E1 берёт каждый, — [docs/architecture.md](docs/architecture.md), раздел 3.10.
-
-| ID | Эпик | Результат | Основа |
-|---|---|---|---|
-| E4 | До первого ребёнка | профили детей; начало работы с согласием родителя — подписанной формой (R116 spec), профиль ребёнка в два шага (R98 spec) и контракт согласия с v0.15.0 `spec` — код запроса, скан формы `SendConsentForm`, `CancelChildConsent`, своё согласие подростка `GiveOwnConsent` и его отзыв, `child-notice` и `teen-notice`, возраст заново `RestateAge` и экраны для учеников из США (R132, R134, R136, R140, R141 spec; Д168, Д175, Д183, Д201 и Д204 в таблице 4 RUN.md `spec`); раздел «Помощь» ученику младше 18 (R127 spec); строка ребёнку, что взрослый видит его прогресс (Д157 в таблице 4 RUN.md `spec`); PIN раздела для взрослых и выбор ученика среди профилей детей — выбор с одним профилем владельца строит E2 (T22); выгрузка и удаление — по профилю и аккаунтом целиком, выгрузка — по формату `export/` версии 3: хранимые работы — файлами рядом с `api.zip`, каждая по `GetWork` (R135 spec и её поправка 2026-11-13; R151 spec; Д180; Д233 spec; R49); показ решения ребёнку — с настройкой «спросить перед показом» и действием взрослого за PIN (R82 spec); срок закрытия профиля владельца — Д7; ручные проверки доступности на устройствах — Д10 | repositories 6 spec; R116–R119, R122, R123, R127, R129, R132–R141 spec; П-26; R04, R08, R11; [docs/architecture.md](docs/architecture.md), раздел 3.10. Ждёт: E3; контракт, тексты семьи и форматы — в `spec` с v0.15.0 |
-
-## Таблица 3. Вопросы автору без ответа
-
-Строки В1–В63 и В65 закрыты. Где лёг ответ каждой, — в архивах эпиков, разделы о закрытых строках таблицы 3: [docs/plan/E1.md](docs/plan/E1.md), [docs/plan/E2.md](docs/plan/E2.md) и [docs/plan/E3.md](docs/plan/E3.md).
-
-Номера не переиспользуются: следующий — В67.
-
-| ID | Вопрос | Откуда | Варианты | Рекомендация |
-|---|---|---|---|---|
-| В66 | «В реестр spec». `PutWork` требует `StoredWork.picture` — «the PNG of the strokes the surface shows at the end, as the device draws it» (`work.proto`; [текст контрактов](spec/contracts/README.md), раздел 15), — а её никто не рисует. Канва рисует лист и вырезку, но такой картинки не даёт: `exportPNG()` убрала R27 canvas, и в релизах до v0.3.18 его нет, а `exportWork()` даёт только вырезку на проверку, на тетради — вырезки окошек. Без картинки `app` работу не положит: `api` проверяет её подпись PNG | T62 | (а) `canvas` даёт метод — PNG штрихов, которые показывает поверхность листа или тетради, без условия, — а architecture 3.2 spec его называет; (б) `app` рисует её сам по `replay(history)`; (в) контракт берёт вырезку последней сдачи | (а) — так я решил для `app` 2026-11-14 (T62): рисует тот же, кто рисует лист и вырезку, и вид у них один; (б) — второй рисунок той же работы; (в) — на тетради это не одна картинка, а до первой сдачи слать нечего |
-| В64 | Пинг `https://apis.google.com/js/gen_204` шлёт модуль `gapi_iframes` везде, где он работает, — раз в сто сбросов счётчика ([docs/sources.md](docs/sources.md), раздел 7.6), — а не только в WebKit: на компьютере — после касания «Войти через Google». Тест собранной страницы даёт Chromium и Firefox заглушку gapi, а `site-check` — настоящий скрипт Google, и там тот же отказ `connect-src` изредка уронит проверку: по решению T59 отказ ожидаем только в WebKit (поправка 2026-11-14 к R45). Ожидать его в `site-check` во всех движках? | T59 | (а) в `site-check` отказ пинга — не нарушение в любом движке, а в тесте собранной страницы — как сейчас, только в WebKit: в Chromium и Firefox там gapi — заглушка; (б) оставить только WebKit и перезапускать `site-check`, если он упадёт на пинге | (а): CSP пинг не пускает в любом движке, и различие по движку ничего не защищает, а ложный провал проверки после выкладки путает больше, чем перезапуск |
-
-## Таблица 4. Технический долг
-
-Таблица — в своём файле, [DEBT.md](DEBT.md), с её началом и следующим свободным номером (R19 spec; R39).
-
-## Эпик E3. Первый срез со взрослыми учениками
+## Epic E3. Первый срез со взрослыми учениками
 
 **Почему эпик такой.**
 - E3 — первый срез этапа 2 без детей. В нём всё, что карточка поручает `app`, кроме того, что нужно только с ребёнком: профилей детей, согласия, PIN, раздела «Помощь», выгрузки и удаления. Это E4 (таблица 2; [docs/architecture.md](docs/architecture.md), раздел 3.10; repositories 6 spec).
@@ -224,30 +139,6 @@
 
 **Выяснилось при планировании** — разведка 2026-11-12 по соседям — в архиве [docs/plan/E3.md](docs/plan/E3.md), раздел «Из описания эпика в RUN.md»: задача сверяет соседей заново, на день своего планирования.
 
-**Сделанные задачи** — их тела в архиве эпика, [docs/plan/E3.md](docs/plan/E3.md) (правило 9; R39):
-- T35 — сделана 2026-11-12: добор пути T30 и слова наставника на локальном `api`; не пройденное — Д14. Тело — [docs/plan/E3.md](docs/plan/E3.md).
-- T36 — сделана 2026-11-12: канва 0.3.15, а на странице «Доступность» 1.4.12 вместо 1.4.4 (поправки 2026-11-12 к R11 и R15). Тело — [docs/plan/E3.md](docs/plan/E3.md).
-- T37 — сделана 2026-11-12: раздел для взрослых `#/adults` — вход и настройки профиля (R29). Тело — [docs/plan/E3.md](docs/plan/E3.md).
-- T38 — сделана 2026-11-12: «Это устройство» и байты в IndexedDB (поправки 2026-11-12 к R04 и R16). Тело — [docs/plan/E3.md](docs/plan/E3.md).
-- T39 — сделана 2026-11-12: хранение работ на сервере (R30). Тело — [docs/plan/E3.md](docs/plan/E3.md).
-- T40 — сделана 2026-11-12: юридические страницы, «Доступность» и уведомления о чужом коде (R31). Тело — [docs/plan/E3.md](docs/plan/E3.md).
-- T41 — сделана 2026-11-12: лицензии модулей (R32). Тело — [docs/plan/E3.md](docs/plan/E3.md).
-- T42 — сделана 2026-11-12: «Наставник — это ИИ», учебные материалы и «Сообщить о проблеме» (R33). Тело — [docs/plan/E3.md](docs/plan/E3.md).
-- T43 — сделана 2026-11-12: «Карта навыков» ученика, `skill-map` 0.1.5 (R34). Тело — [docs/plan/E3.md](docs/plan/E3.md).
-- T44 — сделана 2026-11-12: прогресс в разделе для взрослых (R35). Тело — [docs/plan/E3.md](docs/plan/E3.md).
-- T45 — сделана 2026-11-12: озвучка, `src/voice/` (R36). Тело — [docs/plan/E3.md](docs/plan/E3.md).
-- T46 — сделана 2026-11-14: свой ключ — держатель `src/ownkey/`, страница `#/adults/own-key`, строка на «Это устройство», ключ и поставщик в запросах, участок `just walk` (R47); причина предела — В65, Д22 и Д23. Тело — [docs/plan/E3.md](docs/plan/E3.md).
-- T49 — сделана 2026-11-12: квота ИИ платформы на экранах (R37). Тело — [docs/plan/E3.md](docs/plan/E3.md).
-- T50 — сделана 2026-11-13: `https://novatrail.web.app` отдаёт `app` v0.1.0 как его релиз, по разделу 3.7, — рецептом `just site-check` (R42); пара v0.1.3 для E6 `infra` — В61. Тело — [docs/plan/E3.md](docs/plan/E3.md).
-- T57 — сделана 2026-11-14: `spec` v0.17.1 (R43), путь первого среза в трёх движках без автора — `just walk` (R44), тесты в браузере в CI на Chromium, WebKit и Firefox (R45); траты на настоящий ИИ — нет. Тело — [docs/plan/E3.md](docs/plan/E3.md).
-- T58 — сделана 2026-11-14: следующая версия юридического текста до дня, с которого она применяется, и страница оператора копии — раздел «Who we are» политики (R46); Д17 закрыт; пара строки 6.16 — В63. Тело — [docs/plan/E3.md](docs/plan/E3.md).
-- T59 — сделана 2026-11-14: в WebKit тест собранной страницы и `site-check` не считают нарушением отказ `connect-src` пингу gapi `gen_204`, а CSP его по-прежнему не пускает (поправки 2026-11-14 к R45 и R42); пинг в `site-check` в Chromium и Firefox — В64. Тело — [docs/plan/E3.md](docs/plan/E3.md).
-- T60 — сделана 2026-11-14: `just walk` не падает на отказе `api` с причиной — ответ 4xx своего источника ошибка во всех движках, если он не отказ, — и продолжает урок, начатый раньше; отказ квоты останавливает путь своим сообщением (поправка 2026-11-14 к R44). Тело — [docs/plan/E3.md](docs/plan/E3.md).
-- T53 — вне эпика, сделана 2026-11-12: `spec` v0.16.3 (R38), документы по R143 spec (R39), названия в прогрессе и доля квоты (R40). Тело — [docs/plan/E3.md](docs/plan/E3.md).
-- T54 — вне эпика, сделана 2026-11-12: перевод `docs/architecture.md`, `docs/sources.md` и `docs/measurements.md`. Тело — [docs/plan/E3.md](docs/plan/E3.md).
-- T55 — вне эпика, сделана 2026-11-13: перевод журнала решений и `docs-budgets.json`. Тело — [docs/plan/E3.md](docs/plan/E3.md).
-- T61 — вне эпика, сделана 2026-11-14: `spec` v0.17.9 (R48) — контракт и заготовка те же, а вид по эталону интерфейса (R148 spec) и 2.5.7 на странице «Accessibility» ждут своих тегов — Д25 и Д24. Тело — [docs/plan/E3.md](docs/plan/E3.md).
-- T63 — вне эпика, сделана 2026-11-16: `spec` v0.18.3 (R49) — подмодуль, пакеты 0.18.3, часть `deployment/` и базовый образ контейнера 3.0.13-noble; строки В62, В63 и В65 закрыты, а что тег решил за `app` и `app` пока не делает, — Д28–Д31; раскладка и язык плана — T64, CI — T65. Тело — [docs/plan/E3.md](docs/plan/E3.md).
 
 #### T47. Сочинения: `sheet`, отзыв по рубрике и напоминание не писать имён
 
@@ -325,29 +216,3 @@
 - **Мой шаг:** выбор следующего эпика.
 - **Как проверить:** `just -f spec/justfile docs-check-repo` зелёный, а в RUN.md — только живое.
 - **Разделы:** [docs/architecture.md](docs/architecture.md), раздел 3.10; T31 в [docs/plan/E2.md](docs/plan/E2.md).
-
-#### T64. Переход на `spec` v0.18.3: таблицы плана в `run/` и план на английском
-
-- **Цель:** план `app` — в раскладке и на языке заготовки `spec` v0.18.3. Таблицы 2, 3 и 4 — файлы `run/EPICS.md`, `run/QUESTIONS.md` и `run/DEBT.md`, бывший DEBT.md; открытые задачи вне эпика — `run/TASKS.md`; правила RUN.md, начала и строки таблиц `run/` — на английском, сжато, для сессии. Тела задач, описание эпика и задачи таблицы 1 остаются на русском.
-- **Почему:** вторая часть перехода на v0.18.3 по правилу 11 (R49). R153–R155 spec: каждый репозиторий переносит план своим переходом на тег с этими решениями — строка Д250 `spec`; RULES.md spec, Language. R156 spec: правила RUN.md называют контракт исполнителя оркестратора — правило 7 и первая строка правил заготовки.
-- **Сделать:**
-  - вывод `just new-repo-draft app typescript 3.1 v0.18.3` на клоне `spec` v0.18.3 во временной папке — образец RUN.md, `run/`, CLAUDE.md и README.md;
-  - таблицы 2 и 3 из RUN.md и таблица 4 из DEBT.md — в `run/`, под заголовками «Table N. …» (R154 spec), строки переведены. Начало таблицы — её правила и следующий свободный номер, без истории закрытых строк: она уже в архивах `docs/plan/`;
-  - RUN.md — правила на английском, их номера те же, и текущий эпик. Фразы итога сделанных задач — в архив, к их телам (R153 spec), строки таблицы 1 остаются;
-  - отличия правил `app` от заготовки, которые держат решения журнала, остаются: какие — сверить по журналу, `grep -n 'RUN.md' docs/decisions.md`;
-  - CLAUDE.md — раздел Documents по заготовке; `docs-budgets.json` — пределы новых файлов, если нужны;
-  - ссылки на DEBT.md в документах, README, `.claude/rules/` и коде — на `run/DEBT.md`; архивы `docs/plan/` не переводятся, в них правятся только ссылки (R153 spec);
-  - поправки к записям журнала, чей текст в силе говорит, где таблица и на каком она языке, — R39, R41 и прочим, что найдёт `grep`.
-- **Как проверить:** `just -f spec/justfile docs-check-repo` — зелёный; DEBT.md в корне нет, и ссылки на него ведут на `run/DEBT.md`; `/code-review high`, один круг.
-- **Разделы:** R153, R154, R155, R156 spec; Д250 `spec`; RULES.md spec, Language; repositories 2.2 spec; R39, R41, R49.
-
-#### T65. CI на общих процессах `.github` v0.1.24
-
-- **Цель:** каждый `uses:` `.github/workflows/` — на SHA релиза `.github` v0.1.24, последнего на 2026-11-16.
-- **Почему:** CI `app` — на v0.1.22 (R14; R49), а волна 0 прогона «Сделай эпик E…» ставит каждый репозиторий на последний релиз `.github` следующей задачей после перехода на тег (R156 spec). Кеш образа `toolchain` (Д146 `spec`) у `app` есть с v0.1.22, а группа Dependabot `shared-workflows` (Д88 `spec`) — в `.github/dependabot.yml`: что несут v0.1.23 и v0.1.24, задача читает в их релизах.
-- **Сделать:**
-  - SHA тега v0.1.24 — в каждый `uses:` с комментарием `# v0.1.24`;
-  - что изменили входы и права общих процессов между v0.1.22 и v0.1.24 — `gh api repos/altnovatrail/.github/compare/v0.1.22...v0.1.24` — взять в вызовы;
-  - поправка к R14 о версии общих процессов; [docs/architecture.md](docs/architecture.md), раздел 3.1, — если он называет версию.
-- **Как проверить:** проверки pull request зелёные; `just -f spec/justfile docs-check-repo` — зелёный.
-- **Разделы:** R14, R49; Д88 и Д146 `spec`; R156 spec.
