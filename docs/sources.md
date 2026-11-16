@@ -94,6 +94,12 @@ Read 2026-11-14 (architecture 3.1; R45) — the code of `vitest` 5.1.0 in `node_
 - each left instance whose provider or browser is not Chromium — `if (provider === "preview" || !isChromiumName(provider, browser))`, under the comment "Browser-mode CDP only features" — fails the run when the coverage is on with v8, by the error "@vitest/coverage-v8 does not work with", then the instance's configuration, "Use either:" with Chromium's, and "...or change your coverage provider to:" with `provider: 'istanbul'`;
 - so a run with `--coverage` takes WebKit and Firefox only where `--project` leaves them out, and a run without it takes all three.
 
+### 2.6. React 19.3.1 and Testing Library 16.3.3: the act environment, 2026-11-16
+
+Read 2026-11-16 (architecture 3.1; the 2026-11-16 amendment to R03) — the code in `node_modules`, an inference from code, not a page of documentation:
+- `react-dom` 19.3.1, `cjs/react-dom-client.development.js`: `IS_REACT_ACT_ENVIRONMENT` is read by `isConcurrentActEnvironment()` alone, and that is called in two places, each only to warn — "An update to %s inside a test was not wrapped in act(...)" and "A suspended resource finished loading inside a test, but the event was not wrapped in act(...)" —, both when `null === ReactSharedInternals.actQueue`; the same function, with the flag off and an `actQueue` set, warns "The current testing environment is not configured to support act(...)". Where React's work goes is `scheduleCallback$1`: "null !== actQueue ? (actQueue.push(callback), fakeActCallbackNode$1) : scheduleCallback$3(priorityLevel, callback)" — by the queue of `act`, not by the flag;
+- `@testing-library/react` 16.3.3, `dist/act-compat.js`: its `act` is `withGlobalActEnvironment(reactAct)`, which calls `setIsReactActEnvironment(true)` before the callback and sets back `previousActEnvironment` once the callback, or the promise it returns, has ended; its `render` renders through this `act`.
+
 ## 3. Storage on the device
 
 For architecture 3.2: the browser's storages, their quotas and clearing, IndexedDB and the sign-in session on the device.
