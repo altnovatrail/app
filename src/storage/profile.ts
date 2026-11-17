@@ -328,18 +328,20 @@ export class Profile {
   ): Promise<Saved> {
     return this.save([ESSAYS], async (tx) => {
       const { attemptId, digest, task } = attempt;
-      const kept = essayOf(await tx.get(ESSAYS, attemptId), false);
-      if (kept?.digest === digest) return "saved";
       const record = (await tx.get(ESSAYS, attemptId)) as { sent?: unknown } | undefined;
-      await tx.put(ESSAYS, attemptId, {
-        attemptId,
-        digest,
-        ...(task === undefined ? {} : { task }),
-        ...(language === undefined ? {} : { language }),
-        startedAt: kept?.startedAt ?? this.now(),
-        ended: false,
-        sent: kept === undefined || !Array.isArray(record?.sent) ? [] : record.sent,
-      });
+      const kept = essayOf(record, false);
+      if (kept?.digest !== digest) {
+        await tx.put(ESSAYS, attemptId, {
+          attemptId,
+          digest,
+          ...(task === undefined ? {} : { task }),
+          ...(language === undefined ? {} : { language }),
+          startedAt: kept?.startedAt ?? this.now(),
+          ended: false,
+          // A record essayOf reads has its submissions as an array.
+          sent: kept === undefined ? [] : record?.sent,
+        });
+      }
       return "saved";
     });
   }

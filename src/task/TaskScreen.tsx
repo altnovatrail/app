@@ -15,55 +15,21 @@
 // all, the voicing of the profile switched on and off; above the canvas, "Read aloud" of the
 // statement with its items (R07; T45). Above Check on a handwriting sheet, the reminder to write no
 // names, whose crop goes to AI whole (R127 in spec; R53).
-import type {
-  CanvasElement,
-  HistoryChangeEvent,
-  HistoryEvent,
-  Media,
-} from "@altnovatrail/spec/canvas";
 import type * as open from "@altnovatrail/spec/formatv0/open";
-import { type ReactNode, type Ref, useEffect, useId, useMemo, useRef, useState } from "react";
-import type { Failure } from "../api/failure.ts";
-import { failureText } from "../api/words.ts";
-import { Screen } from "../app/Screen.tsx";
+import { useEffect, useId, useRef, useState } from "react";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
-import { ReadAloud } from "../voice/ReadAloud.tsx";
-import { taskPhrases } from "../voice/texts.ts";
-import { VoicingToggle } from "../voice/VoicingToggle.tsx";
 import { summaryText, type Verdicts } from "./attempt.ts";
 import { goesWhole } from "./essay.ts";
-import { Hint, type HintGiven } from "./Hint.tsx";
 import { Items, Verdict } from "./Items.tsx";
 import { Solution } from "./Solution.tsx";
-import { StepsPanel } from "./StepsPanel.tsx";
-import { choicesOnly, type Mode, type StepsState, slotsFilled, writingFilled } from "./steps.ts";
+import { choicesOnly, slotsFilled, writingFilled } from "./steps.ts";
+import { HintButton, ResultEnd, TaskLayout, type TaskParts } from "./TaskLayout.tsx";
 import { TutorWords } from "./TutorWords.tsx";
 
-export interface TaskScreenProps {
-  readonly task: open.Task;
-  readonly manifest: open.Manifest | undefined;
-  readonly steps: readonly open.Step[];
-  readonly catalog: open.Techniques | undefined;
-  readonly state: StepsState;
-  /** The mode shown: "on my own" alone for a module without steps. */
-  readonly mode: Mode;
+export interface TaskScreenProps extends TaskParts {
   readonly verdicts: Verdicts;
-  /** The canvas's `filled`, as last read. */
-  readonly filled: readonly (readonly boolean[])[] | null;
-  readonly history: readonly HistoryEvent[];
-  readonly media: Media;
-  /** A write of the work did not reach the device's database. */
-  readonly notSaved: boolean;
-  /** A check or a new attempt is under way. */
-  readonly pending: boolean;
-  /** What the last check came to, when it did not answer. */
-  readonly failure?: Failure;
   /** The solution of the task solved; none while it is not. */
   readonly solution?: readonly open.StatementPart[];
-  /** What "Try it again" came to, when it did not answer. */
-  readonly againFailure?: Failure;
-  /** Check blinks once on a pause (section 3.3). */
-  readonly blink: boolean;
   /** The tutor's words of the rung, or after the correct answer; none while none came. */
   readonly tutorWords?: string;
   /**
@@ -75,13 +41,8 @@ export interface TaskScreenProps {
   readonly wordsWaiting?: boolean;
   /** The words came since the last check: a screen reader is told. */
   readonly wordsCame?: boolean;
-  /** "Report a problem" with the tutor's words shown, for a learner of the category adult (R33). */
-  readonly report?: ReactNode;
   /** The outcome of AI at the last check, in words: a failure of AI, a quota, a limit. */
   readonly outcome?: string;
-  /** The hint api gave before the first wrong answer; none while none was asked for. */
-  readonly hint?: HintGiven;
-  readonly onHint: () => void;
   /** "Explain differently", while the rung has the right to it. */
   readonly onExplain?: () => void;
   readonly explaining?: boolean;
@@ -93,43 +54,13 @@ export interface TaskScreenProps {
   readonly showNote?: string;
   /** The attempt ended by the solution shown, not by a correct answer. */
   readonly shown?: boolean;
-  readonly canvasRef?: Ref<CanvasElement>;
-  readonly onHistoryChange: (event: HistoryChangeEvent) => void;
-  readonly onMode: (mode: Mode) => void;
-  readonly onGoTo: (place: number) => void;
-  readonly onTick: (chip: number | "unknown") => void;
-  readonly onDone: () => void;
   readonly onChoose: (key: string, option: string) => void;
   readonly onCheck: () => void;
-  readonly onAgain: () => void;
-  readonly onHome: () => void;
-  /** The task is a segment of a lesson, under its header: no screen of its own, no "Try it again". */
-  readonly inLesson?: boolean;
-  /** The way to what the engine chose once the attempt is over, outside a lesson (R24). */
-  readonly next?: ReactNode;
-}
-
-/** The screen of the task, or, in a lesson, the lesson's screen around it. */
-export function Frame({
-  inLesson,
-  title,
-  children,
-}: {
-  readonly inLesson: boolean;
-  readonly title: string;
-  readonly children: ReactNode;
-}) {
-  if (inLesson) return <div className="nt-lesson-task">{children}</div>;
-  return (
-    <Screen title={title} wide>
-      {children}
-    </Screen>
-  );
 }
 
 export function TaskScreen(props: TaskScreenProps) {
-  const { task, manifest, steps, state, mode, verdicts, filled, solution, pending } = props;
-  const { language, words } = useLanguage();
+  const { task, manifest, state, verdicts, filled, solution, pending } = props;
+  const { words } = useLanguage();
   const lockedId = useId();
   const namesId = useId();
   const [confirming, setConfirming] = useState(false);
@@ -143,7 +74,6 @@ export function TaskScreen(props: TaskScreenProps) {
     asked.current = confirming;
   }, [confirming]);
   const explanation = manifest?.languages.explanation;
-  const statement = useMemo(() => taskPhrases(task, explanation), [task, explanation]);
   const solved = solution !== undefined;
   // The crop of a handwriting sheet goes to AI whole: the reminder to write no names stands before
   // each submission, and describes Check (R127 in spec; R53).
@@ -164,139 +94,57 @@ export function TaskScreen(props: TaskScreenProps) {
   );
 
   return (
-    <Frame inLesson={props.inLesson === true} title={words.text("task.title")}>
-      {steps.length === 0 || solved ? null : (
-        <fieldset className="nt-buttons">
-          <legend>{words.text("task.mode")}</legend>
-          <button
-            type="button"
-            aria-pressed={mode === "steps"}
-            onClick={() => props.onMode("steps")}
-          >
-            {words.text("task.by-steps")}
-          </button>
-          <button type="button" aria-pressed={mode === "self"} onClick={() => props.onMode("self")}>
-            {words.text("task.on-my-own")}
-          </button>
-        </fieldset>
-      )}
-      <VoicingToggle language={explanation} />
-      <p role="status" className="nt-error">
-        {props.notSaved ? words.text("task.not-saved") : ""}
-      </p>
-      <div className="nt-task">
-        <div className="nt-task-work">
-          <ReadAloud phrases={statement} language={explanation} />
-          {/* The order of the properties is the order React gives them (section 3.1). */}
-          <novatrail-canvas
-            ref={props.canvasRef}
-            lang={language}
-            {...(manifest === undefined ? {} : { manifest })}
-            media={props.media}
-            task={task}
-            history={props.history}
-            onhistorychange={props.onHistoryChange}
-          />
-          <Items
-            task={task}
-            choices={state.choices}
-            verdicts={verdicts}
-            language={explanation}
-            locked={solved || pending}
-            onChoose={props.onChoose}
-          />
-        </div>
-        {solved ||
-        mode === "steps" ||
-        props.hint !== undefined ||
+    <TaskLayout
+      parts={props}
+      over={solved}
+      underCanvas={
+        <Items
+          task={task}
+          choices={state.choices}
+          verdicts={verdicts}
+          language={explanation}
+          locked={solved || pending}
+          onChoose={props.onChoose}
+        />
+      }
+      speaking={
         props.tutorWords !== undefined ||
         props.wordsFailure !== undefined ||
-        props.wordsWaiting === true ? (
-          <aside className="nt-task-panel" aria-label={words.text("task.tutor")}>
-            {solved ? (
-              <>
-                <p className="nt-result">
-                  {props.shown === true ? (
-                    words.text("task.solution-shown")
-                  ) : (
-                    <Verdict verdict="correct" />
-                  )}
-                </p>
-                <TutorWords
-                  words={props.tutorWords}
-                  language={explanation}
-                  {...(props.wordsFailure === undefined ? {} : { failure: props.wordsFailure })}
-                  report={props.report}
-                />
-                <Solution parts={solution} language={explanation} media={props.media} />
-                {props.againFailure === undefined ? null : (
-                  <p role="alert" className="nt-error">
-                    {failureText(props.againFailure, words)}
-                  </p>
-                )}
-                {/* In a lesson the way on is its Continue, below the task (R23). */}
-                {props.inLesson === true ? null : props.next}
-                {props.inLesson === true ? null : (
-                  <div className="nt-buttons">
-                    <button
-                      type="button"
-                      className="nt-secondary"
-                      aria-disabled={pending}
-                      onClick={() => {
-                        if (!pending) props.onAgain();
-                      }}
-                    >
-                      {words.text("task.again")}
-                    </button>
-                    <button type="button" className="nt-secondary" onClick={props.onHome}>
-                      {words.text("task.home")}
-                    </button>
-                  </div>
-                )}
-              </>
+        props.wordsWaiting === true
+      }
+      tutor={
+        <TutorWords
+          words={props.tutorWords}
+          language={explanation}
+          {...(props.wordsFailure === undefined ? {} : { failure: props.wordsFailure })}
+          waiting={props.wordsWaiting === true}
+          {...(props.onExplain === undefined ? {} : { onExplain: props.onExplain })}
+          explaining={props.explaining === true}
+          {...(props.explainNote === undefined ? {} : { note: props.explainNote })}
+          report={props.report}
+        />
+      }
+      result={
+        <>
+          <p className="nt-result">
+            {props.shown === true ? (
+              words.text("task.solution-shown")
             ) : (
-              <>
-                {props.hint === undefined ? null : (
-                  <Hint
-                    hint={props.hint}
-                    task={task}
-                    catalog={props.catalog}
-                    language={explanation}
-                  />
-                )}
-                <TutorWords
-                  words={props.tutorWords}
-                  language={explanation}
-                  {...(props.wordsFailure === undefined ? {} : { failure: props.wordsFailure })}
-                  waiting={props.wordsWaiting === true}
-                  {...(props.onExplain === undefined ? {} : { onExplain: props.onExplain })}
-                  explaining={props.explaining === true}
-                  {...(props.explainNote === undefined ? {} : { note: props.explainNote })}
-                  report={props.report}
-                />
-              </>
+              <Verdict verdict="correct" />
             )}
-            {!solved && mode === "steps" ? (
-              <StepsPanel
-                task={task}
-                steps={steps}
-                catalog={props.catalog}
-                state={state}
-                filled={filled}
-                language={explanation}
-                onGoTo={props.onGoTo}
-                onTick={props.onTick}
-                onDone={props.onDone}
-              />
-            ) : null}
-          </aside>
-        ) : null}
-        <div className="nt-task-check">
-          {props.failure === undefined ? null : (
-            <p role="alert" className="nt-error">
-              {failureText(props.failure, words)}
-            </p>
-          )}
+          </p>
+          <TutorWords
+            words={props.tutorWords}
+            language={explanation}
+            {...(props.wordsFailure === undefined ? {} : { failure: props.wordsFailure })}
+            report={props.report}
+          />
+          <Solution parts={solution ?? []} language={explanation} media={props.media} />
+          <ResultEnd parts={props} />
+        </>
+      }
+      check={
+        <>
           {solved || !whole ? null : (
             <p id={namesId} className="nt-hint">
               {words.text("task.no-names")}
@@ -321,16 +169,7 @@ export function TaskScreen(props: TaskScreenProps) {
                   {words.text(locked)}
                 </span>
               )}
-              <button
-                type="button"
-                className="nt-secondary"
-                aria-disabled={pending}
-                onClick={() => {
-                  if (!pending) props.onHint();
-                }}
-              >
-                {words.text("task.hint")}
-              </button>
+              <HintButton parts={props} />
               {props.onShow === undefined || confirming ? null : (
                 <button
                   ref={showButton}
@@ -367,8 +206,8 @@ export function TaskScreen(props: TaskScreenProps) {
           {props.outcome === undefined ? null : <p className="nt-hint">{props.outcome}</p>}
           <p role="status">{summary}</p>
           <p role="status">{props.wordsCame === true ? words.text("task.words-came") : ""}</p>
-        </div>
-      </div>
-    </Frame>
+        </>
+      }
+    />
   );
 }

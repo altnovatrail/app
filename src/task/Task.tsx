@@ -71,8 +71,7 @@ import {
 } from "../storage/profile.ts";
 import { ReportProblem } from "../tutor/ReportProblem.tsx";
 import type { Said } from "../tutor/report.ts";
-import { hintPhrases, type Phrase } from "../voice/texts.ts";
-import { useVoicing } from "../voice/VoicingContext.tsx";
+import { hintPhrases } from "../voice/texts.ts";
 import {
   markNames,
   marksOf,
@@ -86,11 +85,18 @@ import {
   withoutWriting,
   workOf,
 } from "./attempt.ts";
-import { CLOSED_KEYS, closedBy, useStepTechniques } from "./closed.ts";
 import { OpenEssay } from "./Essay.tsx";
 import { isEssay } from "./essay.ts";
 import type { HintGiven } from "./Hint.tsx";
 import { Pause } from "./pause.ts";
+import {
+  CLOSED_KEYS,
+  closedBy,
+  unlessClosed,
+  useKeptWork,
+  useOwnVoicing,
+  useStepTechniques,
+} from "./shared.ts";
 import {
   choicesOnly,
   choose,
@@ -454,28 +460,7 @@ function OpenTask({
   const holder = useKeyHolder();
   const { views, files } = usePackages();
   const { language, words } = useLanguage();
-  const { auto: say, prime, speech } = useVoicing();
-  // What the screen says by itself is its own: words that come once the learner has left are not
-  // said over the next screen, and leaving the screen stops what it was saying — a segment of a
-  // lesson goes with no change of the route.
-  const mounted = useRef(true);
-  const spoken = useRef<object | undefined>(undefined);
-  const auto = useCallback(
-    (phrases: readonly Phrase[], after?: object) => {
-      if (!mounted.current) return undefined;
-      const token = say(phrases, after);
-      if (token !== undefined) spoken.current = token;
-      return token;
-    },
-    [say],
-  );
-  useEffect(() => {
-    mounted.current = true;
-    return () => {
-      mounted.current = false;
-      if (spoken.current !== undefined && speech.speaking() === spoken.current) speech.stop();
-    };
-  }, [speech]);
+  const { auto, prime } = useOwnVoicing();
   const { task, profile, steps } = opened;
   const explanation = opened.manifest?.languages.explanation;
   // What the voicing said of the last check — its verdict — which the tutor's words of the same
@@ -484,8 +469,6 @@ function OpenTask({
   const element = useRef<CanvasElement>(null);
   const [state, setState] = useState(opened.state);
   const [verdicts, setVerdicts] = useState(opened.verdicts);
-  const [filled, setFilled] = useState<readonly (readonly boolean[])[] | null>(null);
-  const [notSaved, setNotSaved] = useState(opened.unsaved);
   const [pending, setPending] = useState(false);
   const [failure, setFailure] = useState<Failure | undefined>(undefined);
   const [solution, setSolution] = useState<readonly open.StatementPart[] | undefined>(undefined);
@@ -511,14 +494,28 @@ function OpenTask({
   // One key for a check of this work, the same with every repeat of it (section 3.3): a new
   // stroke or a new option is a new action.
   const sent = useRef<Sent | undefined>(undefined);
-  // How many changes the sheet has had: a stroke during an export makes the work exported older.
-  const drawn = useRef(0);
   // The checks begun: an answer of words that belongs to an earlier check is dropped.
   const checks = useRef(0);
   // The last check said platform AI is closed, by Check: the words it asked do not say it again.
   const closedAtCheck = useRef(false);
   // Once the attempt is over its record is gone: nothing more is written, and no write says unsaved.
   const over = useRef(false);
+  const { filled, notSaved, unsavedNow, drawn, keepSteps, keepHistory } = useKeptWork({
+    profile,
+    attemptId,
+    unsaved: opened.unsaved,
+    task,
+    element,
+    over,
+  });
+  // api closed the attempt: the screen that says so takes this one's place.
+  const close = useCallback(
+    (reason: CloseReason) => {
+      over.current = true;
+      onClosed(reason);
+    },
+    [onClosed],
+  );
   const latest = useRef({ state, solution, filled });
   latest.current = { state, solution, filled };
   const mode = modeOf(state, steps);
@@ -536,12 +533,6 @@ function OpenTask({
   );
   useEffect(() => () => pause.stop(), [pause]);
 
-  // `filled` changes with no event when the task and the history are given: read it after them.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: read once the element has its task.
-  useEffect(() => {
-    setFilled(element.current?.filled ?? null);
-  }, [task]);
-
   // The tutor's marks go to the canvas after its task and its history, which React gave it in the
   // render (R36 in spec). Marks it refuses — a box it cannot place — are dropped, not a broken screen.
   useEffect(() => {
@@ -557,35 +548,21 @@ function OpenTask({
   const save = useCallback(
     (next: StepsState) => {
       setState(next);
-      if (over.current) return;
-      void profile?.saveSteps(attemptId, next).then((saved) => {
-        if (saved === "unsaved") setNotSaved(true);
-      });
-      if (profile === undefined) setNotSaved(true);
+      keepSteps(next);
     },
-    [profile, attemptId],
+    [keepSteps],
   );
 
   const onHistoryChange = useCallback(
     (event: HistoryChangeEvent) => {
-      setFilled(element.current?.filled ?? null);
+      keepHistory(event);
       pause.acted();
       // Other work is another action: its check gets a key of its own, and what was read of the
       // work before is no verdict of this one.
       sent.current = undefined;
-      drawn.current += 1;
       setVerdicts((held) => withoutWriting(held, task));
-      if (profile === undefined || over.current) return;
-      void profile.appendHistory(attemptId, event.detail).then(async (saved) => {
-        // Events were missed: the element's whole history takes the place of what was kept.
-        const result =
-          saved === "missed"
-            ? await profile.replaceHistory(attemptId, element.current?.history ?? [])
-            : saved;
-        if (result === "unsaved") setNotSaved(true);
-      });
     },
-    [profile, attemptId, pause, task],
+    [keepHistory, pause, task],
   );
 
   // A step that gives techniques asks api for them once, by steps, and keeps what it gave.
@@ -604,13 +581,7 @@ function OpenTask({
       (at: number, ids: readonly string[]) => save(gotTechniques(latest.current.state, at, ids)),
       [save],
     ),
-    onClosed: useCallback(
-      (closed: CloseReason) => {
-        over.current = true;
-        onClosed(closed);
-      },
-      [onClosed],
-    ),
+    onClosed: close,
   });
 
   /** What the answer that closed the attempt says comes next: the lesson's segment, or a choice. */
@@ -677,13 +648,8 @@ function OpenTask({
           },
           (reason: unknown) => {
             if (late()) return;
-            const found = parseFailure(reason);
-            const closed = closedBy(found);
-            if (closed !== undefined) {
-              over.current = true;
-              onClosed(closed);
-              return;
-            }
+            const found = unlessClosed(reason, close);
+            if (found === undefined) return;
             // A rung that is not this answer's, or none, has no words to show.
             const quiet =
               found.kind === "refused" &&
@@ -698,19 +664,7 @@ function OpenTask({
           if (asked === checks.current) setWordsWaiting(false);
         });
     },
-    [
-      api,
-      holder,
-      profileId,
-      attemptId,
-      task,
-      words,
-      markName,
-      onClosed,
-      auto,
-      explanation,
-      language,
-    ],
+    [api, holder, profileId, attemptId, task, words, markName, auto, explanation, language, close],
   );
 
   /**
@@ -772,16 +726,13 @@ function OpenTask({
     const work = (await element.current?.exportWork()) ?? null;
     if (work === null) return undefined;
     let number: number | undefined;
-    if (profile === undefined) setNotSaved(true);
-    else {
-      const saved = await profile.addSubmission(attemptId, work, historyLength);
-      if (saved === "unsaved") setNotSaved(true);
-      else number = saved;
-    }
+    const saved = (await profile?.addSubmission(attemptId, work, historyLength)) ?? "unsaved";
+    if (saved === "unsaved") unsavedNow();
+    else number = saved;
     const made: Sent = { key: idempotencyKey(), work, contract: await workOf(work), number };
     if (drawn.current === at) sent.current = made;
     return made;
-  }, [handwriting, profile, attemptId]);
+  }, [handwriting, profile, attemptId, drawn, unsavedNow]);
 
   const check = useCallback(() => {
     // Within the press: the words that come after it may be said (WebKit; section 3.5).
@@ -863,13 +814,7 @@ function OpenTask({
           correctWords(of);
         }
       } catch (reason) {
-        const found = parseFailure(reason);
-        const closed = closedBy(found);
-        if (closed === undefined) setFailure(found);
-        else {
-          over.current = true;
-          onClosed(closed);
-        }
+        setFailure(unlessClosed(reason, close));
       }
     })().finally(() => setPending(false));
   }, [
@@ -887,11 +832,11 @@ function OpenTask({
     rungWords,
     correctWords,
     onEnded,
-    onClosed,
     comesNext,
     prime,
     auto,
     language,
+    close,
   ]);
 
   /** "Hint": api gives the task's techniques and question, or the words of the rung again. */
@@ -921,17 +866,11 @@ function OpenTask({
           }
         },
         (reason: unknown) => {
-          const found = parseFailure(reason);
-          const closed = closedBy(found);
-          if (closed === undefined) setFailure(found);
-          else {
-            over.current = true;
-            onClosed(closed);
-          }
+          setFailure(unlessClosed(reason, close));
         },
       )
       .finally(() => setPending(false));
-  }, [api, profileId, attemptId, onClosed, prime, auto, task, opened.catalog, explanation]);
+  }, [api, profileId, attemptId, prime, auto, task, opened.catalog, explanation, close]);
 
   /** "Explain differently": the same rung in other words, one call of AI on a rung. */
   const explain = useCallback(() => {
@@ -977,13 +916,8 @@ function OpenTask({
         },
         (reason: unknown) => {
           if (late()) return;
-          const found = parseFailure(reason);
-          const closed = closedBy(found);
-          if (closed !== undefined) {
-            over.current = true;
-            onClosed(closed);
-            return;
-          }
+          const found = unlessClosed(reason, close);
+          if (found === undefined) return;
           // A refusal is the end of the action; anything else may have reached api, and goes again
           // with its key, which gets what was done.
           if (found.kind === "refused") explainKey.current = undefined;
@@ -997,7 +931,7 @@ function OpenTask({
         },
       )
       .finally(() => setExplaining(false));
-  }, [api, holder, profileId, attemptId, words, onClosed, prime, auto, explanation]);
+  }, [api, holder, profileId, attemptId, words, prime, auto, explanation, close]);
 
   /** "Show the solution": the attempt ends with the solution shown (R82 in spec). */
   const showSolution = useCallback(() => {
@@ -1037,13 +971,8 @@ function OpenTask({
           comesNext(answer.next);
         },
         (reason: unknown) => {
-          const found = parseFailure(reason);
-          const closed = closedBy(found);
-          if (closed !== undefined) {
-            over.current = true;
-            onClosed(closed);
-            return;
-          }
+          const found = unlessClosed(reason, close);
+          if (found === undefined) return;
           // A refusal is the end of the action; anything else may have shown the solution already,
           // and goes again with its key, which gets the solution again.
           if (found.kind === "refused") showKey.current = undefined;
@@ -1051,19 +980,7 @@ function OpenTask({
         },
       )
       .finally(() => setPending(false));
-  }, [
-    api,
-    holder,
-    views,
-    profileId,
-    attemptId,
-    profile,
-    words,
-    pause,
-    onEnded,
-    onClosed,
-    comesNext,
-  ]);
+  }, [api, holder, views, profileId, attemptId, profile, words, pause, onEnded, comesNext, close]);
 
   // An adult may ask for the solution from the start of the attempt, a child from the fourth wrong
   // answer, once the ladder of hints is passed (R82 in spec).

@@ -19,7 +19,7 @@ import type { CanvasElement, HistoryChangeEvent } from "@altnovatrail/spec/canva
 import type * as open from "@altnovatrail/spec/formatv0/open";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useApi } from "../api/ApiContext.tsx";
-import { type Failure, parseFailure } from "../api/failure.ts";
+import type { Failure } from "../api/failure.ts";
 import { idempotencyKey } from "../api/keys.ts";
 import { outcomeOf } from "../api/outcome.ts";
 import { HOME, navigate } from "../app/router.ts";
@@ -29,13 +29,12 @@ import { useKeyHolder } from "../ownkey/OwnKeyContext.tsx";
 import { usePackages } from "../packages/PackagesContext.tsx";
 import { ReportProblem } from "../tutor/ReportProblem.tsx";
 import { hintPhrases } from "../voice/texts.ts";
-import { useVoicing } from "../voice/VoicingContext.tsx";
 import { solutionOf } from "./attempt.ts";
-import { closedBy, useStepTechniques } from "./closed.ts";
 import { EssayScreen, type Finished } from "./EssayScreen.tsx";
 import { noteOf, type Shown, sentOf } from "./essay.ts";
 import type { HintGiven } from "./Hint.tsx";
 import { Pause } from "./pause.ts";
+import { unlessClosed, useKeptWork, useOwnVoicing, useStepTechniques } from "./shared.ts";
 import {
   givesTechniques,
   goTo,
@@ -69,33 +68,13 @@ export function OpenEssay({
   const holder = useKeyHolder();
   const { views, files } = usePackages();
   const { language, words } = useLanguage();
-  const { auto: say, prime, speech } = useVoicing();
-  // What the screen says by itself is its own, as on the task screen (Task.tsx).
-  const mounted = useRef(true);
-  const spoken = useRef<object | undefined>(undefined);
-  useEffect(() => {
-    mounted.current = true;
-    return () => {
-      mounted.current = false;
-      if (spoken.current !== undefined && speech.speaking() === spoken.current) speech.stop();
-    };
-  }, [speech]);
-  const auto = useCallback(
-    (phrases: Parameters<typeof say>[0]) => {
-      if (!mounted.current) return;
-      const token = say(phrases);
-      if (token !== undefined) spoken.current = token;
-    },
-    [say],
-  );
+  const { auto, prime } = useOwnVoicing();
   const { task, profile, steps } = opened;
   const explanation = opened.manifest?.languages.explanation;
   const element = useRef<CanvasElement>(null);
   const kept = opened.essay?.kept;
   const last = kept?.sent[kept.sent.length - 1];
   const [state, setState] = useState(opened.state);
-  const [filled, setFilled] = useState<readonly (readonly boolean[])[] | null>(null);
-  const [notSaved, setNotSaved] = useState(opened.unsaved);
   const [pending, setPending] = useState(false);
   const [checking, setChecking] = useState(false);
   const [failure, setFailure] = useState<Failure | undefined>(undefined);
@@ -112,8 +91,16 @@ export function OpenEssay({
   const [choice, setChoice] = useState<EngineChoice | undefined>(undefined);
   // One key for a check of this work, the same with every repeat of it: a new stroke is a new action.
   const sent = useRef<Sent | undefined>(undefined);
-  const drawn = useRef(0);
+  // Once the attempt is over its record is gone: nothing more is written, and no write says unsaved.
   const over = useRef(false);
+  const { filled, notSaved, unsavedNow, drawn, keepSteps, keepHistory } = useKeptWork({
+    profile,
+    attemptId,
+    unsaved: opened.unsaved,
+    task,
+    element,
+    over,
+  });
   const latest = useRef({ state, filled, finished });
   latest.current = { state, filled, finished };
   const mode = modeOf(state, steps);
@@ -128,22 +115,12 @@ export function OpenEssay({
   );
   useEffect(() => () => pause.stop(), [pause]);
 
-  // `filled` changes with no event when the task and the history are given: read it after them.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: read once the element has its task.
-  useEffect(() => {
-    setFilled(element.current?.filled ?? null);
-  }, [task]);
-
   const save = useCallback(
     (next: StepsState) => {
       setState(next);
-      if (over.current) return;
-      if (profile === undefined) setNotSaved(true);
-      void profile?.saveSteps(attemptId, next).then((saved) => {
-        if (saved === "unsaved") setNotSaved(true);
-      });
+      keepSteps(next);
     },
-    [profile, attemptId],
+    [keepSteps],
   );
 
   const closed = useCallback(
@@ -174,20 +151,12 @@ export function OpenEssay({
 
   const onHistoryChange = useCallback(
     (event: HistoryChangeEvent) => {
-      setFilled(element.current?.filled ?? null);
+      keepHistory(event);
       pause.acted();
+      // Another stroke is another action: its check gets a key of its own.
       sent.current = undefined;
-      drawn.current += 1;
-      if (profile === undefined || over.current) return;
-      void profile.appendHistory(attemptId, event.detail).then(async (saved) => {
-        const result =
-          saved === "missed"
-            ? await profile.replaceHistory(attemptId, element.current?.history ?? [])
-            : saved;
-        if (result === "unsaved") setNotSaved(true);
-      });
     },
-    [profile, attemptId, pause],
+    [keepHistory, pause],
   );
 
   /** The crop of the sheet as it is now, or the one sent before, again. */
@@ -203,7 +172,7 @@ export function OpenEssay({
     };
     if (drawn.current === at) sent.current = made;
     return made;
-  }, []);
+  }, [drawn]);
 
   const check = useCallback(() => {
     // Within the press: the words that come after it may be said (WebKit; section 3.5).
@@ -233,10 +202,8 @@ export function OpenEssay({
         setShown(now);
         setSubmissions((n) => n + 1);
         setCame(true);
-        if (profile === undefined) setNotSaved(true);
-        else if ((await profile.addEssaySubmission(attemptId, of.png, end)) === "unsaved") {
-          setNotSaved(true);
-        }
+        const saved = (await profile?.addEssaySubmission(attemptId, of.png, end)) ?? "unsaved";
+        if (saved === "unsaved") unsavedNow();
         const note = noteOf(now, words);
         auto(
           now.feedback === undefined || note !== undefined
@@ -246,10 +213,7 @@ export function OpenEssay({
         // api closed the attempt while it went: the feedback came all the same, and stays here.
         if (answer.closed !== CloseReason.UNSPECIFIED) closed(answer.closed);
       } catch (reason) {
-        const found = parseFailure(reason);
-        const by = closedBy(found);
-        if (by === undefined) setFailure(found);
-        else closed(by);
+        setFailure(unlessClosed(reason, closed));
       } finally {
         setChecking(false);
       }
@@ -262,6 +226,7 @@ export function OpenEssay({
     profile,
     pause,
     submission,
+    unsavedNow,
     words,
     auto,
     language,
@@ -285,12 +250,7 @@ export function OpenEssay({
           setHint({ techniques, ...(question === undefined ? {} : { question }) });
           auto(hintPhrases(task, techniques, question, opened.catalog, explanation));
         },
-        (reason: unknown) => {
-          const found = parseFailure(reason);
-          const by = closedBy(found);
-          if (by === undefined) setFailure(found);
-          else closed(by);
-        },
+        (reason: unknown) => setFailure(unlessClosed(reason, closed)),
       )
       .finally(() => setPending(false));
   }, [api, profileId, attemptId, closed, prime, auto, task, opened.catalog, explanation]);
@@ -316,12 +276,7 @@ export function OpenEssay({
           lesson?.onNext(answer.next);
           if (answer.next?.next.case === "choice") setChoice(answer.next.next.value);
         },
-        (reason: unknown) => {
-          const found = parseFailure(reason);
-          const by = closedBy(found);
-          if (by === undefined) setFailure(found);
-          else closed(by);
-        },
+        (reason: unknown) => setFailure(unlessClosed(reason, closed)),
       )
       .finally(() => setPending(false));
   }, [api, holder, views, profileId, attemptId, profile, pause, onEnded, closed, lesson]);

@@ -566,6 +566,9 @@ describe("an essay", () => {
     const connection = await device.connect(profileDatabase("p1"), PROFILE_SCHEMA, false);
     await connection?.write(["essays"], async (tx) => {
       await tx.put("essays", "x1", { attemptId: "x1" });
+      await tx.put("essays", "x3", { attemptId: "x3", digest: "d1", startedAt: 1, sent: {} });
+      await tx.put("essays", "x4", { attemptId: "x4", digest: "d1", sent: [] });
+      await tx.put("essays", "x5", "not a record");
       await tx.put("essays", "x2", {
         attemptId: "x2",
         digest: "d1",

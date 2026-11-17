@@ -10,6 +10,7 @@ import type { PackageChecks } from "../packages/checks.ts";
 import { DeviceFiles } from "../packages/files.ts";
 import { PackagesProvider } from "../packages/PackagesContext.tsx";
 import type { OpenViews } from "../packages/views.ts";
+import type { MemoryBackend } from "../storage/memory.ts";
 import { addProfile } from "../storage/profile.ts";
 import { setAccount } from "../storage/registry.ts";
 import { memoryDevice } from "../test/device.ts";
@@ -26,10 +27,13 @@ const TASK: open.Task = {
   items: [{ answer_slots: [{ binding: "sheet" }] }],
 };
 
-async function renderScreen(essays: boolean) {
-  const { device, state } = memoryDevice();
+async function renderScreen(
+  essays: boolean,
+  setup: { readonly before?: (backend: MemoryBackend) => void; readonly profile?: boolean } = {},
+) {
+  const { device, state, backend } = memoryDevice();
   await setAccount(device, "account-1");
-  const profile = await addProfile(device, "p1");
+  const profile = setup.profile === false ? undefined : await addProfile(device, "p1");
   if (essays) {
     const first = { attemptId: "e1", digest: `sha256:${"1".repeat(64)}`, task: TASK };
     await profile?.beginAttempt(first);
@@ -58,6 +62,7 @@ async function renderScreen(essays: boolean) {
     }),
   };
   // StrictMode, as main.tsx has it: an effect runs twice, and the crops' addresses outlive it.
+  setup.before?.(backend);
   render(
     <StrictMode>
       {inLanguage(
@@ -67,6 +72,7 @@ async function renderScreen(essays: boolean) {
       )}
     </StrictMode>,
   );
+  return { backend, profile };
 }
 
 describe("My essays", () => {
@@ -122,5 +128,38 @@ describe("My essays", () => {
       await screen.findByText("The version of its module was withdrawn, so its task isn't kept"),
     ).toBeVisible();
     expect(screen.getByText("It hasn't been sent yet")).toBeVisible();
+  });
+
+  it("says there are none for a profile with no database on this device", async () => {
+    await renderScreen(false, { profile: false });
+    expect(await screen.findByText("No essays are kept on this device yet")).toBeVisible();
+  });
+
+  it("says the essays on this device can't be read", async () => {
+    await renderScreen(true, { before: (backend) => backend.unreadable.add("essays") });
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "The data on this device can't be read",
+    );
+  });
+
+  it("opens an essay as it was listed, without its crops, once it is gone or can't be read", async () => {
+    const { backend, profile } = await renderScreen(true);
+    const nth = async (n: number) => {
+      const buttons = await screen.findAllByRole("button", { name: /^Open the essay of / });
+      const button = buttons[n];
+      if (button === undefined) throw new Error("no essay");
+      return button;
+    };
+    const button = await nth(1);
+    // Erased in another tab after the list was read.
+    await profile?.eraseEssay("e1");
+    await userEvent.click(button);
+    expect(await screen.findByText("A good start.")).toBeVisible();
+    expect(screen.queryByRole("img", { name: "The sheet as it was sent" })).toBeNull();
+    await userEvent.click(screen.getByRole("button", { name: "All essays" }));
+    // A read that fails opens it as listed too.
+    backend.unreadable.add("essays");
+    await userEvent.click(await nth(0));
+    expect(await screen.findByText("It hasn't been sent yet")).toBeVisible();
   });
 });

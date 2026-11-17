@@ -9,6 +9,8 @@ import { Mode } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import {
   AttemptService,
   type DoneRequest,
+  type DoneResponseSchema,
+  type GetHintResponseSchema,
   type ReportProblemRequest,
   SubmissionEnd,
   type SubmitEssayRequest,
@@ -17,21 +19,21 @@ import {
 } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
 import {
   Cause,
+  ChoiceKind,
   CloseReason,
   RefusalSchema,
 } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import { LearningService } from "@altnovatrail/contracts/novatrail/api/v1/learning_pb.js";
 import { PackageService } from "@altnovatrail/contracts/novatrail/api/v1/package_pb.js";
-import type { HistoryEvent } from "@altnovatrail/spec/canvas";
+import type { CanvasElement, HistoryEvent } from "@altnovatrail/spec/canvas";
 import type * as open from "@altnovatrail/spec/formatv0/open";
 import { create, type MessageInitShape } from "@bufbuild/protobuf";
 import { timestampFromDate } from "@bufbuild/protobuf/wkt";
-import { Code, ConnectError, type ConnectRouter, createRouterTransport } from "@connectrpc/connect";
-import { render, screen, within } from "@testing-library/react";
+import { Code, ConnectError, type ConnectRouter } from "@connectrpc/connect";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 import { ApiProvider } from "../api/ApiContext.tsx";
-import { createApi } from "../api/client.ts";
 import type { PackageChecks } from "../packages/checks.ts";
 import { DeviceFiles } from "../packages/files.ts";
 import { PackagesProvider } from "../packages/PackagesContext.tsx";
@@ -39,6 +41,7 @@ import { OpenViews } from "../packages/views.ts";
 import type { Device } from "../storage/device.ts";
 import { addProfile, openProfile } from "../storage/profile.ts";
 import { setAccount } from "../storage/registry.ts";
+import { routedApi } from "../test/api.ts";
 import { memoryDevice } from "../test/device.ts";
 import { inLanguage } from "../test/language.tsx";
 import { Task } from "./Task.tsx";
@@ -106,12 +109,16 @@ interface Setup {
   ) => MessageInitShape<typeof SubmitEssayResponseSchema>;
   /** Throws in place of the answer to Done. */
   done?: () => void;
+  /** The answer to Done, in place of the criteria and the model answer. */
+  doneAnswer?: MessageInitShape<typeof DoneResponseSchema>;
+  /** The answer to Hint, or a throw in place of it. */
+  hint?: () => MessageInitShape<typeof GetHintResponseSchema>;
   adult?: boolean;
   lesson?: boolean;
 }
 
 async function renderEssay(setup: Setup = {}) {
-  const { device } = memoryDevice();
+  const { device, backend } = memoryDevice();
   await setAccount(device, "account-1");
   const task = setup.task ?? ESSAY;
   if (setup.history !== undefined) {
@@ -161,18 +168,21 @@ async function renderEssay(setup: Setup = {}) {
       done(request) {
         dones.push(request);
         setup.done?.();
-        return {
-          solved: {
-            criteria: ["There are three first sentences."],
-            solution: encode([{ text: "A model answer." }]),
-            moduleFormatVersion: "0.4",
-          },
-        };
+        return (
+          setup.doneAnswer ?? {
+            solved: {
+              criteria: ["There are three first sentences."],
+              solution: encode([{ text: "A model answer." }]),
+              moduleFormatVersion: "0.4",
+            },
+          }
+        );
       },
-      getHint: () => ({
-        hint: { case: "techniques", value: { techniqueIds: ["middle"] } },
-        leadingQuestion: "What does the umbrella say?",
-      }),
+      getHint: () =>
+        setup.hint?.() ?? {
+          hint: { case: "techniques", value: { techniqueIds: ["middle"] } },
+          leadingQuestion: "What does the umbrella say?",
+        },
       beginStep: () => ({ techniques: { techniqueIds: [] } }),
       reportProblem(request) {
         reports.push(request);
@@ -194,13 +204,7 @@ async function renderEssay(setup: Setup = {}) {
       }),
     });
   };
-  const api = createApi({
-    baseUrl: "https://api.example.org",
-    tokens: { token: async () => "t", signOut: async () => {} },
-    on: { stale: () => {}, accountGone: async () => {}, noAccess: async () => {} },
-    sleep: async () => {},
-    transport: (interceptors) => createRouterTransport(routes, { transport: { interceptors } }),
-  });
+  const api = routedApi(routes);
   const packages = {
     views: new OpenViews({ api, device, stale: () => {} }),
     checks: { check: vi.fn(async () => {}) } as unknown as PackageChecks,
@@ -231,7 +235,7 @@ async function renderEssay(setup: Setup = {}) {
       </ApiProvider>,
     ),
   );
-  return { device, submitted, dones, reports, attempts, nexts };
+  return { device, backend, submitted, dones, reports, attempts, nexts };
 }
 
 const check = () => screen.getByRole("button", { name: "Check" });
@@ -335,6 +339,131 @@ describe("the screen of an essay", () => {
     expect(await (await found()).findByText("Good.")).toBeVisible();
     const keys = new Set(submitted.map((one) => one.idempotencyKey));
     expect(keys.size).toBe(1);
+  });
+
+  it("sends a new stroke with a new key", async () => {
+    const { submitted } = await renderEssay({ history: WRITTEN });
+    await vi.waitFor(() => expect(check()).toHaveAttribute("aria-disabled", "false"));
+    await userEvent.click(check());
+    await (await found()).findByText("Each sentence makes a reader ask why.");
+    // A stroke undone is a change of the work: another action, with a key of its own.
+    const sheet = document.querySelector("novatrail-canvas") as CanvasElement & { undo(): boolean };
+    expect(sheet.undo()).toBe(true);
+    await vi.waitFor(() => expect(check()).toHaveAttribute("aria-disabled", "false"));
+    await userEvent.click(check());
+    await vi.waitFor(() => expect(submitted).toHaveLength(2));
+    expect(submitted[1]?.idempotencyKey).not.toBe(submitted[0]?.idempotencyKey);
+  });
+
+  it("blinks Check once on a pause after a stroke, while the sheet holds writing", async () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    try {
+      await renderEssay({ history: WRITTEN });
+      await vi.waitFor(() => expect(check()).toHaveAttribute("aria-disabled", "false"));
+      const sheet = document.querySelector("novatrail-canvas") as CanvasElement & {
+        undo(): boolean;
+      };
+      expect(sheet.undo()).toBe(true);
+      vi.advanceTimersByTime(6000);
+      await vi.waitFor(() => expect(check()).toHaveClass("nt-blink"));
+      vi.advanceTimersByTime(3000);
+      await vi.waitFor(() => expect(check()).not.toHaveClass("nt-blink"));
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("sends nothing by Check on a blank sheet, nor by Done before a submission", async () => {
+    const { submitted, dones } = await renderEssay();
+    await vi.waitFor(() => expect(check()).toHaveAttribute("aria-disabled", "true"));
+    // A press the browser lets through, as a screen reader's would: aria-disabled does not stop it.
+    check().click();
+    done().click();
+    await userEvent.click(screen.getByRole("button", { name: "Hint" }));
+    await screen.findByText("Start in the middle");
+    expect(submitted).toEqual([]);
+    expect(dones).toEqual([]);
+  });
+
+  it("says when the work did not reach the device: a submission, the steps, a stroke", async () => {
+    const { backend, submitted } = await renderEssay({ history: WRITTEN });
+    await vi.waitFor(() => expect(check()).toHaveAttribute("aria-disabled", "false"));
+    const status = () => screen.getAllByRole("status").map((line) => line.textContent);
+    expect(status()).not.toContain("Your work isn't saved on this device");
+    backend.refuseWrites = true;
+    await userEvent.click(check());
+    await (await found()).findByText("Each sentence makes a reader ask why.");
+    expect(submitted).toHaveLength(1);
+    await vi.waitFor(() => expect(status()).toContain("Your work isn't saved on this device"));
+  });
+
+  it("keeps the steps and the strokes it could not write, and says so", async () => {
+    const { backend } = await renderEssay({ history: WRITTEN });
+    await vi.waitFor(() => expect(check()).toHaveAttribute("aria-disabled", "false"));
+    backend.refuseWrites = true;
+    await userEvent.click(screen.getByRole("button", { name: "Step by step" }));
+    const status = () => screen.getAllByRole("status").map((line) => line.textContent);
+    await vi.waitFor(() => expect(status()).toContain("Your work isn't saved on this device"));
+    cleanup();
+    const other = await renderEssay({ history: WRITTEN });
+    await vi.waitFor(() => expect(check()).toHaveAttribute("aria-disabled", "false"));
+    other.backend.refuseWrites = true;
+    const sheet = document.querySelector("novatrail-canvas") as CanvasElement & { undo(): boolean };
+    expect(sheet.undo()).toBe(true);
+    await vi.waitFor(() => expect(status()).toContain("Your work isn't saved on this device"));
+  });
+
+  it("sends nothing when the sheet gives no crop", async () => {
+    const { submitted } = await renderEssay({ history: WRITTEN });
+    await vi.waitFor(() => expect(check()).toHaveAttribute("aria-disabled", "false"));
+    const sheet = document.querySelector("novatrail-canvas") as CanvasElement;
+    sheet.exportWork = () => Promise.resolve(null);
+    await userEvent.click(check());
+    await vi.waitFor(() => expect(check()).toHaveAttribute("aria-disabled", "false"));
+    expect(submitted).toEqual([]);
+  });
+
+  it("says why Hint did not go, gives one without a question, and a closed attempt ends it", async () => {
+    let answer = (): MessageInitShape<typeof GetHintResponseSchema> => {
+      throw new ConnectError("down", Code.Unavailable);
+    };
+    await renderEssay({ history: WRITTEN, hint: () => answer() });
+    const hint = await screen.findByRole("button", { name: "Hint" });
+    await userEvent.click(hint);
+    expect(await screen.findByRole("alert")).toHaveTextContent("No connection");
+    // A hint of another kind than techniques shows nothing.
+    answer = () => ({});
+    await userEvent.click(hint);
+    await vi.waitFor(() => expect(hint).toHaveAttribute("aria-disabled", "false"));
+    expect(screen.queryByText("Start in the middle")).toBeNull();
+    answer = () => ({ hint: { case: "techniques", value: { techniqueIds: ["middle"] } } });
+    await userEvent.click(hint);
+    expect(await (await found()).findByText("Start in the middle")).toBeVisible();
+    expect(screen.queryByRole("alert")).toBeNull();
+    answer = () => {
+      throw refused(Code.FailedPrecondition, Cause.ATTEMPT_CLOSED, CloseReason.LEFT);
+    };
+    await userEvent.click(hint);
+    expect(await screen.findByText("Another task was begun")).toBeVisible();
+  });
+
+  it("finishes without a solution, offers the engine's choice, and goes home", async () => {
+    window.location.hash = "#/task";
+    await renderEssay({
+      history: WRITTEN,
+      submissions: 1,
+      doneAnswer: {
+        next: { next: { case: "choice", value: { choiceId: "c2", kind: ChoiceKind.TASK } } },
+      },
+    });
+    await vi.waitFor(() => expect(done()).toHaveAttribute("aria-disabled", "false"));
+    await userEvent.click(done());
+    expect(await (await found()).findByText("Essay finished")).toBeVisible();
+    expect(panel().queryByRole("heading", { name: "What the feedback looked at" })).toBeNull();
+    expect(panel().getByRole("button", { name: "Next task" })).toBeVisible();
+    await userEvent.click(panel().getByRole("button", { name: "Back to My subjects" }));
+    expect(window.location.hash).toBe("#/home");
+    window.location.hash = "";
   });
 
   it("says the feedback was lost when a repeat brings no words", async () => {

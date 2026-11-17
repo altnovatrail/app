@@ -87,8 +87,9 @@ export async function unfinishedWork(
     const entry = registry?.databases.get(name);
     if (entry === undefined || entry.erase) continue;
     const kept = await openProfileDatabase(device, name);
-    const count = (await kept?.unfinished()) ?? 0;
-    const essays = (await kept?.essayCount()) ?? 0;
+    if (kept === undefined) continue;
+    const count = await kept.unfinished();
+    const essays = await kept.essayCount();
     if (count > 0 || essays > 0) {
       found.push({ profileId: profile.profileId, pseudonym: profile.pseudonym, count, essays });
     }
