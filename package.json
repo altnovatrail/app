@@ -12,7 +12,7 @@
   "dependencies": {
     "@altnovatrail/canvas": "0.3.28",
     "@altnovatrail/contracts": "0.18.12",
-    "@altnovatrail/skill-map": "0.1.5",
+    "@altnovatrail/skill-map": "0.1.7",
     "@bufbuild/protobuf": "2.17.0",
     "@connectrpc/connect": "2.3.0",
     "@connectrpc/connect-web": "2.3.0",
