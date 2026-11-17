@@ -19,14 +19,19 @@ import { describe, expect, it } from "vitest";
 import { commands, page, userEvent } from "vitest/browser";
 import "@altnovatrail/canvas";
 import "../src/theme/theme.css";
+import { LearnerProvider } from "../src/account/AccountGate.tsx";
 import { ChooseScreen } from "../src/account/ChooseScreen.tsx";
 import { InviteScreen, type TextsRead } from "../src/account/InviteScreen.tsx";
 import { OwnerProfileScreen } from "../src/account/OwnerProfileScreen.tsx";
 import { ApiProvider } from "../src/api/ApiContext.tsx";
+import { HomeBar } from "../src/app/App.tsx";
 import { Example } from "../src/lesson/Example.tsx";
 import { ContinueButton, LessonScreen } from "../src/lesson/LessonScreen.tsx";
 import { NextStep } from "../src/next/NextStep.tsx";
 import { SignInScreen } from "../src/signin/SignInScreen.tsx";
+import type { ModuleMap } from "../src/skills/map.ts";
+import { MapBarHeading } from "../src/skills/SkillMap.tsx";
+import { MapScreen } from "../src/skills/SkillMapScreen.tsx";
 import { SubjectsScreen } from "../src/subjects/MySubjects.tsx";
 import type { ModuleCard } from "../src/subjects/modules.ts";
 import type { SkillCounts } from "../src/subjects/states.ts";
@@ -539,10 +544,29 @@ const MODULES: readonly ModuleCard[] = [
 /** api by the routing transport: nothing is asked of it until a press. */
 const QUIET = routedApi(() => {});
 
+/** The learner of the mockup, Sam, the owner: an adult, with an avatar of the set. */
+const SAM = {
+  learner: create(ProfileSchema, {
+    profileId: "p1",
+    owner: true,
+    pseudonym: "Sam",
+    avatar: "wave",
+    ageCategory: "adult",
+  }),
+  switchLearner: () => {},
+  signOut: () => {},
+  openLegal: () => {},
+  onSaved: () => {},
+  onFailed: () => {},
+};
+
 /** The home screen with the mockup's three modules, a fifth of today's tutor time used. */
 function home() {
   return inLanguage(
     <ApiProvider value={QUIET}>
+      <LearnerProvider value={SAM}>
+        <HomeBar />
+      </LearnerProvider>
       <SubjectsScreen
         connected={MODULES}
         catalog={MODULES}
@@ -557,14 +581,14 @@ function home() {
 
 /**
  * Why the home screen stands lower and its cards are of other heights than the mockup's: app's
- * screen keeps the heading "My subjects" of section 3.8 and the bar of the learner above it, where
- * the mockup greets the learner by name under its own bar (T83); the card of what comes next holds
+ * screen keeps the heading "My subjects" of section 3.8, where the mockup greets the learner by
+ * name (R63); the card of what comes next holds
  * the engine's way, "What's next", which names no lesson before it is pressed (R24), not the
  * mockup's lesson and its picture; the modules connected are "Connected" of section 3.10, with
  * Disconnect and License beside their map, the catalog below them in place of "Add a module".
  */
 const HOME_PLACED =
-  'the heading of section 3.8 and the bar above it (T83); "What\'s next" names no lesson (R24); Disconnect and License on a card (section 3.10)';
+  'the heading of section 3.8 (R63); "What\'s next" names no lesson (R24); Disconnect and License on a card (section 3.10)';
 
 /** A card or a bar, whose words are its own regions': the size of its own text is not drawn. */
 const NO_TEXT = "no text of its own: the body's 14 px (R11)";
@@ -611,6 +635,133 @@ const LEGEND: Region = {
   differs: { what: ["y"], by: HOME_PLACED },
 };
 
+/** The profile's pill, whose width follows the pseudonym; its words are its name's (R63). */
+const PILL: Region = {
+  name: "the profile's pill",
+  mockup: { role: "button", name: "Sam, switch learner" },
+  app: { role: "button", name: "Sam, profile menu" },
+  followsText: "start",
+};
+
+/** The accent as the words of a link or a row on the pop-over's glass (the README's «Contrast»). */
+const ACCENT_TEXT = [{ property: "colour", mockup: "#0071e3", app: "#0066cc" }] as const;
+
+/**
+ * Why the profile's menu is taller, and on the phone its rows higher up the rising sheet: it holds
+ * "For grown-ups" and "Sign out" too, the buttons of the profile's header (section 3.6; R63).
+ */
+const HEADER_ROWS =
+  'the rows "For grown-ups" and "Sign out" of the profile\'s header (section 3.6; R63)';
+
+/** The adult's Help, open, and the bar it stands in. */
+const HELP: readonly Region[] = [
+  PILL,
+  {
+    name: "the glass of Help",
+    mockup: { css: 'div.glass:has(> button[aria-label="Help"])' },
+    app: { css: ".nt-help" },
+    differs: { what: ["font-size"], by: NO_TEXT },
+  },
+  {
+    name: "Help",
+    mockup: { role: "button", name: "Help" },
+    app: { role: "button", name: "Help" },
+    differs: { what: ["font-size", "font-weight"], by: ICON_ALONE },
+  },
+  {
+    name: "the pop-over of Help",
+    mockup: { css: 'div.glass.nt-pop:has(> div:text-is("Help"))' },
+    app: { role: "dialog", name: "Help" },
+    differs: { what: ["font-size"], by: NO_TEXT },
+  },
+  {
+    name: "The tutor is an AI",
+    mockup: { css: 'div.nt-pop span:text-is("The tutor is an AI")' },
+    app: { css: ".nt-help-item:first-of-type > b" },
+    followsText: "start",
+  },
+  {
+    name: "Privacy Policy",
+    mockup: { role: "button", name: "Privacy Policy" },
+    app: { role: "button", name: "Privacy Policy" },
+    followsText: "start",
+    contrast: ACCENT_TEXT,
+  },
+  {
+    name: "Accessibility",
+    mockup: { role: "button", name: "Accessibility" },
+    app: { role: "button", name: "Accessibility" },
+    followsText: "end",
+    contrast: ACCENT_TEXT,
+  },
+];
+
+/** The profile's menu, open. */
+const MENU: readonly Region[] = [
+  PILL,
+  {
+    name: "the profile's menu",
+    mockup: { css: 'div.glass.nt-pop:has(> div:text-is("Learning now"))' },
+    app: { role: "dialog", name: "Profile menu" },
+    differs: { what: ["y", "height", "font-size"], by: `${HEADER_ROWS}; ${NO_TEXT}` },
+  },
+  {
+    name: "Learning now",
+    mockup: { text: "Learning now" },
+    app: { css: ".nt-menu-caption" },
+    differs: { what: ["y"], by: HEADER_ROWS },
+  },
+  {
+    name: "Switch learner",
+    mockup: { role: "button", name: "Switch learner" },
+    app: { role: "button", name: "Switch learner" },
+    contrast: ACCENT_TEXT,
+    differs: { what: ["y"], by: HEADER_ROWS },
+  },
+];
+
+/** A module's skill map in the mockup's frame, the map itself a line: skill-map draws it. */
+function skillMap(title: string) {
+  const map = { manifest: { title, languages: { explanation: "en" } } } as ModuleMap;
+  return () =>
+    inLanguage(
+      <LearnerProvider value={SAM}>
+        <MapScreen title={`Skill map: ${title}`} heading={<MapBarHeading map={map} />}>
+          <p>Choose a skill on the map to practise it.</p>
+        </MapScreen>
+      </LearnerProvider>,
+    );
+}
+
+/** The top bar of the skill map and its frame. */
+const MAP: readonly Region[] = [
+  {
+    name: "the top bar",
+    mockup: { css: 'div.glass:has(> button[aria-label="Back"]):has(span:text-is("Skill map"))' },
+    app: { css: ".nt-top-pill" },
+    followsText: "start",
+    differs: { what: ["font-size"], by: NO_TEXT },
+  },
+  {
+    name: "Back",
+    mockup: { css: 'div.glass:has(span:text-is("Skill map")) > button[aria-label="Back"]' },
+    app: { role: "button", name: "Back" },
+    differs: { what: ["font-size", "font-weight"], by: ICON_ALONE },
+  },
+  {
+    name: "the title",
+    mockup: { text: "Skill map" },
+    app: { css: ".nt-top-title" },
+    followsText: "start",
+  },
+  {
+    name: "the frame",
+    mockup: { css: ".ph-mapframe" },
+    app: { css: ".nt-map-frame" },
+    differs: { what: ["font-size"], by: NO_TEXT },
+  },
+];
+
 const SCREENS: readonly Compared[] = [
   ...WAY_IN,
   { state: "home", devices: ["ipad"], draw: home, regions: [...HOME, LEGEND] },
@@ -629,6 +780,20 @@ const SCREENS: readonly Compared[] = [
       },
     ],
   },
+  {
+    state: "home-help",
+    draw: home,
+    settle: () => userEvent.click(screen.getByRole("button", { name: "Help" })),
+    regions: HELP,
+  },
+  {
+    state: "home-switch",
+    draw: home,
+    settle: () => userEvent.click(screen.getByRole("button", { name: "Sam, profile menu" })),
+    regions: MENU,
+  },
+  { state: "map", draw: skillMap("Olympiad maths 1–6"), regions: MAP },
+  { state: "map-essays", draw: skillMap("Short essays"), regions: MAP },
   ...(["task-pill", "task-empty"] as const).map((state) => ({
     state,
     draw: sheetTask,

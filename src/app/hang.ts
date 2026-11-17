@@ -23,22 +23,28 @@ export interface Hung {
 
 /** Between the button and the pop-over, CSS px: the mockup's 12 under its top bar. */
 export const GAP = 12;
+/** Between the home's bar and a pop-over hung from it, CSS px: the mockup's 6 (R63). */
+export const BELOW_BAR = 6;
 /** Between the pop-over and the edge of the window, CSS px: the mockup's 16. */
 export const MARGIN = 16;
 
-/** The place of a pop-over of `width` × `height` hung from `button` in a window of `view`. */
+/**
+ * The place of a pop-over of `width` × `height` hung from `button` in a window of `view`, `gap`
+ * from it: GAP, or the home's 6 below its bar (R63).
+ */
 export function hang(
   button: Box,
   width: number,
   height: number,
   view: { readonly width: number; readonly height: number },
   centred = false,
+  gap = GAP,
 ): Hung {
-  const fitsBelow = button.bottom + GAP + height <= view.height - MARGIN;
-  const fitsAbove = button.top - GAP - height >= MARGIN;
+  const fitsBelow = button.bottom + gap + height <= view.height - MARGIN;
+  const fitsAbove = button.top - gap - height >= MARGIN;
   const below = fitsBelow || (!fitsAbove && view.height - button.bottom >= button.top);
   const start = button.left + width <= view.width - MARGIN;
-  const top = below ? button.bottom + GAP : button.top - GAP - height;
+  const top = below ? button.bottom + gap : button.top - gap - height;
   const left = centred
     ? (button.left + button.right - width) / 2
     : start

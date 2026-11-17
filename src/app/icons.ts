@@ -184,6 +184,24 @@ export const ICONS = {
       "M12.713 16.713Q13 16.425 13 16v-4q0-.425-.288-.712T12 11t-.712.288T11 12v4q0 .425.288.713T12 17t.713-.288m0-8Q13 8.425 13 8t-.288-.712T12 7t-.712.288T11 8t.288.713T12 9t.713-.288M12 22q-2.075 0-3.9-.788t-3.175-2.137T2.788 15.9T2 12t.788-3.9t2.137-3.175T8.1 2.788T12 2t3.9.788t3.175 2.137T21.213 8.1T22 12t-.788 3.9t-2.137 3.175t-3.175 2.138T12 22m0-2q3.35 0 5.675-2.325T20 12t-2.325-5.675T12 4T6.325 6.325T4 12t2.325 5.675T12 20m0-8",
     ],
   },
+  "keyboard-arrow-down-outline-rounded": {
+    viewBox: "0 0 24 24",
+    paths: [
+      "M11.625 14.913q-.175-.063-.325-.213l-4.6-4.6q-.275-.275-.275-.7t.275-.7t.7-.275t.7.275l3.9 3.9l3.9-3.9q.275-.275.7-.275t.7.275t.275.7t-.275.7l-4.6 4.6q-.15.15-.325.213t-.375.062t-.375-.062",
+    ],
+  },
+  "swap-horiz-outline-rounded": {
+    viewBox: "0 0 24 24",
+    paths: [
+      "M5.825 16L7.7 17.875q.275.275.275.688t-.275.712q-.3.3-.712.3t-.713-.3L2.7 15.7q-.15-.15-.213-.325T2.426 15t.063-.375t.212-.325l3.6-3.6q.3-.3.7-.287t.7.312q.275.3.288.7t-.288.7L5.825 14H12q.425 0 .713.288T13 15t-.288.713T12 16zm12.35-6H12q-.425 0-.712-.288T11 9t.288-.712T12 8h6.175L16.3 6.125q-.275-.275-.275-.687t.275-.713q.3-.3.713-.3t.712.3L21.3 8.3q.15.15.212.325t.063.375t-.063.375t-.212.325l-3.6 3.6q-.3.3-.7.288t-.7-.313q-.275-.3-.288-.7t.288-.7z",
+    ],
+  },
+  "logout-outline-rounded": {
+    viewBox: "0 0 24 24",
+    paths: [
+      "M5 21q-.825 0-1.412-.587T3 19V5q0-.825.588-1.412T5 3h6q.425 0 .713.288T12 4t-.288.713T11 5H5v14h6q.425 0 .713.288T12 20t-.288.713T11 21zm12.175-8H10q-.425 0-.712-.288T9 12t.288-.712T10 11h7.175L15.3 9.125q-.275-.275-.275-.675t.275-.7t.7-.313t.725.288L20.3 11.3q.3.3.3.7t-.3.7l-3.575 3.575q-.3.3-.712.288t-.713-.313q-.275-.3-.262-.712t.287-.688z",
+    ],
+  },
 } as const;
 
 /** The name of an icon of the app. */
@@ -309,6 +327,21 @@ export const VALUES = {
     mirrored: false,
   },
   legend: { outline: "info-outline-rounded", filled: "info-outline-rounded", mirrored: false },
+  "menu-open": {
+    outline: "keyboard-arrow-down-outline-rounded",
+    filled: "keyboard-arrow-down-outline-rounded",
+    mirrored: false,
+  },
+  "switch-learner": {
+    outline: "swap-horiz-outline-rounded",
+    filled: "swap-horiz-outline-rounded",
+    mirrored: false,
+  },
+  "sign-out": {
+    outline: "logout-outline-rounded",
+    filled: "logout-outline-rounded",
+    mirrored: true,
+  },
 } as const satisfies Record<string, { outline: IconName; filled: IconName; mirrored: boolean }>;
 
 /** A value of the app. */

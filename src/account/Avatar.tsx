@@ -8,8 +8,11 @@ import { avatarOf } from "./avatars.ts";
 export interface AvatarProps {
   /** The profile's field `avatar`: empty, a code of the set, or one this build does not know. */
   readonly code: string | undefined;
-  /** Its diameter: the profile's on "Who is learning?" 124, on the owner's profile 112, a choice 48. */
-  readonly size: "large" | "profile" | "choice";
+  /**
+   * Its diameter: the profile's on "Who is learning?" 124, on the owner's profile 112, a choice 48,
+   * in the profile's pill 36 and in its menu 30 (R63).
+   */
+  readonly size: "large" | "profile" | "choice" | "pill" | "menu";
 }
 
 export function Avatar({ code, size }: AvatarProps) {

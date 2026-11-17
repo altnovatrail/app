@@ -86,6 +86,17 @@ const FILE = {
 
 const OWNER = { profileId: "p1", owner: true, pseudonym: "Ёжик", ageCategory: "adult" };
 
+/**
+ * A button of the profile's header, in the menu of the learner's pill (R63): the pill is pressed,
+ * and the button found in the menu it opens.
+ */
+async function inMenu(name: string): Promise<HTMLElement> {
+  await userEvent.click(
+    await screen.findByRole("button", { name: /, (profile menu|меню профиля)$/ }),
+  );
+  return within(await screen.findByRole("dialog")).findByRole("button", { name });
+}
+
 /** The texts of the account, synthetic: the policy with a translation into Russian. */
 function texts(language: string, policy = 2) {
   const ru = language === "ru";
@@ -368,7 +379,7 @@ describe("the way in", () => {
     // The learner's screens, below the bar.
     expect(await screen.findByRole("heading", { level: 1, name: "My subjects" })).toBeTruthy();
     expect(screen.getByRole("banner").textContent).toContain("Ёжик");
-    await userEvent.click(screen.getByRole("button", { name: "Switch learner" }));
+    await userEvent.click(await inMenu("Switch learner"));
     expect(await screen.findByRole("heading", { level: 1, name: "Who is learning?" })).toBeTruthy();
     expect(screen.queryByText("Learners' work is kept on this device")).toBeNull();
     // Each request of the way in — the choice of the learner reads the texts' next versions each
@@ -535,7 +546,7 @@ describe("the way in", () => {
     expect(await screen.findByRole("heading", { level: 1, name: "My subjects" })).toBeTruthy();
     // The attempt is over: nothing to go on with any more, after switching the learner and back too.
     expect(screen.queryByRole("button", { name: "Continue the task" })).toBeNull();
-    await userEvent.click(screen.getByRole("button", { name: "Switch learner" }));
+    await userEvent.click(await inMenu("Switch learner"));
     await userEvent.click(await screen.findByRole("button", { name: "Ёжик" }));
     expect(await screen.findByRole("heading", { level: 1, name: "My subjects" })).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Continue the task" })).toBeNull();
@@ -589,7 +600,7 @@ describe("the way in", () => {
     expect(await screen.findByRole("heading", { level: 1, name: "My subjects" })).toBeTruthy();
     // The run is over: nothing to go on with, after switching the learner and back too.
     expect(screen.queryByRole("button", { name: "Continue the lesson" })).toBeNull();
-    await userEvent.click(screen.getByRole("button", { name: "Switch learner" }));
+    await userEvent.click(await inMenu("Switch learner"));
     await userEvent.click(await screen.findByRole("button", { name: "Ёжик" }));
     expect(await screen.findByRole("heading", { level: 1, name: "My subjects" })).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Continue the lesson" })).toBeNull();
@@ -662,14 +673,14 @@ describe("the way in", () => {
     await profile?.beginEssay({ attemptId: "e1", digest: "d1" }, "en");
     await profile?.attemptEnded("e1");
 
-    await userEvent.click(await screen.findByRole("button", { name: "Sign out" }));
+    await userEvent.click(await inMenu("Sign out"));
     expect(await screen.findByRole("heading", { level: 1, name: "Sign out?" })).toBeTruthy();
     expect(await screen.findByText("Ёжик: 1 unfinished task")).toBeTruthy();
     expect(screen.getByText("Ёжик: 1 essay, which isn't on the server")).toBeTruthy();
     await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
     expect(await screen.findByRole("heading", { level: 1, name: "My subjects" })).toBeTruthy();
 
-    await userEvent.click(screen.getByRole("button", { name: "Sign out" }));
+    await userEvent.click(await inMenu("Sign out"));
     await userEvent.click(await screen.findByRole("button", { name: "Sign out and erase" }));
     expect(await screen.findByRole("heading", { level: 1, name: "Sign in" })).toBeTruthy();
     expect(service.calls.signOut).toBe(1);
@@ -856,7 +867,7 @@ describe("the section for adults", () => {
     expect(await screen.findByRole("heading", { level: 1, name: "Мои предметы" })).toBeTruthy();
     expect(document.documentElement.lang).toBe("ru");
     // From the bar, back to the device's language.
-    await userEvent.click(screen.getByRole("button", { name: "Для взрослых" }));
+    await userEvent.click(await inMenu("Для взрослых"));
     expect(await screen.findByRole("heading", { level: 1, name: "For grown-ups" })).toBeTruthy();
     expect(document.documentElement.lang).toBe("en");
     await userEvent.click(screen.getByRole("button", { name: "Close the section" }));
@@ -993,6 +1004,19 @@ describe("the legal pages", () => {
     expect(window.location.hash).toBe("#/adults");
   });
 
+  it("open from the adult's Help on My subjects, and close back home", async () => {
+    const service = fakeSignIn("uid-1");
+    const account = { accountId: "account-1", profiles: [OWNER] };
+    renderApp({ getAccount: () => message(GetAccountResponseSchema, { account }) }, service);
+    await userEvent.click(await screen.findByRole("button", { name: "Ёжик" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Help" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Accessibility" }));
+    expect(await screen.findByRole("heading", { level: 1, name: "Accessibility" })).toBeTruthy();
+    expect(window.location.hash).toBe("#/legal/accessibility");
+    await userEvent.click(screen.getByRole("button", { name: "Close" }));
+    expect(await screen.findByRole("heading", { level: 1, name: "My subjects" })).toBeTruthy();
+  });
+
   it("tell of a next version on the choice of the learner, and close its page back to the choice", async () => {
     const service = fakeSignIn("uid-1");
     const account = { accountId: "account-1", profiles: [{ ...OWNER, workStorage: true }] };
@@ -1082,7 +1106,7 @@ describe("the own key", () => {
     await vi.waitFor(() => expect(chosen).toHaveLength(1));
     expect(chosen[0]?.ownKeyProvider).toBe("anthropic");
     // Switch learner closes the owner profile: the key, not kept here, is gone.
-    await userEvent.click(screen.getByRole("button", { name: "Switch learner" }));
+    await userEvent.click(await inMenu("Switch learner"));
     await userEvent.click(await screen.findByRole("button", { name: "Ёжик" }));
     await userEvent.click(await screen.findByRole("button", { name: "What's next" }));
     await vi.waitFor(() => expect(chosen).toHaveLength(2));
@@ -1425,7 +1449,7 @@ describe("the reason code of the engine's choice", () => {
     expect(asked).not.toContain("GetProgress");
 
     // The section for adults, in the device's language: the progress names each code.
-    await userEvent.click(screen.getByRole("button", { name: "Для взрослых" }));
+    await userEvent.click(await inMenu("Для взрослых"));
     await userEvent.click(await screen.findByRole("button", { name: "Profile: Ёжик" }));
     await userEvent.click(await screen.findByRole("button", { name: "See the progress" }));
     expect(await screen.findByRole("heading", { level: 1, name: "Progress: Ёжик" })).toBeTruthy();

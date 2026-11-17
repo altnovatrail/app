@@ -90,6 +90,32 @@ const OWNER = create(ProfileSchema, {
   ageCategory: "adult",
 });
 
+/** The owner chosen, as the gate gives the learner's screens. */
+const CHOSEN = {
+  learner: OWNER,
+  switchLearner: () => {},
+  signOut: () => {},
+  openLegal: () => {},
+  onSaved: () => {},
+  onFailed: () => {},
+};
+
+/** My subjects with nothing connected, below its bar, and a press on a button of the bar. */
+function homeWith(button: string): [() => ReactNode, () => Promise<void>] {
+  return [
+    () => (
+      <LearnerProvider value={CHOSEN}>
+        <LearnerBar />
+        <SubjectsScreen connected={[]} catalog={[]} onConnect={() => {}} onDisconnect={() => {}} />
+      </LearnerProvider>
+    ),
+    async () => {
+      await userEvent.click(document.querySelector(button) as HTMLElement);
+      await expect.element(page.getByRole("dialog")).toBeVisible();
+    },
+  ];
+}
+
 /** A task with options and chips, on the steps of the format's example of olympiad maths. */
 const TASK: TaskScreenProps["task"] = {
   id: "fruit",
@@ -684,15 +710,7 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
   [
     "My subjects, below the bar, with a card of each kind",
     () => (
-      <LearnerProvider
-        value={{
-          learner: OWNER,
-          switchLearner: () => {},
-          signOut: () => {},
-          onSaved: () => {},
-          onFailed: () => {},
-        }}
-      >
+      <LearnerProvider value={CHOSEN}>
         <LearnerBar />
         <SubjectsScreen
           connected={[
@@ -739,6 +757,8 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
       </LearnerProvider>
     ),
   ],
+  ["My subjects with the adult's Help open", ...homeWith(".nt-help button")],
+  ["My subjects with the profile's menu open", ...homeWith("button.nt-learner-pill")],
   [
     "My subjects with a task in progress",
     () => (
@@ -1387,9 +1407,12 @@ describe.each(LANGUAGES)("the screens in %s", (_, language, words) => {
       await expect.element(page.getByRole("heading", { level: 1 })).toBeVisible();
       expect(captionlessOffList(words), "buttons without a caption").toEqual([]);
       for (const button of page.getByRole("button").elements()) {
-        // A button of the closed list is named by its caption, which it does not show (R60).
-        const caption = button.textContent || (button.getAttribute("aria-label") ?? "");
-        await expect.element(button).toHaveAccessibleName(caption);
+        // A button of the closed list is named by its caption, which it does not show (R60); one
+        // named beside its words, as the profile's pill, has its words in its name (2.5.3).
+        const label = button.getAttribute("aria-label");
+        const text = button.textContent ?? "";
+        await expect.element(button).toHaveAccessibleName(label ?? text);
+        if (label !== null) expect(label).toContain(text);
       }
     },
   );
