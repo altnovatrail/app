@@ -152,11 +152,30 @@ h3 {
   font-weight: var(--nt-weight-heading);
 }
 
+/*
+ * The width rule (R148 spec; the mockup's README, «Two sizes»): below 600 CSS px the phone's layout,
+ * one column that scrolls, the whole width; from 600 the tablet's — a phone in landscape, a tablet,
+ * a computer —, by the width alone, not by the kind of device. A media query reads no custom
+ * property, so 600px is written in each query of the rule. From 600 a screen is a column of reading,
+ * 40rem; the home screen and the sign-in the mockup's frame, 1194 px at most, centred on the page's
+ * colour, with its margins of 40; a screen with a canvas the whole window (section 3.9).
+ */
 main {
   box-sizing: border-box;
-  max-inline-size: 40rem;
   margin-inline: auto;
   padding: 1rem;
+}
+@media (width >= 600px) {
+  main {
+    max-inline-size: 40rem;
+  }
+  main.nt-reference {
+    max-inline-size: 74.625rem;
+    padding-inline: 2.5rem;
+  }
+  main.nt-canvas {
+    max-inline-size: none;
+  }
 }
 
 h1 {
@@ -258,6 +277,94 @@ button.nt-segment-shown {
 }
 .nt-glass.nt-glass-panel {
   background: var(--nt-glass-panel);
+}
+/*
+ * A pop-over, `PopOver` (the mockup's `.nt-pop` and `.ph-sheet`): a modal dialog whose body fills
+ * it, so that a click on the dialog itself is one on its backdrop. From 600 it hangs where `hang.ts`
+ * puts it, 16rem to 27.5rem wide, the panel's glass, radius 20, and grows from its button's corner
+ * in 0.2 s. Below 600 it is a sheet from the bottom, the whole width: white — the mockup's 0.98 over
+ * the page it dims by 0.22 —, radius 28 above, "Close" at its top right, rising in 0.3 s. Either
+ * scrolls inside where it does not fit the window.
+ */
+dialog.nt-pop {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  border: 0.0625rem solid transparent;
+  color: var(--nt-text);
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.nt-pop-body {
+  position: relative;
+  padding: 0.75rem;
+}
+.nt-pop-content:focus:not(:focus-visible) {
+  outline: none;
+}
+@media (width >= 600px) {
+  dialog.nt-pop {
+    inset: var(--nt-pop-top, 1rem) auto auto var(--nt-pop-left, 1rem);
+    min-inline-size: 16rem;
+    max-inline-size: min(27.5rem, calc(100vw - 2rem));
+    max-block-size: calc(100dvh - 2rem);
+    border-radius: 1.25rem;
+    transform-origin: var(--nt-pop-origin, top left);
+  }
+  dialog.nt-pop::backdrop {
+    background: transparent;
+  }
+  .nt-pop-close {
+    display: none;
+  }
+}
+@media (width < 600px) {
+  dialog.nt-pop {
+    inset: auto 0 0;
+    inline-size: auto;
+    max-inline-size: none;
+    max-block-size: calc(100dvh - 3rem);
+    border-radius: var(--nt-radius-panel) var(--nt-radius-panel) 0 0;
+    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.16);
+  }
+  dialog.nt-pop.nt-glass {
+    background: var(--nt-card);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  dialog.nt-pop::backdrop {
+    background: rgba(0, 0, 0, 0.22);
+  }
+  .nt-pop-body {
+    padding: 3.5rem 1rem 1.75rem;
+  }
+  .nt-pop-close {
+    position: absolute;
+    inset-block-start: 0.5rem;
+    inset-inline-end: 0.5rem;
+  }
+}
+@keyframes nt-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+@keyframes nt-sheet {
+  from {
+    opacity: 0;
+    transform: translateY(2rem);
+  }
+}
+@media (prefers-reduced-motion: no-preference) and (width >= 600px) {
+  dialog.nt-pop {
+    animation: nt-pop 0.2s var(--nt-ease);
+  }
+}
+@media (prefers-reduced-motion: no-preference) and (width < 600px) {
+  dialog.nt-pop {
+    animation: nt-sheet 0.3s var(--nt-ease);
+  }
 }
 
 /* The summary of a legal text's gist opens it: a target of 44 × 44 at the body's 14 px too. */
@@ -366,9 +473,21 @@ button.nt-secondary {
   align-items: center;
   gap: 0.5rem;
   box-sizing: border-box;
-  max-inline-size: 40rem;
   margin-inline: auto;
   padding: 1rem 1rem 0;
+}
+/* From 600 the bar keeps the width and the margins of the screen under it. */
+@media (width >= 600px) {
+  .nt-bar {
+    max-inline-size: 40rem;
+  }
+  .nt-bar:has(+ main.nt-reference, + * main.nt-reference) {
+    max-inline-size: 74.625rem;
+    padding-inline: 2.5rem;
+  }
+  .nt-bar:has(+ main.nt-canvas, + * main.nt-canvas) {
+    max-inline-size: none;
+  }
 }
 .nt-bar > p {
   flex: 1 1 auto;
@@ -414,9 +533,33 @@ button.nt-secondary {
 .nt-card .nt-buttons {
   margin: 0;
 }
-/* A screen of the full width: the task screen, its canvas beside the panel (section 3.3). */
-main.nt-wide {
-  max-inline-size: 90rem;
+/*
+ * In the mockup's frame — the home screen —, a grid: one column on the phone, 12 apart; from 600 two
+ * in a row, as an iPad in portrait has them, 16 apart; four in a row where each is still 15rem wide,
+ * as the reference of 1194 has them (the mockup's README, «Two sizes»): by the frame's own width, as
+ * a container, so that a scroll bar beside it counts.
+ */
+.nt-reference .nt-cards {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.75rem;
+}
+.nt-reference .nt-card {
+  margin: 0;
+}
+@media (width >= 600px) {
+  .nt-reference .nt-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+  }
+}
+main.nt-reference {
+  container-type: inline-size;
+}
+@container (width >= 1008px) {
+  .nt-reference .nt-cards {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
 }
 /*
  * The task screen (R20 in docs/decisions.md): on a narrow screen one column — the panel, the canvas

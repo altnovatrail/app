@@ -53,7 +53,7 @@ export function LessonScreen(props: LessonScreenProps) {
   const lang = props.language === undefined ? {} : { lang: props.language };
   const kind = course.kinds[shown - 1] as Kind;
   return (
-    <Screen title={props.title} heading={<span {...lang}>{props.title}</span>} wide>
+    <Screen title={props.title} heading={<span {...lang}>{props.title}</span>} layout="canvas">
       <SegmentBar
         course={course}
         place={place}

@@ -37,7 +37,7 @@ export function Frame({
 }) {
   if (inLesson) return <div className="nt-lesson-task">{children}</div>;
   return (
-    <Screen title={title} wide>
+    <Screen title={title} layout="canvas">
       {children}
     </Screen>
   );

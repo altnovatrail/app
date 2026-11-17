@@ -15,16 +15,29 @@ export const APP_NAME = "NovaTrail";
  */
 let current: symbol | undefined;
 
+/** The width of a screen in the tablet's layout. */
+export type ScreenLayout = "column" | "reference" | "canvas";
+
+const LAYOUT_CLASS: Readonly<Record<ScreenLayout, string | undefined>> = {
+  column: undefined,
+  reference: "nt-reference",
+  canvas: "nt-canvas",
+};
+
 export interface ScreenProps {
   readonly title: string;
   readonly children?: ReactNode;
-  /** A screen of the full width, as the task screen with its canvas beside the panel. */
-  readonly wide?: boolean;
+  /**
+   * How wide the screen is from 600 CSS px (section 3.9 of docs/architecture.md): `column` a column
+   * of reading, `reference` the mockup's frame — the home screen and the sign-in, 1194 px at most —,
+   * and `canvas` the whole window, as a screen with a canvas. Below 600 each is one column.
+   */
+  readonly layout?: ScreenLayout;
   /** The heading in place of the title's plain text: a module's text with its own `lang`. */
   readonly heading?: ReactNode;
 }
 
-export function Screen({ title, children, wide = false, heading: shown }: ScreenProps) {
+export function Screen({ title, children, layout = "column", heading: shown }: ScreenProps) {
   const { language, words } = useLanguage();
   const heading = useRef<HTMLHeadingElement>(null);
   const token = useRef(Symbol("screen"));
@@ -40,7 +53,7 @@ export function Screen({ title, children, wide = false, heading: shown }: Screen
   }, []);
 
   return (
-    <main lang={language} className={wide ? "nt-wide" : undefined}>
+    <main lang={language} className={LAYOUT_CLASS[layout]}>
       <h1 ref={heading} tabIndex={-1}>
         {shown ?? title}
       </h1>
