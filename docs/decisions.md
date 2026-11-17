@@ -1897,6 +1897,8 @@ Rejected: the warning by the profile, as Д16 proposed — a work that did not r
 
 — *Rejected:* the progress' `level_settings` as the source of the mark — it is the adult's alone, and the learner's screen calls `GetSkillMap` (the 2026-11-16 amendment to R99 spec); a confirmation before each press — one band is one step back by the other button; a step "below the lowest band" — the contract names no such band (R99 spec).
 
-— *Does not decide:* the PIN in front of the buttons — the PIN of the section comes with E4 (R29; run/QUESTIONS.md, В70); the family texts that name the correction before the buttons reach a child — Д259 `spec`, Д39.
+— *The PIN:* the buttons ship in the section as it stands, with no PIN, before E4 — the author's answer of 2026-11-17 to В70, option (a), by its recommendation: the PIN guards the section from a child, the account in E3 holds the owner's profile `adult` alone, and E4's PIN comes in front of the whole section, the buttons with it (R29). Rejected: building the PIN of the section first, in a task of its own before the epic of row 6.18 — a part of E4 moved forward, and the adult waits for the correction meanwhile; holding T73 `[?]` until E4 — R157 spec counts on the correction now.
+
+— *Does not decide:* the family texts that name the correction before the buttons reach a child — Д259 `spec`, Д39.
 
 — *Consequence:* `src/skills/level.ts`, `src/skills/Level.tsx`; `ProgressMap` in `src/adults/ProgressPage.tsx`; `MapOfModule` in `src/skills/SkillMapScreen.tsx`; the keys `level.*` in the dictionaries; the 2026-11-17 amendments to R34 and R35. — [architecture.md](architecture.md), sections 1, 3.8 and 3.10; RUN.md, T73; `run/DEBT.md`, Д33 closed, Д39.
