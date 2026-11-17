@@ -12,9 +12,10 @@ import { listFormat } from "../i18n/intl.ts";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { judged, MARKS, type SkillCounts, STATES, segmentsOf } from "./states.ts";
 
-/** The bar and the words of a module's skills. */
+/** The bar and the words of a module's skills; nothing for a module with no skill to count. */
 export function SkillBar({ counts }: { readonly counts: SkillCounts }) {
   const { language, words } = useLanguage();
+  if (Object.values(counts).every((count) => count === 0)) return null;
   const named = listFormat(language, { type: "unit" }).format(
     [...STATES, ...MARKS]
       .filter((status) => counts[status] > 0)

@@ -75,6 +75,15 @@ function RunName({ run }: { readonly run: OpenRun }) {
   );
 }
 
+/**
+ * How full the bar of the tutor time is, in percent: the profile's share, and full once a cap is
+ * reached — the account's too, which the line then names as the time used up.
+ */
+function quotaFill(quota: QuotaShare | undefined): number {
+  if (quota?.capReached === true) return 100;
+  return Math.min(100, Math.max(0, quota?.profilePercent ?? 0));
+}
+
 /** What a card's button does. */
 type Action = "connect" | "disconnect";
 
@@ -262,13 +271,9 @@ export function SubjectsScreen({
           {/* At the card's foot, as the mockup has it: how much of today's tutor time is used. */}
           {spent === undefined ? null : (
             <p className="nt-quota">
-              {quota?.profilePercent === undefined ? null : (
-                <span className="nt-quota-bar" aria-hidden="true">
-                  <span
-                    style={{ inlineSize: `${Math.min(100, Math.max(0, quota.profilePercent))}%` }}
-                  />
-                </span>
-              )}
+              <span className="nt-quota-bar" aria-hidden="true">
+                <span style={{ inlineSize: `${quotaFill(quota)}%` }} />
+              </span>
               {spent}
             </p>
           )}

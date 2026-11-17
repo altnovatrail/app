@@ -564,6 +564,26 @@ describe("the tutor time", () => {
         `Время наставника на сегодня кончилось. Оно вернётся завтра в ${time}`,
       ),
     ).toBeVisible();
+    // The bar beside it full, whatever share the profile's own was.
+    const fill = document.querySelector<HTMLElement>(".nt-quota-bar > span");
+    expect(fill?.style.inlineSize).toBe("100%");
+  });
+
+  it("fills the bar once the account's cap is reached, with the profile's own share below it", async () => {
+    await renderSubjects({ quota: () => ({ profilePercent: 20, capReached: true }) });
+    const card = within(await screen.findByRole("region", { name: "Next up" }));
+    await waitFor(() =>
+      expect(
+        card
+          .getByRole("button", { name: "What's next" })
+          .closest("section")
+          ?.querySelector(".nt-quota"),
+      ).toBeTruthy(),
+    );
+    expect(screen.queryByText("Tutor time today: 20% used")).toBeNull();
+    expect(document.querySelector<HTMLElement>(".nt-quota-bar > span")?.style.inlineSize).toBe(
+      "100%",
+    );
   });
 
   it("is no line while platform AI is closed to the account, nor from an api with no GetQuota", async () => {
@@ -731,6 +751,18 @@ describe("the states of the skills", () => {
     expect(math.queryByRole("img")).toBeNull();
   });
 
+  it("are nothing on the card of a module whose graph has no skill", async () => {
+    const { asked } = await renderSubjects({
+      connected: [{ moduleId: MATH, packageDigest: D1 }],
+      tiers: { [D1]: {} },
+      maps: { [MATH]: { packageDigest: D1 } },
+    });
+    const math = await card("Olympiad maths");
+    await waitFor(() => expect(asked).toContain(`map ${MATH} 1`));
+    expect(math.queryByRole("img")).toBeNull();
+    expect(math.queryByText("Not assessed")).toBeNull();
+  });
+
   it("leave the card as it is when its map does not come, and lead to the module's map", async () => {
     const { asked } = await renderSubjects({ connected: [{ moduleId: MATH, packageDigest: D1 }] });
     const math = await card("Olympiad maths");
@@ -763,13 +795,16 @@ describe("the legend and the task from paper", () => {
     expect(screen.queryByRole("button", { name: "What the marks mean" })).toBeNull();
     unmount();
     await page.viewport(390, 844);
-    await renderSubjects({ connected: [{ moduleId: MATH, packageDigest: D1 }] });
-    await card("Olympiad maths");
-    expect(screen.queryByRole("region", { name: "What the marks mean" })).toBeNull();
-    await userEvent.click(screen.getByRole("button", { name: "What the marks mean" }));
-    const sheet = within(await screen.findByRole("dialog", { name: "What the marks mean" }));
-    expect(sheet.getAllByRole("listitem")).toHaveLength(7);
-    await page.viewport(1194, 834);
+    try {
+      await renderSubjects({ connected: [{ moduleId: MATH, packageDigest: D1 }] });
+      await card("Olympiad maths");
+      expect(screen.queryByRole("region", { name: "What the marks mean" })).toBeNull();
+      await userEvent.click(screen.getByRole("button", { name: "What the marks mean" }));
+      const sheet = within(await screen.findByRole("dialog", { name: "What the marks mean" }));
+      expect(sheet.getAllByRole("listitem")).toHaveLength(7);
+    } finally {
+      await page.viewport(1194, 834);
+    }
   });
 
   it("is no legend with no module connected", async () => {

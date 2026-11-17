@@ -3,9 +3,10 @@
 // version takes its counts when its map has come — GetSkillMap by the learner's action, and the open
 // view of the skill graph of the version that answer names, as the skill map reads them (R34) —,
 // counted by the function ./states of skill-map at the time of the device. A map that does not
-// come, or a module with no skill graph, leaves its card with no bar.
+// come, or a module with no skill graph, leaves its card with no bar; the next lists read — a retry,
+// a connection — ask again for a map that failed, and never again for one that came.
 import { Action } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Api } from "../api/client.ts";
 import type { OpenViews } from "../packages/views.ts";
 import { readModuleMap } from "../skills/map.ts";
@@ -24,6 +25,10 @@ export async function countsOfModule(
   return map.graph === undefined ? undefined : skillCounts(map.graph.view, map.skillMap, now());
 }
 
+/** A card's key: the profile, whose map it is, the module and its version. */
+const keyOf = (profileId: string, card: ModuleCard) =>
+  JSON.stringify([profileId, card.moduleId, card.digest]);
+
 /** The cards, each with the counts of its skills once its map has come; undefined while none. */
 export function useSkillCounts(
   api: Api,
@@ -31,39 +36,38 @@ export function useSkillCounts(
   profileId: string,
   cards: readonly ModuleCard[] | undefined,
 ): readonly ModuleCard[] | undefined {
-  // By module and version: the cards read anew after a connection keep the counts they had.
   const [counted, setCounted] = useState<ReadonlyMap<string, SkillCounts>>(new Map());
-  const keys = [
-    ...new Set(
-      (cards ?? []).flatMap((card) =>
-        card.digest === undefined ? [] : [`${card.moduleId} ${card.digest}`],
-      ),
-    ),
-  ]
-    .sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))
-    .join("\n");
+  // The keys asked for and not failed: each map is asked once while it is on its way or has come.
+  const asked = useRef(new Set<string>());
+  const mounted = useRef(true);
   useEffect(() => {
-    let current = true;
-    for (const key of keys === "" ? [] : keys.split("\n")) {
-      const moduleId = key.slice(0, key.indexOf(" "));
-      void countsOfModule(api, views, profileId, moduleId).then(
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+  useEffect(() => {
+    for (const card of cards ?? []) {
+      if (card.digest === undefined) continue;
+      const key = keyOf(profileId, card);
+      if (asked.current.has(key)) continue;
+      asked.current.add(key);
+      void countsOfModule(api, views, profileId, card.moduleId).then(
         (counts) => {
-          if (current && counts !== undefined) setCounted((held) => new Map(held).set(key, counts));
+          if (mounted.current && counts !== undefined) {
+            setCounted((held) => new Map(held).set(key, counts));
+          }
         },
-        () => {},
+        () => asked.current.delete(key),
       );
     }
-    return () => {
-      current = false;
-    };
-  }, [api, views, profileId, keys]);
+  }, [api, views, profileId, cards]);
   return useMemo(
     () =>
       cards?.map((card) => {
-        const counts =
-          card.digest === undefined ? undefined : counted.get(`${card.moduleId} ${card.digest}`);
+        const counts = card.digest === undefined ? undefined : counted.get(keyOf(profileId, card));
         return counts === undefined ? card : { ...card, skills: counts };
       }),
-    [cards, counted],
+    [cards, counted, profileId],
   );
 }

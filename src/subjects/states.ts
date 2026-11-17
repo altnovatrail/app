@@ -32,7 +32,7 @@ export function countsOf(statuses: ReadonlyMap<string, SkillStatus>): SkillCount
   const counts: Record<string, number> = {};
   for (const status of [...STATES, ...MARKS]) counts[status] = 0;
   for (const status of statuses.values()) {
-    if (status in counts) counts[status] = (counts[status] as number) + 1;
+    if (Object.hasOwn(counts, status)) counts[status] = (counts[status] as number) + 1;
   }
   return counts as SkillCounts;
 }
