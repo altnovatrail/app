@@ -256,6 +256,7 @@ async function renderEssay(setup: Setup = {}) {
                 learner: create(ProfileSchema, { profileId: "p1", workStorage: setup.storage }),
                 switchLearner: () => {},
                 signOut: () => {},
+                openLegal: () => {},
                 onSaved: () => {},
                 onFailed: () => {},
               }}

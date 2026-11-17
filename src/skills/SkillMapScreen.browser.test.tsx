@@ -313,7 +313,7 @@ describe("the list of maps", () => {
       "Fair shares",
     );
     expect(screen.queryByRole("button", { name: "All skill maps" })).toBeNull();
-    await userEvent.click(screen.getByRole("button", { name: "Back to My subjects" }));
+    await userEvent.click(screen.getByRole("button", { name: "Back" }));
     expect(window.location.hash).toBe("#/home");
   });
 
@@ -327,6 +327,22 @@ describe("the list of maps", () => {
 });
 
 describe("a module's map", () => {
+  it("stands in the frame below the top bar, whose Back goes home, with the way to every map", async () => {
+    await renderMap(moduleMapRoute(SHARES));
+    await drawn();
+    const frame = screen.getByRole("region", { name: "Skill map: Fair shares" });
+    expect(frame).toContainElement(document.querySelector("novatrail-skill-map"));
+    expect(frame).toHaveAttribute("tabindex", "0");
+    const heading = screen.getByRole("heading", { level: 1, name: "Skill map: Fair shares" });
+    expect(heading.closest(".nt-top-pill")).toContainElement(
+      screen.getByRole("button", { name: "Back" }),
+    );
+    await userEvent.click(within(frame).getByRole("button", { name: "All skill maps" }));
+    expect(window.location.hash).toBe("#/skill-map");
+    await userEvent.click(screen.getByRole("button", { name: "Back" }));
+    expect(window.location.hash).toBe("#/home");
+  });
+
   it("gives the element the learner's view in the learner's language, by the learner's action", async () => {
     const { maps } = await renderMap(moduleMapRoute(SHARES), {}, "ru");
     const element = await drawn();
@@ -339,7 +355,7 @@ describe("a module's map", () => {
     expect(element.skillMap?.packageDigest).toBe(D1);
     expect(maps[0]).toMatchObject({ profileId: "p1", moduleId: SHARES, action: Action.LEARNING });
     const heading = screen.getByRole("heading", { level: 1 });
-    expect(heading).toHaveTextContent("Карта навыков: Fair shares");
+    expect(heading).toHaveAccessibleName("Карта навыков: Fair shares");
     expect(within(heading).getByText("Fair shares")).toHaveAttribute("lang", "en");
     expect(document.title).toBe("Карта навыков: Fair shares — NovaTrail");
     // The map's own words are Russian, and its bands' headings are below the screen's.
@@ -547,7 +563,7 @@ describe("a module's map", () => {
   it("says a module has no map without a skill graph", async () => {
     await renderMap(moduleMapRoute("example/no-graph"), { maps: [() => ({ packageDigest: D3 })] });
     expect(await screen.findByText("This subject has no skill map")).toBeVisible();
-    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Skill map: No graph");
+    expect(screen.getByRole("heading", { level: 1 })).toHaveAccessibleName("Skill map: No graph");
     expect(document.querySelector("novatrail-skill-map")).toBeNull();
   });
 

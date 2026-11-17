@@ -2014,3 +2014,266 @@ button[aria-disabled="true"] {
     color: GrayText;
   }
 }
+/*
+ * The top of "My subjects" by the mockup's `home` (R63): the profile's pill 16 from the left and 14
+ * from the top of the frame, the adult's Help in a glass of its own at the right, 48 high each.
+ */
+.nt-help {
+  display: inline-flex;
+  flex: none;
+  padding: 0.125rem;
+  border-radius: var(--nt-radius-top-bar);
+}
+.nt-home-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  box-sizing: border-box;
+  max-inline-size: 74.625rem;
+  margin-inline: auto;
+  padding: 0.875rem 1rem 0;
+}
+.nt-home-bar > .nt-help {
+  margin-inline-start: auto;
+}
+/* From 600 the heading 30 below the bar, 92 from the top, as the mockup's greeting. */
+@media (width >= 600px) {
+  .nt-home-bar + main.nt-reference,
+  .nt-home-bar + * > main.nt-reference {
+    padding-block-start: 1.875rem;
+  }
+}
+.nt-learner-name {
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
+}
+/* The profile's pill: the avatar of 36, the pseudonym semibold at 15, a chevron down. */
+button.nt-learner-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.625rem;
+  min-inline-size: 0;
+  max-inline-size: 100%;
+  block-size: 3rem;
+  padding: 0 0.875rem 0 0.375rem;
+  border-radius: var(--nt-radius-top-bar);
+  color: var(--nt-text);
+  font-size: 1rem;
+  font-weight: 400;
+  text-align: start;
+}
+.nt-learner-pill > .nt-learner-name {
+  font-size: 0.9375rem;
+  font-weight: var(--nt-weight-bold);
+}
+.nt-learner-chevron {
+  display: inline-flex;
+  flex: none;
+  color: var(--nt-text-muted);
+  font-size: 0.75rem;
+}
+/* The avatar's picture is 1em: its size is the font's. */
+.nt-avatar-pill {
+  inline-size: 2.25rem;
+  block-size: 2.25rem;
+  box-shadow: none;
+  font-size: 1.125rem;
+}
+.nt-avatar-menu {
+  inline-size: 1.875rem;
+  block-size: 1.875rem;
+  box-shadow: none;
+  font-size: 0.9375rem;
+}
+/* The icons of a bar in the text's colour, as the mockup's: Help, Back. */
+.nt-help button.nt-icon-only,
+.nt-top-pill button.nt-icon-only {
+  color: var(--nt-text);
+}
+/* The profile's menu: who is learning now, a line, and its rows of 44 the menu's whole width. */
+.nt-menu-caption {
+  margin: 0;
+  line-height: normal;
+  padding: 0.375rem 0.625rem 0.25rem;
+  color: var(--nt-text-muted);
+  font-size: 0.75rem;
+  font-weight: var(--nt-weight-bold);
+}
+.nt-menu-current {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  margin: 0;
+  padding: 0.5rem 0.625rem;
+  font-size: 0.9375rem;
+  font-weight: var(--nt-weight-medium);
+}
+.nt-menu-current > .nt-learner-name {
+  flex: 1 1 auto;
+}
+.nt-menu-tick {
+  display: inline-flex;
+  flex: none;
+  color: var(--nt-accent);
+  font-size: 1rem;
+}
+.nt-pop-menu hr {
+  margin: 0.25rem 0.625rem;
+  border: 0;
+  border-block-start: 0.0625rem solid rgba(0, 0, 0, 0.08);
+}
+button.nt-menu-row {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  inline-size: 100%;
+  block-size: var(--nt-target);
+  padding: 0 0.625rem;
+  border-radius: var(--nt-radius-field);
+  background: transparent;
+  color: var(--nt-accent-text);
+  font-size: 0.9375rem;
+  font-weight: 400;
+  text-align: start;
+}
+.nt-menu-icon {
+  display: inline-flex;
+  flex: none;
+  font-size: 1.125rem;
+}
+@media (hover: hover) {
+  button.nt-menu-row:hover {
+    background: rgba(0, 0, 0, 0.04);
+  }
+}
+/* The adult's Help: its heading at 17, each thing in two lines, and the three pages as links. */
+.nt-pop-help .nt-pop-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.nt-pop-help h2 {
+  margin: 0;
+  line-height: normal;
+  font-size: var(--nt-size-emphasis);
+}
+.nt-help-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  margin: 0;
+}
+.nt-help-item > b {
+  font-size: var(--nt-size-body);
+  line-height: normal;
+}
+.nt-help-item > span {
+  color: var(--nt-text-muted);
+  font-size: var(--nt-size-caption);
+  line-height: 1.4;
+}
+/*
+ * The links stand 10 further out than the words, as the mockup's: the body is 6 from the edge and
+ * the words 10 inside it, so that nothing reaches beyond the body and scrolls.
+ */
+.nt-pop-help .nt-pop-body {
+  padding-inline: 0.375rem;
+}
+.nt-pop-help .nt-pop-content > :not(.nt-help-pages) {
+  padding-inline: 0.625rem;
+}
+.nt-help-pages {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 0.25rem;
+  margin-block: -0.25rem -0.5rem;
+}
+/* 10 on each side with the border of 1 in it, as the mockup's links have no border. */
+.nt-pop-help .nt-help-pages > button.nt-link {
+  padding: 0 calc(0.625rem - 0.0625rem);
+  font-size: var(--nt-size-body);
+}
+@media (width >= 600px) {
+  dialog.nt-pop.nt-pop-menu {
+    min-inline-size: 0;
+    inline-size: 16.875rem;
+  }
+  dialog.nt-pop.nt-pop-help {
+    inline-size: 20rem;
+  }
+  .nt-pop-menu .nt-pop-body {
+    padding: 0.5rem;
+  }
+  .nt-pop-help .nt-pop-body {
+    padding-block: 1rem;
+  }
+}
+/*
+ * A screen with a top bar (R63): the glass pill of 48 — its way back, and its heading, the title
+ * at 14 semibold and a line under it at 11.5 — and what stands at the bar's other end.
+ */
+.nt-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-block-end: 0.875rem;
+}
+.nt-top-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  box-sizing: border-box;
+  min-block-size: 3rem;
+  padding: 0.125rem 1rem 0.125rem 0.125rem;
+  border-radius: var(--nt-radius-top-bar);
+}
+.nt-top > .nt-top-pill > h1 {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  font-size: var(--nt-size-body);
+  line-height: 1.15;
+}
+.nt-top-pill button.nt-icon-only {
+  font-size: 1.125rem;
+}
+.nt-top-title {
+  font-weight: var(--nt-weight-bold);
+  letter-spacing: -0.1px;
+}
+/* The colon between the title and its line, for the heading's name: inline, so no space before it. */
+.nt-top-colon {
+  opacity: 0;
+}
+.nt-top-sub {
+  color: var(--nt-text-muted);
+  font-size: 0.71875rem;
+  font-weight: 400;
+}
+/*
+ * The skill map's screen (R63; the mockup's `map`): the whole window, the top bar 14 from the top
+ * and 16 from the sides, and below it, 76 from the top to 16 from the bottom, the white frame of
+ * radius 26 that the map stands in and that scrolls inside; 20rem high at least, where the window
+ * is lower, and the page scrolls then.
+ */
+main.nt-map {
+  max-inline-size: none;
+  padding: 0.875rem 1rem 1rem;
+}
+.nt-map-frame {
+  box-sizing: border-box;
+  block-size: max(calc(100dvh - 5.75rem), 20rem);
+  padding: 1.25rem;
+  overflow: auto;
+  border: 0.0625rem solid transparent;
+  border-radius: 1.625rem;
+  background: var(--nt-card);
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.05),
+    0 12px 32px rgba(0, 0, 0, 0.06);
+}
+.nt-map-frame > .nt-buttons:first-child {
+  margin-block-start: -0.75rem;
+}

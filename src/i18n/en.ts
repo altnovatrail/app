@@ -345,6 +345,16 @@ export const en = {
   "persist.refused": "The browser may still erase it when space runs low",
   /** Switches to the choice of the learner. */
   "learner.switch": "Switch learner",
+  /** The profile's menu (R63): its dialog, its pill by the pseudonym it shows, the learner in it. */
+  "learner.menu": "Profile menu",
+  "learner.menu-button": "{pseudonym}, profile menu",
+  "learner.now": "Learning now",
+  /** The adult's Help on the home screen (R148 in spec; R63): three things, and three pages. */
+  "help.ai": "The tutor is an AI",
+  "help.ai-text":
+    "A computer program, not a person — and a program checks every answer. If the AI read your work wrongly, write it again, or tell the operator with Report a problem at the task",
+  "help.name": "Your name is made up",
+  "help.name-text": "Write no real names in the work — in an essay either",
   "signout.button": "Sign out",
   /** The heading of the screen before the sign-out. */
   "signout.title": "Sign out?",

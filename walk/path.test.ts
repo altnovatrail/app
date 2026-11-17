@@ -261,6 +261,12 @@ async function chooseDev(page: Page) {
   await page.getByRole("button", { name: "Dev", exact: true }).click();
 }
 
+/** Presses a button of the profile's header, in the menu of the learner's pill (R63). */
+async function fromMenu(page: Page, name: string) {
+  await page.getByRole("button", { name: /, profile menu$/ }).click();
+  await page.getByRole("dialog").getByRole("button", { name, exact: true }).click();
+}
+
 async function home(page: Page) {
   await page.getByRole("heading", { name: "My subjects", exact: true }).waitFor();
 }
@@ -613,7 +619,7 @@ describe.each(NAMED)("the path in %s", (name) => {
   it("connects an own key the stub checks, kept on this device, once a wrong one is refused", async () => {
     shoot();
     const { page } = walk;
-    await page.getByRole("button", { name: "For grown-ups" }).click();
+    await fromMenu(page, "For grown-ups");
     await page.getByRole("button", { name: "Set up an own AI key" }).click();
     await page.getByRole("heading", { level: 1, name: "Own AI key" }).waitFor();
     const field = page.getByLabel("Key", { exact: true });
@@ -687,7 +693,7 @@ describe.each(NAMED)("the path in %s", (name) => {
     const { page } = walk;
     await page.goto(`${ORIGIN}/#/home`);
     await home(page);
-    await page.getByRole("button", { name: "For grown-ups" }).click();
+    await fromMenu(page, "For grown-ups");
     await page.getByRole("button", { name: "Profile: Dev" }).click();
     await page.getByRole("heading", { level: 1, name: "Profile: Dev" }).waitFor();
     // The quota share of the profile and of the account (R40; Д20).
@@ -737,7 +743,7 @@ describe.each(NAMED)("the path in %s", (name) => {
       note("the task in progress is a tap task: no reading to meet the tier's ceiling");
       return;
     }
-    await page.getByRole("button", { name: "For grown-ups" }).click();
+    await fromMenu(page, "For grown-ups");
     await page.getByRole("button", { name: "Set up an own AI key" }).click();
     await page.getByRole("heading", { level: 1, name: "Own AI key" }).waitFor();
     await page.getByLabel("Key", { exact: true }).fill(TIER_KEY);
@@ -759,7 +765,7 @@ describe.each(NAMED)("the path in %s", (name) => {
     // Beside the key, the same line and what to do until then; Remove key goes to platform AI.
     await page.goto(`${ORIGIN}/#/home`);
     await home(page);
-    await page.getByRole("button", { name: "For grown-ups" }).click();
+    await fromMenu(page, "For grown-ups");
     await page.getByRole("button", { name: "Set up an own AI key" }).click();
     await page.getByRole("heading", { level: 1, name: "Own AI key" }).waitFor();
     await page.getByText(TIER_LINE).first().waitFor();
@@ -774,7 +780,7 @@ describe.each(NAMED)("the path in %s", (name) => {
   it("keeps the works on the server once its storage is on, and This device warns of no loss", async () => {
     shoot();
     const { page } = walk;
-    await page.getByRole("button", { name: "For grown-ups" }).click();
+    await fromMenu(page, "For grown-ups");
     await page.getByRole("button", { name: "Profile: Dev" }).click();
     const storage = page.getByRole("region", { name: "Keeping works on the server" });
     const keep = storage.getByRole("button", { name: "Keep works on the server" });
@@ -816,7 +822,7 @@ describe.each(NAMED)("the path in %s", (name) => {
     shoot();
     const { page, context } = walk;
     expect((await databases(context)).filter((db) => ACCOUNT_DATABASES.test(db))).not.toEqual([]);
-    await page.getByRole("button", { name: "Sign out", exact: true }).click();
+    await fromMenu(page, "Sign out");
     await page.getByRole("heading", { level: 1, name: "Sign out?" }).waitFor();
     await page.getByRole("listitem").filter({ hasText: "Dev: 1 unfinished task" }).waitFor();
     await page.getByRole("button", { name: "Sign out and erase" }).click();
@@ -831,7 +837,7 @@ describe.each(NAMED)("the path in %s", (name) => {
     await page.getByRole("button", { name: "Sign in with Google" }).click();
     await chooseDev(page);
     await home(page);
-    await page.getByRole("button", { name: "For grown-ups" }).click();
+    await fromMenu(page, "For grown-ups");
     await page.getByRole("button", { name: "See what is on this device" }).click();
     await page.getByRole("button", { name: "Erase everything on this device" }).click();
     await page

@@ -9,6 +9,8 @@ import {
   type ComponentProps,
   type FocusEvent,
   type PointerEvent,
+  type Ref,
+  useCallback,
   useEffect,
   useLayoutEffect,
   useRef,
@@ -45,11 +47,14 @@ export type Captionless = keyof typeof CAPTIONLESS;
 /** How long the pointer or the focus stays before the tooltip comes, as the mockup's `.tip`. */
 export const TIP_DELAY_MS = 300;
 
-export interface IconButtonProps extends Omit<ComponentProps<"button">, "children" | "type"> {
+export interface IconButtonProps
+  extends Omit<ComponentProps<"button">, "children" | "type" | "ref"> {
   /** Which button of the list it is: its icon and its name. */
   readonly value: Captionless;
   /** Whether what it stands for is chosen, on or open: then its icon is the fill, where it has one. */
   readonly chosen?: boolean;
+  /** The button itself, for what opens from it: a pop-over that gives the focus back to it. */
+  readonly ref?: Ref<HTMLButtonElement>;
 }
 
 export function IconButton({
@@ -58,6 +63,7 @@ export function IconButton({
   className,
   onFocus,
   onBlur,
+  ref,
   ...button
 }: IconButtonProps) {
   const { words } = useLanguage();
@@ -70,6 +76,15 @@ export function IconButton({
   const host = useRef<HTMLButtonElement>(null);
   const tip = useRef<HTMLSpanElement>(null);
   const wanted = hover || focus;
+  // The tooltip's own ref and the one given, on the same button.
+  const setButton = useCallback(
+    (node: HTMLButtonElement | null) => {
+      host.current = node;
+      if (typeof ref === "function") ref(node);
+      else if (ref != null) ref.current = node;
+    },
+    [ref],
+  );
 
   // It comes once the pointer or the focus has stayed; it goes, and Escape's dismissal is over,
   // once neither is on the button or on it.
@@ -139,7 +154,7 @@ export function IconButton({
       onPointerLeave={() => setHover(false)}
     >
       <button
-        ref={host}
+        ref={setButton}
         type="button"
         className={["nt-icon-only", icon === undefined ? "nt-grabber" : undefined, className]
           .filter(Boolean)

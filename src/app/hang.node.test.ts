@@ -21,6 +21,11 @@ describe("hang", () => {
     });
   });
 
+  it("hangs the gap it is given below the button, as the home's 6 below its bar", () => {
+    expect(hang(button(16, 14), 270, 140, VIEW, false, 6)).toMatchObject({ left: 16, top: 64 });
+    expect(hang(button(16, 700), 270, 140, VIEW, false, 6)).toMatchObject({ top: 700 - 6 - 140 });
+  });
+
   it("hangs centred below the button's middle, growing from the middle of its top, when asked", () => {
     expect(hang(button(500, 300), 300, 200, VIEW, true)).toEqual({
       left: 522 - 150,

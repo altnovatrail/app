@@ -11,18 +11,21 @@
 // `ConnectModule`, above the map, as the element shows no `teaching_modules` (Д211 in the table 4
 // of spec's RUN.md); once one is connected, the map's state is read again in place. Above the map,
 // "The level was set by an adult" with its day, when an adult set the module's level (R157 in
-// spec; R56): every learner sees it.
+// spec; R56): every learner sees it. Each screen of the map is the mockup's `map` (R148 in spec;
+// R63): a top bar — Back home, the heading in its glass pill, the profile's pill at its other end —
+// and below it a white frame of the whole window, which scrolls inside, with the map in it.
 import { Action } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
 import type { EngineChoice } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useId, useRef, useState } from "react";
 import { useApi, useRequest } from "../api/ApiContext.tsx";
 import type { Api } from "../api/client.ts";
 import { type Failure, parseFailure } from "../api/failure.ts";
 import { outcomeOf } from "../api/outcome.ts";
 import { ReadFailure } from "../api/ReadFailure.tsx";
 import { failureText, outcomeText } from "../api/words.ts";
-import { HomeButton } from "../app/HomeButton.tsx";
-import { navigate, type Route, redirect, SKILL_MAP } from "../app/router.ts";
+import { IconButton } from "../app/IconButton.tsx";
+import { LearnerMenu } from "../app/LearnerMenu.tsx";
+import { HOME, navigate, type Route, redirect, SKILL_MAP } from "../app/router.ts";
 import { Screen } from "../app/Screen.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { givenOf } from "../next/choice.ts";
@@ -35,25 +38,41 @@ import { cardsOf } from "../subjects/modules.ts";
 import { useAttempt } from "../task/AttemptContext.tsx";
 import { LevelSetBy } from "./Level.tsx";
 import { type ModuleMap, offeredModules, readModuleMap } from "./map.ts";
-import { MapHeading, ModuleSkillMap, mapTitle } from "./SkillMap.tsx";
+import { MapBarHeading, ModuleSkillMap, mapTitle } from "./SkillMap.tsx";
 
 /** The map of a module, by its ID. */
 export function moduleMapRoute(moduleId: string): Route {
   return { screen: SKILL_MAP.screen, parts: [moduleId] };
 }
 
-/** The ways out of a screen of the map: to the list of maps from a module's, and home. */
-function Ways({ all }: { readonly all: boolean }) {
-  const { words } = useLanguage();
+export interface MapScreenProps {
+  /** The screen's title, and the frame's name. */
+  readonly title: string;
+  /** The heading in the top bar's pill, in place of the title's plain text. */
+  readonly heading?: ReactNode;
+  readonly children?: ReactNode;
+}
+
+/**
+ * A screen of the map: the top bar, whose Back goes home (R57) and whose other end is the profile's
+ * pill, and the frame, named by the title, which the keyboard scrolls as it takes the focus.
+ */
+export function MapScreen({ title, heading, children }: MapScreenProps) {
   return (
-    <div className="nt-buttons">
-      {all ? (
-        <button type="button" className="nt-secondary" onClick={() => navigate(SKILL_MAP)}>
-          {words.text("skillmap.all")}
-        </button>
-      ) : null}
-      <HomeButton />
-    </div>
+    <Screen
+      title={title}
+      heading={heading}
+      layout="map"
+      bar={{
+        back: <IconButton value="back" onClick={() => navigate(HOME)} />,
+        end: <LearnerMenu />,
+      }}
+    >
+      {/* biome-ignore lint/a11y/noNoninteractiveTabindex: a frame that scrolls inside takes the keyboard's focus to scroll. */}
+      <section className="nt-map-frame" aria-label={title} tabIndex={0}>
+        {children}
+      </section>
+    </Screen>
   );
 }
 
@@ -90,10 +109,12 @@ function MapList({ profileId }: { readonly profileId: string }) {
       );
   }
   return (
-    <Screen title={words.text("skillmap.title")}>
-      <Ways all={false} />
+    <MapScreen
+      title={words.text("skillmap.title")}
+      heading={<span className="nt-top-title">{words.text("skillmap.title")}</span>}
+    >
       {shown}
-    </Screen>
+    </MapScreen>
   );
 }
 
@@ -310,8 +331,12 @@ function MapOfModule({
   const map = read.status === "done" ? read.map : undefined;
   const outcome = nothing === undefined ? undefined : outcomeOf(nothing.outcome);
   return (
-    <Screen title={mapTitle(map, words)} heading={<MapHeading map={map} />}>
-      <Ways all />
+    <MapScreen title={mapTitle(map, words)} heading={<MapBarHeading map={map} />}>
+      <div className="nt-buttons">
+        <button type="button" className="nt-link" onClick={() => navigate(SKILL_MAP)}>
+          {words.text("skillmap.all")}
+        </button>
+      </div>
       {read.status === "failed" ? <ReadFailure failure={read.failure} onRetry={retry} /> : null}
       {read.status === "done" ? (
         <>
@@ -367,7 +392,7 @@ function MapOfModule({
           <ModuleSkillMap map={read.map} view="learner" headingLevel="2" onChoose={chosen} />
         </>
       ) : null}
-    </Screen>
+    </MapScreen>
   );
 }
 

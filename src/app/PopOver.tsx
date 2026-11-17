@@ -12,7 +12,7 @@ import {
   useState,
 } from "react";
 import { hang } from "./hang.ts";
-import { IconButton } from "./IconButton.tsx";
+import { type Captionless, IconButton } from "./IconButton.tsx";
 
 /** What takes the focus in a pop-over that opens: the first of these, or the pop-over itself. */
 const FOCUSABLE =
@@ -26,6 +26,16 @@ export interface PopOverProps {
    * its field's name and value, as the owner's country.
    */
   readonly caption?: ReactNode;
+  /**
+   * The button's name, where its caption is not all of it: the profile's pill, whose name says what
+   * it opens beside the pseudonym it shows.
+   */
+  readonly buttonLabel?: string;
+  /**
+   * A button of the closed list in place of the words (R60): its icon alone, filled while the
+   * pop-over is open, and its caption its name — Help.
+   */
+  readonly icon?: Captionless;
   /** The button's class, as `nt-secondary`. */
   readonly className?: string;
   /** The button, for a form that puts the focus on it. */
@@ -34,6 +44,11 @@ export interface PopOverProps {
   readonly describedBy?: string | undefined;
   /** Hung below the middle of its button, from 600 CSS px, not from its edge. */
   readonly centred?: boolean;
+  /**
+   * Between the button and the pop-over hung from it, CSS px, where it is not GAP of hang.ts: the
+   * home's pop-overs hang 6 below its bar, as the mockup's do (R63).
+   */
+  readonly gap?: number;
   /** The pop-over's own class, beside `nt-pop`: a look of its own, as the avatars'. */
   readonly popClassName?: string;
   /** What the pop-over holds; given `close`, a choice can close it once it is made. */
@@ -43,10 +58,13 @@ export interface PopOverProps {
 export function PopOver({
   label,
   caption,
+  buttonLabel,
+  icon,
   className,
   buttonRef,
   describedBy,
   centred = false,
+  gap,
   popClassName,
   children,
 }: PopOverProps) {
@@ -74,6 +92,7 @@ export function PopOver({
           height: document.documentElement.clientHeight,
         },
         centred,
+        gap,
       );
       shown.style.setProperty("--nt-pop-left", `${at.left}px`);
       shown.style.setProperty("--nt-pop-top", `${at.top}px`);
@@ -117,21 +136,24 @@ export function PopOver({
       // back: the button takes it, while it is still on the page.
       if (button.current?.isConnected === true) button.current.focus();
     };
-  }, [open, close, centred, button]);
+  }, [open, close, centred, gap, button]);
 
+  const opens = {
+    className,
+    "aria-describedby": describedBy,
+    "aria-haspopup": "dialog",
+    "aria-expanded": open,
+    onClick: () => setOpen((was) => !was),
+  } as const;
   return (
     <>
-      <button
-        ref={button}
-        type="button"
-        className={className}
-        aria-describedby={describedBy}
-        aria-haspopup="dialog"
-        aria-expanded={open}
-        onClick={() => setOpen((was) => !was)}
-      >
-        {caption ?? label}
-      </button>
+      {icon === undefined ? (
+        <button ref={button} type="button" aria-label={buttonLabel} {...opens}>
+          {caption ?? label}
+        </button>
+      ) : (
+        <IconButton ref={button} value={icon} chosen={open} {...opens} />
+      )}
       {open ? (
         <dialog
           ref={dialog}

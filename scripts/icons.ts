@@ -88,6 +88,12 @@ export const TABLE: Readonly<Record<string, Value>> = {
   // my paper", shown disabled; the button of the phone that opens what the marks mean, an "i".
   camera: { base: "photo-camera", filled: false, mirrored: false },
   legend: { base: "info", filled: false, mirrored: false },
+  // The profile's menu (section 3.10 of docs/architecture.md; R63): the chevron down of its pill;
+  // "Switch learner", two arrows that swap; "Sign out", a door with an arrow out. "For grown-ups"
+  // is the group of the sign-in's line for grown-ups.
+  "menu-open": { base: "keyboard-arrow-down", filled: false, mirrored: false },
+  "switch-learner": { base: "swap-horiz", filled: false, mirrored: false },
+  "sign-out": { base: "logout", filled: false, mirrored: true },
 };
 
 /** An icon as the app draws it: its view box, and the paths it fills in the text's colour. */

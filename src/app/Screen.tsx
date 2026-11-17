@@ -2,7 +2,9 @@
 // document in the screen's language (WCAG 2.4.2), and the focus on that heading when one screen
 // takes another's place (2.4.3) — not on the first screen of the page, and not while the same screen
 // stays. `<main lang>` is the screen's language (3.1.1). A heading that is a module's text — a
-// lesson's title — comes as a node of its own, with its `lang`, and the title stays its words.
+// lesson's title — comes as a node of its own, with its `lang`, and the title stays its words. A
+// screen with a top bar has its heading in the bar's glass pill, beside its way back, as the
+// mockup's top bar has its title (R63).
 import { type ReactNode, useEffect, useRef } from "react";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 
@@ -16,7 +18,7 @@ export const APP_NAME = "NovaTrail";
 let current: symbol | undefined;
 
 /** The width of a screen in the tablet's layout. */
-export type ScreenLayout = "column" | "reference" | "canvas" | "welcome" | "profiles";
+export type ScreenLayout = "column" | "reference" | "canvas" | "welcome" | "profiles" | "map";
 
 const LAYOUT_CLASS: Readonly<Record<ScreenLayout, string | undefined>> = {
   column: undefined,
@@ -24,7 +26,16 @@ const LAYOUT_CLASS: Readonly<Record<ScreenLayout, string | undefined>> = {
   canvas: "nt-canvas",
   welcome: "nt-welcome",
   profiles: "nt-profiles",
+  map: "nt-map",
 };
+
+/** The top bar of a screen: its way back, and what stands at its other end. */
+export interface TopBar {
+  /** The way back, before the heading in the bar's pill: `IconButton` "back". */
+  readonly back: ReactNode;
+  /** What stands at the bar's other end: the profile's pill. */
+  readonly end?: ReactNode;
+}
 
 export interface ScreenProps {
   readonly title: string;
@@ -34,7 +45,8 @@ export interface ScreenProps {
    * of reading, `reference` the mockup's frame — the home screen and the sign-in, 1194 px at most —,
    * and `canvas` the whole window, as a screen with a canvas; `welcome` the sign-in's frame, its
    * art beside the column, and `profiles` the frame of the owner's profile and "Who is learning?",
-   * a column in the middle (R61). Below 600 each is one column.
+   * a column in the middle (R61), and `map` the whole window, a frame below the top bar (R63).
+   * Below 600 each is one column.
    */
   readonly layout?: ScreenLayout;
   /** What stands in the frame before the heading's column: the sign-in's art, the app's name. */
@@ -45,6 +57,8 @@ export interface ScreenProps {
   readonly after?: ReactNode;
   /** The heading in place of the title's plain text: a module's text with its own `lang`. */
   readonly heading?: ReactNode;
+  /** The top bar, which then holds the heading. */
+  readonly bar?: TopBar;
 }
 
 export function Screen({
@@ -55,6 +69,7 @@ export function Screen({
   before,
   lead,
   after,
+  bar,
 }: ScreenProps) {
   const { language, words } = useLanguage();
   const heading = useRef<HTMLHeadingElement>(null);
@@ -70,11 +85,24 @@ export function Screen({
     current = token.current;
   }, []);
 
+  const h1 = (
+    <h1 ref={heading} tabIndex={-1}>
+      {shown ?? title}
+    </h1>
+  );
   const content = (
     <>
-      <h1 ref={heading} tabIndex={-1}>
-        {shown ?? title}
-      </h1>
+      {bar === undefined ? (
+        h1
+      ) : (
+        <div className="nt-top">
+          <div className="nt-top-pill nt-glass">
+            {bar.back}
+            {h1}
+          </div>
+          {bar.end}
+        </div>
+      )}
       {children}
     </>
   );

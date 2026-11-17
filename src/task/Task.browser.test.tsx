@@ -470,6 +470,7 @@ async function renderTask(setup: Setup = {}) {
           learner: create(ProfileSchema, { profileId: "p1", workStorage: setup.storage }),
           switchLearner: () => {},
           signOut: () => {},
+          openLegal: () => {},
           onSaved: (profile) => saved.push(profile),
           onFailed: (failure) => failed.push(failure),
         }}

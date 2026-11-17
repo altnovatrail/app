@@ -66,6 +66,8 @@ export interface Learner {
   readonly learner: Profile;
   readonly switchLearner: () => void;
   readonly signOut: () => void;
+  /** Opens a legal page, whose bar goes back home: the adult's Help leads to three (R63). */
+  readonly openLegal: (page: Route) => void;
   /** api changed the profile on a learner's screen — its voicing (T45): the session takes it. */
   readonly onSaved: (profile: Profile) => void;
   /** A request of a learner's screen about the profile did not go through. */
@@ -284,6 +286,7 @@ export function AccountGate({ children }: { readonly children: ReactNode }) {
               learner: state.learner,
               switchLearner: () => session.switchLearner(),
               signOut: () => setLeaving(true),
+              openLegal: (page) => openLegal(HOME, page),
               onSaved,
               onFailed,
             }}
