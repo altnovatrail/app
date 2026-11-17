@@ -55,8 +55,9 @@ const PAIRS: readonly [string, readonly string[], number][] = [
   ["next", ["card"], TEXT],
   // The tutor's words and marks on the sheet.
   ["tutor-words", ["card"], TEXT],
-  // The focus ring, a primary button's fill and what is selected, against what they stand on.
-  ["accent", ["card"], EDGE],
+  // The accent on the skill map's paper, as text too; the focus ring, a primary button's fill and
+  // what is selected, against what they stand on.
+  ["accent", ["card"], TEXT],
   ["accent", ["page"], EDGE],
   ["accent", ["page-owner"], EDGE],
   ["accent", ["glass", "page"], EDGE],

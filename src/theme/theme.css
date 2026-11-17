@@ -178,6 +178,13 @@ p {
   margin-block: 0 1rem;
 }
 
+/* A field's text is 16 px, under which Safari on iOS zooms the page when the field takes focus. */
+input,
+select,
+textarea {
+  font-size: 1rem;
+}
+
 /*
  * A button as the mockup's pill: 44 high, round, the accent's fill and white semibold text. Its
  * border has no colour of its own, so that forced colours, which take the fill away, draw its edge.
@@ -217,12 +224,17 @@ button.nt-main {
 }
 
 button[aria-pressed="false"] {
+  border-color: var(--nt-accent);
   background: var(--nt-card);
   color: var(--nt-accent-text);
 }
 
-/* The chosen one is told by more than colour, which forced colours take away (1.4.1). */
-button[aria-pressed="true"] {
+/*
+ * The chosen one, and the segment shown, are told by more than colour, which forced colours take
+ * away (1.4.1): by an underline, since every button is semibold.
+ */
+button[aria-pressed="true"],
+button.nt-segment-shown {
   text-decoration: underline;
   text-decoration-thickness: 0.125rem;
   text-underline-offset: 0.25rem;
@@ -282,18 +294,12 @@ summary {
 }
 /*
  * A second action beside the main one: the accent as text on white, which holds 4.5:1 on the page
- * too, where the accent's tint would not.
+ * too, where the accent's tint would not, and the accent's edge, which tells it from a white card.
  */
 button.nt-secondary {
+  border-color: var(--nt-accent);
   background: var(--nt-card);
   color: var(--nt-accent-text);
-}
-/* A disabled button: grey on a grey fill, as an inactive control may be (1.4.3). */
-button:disabled,
-button[aria-disabled="true"] {
-  background: var(--nt-grey-16);
-  color: var(--nt-disabled);
-  cursor: default;
 }
 /* A field of a form: its label above, its hint and its error below (3.3.1, 3.3.2). */
 .nt-field {
@@ -316,6 +322,7 @@ button[aria-disabled="true"] {
   background: var(--nt-card);
   color: var(--nt-text);
   font: inherit;
+  font-size: 1rem;
 }
 /* A checkbox as large as any target, its label beside it. */
 .nt-check {
@@ -618,7 +625,7 @@ novatrail-canvas {
 }
 /*
  * The lesson player (R23 in docs/decisions.md): the bar of segments, chips of 44 × 44 by place that
- * wrap onto a second line, the one shown filled and in bold; the sign ✓ of a segment passed and the
+ * wrap onto a second line, the one shown filled and underlined; the sign ✓ of a segment passed and the
  * chip's name tell it, not colour alone (1.4.1). From 64rem a chip shows its kind's word too.
  */
 .nt-segment-bar {
@@ -630,6 +637,7 @@ novatrail-canvas {
   list-style: none;
 }
 button.nt-segment {
+  border-color: var(--nt-accent);
   background: var(--nt-card);
   color: var(--nt-accent-text);
 }
@@ -671,4 +679,23 @@ button.nt-icon-button {
 }
 .nt-lesson-buttons > .nt-buttons {
   margin-block-end: 0.5rem;
+}
+/*
+ * A disabled button: grey on a grey fill, as an inactive control may be (1.4.3); last, so that it
+ * holds over each kind of button above. In forced colours GrayText, which the browser gives only to
+ * :disabled, marks one that is aria-disabled too.
+ */
+button:disabled,
+button[aria-disabled="true"] {
+  border-color: transparent;
+  background: var(--nt-grey-16);
+  color: var(--nt-disabled);
+  cursor: default;
+}
+@media (forced-colors: active) {
+  button:disabled,
+  button[aria-disabled="true"] {
+    border-color: GrayText;
+    color: GrayText;
+  }
 }

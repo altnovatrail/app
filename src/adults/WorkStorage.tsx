@@ -155,14 +155,11 @@ function Consent({
         )}
       </div>
       <div className="nt-buttons">
-        {/*
-          Not disabled while it is under way: a disabled button would drop the focus. Until the
-          texts have come it is disabled, and no aria-disabled="false" says otherwise.
-        */}
+        {/* Not disabled while it is under way: a disabled button would drop the focus. */}
         <button
           type="submit"
           disabled={texts.status !== "done"}
-          {...(pending ? { "aria-disabled": true } : {})}
+          aria-disabled={pending || undefined}
         >
           {words.text("storage.switch-on")}
         </button>

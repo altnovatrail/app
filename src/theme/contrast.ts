@@ -2,7 +2,10 @@
 // relative luminance of each, and (lighter + 0.05) / (darker + 0.05); a translucent colour laid over
 // what it stands on first, as the mockup's README, «Contrast», reads its pairs. No DOM.
 
-/** A colour written #rrggbb or rgba(r, g, b, a), its channels 0–255 and its alpha 0–1. */
+/**
+ * A colour written #rrggbb or rgba(r, g, b, a), its channels 0–255 — fractional while layers are laid
+ * one over another — and its alpha 0–1.
+ */
 interface Rgba {
   readonly r: number;
   readonly g: number;
@@ -32,7 +35,7 @@ function parse(colour: string): Rgba {
 }
 
 function hex({ r, g, b }: Rgba): string {
-  return `#${[r, g, b].map((channel) => channel.toString(16).padStart(2, "0")).join("")}`;
+  return `#${[r, g, b].map((channel) => Math.round(channel).toString(16).padStart(2, "0")).join("")}`;
 }
 
 /**
@@ -44,9 +47,10 @@ export function over(...layers: readonly string[]): string {
   if (ground === undefined || parse(ground).a !== 1) {
     throw new Error(`the last of the layers is not opaque: ${layers.join(" over ")}`);
   }
+  // The channels stay fractional until the last layer, and only the colour seen is rounded.
   const seen = layers.slice(0, -1).reduceRight((under, layer) => {
     const top = parse(layer);
-    const mix = (a: number, b: number) => Math.round(a * top.a + b * (1 - top.a));
+    const mix = (a: number, b: number) => a * top.a + b * (1 - top.a);
     return { r: mix(top.r, under.r), g: mix(top.g, under.g), b: mix(top.b, under.b), a: 1 };
   }, parse(ground));
   return hex(seen);

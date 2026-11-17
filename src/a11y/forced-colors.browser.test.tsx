@@ -73,6 +73,24 @@ describe("forced colours", () => {
     expect(await axeViolations()).toEqual([]);
   });
 
+  it("draw a button that is aria-disabled in GrayText, as one that is disabled", () => {
+    render(
+      <>
+        <button type="button" disabled>
+          Off
+        </button>
+        <button type="button" aria-disabled="true">
+          Pending
+        </button>
+        <button type="button">On</button>
+      </>,
+    );
+    const colour = (name: string) =>
+      getComputedStyle(page.getByRole("button", { name }).element() as HTMLElement).color;
+    expect(colour("Pending")).toBe(colour("Off"));
+    expect(colour("Pending")).not.toBe(colour("On"));
+  });
+
   it("keep the chosen language told from the others by more than colour", () => {
     render(inLanguage(<LanguageButtons />, "ru"));
     const style = (name: string) =>

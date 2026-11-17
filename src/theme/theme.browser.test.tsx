@@ -34,9 +34,12 @@ describe("the theme", () => {
         <button type="button" disabled>
           Wait
         </button>
+        <button type="button" className="nt-segment" aria-disabled="true">
+          2
+        </button>
       </>,
     );
-    const [pill, main, secondary, disabled] = [...container.querySelectorAll("button")].map(
+    const [pill, main, secondary, disabled, closed] = [...container.querySelectorAll("button")].map(
       styleOf,
     );
     expect(pill?.backgroundColor).toBe("rgb(0, 113, 227)");
@@ -52,14 +55,18 @@ describe("the theme", () => {
       "14px",
       "16px",
     ]);
-    expect([secondary?.backgroundColor, secondary?.color]).toEqual([
+    expect([secondary?.backgroundColor, secondary?.color, secondary?.borderTopColor]).toEqual([
       "rgb(255, 255, 255)",
       "rgb(0, 102, 204)",
+      "rgb(0, 113, 227)",
     ]);
-    expect([disabled?.backgroundColor, disabled?.color]).toEqual([
-      "rgba(118, 118, 128, 0.16)",
-      "rgb(142, 142, 147)",
-    ]);
+    // A segment that does not open is grey as a disabled button is, its own colours held over.
+    for (const off of [disabled, closed]) {
+      expect([off?.backgroundColor, off?.color]).toEqual([
+        "rgba(118, 118, 128, 0.16)",
+        "rgb(142, 142, 147)",
+      ]);
+    }
   });
 
   it("draws a field white with an edge of 1 px, and a card white and round", () => {
@@ -79,6 +86,8 @@ describe("the theme", () => {
       "12px",
     ]);
     expect(field.backgroundColor).toBe("rgb(255, 255, 255)");
+    // 16 px, under which Safari on iOS zooms the page on the field's focus.
+    expect(field.fontSize).toBe("16px");
     const card = styleOf(container.querySelector(".nt-card"));
     expect([card.backgroundColor, card.borderTopLeftRadius]).toEqual([
       "rgb(255, 255, 255)",
