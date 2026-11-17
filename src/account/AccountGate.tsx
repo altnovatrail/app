@@ -718,9 +718,20 @@ export function SignOutScreen({
         <p>{words.text("signout.nothing")}</p>
       ) : (
         <ul>
-          {work.map(({ profileId, pseudonym, count }) => (
-            <li key={profileId}>{words.text("signout.unfinished", { pseudonym, count })}</li>
-          ))}
+          {work.flatMap(({ profileId, pseudonym, count, essays }) => [
+            ...(count === 0
+              ? []
+              : [
+                  <li key={profileId}>{words.text("signout.unfinished", { pseudonym, count })}</li>,
+                ]),
+            ...(essays === 0
+              ? []
+              : [
+                  <li key={`${profileId} essays`}>
+                    {words.text("signout.essays", { pseudonym, count: essays })}
+                  </li>,
+                ]),
+          ])}
         </ul>
       )}
       <div className="nt-buttons">

@@ -13,7 +13,8 @@
 // it shows it takes from its container, Task.tsx, which also gives the canvas the tutor's marks and
 // "Report a problem" with the tutor's words, for a learner of the category adult (R33). Above it
 // all, the voicing of the profile switched on and off; above the canvas, "Read aloud" of the
-// statement with its items (R07; T45).
+// statement with its items (R07; T45). Above Check on a handwriting sheet, the reminder to write no
+// names, whose crop goes to AI whole (R127 in spec; R53).
 import type {
   CanvasElement,
   HistoryChangeEvent,
@@ -30,6 +31,7 @@ import { ReadAloud } from "../voice/ReadAloud.tsx";
 import { taskPhrases } from "../voice/texts.ts";
 import { VoicingToggle } from "../voice/VoicingToggle.tsx";
 import { summaryText, type Verdicts } from "./attempt.ts";
+import { goesWhole } from "./essay.ts";
 import { Hint, type HintGiven } from "./Hint.tsx";
 import { Items, Verdict } from "./Items.tsx";
 import { Solution } from "./Solution.tsx";
@@ -108,7 +110,7 @@ export interface TaskScreenProps {
 }
 
 /** The screen of the task, or, in a lesson, the lesson's screen around it. */
-function Frame({
+export function Frame({
   inLesson,
   title,
   children,
@@ -129,6 +131,7 @@ export function TaskScreen(props: TaskScreenProps) {
   const { task, manifest, steps, state, mode, verdicts, filled, solution, pending } = props;
   const { language, words } = useLanguage();
   const lockedId = useId();
+  const namesId = useId();
   const [confirming, setConfirming] = useState(false);
   // The button that asks goes while the question stands: the focus goes with it, and comes back.
   const showButton = useRef<HTMLButtonElement>(null);
@@ -142,6 +145,9 @@ export function TaskScreen(props: TaskScreenProps) {
   const explanation = manifest?.languages.explanation;
   const statement = useMemo(() => taskPhrases(task, explanation), [task, explanation]);
   const solved = solution !== undefined;
+  // The crop of a handwriting sheet goes to AI whole: the reminder to write no names stands before
+  // each submission, and describes Check (R127 in spec; R53).
+  const whole = goesWhole(task);
   const open = !solved && slotsFilled(task, state.choices, filled);
   // What locks Check: the sheet first, then the options.
   const locked = open
@@ -149,6 +155,7 @@ export function TaskScreen(props: TaskScreenProps) {
     : !choicesOnly(task) && !writingFilled(task, filled)
       ? "task.check-write"
       : "task.check-locked";
+  const described = [whole ? namesId : "", locked === undefined ? "" : lockedId].join(" ").trim();
   const summary = summaryText(
     verdicts,
     solved ? (props.shown === true ? "shown" : "correct") : undefined,
@@ -290,6 +297,11 @@ export function TaskScreen(props: TaskScreenProps) {
               {failureText(props.failure, words)}
             </p>
           )}
+          {solved || !whole ? null : (
+            <p id={namesId} className="nt-hint">
+              {words.text("task.no-names")}
+            </p>
+          )}
           {solved ? null : (
             <div className="nt-buttons">
               {/* Not disabled while it is locked: a disabled button would drop the focus. */}
@@ -297,7 +309,7 @@ export function TaskScreen(props: TaskScreenProps) {
                 type="button"
                 className={props.blink && open ? "nt-blink" : undefined}
                 aria-disabled={!open || pending}
-                {...(locked === undefined ? {} : { "aria-describedby": lockedId })}
+                {...(described === "" ? {} : { "aria-describedby": described })}
                 onClick={() => {
                   if (open && !pending) props.onCheck();
                 }}

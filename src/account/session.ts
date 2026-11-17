@@ -67,11 +67,14 @@ export interface Unfinished {
   readonly profileId: string;
   readonly pseudonym: string;
   readonly count: number;
+  /** The essays it keeps here, which the server does not (R53). */
+  readonly essays: number;
 }
 
 /**
- * The attempts each profile of the account keeps unfinished on this device: the work the sign-out
- * would take (section 3.2). A profile with none, or with no database here, is not named.
+ * The attempts each profile of the account keeps unfinished on this device, and its essays, which
+ * the server does not keep: the work the sign-out would take (section 3.2; R53). A profile with
+ * neither, or with no database here, is not named.
  */
 export async function unfinishedWork(
   device: Device,
@@ -83,9 +86,12 @@ export async function unfinishedWork(
     const name = profileDatabase(profile.profileId);
     const entry = registry?.databases.get(name);
     if (entry === undefined || entry.erase) continue;
-    const count = (await (await openProfileDatabase(device, name))?.unfinished()) ?? 0;
-    if (count > 0)
-      found.push({ profileId: profile.profileId, pseudonym: profile.pseudonym, count });
+    const kept = await openProfileDatabase(device, name);
+    const count = (await kept?.unfinished()) ?? 0;
+    const essays = (await kept?.essayCount()) ?? 0;
+    if (count > 0 || essays > 0) {
+      found.push({ profileId: profile.profileId, pseudonym: profile.pseudonym, count, essays });
+    }
   }
   return found;
 }

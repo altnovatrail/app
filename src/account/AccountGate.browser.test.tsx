@@ -643,10 +643,15 @@ describe("the way in", () => {
     await userEvent.click(await screen.findByRole("button", { name: "Ёжик" }));
     const profile = await addProfile(device, "p1");
     await profile?.beginAttempt({ attemptId: "a1", digest: `sha256:${"1".repeat(64)}` });
+    // An essay ended stays on the device, which the server does not keep (R53).
+    await profile?.beginAttempt({ attemptId: "e1", digest: "d1" });
+    await profile?.beginEssay({ attemptId: "e1", digest: "d1" }, "en");
+    await profile?.attemptEnded("e1");
 
     await userEvent.click(await screen.findByRole("button", { name: "Sign out" }));
     expect(await screen.findByRole("heading", { level: 1, name: "Sign out?" })).toBeTruthy();
     expect(await screen.findByText("Ёжик: 1 unfinished task")).toBeTruthy();
+    expect(screen.getByText("Ёжик: 1 essay, which isn't on the server")).toBeTruthy();
     await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
     expect(await screen.findByRole("heading", { level: 1, name: "My subjects" })).toBeTruthy();
 

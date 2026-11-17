@@ -9,10 +9,10 @@
 // attempt open, which it closes (T28; R24). A card of a version has the page of its license beside
 // its button (R32). Below the lists the screen says that the tutor is an AI, and leads to the page
 // on how to use it safely (R33). Beside the engine's way the screen leads to the skill map, the
-// second way in, where the learner chooses a skill (R34); a card marks a module whose skill graph
-// is a chain "in order" (R06). Under its heading, where the learner begins their work, the screen
-// says how much of today's tutor time the profile has used, or, once it is used up, when it comes
-// back (section 15 of the text of the contracts, "The quota"; R37).
+// second way in, where the learner chooses a skill (R34), and to "My essays" (R53); a card marks a
+// module whose skill graph is a chain "in order" (R06). Under its heading, where the learner begins
+// their work, the screen says how much of today's tutor time the profile has used, or, once it is
+// used up, when it comes back (section 15 of the text of the contracts, "The quota"; R37).
 import type { QuotaShare } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 // Whose action a request is; the cards have actions of their own.
 import { Action as Actor } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
@@ -23,7 +23,7 @@ import { useApi, useRequest } from "../api/ApiContext.tsx";
 import type { Api } from "../api/client.ts";
 import { type Failure, parseFailure } from "../api/failure.ts";
 import { failureText } from "../api/words.ts";
-import { LESSON, navigate, SKILL_MAP, TASK, TUTOR } from "../app/router.ts";
+import { ESSAYS, LESSON, navigate, SKILL_MAP, TASK, TUTOR } from "../app/router.ts";
 import { Screen } from "../app/Screen.tsx";
 import { ReadFailed } from "../boot/Screens.tsx";
 import { collator } from "../i18n/intl.ts";
@@ -210,6 +210,9 @@ export function SubjectsScreen({
       <div className="nt-buttons">
         <button type="button" className="nt-secondary" onClick={() => navigate(SKILL_MAP)}>
           {words.text("skillmap.title")}
+        </button>
+        <button type="button" className="nt-secondary" onClick={() => navigate(ESSAYS)}>
+          {words.text("essays.title")}
         </button>
       </div>
       {runs.length === 0 ? null : (

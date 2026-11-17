@@ -8,8 +8,9 @@ Table 3 of [RUN.md](../RUN.md): the author's open questions from tasks' «Отк
 
 ## Table 3. Questions to the author
 
-Numbers are not reused: next — В68.
+Numbers are not reused: next — В69.
 
 | ID | Question | From | Options | Recommendation |
 |---|---|---|---|---|
 | В64 | The ping `https://apis.google.com/js/gen_204` is sent by the module `gapi_iframes` wherever it runs — once in a hundred resets of the counter ([docs/sources.md](../docs/sources.md), section 7.6) —, not only in WebKit: on a computer, after the tap on «Sign in with Google». The built-page test gives Chromium and Firefox a gapi stub, while `site-check` gets Google's real script, and there the same `connect-src` refusal will now and then fail the check: by T59's decision the refusal is expected only in WebKit (the 2026-11-14 amendment to R45). Expect it in `site-check` in every engine? | T59 | (a) in `site-check` a refused ping is no violation in any engine, and in the built-page test, as now, only in WebKit: there Chromium and Firefox have a gapi stub; (b) keep WebKit alone and rerun `site-check` if it fails on the ping | (a): the CSP refuses the ping in every engine, telling engines apart protects nothing, and a false failure of the check after a rollout confuses more than a rerun |
+| В68 | «В реестр spec». Since T47 `app` shows the reminder not to write names itself, above "Check" of every handwriting sheet whose work goes to AI whole, and as its description (R53; R127 spec). Д9 `modules` (Д152 spec) removes the sentence "Do not write your name or the real name of anyone you know." from the statements of five `english-essays` tasks in a new module version once `app` shows it. When? | T47 | (a) in the next version of `english-essays` after the release of `app` with T47 is deployed — until then the learner sees the sentence in the statement; (b) at once, after T47 is merged — on the site the reminder is missing until the deployment; (c) keep it in the statements too — the learner reads it twice | (a): R127 spec wants the reminder before every submission, and a statement without it on an older `app` would leave none |

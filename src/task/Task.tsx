@@ -62,7 +62,13 @@ import { NextStep } from "../next/NextStep.tsx";
 import { useKeyHolder } from "../ownkey/OwnKeyContext.tsx";
 import { usePackages } from "../packages/PackagesContext.tsx";
 import type { Device } from "../storage/device.ts";
-import { addProfile, attemptOver, openProfile, type Profile } from "../storage/profile.ts";
+import {
+  addProfile,
+  attemptOver,
+  type Essay,
+  openProfile,
+  type Profile,
+} from "../storage/profile.ts";
 import { ReportProblem } from "../tutor/ReportProblem.tsx";
 import type { Said } from "../tutor/report.ts";
 import { hintPhrases, type Phrase } from "../voice/texts.ts";
@@ -80,6 +86,9 @@ import {
   withoutWriting,
   workOf,
 } from "./attempt.ts";
+import { CLOSED_KEYS, closedBy, useStepTechniques } from "./closed.ts";
+import { OpenEssay } from "./Essay.tsx";
+import { isEssay } from "./essay.ts";
 import type { HintGiven } from "./Hint.tsx";
 import { Pause } from "./pause.ts";
 import {
@@ -98,19 +107,8 @@ import {
 } from "./steps.ts";
 import { TaskScreen } from "./TaskScreen.tsx";
 
-/** Why an attempt is over, in words, by its close reason. */
-const CLOSED_KEYS = {
-  [CloseReason.CORRECT]: "task.closed-correct",
-  [CloseReason.SOLUTION_SHOWN]: "task.closed-solution-shown",
-  [CloseReason.LEFT]: "task.closed-left",
-  [CloseReason.ABANDONED]: "task.closed-abandoned",
-  [CloseReason.UNCHECKED]: "task.unchecked",
-  [CloseReason.NOT_SUITABLE]: "task.closed-not-suitable",
-  [CloseReason.DONE]: "task.closed-done",
-} as const;
-
 /** What the screen has read of the attempt. */
-interface Opened {
+export interface Opened {
   readonly task: open.Task;
   readonly digest: string;
   readonly manifest: open.Manifest | undefined;
@@ -128,6 +126,8 @@ interface Opened {
   readonly hint?: HintGiven;
   /** "Explain differently" was asked for on the current rung. */
   readonly explained: boolean;
+  /** Of an essay: what the device keeps of it, and how many submissions api counts (R53). */
+  readonly essay?: { readonly kept: Essay | undefined; readonly submissions: number };
 }
 
 type Read =
@@ -135,12 +135,6 @@ type Read =
   | { readonly status: "failed"; readonly failure: Failure }
   | { readonly status: "closed"; readonly reason: CloseReason }
   | { readonly status: "ready"; readonly opened: Opened };
-
-/** The close reason a refusal `CAUSE_ATTEMPT_CLOSED` tells, if it is one. */
-function closedBy(failure: Failure): CloseReason | undefined {
-  if (failure.kind !== "refused" || failure.cause !== Cause.ATTEMPT_CLOSED) return undefined;
-  return failure.data.case === "closeReason" ? failure.data.value : CloseReason.UNSPECIFIED;
-}
 
 export interface TaskProps {
   readonly profileId: string;
@@ -238,8 +232,14 @@ export function Task({
       const stored = await profile?.readAttempt(attemptId).catch(() => undefined);
       const kept = stored?.attempt.digest === digest ? stored : undefined;
       let unsaved = profile === undefined;
+      const essay = isEssay(task);
       if (profile !== undefined && kept === undefined) {
         unsaved = (await profile.beginAttempt({ attemptId, digest, task })) === "unsaved";
+      }
+      if (profile !== undefined && essay) {
+        const language = manifest?.view.languages.explanation;
+        const begun = await profile.beginEssay({ attemptId, digest, task }, language);
+        unsaved ||= begun === "unsaved";
       }
       const { state, verdicts } = resumed(
         task,
@@ -277,6 +277,14 @@ export function Task({
             }
           : {}),
         explained: answer.explainedDifferently,
+        ...(essay
+          ? {
+              essay: {
+                kept: await profile?.essay(attemptId).catch(() => undefined),
+                submissions: answer.essaySubmissions.length,
+              },
+            }
+          : {}),
       };
     }
   }, [api, views, device, profileId, attemptId, attempt]);
@@ -357,8 +365,9 @@ export function Task({
       </Screen>
     );
   }
+  const Open = read.opened.essay === undefined ? OpenTask : OpenEssay;
   return (
-    <OpenTask
+    <Open
       key={read.opened.digest}
       profileId={profileId}
       attemptId={attemptId}
@@ -409,7 +418,7 @@ function useAgain(
   return { start, pending, failure };
 }
 
-interface OpenTaskProps {
+export interface OpenTaskProps {
   readonly profileId: string;
   readonly attemptId: string;
   readonly adult: boolean;
@@ -580,31 +589,29 @@ function OpenTask({
   );
 
   // A step that gives techniques asks api for them once, by steps, and keeps what it gave.
-  const asked = useRef(new Set<number>());
   const place = state.place;
-  const step = steps[place - 1];
-  const want =
-    mode === "steps" &&
-    solution === undefined &&
-    givesTechniques(step) &&
-    state.techniques[place] === undefined;
-  useEffect(() => {
-    if (!want || asked.current.has(place)) return;
-    asked.current.add(place);
-    void api.attempt.beginStep({ profileId, attemptId, step: place }).then(
-      (answer) =>
-        save(gotTechniques(latest.current.state, place, answer.techniques?.techniqueIds ?? [])),
-      (reason: unknown) => {
-        const closed = closedBy(parseFailure(reason));
-        if (closed !== undefined) {
-          over.current = true;
-          onClosed(closed);
-        }
-        // Any other failure asks again when the learner comes back to the step.
-        else asked.current.delete(place);
+  useStepTechniques({
+    api,
+    profileId,
+    attemptId,
+    want:
+      mode === "steps" &&
+      solution === undefined &&
+      givesTechniques(steps[place - 1]) &&
+      state.techniques[place] === undefined,
+    place,
+    onTechniques: useCallback(
+      (at: number, ids: readonly string[]) => save(gotTechniques(latest.current.state, at, ids)),
+      [save],
+    ),
+    onClosed: useCallback(
+      (closed: CloseReason) => {
+        over.current = true;
+        onClosed(closed);
       },
-    );
-  }, [want, place, api, profileId, attemptId, save, onClosed]);
+      [onClosed],
+    ),
+  });
 
   /** What the answer that closed the attempt says comes next: the lesson's segment, or a choice. */
   const comesNext = useCallback(
