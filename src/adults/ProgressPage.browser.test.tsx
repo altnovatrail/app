@@ -52,6 +52,8 @@ const MATHS = "novatrail/olympiad-math";
 const PHYSICS = "novatrail/physics";
 const D1 = `sha256:${"1".repeat(64)}`;
 const D2 = `sha256:${"2".repeat(64)}`;
+/** A newer version of olympiad maths, whose bands are titled anew. */
+const D3 = `sha256:${"3".repeat(64)}`;
 
 const OWNER = create(ProfileSchema, {
   profileId: "p1",
@@ -78,6 +80,10 @@ const BANDS = [
 const MANIFESTS: Readonly<Record<string, ReturnType<typeof manifest> & { bands?: unknown }>> = {
   [D1]: { ...manifest(MATHS, "Olympiad maths", "en"), bands: BANDS },
   [D2]: manifest(PHYSICS, "Физика", "ru"),
+  [D3]: {
+    ...manifest(MATHS, "Olympiad maths", "en"),
+    bands: BANDS.map((band) => ({ ...band, title: `${band.title}, new` })),
+  },
 };
 
 const GRAPH = { skills: { counting: { title: "Counting", assessability: "verdict" } } };
@@ -239,7 +245,7 @@ function renderSection(setup: Setup = {}, language: Language = "en") {
     router.service(PackageService, {
       getManifest: (request) => ({ manifest: view(MANIFESTS[request.packageDigest]) }),
       getSkillGraph: (request) =>
-        request.packageDigest === D1
+        request.packageDigest === D1 || request.packageDigest === D3
           ? { skillGraph: view(GRAPH), skillTiers: { counting: 1 } }
           : {},
     });
@@ -757,25 +763,23 @@ describe("the adult's correction of a module's level", () => {
     expect(maps[1]).toMatchObject({ moduleId: MATHS, action: Action.ADULT });
   });
 
-  it("reads the whole map again when the module's version changed meanwhile", async () => {
-    const { maps } = await openMap({
-      skillMaps: [
-        at34,
-        () => ({ packageDigest: D2 }),
-        () => ({ packageDigest: D1, levelBand: "g12" }),
-      ],
+  it("reads the map of the new version in place when the module's version changed meanwhile", async () => {
+    const { region, maps } = await openMap({
+      skillMaps: [at34, () => ({ packageDigest: D3, levelBand: "g12" })],
       setLevel: () => {
         throw new ConnectError("refused", Code.FailedPrecondition, undefined, [
           { desc: RefusalSchema, value: create(RefusalSchema, { cause: Cause.BAND_NOT_NEXT }) },
         ]);
       },
     });
-    await userEvent.click(screen.getByRole("button", { name: "Harder: Grades 5–6" }));
-    const region = within(await screen.findByRole("region", { name: "Level" }));
-    await vi.waitFor(() =>
-      expect(region.getByText(/^The level:/)).toHaveTextContent("The level: Grades 1–2"),
-    );
-    expect(maps).toHaveLength(3);
+    await userEvent.click(region.getByRole("button", { name: "Harder: Grades 5–6" }));
+    expect(await region.findByText(/changed meanwhile/)).toBeVisible();
+    expect(region.getByText(/^The level:/)).toHaveTextContent("The level: Grades 1–2, new");
+    expect(region.getByText(/^The level:/)).toHaveFocus();
+    expect(region.getByRole("button", { name: "Harder: Grades 3–4, new" })).toBeVisible();
+    expect(maps).toHaveLength(2);
+    const element = document.querySelector<NovatrailSkillMap>("novatrail-skill-map");
+    expect(element?.skillMap?.packageDigest).toBe(D3);
   });
 
   it("says what a correction or the map read after it came to, and takes no press meanwhile", async () => {
@@ -785,11 +789,13 @@ describe("the adult's correction of a module's level", () => {
       setLevel: () => new Promise<LevelSet>((resolve) => (answer = resolve)),
     });
     const harder = region.getByRole("button", { name: "Harder: Grades 5–6" });
-    await userEvent.click(harder);
-    await vi.waitFor(() => expect(harder).toHaveAttribute("aria-disabled", "true"));
-    // Playwright presses no button marked disabled: the press comes from the DOM itself.
+    // Two presses before any render, from the DOM itself: one request.
     harder.click();
-    expect(levels).toHaveLength(1);
+    harder.click();
+    await vi.waitFor(() => expect(harder).toHaveAttribute("aria-disabled", "true"));
+    // Playwright presses no button marked disabled: a press meanwhile comes from the DOM too.
+    harder.click();
+    await vi.waitFor(() => expect(levels).toHaveLength(1));
     answer({ levelBand: "g34" });
     await vi.waitFor(() => expect(harder).toHaveAttribute("aria-disabled", "false"));
     // The band of the level named again: it stays, with no adult's day to tell.
@@ -825,6 +831,24 @@ describe("the adult's correction of a module's level", () => {
     await userEvent.click(unread.region.getByRole("button", { name: "Easier: Grades 1–2" }));
     expect(await unread.region.findByRole("alert")).toHaveTextContent("No connection");
     expect(unread.region.getByText(/^The level:/)).toHaveTextContent("The level: Grades 3–4");
+  });
+
+  it("shows the day an adult set the level when the manifest does not name its band", async () => {
+    window.location.hash = "#/adults";
+    renderSection({
+      skillMaps: [
+        () => ({ packageDigest: D1, levelBand: "g78", levelSetAt: timestampFromDate(SET) }),
+      ],
+    });
+    await openProgress();
+    const cards = within(await screen.findByRole("region", { name: "Skill maps" }));
+    await userEvent.click(
+      within(await cards.findByRole("article", { name: "Olympiad maths" })).getByRole("button"),
+    );
+    expect(await screen.findByText(/^The level was set by an adult/)).toHaveTextContent(
+      `The level was set by an adult on ${day(SET)}`,
+    );
+    expect(screen.queryByRole("region", { name: "Level" })).toBeNull();
   });
 
   it("shows no level for a module whose manifest has no bands", async () => {

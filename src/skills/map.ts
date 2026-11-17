@@ -28,7 +28,11 @@ export async function readModuleMap(
   views: OpenViews,
   request: { readonly profileId: string; readonly moduleId: string; readonly action: Action },
 ): Promise<ModuleMap> {
-  const skillMap = await api.progress.getSkillMap(request);
+  return mapOf(views, await api.progress.getSkillMap(request));
+}
+
+/** A module's map by a state read: the open views of the version the state was computed on. */
+export async function mapOf(views: OpenViews, skillMap: GetSkillMapResponse): Promise<ModuleMap> {
   const digest = skillMap.packageDigest;
   const [graph, manifest] = await Promise.all([
     views.get(digest, "skill-graph"),

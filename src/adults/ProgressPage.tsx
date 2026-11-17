@@ -1,20 +1,20 @@
 // The progress of a profile in the section for adults (R35 in docs/decisions.md; section 3.10 of
-// docs/architecture.md; architecture 3.3 in spec), a page of the profile chosen, `#/adults/progress`:
-// the skill maps of the modules connected, each the adult's view of skill-map's element on a page of
-// its own, `#/adults/progress/<module>`, with "Easier" and "Harder" at the module's level (R56);
-// the traps that repeat, from the first page of GetProgress alone; and the attempts, newest first,
-// a page at a time, each with how it came out, its wrong answers, its times and why the engine
-// gave its task or its lesson — the reason code, which the adult alone sees (concepts 12 in spec; R100 in spec). The progress names a task by its full ID
+// docs/architecture.md; architecture 3.3 in spec), a page of the profile chosen,
+// `#/adults/progress`: the skill maps of the modules connected, each the adult's view of
+// skill-map's element on a page of its own, `#/adults/progress/<module>`, with "Easier" and
+// "Harder" at the module's level (R56); the traps that repeat, from the first page of GetProgress
+// alone; and the attempts, newest first, a page at a time, each with how it came out, its wrong
+// answers, its times and why the engine gave its task or its lesson — the reason code, which the
+// adult alone sees (concepts 12 in spec; R100 in spec). The progress names a task by its full ID
 // alone, and the screen shows its local ID; a lesson by its title, or by its local ID when api no
-// longer reads the package the attempt went on; and a solved attempt the skills its task trains,
-// by their titles. A module is named by the manifest of its current version, or of the one the
-// cache keeps, or else by its ID. In the device's language, as the section is (R10); a module's
-// texts — a lesson's title, the skills', a trap's — in the module's explanation language.
+// longer reads the package the attempt went on; and a solved attempt the skills its task trains, by
+// their titles. A module is named by the manifest of its current version, or of the one the cache
+// keeps, or else by its ID. In the device's language, as the section is (R10); a module's texts — a
+// lesson's title, the skills', a trap's — in the module's explanation language.
 import type { Profile } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import { Action } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
 import type {
   AttemptRecord,
-  GetSkillMapResponse,
   RepeatingTrap,
 } from "@altnovatrail/contracts/novatrail/api/v1/progress_pb.js";
 import { type Timestamp, timestampDate } from "@bufbuild/protobuf/wkt";
@@ -492,13 +492,12 @@ export function ProgressMap({
   );
   const map = useRequest(read);
   const got = map.status === "done" ? map.value : undefined;
-  // A correction of the level gives the map the state it set, in place of the one read.
-  const [state, setState] = useState<{ read: ModuleMap; skillMap: GetSkillMapResponse }>();
-  const shown =
-    got === undefined || state?.read !== got ? got : { ...got, skillMap: state.skillMap };
+  // A correction of the level gives the map it set, in place of the one read, until a read anew.
+  const [corrected, setCorrected] = useState<{ readonly of: ModuleMap; readonly map: ModuleMap }>();
+  const shown = got === undefined || corrected?.of !== got ? got : corrected.map;
   const onMap = useCallback(
-    (skillMap: GetSkillMapResponse) => {
-      if (got !== undefined) setState({ read: got, skillMap });
+    (next: ModuleMap) => {
+      if (got !== undefined) setCorrected({ of: got, map: next });
     },
     [got],
   );
@@ -512,13 +511,7 @@ export function ProgressMap({
       {map.status === "failed" ? <ReadFailure failure={map.failure} onRetry={map.retry} /> : null}
       {shown === undefined ? null : (
         <>
-          <LevelCorrection
-            profileId={profileId}
-            moduleId={moduleId}
-            map={shown}
-            onMap={onMap}
-            onStale={map.retry}
-          />
+          <LevelCorrection profileId={profileId} moduleId={moduleId} map={shown} onMap={onMap} />
           <ModuleSkillMap map={shown} view="adult" headingLevel="2" />
         </>
       )}
