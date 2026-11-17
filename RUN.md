@@ -1,6 +1,6 @@
 # RUN.md — work plan of app
 
-What app does, does not do and has still to decide — [docs/architecture.md](docs/architecture.md); why — [docs/decisions.md](docs/decisions.md). The platform is in `spec/`, a submodule at tag v0.18.6: the component's card — architecture 3.1 spec; the order of repositories — repositories 6 spec; learners' data and law — privacy spec; the platform's decisions — spec's log. Small tasks, one at a time, each reviewed by the author; only the current epic is in detail (R19 spec). Other tables, each a file opening with its rules (R153 spec): 2, epics for later — [run/EPICS.md](run/EPICS.md); 3, questions to the author — [run/QUESTIONS.md](run/QUESTIONS.md); 4, debt — [run/DEBT.md](run/DEBT.md). Open tasks outside an epic — [run/TASKS.md](run/TASKS.md) (R155 spec). «Как пользоваться» in older texts is Rules, «Как устроен план: эпики» is Epics, and «таблица 2, 3, 4» names the file above (R50).
+What app does, does not do and has still to decide — [docs/architecture.md](docs/architecture.md); why — [docs/decisions.md](docs/decisions.md). The platform is in `spec/`, a submodule at tag v0.18.12: the component's card — architecture 3.1 spec; the order of repositories — repositories 6 spec; learners' data and law — privacy spec; the platform's decisions — spec's log. Small tasks, one at a time, each reviewed by the author; only the current epic is in detail (R19 spec). Other tables, each a file opening with its rules (R153 spec): 2, epics for later — [run/EPICS.md](run/EPICS.md); 3, questions to the author — [run/QUESTIONS.md](run/QUESTIONS.md); 4, debt — [run/DEBT.md](run/DEBT.md). Open tasks outside an epic — [run/TASKS.md](run/TASKS.md) (R155 spec). «Как пользоваться» in older texts is Rules, «Как устроен план: эпики» is Epics, and «таблица 2, 3, 4» names the file above (R50).
 
 Language (R154 spec): rules and tables in English, terse, for the session; the bodies of tasks in table 1 and in `run/TASKS.md` in Russian — the author writes and reviews them.
 
@@ -49,10 +49,11 @@ A task starts with «Выполни задачу T01 из RUN.md» in a new sess
 
 ## Table 1. Current epic — none
 
-No current epic. The last done one is E3 «Первый срез со взрослыми учениками», archive — [docs/plan/E3.md](docs/plan/E3.md). Next, by the author's word of 2026-11-16 (T52): row 6.29 of [COORDINATION.md](spec/COORDINATION.md), a task outside an epic, once rows 1.22 and 6.28 are done (Д33); then the epic of row 6.18, «Interface by the mockup», which its own task writes down and opens here; E4 of [run/EPICS.md](run/EPICS.md) after it.
+No current epic. The last done one is E3 «Первый срез со взрослыми учениками», archive — [docs/plan/E3.md](docs/plan/E3.md). Next, by the author's word of 2026-11-16 (T52): row 6.29 of [COORDINATION.md](spec/COORDINATION.md), a task outside an epic, once row 6.28 is done (Д33; row 1.22 is done, R55); then the epic of row 6.18, «Interface by the mockup», which its own task writes down and opens here; E4 of [run/EPICS.md](run/EPICS.md) after it.
 
 | Статус | ID | Задача | Кто | План | Зависит от |
 |---|---|---|---|---|---|
+| [x] | T72 | Переход на тег `spec` v0.18.12 | Claude | — | — |
 
 «Зависит от» names only tasks of this plan. What a task waits for from other repositories is its body's «Ждёт»: it is taken once the neighbour has done that, and until then the queue goes on.
 
