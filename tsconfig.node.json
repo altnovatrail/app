@@ -9,6 +9,7 @@
     "vitest.config.ts",
     "scripts/**/*.ts",
     "walk/**/*.ts",
+    "mockup/**/*.ts",
     "src/**/*.node.test.ts"
   ]
 }
