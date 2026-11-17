@@ -1320,6 +1320,9 @@ describe.each(LANGUAGES)("the screens in %s", (_, language, words) => {
       await after?.();
       for (const width of [1024, 320]) {
         await page.viewport(width, 640);
+        // Two frames for what measures itself on a resize: the canvas's row of a worked example
+        // takes its width from the element by a ResizeObserver (R84 in canvas).
+        for (let frame = 0; frame < 2; frame++) await new Promise(requestAnimationFrame);
         expect(await axeViolations(), `axe at ${width} px`).toEqual([]);
         expect(smallTargets(), `targets at ${width} px`).toEqual([]);
         expect(overflows(), `layout at ${width} px`).toEqual([]);
