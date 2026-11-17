@@ -94,7 +94,8 @@ export function parseColour(text: string): Rgba | null {
     };
   }
   // What color-mix() computes to, the canvas's tool in use among them: channels of 1, not 255.
-  const srgb = /^color\(srgb\s+([^)]*)\)$/.exec(value)?.[1];
+  const srgb =
+    value.startsWith("color(srgb ") && value.endsWith(")") ? value.slice(11, -1) : undefined;
   if (srgb !== undefined) return channels(srgb, 1, false);
   const fn = /^rgba?\(([^)]*)\)$/.exec(value)?.[1];
   return fn === undefined ? null : channels(fn, 255, true);
@@ -108,7 +109,9 @@ export function parseColour(text: string): Rgba | null {
 function channels(body: string, scale: number, commas: boolean): Rgba | null {
   let [colour = "", alpha, ...more] = body.split("/");
   if (more.length > 0) return null;
-  const parts = colour.split(commas && colour.includes(",") ? /\s*,\s*/ : /\s+/).filter(Boolean);
+  const parts = (commas && colour.includes(",") ? colour.split(",") : colour.split(" "))
+    .map((part) => part.trim())
+    .filter(Boolean);
   if (alpha === undefined && commas && colour.includes(",") && parts.length === 4) {
     alpha = parts.pop();
   }
@@ -262,9 +265,10 @@ export function compareRegion(
   }
   const mBox = boxNumbers(mockup.box, region.followsText);
   const aBox = boxNumbers(app.box, region.followsText);
-  const beyond = Object.keys(mBox).filter(
-    (key) => Math.abs((mBox[key] ?? 0) - (aBox[key] ?? 0)) > THRESHOLDS.box,
-  );
+  // Both sides have the same numbers: those of the region's `followsText`.
+  const beyond = Object.entries(mBox)
+    .filter(([key, m]) => Math.abs(m - (aBox[key] as number)) > THRESHOLDS.box)
+    .map(([key]) => key);
   if (beyond.length > 0) {
     // "centre x" and "right x" are the region's x.
     const named = beyond.every((key) =>

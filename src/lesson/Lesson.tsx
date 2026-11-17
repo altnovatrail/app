@@ -578,7 +578,8 @@ function OpenLesson({
   if (segment?.explanation !== undefined) {
     body = <Explanation parts={segment.explanation} language={language} media={media} />;
   } else if (segment?.worked_example !== undefined) {
-    if (continues !== undefined) continues = "canvas";
+    // A segment that is no task always continues (mayContinue).
+    continues = "canvas";
     body = (
       <Example
         key={`example-${shown}`}
@@ -587,11 +588,7 @@ function OpenLesson({
         media={media}
         demo={demo[shown]}
         onDemo={(state) => onDemo(shown, state)}
-        actions={
-          continues === "canvas" ? (
-            <ContinueButton slot="actions" pending={pending} onContinue={onContinue} />
-          ) : null
-        }
+        actions={<ContinueButton slot="actions" pending={pending} onContinue={onContinue} />}
       />
     );
   } else if (kind === "task") {
