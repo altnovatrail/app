@@ -69,7 +69,7 @@ T72–T74 are tasks outside an epic, done before E5 opened; their bodies are in 
 | [x] | T77 | Цвета, стекло, радиусы и движение эталона — поправка к R17 | Claude | — | T76 |
 | [x] | T78 | Раскладка от ширины и всплывающие окна | Claude | — | T77 |
 | [x] | T79 | Кнопки без подписи: значки, имена и подсказки | Claude | — | T78 |
-| [ ] | T80 | Канва строки 5.11: стеклянная полоса и 2.5.7 | Claude | — | T79 |
+| [x] | T80 | Канва строки 5.11: стеклянная полоса и 2.5.7 | Claude | — | T79 |
 | [ ] | T81 | Вход, профиль владельца с аватаром и «Кто учится?» | Claude | — | T80 |
 | [ ] | T82 | Главная: карточки модулей по `./states` и легенда | Claude | — | T81 |
 | [ ] | T83 | Помощь взрослого, меню профиля и карта навыков | Claude | — | T82 |
@@ -107,25 +107,11 @@ A code task ends with the checks of rule 6: the recipes `ci-lint`, `ci-test`, `c
 
 **Not in the epic** (row 6.18): behaviour the documents do not have — the paper flow, the switch of canvas kinds, «Show where», the tutor's text field and microphone (epic E11 spec), the highlighter of the bar; the children's screens — E4.
 
-**Waits:** T80 — the `canvas` release of row 5.11: 0.3.26 is out (2026-11-17); T82 — `./states` of `skill-map`, row 6.19: in its package since 0.1.11, 0.1.15 the latest on 2026-11-17. Nothing else waits.
+**Waits:** T82 — `./states` of `skill-map`, row 6.19: in its package since 0.1.11, 0.1.15 the latest on 2026-11-17. Nothing else waits.
 
 **E3's result** «с iPad, Android и компьютера» reads «с телефона, планшета и компьютера» (the second 2026-11-14 amendment to R76 spec).
 
 ## Задачи эпика
-
-#### T80. Канва строки 5.11: стеклянная полоса и 2.5.7
-
-- **Цель:** `app` берёт релиз `canvas` строки 5.11 — панель инструментов стеклянной полосой эталона по свойствам стиля, которые ставит `app`, — а несоответствие 2.5.7 названо на странице «Accessibility».
-- **Почему:** строка 5.11 COORDINATION.md spec; поправка 2026-11-17 к R148 spec и к R36 spec; вторая поправка 2026-11-14 к R90 spec — лист двигают рукой, 2.5.7 — объявленное несоответствие; Д24.
-- **Ждёт:** релиз `canvas` строки 5.11 — 0.3.26 вышел 2026-11-17; берётся последний на день задачи.
-- **Сделать:**
-  - `@altnovatrail/canvas` — релиз строки 5.11 или новее, с `release-verify-npm`, поправкой к R15;
-  - свойства `--novatrail-canvas-accent` и `--novatrail-canvas-glass` — из темы T77, `--novatrail-canvas-top` — отступ полосы под верхней панелью;
-  - «Continue» примера — в слоте `actions` элемента, его доступность — у `canvas`;
-  - 2.5.7 — в таблицу [docs/architecture.md](docs/architecture.md), раздел 3.9, на страницу `#/legal/accessibility` и в её тест, поправкой к R11; кнопок «Up», «Down», «Left» и «Right» больше нет; Д24 закрыт.
-- **Не делать:** `tools-hidden` под листом наставника — T87, где появляется лист.
-- **Как проверить:** сравнение полосы с эталоном — `task-pill`, `task-empty`, а на iPad `task` и `example` (T76); тест страницы «Accessibility»; тесты канвы на настоящем элементе.
-- **Разделы:** R148, R90, R36 spec; строка 5.11 COORDINATION.md spec; R11, R15, R17; Д24; [docs/architecture.md](docs/architecture.md), раздел 3.9.
 
 #### T81. Вход, профиль владельца с аватаром и «Кто учится?»
 

@@ -29,6 +29,9 @@ export type Property =
   | "font-size"
   | "font-weight";
 
+/** A number of a region's box: its x — of the edge `followsText` names —, y, width and height. */
+export type BoxNumber = "x" | "y" | "width" | "height";
+
 /** The properties that hold a colour. */
 export type ColourProperty = "background" | "border" | "colour";
 
@@ -54,9 +57,14 @@ export interface Region {
   }[];
   /**
    * What app draws otherwise by a row of the README's «Where it differs from the documents» or by
-   * a decision, which `by` names: a difference of these properties is reported, not held.
+   * a decision, which `by` names: a difference of these properties is reported, not held. A
+   * number of the box named alone leaves the others held: the box's difference is reported only
+   * when no other number of it is beyond the threshold.
    */
-  readonly differs?: { readonly what: readonly (Property | "missing")[]; readonly by: string };
+  readonly differs?: {
+    readonly what: readonly (Property | BoxNumber | "missing")[];
+    readonly by: string;
+  };
 }
 
 /** One difference of a region: what differs, and the two sides' values. */

@@ -5,9 +5,12 @@
 // element opens the demo's parts and hides the demo by its own Next and Demo (R42 in canvas), and
 // sends `demochange` only on the learner's press: the player keeps its detail, and gives the element
 // that same object back. A kept state the element would refuse is not given (run.ts, `demoOf`).
-// "Read aloud" above it reads the statement, the lines and the parts of the demo open (R07).
+// "Read aloud" above it reads the statement, the lines and the parts of the demo open (R07). The
+// lesson's "Continue", when it stands, is the element's child in its slot `actions`: the element
+// shows it in its row after Next and Demo (R84 in canvas; the 2026-11-17 amendment to R36 in spec).
 import type { DemoChangeEvent, DemoState, Media } from "@altnovatrail/spec/canvas";
 import type * as open from "@altnovatrail/spec/formatv0/open";
+import type { ReactNode } from "react";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { ReadAloud } from "../voice/ReadAloud.tsx";
 import { examplePhrases } from "../voice/texts.ts";
@@ -18,6 +21,7 @@ export function Example({
   media,
   demo,
   onDemo,
+  actions,
 }: {
   readonly example: open.WorkedExample;
   readonly manifest: open.Manifest | undefined;
@@ -25,6 +29,8 @@ export function Example({
   /** The demo state of this run, checked; none for a demo from its beginning. */
   readonly demo: DemoState | undefined;
   readonly onDemo: (state: DemoState) => void;
+  /** The lesson's buttons in the element's row, each `slot="actions"`. */
+  readonly actions?: ReactNode;
 }) {
   const { language } = useLanguage();
   const explanation = manifest?.languages.explanation;
@@ -42,7 +48,9 @@ export function Example({
         workedExample={example}
         {...(demo === undefined ? {} : { demoState: demo })}
         ondemochange={(event: DemoChangeEvent) => onDemo(event.detail)}
-      />
+      >
+        {actions}
+      </novatrail-canvas>
     </div>
   );
 }

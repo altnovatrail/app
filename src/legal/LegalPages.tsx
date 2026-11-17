@@ -58,7 +58,7 @@ export function nextPage(id: PageText): Route {
 const POLICY: PageText = "privacy-policy";
 
 /** The places where the app does not meet its standard yet, as R11 declares them. */
-const GAPS = ["handwriting", "print", "check"] as const;
+const GAPS = ["handwriting", "moving", "print", "check"] as const;
 
 /** The bar above each legal page: their name, the way to their list, and back out of them. */
 function LegalBar({ first, back }: { readonly first: boolean; readonly back: Route }) {

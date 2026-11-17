@@ -10,7 +10,7 @@
   },
   "type": "module",
   "dependencies": {
-    "@altnovatrail/canvas": "0.3.25",
+    "@altnovatrail/canvas": "0.3.28",
     "@altnovatrail/contracts": "0.18.12",
     "@altnovatrail/skill-map": "0.1.5",
     "@bufbuild/protobuf": "2.17.0",

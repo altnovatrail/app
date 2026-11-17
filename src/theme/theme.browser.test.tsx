@@ -1,7 +1,12 @@
 // The theme as the browser computes it (section 3.9 of docs/architecture.md; the 2026-11-17
 // amendment to R17): the mockup's pill and primary button, a field with its edge, a card, the glass
-// and its panel, the page and the weights, in CSS px at the root's 16.
-import { render } from "@testing-library/react";
+// and its panel, the page and the weights, in CSS px at the root's 16; and the canvas's bar of tools
+// in the same glass and accent, from the top of the window (R84 in canvas).
+import "@altnovatrail/canvas";
+import type { CanvasElement } from "@altnovatrail/spec/canvas";
+import type * as open from "@altnovatrail/spec/formatv0/open";
+import { render, waitFor } from "@testing-library/react";
+import { createRef } from "react";
 import { describe, expect, it } from "vitest";
 import "./theme.css";
 
@@ -109,5 +114,27 @@ describe("the theme", () => {
     expect(bar?.backdropFilter ?? "").toMatch(
       /^(blur\(22px\) saturate\(1\.8\)|blur\(22px\) saturate\(180%\))$/,
     );
+  });
+
+  it("draws the canvas's bar of tools in the same glass, the tool in use in the accent", async () => {
+    const task: open.Task = {
+      id: "rungs",
+      statement: [{ text: "How many rungs?" }],
+      canvas: { kind: "handwriting_sheet", grid: "squares" },
+      items: [{ answer_slots: [{ binding: "anywhere" }] }],
+    };
+    const ref = createRef<CanvasElement>();
+    render(<novatrail-canvas ref={ref} lang="en" task={task} />);
+    const element = ref.current as CanvasElement;
+    let pen: Element | null | undefined;
+    await waitFor(() => {
+      pen = element.shadowRoot?.querySelector('[role="radio"][aria-checked="true"]');
+      expect(pen).toBeTruthy();
+    });
+    const bar = styleOf(element.shadowRoot?.querySelector('[role="toolbar"]') ?? null);
+    expect(bar.backgroundColor).toBe("rgba(255, 255, 255, 0.76)");
+    expect(styleOf(pen ?? null).color).toBe("rgb(0, 113, 227)");
+    // No sticky header: the bar's band starts at the window's top.
+    expect(styleOf(element).getPropertyValue("--novatrail-canvas-top").trim()).toBe("0px");
   });
 });

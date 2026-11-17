@@ -229,11 +229,20 @@ export const en = {
     "2.1.1 Keyboard, level A; 2.5.1 Pointer Gestures, level A; 2.5.7 Dragging Movements, level AA",
   "accessibility.handwriting-why":
     "An answer on the sheet, or in a box of the workbook, is written by hand: with a finger, a stylus or a mouse. It cannot be typed on a keyboard or given with a single tap",
-  /** Up, Down, Left and Right are the canvas's own buttons, in its words. */
   "accessibility.handwriting-instead":
-    "Choosing among options, and everything else in the app, works with a tap and from the keyboard. The sheet moves with its buttons Up and Down, and Left and Right when it is enlarged, with no two-finger gesture",
+    "Choosing among options, and everything else in the app, works with a tap and from the keyboard",
   "accessibility.handwriting-when":
     "Once there is a second way to answer, such as a keyboard or buttons with digits. The platform has not chosen it yet",
+  /** The sheet's own scrolling, which canvas declares (architecture 3.10 in canvas). */
+  "accessibility.moving": "Moving the sheet",
+  "accessibility.moving-criteria": "2.5.7 Dragging Movements, level AA",
+  "accessibility.moving-why":
+    "With a single finger, the sheet moves only by dragging it, and two fingers drag it too. The sheet has no buttons that move it",
+  /** Zoom in and Zoom out are the canvas's own buttons, in its words. */
+  "accessibility.moving-instead":
+    "A mouse wheel, a trackpad and the arrow keys move the sheet once it has the focus. Where the sheet is taller than the screen, the page scrolls as any page does. Zoom in and Zoom out work with a tap",
+  "accessibility.moving-when":
+    "There is no date: buttons that move the sheet come back only if the platform decides so",
   "accessibility.print": "Print in the lines of a workbook",
   "accessibility.print-criteria": "1.4.12 Text Spacing, level AA",
   "accessibility.print-why":

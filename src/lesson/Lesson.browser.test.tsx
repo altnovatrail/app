@@ -495,6 +495,7 @@ describe("the lesson player", () => {
     expect(screen.getByRole("heading", { level: 2 })).toHaveTextContent("Explanation · 1 of 4");
 
     // The worked example: a new element, its demo from the beginning; Continue stands at once.
+    expect((await continueButton()).closest("novatrail-canvas")).toBeNull();
     await userEvent.click(await continueButton());
     const heading = screen.getByRole("heading", { level: 2 });
     expect(heading).toHaveTextContent("Worked example · 2 of 4");
@@ -504,6 +505,10 @@ describe("the lesson player", () => {
     expect((await kept())?.place).toBe(2);
     await waitFor(() => expect(canvas().workedExample).toBeDefined());
     expect(canvas().demoState).toEqual({ opened: 0, hidden: false });
+    // Its Continue is the element's child, in its row after Next and Demo (R84 in canvas).
+    const inRow = await continueButton();
+    expect(inRow.parentElement).toBe(canvas());
+    expect(inRow.assignedSlot?.name).toBe("actions");
     for (let i = 0; i < 3; i += 1) await userEvent.click(await canvasButton("Next"));
     await waitFor(async () =>
       expect((await kept())?.demo[2]).toEqual({ opened: 3, hidden: false }),

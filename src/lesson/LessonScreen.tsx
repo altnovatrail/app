@@ -1,7 +1,8 @@
 // The lesson's screen (section 3.4 of docs/architecture.md; R06, R23 in docs/decisions.md): its
 // header on every segment — the lesson's title, the module's text with its own `lang`, and the bar of
 // segments —, the heading of the segment shown — its kind, its place and the count —, the segment
-// itself, and below it "Continue", with its icon, and the way out of the lesson. A segment that takes
+// itself, and below it "Continue", with its icon — a worked example's in the canvas's own row —,
+// and the way out of the lesson. A segment that takes
 // another's place takes the focus on its heading, as a screen does (2.4.3); "Continue" that comes
 // after a task is told by a status line (4.1.3). What it shows it takes from its container,
 // Lesson.tsx.
@@ -88,18 +89,7 @@ export function LessonScreen(props: LessonScreenProps) {
             </button>
           )}
           {props.onContinue === undefined ? null : (
-            // Not disabled while "lesson done" is under way: a disabled button would drop the focus.
-            <button
-              type="button"
-              className="nt-icon-button"
-              aria-disabled={pending}
-              onClick={() => {
-                if (!pending) props.onContinue?.();
-              }}
-            >
-              <Icon value="continue" />
-              {words.text("lesson.continue")}
-            </button>
+            <ContinueButton pending={pending} onContinue={props.onContinue} />
           )}
         </div>
         <div className="nt-buttons">
@@ -109,5 +99,37 @@ export function LessonScreen(props: LessonScreenProps) {
         </div>
       </div>
     </Screen>
+  );
+}
+
+/**
+ * "Continue", with its icon: under the segment shown, or, on a worked example, a child of the
+ * canvas in its slot `actions`, after its Next and Demo (R84 in canvas; the 2026-11-17 amendment to
+ * R36 in spec). Not disabled while "lesson done" is under way: a disabled button would drop the
+ * focus.
+ */
+export function ContinueButton({
+  pending,
+  onContinue,
+  slot,
+}: {
+  readonly pending: boolean;
+  readonly onContinue: () => void;
+  readonly slot?: "actions";
+}) {
+  const { words } = useLanguage();
+  return (
+    <button
+      type="button"
+      className="nt-icon-button"
+      {...(slot === undefined ? {} : { slot })}
+      aria-disabled={pending}
+      onClick={() => {
+        if (!pending) onContinue();
+      }}
+    >
+      <Icon value="continue" />
+      {words.text("lesson.continue")}
+    </button>
   );
 }

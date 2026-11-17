@@ -106,15 +106,18 @@
   --nt-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
 
   /*
-   * The canvas in the same colours (its custom properties, R28 in canvas): the tutor's marks in the
-   * colour of its words on the sheet; the accent and the glass of its bar, which canvas reads from
-   * 0.3.26 (T80).
+   * The canvas in the same colours (its custom properties, R28 and R84 in canvas): the tutor's marks
+   * in the colour of its words on the sheet; the accent and the glass of its bar of tools. The bar
+   * stands in the middle of the band below --novatrail-canvas-top, the height of a sticky header:
+   * app has none, and the mockup centres the bar in the whole screen, so the band starts at the
+   * window's top.
    */
   --novatrail-canvas-ink: var(--nt-text);
   --novatrail-canvas-paper: var(--nt-card);
   --novatrail-canvas-mark: var(--nt-tutor-words);
   --novatrail-canvas-accent: var(--nt-accent);
   --novatrail-canvas-glass: var(--nt-glass);
+  --novatrail-canvas-top: 0px;
 
   /*
    * The skill map in the same colours (its custom properties, R10 in skill-map): the accent on the
