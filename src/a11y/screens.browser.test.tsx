@@ -64,7 +64,7 @@ import { LegalPages } from "../legal/LegalPages.tsx";
 import { Example } from "../lesson/Example.tsx";
 import { Explanation } from "../lesson/Explanation.tsx";
 import { LessonEnd } from "../lesson/Lesson.tsx";
-import { LessonScreen, type LessonScreenProps } from "../lesson/LessonScreen.tsx";
+import { ContinueButton, LessonScreen, type LessonScreenProps } from "../lesson/LessonScreen.tsx";
 import { NextStep } from "../next/NextStep.tsx";
 import { LicensePages, licenseRoute } from "../packages/LicensePage.tsx";
 import { type Packages, PackagesProvider } from "../packages/PackagesContext.tsx";
@@ -911,8 +911,9 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
           media={noMedia}
           demo={{ opened: 1, hidden: false }}
           onDemo={() => {}}
+          actions={<ContinueButton slot="actions" pending={false} onContinue={() => {}} />}
         />,
-        { place: 3, shown: 2, unsaved: true, note: "Not open yet" },
+        { place: 3, shown: 2, unsaved: true, note: "Not open yet", onContinue: undefined },
       ),
   ],
   [
@@ -1332,4 +1333,34 @@ describe.each(LANGUAGES)("the screens in %s", (_, language, words) => {
       }
     },
   );
+});
+
+describe("the checks", () => {
+  it("take app's own button in the canvas's slot, and leave the canvas's own tree to canvas", async () => {
+    render(
+      <novatrail-canvas
+        lang="en"
+        workedExample={{
+          statement: [{ text: "A path is 20 m long, with a tree every 5 m." }],
+          canvas: { kind: "handwriting_sheet", grid: "squares" },
+          demo: [{ text: "20 ÷ 5 = 4 gaps." }],
+        }}
+      >
+        <button
+          type="button"
+          slot="actions"
+          style={{ minInlineSize: 0, minBlockSize: 0, inlineSize: "1rem", blockSize: "1rem" }}
+        />
+      </novatrail-canvas>,
+    );
+    // The slot stands in the element's row once the element has drawn it.
+    await vi.waitFor(() => expect(document.querySelector("[slot]")?.assignedSlot).toBeTruthy());
+    expect((await axeViolations()).map((line) => line.split(":")[0])).toContain("button-name");
+    expect(smallTargets()).toHaveLength(1);
+    // The canvas's own buttons, in its shadow tree, are canvas's to check.
+    expect(
+      document.querySelector("novatrail-canvas")?.shadowRoot?.querySelector("button"),
+    ).toBeTruthy();
+    expect(captionlessOffList(WORDS.en)).toEqual([""]);
+  });
 });

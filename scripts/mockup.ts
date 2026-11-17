@@ -11,6 +11,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import type { Browser, BrowserContext, Frame, Locator, Page } from "playwright";
 import {
+  type BoxNumber,
   type ColourProperty,
   type Device,
   type Difference,
@@ -75,7 +76,10 @@ export interface Measure {
   readonly fontWeight: number;
 }
 
-/** A colour as CSS writes it — #rgb, #rrggbb, rgb() or rgba(), with commas or spaces — or null. */
+/**
+ * A colour as CSS writes it — #rgb, #rrggbb, rgb() or rgba(), with commas or spaces, or color() in
+ * srgb, as an engine computes color-mix() — or null.
+ */
 export function parseColour(text: string): Rgba | null {
   const value = text.trim().toLowerCase();
   if (value === "transparent") return { r: 0, g: 0, b: 0, a: 0 };
@@ -89,17 +93,36 @@ export function parseColour(text: string): Rgba | null {
       a: 1,
     };
   }
+  // What color-mix() computes to, the canvas's tool in use among them: channels of 1, not 255.
+  const srgb = /^color\(srgb\s+([^)]*)\)$/.exec(value)?.[1];
+  if (srgb !== undefined) return channels(srgb, 1, false);
   const fn = /^rgba?\(([^)]*)\)$/.exec(value)?.[1];
-  if (fn === undefined) return null;
-  const parts = fn.split(/[\s,/]+/).filter((part) => part !== "");
-  if (parts.length !== 3 && parts.length !== 4) return null;
-  // A share is of 255 for a channel and of 1 for the alpha.
-  const numbers = parts.map((part, i) =>
-    part.endsWith("%") ? (Number.parseFloat(part) / 100) * (i < 3 ? 255 : 1) : Number(part),
-  );
-  if (numbers.some((n) => !Number.isFinite(n))) return null;
-  const [r, g, b, a = 1] = numbers as [number, number, number, number?];
-  return { r, g, b, a };
+  return fn === undefined ? null : channels(fn, 255, true);
+}
+
+/**
+ * Three channels on the scale given — 255, or 1 for color() — and an alpha up to 1, after a slash
+ * or, where `commas` lets the legacy rgba() have it, as a fourth value between commas; each a
+ * number or a share; or null.
+ */
+function channels(body: string, scale: number, commas: boolean): Rgba | null {
+  let [colour = "", alpha, ...more] = body.split("/");
+  if (more.length > 0) return null;
+  const parts = colour.split(commas && colour.includes(",") ? /\s*,\s*/ : /\s+/).filter(Boolean);
+  if (alpha === undefined && commas && colour.includes(",") && parts.length === 4) {
+    alpha = parts.pop();
+  }
+  if (parts.length !== 3 || (alpha !== undefined && alpha.trim() === "")) return null;
+  // A share is of the scale for a channel and of 1 for the alpha.
+  const read = (part: string, of: number) =>
+    part.endsWith("%") ? (Number.parseFloat(part) / 100) * of : Number(part);
+  const [r, g, b] = parts.map((part) => read(part, scale) * (255 / scale)) as [
+    number,
+    number,
+    number,
+  ];
+  const a = alpha === undefined ? 1 : read(alpha.trim(), 1);
+  return [r, g, b, a].every(Number.isFinite) ? { r, g, b, a } : null;
 }
 
 /** A colour laid over another, by the operator "source over". */
@@ -225,8 +248,8 @@ export function compareRegion(
   app: Measure | string,
 ): Difference[] {
   const found: Difference[] = [];
-  const add = (what: Property | "missing", m: string, a: string) => {
-    const by = region.differs?.what.includes(what) ? region.differs.by : undefined;
+  const add = (what: Property | "missing", m: string, a: string, named = false) => {
+    const by = named || region.differs?.what.includes(what) ? region.differs?.by : undefined;
     found.push({ region: region.name, what, mockup: m, app: a, ...(by ? { by } : {}) });
   };
   if (typeof mockup === "string" || typeof app === "string") {
@@ -239,10 +262,16 @@ export function compareRegion(
   }
   const mBox = boxNumbers(mockup.box, region.followsText);
   const aBox = boxNumbers(app.box, region.followsText);
-  if (
-    Object.keys(mBox).some((key) => Math.abs((mBox[key] ?? 0) - (aBox[key] ?? 0)) > THRESHOLDS.box)
-  )
-    add("box", boxText(mBox), boxText(aBox));
+  const beyond = Object.keys(mBox).filter(
+    (key) => Math.abs((mBox[key] ?? 0) - (aBox[key] ?? 0)) > THRESHOLDS.box,
+  );
+  if (beyond.length > 0) {
+    // "centre x" and "right x" are the region's x.
+    const named = beyond.every((key) =>
+      region.differs?.what.includes(key.endsWith("x") ? "x" : (key as BoxNumber)),
+    );
+    add("box", boxText(mBox), boxText(aBox), named);
+  }
   const colours: Record<ColourProperty, [Rgba | null, Rgba | null]> = {
     background: [mockup.background, app.background],
     border: [mockup.border, app.border],

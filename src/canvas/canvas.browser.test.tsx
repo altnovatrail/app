@@ -137,7 +137,7 @@ async function unzoom(element: CanvasElement) {
 // itself rather than taken from canvas's documents (R11; section 3.9 of docs/architecture.md). A
 // later canvas that changes any of it fails here, and the page's list is to be read again.
 describe("what canvas declares for app's Accessibility page", () => {
-  it("zooms a workbook's print to 200 % by «Крупнее», and scrolls it across: 1.4.4 is met", async () => {
+  it("zooms a workbook's print to 200 % by «Крупнее», in a region that scrolls across: 1.4.4 is met", async () => {
     const ref = createRef<CanvasElement>();
     render(
       <div style={{ inlineSize: "20rem" }}>
@@ -156,16 +156,33 @@ describe("what canvas declares for app's Accessibility page", () => {
       await pressToEnd(larger);
       // Twice the fit, and not a step short of it: 150 % and 175 % are steps of the zoom too.
       // The zoomed sheet is wider than the element: a region of its own, named in the element's
-      // language, which Left and Right scroll with a single pointer (2.5.1).
+      // language, which the wheel, the trackpad and the keys scroll across.
       await waitFor(() => expect(region(element)?.getAttribute("aria-label")).toBe("Тетрадь"));
       await waitFor(() => {
         expect((region(element)?.scrollWidth ?? 0) / fit.page).toBeCloseTo(2, 2);
         expect(printSpan(element) / fit.print).toBeCloseTo(2, 1);
       });
-      expect((await rowButton(element, "Левее")).closest("[hidden]")).toBeNull();
-      expect((await rowButton(element, "Правее")).closest("[hidden]")).toBeNull();
+      expect(region(element)?.tabIndex).toBe(0);
     } finally {
       await unzoom(element);
+    }
+  });
+
+  it("moves the sheet by dragging alone, with no button that scrolls it: 2.5.7 is not met", async () => {
+    for (const task of [SHEET, PAGE]) {
+      const ref = createRef<CanvasElement>();
+      const { unmount } = render(<novatrail-canvas ref={ref} lang="ru" task={task} />);
+      const element = ref.current as CanvasElement;
+      // The bar of glass holds the tools and the zoom's pair; «Выше», «Ниже», «Левее» and «Правее»
+      // left the element with canvas 0.3.26 (the second 2026-11-14 amendment to R90 in spec):
+      // every button of it, in any row, by its text and by a name of its own.
+      await rowButton(element, "Крупнее");
+      const labels = [...(element.shadowRoot?.querySelectorAll("button") ?? [])].flatMap(
+        (button) => [button.textContent?.trim(), button.getAttribute("aria-label")],
+      );
+      expect(labels).toEqual(expect.arrayContaining(["Перо", "Отменить", "Крупнее", "Мельче"]));
+      for (const gone of ["Выше", "Ниже", "Левее", "Правее"]) expect(labels).not.toContain(gone);
+      unmount();
     }
   });
 

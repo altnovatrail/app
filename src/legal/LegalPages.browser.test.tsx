@@ -330,11 +330,12 @@ describe("the legal pages", () => {
       "If something is hard to use",
     ]);
     const places = screen.getAllByRole("region");
-    expect(places.map((place) => place.getAttribute("aria-labelledby"))).toHaveLength(3);
+    expect(places.map((place) => place.getAttribute("aria-labelledby"))).toHaveLength(4);
     expect(
       places.map((place) => within(place).getByRole("heading", { level: 3 }).textContent),
     ).toEqual([
       "Answering in handwriting",
+      "Moving the sheet",
       "Print in the lines of a workbook",
       "Sending an answer with Check",
     ]);
@@ -342,8 +343,10 @@ describe("the legal pages", () => {
     expect(criteria[0]).toContain("2.1.1");
     expect(criteria[0]).toContain("2.5.1");
     expect(criteria[0]).toContain("2.5.7");
-    expect(criteria[1]).toContain("1.4.12");
-    expect(criteria[2]).toContain("3.3.4");
+    // 2.5.7 twice: canvas 0.3.26 moves the sheet by dragging alone (the 2026-11-17 amendment to R11).
+    expect(criteria[1]).toBe("2.5.7 Dragging Movements, level AA");
+    expect(criteria[2]).toContain("1.4.12");
+    expect(criteria[3]).toContain("3.3.4");
     // 1.4.4 went with canvas 0.3.15, and 3.1.2 app never has (the 2026-11-12 amendment to R11).
     expect(document.body.textContent).not.toContain("1.4.4");
     expect(document.body.textContent).not.toContain("3.1.2");

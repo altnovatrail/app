@@ -49,10 +49,32 @@ describe("colours", () => {
     expect(parseColour("rgb(255 255 255 / 50%)")).toEqual({ ...WHITE, a: 0.5 });
     expect(parseColour("rgb(100% 0% 50%)")).toEqual({ r: 255, g: 0, b: 127.5, a: 1 });
     expect(parseColour(" Transparent ")).toEqual({ r: 0, g: 0, b: 0, a: 0 });
+    // color-mix() of the accent at 12 %, as Chromium computes it.
+    expect(parseColour("color(srgb 0 0.443137 0.890196 / 0.12)")).toEqual({
+      r: 0,
+      g: expect.closeTo(113, 3),
+      b: expect.closeTo(227, 3),
+      a: 0.12,
+    });
+    expect(parseColour("color(srgb 100% 0% 50%)")).toEqual({ r: 255, g: 0, b: 127.5, a: 1 });
   });
 
   it("takes nothing else", () => {
-    for (const text of ["", "red", "#12", "rgb(1, 2)", "rgb(1, 2, x)", "hsl(0 0% 0%)"])
+    for (const text of [
+      "",
+      "red",
+      "#12",
+      "rgb(1, 2)",
+      "rgb(1, 2, x)",
+      "hsl(0 0% 0%)",
+      "color(srgb 1 1)",
+      "color(srgb 1 x 1)",
+      "color(srgb 1 1 / 0.5)",
+      "color(srgb 1 1 1 1)",
+      "rgb(1 2 3 4)",
+      "rgb(1 2 3 / 0.5 / 1)",
+      "color(display-p3 1 1 1)",
+    ])
       expect(parseColour(text)).toBeNull();
   });
 
@@ -247,6 +269,21 @@ describe("a region", () => {
     expect(compareRegion(region, BUTTON, "hidden")[0]?.by).toBe(
       "«Where it differs», the system font",
     );
+  });
+
+  it("reports a box whose numbers beyond the threshold are all named, and holds one with another", () => {
+    const by = "the sheet is not the whole window";
+    const region: Region = { ...REGION, differs: { what: ["y"], by } };
+    const lower = { ...BUTTON, box: { ...BUTTON.box, y: BUTTON.box.y + 200 } };
+    expect(compareRegion(region, BUTTON, lower).map((d) => [d.what, d.by])).toEqual([["box", by]]);
+    const wider = { ...lower, box: { ...lower.box, width: lower.box.width + 20 } };
+    expect(compareRegion(region, BUTTON, wider).map((d) => [d.what, d.by])).toEqual([
+      ["box", undefined],
+    ]);
+    // The x of a region that follows its text is the x of its edge, named as x.
+    const right = { ...BUTTON, box: { ...BUTTON.box, x: BUTTON.box.x + 20 } };
+    const ending: Region = { ...REGION, followsText: "end", differs: { what: ["x"], by } };
+    expect(compareRegion(ending, BUTTON, right)[0]?.by).toBe(by);
   });
 
   it("is reported line by line", () => {

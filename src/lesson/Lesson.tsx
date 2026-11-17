@@ -39,7 +39,7 @@ import { Task, type TaskInLesson } from "../task/Task.tsx";
 import { Example } from "./Example.tsx";
 import { Explanation } from "./Explanation.tsx";
 import type { LessonOpen, RunRef } from "./LessonContext.tsx";
-import { LessonScreen } from "./LessonScreen.tsx";
+import { ContinueButton, LessonScreen } from "./LessonScreen.tsx";
 import {
   type Course,
   continueFrom,
@@ -570,10 +570,15 @@ function OpenLesson({
 
   const segment = segments[shown - 1];
   const kind = kinds[shown - 1];
+  // Where "Continue" stands, if it does: under the segment, or in a worked example's canvas.
+  let continues: "screen" | "canvas" | undefined = mayContinue(course, place, shown)
+    ? "screen"
+    : undefined;
   let body: ReactNode = null;
   if (segment?.explanation !== undefined) {
     body = <Explanation parts={segment.explanation} language={language} media={media} />;
   } else if (segment?.worked_example !== undefined) {
+    if (continues !== undefined) continues = "canvas";
     body = (
       <Example
         key={`example-${shown}`}
@@ -582,6 +587,11 @@ function OpenLesson({
         media={media}
         demo={demo[shown]}
         onDemo={(state) => onDemo(shown, state)}
+        actions={
+          continues === "canvas" ? (
+            <ContinueButton slot="actions" pending={pending} onContinue={onContinue} />
+          ) : null
+        }
       />
     );
   } else if (kind === "task") {
@@ -621,7 +631,7 @@ function OpenLesson({
       {...(beginFailure === undefined || shown !== place ? {} : { failure: beginFailure })}
       {...(completeFailure === undefined ? {} : { failure: completeFailure })}
       {...(offerAgain ? { onAgain: () => begin(place) } : {})}
-      {...(mayContinue(course, place, shown) ? { onContinue } : {})}
+      {...(continues === "screen" ? { onContinue } : {})}
       pending={pending}
       onGoTo={goTo}
       onNote={setNote}

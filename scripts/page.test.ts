@@ -285,11 +285,11 @@ describe.each(ENGINES.map((type) => [type.name(), type] as const))(
       await ink.scrollIntoViewIfNeeded();
       const box = await ink.boundingBox();
       if (box === null) throw new Error("the sheet has no box");
-      // Below the element's own row of buttons, which stands over the top of the sheet.
+      // Right of the element's bar of buttons, which stands over the sheet's left edge, 16 to 68 px.
       const y = Math.max(box.y, 0) + 300;
-      await page.mouse.move(box.x + 40, y);
+      await page.mouse.move(box.x + 120, y);
       await page.mouse.down();
-      for (let i = 1; i <= 5; i++) await page.mouse.move(box.x + 40 + i * 10, y + i * 5);
+      for (let i = 1; i <= 5; i++) await page.mouse.move(box.x + 120 + i * 10, y + i * 5);
       await page.mouse.up();
       expect(await page.evaluate(`document.querySelector("novatrail-canvas").history.length`)).toBe(
         1,
