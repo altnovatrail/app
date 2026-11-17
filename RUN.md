@@ -45,113 +45,15 @@ A task starts with «Выполни задачу T01 из RUN.md» in a new sess
 - **Table 1** is the current epic: its tasks in detail, run one at a time. A task outside an epic — a move to a tag of `spec` (RULES.md, Across repositories), a task of analysis by R145 spec — has its row in table 1 too, with or without an epic, and its body in `run/TASKS.md` (R13, R50).
 - **Next epic.** Once table 1 is all checked, the author picks the next epic from [run/EPICS.md](run/EPICS.md) and splits it with Claude in plan mode into tasks of one review each, into table 1 and this file.
 - **A done epic** goes to `docs/plan/<epic>.md` (R59 canvas-api): bodies and gist sentences are there already (rule 9); move its description and table of tasks verbatim; questions and debt stay in `run/`; until the next epic, table 1 reads «Current epic — none» and names it as the last done epic; measure the epic's sessions — `just -f spec/justfile tokens-report --since <first day of the epic> --row` — as a row of the table of measurements of [docs/measurements.md](docs/measurements.md), after measurements 1.9 spec; a new analysis by the threshold of R145 spec. Never read an archive whole: take the task cited.
-- **Archives:** E1 — [docs/plan/E1.md](docs/plan/E1.md); E2 — [docs/plan/E2.md](docs/plan/E2.md); E3, under way — [docs/plan/E3.md](docs/plan/E3.md).
+- **Archives:** E1 — [docs/plan/E1.md](docs/plan/E1.md); E2 — [docs/plan/E2.md](docs/plan/E2.md); E3 — [docs/plan/E3.md](docs/plan/E3.md).
 
-## Table 1. Current epic — E3. Первый срез со взрослыми учениками
+## Table 1. Current epic — none
 
-**Результат:**
-- сборку `app` выкатил `infra` вместе с `api` (R106 spec; строка 6.9 [COORDINATION.md](spec/COORDINATION.md)), и на ней учатся взрослые ученики — я, а по инвайт-кодам и другие взрослые, — с iPad, Android и компьютера;
-- построено то, что карточка поручает `app` до первого ребёнка, кроме экранов детей ([docs/architecture.md](docs/architecture.md), раздел 3.10; product 10 spec):
-  - раздел для взрослых — настройки профиля, «Это устройство», свой ключ, хранение работ на сервере, квота ИИ платформы и прогресс;
-  - «Карта навыков» пакетом `skill-map`;
-  - озвучка;
-  - модули тетради и сочинений — привязка `sheet` и отзыв по рубрике;
-  - раскрытие, что наставник — ИИ, учебные материалы и «сообщить о проблеме»;
-  - юридические страницы, «Доступность», уведомления о чужом коде и лицензии модулей;
-- долги Д5, Д6, Д8 и Д14 закрыты, а ручные проверки Д4, Д9 и Д13 пройдены на устройствах.
+No current epic. The last done one is E3 «Первый срез со взрослыми учениками», archive — [docs/plan/E3.md](docs/plan/E3.md). Next, by the author's word of 2026-11-16 (T52): row 6.29 of [COORDINATION.md](spec/COORDINATION.md), a task outside an epic, once rows 1.22 and 6.28 are done (Д33); then the epic of row 6.18, «Interface by the mockup», which its own task writes down and opens here; E4 of [run/EPICS.md](run/EPICS.md) after it.
 
 | Статус | ID | Задача | Кто | План | Зависит от |
 |---|---|---|---|---|---|
-| [x] | T35 | Добор пути T30 и слова наставника на `api` | я + Claude | — | — |
-| [x] | T36 | Канва 0.3.13 | Claude | да | T35 |
-| [x] | T37 | Раздел для взрослых: вход и настройки профиля | Claude | да | T35 |
-| [x] | T38 | «Это устройство» и байты в IndexedDB | Claude | да | T37 |
-| [x] | T39 | Хранение работ на сервере | Claude | да | T37, T38 |
-| [x] | T40 | Юридические страницы, «Доступность» и уведомления о чужом коде | Claude, проверяю я | да | T36, T37 |
-| [x] | T41 | Лицензии модулей | Claude | — | T40 |
-| [x] | T42 | Раскрытие, что наставник — ИИ, учебные материалы и «Сообщить о проблеме» | Claude, проверяю я | да | T35, T40 |
-| [x] | T43 | «Карта навыков» ученика | Claude | да | T35 |
-| [x] | T44 | Прогресс в разделе для взрослых | Claude | — | T37, T43 |
-| [x] | T45 | Озвучка | Claude | да | T37, T38 |
-| [x] | T46 | Свой ключ | Claude | да | T37, T38 |
-| [x] | T47 | Сочинения: `sheet`, отзыв по рубрике и напоминание не писать имён | Claude | да | T36, T38, T39, T42 |
-| [x] | T48 | Рабочая тетрадь | Claude | да | T36 |
-| [x] | T49 | Квота ИИ платформы | я + Claude | да | T37 |
-| [x] | T50 | Развёртывание с `infra` | я + Claude | да | — |
-| [-] | T51 | Проверки на устройствах — вошла в T57 | я + Claude | да | T45, T50, T56 |
-| [ ] | T52 | Итог E3 | я + Claude | — | T35–T50, T57–T60 |
-| [x] | T53 | Переход на `spec` v0.16.3, перестройка документов, названия в прогрессе и доля квоты | Claude | да | — |
-| [x] | T54 | Перевод: `docs/architecture.md`, `docs/sources.md` и `docs/measurements.md` | Claude | да | T53 |
-| [x] | T55 | Перевод: журнал решений; бюджеты документов | Claude | да | T54 |
-| [-] | T56 | Путь в браузере без автора — вошла в T57 | Claude | да | T53 |
-| [x] | T57 | Переход на `spec` v0.17.1, путь в браузере без автора и проверки на трёх движках | я + Claude | да | T45, T50, T53 |
-| [x] | T58 | Следующая версия юридического текста и оператор копии | Claude | да | T57 |
-| [x] | T59 | Пинг gapi в WebKit — ожидаемый отказ CSP | Claude | — | T58 |
-| [x] | T60 | Путь в браузере: штатный отказ и начатый урок | Claude | — | T58 |
-| [x] | T61 | Переход на `spec` v0.17.9 | Claude | — | — |
-| [x] | T62 | Работы на сервере: `PutWork` | Claude | — | T39, T46 |
-| [x] | T63 | Переход на `spec` v0.18.3: тег, пакеты и контейнер | Claude | да | — |
-| [x] | T64 | Переход на `spec` v0.18.3: таблицы плана в `run/` и план на английском | Claude | — | T63 |
-| [x] | T65 | CI на общих процессах `.github` v0.1.24 | Claude | — | T64 |
-| [x] | T66 | Слова отказа `CAUSE_KEY_CHECKS_EXHAUSTED` — Д28 | Claude | — | — |
-| [x] | T67 | Скорость CI: строка 7.22 | Claude | — | — |
-| [x] | T68 | Скорость CI: WebKit и Firefox своей проверкой — строка 7.22 | Claude | — | T67 |
-| [x] | T69 | Скорость CI: переход на `spec` со стадией `toolchain-core` — строка 7.22 | Claude | — | T68 |
-| [x] | T70 | Переход на тег `spec` v0.18.6 | Claude | — | — |
-| [x] | T71 | Когда вернётся доступ: `access_returns` в отказе своего ключа | Claude | — | — |
 
 «Зависит от» names only tasks of this plan. What a task waits for from other repositories is its body's «Ждёт»: it is taken once the neighbour has done that, and until then the queue goes on.
 
 A code task ends with the checks of rule 6: the recipes `ci-lint`, `ci-test`, `ci-engines`, `ci-vuln`, `ci-licenses` and `build` green locally and in CI; `codecov/patch` at least 90 % of the changed lines; `just -f spec/justfile docs-check-repo` green; then `/code-review high`, one round. A task's «Как проверить» names only what goes beyond them.
-
-**Почему такой порядок.**
-- T52 — итог эпика, когда сделано остальное.
-
-## Epic E3. Первый срез со взрослыми учениками
-
-**Почему эпик такой.**
-- E3 — первый срез этапа 2 без детей. В нём всё, что карточка поручает `app`, кроме того, что нужно только с ребёнком: профилей детей, согласия, PIN, раздела «Помощь», выгрузки и удаления. Это E4 (таблица 2; [docs/architecture.md](docs/architecture.md), раздел 3.10; repositories 6 spec).
-
-**Не входит:**
-- в E4 (таблица 2; Д7, Д10):
-  - профили детей, согласие родителя и подростка;
-  - PIN раздела для взрослых и профиля владельца;
-  - раздел «Помощь» и строка ребёнку о прогрессе;
-  - показ решения ребёнку;
-  - выгрузка и удаление, а с ним — отзыв токена Google;
-  - ручные проверки доступности;
-- позже, этапами платформы:
-  - тарифы и оплата — этап 3 (О-14);
-  - виджеты модулей — этап 4 (R16 spec);
-  - задача с бумаги — этап 5 (О-11);
-- класс ученика — с первым модулем, чей паспорт называет классы.
-
-**Решено автором (2026-11-12)**, при планировании эпика, все три — по рекомендациям плана; второе, о В51, сделала T38, и оно — в архиве E3:
-- **Кто коммитит.** Коммит, push, pull request и мерж каждой задачи E3 делает исполнитель, как в E2:
-  - мерж — merge-коммитом и только когда все проверки pull request зелёные (R30 spec);
-  - правило 7 в E3 не действует, как и «Do not commit» в RULES.md, How we work;
-  - шаги в настройках GitHub и сервисов и всё, что стоит денег, — по-прежнему мои (правило 4);
-  - проверяю я после мержа: задачу, которую верну в `[ ]`, исполнитель правит новым pull request;
-  - так же уходит и само планирование эпика.
-- **Развёртывание — как только его готов сделать `infra`.**
-  - T50 ждёт T24 `infra`. А та ждёт моего решения по строке 6.9 [COORDINATION.md](spec/COORDINATION.md) и оплаты не пробным периодом (Д8 `infra`).
-  - Сразу за T50 идут проверки на устройствах, T51.
-  - Инвайт-коды взрослым, кроме меня, — только когда в выкатке есть:
-    - юридические страницы — T40;
-    - раскрытие, что наставник — ИИ, и «сообщить о проблеме» — T42.
-
-**Выяснилось при планировании** — разведка 2026-11-12 по соседям — в архиве [docs/plan/E3.md](docs/plan/E3.md), раздел «Из описания эпика в RUN.md»: задача сверяет соседей заново, на день своего планирования.
-
-
-#### T52. Итог E3
-
-- **Цель:** E3 подведён и ушёл в архив, а следующий эпик выбран.
-- **Почему:** после эпика в RUN.md остаётся только живое, а следующий эпик берётся из таблицы 2.
-- **Сделать:**
-  - README — статус;
-  - раздел 3.10 — что E3 взял и что осталось;
-  - если детализация изменила то, что говорит карточка architecture 3.1 spec, — строка «в реестр spec» в таблице 3;
-  - E3 — в архив `docs/plan/E3.md`, а следующий эпик — из таблицы 2.
-- **Мой шаг:** выбор следующего эпика.
-- **Как проверить:** `just -f spec/justfile docs-check-repo` зелёный, а в RUN.md — только живое.
-- **Разделы:** [docs/architecture.md](docs/architecture.md), раздел 3.10; T31 в [docs/plan/E2.md](docs/plan/E2.md).
