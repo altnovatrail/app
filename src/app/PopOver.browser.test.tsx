@@ -82,6 +82,40 @@ describe.each([600, 834, 1194])("a pop-over at %i px", (width) => {
     await closedToButton();
   });
 
+  it("hangs centred below its button's middle, its button showing a caption of its own", async () => {
+    await page.viewport(width, 834);
+    render(
+      inLanguage(
+        <div style={{ display: "flex", justifyContent: "center", padding: "1rem" }}>
+          <p id="why">Why</p>
+          <PopOver
+            label="Avatar"
+            caption={<span>Choose one</span>}
+            id="avatar"
+            describedBy="why"
+            centred
+            popClassName="nt-wide"
+          >
+            <button type="button">Peak</button>
+          </PopOver>
+        </div>,
+      ),
+    );
+    const button = page.getByRole("button", { name: "Choose one" });
+    await expect.element(button).toHaveAccessibleDescription("Why");
+    expect(button.element().id).toBe("avatar");
+    await button.click();
+    const shown = page.getByRole("dialog", { name: "Avatar" });
+    await expect.element(shown).toBeVisible();
+    const dialog = shown.element() as HTMLDialogElement;
+    await Promise.all(dialog.getAnimations().map((animation) => animation.finished));
+    expect(dialog.classList).toContain("nt-wide");
+    const from = button.element().getBoundingClientRect();
+    const box = dialog.getBoundingClientRect();
+    expect(Math.round(box.left + box.width / 2)).toBe(Math.round(from.left + from.width / 2));
+    expect(originX(dialog)).toBeCloseTo(box.width / 2, 0);
+  });
+
   it("hangs at its button's right edge near the window's right", async () => {
     await page.viewport(width, 834);
     render(inLanguage(<Choice place="end" />));

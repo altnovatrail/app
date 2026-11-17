@@ -21,11 +21,12 @@ const STANDARD = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 
 /** What axe-core finds against the standard, a line for each rule and the nodes it found. */
 export async function axeViolations(root: Element = document.body): Promise<string[]> {
-  // A colour in its transition, a button just enabled, is read as it ends, not halfway through.
+  // A colour in its transition, a button just enabled, or a pop-over's sheet coming in as the
+  // width crosses 600 px, is read as it ends, not halfway through; a spinner's never ends.
   await Promise.all(
     document
       .getAnimations()
-      .filter((animation) => "transitionProperty" in animation)
+      .filter((animation) => animation.effect?.getComputedTiming().iterations !== Infinity)
       .map((animation) => animation.finished.catch(() => {})),
   );
   const result = await axe.run(
@@ -46,10 +47,16 @@ const TARGETS = "button, a[href], input, select, textarea, [role='button'], [tab
 /** The least a target is across and down, CSS px (2.5.5 Target Size (Enhanced)). */
 export const TARGET_PX = 44;
 
-/** The targets smaller than 44 × 44 CSS px, by their text and size. */
+/**
+ * The targets smaller than 44 × 44 CSS px, by their text and size. A target not drawn, as a pop-over's
+ * × above the phone, is none; nor is one inline in a sentence, as a text's name in a checkbox's line
+ * (2.5.5's exception Inline).
+ */
 export function smallTargets(root: ParentNode = document): string[] {
   return [...root.querySelectorAll<HTMLElement>(TARGETS)]
     .filter(ours)
+    .filter((target) => target.getClientRects().length > 0)
+    .filter((target) => getComputedStyle(target).display !== "inline")
     .map((target) => ({ target, box: target.getBoundingClientRect() }))
     .filter(({ box }) => box.width < TARGET_PX || box.height < TARGET_PX)
     .map(({ target, box }) => `${target.textContent ?? ""} ${box.width}×${box.height}`);
@@ -57,7 +64,8 @@ export function smallTargets(root: ParentNode = document): string[] {
 
 /**
  * What does not fit the width: the page scrolling sideways, and every box whose content is wider
- * than it — text cut or spilling out (1.4.10 Reflow).
+ * than it — text cut or spilling out (1.4.10 Reflow). A box clipped to nothing on purpose, a name
+ * for assistive technology alone (`.nt-hidden-label`), shows nothing to cut.
  */
 export function overflows(root: Element = document.body): string[] {
   const found: string[] = [];
@@ -67,6 +75,7 @@ export function overflows(root: Element = document.body): string[] {
   }
   for (const element of root.querySelectorAll<HTMLElement>("*")) {
     if (!ours(element) || element.clientWidth === 0) continue;
+    if (getComputedStyle(element).clipPath === "inset(50%)") continue;
     if (element.scrollWidth > element.clientWidth + 1) {
       found.push(
         `${element.tagName.toLowerCase()} "${element.textContent ?? ""}": ${element.scrollWidth} > ${element.clientWidth}`,

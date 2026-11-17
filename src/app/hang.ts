@@ -1,8 +1,10 @@
 // Where a pop-over hangs from its button in the tablet's layout (the mockup's README, «Pop-overs, not
 // panels»; section 3.9 of docs/architecture.md): below the button, or above it where below has no
 // room and above has, or more of it where neither has; at the button's left edge, or at its right
-// where the left would leave the window; inside the window by its margin, where what does not fit
-// scrolls inside the pop-over. It grows from the corner nearest the button. Without DOM.
+// where the left would leave the window — or, centred, below the button's middle, as the mockup
+// hangs the avatars from their button in the middle of the owner's column —; inside the window by
+// its margin, where what does not fit scrolls inside the pop-over. It grows from the corner nearest
+// the button, or from the middle of its edge. Without DOM.
 
 /** A box in CSS px of the viewport, as `getBoundingClientRect` gives it. */
 export interface Box {
@@ -30,16 +32,22 @@ export function hang(
   width: number,
   height: number,
   view: { readonly width: number; readonly height: number },
+  centred = false,
 ): Hung {
   const fitsBelow = button.bottom + GAP + height <= view.height - MARGIN;
   const fitsAbove = button.top - GAP - height >= MARGIN;
   const below = fitsBelow || (!fitsAbove && view.height - button.bottom >= button.top);
   const start = button.left + width <= view.width - MARGIN;
   const top = below ? button.bottom + GAP : button.top - GAP - height;
-  const left = start ? button.left : button.right - width;
+  const left = centred
+    ? (button.left + button.right - width) / 2
+    : start
+      ? button.left
+      : button.right - width;
+  const side = centred ? "center" : start ? "left" : "right";
   return {
     left: Math.max(MARGIN, Math.min(left, view.width - MARGIN - width)),
     top: Math.max(MARGIN, Math.min(top, view.height - MARGIN - height)),
-    origin: `${below ? "top" : "bottom"} ${start ? "left" : "right"}`,
+    origin: `${below ? "top" : "bottom"} ${side}`,
   };
 }

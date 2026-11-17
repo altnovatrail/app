@@ -33,14 +33,10 @@ import {
 } from "@altnovatrail/contracts/novatrail/api/v1/progress_pb.js";
 import { create } from "@bufbuild/protobuf";
 import { userEvent } from "vitest/browser";
-import {
-  ChooseScreen,
-  InviteScreen,
-  LearnerProvider,
-  OwnerProfileScreen,
-  SignOutScreen,
-  type TextsRead,
-} from "../account/AccountGate.tsx";
+import { LearnerProvider, SignOutScreen } from "../account/AccountGate.tsx";
+import { ChooseScreen } from "../account/ChooseScreen.tsx";
+import { InviteScreen, type TextsRead } from "../account/InviteScreen.tsx";
+import { OwnerProfileScreen } from "../account/OwnerProfileScreen.tsx";
 import { AdultSection } from "../adults/AdultSection.tsx";
 import { DevicePage } from "../adults/DevicePage.tsx";
 import { ModulesPage } from "../adults/ModulesPage.tsx";
@@ -298,6 +294,12 @@ const TEXTS: TextsRead = {
 };
 
 /** Every legal text of the screen, opened. */
+/** The invite code typed, and its step left for the statement and the texts. */
+async function agreeStep(): Promise<void> {
+  await userEvent.type(document.querySelector("input") as HTMLElement, "NOVA2026");
+  await submit();
+}
+
 async function openTexts(): Promise<void> {
   for (const summary of document.querySelectorAll("summary")) await userEvent.click(summary);
 }
@@ -595,31 +597,61 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
       />
     ),
   ],
-  ["invite code", () => <InviteScreen texts={TEXTS} onCreate={async () => "done"} />],
   [
-    "invite code with its texts open",
-    () => <InviteScreen texts={TEXTS} onCreate={async () => "done"} />,
-    openTexts,
+    "invite code",
+    () => <InviteScreen texts={TEXTS} onCreate={async () => "done"} onLegal={() => {}} />,
   ],
   [
-    "invite code with its errors",
-    () => <InviteScreen texts={TEXTS} onCreate={async () => "done"} />,
-    submit,
+    "invite code's statement with its texts open",
+    () => <InviteScreen texts={TEXTS} onCreate={async () => "done"} onLegal={() => {}} />,
+    async () => {
+      await agreeStep();
+      await openTexts();
+    },
   ],
   [
-    "invite code whose texts could not be read",
+    "invite code that api did not take",
+    () => (
+      <InviteScreen texts={TEXTS} onCreate={async () => "code-not-accepted"} onLegal={() => {}} />
+    ),
+    async () => {
+      await agreeStep();
+      for (const tick of document.querySelectorAll("input[type=checkbox]")) {
+        await userEvent.click(tick);
+      }
+      await submit();
+    },
+  ],
+  [
+    "invite code's statement whose texts could not be read",
     () => (
       <InviteScreen
         texts={{ status: "failed", failure: { kind: "offline" }, retry: () => {} }}
         onCreate={async () => "done"}
+        onLegal={() => {}}
       />
     ),
+    agreeStep,
   ],
   ["owner's profile", () => <OwnerProfileScreen onCreate={async () => "done"} />],
   [
-    "owner's profile with its errors",
+    "owner's profile with the avatars open",
     () => <OwnerProfileScreen onCreate={async () => "done"} />,
-    submit,
+    async () => {
+      await userEvent.click(document.querySelector<HTMLButtonElement>(".nt-link") as HTMLElement);
+    },
+  ],
+  [
+    "owner's profile whose country api did not take",
+    () => <OwnerProfileScreen onCreate={async () => "country-not-accepted"} />,
+    async () => {
+      await userEvent.type(document.querySelector("input") as HTMLElement, "Sam");
+      await userEvent.click(
+        document.querySelector<HTMLButtonElement>("button.nt-row") as HTMLElement,
+      );
+      await userEvent.click(document.querySelector(".nt-choice-list button") as HTMLElement);
+      await submit();
+    },
   ],
   [
     "choice of the learner on the first sign-in, with the next version of a text",

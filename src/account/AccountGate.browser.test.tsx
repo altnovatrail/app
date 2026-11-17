@@ -223,7 +223,11 @@ describe("the way in", () => {
     let profiles: MessageInitShape<typeof GetAccountResponseSchema>["account"] | undefined;
     const codes: string[] = [];
     const accepted: string[][] = [];
-    const created: { country: string; pseudonym: string | undefined }[] = [];
+    const created: {
+      country: string;
+      pseudonym: string | undefined;
+      avatar: string | undefined;
+    }[] = [];
     const { asked } = renderApp(
       {
         getLegalTexts: (body) =>
@@ -245,7 +249,11 @@ describe("the way in", () => {
         },
         createOwnerProfile: (body) => {
           const request = fromBinary(CreateOwnerProfileRequestSchema, body);
-          created.push({ country: request.country, pseudonym: request.settings?.pseudonym });
+          created.push({
+            country: request.country,
+            pseudonym: request.settings?.pseudonym,
+            avatar: request.settings?.avatar,
+          });
           if (request.country === "DE") {
             return refusal("failed_precondition", Cause.COUNTRY_NOT_ACCEPTED);
           }
@@ -261,20 +269,16 @@ describe("the way in", () => {
     expect(screen.getByRole("group", { name: "Language" })).toBeTruthy();
     await userEvent.click(screen.getByRole("button", { name: "Sign in with Google" }));
 
-    // The invite code: each field says what it lacks, and focus goes to the first.
+    // The invite code, then the statement and the texts: nothing goes before each is given.
     expect(await screen.findByRole("heading", { level: 1, name: "Invite code" })).toBeTruthy();
-    const code = screen.getByRole("textbox", { name: "Invite code" });
-    const adult = screen.getByRole("checkbox", { name: "I am 18 or older" });
-    await userEvent.click(screen.getByRole("button", { name: "Create account" }));
-    expect(code).toHaveAccessibleDescription("Enter the invite code");
-    expect(code).toHaveAttribute("aria-invalid", "true");
-    expect(document.activeElement).toBe(code);
-    await userEvent.type(code, "WRONG");
-    await userEvent.click(screen.getByRole("button", { name: "Create account" }));
-    expect(adult).toHaveAccessibleDescription("Only someone 18 or older can create an account");
-    expect(document.activeElement).toBe(adult);
-    expect(codes).toEqual([]);
-    await userEvent.click(adult);
+    await userEvent.type(screen.getByRole("textbox", { name: "Invite code" }), "WRONG");
+    await userEvent.click(screen.getByRole("button", { name: "Continue" }));
+    expect(
+      await screen.findByRole("heading", { level: 1, name: "Create your account" }),
+    ).toBeTruthy();
+    const create = screen.getByRole("button", { name: "Create account" });
+    await userEvent.click(screen.getByRole("checkbox", { name: "I am 18 or older" }));
+    expect(create).toBeDisabled();
     // The texts in force, each open in place, and the owner's acceptance of both.
     expect(
       screen.getByRole("heading", { level: 2, name: "Privacy Policy and Terms of Use" }),
@@ -282,11 +286,6 @@ describe("the way in", () => {
     const accept = screen.getByRole("checkbox", {
       name: "I accept the Privacy Policy and the Terms of Use",
     });
-    await userEvent.click(screen.getByRole("button", { name: "Create account" }));
-    expect(accept).toHaveAccessibleDescription(
-      "To create an account, accept the Privacy Policy and the Terms of Use",
-    );
-    expect(document.activeElement).toBe(accept);
     expect(codes).toEqual([]);
     await userEvent.click(screen.getByText("Privacy Policy", { selector: "summary span" }));
     expect(screen.getByText("We keep little.")).toBeVisible();
@@ -298,49 +297,62 @@ describe("the way in", () => {
         element.textContent === "We keep little. See <b>this</b> and a link.",
     );
     expect(body.closest("section")).toHaveAttribute("lang", "en");
-    expect(document.querySelector("main a, main b")).toBeNull();
-    expect(
-      screen.queryByText("The text is in English, and the English text is the one in force"),
-    ).toBeNull();
+    expect(document.querySelector(".nt-account-texts a, .nt-account-texts b")).toBeNull();
     await userEvent.click(accept);
-    await userEvent.click(screen.getByRole("button", { name: "Create account" }));
+    await userEvent.click(create);
+    // A code api does not take: back to its step, with the line why.
+    const code = await screen.findByRole("textbox", { name: "Invite code" });
     await vi.waitFor(() =>
-      expect(code).toHaveAccessibleDescription("This code isn't valid or has been used"),
+      expect(code).toHaveAccessibleDescription(
+        "The code from your invitation This code isn't valid or has been used",
+      ),
     );
     await userEvent.clear(code);
     await userEvent.type(code, " 0123-4567-89AB-CDEF ");
-    await userEvent.click(screen.getByRole("button", { name: "Create account" }));
+    await userEvent.click(screen.getByRole("button", { name: "Continue" }));
+    // The statement and the acceptance stay given for the versions shown.
+    expect(screen.getByRole("checkbox", { name: "I am 18 or older" })).toBeChecked();
+    await userEvent.click(await screen.findByRole("button", { name: "Create account" }));
     expect(codes).toEqual(["WRONG", "0123-4567-89AB-CDEF"]);
     expect(accepted[1]).toEqual(["privacy-policy 2", "terms-of-use 1"]);
 
-    // The owner's profile: a pseudonym of 1 to 30 characters, and a country api takes.
+    // The owner's profile: a pseudonym of 1 to 30 characters, an avatar of the set, and a country
+    // api takes.
     expect(
       await screen.findByRole("heading", { level: 1, name: "Your learner profile" }),
     ).toBeTruthy();
     const pseudonym = screen.getByRole("textbox", { name: "Pseudonym" });
-    const country = screen.getByRole("combobox", { name: "Country" });
-    expect(pseudonym).toHaveAccessibleDescription("Not a real name, up to 30 characters");
-    await userEvent.type(pseudonym, "   ");
-    await userEvent.click(screen.getByRole("button", { name: "Continue" }));
+    const next = screen.getByRole("button", { name: "Continue" });
     expect(pseudonym).toHaveAccessibleDescription(
-      "Not a real name, up to 30 characters From 1 to 30 characters",
+      "A made-up name, up to 30 characters. A grown-up's profile needs no age: you stated that you are 18 or older",
     );
+    await userEvent.type(pseudonym, "   ");
+    expect(next).toBeDisabled();
+    await userEvent.type(pseudonym, "x".repeat(31));
+    await userEvent.click(screen.getByRole("button", { name: "Country Choose a country" }));
+    await userEvent.click(screen.getByRole("button", { name: "Germany" }));
+    await userEvent.click(next);
+    expect(pseudonym).toHaveAttribute("aria-invalid", "true");
+    expect(document.activeElement).toBe(pseudonym);
+    await userEvent.clear(pseudonym);
     await userEvent.type(pseudonym, " Ёжик ");
-    await userEvent.click(screen.getByRole("button", { name: "Continue" }));
-    expect(country).toHaveAccessibleDescription("Choose a country");
-    expect(document.activeElement).toBe(country);
-    await userEvent.selectOptions(country, "DE");
-    await userEvent.click(screen.getByRole("button", { name: "Continue" }));
+    await userEvent.click(screen.getByRole("button", { name: "Choose an avatar" }));
+    await userEvent.click(screen.getByRole("button", { name: "Moon" }));
+    expect(screen.getByRole("button", { name: "Change the avatar" })).toBeTruthy();
+    await userEvent.click(next);
+    const country = screen.getByRole("button", { name: "Country Germany" });
     await vi.waitFor(() =>
       expect(country).toHaveAccessibleDescription(
         "NovaTrail doesn't take learners from this country yet",
       ),
     );
-    await userEvent.selectOptions(country, "US");
-    await userEvent.click(screen.getByRole("button", { name: "Continue" }));
+    expect(document.activeElement).toBe(country);
+    await userEvent.click(country);
+    await userEvent.click(screen.getByRole("button", { name: "United States" }));
+    await userEvent.click(next);
     expect(created).toEqual([
-      { country: "DE", pseudonym: "Ёжик" },
-      { country: "US", pseudonym: "Ёжик" },
+      { country: "DE", pseudonym: "Ёжик", avatar: "moon" },
+      { country: "US", pseudonym: "Ёжик", avatar: "moon" },
     ]);
 
     // The choice of the learner, with the line of the first sign-in.
@@ -410,6 +422,8 @@ describe("the way in", () => {
       ["ru"],
     );
     expect(await screen.findByRole("heading", { level: 1, name: "Инвайт-код" })).toBeTruthy();
+    await userEvent.type(screen.getByRole("textbox", { name: "Инвайт-код" }), "CODE");
+    await userEvent.click(screen.getByRole("button", { name: "Продолжить" }));
     // Texts that could not be read: nothing is sent, and a retry asks again.
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Эта версия приложения этого ещё не знает",
@@ -447,7 +461,6 @@ describe("the way in", () => {
     expect(screen.getByRole("cell", { name: "Learn" })).toBeTruthy();
 
     // api has a newer policy: the screen reads it, unticks, and says so.
-    await userEvent.type(screen.getByRole("textbox", { name: "Инвайт-код" }), "CODE");
     await userEvent.click(screen.getByRole("checkbox", { name: "Мне 18 лет или больше" }));
     await userEvent.click(accept);
     policy = 3;
@@ -460,10 +473,11 @@ describe("the way in", () => {
     );
     expect(accept).not.toBeChecked();
     expect(document.activeElement).toBe(accept);
-    await vi.waitFor(() =>
-      expect(screen.getByRole("button", { name: "Завести аккаунт" })).toBeEnabled(),
-    );
-    await userEvent.click(accept);
+    // Ticked again once the new versions are shown, it holds for them.
+    await vi.waitFor(async () => {
+      if (!(accept as HTMLInputElement).checked) await userEvent.click(accept);
+      expect(screen.getByRole("button", { name: "Завести аккаунт" })).toBeEnabled();
+    });
     await userEvent.click(screen.getByRole("button", { name: "Завести аккаунт" }));
     await vi.waitFor(() => expect(accepted).toHaveLength(2));
     expect(accepted).toEqual([

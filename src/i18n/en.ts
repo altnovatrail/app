@@ -97,6 +97,18 @@ export const en = {
   "signin.title": "Sign in",
   /** The button that opens Google's sign-in window. */
   "signin.google": "Sign in with Google",
+  /** The same button while Google's window is open. */
+  "signin.signing": "Signing in with Google…",
+  /** Below the heading of the sign-in: what NovaTrail is. */
+  "signin.intro":
+    "Lessons from teachers and authors, a canvas to think on, and an AI tutor that helps you find the answer yourself",
+  /** Below the button: an account is a grown-up's alone (R118 spec). */
+  "signin.grown-ups":
+    "Accounts are for grown-ups, 18 and over. A child learns in a profile their grown-up adds, and never signs in",
+  /** The line of the sign-in's art, and what it says of NovaTrail. */
+  "signin.tagline": "Any subject, one trail",
+  "signin.tagline-line":
+    "Maths, writing and more, on a canvas to think on, with a tutor that helps you find the answer yourself",
   /** The browser did not open the sign-in window. */
   "signin.blocked":
     "The browser didn't open the sign-in window. Allow pop-ups for this site and try again",
@@ -110,20 +122,31 @@ export const en = {
   "account.invite-intro": "NovaTrail is open by invitation for now",
   /** The owner's statement, a checkbox: kept by api with its date (R118 spec). */
   "account.adult": "I am 18 or older",
-  /** Below the checkbox when it is not ticked. */
-  "account.adult-needed": "Only someone 18 or older can create an account",
+  /** Below the statement: why it is asked. */
+  "account.adult-line": "Only grown-ups hold an account",
   "account.create": "Create account",
   /** What another account left on this device cannot be erased yet: another tab of the app holds it. */
   "account.held":
     "Another account's data on this device can't be erased yet. Close the app's other tabs and try again",
   /** api did not take the invite code. */
   "account.code-not-accepted": "This code isn't valid or has been used",
-  /** Below the field when it is empty. */
-  "account.code-needed": "Enter the invite code",
-  /** The owner accepts both legal texts, a checkbox: api keeps the versions shown (R131 spec). */
-  "account.texts": "I accept the Privacy Policy and the Terms of Use",
-  /** Below the checkbox when it is not ticked. */
-  "account.texts-needed": "To create an account, accept the Privacy Policy and the Terms of Use",
+  /** Below the field of the code. */
+  "account.code-hint": "The code from your invitation",
+  /** From the code to the statement and the texts. */
+  "account.next": "Continue",
+  /** Below the code: the sign-in is done, the account is not yet. */
+  "account.signed-in": "Signed in with Google",
+  /** The heading of the step of the statement and the texts. */
+  "account.agree-title": "Create your account",
+  "account.agree-intro":
+    "One account holds the profiles of those who learn in it. Only you sign in",
+  /**
+   * The owner accepts both legal texts, a checkbox: api keeps the versions shown (R131 spec). Each
+   * name is a link down to its text.
+   */
+  "account.texts": "I accept the {policy} and the {terms}",
+  "account.texts-policy": "Privacy Policy",
+  "account.texts-terms": "Terms of Use",
   /** api has newer versions of the texts than the screen showed: they are shown anew, unticked. */
   "account.texts-changed": "The texts have changed. Read them again and accept them",
   /** The heading above the legal texts of the account, each opened in place. */
@@ -271,6 +294,22 @@ export const en = {
   "accessibility.operator": "Who runs this copy and how to reach them",
   /** The heading of the screen that makes the owner's own profile as a learner. */
   "profile.title": "Your learner profile",
+  "profile.intro": "This is how you learn here. Use a made-up name, never your real one",
+  /** The button of the avatars, before one is chosen and after. */
+  "profile.avatar-choose": "Choose an avatar",
+  "profile.avatar-change": "Change the avatar",
+  /** Below the owner's fields: the name's bounds, and why no age is asked (R118 spec). */
+  "profile.owner-hint":
+    "A made-up name, up to 30 characters. A grown-up's profile needs no age: you stated that you are 18 or older",
+  /** The avatars of the set (src/account/avatars.ts), each by its picture. */
+  "avatar.peak": "Peak",
+  "avatar.rocket": "Rocket",
+  "avatar.leaf": "Leaf",
+  "avatar.star": "Star",
+  "avatar.moon": "Moon",
+  "avatar.wave": "Wave",
+  "avatar.sun": "Sun",
+  "avatar.bolt": "Bolt",
   /** The name a learner goes by: never a real one. */
   "profile.pseudonym": "Pseudonym",
   "profile.pseudonym-hint": "Not a real name, up to 30 characters",
@@ -283,6 +322,15 @@ export const en = {
   "profile.create": "Continue",
   /** The heading of the choice of the learner. */
   "choose.title": "Who is learning?",
+  "choose.intro": "Choose a profile",
+  /** Below a profile's name: whose it is. */
+  "choose.owner": "You · grown-up",
+  "choose.learner": "Learner",
+  /** Shown but not open until a child's profile comes with a parent's consent (R148 spec). */
+  "choose.add": "Add a learner",
+  "choose.add-why": "Comes later: a child's profile waits for a parent's consent",
+  /** At the foot of the choice. */
+  "choose.foot": "Each learner has a made-up name and an avatar, never a real name or a photo",
   /** On the first sign-in of an account on this device (section 3.2). */
   "persist.line": "Learners' work is kept on this device",
   /** Asks the browser to keep the site's data: navigator.storage.persist(). */

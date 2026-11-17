@@ -1,14 +1,18 @@
-// The sign-in screen (sections 3.7 and 3.8 of docs/architecture.md): in the language of the device,
-// whose buttons are here, and Google's window on a press. What came of the last window is a line
-// below its button; a project that does not take this copy has the line for whoever deployed it.
-// Below, the way to the legal pages, by a button that holds the word "privacy" (R31).
+// The sign-in screen (sections 3.7 and 3.8 of docs/architecture.md; R61): the mockup's `signin`,
+// in the frame of the way in, in the language of the device, whose buttons are in its corner, and
+// Google's window on a press, the button saying so while it is open. What came of the last window
+// is a line below its button; a project that does not take this copy has the line for whoever
+// deployed it. Below, the line that accounts are for grown-ups alone, and at the foot the way to the
+// legal pages, by a button that holds the word "privacy" (R31).
 import { useState } from "react";
-import { Screen } from "../app/Screen.tsx";
+import { Spark } from "../app/Brand.tsx";
+import { Icon } from "../app/Icon.tsx";
 import { operatorLine } from "../boot/Screens.tsx";
 import { LanguageButtons } from "../i18n/LanguageButtons.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import type { Words } from "../i18n/words.ts";
 import type { SignInResult } from "./service.ts";
+import { WelcomeScreen } from "./Welcome.tsx";
 
 export interface SignInScreenProps {
   /** Opens the window; the screen stays until the account comes. */
@@ -41,24 +45,40 @@ export function SignInScreen({ onSignIn, result, left = false, onLegal }: SignIn
   const [pending, setPending] = useState(false);
   const line = result === undefined ? undefined : resultText(result, words);
   return (
-    <Screen title={words.text("signin.title")} layout="reference">
-      <LanguageButtons />
+    <WelcomeScreen
+      title={words.text("signin.title")}
+      first
+      lead={
+        <span className="nt-welcome-mark" aria-hidden="true">
+          <Spark />
+        </span>
+      }
+      corner={<LanguageButtons />}
+      onLegal={onLegal}
+    >
+      <p className="nt-lead">{words.text("signin.intro")}</p>
       {left ? <p role="status">{words.text("signout.left")}</p> : null}
-      <p>
-        <button
-          type="button"
-          disabled={pending}
-          onClick={() => {
-            setPending(true);
-            void onSignIn().finally(() => setPending(false));
-          }}
-        >
-          {words.text("signin.google")}
-        </button>
-      </p>
+      <button
+        type="button"
+        className="nt-main nt-google"
+        disabled={pending}
+        onClick={() => {
+          setPending(true);
+          void onSignIn().finally(() => setPending(false));
+        }}
+      >
+        {pending ? (
+          <>
+            <span className="nt-spin" aria-hidden="true" />
+            {words.text("signin.signing")}
+          </>
+        ) : (
+          words.text("signin.google")
+        )}
+      </button>
       {line === undefined ? null : (
-        <div role="alert">
-          <p>{line}</p>
+        <div role="alert" className="nt-welcome-alert">
+          <p className="nt-error">{line}</p>
           {result?.kind === "unconfigured" ? (
             <p lang="en" data-operator="">
               {operatorLine(`the sign-in service refused this copy: auth/${result.code}`)}
@@ -66,11 +86,10 @@ export function SignInScreen({ onSignIn, result, left = false, onLegal }: SignIn
           ) : null}
         </div>
       )}
-      <div className="nt-buttons">
-        <button type="button" className="nt-secondary" onClick={onLegal}>
-          {words.text("legal.title")}
-        </button>
-      </div>
-    </Screen>
+      <p className="nt-note">
+        <Icon value="grown" />
+        <span>{words.text("signin.grown-ups")}</span>
+      </p>
+    </WelcomeScreen>
   );
 }
