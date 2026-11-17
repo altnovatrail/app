@@ -34,6 +34,8 @@ export interface TutorWordsProps {
   readonly note?: string;
   /** "Report a problem" with the words shown, below them; none for a learner it is not offered. */
   readonly report?: ReactNode;
+  /** The block stands with nothing in it too: the panel the learner opened on my own. */
+  readonly always?: boolean;
 }
 
 export function TutorWords({
@@ -45,10 +47,11 @@ export function TutorWords({
   explaining = false,
   note,
   report,
+  always = false,
 }: TutorWordsProps) {
   const { words } = useLanguage();
   const id = useId();
-  if (text === undefined && failure === undefined && !waiting) return null;
+  if (!always && text === undefined && failure === undefined && !waiting) return null;
   return (
     <section aria-labelledby={id} className="nt-tutor">
       <h2 id={id}>{words.text("task.tutor")}</h2>

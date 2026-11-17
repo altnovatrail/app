@@ -205,6 +205,8 @@ interface Setup {
   ownKey?: boolean;
   /** The screen among a learner's screens, the profile's storage of works on the server on (T62). */
   storage?: boolean;
+  /** On my own, the learner opens the tutor's panel once the screen is up: its words come at Check. */
+  tutor?: boolean;
 }
 
 /** A synthetic own key: no provider issued it. */
@@ -497,6 +499,9 @@ async function renderTask(setup: Setup = {}) {
       </ApiProvider>,
     ),
   );
+  if (setup.tutor === true) {
+    await userEvent.click(await screen.findByRole("button", { name: "Tutor" }));
+  }
   return {
     device,
     holder,
@@ -1021,6 +1026,7 @@ describe("the task screen with handwriting", () => {
       task: SHEET_TASK,
       history: WRITTEN,
       mode: Mode.SELF,
+      tutor: true,
       answer: () => sheetAnswer("not_yet", { value: "5", wrong: 1 }),
       rung: () => ({
         rung: 1,
@@ -1130,6 +1136,7 @@ describe("the task screen with handwriting", () => {
       task: SHEET_TASK,
       history: WRITTEN,
       mode: Mode.SELF,
+      tutor: true,
       answer: () => sheetAnswer("not_yet", { value: "5", wrong: rungs.length + 1 }),
       rung: (request) => ({ rung: request.wrongAnswers, words: "Read the task again.", outcome }),
     });
@@ -1178,6 +1185,7 @@ describe("the task screen with handwriting", () => {
       task: SHEET_TASK,
       history: WRITTEN,
       mode: Mode.SELF,
+      tutor: true,
       // A check whose slot of choice was wrong while the quota left its handwriting unchecked.
       answer: () => ({
         ...sheetAnswer("not_yet", { value: "5", wrong: rungs.length + 1 }),
@@ -1228,6 +1236,7 @@ describe("the task screen with handwriting", () => {
       task: SHEET_TASK,
       history: WRITTEN,
       mode: Mode.SELF,
+      tutor: true,
       answer: solved,
       correct: () => ({ outcome }),
     });
@@ -1246,6 +1255,7 @@ describe("the task screen with handwriting", () => {
       task: SHEET_TASK,
       history: WRITTEN,
       mode: Mode.SELF,
+      tutor: true,
       answer: solved,
       correct: () => ({ outcome }),
     });
@@ -1306,6 +1316,7 @@ describe("the task screen with handwriting", () => {
       task: SHEET_TASK,
       history: WRITTEN,
       mode: Mode.SELF,
+      tutor: true,
       answer: () => ({
         ...sheetAnswer("correct", { value: "7" }),
         solved: { solution: encode(SOLUTION), moduleFormatVersion: "0.4" },
@@ -1393,6 +1404,7 @@ describe("the task screen with handwriting", () => {
       task: SHEET_TASK,
       history: WRITTEN,
       mode: Mode.SELF,
+      tutor: true,
       answer: () => sheetAnswer("not_yet", { value: "5", wrong: rungs.length + 1 }),
       rung: () => {
         throw refusal;
@@ -1401,7 +1413,8 @@ describe("the task screen with handwriting", () => {
     await vi.waitFor(() => expect(check()).toHaveAttribute("aria-disabled", "false"));
     await userEvent.click(check());
     await vi.waitFor(() => expect(rungs.length).toBe(1));
-    expect(screen.queryByRole("complementary", { name: "Tutor" })).toBeNull();
+    // The panel holds its heading and the line that the tutor is an AI, and nothing more.
+    expect(panel().getByRole("region", { name: "Tutor" }).querySelectorAll("p")).toHaveLength(1);
     refusal = refused(Code.FailedPrecondition, Cause.NO_CONSENT);
     await userEvent.click(check());
     expect(await screen.findByText("A grown-up's consent is needed first")).toBeVisible();
@@ -1412,6 +1425,7 @@ describe("the task screen with handwriting", () => {
       task: SHEET_TASK,
       history: WRITTEN,
       mode: Mode.SELF,
+      tutor: true,
       answer: () => sheetAnswer("not_yet", { value: "5", wrong: 1 }),
       rung: () => ({
         rung: 1,
@@ -1439,6 +1453,7 @@ describe("the task screen with handwriting", () => {
       task: SHEET_TASK,
       history: WRITTEN,
       mode: Mode.SELF,
+      tutor: true,
       answer: () => sheetAnswer("not_yet", { value: "5", wrong: 1 }),
       rung: () => {
         throw refused(Code.FailedPrecondition, Cause.ATTEMPT_CLOSED, CloseReason.ABANDONED);
@@ -1474,6 +1489,7 @@ describe("the task screen with handwriting", () => {
       task: SHEET_TASK,
       history: WRITTEN,
       mode: Mode.SELF,
+      tutor: true,
       answer: () => sheetAnswer("not_yet", { value: "5", wrong: 1 }),
       rung: () =>
         new Promise((resolve) => {
@@ -1495,6 +1511,7 @@ describe("the task screen with handwriting", () => {
     let words: () => void = () => {};
     await renderTask({
       mode: Mode.SELF,
+      tutor: true,
       rung: () =>
         new Promise((resolve) => {
           words = () => resolve({ rung: 1, words: "Count the gaps between the rungs." });
@@ -1594,6 +1611,215 @@ describe("the task screen with handwriting", () => {
   });
 });
 
+describe("the tutor's words only while its panel is open (T88)", () => {
+  const tutorButton = () => screen.getByRole("button", { name: "Tutor" });
+  const solvedSheet = () => ({
+    ...sheetAnswer("correct", { value: "7" }),
+    solved: { solution: encode(SOLUTION), moduleFormatVersion: "0.4" },
+  });
+  /** Check on the sheet, and the verdict it gave on screen: what was read under the item. */
+  async function checkSheet(read: string): Promise<void> {
+    await vi.waitFor(() => expect(check()).toHaveAttribute("aria-disabled", "false"));
+    await userEvent.click(check());
+    await screen.findByText(read);
+  }
+
+  it("gives the verdict alone with the panel closed, and asks the words of that submission once it opens", async () => {
+    const { submitted, rungs } = await renderTask({
+      task: SHEET_TASK,
+      history: WRITTEN,
+      mode: Mode.SELF,
+      answer: () => sheetAnswer("not_yet", { value: "5", wrong: 1 }),
+    });
+    await checkSheet("Read: 5");
+    // The verdict does not open the panel, and nothing asks the tutor's words.
+    expect(screen.queryByRole("complementary", { name: "Tutor" })).toBeNull();
+    expect(tutorButton()).toHaveAttribute("aria-expanded", "false");
+    expect(rungs).toHaveLength(0);
+    await userEvent.click(tutorButton());
+    expect(await panel().findByText("Count the gaps between the rungs.")).toBeVisible();
+    expect(rungs).toHaveLength(1);
+    expect(rungs[0]?.wrongAnswers).toBe(1);
+    expect(rungs[0]?.work).toEqual(submitted[0]?.work);
+    expect(rungs[0]?.work?.surface.case).toBe("sheet");
+    // Closed and opened again, the panel shows the words it got, and asks nothing more.
+    await userEvent.click(tutorButton());
+    expect(screen.queryByRole("complementary", { name: "Tutor" })).toBeNull();
+    await userEvent.click(tutorButton());
+    expect(panel().getByText("Count the gaps between the rungs.")).toBeVisible();
+    expect(rungs).toHaveLength(1);
+  });
+
+  it("keeps words that come once the panel closed unsaid and out of sight, with their marks, until it opens", async () => {
+    const speech = fakeSpeech([voice("Samantha", "en-US", { isDefault: true })]);
+    let answer: () => void = () => {};
+    const { rungs } = await renderTask({
+      task: SHEET_TASK,
+      history: WRITTEN,
+      mode: Mode.SELF,
+      tutor: true,
+      voicing: { speech, on: true },
+      answer: () => sheetAnswer("not_yet", { value: "5", wrong: 1 }),
+      rung: () =>
+        new Promise((resolve) => {
+          answer = () =>
+            resolve({
+              rung: 1,
+              words: "How many gaps are there?",
+              marks: [
+                {
+                  kind: MarkKind.FRAME,
+                  place: { case: "cropBox", value: { ymin: 0, xmin: 0, ymax: 1000, xmax: 1000 } },
+                },
+              ],
+            });
+        }),
+    });
+    await checkSheet("Read: 5");
+    await vi.waitFor(() => expect(rungs).toHaveLength(1));
+    // Closed while the words are asked: they come, and the tutor says nothing of them.
+    await userEvent.click(tutorButton());
+    answer();
+    const sheet = document.querySelector("novatrail-canvas") as CanvasElement;
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    expect(speech.texts()).not.toContain("How many gaps are there?");
+    expect(sheet.marks).toBeUndefined();
+    expect(screen.queryByText("The tutor's words came")).toBeNull();
+    await userEvent.click(tutorButton());
+    expect(await panel().findByText("How many gaps are there?")).toBeVisible();
+    await vi.waitFor(() => expect(sheet.marks?.marks).toHaveLength(1));
+    expect(rungs).toHaveLength(1);
+  });
+
+  it("asks the words of the last not yet: a later unreadable leaves it, a later not yet takes its place", async () => {
+    const answers = [
+      sheetAnswer("not_yet", { value: "5", wrong: 1 }),
+      sheetAnswer("unreadable", { reason: "illegible", wrong: 1 }),
+    ];
+    const first = await renderTask({
+      task: SHEET_TASK,
+      history: WRITTEN,
+      mode: Mode.SELF,
+      answer: () => answers.shift() ?? sheetAnswer("not_yet", { value: "6", wrong: 2 }),
+    });
+    await checkSheet("Read: 5");
+    await checkSheet("It can't be made out");
+    await userEvent.click(tutorButton());
+    await vi.waitFor(() => expect(first.rungs).toHaveLength(1));
+    expect(first.rungs[0]?.wrongAnswers).toBe(1);
+    first.unmount();
+    // Two wrong answers with the panel closed: the earlier one gets no words.
+    let wrong = 0;
+    const second = await renderTask({
+      task: SHEET_TASK,
+      history: WRITTEN,
+      mode: Mode.SELF,
+      answer: () => sheetAnswer("not_yet", { value: `${5 + wrong}`, wrong: ++wrong }),
+    });
+    await checkSheet("Read: 5");
+    await checkSheet("Read: 6");
+    expect(second.rungs).toHaveLength(0);
+    await userEvent.click(tutorButton());
+    await vi.waitFor(() => expect(second.rungs).toHaveLength(1));
+    expect(second.rungs[0]?.wrongAnswers).toBe(2);
+  });
+
+  it("opens the panel by Hint after a wrong answer left unasked, and asks its rung's words in place of the hint", async () => {
+    const { rungs, asked } = await renderTask({
+      task: SHEET_TASK,
+      history: WRITTEN,
+      mode: Mode.SELF,
+      answer: () => sheetAnswer("not_yet", { value: "5", wrong: 1 }),
+    });
+    await checkSheet("Read: 5");
+    await userEvent.click(screen.getByRole("button", { name: "Hint" }));
+    expect(await panel().findByText("Count the gaps between the rungs.")).toBeVisible();
+    expect(rungs).toHaveLength(1);
+    expect(asked).not.toContain("hint");
+    expect(tutorButton()).toHaveAttribute("aria-expanded", "true");
+    // Hint again, the panel open: it asks api for the hint, and no words of AI.
+    await userEvent.click(screen.getByRole("button", { name: "Hint" }));
+    await vi.waitFor(() => expect(asked).toContain("hint"));
+    expect(rungs).toHaveLength(1);
+  });
+
+  it("asks the words left unasked when the learner chooses by steps, whose panel is open", async () => {
+    const { rungs } = await renderTask({
+      task: SHEET_TASK,
+      history: WRITTEN,
+      mode: Mode.SELF,
+      answer: () => sheetAnswer("not_yet", { value: "5", wrong: 1 }),
+    });
+    await checkSheet("Read: 5");
+    await userEvent.click(screen.getByRole("button", { name: "Step by step" }));
+    expect(await panel().findByText("Count the gaps between the rungs.")).toBeVisible();
+    expect(rungs).toHaveLength(1);
+    // Back on my own, the panel stays open with the words it holds.
+    await userEvent.click(screen.getByRole("button", { name: "On my own" }));
+    expect(panel().getByText("Count the gaps between the rungs.")).toBeVisible();
+    expect(tutorButton()).toHaveAttribute("aria-expanded", "true");
+  });
+
+  it("asks the words after Correct once the Tutor of its result opens, with its work, then lets the work go", async () => {
+    const { corrects, device } = await renderTask({
+      task: SHEET_TASK,
+      history: WRITTEN,
+      mode: Mode.SELF,
+      answer: solvedSheet,
+      correct: () => ({ words: "The gaps were the key: well found." }),
+    });
+    await vi.waitFor(() => expect(check()).toHaveAttribute("aria-disabled", "false"));
+    await userEvent.click(check());
+    await screen.findByRole("region", { name: "Solution" });
+    const profile = await addProfile(device, "p1");
+    // The work waits on the device for the opening, and no words are asked meanwhile.
+    expect(await profile?.correctWork("a1")).toBeDefined();
+    expect(corrects).toHaveLength(0);
+    expect(screen.queryByText("The gaps were the key: well found.")).toBeNull();
+    await userEvent.click(tutorButton());
+    expect(await panel().findByText("The gaps were the key: well found.")).toBeVisible();
+    expect(corrects).toHaveLength(1);
+    expect(corrects[0]?.work?.surface.case).toBe("sheet");
+    await vi.waitFor(async () => expect(await profile?.correctWork("a1")).toBeUndefined());
+  });
+
+  it("asks nothing once the learner left the screen, and lets the work of Correct go", async () => {
+    const { corrects, rungs, device, unmount } = await renderTask({
+      task: SHEET_TASK,
+      history: WRITTEN,
+      mode: Mode.SELF,
+      answer: solvedSheet,
+    });
+    await vi.waitFor(() => expect(check()).toHaveAttribute("aria-disabled", "false"));
+    await userEvent.click(check());
+    await screen.findByRole("region", { name: "Solution" });
+    const profile = await addProfile(device, "p1");
+    expect(await profile?.correctWork("a1")).toBeDefined();
+    unmount();
+    await vi.waitFor(async () => expect(await profile?.correctWork("a1")).toBeUndefined());
+    expect(corrects).toHaveLength(0);
+    expect(rungs).toHaveLength(0);
+  });
+
+  it("asks no words of a wrong answer left unasked once the solution is shown", async () => {
+    const { rungs, shows } = await renderTask({
+      task: SHEET_TASK,
+      history: WRITTEN,
+      mode: Mode.SELF,
+      adult: true,
+      answer: () => sheetAnswer("not_yet", { value: "5", wrong: 1 }),
+    });
+    await checkSheet("Read: 5");
+    await userEvent.click(screen.getByRole("button", { name: "Show the solution" }));
+    await userEvent.click(screen.getByRole("button", { name: "Show it" }));
+    expect(await screen.findByText("Solution shown", { selector: ".nt-result" })).toBeVisible();
+    expect(shows).toHaveLength(1);
+    await userEvent.click(tutorButton());
+    expect(tutorButton()).toHaveAttribute("aria-expanded", "true");
+    expect(rungs).toHaveLength(0);
+  });
+});
+
 describe("the hint, Explain differently and the solution", () => {
   const hintButton = () => screen.getByRole("button", { name: "Hint" });
 
@@ -1661,7 +1887,7 @@ describe("the hint, Explain differently and the solution", () => {
   });
 
   it("explains the rung differently once, with its wrong answer and its key", async () => {
-    const { explains } = await renderTask({ mode: Mode.SELF });
+    const { explains } = await renderTask({ mode: Mode.SELF, tutor: true });
     await userEvent.click(await screen.findByRole("radio", { name: "4" }));
     await userEvent.click(screen.getByRole("radio", { name: "No" }));
     await userEvent.click(check());
@@ -1781,6 +2007,7 @@ describe("the hint and the solution, against late answers and lost replies", () 
     let n = 0;
     await renderTask({
       mode: Mode.SELF,
+      tutor: true,
       rung: (request) => ({
         rung: request.wrongAnswers ?? 1,
         words: `Rung ${request.wrongAnswers}.`,
@@ -1921,14 +2148,14 @@ describe("Report a problem with the tutor's words (R33)", () => {
   const thanks = `Thank you: the report is sent. It will be reviewed by ${day}`;
 
   it("says the tutor is an AI, and offers a learner who is not an adult no report", async () => {
-    await renderTask({ mode: Mode.SELF });
+    await renderTask({ mode: Mode.SELF, tutor: true });
     await notYet();
     expect(panel().getByText("The tutor is an AI, not a person")).toBeVisible();
     expect(screen.queryByRole("button", { name: "Report a problem" })).toBeNull();
   });
 
   it("reports the words of a rung with its kind, its text and a key, and says by when it is reviewed", async () => {
-    const { reportRequests } = await renderTask({ mode: Mode.SELF, adult: true });
+    const { reportRequests } = await renderTask({ mode: Mode.SELF, tutor: true, adult: true });
     await notYet();
     expect(panel().getByText("The tutor is an AI, not a person")).toBeVisible();
     await userEvent.click(panel().getByRole("button", { name: "Report a problem" }));
@@ -1970,6 +2197,7 @@ describe("Report a problem with the tutor's words (R33)", () => {
   it("repeats a report whose reply was lost with the same key, and api keeps one report", async () => {
     const { reportRequests, reports } = await renderTask({
       mode: Mode.SELF,
+      tutor: true,
       adult: true,
       report: (_, n) => {
         // The first reply lost on the way, which the client repeats itself; the second a failure
@@ -1996,6 +2224,7 @@ describe("Report a problem with the tutor's words (R33)", () => {
   it("gives an edited report a key of its own, after a failure too", async () => {
     const { reportRequests, reports } = await renderTask({
       mode: Mode.SELF,
+      tutor: true,
       adult: true,
       report: (_, n) => {
         if (n === 0) throw new ConnectError("lost", Code.Internal);
@@ -2021,6 +2250,7 @@ describe("Report a problem with the tutor's words (R33)", () => {
     let going = true;
     const { reportRequests } = await renderTask({
       mode: Mode.SELF,
+      tutor: true,
       adult: true,
       report: (_, n) => {
         if (going) throw refused(Code.Unavailable, Cause.STILL_GOING);
@@ -2052,6 +2282,7 @@ describe("Report a problem with the tutor's words (R33)", () => {
   it("reports the words after a correct answer without a rung", async () => {
     const { reportRequests } = await renderTask({
       mode: Mode.SELF,
+      tutor: true,
       adult: true,
       correct: () => ({ words: "Well done: five fruits." }),
     });
@@ -2149,6 +2380,7 @@ describe("Report a problem with the tutor's words (R33)", () => {
     });
     const { reportRequests } = await renderTask({
       mode: Mode.SELF,
+      tutor: true,
       adult: true,
       report: () => gate,
     });
@@ -2170,6 +2402,7 @@ describe("Report a problem with the tutor's words (R33)", () => {
   it("asks Something else for its text, gives the focus back on Cancel, and thanks without a day none came", async () => {
     const { reportRequests } = await renderTask({
       mode: Mode.SELF,
+      tutor: true,
       adult: true,
       reportAnswer: { reportId: "report-1" },
     });
@@ -2201,7 +2434,7 @@ describe("the task screen's voicing", () => {
 
   it("says the verdict and then the tutor's words by itself while the voicing is on", async () => {
     const speech = fakeSpeech([SAMANTHA]);
-    await renderTask({ mode: Mode.SELF, voicing: { speech, on: true } });
+    await renderTask({ mode: Mode.SELF, tutor: true, voicing: { speech, on: true } });
     await userEvent.click(await screen.findByRole("radio", { name: "4" }));
     await userEvent.click(screen.getByRole("radio", { name: "No" }));
     await userEvent.click(check());
@@ -2239,7 +2472,7 @@ describe("the task screen's voicing", () => {
 
   it("says nothing by itself while the voicing is off, and reads the task on a press", async () => {
     const speech = fakeSpeech([SAMANTHA]);
-    await renderTask({ mode: Mode.SELF, voicing: { speech, on: false } });
+    await renderTask({ mode: Mode.SELF, tutor: true, voicing: { speech, on: false } });
     await userEvent.click(await screen.findByRole("button", { name: "Read aloud" }));
     expect(speech.texts()).toEqual([
       "Two apples and three pears are in a bowl.",
@@ -2337,7 +2570,7 @@ describe("the task screen's voicing, once the screen is gone", () => {
 
 describe("the task screen on the owner's own key", () => {
   it("sends no key and no provider on platform AI", async () => {
-    const { submitted, rungs } = await renderTask({ mode: Mode.SELF });
+    const { submitted, rungs } = await renderTask({ mode: Mode.SELF, tutor: true });
     await userEvent.click(await screen.findByRole("radio", { name: "4" }));
     await userEvent.click(screen.getByRole("radio", { name: "No" }));
     await userEvent.click(check());
@@ -2351,6 +2584,7 @@ describe("the task screen on the owner's own key", () => {
   it("names the provider alone with taps, a solution shown and a task begun again", async () => {
     const { submitted, rungs, explains, shows, begun } = await renderTask({
       mode: Mode.SELF,
+      tutor: true,
       adult: true,
       ownKey: true,
     });
@@ -2400,6 +2634,7 @@ describe("the task screen on the owner's own key", () => {
   it("says beside the fallback words of a rung that the key's limit ran out", async () => {
     const { holder } = await renderTask({
       mode: Mode.SELF,
+      tutor: true,
       ownKey: true,
       rung: () => ({
         rung: 1,
@@ -2446,6 +2681,7 @@ describe("the task screen on the owner's own key", () => {
   it("says beside the fallback words of a rung that the owner's own limit ran out, with no time", async () => {
     await renderTask({
       mode: Mode.SELF,
+      tutor: true,
       ownKey: true,
       rung: () => ({
         rung: 1,

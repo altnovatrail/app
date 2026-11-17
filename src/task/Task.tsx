@@ -8,10 +8,15 @@
 // canvas gives, with one idempotency key for the action and the same with every repeat of it; the
 // submission is kept with its context, for the tutor's marks, and while the profile's storage of
 // works is on the work goes to the server by `PutWork`, as it does once more when the attempt
-// closes (T62). "Not yet" asks the words of its rung at once, with the same work, and the marks that
-// come with them go on the canvas (R21). "Correct"
+// closes (T62). The tutor speaks of the work only while its panel is open (the second 2026-11-17
+// amendment to R148 in spec; R21): then "Not yet" asks the words of its rung at once, with the same
+// work, and the marks that come with them go on the canvas, and "Correct" the words after it; with
+// the panel closed the check ends at the verdict, and the panel's opening asks, once, the words of
+// the last submission that gave "not yet" or "correct", with its work, which the screen holds in
+// memory until then. "Correct"
 // closes the attempt: its work on the device goes but the correct one's, which goes with the request
-// of the words after a correct answer and is erased once it ends, and the solution comes. An attempt
+// of the words after a correct answer and is erased once it ends, or once the screen is left with
+// them unasked, and the solution comes. An attempt
 // api closed meanwhile is a screen of its own, and one closed unchecked asks CheckPackages (T21).
 // Hint asks api, with no work and no AI: before the first wrong answer the task's techniques and its
 // leading question, after it the words of the current rung again; "Explain differently" asks the
@@ -450,6 +455,14 @@ interface Sent {
   readonly number: number | undefined;
 }
 
+/**
+ * The last submission whose words were not asked, the tutor's panel closed at its check: after
+ * "not yet", the words of its rung, by its number of wrong answers; after "correct", the words after it.
+ */
+type Unasked =
+  | { readonly reply: "rung"; readonly wrongAnswers: number; readonly of: Sent }
+  | { readonly reply: "correct"; readonly of: Sent };
+
 /** The screen of an attempt read: what the learner does on it, written as it is done. */
 function OpenTask({
   profileId,
@@ -527,6 +540,23 @@ function OpenTask({
   latest.current = { state, solution, filled };
   const mode = modeOf(state, steps);
   const handwriting = !choicesOnly(task);
+  // The tutor's panel: always open by steps, whose steps stand in it; on my own, opened by the
+  // learner — the button "Tutor" or Hint —, and by what the attempt kept of it.
+  const [panel, setPanel] = useState(opened.hint !== undefined || opened.rung !== undefined);
+  const open = mode === "steps" || panel;
+  const isOpen = useRef(open);
+  isOpen.current = open;
+  const unasked = useRef<Unasked | undefined>(undefined);
+  // The screen is left with the words after a correct answer unasked: its work goes.
+  useEffect(
+    () => () => {
+      const waiting = unasked.current;
+      if (waiting?.reply === "correct" && waiting.of.contract !== undefined) {
+        void profile?.wordsCame(attemptId).catch(() => {});
+      }
+    },
+    [profile, attemptId],
+  );
 
   const media = useMemo(() => files.media(opened.digest), [files, opened.digest]);
   // Check blinks on a pause only while it is open.
@@ -542,15 +572,23 @@ function OpenTask({
 
   // The tutor's marks go to the canvas after its task and its history, which React gave it in the
   // render (R36 in spec). Marks it refuses — a box it cannot place — are dropped, not a broken screen.
+  // They are the tutor's: out of sight while its panel is closed, and back once it opens.
   useEffect(() => {
     const canvas = element.current;
     if (canvas === null) return;
     try {
-      canvas.marks = marks;
+      canvas.marks = open ? marks : undefined;
     } catch {
       canvas.marks = undefined;
     }
-  }, [marks]);
+  }, [marks, open]);
+
+  /** What the tutor says by itself: nothing while its panel is closed, the words kept for it. */
+  const tutorSays = useCallback(
+    (phrases: Parameters<typeof auto>[0], after?: object) =>
+      isOpen.current ? auto(phrases, after) : undefined,
+    [auto],
+  );
 
   const save = useCallback(
     (next: StepsState) => {
@@ -634,7 +672,7 @@ function OpenTask({
               setSaid({ text: answer.words, reply: TutorReply.RUNG, rung: answer.rung });
               if (why !== undefined) setWordsFailure(why);
               setWordsCame(true);
-              auto(
+              tutorSays(
                 [
                   { text: answer.words, language: explanation },
                   ...(why === undefined ? [] : [{ text: why, language }]),
@@ -671,7 +709,19 @@ function OpenTask({
           if (asked === checks.current) setWordsWaiting(false);
         });
     },
-    [api, holder, profileId, attemptId, task, words, markName, auto, explanation, language, close],
+    [
+      api,
+      holder,
+      profileId,
+      attemptId,
+      task,
+      words,
+      markName,
+      explanation,
+      language,
+      close,
+      tutorSays,
+    ],
   );
 
   /**
@@ -695,7 +745,7 @@ function OpenTask({
               holder.noteOutcome(profileId, undefined, ai);
               setSaid({ text: answer.words, reply: TutorReply.CORRECT_ANSWER, rung: 0 });
               setWordsCame(true);
-              auto([{ text: answer.words, language: explanation }], verdictSaid.current);
+              tutorSays([{ text: answer.words, language: explanation }], verdictSaid.current);
               return;
             }
             const read = outcomeOf(answer.outcome);
@@ -703,7 +753,7 @@ function OpenTask({
             if (!closesAI(read) || closedAtCheck.current) return;
             const why = outcomeText(read, words);
             setWordsFailure(why);
-            auto([{ text: why, language }], verdictSaid.current);
+            tutorSays([{ text: why, language }], verdictSaid.current);
           },
           () => {},
         )
@@ -711,8 +761,31 @@ function OpenTask({
           if (of.contract !== undefined) void profile?.wordsCame(attemptId).catch(() => {});
         });
     },
-    [api, holder, profileId, attemptId, profile, auto, explanation, words, language],
+    [api, holder, profileId, attemptId, profile, explanation, words, language, tutorSays],
   );
+
+  /** The panel opens: the words of the last submission not asked, once. */
+  const askUnasked = useCallback(() => {
+    const waiting = unasked.current;
+    unasked.current = undefined;
+    if (waiting === undefined) return;
+    if (waiting.reply === "rung") rungWords(waiting.wrongAnswers, waiting.of);
+    else correctWords(waiting.of);
+  }, [rungWords, correctWords]);
+
+  /** The panel opens — the button "Tutor", Hint, the choice of "by steps" —, and asks what it must. */
+  const openPanel = useCallback(() => {
+    // Within the press: the words the opening asks may be said (WebKit; section 3.5).
+    if (unasked.current !== undefined) prime();
+    setPanel(true);
+    askUnasked();
+  }, [prime, askUnasked]);
+
+  /** The button "Tutor", on my own: it opens the panel, or closes it. */
+  const togglePanel = useCallback(() => {
+    if (isOpen.current) setPanel(false);
+    else openPanel();
+  }, [openPanel]);
 
   /** The submission of what the sheet and the options hold now, or the one sent before, again. */
   const submission = useCallback(async (): Promise<Sent | undefined> => {
@@ -799,7 +872,9 @@ function OpenTask({
             // The words of the rung before, and the hint before the first wrong answer, are past.
             setSaid(undefined);
             setHint(undefined);
-            rungWords(answer.wrongAnswers, of);
+            unasked.current = undefined;
+            if (isOpen.current) rungWords(answer.wrongAnswers, of);
+            else unasked.current = { reply: "rung", wrongAnswers: answer.wrongAnswers, of };
           }
         } else {
           over.current = true;
@@ -815,7 +890,9 @@ function OpenTask({
           await onEnded(CloseReason.CORRECT, profile, of.number);
           setSolution(parts);
           comesNext(answer.next);
-          correctWords(of);
+          unasked.current = undefined;
+          if (isOpen.current) correctWords(of);
+          else unasked.current = { reply: "correct", of };
         }
       } catch (reason) {
         setFailure(unlessClosed(reason, close));
@@ -847,6 +924,11 @@ function OpenTask({
   const askHint = useCallback(() => {
     prime();
     setFailure(undefined);
+    // The rung's words of a wrong answer the closed panel left unasked: the opening asks them, by AI
+    // and with the work, and they are the hint (the 2026-11-17 amendment to R82 in spec).
+    const rungUnasked = unasked.current?.reply === "rung";
+    openPanel();
+    if (rungUnasked) return;
     setPending(true);
     void api.attempt
       .getHint({ profileId, attemptId })
@@ -857,7 +939,7 @@ function OpenTask({
             const techniques = answer.hint.value.techniqueIds;
             const question = answer.leadingQuestion === "" ? undefined : answer.leadingQuestion;
             setHint({ techniques, ...(question === undefined ? {} : { question }) });
-            auto(hintPhrases(task, techniques, question, opened.catalog, explanation));
+            tutorSays(hintPhrases(task, techniques, question, opened.catalog, explanation));
           } else if (answer.hint.case === "rung") {
             const { words: text, rung } = answer.hint.value;
             // The words shown again stay the reply they came by — "explain differently" too — and
@@ -866,7 +948,7 @@ function OpenTask({
               before?.text === text ? before : { text, reply: TutorReply.RUNG, rung },
             );
             setWordsCame(true);
-            auto([{ text, language: explanation }]);
+            tutorSays([{ text, language: explanation }]);
           }
         },
         (reason: unknown) => {
@@ -874,7 +956,18 @@ function OpenTask({
         },
       )
       .finally(() => setPending(false));
-  }, [api, profileId, attemptId, prime, auto, task, opened.catalog, explanation, close]);
+  }, [
+    api,
+    profileId,
+    attemptId,
+    prime,
+    openPanel,
+    tutorSays,
+    task,
+    opened.catalog,
+    explanation,
+    close,
+  ]);
 
   /** "Explain differently": the same rung in other words, one call of AI on a rung. */
   const explain = useCallback(() => {
@@ -915,7 +1008,7 @@ function OpenTask({
             // Words of a model came: what the block said of platform AI closed is past.
             setWordsFailure(undefined);
             setWordsCame(true);
-            auto([{ text: answer.words, language: explanation }]);
+            tutorSays([{ text: answer.words, language: explanation }]);
           }
         },
         (reason: unknown) => {
@@ -935,7 +1028,7 @@ function OpenTask({
         },
       )
       .finally(() => setExplaining(false));
-  }, [api, holder, profileId, attemptId, words, prime, auto, explanation, close]);
+  }, [api, holder, profileId, attemptId, words, prime, explanation, close, tutorSays]);
 
   /** "Show the solution": the attempt ends with the solution shown (R82 in spec). */
   const showSolution = useCallback(() => {
@@ -955,6 +1048,7 @@ function OpenTask({
         async (answer) => {
           showKey.current = undefined;
           over.current = true;
+          unasked.current = undefined;
           let parts: readonly open.StatementPart[] = [];
           try {
             if (answer.solved !== undefined) parts = solutionOf(views, answer.solved);
@@ -1011,6 +1105,8 @@ function OpenTask({
       {...(solution === undefined ? {} : { solution })}
       {...(again.failure === undefined ? {} : { againFailure: again.failure })}
       {...(tutorWords === undefined ? {} : { tutorWords })}
+      panelOpen={open}
+      {...(mode === "self" ? { onPanel: togglePanel } : {})}
       {...(adult && said !== undefined && said.text !== ""
         ? {
             report: (
@@ -1027,7 +1123,7 @@ function OpenTask({
       {...(wordsFailure === undefined ? {} : { wordsFailure })}
       wordsWaiting={wordsWaiting}
       {...(outcome === undefined ? {} : { outcome })}
-      wordsCame={wordsCame}
+      wordsCame={wordsCame && open}
       {...(hint === undefined ? {} : { hint })}
       onHint={askHint}
       {...(mayExplain ? { onExplain: explain } : {})}
@@ -1039,7 +1135,15 @@ function OpenTask({
       blink={blink}
       canvasRef={element}
       onHistoryChange={onHistoryChange}
-      onMode={(next: Mode) => save({ ...state, mode: next })}
+      onMode={(next: Mode) => {
+        save({ ...state, mode: next });
+        // By steps the panel is open, its steps in it: the opening asks what was left unasked. Back
+        // on my own, it stays open while it holds the tutor's words or a hint.
+        if (next === "steps" && unasked.current !== undefined) openPanel();
+        if (next === "self" && open && (said !== undefined || hint !== undefined || wordsWaiting)) {
+          setPanel(true);
+        }
+      }}
       onGoTo={(to) => save(goTo(state, to))}
       onTick={(chip) => save(tick(state, chip))}
       onDone={() => save(stepDone(state, steps))}

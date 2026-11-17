@@ -74,7 +74,12 @@ export function EssayScreen(props: EssayScreenProps) {
           </section>
         )
       }
-      speaking={props.feedback !== undefined || props.note !== undefined || props.checking}
+      panel={
+        props.hint !== undefined ||
+        props.feedback !== undefined ||
+        props.note !== undefined ||
+        props.checking
+      }
       tutor={feedback}
       result={
         <>

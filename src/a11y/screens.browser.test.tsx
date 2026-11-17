@@ -197,6 +197,7 @@ function taskScreen(props: Partial<TaskScreenProps> = {}) {
       onHint={() => {}}
       onAgain={() => {}}
       onHome={() => {}}
+      panelOpen
       {...props}
     />
   );
@@ -824,6 +825,14 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
         onShow: () => {},
         showNote: "A grown-up needs to help",
       }),
+  ],
+  [
+    "task screen on my own, the tutor's panel closed",
+    () => taskScreen({ mode: "self", panelOpen: false, onPanel: () => {} }),
+  ],
+  [
+    "task screen on my own, the tutor's panel opened with nothing in it yet",
+    () => taskScreen({ mode: "self", onPanel: () => {} }),
   ],
   [
     "task screen with the words of a rung and Report a problem",

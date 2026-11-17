@@ -242,6 +242,8 @@ function boxesOf(request: SubmitWorkRequest | undefined) {
 /** Checks the work the history holds, once Check is open, and gives what went to api. */
 async function checked(history: readonly HistoryEvent[]) {
   const shown = await renderWorkbook({ history });
+  // On my own the rung's words, and their marks, come only while the tutor's panel is open (T88).
+  await userEvent.click(await screen.findByRole("button", { name: "Tutor" }));
   await vi.waitFor(() => expect(check()).toHaveAttribute("aria-disabled", "false"));
   await userEvent.click(check());
   await vi.waitFor(() => expect(shown.submitted).toHaveLength(1));
