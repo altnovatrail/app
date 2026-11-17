@@ -554,8 +554,11 @@ describe("the forms of the account", () => {
       country: "DE",
       settings: { pseudonym: "Ёжик", interfaceLanguage: "ru" },
     });
+    // No avatar chosen: none is sent, and the profile shows the set's own.
+    expect(asked[0]?.settings?.avatar ?? "").toBe("");
     cause = undefined;
-    expect(await session.createOwnerProfile("Ёжик", "US", "ru")).toBe("done");
+    expect(await session.createOwnerProfile("Ёжик", "US", "ru", "wave")).toBe("done");
+    expect(asked[1]?.settings?.avatar).toBe("wave");
     await settled(session, "choose");
 
     cause = Cause.ALREADY_EXISTS;

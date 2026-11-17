@@ -916,6 +916,784 @@ button.nt-icon-only:where(.nt-grabber) {
   margin-block-end: 0.5rem;
 }
 /*
+ * The way in (R61; section 3.9): the sign-in, the invite code and the statement in the frame of
+ * the mockup's `signin` — from 600 its art at the left, 600 of the reference's 1194, and the step's
+ * column of 380 in the middle of the rest, the way to the legal pages at its foot; below 600 the
+ * art a band of 200 above the first step alone, and one column. The owner's profile and "Who is
+ * learning?" in the frame of `owner` and `who`: the page's colour of the owner with its two glows,
+ * the app's name at the top, a column in the middle.
+ */
+.nt-hidden-label,
+.nt-welcome-corner legend {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+/* A button that reads as a link: the accent as text, no fill. */
+button.nt-link {
+  min-inline-size: 0;
+  padding: 0 0.5rem;
+  border-color: transparent;
+  background: transparent;
+  color: var(--nt-accent-text);
+}
+button.nt-link.nt-quiet {
+  border-radius: 0;
+  color: var(--nt-text-muted);
+  font-weight: 400;
+}
+.nt-lead {
+  margin: 0;
+  color: var(--nt-text-muted);
+  font-size: 0.9375rem;
+  line-height: 1.45;
+}
+main.nt-welcome {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-block-size: 100dvh;
+  padding: 0;
+  background: var(--nt-card);
+}
+.nt-art {
+  position: relative;
+  flex: none;
+  block-size: 12.5rem;
+  overflow: hidden;
+  background-color: #0b1030;
+  background-image:
+    radial-gradient(60% 45% at 18% 22%, rgba(94, 92, 230, 0.95) 0%, rgba(94, 92, 230, 0) 70%),
+    radial-gradient(55% 45% at 88% 32%, rgba(10, 132, 255, 0.75) 0%, rgba(10, 132, 255, 0) 70%),
+    radial-gradient(65% 50% at 58% 98%, rgba(255, 159, 10, 0.85) 0%, rgba(255, 159, 10, 0) 70%),
+    radial-gradient(40% 35% at 6% 88%, rgba(255, 55, 95, 0.6) 0%, rgba(255, 55, 95, 0) 70%);
+  font-size: 1rem;
+}
+.nt-art p {
+  margin: 0;
+}
+.nt-art-brand,
+.nt-art-stop,
+.nt-art-tag {
+  color: var(--nt-on-fill);
+}
+.nt-art-brand {
+  position: absolute;
+  inset-block-start: 1.25rem;
+  inset-inline-start: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  font-size: 1.25rem;
+  font-weight: var(--nt-weight-heading);
+  letter-spacing: -0.3px;
+  line-height: 1.625rem;
+}
+.nt-art-brand svg {
+  inline-size: 1.625rem;
+  block-size: 1.625rem;
+}
+.nt-art-trail,
+.nt-art-stop,
+.nt-art-star {
+  display: none;
+}
+.nt-art-tag {
+  position: absolute;
+  inset-inline: 1rem;
+  inset-block-end: 1.125rem;
+}
+.nt-art-title {
+  font-size: 1.5rem;
+  font-weight: var(--nt-weight-heading);
+  letter-spacing: -0.6px;
+  line-height: 1.15;
+}
+.nt-art-tag > p + p {
+  margin-block-start: 0.375rem;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+.nt-welcome .nt-column {
+  font-size: 1rem;
+  display: flex;
+  flex-direction: column;
+  padding: 1.75rem 1rem 0;
+}
+.nt-art-later {
+  display: none;
+}
+.nt-art-later ~ .nt-column {
+  padding-block-start: 3.5rem;
+}
+.nt-welcome h1 {
+  margin: 0 0 0.625rem;
+  font-size: 2rem;
+  letter-spacing: -0.7px;
+  line-height: 1.12;
+}
+.nt-welcome-mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 3.75rem;
+  block-size: 3.75rem;
+  margin-block-end: 1.5rem;
+  border-radius: 1rem;
+  background: linear-gradient(135deg, #5e5ce6 0%, #0a84ff 55%, #ff9f0a 100%);
+  box-shadow: 0 8px 24px rgba(94, 92, 230, 0.35);
+  color: var(--nt-on-fill);
+  font-size: 2rem;
+}
+button.nt-main.nt-google {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.625rem;
+  margin-block-start: 2rem;
+  background: var(--nt-card);
+  box-shadow:
+    inset 0 0 0 1px #d2d2d7,
+    0 1px 2px rgba(0, 0, 0, 0.04);
+  color: var(--nt-text);
+}
+button.nt-main.nt-google:disabled {
+  background: var(--nt-card);
+  color: var(--nt-text);
+}
+.nt-spin {
+  flex: none;
+  box-sizing: border-box;
+  inline-size: 1.125rem;
+  block-size: 1.125rem;
+  border: 2.5px solid rgba(0, 113, 227, 0.18);
+  border-block-start-color: var(--nt-accent);
+  border-radius: 50%;
+}
+@keyframes nt-spin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .nt-spin {
+    animation: nt-spin 0.8s linear infinite;
+  }
+}
+.nt-welcome-alert {
+  margin-block-start: 1rem;
+}
+.nt-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.625rem;
+  margin: 1.125rem 0 0;
+  padding: 0.75rem 0.875rem;
+  border-radius: var(--nt-radius-main);
+  background: var(--nt-page-owner);
+  color: var(--nt-segmented);
+  font-size: var(--nt-size-caption);
+  line-height: 1.4;
+}
+.nt-note > svg {
+  flex: none;
+  inline-size: 1.125rem;
+  block-size: 1.125rem;
+  color: var(--nt-text-muted);
+}
+.nt-welcome-corner {
+  padding: 1rem 1rem 0;
+}
+.nt-welcome-corner .nt-buttons {
+  margin: 0;
+}
+.nt-welcome-foot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-block-start: auto;
+  padding: 1rem 1rem 1rem;
+  font-size: var(--nt-size-caption);
+}
+.nt-welcome form {
+  display: flex;
+  flex-direction: column;
+}
+.nt-code {
+  margin: 1.75rem 0 0;
+}
+.nt-code input {
+  box-sizing: border-box;
+  inline-size: 100%;
+  block-size: var(--nt-main);
+  padding: 0 0.75rem;
+  border: 0.0625rem solid var(--nt-edge);
+  border-radius: 0.6875rem;
+  background: var(--nt-page-owner);
+  color: var(--nt-text);
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 1.375rem;
+  font-weight: var(--nt-weight-bold);
+  letter-spacing: 0.2em;
+}
+.nt-code .nt-hint {
+  margin-block-start: 0.625rem;
+  font-size: 0.78125rem;
+}
+.nt-code + button.nt-main {
+  margin-block-start: 1.75rem;
+}
+.nt-signed {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  margin: 0.875rem 0 0;
+  color: var(--nt-text-muted);
+  font-size: var(--nt-size-caption);
+}
+.nt-signed > svg {
+  color: #248a3d;
+}
+button.nt-link.nt-back {
+  display: flex;
+  align-items: center;
+  gap: 0.125rem;
+  align-self: flex-start;
+  margin: -0.375rem 0 -0.375rem -0.625rem;
+  padding: 0 0.75rem 0 0.375rem;
+  font-size: 0.9375rem;
+  font-weight: 400;
+}
+.nt-back + h1 {
+  margin-block-start: 1.125rem;
+}
+.nt-ticks {
+  margin-block-start: 1.625rem;
+  padding: 0.25rem 0;
+  border-radius: var(--nt-radius-card);
+  background: var(--nt-page-owner);
+}
+.nt-ticks > .nt-check {
+  margin: 0;
+  padding: 0.25rem 0.875rem 0.25rem 0.25rem;
+  font-size: 0.9375rem;
+  line-height: 1.4;
+}
+.nt-ticks > .nt-check + .nt-check {
+  box-shadow: inset 0 0.5px 0 rgba(0, 0, 0, 0.1);
+}
+.nt-tick-title {
+  font-weight: var(--nt-weight-bold);
+}
+.nt-ticks .nt-hint {
+  margin: 0;
+  font-size: 0.78125rem;
+}
+/* A text's name inline in the checkbox's line, a link in the sentence and wrapping with it. */
+.nt-check a.nt-inline {
+  color: var(--nt-accent-text);
+  text-decoration: none;
+}
+.nt-check a.nt-inline:hover {
+  text-decoration: underline;
+}
+.nt-ticks + .nt-error,
+.nt-ticks ~ .nt-hint {
+  margin-block-start: 0.625rem;
+  font-size: 0.78125rem;
+}
+.nt-welcome form > button.nt-main {
+  margin-block-start: 1.5rem;
+}
+.nt-account-texts {
+  margin-block-start: 2rem;
+}
+.nt-account-texts > div:focus {
+  outline-offset: 0.25rem;
+}
+@media (width >= 600px) {
+  main.nt-welcome {
+    display: grid;
+    grid-template-columns: minmax(0, 600fr) minmax(min(100%, 26rem), 594fr);
+    grid-template-rows: auto 1fr auto;
+    max-inline-size: 74.625rem;
+  }
+  .nt-art,
+  .nt-art-later {
+    display: block;
+    grid-column: 1;
+    grid-row: 1 / -1;
+    block-size: auto;
+    min-block-size: 100dvh;
+  }
+  .nt-art-brand {
+    inset-block-start: 2.25rem;
+    inset-inline-start: 2.5rem;
+  }
+  .nt-art-trail {
+    display: block;
+    position: absolute;
+    inset: 0;
+    inline-size: 100%;
+    block-size: 100%;
+  }
+  .nt-art-trail path {
+    fill: none;
+    stroke: rgba(255, 255, 255, 0.55);
+    stroke-width: 3;
+    stroke-linecap: round;
+    stroke-dasharray: 0 11;
+    vector-effect: non-scaling-stroke;
+  }
+  .nt-art-stop {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    inline-size: 4rem;
+    block-size: 4rem;
+    margin: -2rem 0 0 -2rem;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.16);
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 255, 255, 0.35),
+      0 10px 30px rgba(0, 0, 0, 0.25);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    font-size: 1.375rem;
+    font-weight: var(--nt-weight-bold);
+  }
+  .nt-art-star {
+    position: absolute;
+    inset-inline-start: 78.333%;
+    inset-block-start: 17.986%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    inline-size: 5.25rem;
+    block-size: 5.25rem;
+    margin: -2.625rem 0 0 -2.625rem;
+    border-radius: 50%;
+    background: var(--nt-card);
+    box-shadow:
+      0 0 0 10px rgba(255, 255, 255, 0.18),
+      0 0 60px rgba(255, 214, 10, 0.8);
+    color: #ff9f0a;
+    font-size: 2.5rem;
+  }
+  .nt-art-tag {
+    inset-inline: 2.5rem;
+    inset-block-end: 2.75rem;
+  }
+  .nt-art-title {
+    font-size: 1.875rem;
+  }
+  .nt-art-tag > p + p {
+    font-size: 0.9375rem;
+  }
+  .nt-welcome .nt-column,
+  .nt-art-later ~ .nt-column {
+    grid-column: 2;
+    grid-row: 1 / -1;
+    align-self: center;
+    justify-self: center;
+    box-sizing: border-box;
+    inline-size: min(23.75rem, 100% - 2rem);
+    margin-block: 4.5rem;
+    padding: 0;
+  }
+  .nt-welcome-corner {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+    padding: 1.5rem 1.5rem 0;
+  }
+  .nt-welcome-foot {
+    grid-column: 2;
+    grid-row: 3;
+    padding: 0 1rem 1rem;
+  }
+}
+
+main.nt-profiles {
+  display: flex;
+  flex-direction: column;
+  min-block-size: 100dvh;
+  padding: 0 0 2.125rem;
+  background-color: var(--nt-page-owner);
+  background-image:
+    radial-gradient(70% 55% at 50% 0%, rgba(94, 92, 230, 0.14) 0%, rgba(94, 92, 230, 0) 70%),
+    radial-gradient(40% 40% at 90% 100%, rgba(255, 159, 10, 0.12) 0%, rgba(255, 159, 10, 0) 70%);
+}
+.nt-brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: 1.0625rem;
+  font-weight: var(--nt-weight-heading);
+  letter-spacing: -0.2px;
+  line-height: 1.5rem;
+}
+.nt-brand svg {
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+  color: #5e5ce6;
+}
+.nt-profiles > .nt-brand {
+  padding-block-start: 2.125rem;
+}
+.nt-profiles .nt-column {
+  font-size: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-sizing: border-box;
+  inline-size: 100%;
+  margin: 1.625rem auto 0;
+  padding: 0 1rem 2rem;
+  text-align: center;
+}
+.nt-profiles h1 {
+  margin: 0;
+  font-size: 2rem;
+  letter-spacing: -0.7px;
+  line-height: 1.15;
+}
+.nt-profiles .nt-lead {
+  margin-block-start: 0.5rem;
+}
+.nt-avatar {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--nt-avatar-from) 0%, var(--nt-avatar-to) 100%);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.14);
+  color: var(--nt-on-fill);
+}
+.nt-avatar-large {
+  inline-size: 7.75rem;
+  block-size: 7.75rem;
+}
+.nt-avatar-large > svg {
+  inline-size: 3.375rem;
+  block-size: 3.375rem;
+}
+.nt-avatar-profile {
+  inline-size: 7rem;
+  block-size: 7rem;
+  margin-block-start: 1.625rem;
+}
+.nt-avatar-profile > svg {
+  inline-size: 3.125rem;
+  block-size: 3.125rem;
+}
+.nt-avatar-choice {
+  inline-size: 3rem;
+  block-size: 3rem;
+  box-shadow: none;
+}
+.nt-avatar-choice > svg {
+  inline-size: 1.5rem;
+  block-size: 1.5rem;
+}
+@media (width >= 600px) {
+  dialog.nt-pop.nt-pop-avatars {
+    border-radius: 1.375rem;
+  }
+}
+.nt-avatar-profile + button.nt-link {
+  margin-block-start: 0.625rem;
+  padding: 0 1rem;
+  font-size: 0.9375rem;
+}
+.nt-avatars,
+.nt-choice-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.nt-avatars {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.375rem;
+}
+.nt-avatars .nt-avatar-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  inline-size: 100%;
+  block-size: 5.25rem;
+  padding: 0;
+  border-color: transparent;
+  border-radius: var(--nt-radius-card);
+  background: transparent;
+  color: var(--nt-text);
+  font-size: 1rem;
+  font-weight: 400;
+  text-decoration: none;
+}
+.nt-avatar-option > span:last-child {
+  font-size: 0.78125rem;
+  font-weight: var(--nt-weight-medium);
+}
+.nt-avatars .nt-avatar-option[aria-pressed="true"] {
+  background: var(--nt-accent-tint);
+}
+.nt-avatar-option[aria-pressed="true"] .nt-avatar {
+  box-shadow:
+    0 0 0 3px var(--nt-card),
+    0 0 0 5px var(--nt-accent);
+}
+.nt-choice-list button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  inline-size: 100%;
+  padding: 0 0.625rem;
+  border-color: transparent;
+  border-radius: var(--nt-radius-field);
+  background: transparent;
+  color: var(--nt-text);
+  font-size: 0.9375rem;
+  font-weight: 400;
+  text-align: start;
+  text-decoration: none;
+}
+.nt-choice-list svg {
+  color: var(--nt-accent);
+}
+.nt-profiles form {
+  display: flex;
+  flex-direction: column;
+  align-self: stretch;
+  text-align: start;
+}
+.nt-rows {
+  margin-block-start: 0.875rem;
+  padding: 0.25rem 0;
+  border-radius: var(--nt-radius-card);
+  background: var(--nt-card);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+.nt-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  box-sizing: border-box;
+  block-size: 3.25rem;
+  padding: 0 1rem;
+}
+.nt-rows > .nt-row + .nt-row {
+  box-shadow:
+    inset 1rem 0.5px 0 var(--nt-card),
+    inset 0 0.5px 0 rgba(0, 0, 0, 0.1);
+}
+.nt-row > label,
+.nt-row-name {
+  flex: none;
+  min-inline-size: 4.75rem;
+  font-size: 0.9375rem;
+  font-weight: var(--nt-weight-bold);
+}
+.nt-row > input {
+  flex: 1;
+  min-inline-size: 0;
+  block-size: var(--nt-target);
+  box-sizing: border-box;
+  padding: 0 0.625rem;
+  border: 0.0625rem solid var(--nt-edge);
+  border-radius: var(--nt-radius-field);
+  background: var(--nt-card);
+  color: var(--nt-text);
+  font: inherit;
+  font-size: 1rem;
+}
+button.nt-row {
+  inline-size: 100%;
+  min-block-size: 0;
+  padding: 0 0.75rem 0 1rem;
+  border-color: transparent;
+  border-radius: 0;
+  background: transparent;
+  color: var(--nt-text);
+  font-weight: 400;
+  text-align: start;
+}
+.nt-row-value,
+.nt-row-choose {
+  flex: 1;
+  font-size: 1rem;
+}
+.nt-row-choose {
+  color: var(--nt-accent-text);
+}
+button.nt-row > svg {
+  flex: none;
+  inline-size: 0.875rem;
+  block-size: 0.875rem;
+  color: var(--nt-text-muted);
+}
+.nt-profiles form .nt-hint {
+  margin-block-start: 0.625rem;
+  font-size: 0.78125rem;
+  line-height: 1.4;
+}
+.nt-profiles form > button.nt-main {
+  margin-block-start: 1.375rem;
+}
+.nt-profiles-top {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  grid-template-areas: "adults brand out";
+  align-items: center;
+  padding: 1.5rem 1.5rem 0;
+}
+.nt-profiles-top > :first-child {
+  grid-area: adults;
+  justify-self: start;
+}
+.nt-profiles-top > .nt-brand {
+  grid-area: brand;
+}
+.nt-profiles-top > :last-child {
+  grid-area: out;
+  justify-self: end;
+}
+.nt-profiles-top > button.nt-link {
+  font-weight: 400;
+}
+.nt-profiles-top ~ .nt-column {
+  margin-block-start: 8rem;
+}
+.nt-profiles-top ~ .nt-column h1 {
+  font-size: 2.375rem;
+  letter-spacing: -0.8px;
+}
+.nt-profiles-top ~ .nt-column .nt-lead {
+  font-size: 1rem;
+}
+.nt-learners {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1.375rem 2.125rem;
+  margin: 3.875rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+.nt-learners > li {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  inline-size: 9.375rem;
+}
+.nt-learners > li.nt-learner-add {
+  inline-size: 10.625rem;
+}
+.nt-learners button.nt-learner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  inline-size: 100%;
+  padding: 0;
+  border-color: transparent;
+  border-radius: 0;
+  background: transparent;
+  color: var(--nt-text);
+  font-weight: 400;
+}
+.nt-learners button.nt-learner:disabled {
+  background: transparent;
+  color: var(--nt-text-muted);
+}
+.nt-learner-name {
+  font-size: 1.125rem;
+  font-weight: var(--nt-weight-bold);
+  line-height: 1.2;
+}
+.nt-learner-line {
+  margin: 0.125rem 0 0;
+  color: var(--nt-text-muted);
+  font-size: var(--nt-size-caption);
+  line-height: 1.35;
+}
+.nt-avatar.nt-avatar-add {
+  border: 2px dashed #d1d1d6;
+  background: none;
+  box-shadow: none;
+  color: var(--nt-text-muted);
+  opacity: 0.5;
+}
+.nt-avatar.nt-avatar-add > svg {
+  inline-size: 2.5rem;
+  block-size: 2.5rem;
+}
+.nt-persist {
+  margin-block-start: 2rem;
+}
+.nt-profiles-foot {
+  margin: auto 0 0;
+  padding: 0 1.75rem;
+  color: var(--nt-text-muted);
+  font-size: var(--nt-size-caption);
+  line-height: 1.1;
+  text-align: center;
+}
+@media (width < 600px) {
+  .nt-profiles-top {
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+      "adults out"
+      "brand brand";
+    padding: 1.25rem 0.5rem 0;
+  }
+  .nt-profiles-top > .nt-brand {
+    margin-block-start: 1.75rem;
+  }
+  .nt-profiles-top ~ .nt-column {
+    margin-block-start: 1rem;
+  }
+  .nt-profiles-top ~ .nt-column h1 {
+    font-size: 2rem;
+  }
+  .nt-learners {
+    gap: 1.375rem 1.5rem;
+  }
+  .nt-learners > li.nt-learner-add {
+    inline-size: 9.375rem;
+  }
+}
+@media (width >= 600px) {
+  main.nt-profiles {
+    max-inline-size: none;
+  }
+  .nt-profiles > .nt-brand ~ .nt-column {
+    inline-size: min(26.25rem, 100% - 2rem);
+    padding: 0 0 2rem;
+    margin-block-start: 2.875rem;
+  }
+  .nt-avatars {
+    grid-template-columns: repeat(4, 5.15625rem);
+  }
+  .nt-choice-list {
+    inline-size: 17.125rem;
+  }
+}
+
+/*
  * A disabled button: grey on a grey fill, as an inactive control may be (1.4.3); last, so that it
  * holds over each kind of button above. In forced colours GrayText, which the browser gives only to
  * :disabled, marks one that is aria-disabled too.

@@ -356,11 +356,17 @@ export class Session {
     pseudonym: string,
     country: string,
     language: string,
+    avatar?: string,
   ): Promise<FormResult<"country-not-accepted">> {
     try {
+      // An avatar left unchosen is no field: the profile shows the set's own (R98 in spec).
       await this.options.api.account.createOwnerProfile({
         country,
-        settings: { pseudonym, interfaceLanguage: language },
+        settings: {
+          pseudonym,
+          interfaceLanguage: language,
+          ...(avatar === undefined ? {} : { avatar }),
+        },
       });
     } catch (reason) {
       const failure = parseFailure(reason);

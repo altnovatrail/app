@@ -1,5 +1,5 @@
 // Where a pop-over hangs from its button (section 3.9 of docs/architecture.md): below it and at its
-// left, above it where below has no room, at its right where the left would leave the window, and
+// left, or centred below its middle, above it where below has no room, at its right where the left would leave the window, and
 // inside the window's margin whatever the button's place.
 import { describe, expect, it } from "vitest";
 import { GAP, hang, MARGIN } from "./hang.ts";
@@ -19,6 +19,16 @@ describe("hang", () => {
       top: 56 + GAP,
       origin: "top left",
     });
+  });
+
+  it("hangs centred below the button's middle, growing from the middle of its top, when asked", () => {
+    expect(hang(button(500, 300), 300, 200, VIEW, true)).toEqual({
+      left: 522 - 150,
+      top: 344 + GAP,
+      origin: "top center",
+    });
+    // Centred, still inside the margin.
+    expect(hang(button(0, 300), 300, 200, VIEW, true).left).toBe(MARGIN);
   });
 
   it("hangs at the button's right where its left would leave the window", () => {

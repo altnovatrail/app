@@ -16,12 +16,14 @@ export const APP_NAME = "NovaTrail";
 let current: symbol | undefined;
 
 /** The width of a screen in the tablet's layout. */
-export type ScreenLayout = "column" | "reference" | "canvas";
+export type ScreenLayout = "column" | "reference" | "canvas" | "welcome" | "profiles";
 
 const LAYOUT_CLASS: Readonly<Record<ScreenLayout, string | undefined>> = {
   column: undefined,
   reference: "nt-reference",
   canvas: "nt-canvas",
+  welcome: "nt-welcome",
+  profiles: "nt-profiles",
 };
 
 export interface ScreenProps {
@@ -30,14 +32,30 @@ export interface ScreenProps {
   /**
    * How wide the screen is from 600 CSS px (section 3.9 of docs/architecture.md): `column` a column
    * of reading, `reference` the mockup's frame — the home screen and the sign-in, 1194 px at most —,
-   * and `canvas` the whole window, as a screen with a canvas. Below 600 each is one column.
+   * and `canvas` the whole window, as a screen with a canvas; `welcome` the sign-in's frame, its
+   * art beside the column, and `profiles` the frame of the owner's profile and "Who is learning?",
+   * a column in the middle (R61). Below 600 each is one column.
    */
   readonly layout?: ScreenLayout;
+  /** What stands in the frame before the heading's column: the sign-in's art, the app's name. */
+  readonly before?: ReactNode;
+  /** What stands in the column above the heading, drawn: the sign-in's mark. */
+  readonly lead?: ReactNode;
+  /** What stands in the frame after the column: the way to the legal pages, at the frame's foot. */
+  readonly after?: ReactNode;
   /** The heading in place of the title's plain text: a module's text with its own `lang`. */
   readonly heading?: ReactNode;
 }
 
-export function Screen({ title, children, layout = "column", heading: shown }: ScreenProps) {
+export function Screen({
+  title,
+  children,
+  layout = "column",
+  heading: shown,
+  before,
+  lead,
+  after,
+}: ScreenProps) {
   const { language, words } = useLanguage();
   const heading = useRef<HTMLHeadingElement>(null);
   const token = useRef(Symbol("screen"));
@@ -52,12 +70,29 @@ export function Screen({ title, children, layout = "column", heading: shown }: S
     current = token.current;
   }, []);
 
-  return (
-    <main lang={language} className={LAYOUT_CLASS[layout]}>
+  const content = (
+    <>
       <h1 ref={heading} tabIndex={-1}>
         {shown ?? title}
       </h1>
       {children}
+    </>
+  );
+  const framed = before !== undefined || lead !== undefined || after !== undefined;
+  return (
+    <main lang={language} className={LAYOUT_CLASS[layout]}>
+      {framed ? (
+        <>
+          {before}
+          <div className="nt-column">
+            {lead}
+            {content}
+          </div>
+          {after}
+        </>
+      ) : (
+        content
+      )}
     </main>
   );
 }

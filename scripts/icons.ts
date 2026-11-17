@@ -57,6 +57,24 @@ export const TABLE: Readonly<Record<string, Value>> = {
   // Help, filled while its pop-over is open; the tutor's button, a bubble of words.
   help: { base: "help", filled: true, mirrored: false },
   tutor: { base: "sms", filled: false, mirrored: false },
+  // The way into the app (section 3.10 of docs/architecture.md; R61): the line for grown-ups on the
+  // sign-in, a group; "Signed in with Google" and the country chosen, a tick; the row that opens the
+  // countries, a chevron that points on; "Add a learner", a plus.
+  grown: { base: "group", filled: false, mirrored: false },
+  ticked: { base: "check", filled: false, mirrored: false },
+  more: { base: "chevron-right", filled: false, mirrored: true },
+  add: { base: "add", filled: false, mirrored: false },
+  // The pictures of the set of avatars, each in outline, white on its gradient
+  // (src/account/avatars.ts; R61): a mountain, a rocket, a leaf, a star, the moon, waves, the sun
+  // and a bolt.
+  "avatar-peak": { base: "landscape", filled: false, mirrored: false },
+  "avatar-rocket": { base: "rocket-launch", filled: false, mirrored: false },
+  "avatar-leaf": { base: "eco", filled: false, mirrored: false },
+  "avatar-star": { base: "star", filled: false, mirrored: false },
+  "avatar-moon": { base: "dark-mode", filled: false, mirrored: false },
+  "avatar-wave": { base: "waves", filled: false, mirrored: false },
+  "avatar-sun": { base: "sunny", filled: false, mirrored: false },
+  "avatar-bolt": { base: "bolt", filled: false, mirrored: false },
 };
 
 /** An icon as the app draws it: its view box, and the paths it fills in the text's colour. */

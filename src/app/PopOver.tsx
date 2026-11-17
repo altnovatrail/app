@@ -3,7 +3,14 @@
 // button and grows from the button's corner; below 600 it is a sheet from the bottom with a button
 // "Close", ×, which shows its icon alone (R60). It is a modal <dialog>: the rest of the page is inert while it is open, Escape and a tap
 // outside it close it, the focus goes into it, and comes back to its button when it closes.
-import { type ReactNode, useCallback, useLayoutEffect, useRef, useState } from "react";
+import {
+  type ReactNode,
+  type RefObject,
+  useCallback,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { hang } from "./hang.ts";
 import { IconButton } from "./IconButton.tsx";
 
@@ -14,15 +21,38 @@ const FOCUSABLE =
 export interface PopOverProps {
   /** The words of the button, which name the pop-over too, as the mockup's do. */
   readonly label: string;
+  /**
+   * What the button shows in place of the label, whose text is then its name: a row of a form with
+   * its field's name and value, as the owner's country.
+   */
+  readonly caption?: ReactNode;
   /** The button's class, as `nt-secondary`. */
   readonly className?: string;
+  /** The button, for a form that puts the focus on it. */
+  readonly buttonRef?: RefObject<HTMLButtonElement | null>;
+  /** What describes the button: the ID of a hint or an error. */
+  readonly describedBy?: string | undefined;
+  /** Hung below the middle of its button, from 600 CSS px, not from its edge. */
+  readonly centred?: boolean;
+  /** The pop-over's own class, beside `nt-pop`: a look of its own, as the avatars'. */
+  readonly popClassName?: string;
   /** What the pop-over holds; given `close`, a choice can close it once it is made. */
   readonly children: ReactNode | ((close: () => void) => ReactNode);
 }
 
-export function PopOver({ label, className, children }: PopOverProps) {
+export function PopOver({
+  label,
+  caption,
+  className,
+  buttonRef,
+  describedBy,
+  centred = false,
+  popClassName,
+  children,
+}: PopOverProps) {
   const [open, setOpen] = useState(false);
-  const button = useRef<HTMLButtonElement>(null);
+  const own = useRef<HTMLButtonElement>(null);
+  const button = buttonRef ?? own;
   const dialog = useRef<HTMLDialogElement>(null);
   const content = useRef<HTMLDivElement>(null);
   const close = useCallback(() => setOpen(false), []);
@@ -35,10 +65,16 @@ export function PopOver({ label, className, children }: PopOverProps) {
     const place = (event?: Event) => {
       const from = button.current;
       if (from === null || (event?.target instanceof Node && shown.contains(event.target))) return;
-      const at = hang(from.getBoundingClientRect(), shown.offsetWidth, shown.offsetHeight, {
-        width: document.documentElement.clientWidth,
-        height: document.documentElement.clientHeight,
-      });
+      const at = hang(
+        from.getBoundingClientRect(),
+        shown.offsetWidth,
+        shown.offsetHeight,
+        {
+          width: document.documentElement.clientWidth,
+          height: document.documentElement.clientHeight,
+        },
+        centred,
+      );
       shown.style.setProperty("--nt-pop-left", `${at.left}px`);
       shown.style.setProperty("--nt-pop-top", `${at.top}px`);
       shown.style.setProperty("--nt-pop-origin", at.origin);
@@ -81,7 +117,7 @@ export function PopOver({ label, className, children }: PopOverProps) {
       // back: the button takes it, while it is still on the page.
       if (button.current?.isConnected === true) button.current.focus();
     };
-  }, [open, close]);
+  }, [open, close, centred, button]);
 
   return (
     <>
@@ -89,16 +125,17 @@ export function PopOver({ label, className, children }: PopOverProps) {
         ref={button}
         type="button"
         className={className}
+        aria-describedby={describedBy}
         aria-haspopup="dialog"
         aria-expanded={open}
         onClick={() => setOpen((was) => !was)}
       >
-        {label}
+        {caption ?? label}
       </button>
       {open ? (
         <dialog
           ref={dialog}
-          className="nt-pop nt-glass nt-glass-panel"
+          className={`nt-pop nt-glass nt-glass-panel${popClassName === undefined ? "" : ` ${popClassName}`}`}
           aria-label={label}
           onCancel={(event) => {
             event.preventDefault();

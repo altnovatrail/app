@@ -4,18 +4,29 @@
 // screen whose task of epic E5 has not come yet: its differences are reported in mockup/out/ and
 // not held. Once that task has brought it to the mockup, `until` goes, and every difference but
 // those a region's `differs` names fails the test.
-import { render, waitFor } from "@testing-library/react";
+import { ProfileSchema } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
+import {
+  LegalService,
+  LegalTextSchema,
+} from "@altnovatrail/contracts/novatrail/api/v1/legal_pb.js";
+import { create } from "@bufbuild/protobuf";
+import { render, screen, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { describe, expect, it } from "vitest";
-import { commands, page } from "vitest/browser";
+import { commands, page, userEvent } from "vitest/browser";
 import "@altnovatrail/canvas";
 import "../src/theme/theme.css";
+import { ChooseScreen } from "../src/account/ChooseScreen.tsx";
+import { InviteScreen, type TextsRead } from "../src/account/InviteScreen.tsx";
+import { OwnerProfileScreen } from "../src/account/OwnerProfileScreen.tsx";
+import { ApiProvider } from "../src/api/ApiContext.tsx";
 import { Example } from "../src/lesson/Example.tsx";
 import { ContinueButton, LessonScreen } from "../src/lesson/LessonScreen.tsx";
 import { SignInScreen } from "../src/signin/SignInScreen.tsx";
 import { NO_VERDICTS } from "../src/task/attempt.ts";
 import { initialState } from "../src/task/steps.ts";
 import { TaskScreen } from "../src/task/TaskScreen.tsx";
+import { routedApi } from "../src/test/api.ts";
 import { inLanguage } from "../src/test/language.tsx";
 import { type Device, type Difference, type Region, SIZES } from "./regions.ts";
 
@@ -159,36 +170,338 @@ const BAR: readonly Region[] = [
   },
 ];
 
-const SCREENS: readonly Compared[] = [
+/** The privacy policy and the terms of use in force, synthetic, as the agreement's step reads them. */
+const ACCOUNT_TEXTS: TextsRead = {
+  status: "done",
+  value: {
+    texts: (["privacy-policy", "terms-of-use"] as const).map((id) =>
+      create(LegalTextSchema, {
+        id,
+        version: 1,
+        inForceSince: "2026-11-11",
+        body: "# A text\n\nIts words.\n",
+        summary: "In short, its words.",
+        summaryLanguage: "en",
+      }),
+    ),
+    next: [],
+  },
+  retry: () => {},
+};
+
+/** The way in: the sign-in, and nothing comes of Google's window. */
+function signIn() {
+  return inLanguage(<SignInScreen onSignIn={() => new Promise(() => {})} onLegal={() => {}} />);
+}
+
+/** The invite code, and nothing comes of "Create account". */
+function invite() {
+  return inLanguage(
+    <InviteScreen
+      texts={ACCOUNT_TEXTS}
+      onCreate={() => new Promise(() => {})}
+      onLegal={() => {}}
+    />,
+  );
+}
+
+/** The owner's profile, and nothing comes of "Continue". */
+function owner() {
+  return inLanguage(<OwnerProfileScreen onCreate={() => new Promise(() => {})} />);
+}
+
+/** api by the routing transport: no legal text has a next version. */
+const NO_NEXT = routedApi((router) => router.service(LegalService, { getLegalTexts: () => ({}) }));
+
+/** A synthetic code, typed. */
+async function codeTyped() {
+  await userEvent.type(screen.getByRole("textbox", { name: "Invite code" }), "NOVA2026");
+}
+
+/** The code typed and taken on to the statement and the texts. */
+async function agreeing() {
+  await codeTyped();
+  await userEvent.click(screen.getByRole("button", { name: "Continue" }));
+  await screen.findByRole("heading", { name: "Create your account" });
+}
+
+/**
+ * Why the column of the way in stands elsewhere than the mockup has it: it stands in the middle of
+ * the frame's height, as the mockup's, but its heading keeps the words of the terms of section 3.8
+ * — one line where the mockup's has two —, the code's step has no "Back", which in the mockup signs
+ * out, and the statement's texts stand in place below it (R27; R46), so the column is of another
+ * height (R61).
+ */
+const CENTRED =
+  "the headings' words of section 3.8, no Back from the code, the texts in place below (R27; R46; R61)";
+
+/** The way to the legal pages: one button that names them all (R31), not the mockup's two. */
+const LEGAL_WAY: Region = {
+  name: "the way to the legal texts",
+  mockup: { css: '.ph-signfoot button:text-is("Privacy Policy")' },
+  app: { role: "button", name: "Privacy and legal information" },
+  followsText: "centre",
+  differs: { what: ["x", "font-weight"], by: "one button to the legal pages (R31)" },
+};
+
+/** The art of the way in, at the left from 600 and a band on the phone's first step. */
+const ART: Region = {
+  name: "the art",
+  mockup: { css: ".ph-art" },
+  app: { css: ".nt-art" },
+};
+
+/** The art on the steps after the sign-in: at the left from 600, and none on the phone. */
+const ART_LATER: Region = {
+  ...ART,
+  differs: { what: ["missing"], by: "the art is a band above the sign-in alone on a phone" },
+};
+
+/** The disabled or enabled primary button of a step, and what stands above it in the column. */
+function primary(mockup: string, app: string): Region {
+  return {
+    name: `the primary button, ${app}`,
+    mockup: { role: "button", name: mockup },
+    app: { role: "button", name: app },
+    differs: { what: ["y"], by: CENTRED },
+  };
+}
+
+const SIGN_IN: readonly Region[] = [
+  ART,
+  {
+    name: "the heading",
+    mockup: { text: "Learn anything" },
+    app: { role: "heading", name: "Sign in" },
+    followsText: "start",
+    differs: { what: ["y", "height"], by: CENTRED },
+  },
+  {
+    name: "the line for grown-ups",
+    mockup: { css: 'div:has(> span:text("Accounts are for grown-ups"))' },
+    app: { css: ".nt-note" },
+    differs: { what: ["y"], by: CENTRED },
+  },
+  LEGAL_WAY,
+];
+
+const CODE: Region = {
+  name: "the code",
+  mockup: { role: "button", name: "Invite code" },
+  app: { role: "textbox", name: "Invite code" },
+  // Eight boxes in the mockup, one field here, whose edge is the one «Contrast» asks of a field.
+  differs: {
+    what: ["y", "width", "border", "radius", "font-size"],
+    by: `${CENTRED}; one field, its edge by «Contrast»`,
+  },
+};
+
+const AGREE: readonly Region[] = [
+  ART_LATER,
+  {
+    name: "Back",
+    mockup: { css: '.ph-signcol button:text-is("Back")' },
+    app: { role: "button", name: "Back" },
+    followsText: "start",
+    contrast: [{ property: "colour", mockup: "#0071e3", app: "#0066cc" }],
+    differs: { what: ["y"], by: CENTRED },
+  },
+  {
+    name: "the ticks",
+    mockup: { css: 'div:has(> button[role="checkbox"]):has(> div > button[role="checkbox"])' },
+    app: { css: ".nt-ticks" },
+    differs: { what: ["y", "height"], by: `${CENTRED}; the browser's own checkbox, 44 high (R61)` },
+  },
+  LEGAL_WAY,
+];
+
+/** The owner's column: its heading, the avatar, its button, the card of the fields. */
+const OWNER: readonly Region[] = [
+  {
+    name: "the heading",
+    mockup: { css: ".ph-owncol > div:first-child" },
+    app: { role: "heading", name: "Your learner profile" },
+    followsText: "centre",
+  },
+  {
+    name: "the avatar",
+    mockup: { css: 'span:has(> svg[width="50"])' },
+    app: { css: ".nt-avatar-profile" },
+  },
+  {
+    name: "the fields",
+    mockup: { css: "div:has(> label)" },
+    app: { css: ".nt-rows" },
+  },
+];
+
+/** Why the avatars stand lower: 12 below their button, and the phone's sheet with its × (R59; R60). */
+const AVATARS_HUNG = "the pop-over 12 below its button, the phone's sheet with its × (R59; R60)";
+
+const WAY_IN: readonly Compared[] = [
   {
     state: "signin",
-    until: "T81",
-    draw: () =>
-      inLanguage(<SignInScreen onSignIn={async () => ({ kind: "closed" })} onLegal={() => {}} />),
+    draw: signIn,
+    regions: [...SIGN_IN, primary("Continue with Google", "Sign in with Google")],
+  },
+  {
+    state: "signin-signing",
+    draw: signIn,
+    settle: () => userEvent.click(screen.getByRole("button", { name: "Sign in with Google" })),
+    regions: [...SIGN_IN, primary("Signing in with Google…", "Signing in with Google…")],
+  },
+  {
+    state: "invite",
+    draw: invite,
+    regions: [ART_LATER, CODE, primary("Continue", "Continue"), LEGAL_WAY],
+  },
+  {
+    state: "invite-filled",
+    draw: invite,
+    settle: codeTyped,
+    regions: [ART_LATER, CODE, primary("Continue", "Continue"), LEGAL_WAY],
+  },
+  {
+    state: "agree",
+    draw: invite,
+    settle: agreeing,
+    regions: [...AGREE, primary("Create account", "Create account")],
+  },
+  {
+    state: "agree-ticked",
+    draw: invite,
+    settle: async () => {
+      await agreeing();
+      await userEvent.click(screen.getByRole("checkbox", { name: "I am 18 or older" }));
+      await userEvent.click(
+        screen.getByRole("checkbox", { name: "I accept the Privacy Policy and the Terms of Use" }),
+      );
+    },
+    regions: [...AGREE, primary("Create account", "Create account")],
+  },
+  {
+    state: "owner",
+    draw: owner,
     regions: [
+      ...OWNER,
       {
-        name: "the heading",
-        mockup: { text: "Learn anything" },
-        app: { role: "heading", name: "Sign in" },
-      },
-      {
-        name: "the primary button",
-        mockup: { role: "button", name: "Continue with Google" },
-        app: { role: "button", name: "Sign in with Google" },
-      },
-      {
-        name: "the line for grown-ups",
-        mockup: { text: "Accounts are for grown-ups" },
-        app: { text: "Accounts are for grown-ups" },
-      },
-      {
-        name: "the way to the legal texts",
-        mockup: { role: "button", name: "Privacy Policy" },
-        app: { role: "button", name: "Privacy and legal information" },
-        followsText: "start",
+        name: "Continue",
+        mockup: { role: "button", name: "Continue" },
+        app: { role: "button", name: "Continue" },
       },
     ],
   },
+  {
+    state: "owner-avatars",
+    draw: owner,
+    settle: () => userEvent.click(screen.getByRole("button", { name: "Choose an avatar" })),
+    regions: [
+      ...OWNER,
+      {
+        name: "the avatars",
+        mockup: { role: "radiogroup", name: "Avatar" },
+        app: { role: "dialog", name: "Choose an avatar" },
+        differs: { what: ["y", "height"], by: AVATARS_HUNG },
+      },
+      {
+        name: "the first avatar",
+        mockup: { role: "radio", name: "Peak" },
+        app: { role: "button", name: "Peak" },
+        differs: { what: ["y"], by: AVATARS_HUNG },
+      },
+    ],
+  },
+  {
+    state: "owner-countries",
+    draw: owner,
+    settle: () => userEvent.click(screen.getByRole("button", { name: "Country Choose a country" })),
+    regions: [
+      ...OWNER,
+      {
+        name: "the countries",
+        mockup: { role: "listbox", name: "Country" },
+        app: { role: "dialog", name: "Country" },
+        differs: {
+          what: ["x", "y", "height"],
+          by: "every country of the part consent-age/, not the mockup's five, hung from the row («Where it differs»)",
+        },
+      },
+    ],
+  },
+  {
+    state: "owner-filled",
+    draw: owner,
+    settle: async () => {
+      await userEvent.type(screen.getByRole("textbox", { name: "Pseudonym" }), "Sam");
+      await userEvent.click(screen.getByRole("button", { name: "Choose an avatar" }));
+      await userEvent.click(screen.getByRole("button", { name: "Wave" }));
+      await userEvent.click(screen.getByRole("button", { name: "Country Choose a country" }));
+      await userEvent.click(screen.getByRole("button", { name: "United States" }));
+    },
+    regions: [
+      ...OWNER,
+      {
+        name: "Continue",
+        mockup: { role: "button", name: "Continue" },
+        app: { role: "button", name: "Continue" },
+      },
+    ],
+  },
+  {
+    state: "who",
+    draw: () =>
+      inLanguage(
+        <ApiProvider value={NO_NEXT}>
+          <ChooseScreen
+            profiles={[
+              create(ProfileSchema, {
+                profileId: "p1",
+                owner: true,
+                pseudonym: "Sam",
+                avatar: "wave",
+              }),
+            ]}
+            first={false}
+            onChoose={() => {}}
+            onSignOut={() => {}}
+            onLegal={() => {}}
+          />
+        </ApiProvider>,
+      ),
+    regions: [
+      {
+        name: "the heading",
+        mockup: { text: "Who’s learning?" },
+        app: { role: "heading", name: "Who is learning?" },
+        followsText: "centre",
+      },
+      {
+        name: "Sign out",
+        mockup: { role: "button", name: "Sign out" },
+        app: { role: "button", name: "Sign out" },
+        followsText: "end",
+      },
+      {
+        name: "the owner's profile",
+        mockup: { css: "button.pf:not(.ph-addp)" },
+        app: { css: ".nt-learners > li:first-child" },
+      },
+      {
+        name: "Add a learner",
+        mockup: { css: "button.ph-addp" },
+        app: { css: ".nt-learner-add" },
+      },
+      {
+        name: "the line at the foot",
+        mockup: { text: "Each learner has a made-up name" },
+        app: { text: "Each learner has a made-up name" },
+      },
+    ],
+  },
+];
+
+const SCREENS: readonly Compared[] = [
+  ...WAY_IN,
   ...(["task-pill", "task-empty"] as const).map((state) => ({
     state,
     draw: sheetTask,
