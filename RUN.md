@@ -1,6 +1,6 @@
 # RUN.md — work plan of app
 
-What app does, does not do and has still to decide — [docs/architecture.md](docs/architecture.md); why — [docs/decisions.md](docs/decisions.md). The platform is in `spec/`, a submodule at tag v0.18.4: the component's card — architecture 3.1 spec; the order of repositories — repositories 6 spec; learners' data and law — privacy spec; the platform's decisions — spec's log. Small tasks, one at a time, each reviewed by the author; only the current epic is in detail (R19 spec). Other tables, each a file opening with its rules (R153 spec): 2, epics for later — [run/EPICS.md](run/EPICS.md); 3, questions to the author — [run/QUESTIONS.md](run/QUESTIONS.md); 4, debt — [run/DEBT.md](run/DEBT.md). Open tasks outside an epic — [run/TASKS.md](run/TASKS.md) (R155 spec). «Как пользоваться» in older texts is Rules, «Как устроен план: эпики» is Epics, and «таблица 2, 3, 4» names the file above (R50).
+What app does, does not do and has still to decide — [docs/architecture.md](docs/architecture.md); why — [docs/decisions.md](docs/decisions.md). The platform is in `spec/`, a submodule at tag v0.18.6: the component's card — architecture 3.1 spec; the order of repositories — repositories 6 spec; learners' data and law — privacy spec; the platform's decisions — spec's log. Small tasks, one at a time, each reviewed by the author; only the current epic is in detail (R19 spec). Other tables, each a file opening with its rules (R153 spec): 2, epics for later — [run/EPICS.md](run/EPICS.md); 3, questions to the author — [run/QUESTIONS.md](run/QUESTIONS.md); 4, debt — [run/DEBT.md](run/DEBT.md). Open tasks outside an epic — [run/TASKS.md](run/TASKS.md) (R155 spec). «Как пользоваться» in older texts is Rules, «Как устроен план: эпики» is Epics, and «таблица 2, 3, 4» names the file above (R50).
 
 Language (R154 spec): rules and tables in English, terse, for the session; the bodies of tasks in table 1 and in `run/TASKS.md` in Russian — the author writes and reviews them.
 
@@ -97,6 +97,7 @@ A task starts with «Выполни задачу T01 из RUN.md» in a new sess
 | [x] | T67 | Скорость CI: строка 7.22 | Claude | — | — |
 | [x] | T68 | Скорость CI: WebKit и Firefox своей проверкой — строка 7.22 | Claude | — | T67 |
 | [x] | T69 | Скорость CI: переход на `spec` со стадией `toolchain-core` — строка 7.22 | Claude | — | T68 |
+| [x] | T70 | Переход на тег `spec` v0.18.6 | Claude | — | — |
 
 «Зависит от» names only tasks of this plan. What a task waits for from other repositories is its body's «Ждёт»: it is taken once the neighbour has done that, and until then the queue goes on.
 
@@ -104,7 +105,7 @@ A code task ends with the checks of rule 6: the recipes `ci-lint`, `ci-test`, `c
 
 **Почему такой порядок.**
 - T47 и T48 ждут соседей: сочинения и тетрадь — их допуска в `api`. Их порядок — тот, в каком соседи их откроют.
-- T62 ждёт `canvas`: картинку работы для `PutWork` рисует канва, а её метода ещё нет (В66).
+- T62 ждёт `canvas`: картинку работы для `PutWork` рисует канва, а её метода ещё нет — строка 5.14 [COORDINATION.md](spec/COORDINATION.md), ответ `spec` на В66 (T172 spec).
 - T52 — итог эпика, когда сделано остальное.
 
 ## Epic E3. Первый срез со взрослыми учениками
@@ -187,7 +188,7 @@ A code task ends with the checks of rule 6: the recipes `ci-lint`, `ci-test`, `c
   - **картинку работы рисует канва.** `StoredWork.picture` — «the PNG of the strokes the surface shows at the end, as the device draws it», и `api` проверяет её подпись PNG (`work.proto`). Канва 0.3.15 её не даёт, и релизы до v0.3.18 тоже: `exportPNG()` убрала R27 canvas, а `exportWork()` даёт вырезку на проверку, на тетради — вырезки окошек. Рисует тот же, кто рисует лист и вырезку, — вопрос «в реестр spec» В66. Отвергнуто: `app` рисует сам по `replay(history)` — второй рисунок той же работы, не такой, как лист; вырезка последней сдачи — не то, что называет контракт: на тетради это не одна картинка, а до первой сдачи слать нечего;
   - **объём — только `PutWork`.** Список работ на сервере и стирание по одной, `ListWorks` и `DeleteWork`, — Д26; продолжение открытой попытки с работой другого устройства, `GetWork`, — Д27;
   - **предупреждение — по работам.** «Это устройство» снимает его у профиля, только когда хранение включено и последняя `PutWork` каждой работы профиля на устройстве прошла. Работа больше 4 МиБ, отказ и сбой сети предупреждение оставляют. Отвергнуто: по профилю, как предлагала строка Д16, — тогда работа, что не дошла до сервера, лежала бы только здесь без предупреждения (R113 spec).
-- **Ждёт:** релиза `canvas` с методом картинки работы — В66.
+- **Ждёт:** релиза `canvas` с методом картинки работы по строке 5.14 [COORDINATION.md](spec/COORDINATION.md): так `spec` ответил на В66 решением автора 2026-11-16 в T172 spec, и architecture 3.2 spec называет метод; строка В66 закрыта переходом на v0.18.6 (T70).
 - **Сделать:**
   - клиент `WorkService` в `src/api/client.ts`, рядом с прочими службами;
   - `PutWork` — пока `Profile.work_storage` включено, когда `app` пишет работу на устройство: на каждой сдаче и когда попытка закрывается (`work.proto`). `StoredWork` — `attempt_id`, история письма — JSON её массива в UTF-8, сдачи — JSON контекста каждой и `history_length`, по порядку, — и картинка от канвы, без `kind` и `stored_at`. Размер — сумма байтов истории, контекстов и картинки: больше 4 194 304 байт работа не уходит и остаётся только на устройстве;
@@ -205,7 +206,7 @@ A code task ends with the checks of rule 6: the recipes `ci-lint`, `ci-test`, `c
   - тесты в Node: форма `StoredWork`, предел 4 МиБ, каждый ответ и `unimplemented`, включение и выключение хранения;
   - тест в браузере: картинка канвы начинается с подписи PNG, и работа с ней проходит ту проверку формы, что делает `api`;
   - участок `just walk` с включённым хранением на локальном `api`: `PutWork` прошла, а на «Это устройство» нет предупреждения.
-- **Разделы:** R16, R30, R40, R45; [docs/architecture.md](docs/architecture.md), разделы 3.2 и 3.10; R113 spec и её поправка 2026-11-13; [текст контрактов](spec/contracts/README.md), раздел 15; R27 canvas; R70 api; Д16, Д26, Д27, В66.
+- **Разделы:** R16, R30, R40, R45; [docs/architecture.md](docs/architecture.md), разделы 3.2 и 3.10; R113 spec и её поправка 2026-11-13; [текст контрактов](spec/contracts/README.md), раздел 15; R27 canvas; R70 api; Д16, Д26, Д27; строка 5.14 COORDINATION.md spec, architecture 3.2 spec.
 
 #### T52. Итог E3
 

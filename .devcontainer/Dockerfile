@@ -108,9 +108,10 @@ ENV PATH="/usr/local/node/bin:/usr/local/go/bin:/home/vscode/.local/bin:${PATH}"
 
 # -- toolchain: the core, plus what the repository's tests need ---------------
 #
-# spec's tests need nothing the core lacks, so here the stage adds nothing. A copy's kind adds its
-# lines at the end of this stage (repo-template/kinds.json): what they install, a release never
-# builds.
+# What the repository's tests need beyond the core: in spec, nothing; in a copy, the lines its kind
+# adds at the end of this stage, if it adds any. What they install, a release never builds, and
+# neither do the checks that run no browser: what the release and those ci- recipes call belongs in
+# toolchain-core.
 
 FROM toolchain-core AS toolchain
 
@@ -152,7 +153,7 @@ ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 # apt reads the snapshot alone, from a source of its own that names the snapshot in its URI, with
 # the suites and components of the base image's ubuntu.sources: apt-get update --snapshot reads
 # the live archive's indexes as well as the snapshot's, 67.6 MB against 33.6 MB, and resolves the
-# same packages at the same versions (measurements 3.2; the 2026-11-16 amendment to R40 spec). The
+# same packages at the same versions (measurements 3.2 spec; the 2026-11-16 amendment to R40 spec). The
 # base image's own sources stay as they are, for whoever runs apt in the devcontainer, and this
 # RUN reads none of them. snapshot.ubuntu.com/ubuntu serves arm64 as well as amd64. The suites are
 # those of noble, the base image's Ubuntu: a base image of a newer one changes them with the ID.
