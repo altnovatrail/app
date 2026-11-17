@@ -344,6 +344,26 @@ export const en = {
   "skillmap.choosing": "Opening what's next…",
   /** A module of those connected from the map: its card says so in place of its button. */
   "skillmap.connected": "Connected: it is in My subjects now",
+  /**
+   * Under a module's map, on the learner's screen and in the section for adults alike: an adult set
+   * the module's level, {date} the day of the last correction (R157 in spec).
+   */
+  "level.set-by-adult": "The level was set by an adult on {date}",
+  /** The adult's correction of a module's level, on its map in the section for adults (R56). */
+  "level.title": "Level",
+  /** Each press sets the level one band easier or harder: a fact the learner model takes. */
+  "level.hint":
+    "Each press moves the level one band, and the learner sees on their map that an adult set it",
+  /** {band} is the title of the band of the level, in the module's language. */
+  "level.band": "The level: {band}",
+  /** The level stands below the lowest band, {band}, where a new learner may start. */
+  "level.below": "The level: below {band}",
+  /** The button that sets the level in the band before it, {band}. */
+  "level.easier": "Easier: {band}",
+  /** The button that sets the level in the band after it, {band}. */
+  "level.harder": "Harder: {band}",
+  /** The band pressed was no longer next to the level: the map was read again. */
+  "level.moved": "The level had changed meanwhile. It shows here as it stands now",
   /** The learner's essays kept on this device, read again here (R04; R53). */
   "essays.title": "My essays",
   "essays.none": "No essays are kept on this device yet",

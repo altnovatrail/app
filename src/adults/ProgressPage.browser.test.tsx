@@ -4,8 +4,9 @@
 // first page alone, the attempts page by page with "Show more" and the focus, each with how it
 // came out and the words of its reason code — an unknown code with the common words —, its
 // lesson's title or ID and a solved attempt's skills in the module's language, a page that did not
-// come and its retry, and the pages with no profile chosen — with api on connect-es's router and
-// the open views on the device's memory.
+// come and its retry, the pages with no profile chosen, and "Easier" and "Harder" at a module's
+// level on its map (R56) — with api on connect-es's router and the open views on the device's
+// memory.
 import "@altnovatrail/skill-map";
 import { ProfileSchema } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import { Action } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
@@ -21,7 +22,10 @@ import {
   type GetProgressRequest,
   type GetProgressResponseSchema,
   type GetSkillMapRequest,
+  type GetSkillMapResponseSchema,
   ProgressService,
+  type SetModuleLevelRequest,
+  type SetModuleLevelResponseSchema,
 } from "@altnovatrail/contracts/novatrail/api/v1/progress_pb.js";
 import type { NovatrailSkillMap } from "@altnovatrail/skill-map";
 import { create, type MessageInitShape } from "@bufbuild/protobuf";
@@ -48,6 +52,8 @@ const MATHS = "novatrail/olympiad-math";
 const PHYSICS = "novatrail/physics";
 const D1 = `sha256:${"1".repeat(64)}`;
 const D2 = `sha256:${"2".repeat(64)}`;
+/** A newer version of olympiad maths, whose bands are titled anew. */
+const D3 = `sha256:${"3".repeat(64)}`;
 
 const OWNER = create(ProfileSchema, {
   profileId: "p1",
@@ -64,9 +70,20 @@ function manifest(id: string, title: string, explanation: string) {
   return { module_format_version: "0.4", id, version: "1.2.0", title, languages: { explanation } };
 }
 
-const MANIFESTS: Readonly<Record<string, ReturnType<typeof manifest>>> = {
-  [D1]: manifest(MATHS, "Olympiad maths", "en"),
+/** The bands of olympiad maths, from the easiest, titled in its explanation language. */
+const BANDS = [
+  { id: "g12", title: "Grades 1–2", grades: [1, 2] },
+  { id: "g34", title: "Grades 3–4", grades: [3, 4] },
+  { id: "g56", title: "Grades 5–6", grades: [5, 6] },
+];
+
+const MANIFESTS: Readonly<Record<string, ReturnType<typeof manifest> & { bands?: unknown }>> = {
+  [D1]: { ...manifest(MATHS, "Olympiad maths", "en"), bands: BANDS },
   [D2]: manifest(PHYSICS, "Физика", "ru"),
+  [D3]: {
+    ...manifest(MATHS, "Olympiad maths", "en"),
+    bands: BANDS.map((band) => ({ ...band, title: `${band.title}, new` })),
+  },
 };
 
 const GRAPH = { skills: { counting: { title: "Counting", assessability: "verdict" } } };
@@ -155,7 +172,14 @@ interface Setup {
   readonly connected?: { moduleId: string; packageDigest: string }[] | "fail";
   /** Whether GetSkillMap is refused, as for a module no longer connected. */
   readonly mapRefused?: () => boolean;
+  /** Each answer of GetSkillMap in turn, the last for the rest; throwing makes it fail. */
+  readonly skillMaps?: (() => SkillMap)[];
+  /** What SetModuleLevel answers; throwing makes it fail. */
+  readonly setLevel?: (request: SetModuleLevelRequest) => LevelSet | Promise<LevelSet>;
 }
+
+type SkillMap = MessageInitShape<typeof GetSkillMapResponseSchema>;
+type LevelSet = MessageInitShape<typeof SetModuleLevelResponseSchema>;
 
 /** The section at the route of the hash, as AccountGate shows it. */
 function Section({ device }: { readonly device: Device }) {
@@ -176,6 +200,8 @@ function renderSection(setup: Setup = {}, language: Language = "en") {
   const { device } = memoryDevice();
   const progress: GetProgressRequest[] = [];
   const maps: GetSkillMapRequest[] = [];
+  const levels: SetModuleLevelRequest[] = [];
+  const skillMaps = [...(setup.skillMaps ?? [])];
   const pages = Object.fromEntries(
     Object.entries(setup.pages ?? { "": [() => FIRST], "page-2": [() => SECOND] }).map(
       ([token, answers]) => [token, [...answers]],
@@ -196,7 +222,12 @@ function renderSection(setup: Setup = {}, language: Language = "en") {
             { desc: RefusalSchema, value: create(RefusalSchema, { cause: Cause.NOT_FOUND }) },
           ]);
         }
-        return { packageDigest: D1, skills: [{ skill: "counting", evidenceCount: 2 }] };
+        const next = skillMaps.length > 1 ? skillMaps.shift() : skillMaps[0];
+        return next?.() ?? { packageDigest: D1, skills: [{ skill: "counting", evidenceCount: 2 }] };
+      },
+      setModuleLevel(request) {
+        levels.push(request);
+        return setup.setLevel?.(request) ?? {};
       },
     });
     router.service(ModuleService, {
@@ -214,7 +245,7 @@ function renderSection(setup: Setup = {}, language: Language = "en") {
     router.service(PackageService, {
       getManifest: (request) => ({ manifest: view(MANIFESTS[request.packageDigest]) }),
       getSkillGraph: (request) =>
-        request.packageDigest === D1
+        request.packageDigest === D1 || request.packageDigest === D3
           ? { skillGraph: view(GRAPH), skillTiers: { counting: 1 } }
           : {},
     });
@@ -241,7 +272,7 @@ function renderSection(setup: Setup = {}, language: Language = "en") {
       language,
     ),
   );
-  return { progress, maps };
+  return { progress, maps, levels };
 }
 
 /** From the section's first page to the profile's progress. */
@@ -635,5 +666,202 @@ describe("the progress of a profile", () => {
       await vi.waitFor(() => expect(window.location.hash).toBe("#/adults"));
       unmount();
     }
+  });
+});
+
+describe("the adult's correction of a module's level", () => {
+  const SET = new Date(Date.UTC(2026, 10, 16, 12, 0));
+  const at34 = (): SkillMap => ({ packageDigest: D1, levelBand: "g34" });
+  const day = (date: Date, language: Language = "en") =>
+    dateTimeFormat(language, { dateStyle: "long" }).format(date);
+
+  /** From the section's first page to the map of olympiad maths, with its level drawn. */
+  async function openMap(setup: Setup, language: Language = "en") {
+    window.location.hash = "#/adults";
+    const held = renderSection(setup, language);
+    await openProgress(language === "en" ? "See the progress" : "Посмотреть прогресс");
+    const cards = within(
+      await screen.findByRole("region", {
+        name: language === "en" ? "Skill maps" : "Карты навыков",
+      }),
+    );
+    await userEvent.click(
+      within(await cards.findByRole("article", { name: "Olympiad maths" })).getByRole("button"),
+    );
+    const region = within(
+      await screen.findByRole("region", { name: language === "en" ? "Level" : "Уровень" }),
+    );
+    return { ...held, region };
+  }
+
+  it("names the band of the level and the bands next to it, and sets the one pressed", async () => {
+    const { region, levels } = await openMap({
+      skillMaps: [at34],
+      setLevel: () => ({ levelBand: "g56", levelSetAt: timestampFromDate(SET) }),
+    });
+    expect(region.getByText(/^The level:/)).toHaveTextContent("The level: Grades 3–4");
+    expect(region.getByText("Grades 3–4")).toHaveAttribute("lang", "en");
+    expect(region.queryByText(/set by an adult/)).toBeNull();
+    expect(region.getByRole("button", { name: "Easier: Grades 1–2" })).toBeVisible();
+    await userEvent.click(region.getByRole("button", { name: "Harder: Grades 5–6" }));
+    expect(levels).toEqual([
+      expect.objectContaining({ profileId: "p1", moduleId: MATHS, band: "g56" }),
+    ]);
+    await vi.waitFor(() =>
+      expect(region.getByText(/^The level:/)).toHaveTextContent("The level: Grades 5–6"),
+    );
+    // At the highest band there is no Harder, and the focus is on the line of the level.
+    expect(region.queryByRole("button", { name: /^Harder/ })).toBeNull();
+    expect(region.getByRole("button", { name: "Easier: Grades 3–4" })).toBeVisible();
+    expect(region.getByText(/^The level:/)).toHaveFocus();
+    expect(region.getByText(/set by an adult/)).toHaveTextContent(
+      `The level was set by an adult on ${day(SET)}`,
+    );
+    const element = document.querySelector<NovatrailSkillMap>("novatrail-skill-map");
+    expect(element?.skillMap?.levelBand).toBe("g56");
+  });
+
+  it("offers the lowest band alone as Harder while the level stands below it, in Russian too", async () => {
+    const { region, levels } = await openMap(
+      {
+        skillMaps: [() => ({ packageDigest: D1, levelSetAt: timestampFromDate(SET) })],
+        setLevel: () => ({ levelBand: "g12", levelSetAt: timestampFromDate(SET) }),
+      },
+      "ru",
+    );
+    expect(region.getByText(/^Уровень:/)).toHaveTextContent("Уровень: ниже, чем Grades 1–2");
+    expect(region.getByText(/^Уровень поставил взрослый/)).toHaveTextContent(
+      `Уровень поставил взрослый: ${day(SET, "ru")}`,
+    );
+    expect(region.queryByRole("button", { name: /^Проще/ })).toBeNull();
+    await userEvent.click(region.getByRole("button", { name: "Сложнее: Grades 1–2" }));
+    expect(levels.map((request) => request.band)).toEqual(["g12"]);
+    await vi.waitFor(() =>
+      expect(region.getByText(/^Уровень:/)).toHaveTextContent("Уровень: Grades 1–2"),
+    );
+    expect(region.queryByRole("button", { name: /^Проще/ })).toBeNull();
+  });
+
+  it("reads the map again when the band is no longer next, and offers the bands next to the level it gives", async () => {
+    const { region, maps, levels } = await openMap({
+      skillMaps: [at34, () => ({ packageDigest: D1, levelBand: "g56" })],
+      setLevel: () => {
+        throw new ConnectError("refused", Code.FailedPrecondition, undefined, [
+          { desc: RefusalSchema, value: create(RefusalSchema, { cause: Cause.BAND_NOT_NEXT }) },
+        ]);
+      },
+    });
+    await userEvent.click(region.getByRole("button", { name: "Easier: Grades 1–2" }));
+    expect(levels.map((request) => request.band)).toEqual(["g12"]);
+    expect(await region.findByText(/changed meanwhile/)).toHaveTextContent(
+      "The level had changed meanwhile. It shows here as it stands now",
+    );
+    expect(region.getByText(/^The level:/)).toHaveTextContent("The level: Grades 5–6");
+    expect(region.getByRole("button", { name: "Easier: Grades 3–4" })).toBeVisible();
+    expect(region.queryByRole("button", { name: /^Harder/ })).toBeNull();
+    expect(maps).toHaveLength(2);
+    expect(maps[1]).toMatchObject({ moduleId: MATHS, action: Action.ADULT });
+  });
+
+  it("reads the map of the new version in place when the module's version changed meanwhile", async () => {
+    const { region, maps } = await openMap({
+      skillMaps: [at34, () => ({ packageDigest: D3, levelBand: "g12" })],
+      setLevel: () => {
+        throw new ConnectError("refused", Code.FailedPrecondition, undefined, [
+          { desc: RefusalSchema, value: create(RefusalSchema, { cause: Cause.BAND_NOT_NEXT }) },
+        ]);
+      },
+    });
+    await userEvent.click(region.getByRole("button", { name: "Harder: Grades 5–6" }));
+    expect(await region.findByText(/changed meanwhile/)).toBeVisible();
+    expect(region.getByText(/^The level:/)).toHaveTextContent("The level: Grades 1–2, new");
+    expect(region.getByText(/^The level:/)).toHaveFocus();
+    expect(region.getByRole("button", { name: "Harder: Grades 3–4, new" })).toBeVisible();
+    expect(maps).toHaveLength(2);
+    const element = document.querySelector<NovatrailSkillMap>("novatrail-skill-map");
+    expect(element?.skillMap?.packageDigest).toBe(D3);
+  });
+
+  it("says what a correction or the map read after it came to, and takes no press meanwhile", async () => {
+    let answer: (set: LevelSet) => void = () => {};
+    const { region, levels } = await openMap({
+      skillMaps: [at34],
+      setLevel: () => new Promise<LevelSet>((resolve) => (answer = resolve)),
+    });
+    const harder = region.getByRole("button", { name: "Harder: Grades 5–6" });
+    // Two presses before any render, from the DOM itself: one request.
+    harder.click();
+    harder.click();
+    await vi.waitFor(() => expect(harder).toHaveAttribute("aria-disabled", "true"));
+    // Playwright presses no button marked disabled: a press meanwhile comes from the DOM too.
+    harder.click();
+    await vi.waitFor(() => expect(levels).toHaveLength(1));
+    answer({ levelBand: "g34" });
+    await vi.waitFor(() => expect(harder).toHaveAttribute("aria-disabled", "false"));
+    // The band of the level named again: it stays, with no adult's day to tell.
+    expect(region.getByText(/^The level:/)).toHaveTextContent("The level: Grades 3–4");
+    expect(region.queryByText(/set by an adult/)).toBeNull();
+
+    cleanup();
+    const failing = await openMap({
+      skillMaps: [at34],
+      setLevel: () => {
+        throw new ConnectError("refused", Code.NotFound, undefined, [
+          { desc: RefusalSchema, value: create(RefusalSchema, { cause: Cause.NOT_FOUND }) },
+        ]);
+      },
+    });
+    await userEvent.click(failing.region.getByRole("button", { name: "Easier: Grades 1–2" }));
+    expect(await failing.region.findByRole("alert")).toHaveTextContent("This isn't there any more");
+
+    cleanup();
+    const unread = await openMap({
+      skillMaps: [
+        at34,
+        () => {
+          throw new ConnectError("down", Code.Unavailable);
+        },
+      ],
+      setLevel: () => {
+        throw new ConnectError("refused", Code.FailedPrecondition, undefined, [
+          { desc: RefusalSchema, value: create(RefusalSchema, { cause: Cause.BAND_NOT_NEXT }) },
+        ]);
+      },
+    });
+    await userEvent.click(unread.region.getByRole("button", { name: "Easier: Grades 1–2" }));
+    expect(await unread.region.findByRole("alert")).toHaveTextContent("No connection");
+    expect(unread.region.getByText(/^The level:/)).toHaveTextContent("The level: Grades 3–4");
+  });
+
+  it("shows the day an adult set the level when the manifest does not name its band", async () => {
+    window.location.hash = "#/adults";
+    renderSection({
+      skillMaps: [
+        () => ({ packageDigest: D1, levelBand: "g78", levelSetAt: timestampFromDate(SET) }),
+      ],
+    });
+    await openProgress();
+    const cards = within(await screen.findByRole("region", { name: "Skill maps" }));
+    await userEvent.click(
+      within(await cards.findByRole("article", { name: "Olympiad maths" })).getByRole("button"),
+    );
+    expect(await screen.findByText(/^The level was set by an adult/)).toHaveTextContent(
+      `The level was set by an adult on ${day(SET)}`,
+    );
+    expect(screen.queryByRole("region", { name: "Level" })).toBeNull();
+  });
+
+  it("shows no level for a module whose manifest has no bands", async () => {
+    window.location.hash = "#/adults";
+    renderSection({ skillMaps: [() => ({ packageDigest: D2, levelBand: "g34" })] });
+    await openProgress();
+    const cards = within(await screen.findByRole("region", { name: "Skill maps" }));
+    await userEvent.click(
+      within(await cards.findByRole("article", { name: "Физика" })).getByRole("button"),
+    );
+    expect(
+      await screen.findByRole("heading", { level: 1, name: "Skill map: Физика" }),
+    ).toBeTruthy();
+    expect(screen.queryByRole("region", { name: "Level" })).toBeNull();
   });
 });

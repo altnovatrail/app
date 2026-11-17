@@ -1,15 +1,16 @@
 // The progress of a profile in the section for adults (R35 in docs/decisions.md; section 3.10 of
-// docs/architecture.md; architecture 3.3 in spec), a page of the profile chosen, `#/adults/progress`:
-// the skill maps of the modules connected, each the adult's view of skill-map's element on a page of
-// its own, `#/adults/progress/<module>`; the traps that repeat, from the first page of GetProgress
+// docs/architecture.md; architecture 3.3 in spec), a page of the profile chosen,
+// `#/adults/progress`: the skill maps of the modules connected, each the adult's view of
+// skill-map's element on a page of its own, `#/adults/progress/<module>`, with "Easier" and
+// "Harder" at the module's level (R56); the traps that repeat, from the first page of GetProgress
 // alone; and the attempts, newest first, a page at a time, each with how it came out, its wrong
 // answers, its times and why the engine gave its task or its lesson — the reason code, which the
 // adult alone sees (concepts 12 in spec; R100 in spec). The progress names a task by its full ID
 // alone, and the screen shows its local ID; a lesson by its title, or by its local ID when api no
-// longer reads the package the attempt went on; and a solved attempt the skills its task trains,
-// by their titles. A module is named by the manifest of its current version, or of the one the
-// cache keeps, or else by its ID. In the device's language, as the section is (R10); a module's
-// texts — a lesson's title, the skills', a trap's — in the module's explanation language.
+// longer reads the package the attempt went on; and a solved attempt the skills its task trains, by
+// their titles. A module is named by the manifest of its current version, or of the one the cache
+// keeps, or else by its ID. In the device's language, as the section is (R10); a module's texts — a
+// lesson's title, the skills', a trap's — in the module's explanation language.
 import type { Profile } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import { Action } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
 import type {
@@ -29,7 +30,8 @@ import { dateTimeFormat, listFormat, numberFormat } from "../i18n/intl.ts";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import type { Language } from "../i18n/language.ts";
 import { usePackages } from "../packages/PackagesContext.tsx";
-import { readModuleMap } from "../skills/map.ts";
+import { LevelCorrection } from "../skills/Level.tsx";
+import { type ModuleMap, readModuleMap } from "../skills/map.ts";
 import { MapHeading, ModuleSkillMap, mapTitle } from "../skills/SkillMap.tsx";
 import { ModuleCardItem, ModuleCardList, useConnectedCards } from "../subjects/ModuleCards.tsx";
 import { cardsOf, type ModuleCard } from "../subjects/modules.ts";
@@ -471,7 +473,8 @@ export function ProgressPage({ profile }: { readonly profile: Profile }) {
 
 /**
  * `#/adults/progress/<module>`: the adult's view of a module's map, `GetSkillMap` by an adult's
- * action; it chooses nothing (R03 and R04 in skill-map), and leads back to the progress.
+ * action; it chooses nothing (R03 and R04 in skill-map), and leads back to the progress. Above it,
+ * the adult's correction of the module's level, "Easier" and "Harder" (R56).
  */
 export function ProgressMap({
   profile,
@@ -488,7 +491,16 @@ export function ProgressMap({
     [views, profileId, moduleId],
   );
   const map = useRequest(read);
-  const shown = map.status === "done" ? map.value : undefined;
+  const got = map.status === "done" ? map.value : undefined;
+  // A correction of the level gives the map it set, in place of the one read, until a read anew.
+  const [corrected, setCorrected] = useState<{ readonly of: ModuleMap; readonly map: ModuleMap }>();
+  const shown = got === undefined || corrected?.of !== got ? got : corrected.map;
+  const onMap = useCallback(
+    (next: ModuleMap) => {
+      if (got !== undefined) setCorrected({ of: got, map: next });
+    },
+    [got],
+  );
   return (
     <Screen title={mapTitle(shown, words)} heading={<MapHeading map={shown} />}>
       <div className="nt-buttons">
@@ -497,7 +509,12 @@ export function ProgressMap({
         </button>
       </div>
       {map.status === "failed" ? <ReadFailure failure={map.failure} onRetry={map.retry} /> : null}
-      {shown === undefined ? null : <ModuleSkillMap map={shown} view="adult" headingLevel="2" />}
+      {shown === undefined ? null : (
+        <>
+          <LevelCorrection profileId={profileId} moduleId={moduleId} map={shown} onMap={onMap} />
+          <ModuleSkillMap map={shown} view="adult" headingLevel="2" />
+        </>
+      )}
     </Screen>
   );
 }

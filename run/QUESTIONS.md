@@ -8,7 +8,7 @@ Table 3 of [RUN.md](../RUN.md): the author's open questions from tasks' «Отк
 
 ## Table 3. Questions to the author
 
-Numbers are not reused: next — В70.
+Numbers are not reused: next — В71.
 
 | ID | Question | From | Options | Recommendation |
 |---|---|---|---|---|

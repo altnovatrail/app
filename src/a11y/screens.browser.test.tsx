@@ -475,6 +475,16 @@ const MAPPED = {
               version: "1.0.0",
               title: digest === D1 ? "Fair shares" : "Таблица умножения",
               languages: { explanation: digest === D1 ? "en" : "ru" },
+              // The bands of the level, which the adult's map corrects (R56).
+              ...(digest === D1
+                ? {
+                    bands: [
+                      { id: "easy", title: "Easy" },
+                      { id: "middle", title: "Middle" },
+                      { id: "hard", title: "Hard" },
+                    ],
+                  }
+                : {}),
             },
             skillTiers: {},
           },
@@ -498,6 +508,8 @@ const MAP_API = {
       create(GetSkillMapResponseSchema, {
         packageDigest: D1,
         skills: [{ skill: "counting", evidenceCount: 1 }],
+        levelBand: "middle",
+        levelSetAt: { seconds: 1_794_830_400n, nanos: 0 },
         anchorSkills: [
           {
             anchorSkill: "core.multiplication-table",

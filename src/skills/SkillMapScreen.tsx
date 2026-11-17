@@ -9,7 +9,9 @@
 // outside a lesson for good: while one is open, a question says so first. Beside an anchor skill
 // whose holding is unknown, the modules of the catalog that teach it are offered with Connect,
 // `ConnectModule`, above the map, as the element shows no `teaching_modules` (Д211 in the table 4
-// of spec's RUN.md); once one is connected, the map's state is read again in place.
+// of spec's RUN.md); once one is connected, the map's state is read again in place. Above the map,
+// "The level was set by an adult" with its day, when an adult set the module's level (R157 in
+// spec; R56): every learner sees it.
 import { Action } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
 import type { EngineChoice } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
@@ -30,6 +32,7 @@ import { CardHeading } from "../subjects/CardHeading.tsx";
 import { ModuleCardItem, ModuleCardList, useConnectedCards } from "../subjects/ModuleCards.tsx";
 import { cardsOf } from "../subjects/modules.ts";
 import { useAttempt } from "../task/AttemptContext.tsx";
+import { LevelSetBy } from "./Level.tsx";
 import { type ModuleMap, offeredModules, readModuleMap } from "./map.ts";
 import { MapHeading, ModuleSkillMap, mapTitle } from "./SkillMap.tsx";
 
@@ -361,6 +364,7 @@ function MapOfModule({
           {read.offered.length === 0 ? null : (
             <Offered profileId={profileId} moduleIds={read.offered} onConnected={refresh} />
           )}
+          <LevelSetBy skillMap={read.map.skillMap} />
           <ModuleSkillMap map={read.map} view="learner" headingLevel="2" onChoose={chosen} />
         </>
       ) : null}

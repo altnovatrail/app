@@ -29,14 +29,16 @@ import {
 } from "@altnovatrail/contracts/novatrail/api/v1/progress_pb.js";
 import type { NovatrailSkillMap, SkillChooseEvent } from "@altnovatrail/skill-map";
 import { create, type MessageInitShape } from "@bufbuild/protobuf";
+import { timestampFromDate } from "@bufbuild/protobuf/wkt";
 import { Code, ConnectError, type ConnectRouter, createRouterTransport } from "@connectrpc/connect";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import { createRef } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 import { ApiProvider } from "../api/ApiContext.tsx";
 import { createApi } from "../api/client.ts";
 import { SKILL_MAP } from "../app/router.ts";
+import { dateTimeFormat } from "../i18n/intl.ts";
 import { LessonProvider } from "../lesson/LessonContext.tsx";
 import { PackageChecks } from "../packages/checks.ts";
 import { DeviceFiles } from "../packages/files.ts";
@@ -521,6 +523,25 @@ describe("a module's map", () => {
     await drawn();
     expect(screen.queryByRole("region", { name: "Modules to connect" })).toBeNull();
     expect(asked).toEqual([]);
+  });
+
+  it("says when an adult set the module's level, and says nothing when none did", async () => {
+    const set = new Date(Date.UTC(2026, 10, 16, 12, 0));
+    await renderMap(moduleMapRoute(SHARES), {
+      maps: [() => ({ packageDigest: D1, levelBand: "b", levelSetAt: timestampFromDate(set) })],
+    });
+    await drawn();
+    const day = dateTimeFormat("en", { dateStyle: "long" }).format(set);
+    const line = screen.getByText(/^The level was set by an adult on/);
+    expect(line).toHaveTextContent(`The level was set by an adult on ${day}`);
+    expect(line.querySelector("time")).toHaveAttribute("datetime", set.toISOString());
+    // The learner's screen has no correction of its own.
+    expect(screen.queryByRole("button", { name: /^Easier|^Harder/ })).toBeNull();
+
+    cleanup();
+    await renderMap(moduleMapRoute(SHARES), {}, "ru");
+    await drawn();
+    expect(screen.queryByText(/Уровень поставил взрослый/)).toBeNull();
   });
 
   it("says a module has no map without a skill graph", async () => {

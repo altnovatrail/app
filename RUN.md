@@ -49,11 +49,12 @@ A task starts with «Выполни задачу T01 из RUN.md» in a new sess
 
 ## Table 1. Current epic — none
 
-No current epic. The last done one is E3 «Первый срез со взрослыми учениками», archive — [docs/plan/E3.md](docs/plan/E3.md). Next, by the author's word of 2026-11-16 (T52): row 6.29 of [COORDINATION.md](spec/COORDINATION.md), a task outside an epic, once row 6.28 is done (Д33; row 1.22, the method, is here since v0.18.12, R55); then the epic of row 6.18, «Interface by the mockup», which its own task writes down and opens here; E4 of [run/EPICS.md](run/EPICS.md) after it.
+No current epic. The last done one is E3 «Первый срез со взрослыми учениками», archive — [docs/plan/E3.md](docs/plan/E3.md). Next, by the author's word of 2026-11-16 (T52): row 6.29 of [COORDINATION.md](spec/COORDINATION.md), a task outside an epic — T73 (R56); then the epic of row 6.18, «Interface by the mockup», which its own task writes down and opens here; E4 of [run/EPICS.md](run/EPICS.md) after it.
 
 | Статус | ID | Задача | Кто | План | Зависит от |
 |---|---|---|---|---|---|
 | [x] | T72 | Переход на тег `spec` v0.18.12 | Claude | — | — |
+| [x] | T73 | «Проще» и «Сложнее» у уровня модуля | Claude | — | — |
 
 «Зависит от» names only tasks of this plan. What a task waits for from other repositories is its body's «Ждёт»: it is taken once the neighbour has done that, and until then the queue goes on.
 
