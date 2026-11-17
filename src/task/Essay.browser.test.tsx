@@ -266,7 +266,8 @@ describe("the screen of an essay", () => {
     const sent = submitted[0];
     expect([...(sent?.crop.slice(0, 4) ?? [])]).toEqual(PNG);
     expect(sent?.clockOffsetMinutes).toBeDefined();
-    expect(done()).toHaveAttribute("aria-disabled", "false");
+    // Done opens once the submission is kept on the device, which may come after the feedback.
+    await vi.waitFor(() => expect(done()).toHaveAttribute("aria-disabled", "false"));
     // No report for a learner who is not of the category adult.
     expect(panel().queryByRole("button", { name: "Report a problem" })).toBeNull();
     await vi.waitFor(async () => expect((await essayOf(device))?.sent).toHaveLength(1));
