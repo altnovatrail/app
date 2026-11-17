@@ -1,13 +1,13 @@
 {
   "sections": {
-    "architecture 3.1": 31,
+    "architecture 3.1": 32,
     "architecture 3.2": 40,
     "architecture 3.3": 30,
     "architecture 3.4": 31,
     "architecture 3.5": 29,
     "architecture 3.7": 39,
-    "architecture 3.8": 78,
+    "architecture 3.8": 80,
     "architecture 3.9": 29,
-    "architecture 3.10": 68
+    "architecture 3.10": 69
   }
 }

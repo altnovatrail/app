@@ -701,9 +701,34 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
               digest: "sha256:1",
               title: "Olympiad maths",
               language: "en",
+              skills: {
+                mastered: 14,
+                "time-to-review": 3,
+                "in-progress": 6,
+                "ready-to-start": 9,
+                locked: 13,
+                "feedback-by-criteria": 2,
+                "not-assessed": 1,
+              },
+            },
+            {
+              moduleId: "novatrail/short-essays",
+              digest: "sha256:3",
+              title: "Short essays",
+              language: "en",
+              skills: {
+                mastered: 0,
+                "time-to-review": 0,
+                "in-progress": 0,
+                "ready-to-start": 0,
+                locked: 0,
+                "feedback-by-criteria": 18,
+                "not-assessed": 0,
+              },
             },
             { moduleId: "novatrail/gone", title: "novatrail/gone" },
           ]}
+          quota={create(QuotaShareSchema, { profilePercent: 20 })}
           catalog={[
             { moduleId: "novatrail/physics", digest: "sha256:2", title: "Физика", language: "ru" },
           ]}

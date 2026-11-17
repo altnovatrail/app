@@ -130,6 +130,60 @@ export const ICONS = {
       "m10.55 18.2l5.175-6.2h-4l.725-5.675L7.825 13H11.3zM9 15H5.9q-.6 0-.888-.537t.063-1.038l7.475-10.75q.25-.35.65-.487t.825.012t.625.525t.15.8L14 10h3.875q.65 0 .913.575t-.163 1.075L10.4 21.5q-.275.325-.675.425t-.775-.075t-.587-.537t-.163-.788zm2.775-2.75",
     ],
   },
+  "check-circle-outline-rounded": {
+    viewBox: "0 0 24 24",
+    paths: [
+      "m10.6 13.8l-2.15-2.15q-.275-.275-.7-.275t-.7.275t-.275.7t.275.7L9.9 15.9q.3.3.7.3t.7-.3l5.65-5.65q.275-.275.275-.7t-.275-.7t-.7-.275t-.7.275zM12 22q-2.075 0-3.9-.788t-3.175-2.137T2.788 15.9T2 12t.788-3.9t2.137-3.175T8.1 2.788T12 2t3.9.788t3.175 2.137T21.213 8.1T22 12t-.788 3.9t-2.137 3.175t-3.175 2.138T12 22m0-2q3.35 0 5.675-2.325T20 12t-2.325-5.675T12 4T6.325 6.325T4 12t2.325 5.675T12 20m0-8",
+    ],
+  },
+  "update-outline-rounded": {
+    viewBox: "0 0 24 24",
+    paths: [
+      "M12 21q-1.875 0-3.512-.712t-2.85-1.925t-1.925-2.85T3 12t.713-3.512t1.924-2.85t2.85-1.925T12 3q2.05 0 3.888.875T19 6.35V5q0-.425.288-.712T20 4t.713.288T21 5v4q0 .425-.288.713T20 10h-4q-.425 0-.712-.288T15 9t.288-.712T16 8h1.75q-1.025-1.4-2.525-2.2T12 5Q9.075 5 7.038 7.038T5 12t2.038 4.963T12 19q2.375 0 4.25-1.425t2.475-3.675q.125-.4.45-.6t.725-.15q.425.05.675.362t.15.688q-.725 2.975-3.15 4.888T12 21m1-9.4l2.5 2.5q.275.275.275.7t-.275.7t-.7.275t-.7-.275l-2.8-2.8q-.15-.15-.225-.337T11 11.975V8q0-.425.288-.712T12 7t.713.288T13 8z",
+    ],
+  },
+  "timelapse-outline-rounded": {
+    viewBox: "0 0 24 24",
+    paths: [
+      "M12 18q2.5 0 4.25-1.75T18 12q0-2.175-1.388-3.825T13.1 6.1q-.45-.05-.775.25T12 7.1V12l-3.45 3.45q-.325.325-.3.775t.375.725q.725.575 1.6.813T12 18m0 4q-2.075 0-3.9-.787t-3.175-2.138T2.788 15.9T2 12t.788-3.9t2.137-3.175T8.1 2.788T12 2t3.9.788t3.175 2.137T21.213 8.1T22 12t-.788 3.9t-2.137 3.175t-3.175 2.138T12 22m0-2q3.35 0 5.675-2.325T20 12t-2.325-5.675T12 4T6.325 6.325T4 12t2.325 5.675T12 20m0-8",
+    ],
+  },
+  "lock-open-right-outline-rounded": {
+    viewBox: "0 0 24 24",
+    paths: [
+      "M6 20h12V10H6zm7.413-3.588Q14 15.826 14 15t-.587-1.412T12 13t-1.412.588T10 15t.588 1.413T12 17t1.413-.587M6 20V10zm0 2q-.825 0-1.412-.587T4 20V10q0-.825.588-1.412T6 8h7V6q0-2.075 1.463-3.537T18 1q1.775 0 3.1 1.075t1.75 2.7q.125.425-.162.825T22 6q-.425 0-.7-.175t-.4-.575q-.275-.95-1.062-1.6T18 3q-1.25 0-2.125.875T15 6v2h3q.825 0 1.413.588T20 10v10q0 .825-.587 1.413T18 22z",
+    ],
+  },
+  "lock-outline-rounded": {
+    viewBox: "0 0 24 24",
+    paths: [
+      "M6 22q-.825 0-1.412-.587T4 20V10q0-.825.588-1.412T6 8h1V6q0-2.075 1.463-3.537T12 1t3.538 1.463T17 6v2h1q.825 0 1.413.588T20 10v10q0 .825-.587 1.413T18 22zm0-2h12V10H6zm7.413-3.588Q14 15.826 14 15t-.587-1.412T12 13t-1.412.588T10 15t.588 1.413T12 17t1.413-.587M9 8h6V6q0-1.25-.875-2.125T12 3t-2.125.875T9 6zM6 20V10z",
+    ],
+  },
+  "rate-review-outline-rounded": {
+    viewBox: "0 0 24 24",
+    paths: [
+      "M7 14h1.625q.2 0 .388-.075t.337-.225l4.7-4.7q.225-.225.338-.513t.112-.562t-.125-.537t-.325-.488l-.9-.95q-.225-.225-.5-.337t-.575-.113q-.275 0-.562.113T11 5.95l-4.7 4.7q-.15.15-.225.338T6 11.375V13q0 .425.288.713T7 14m6-6.075L12.075 7zM7.5 12.5v-.95l2.525-2.525l.5.45l.45.5L8.45 12.5zm3.025-3.025l.45.5l-.95-.95zm.65 4.525H17q.425 0 .713-.288T18 13t-.288-.712T17 12h-3.825zM6 18l-2.3 2.3q-.475.475-1.088.213T2 19.575V4q0-.825.588-1.412T4 2h16q.825 0 1.413.588T22 4v12q0 .825-.587 1.413T20 18zm-.85-2H20V4H4v13.125zM4 16V4z",
+    ],
+  },
+  "remove-done-outline-rounded": {
+    viewBox: "0 0 24 24",
+    paths: [
+      "m21.125 21.1l-5.9-5.9l-2.15 2.15q-.3.3-.7.3t-.7-.3l-4.25-4.25q-.3-.3-.287-.7t.287-.7q.3-.3.713-.312t.712.287l3.525 3.525l1.4-1.4l-9.65-9.65q-.3-.3-.288-.7t.288-.7q.3-.3.713-.312t.712.287L22.525 19.7q.275.275.275.7t-.275.7t-.7.275t-.7-.275m-15.1-3.75l-4.25-4.25q-.275-.275-.275-.7t.275-.7t.7-.275t.7.275l3.55 3.55l1.4 1.4l-.7.7q-.3.3-.7.3t-.7-.3m12-4.95l-1.4-1.4l4.225-4.225q.275-.275.675-.287t.7.262t.313.7t-.288.725zm-2.85-2.85l-1.4-1.4l1.45-1.45q.275-.275.7-.275t.7.275t.275.7t-.275.7z",
+    ],
+  },
+  "photo-camera-outline-rounded": {
+    viewBox: "0 0 24 24",
+    paths: [
+      "M12 17.5q1.875 0 3.188-1.312T16.5 13t-1.312-3.187T12 8.5T8.813 9.813T7.5 13t1.313 3.188T12 17.5m0-2q-1.05 0-1.775-.725T9.5 13t.725-1.775T12 10.5t1.775.725T14.5 13t-.725 1.775T12 15.5M4 21q-.825 0-1.412-.587T2 19V7q0-.825.588-1.412T4 5h3.15L8.4 3.65q.275-.3.663-.475T9.875 3h4.25q.425 0 .813.175t.662.475L16.85 5H20q.825 0 1.413.588T22 7v12q0 .825-.587 1.413T20 21zm0-2h16V7h-4.05l-1.825-2h-4.25L8.05 7H4zm8-6",
+    ],
+  },
+  "info-outline-rounded": {
+    viewBox: "0 0 24 24",
+    paths: [
+      "M12.713 16.713Q13 16.425 13 16v-4q0-.425-.288-.712T12 11t-.712.288T11 12v4q0 .425.288.713T12 17t.713-.288m0-8Q13 8.425 13 8t-.288-.712T12 7t-.712.288T11 8t.288.713T12 9t.713-.288M12 22q-2.075 0-3.9-.788t-3.175-2.137T2.788 15.9T2 12t.788-3.9t2.137-3.175T8.1 2.788T12 2t3.9.788t3.175 2.137T21.213 8.1T22 12t-.788 3.9t-2.137 3.175t-3.175 2.138T12 22m0-2q3.35 0 5.675-2.325T20 12t-2.325-5.675T12 4T6.325 6.325T4 12t2.325 5.675T12 20m0-8",
+    ],
+  },
 } as const;
 
 /** The name of an icon of the app. */
@@ -214,6 +268,47 @@ export const VALUES = {
     filled: "bolt-outline-rounded",
     mirrored: false,
   },
+  "state-mastered": {
+    outline: "check-circle-outline-rounded",
+    filled: "check-circle-outline-rounded",
+    mirrored: false,
+  },
+  "state-time-to-review": {
+    outline: "update-outline-rounded",
+    filled: "update-outline-rounded",
+    mirrored: false,
+  },
+  "state-in-progress": {
+    outline: "timelapse-outline-rounded",
+    filled: "timelapse-outline-rounded",
+    mirrored: false,
+  },
+  "state-ready-to-start": {
+    outline: "lock-open-right-outline-rounded",
+    filled: "lock-open-right-outline-rounded",
+    mirrored: false,
+  },
+  "state-locked": {
+    outline: "lock-outline-rounded",
+    filled: "lock-outline-rounded",
+    mirrored: false,
+  },
+  "state-feedback-by-criteria": {
+    outline: "rate-review-outline-rounded",
+    filled: "rate-review-outline-rounded",
+    mirrored: false,
+  },
+  "state-not-assessed": {
+    outline: "remove-done-outline-rounded",
+    filled: "remove-done-outline-rounded",
+    mirrored: false,
+  },
+  camera: {
+    outline: "photo-camera-outline-rounded",
+    filled: "photo-camera-outline-rounded",
+    mirrored: false,
+  },
+  legend: { outline: "info-outline-rounded", filled: "info-outline-rounded", mirrored: false },
 } as const satisfies Record<string, { outline: IconName; filled: IconName; mirrored: boolean }>;
 
 /** A value of the app. */

@@ -4,7 +4,10 @@
 // screen whose task of epic E5 has not come yet: its differences are reported in mockup/out/ and
 // not held. Once that task has brought it to the mockup, `until` goes, and every difference but
 // those a region's `differs` names fails the test.
-import { ProfileSchema } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
+import {
+  ProfileSchema,
+  QuotaShareSchema,
+} from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import {
   LegalService,
   LegalTextSchema,
@@ -22,7 +25,11 @@ import { OwnerProfileScreen } from "../src/account/OwnerProfileScreen.tsx";
 import { ApiProvider } from "../src/api/ApiContext.tsx";
 import { Example } from "../src/lesson/Example.tsx";
 import { ContinueButton, LessonScreen } from "../src/lesson/LessonScreen.tsx";
+import { NextStep } from "../src/next/NextStep.tsx";
 import { SignInScreen } from "../src/signin/SignInScreen.tsx";
+import { SubjectsScreen } from "../src/subjects/MySubjects.tsx";
+import type { ModuleCard } from "../src/subjects/modules.ts";
+import type { SkillCounts } from "../src/subjects/states.ts";
 import { NO_VERDICTS } from "../src/task/attempt.ts";
 import { initialState } from "../src/task/steps.ts";
 import { TaskScreen } from "../src/task/TaskScreen.tsx";
@@ -500,8 +507,128 @@ const WAY_IN: readonly Compared[] = [
   },
 ];
 
+/** The counts of a module's skills: the five states, then the two marks. */
+function counts(states: readonly number[], rubric = 0): SkillCounts {
+  const [mastered = 0, review = 0, progress = 0, ready = 0, locked = 0] = states;
+  return {
+    mastered,
+    "time-to-review": review,
+    "in-progress": progress,
+    "ready-to-start": ready,
+    locked,
+    "feedback-by-criteria": rubric,
+    "not-assessed": 0,
+  };
+}
+
+/** The mockup's three modules of the first slice, with the states of their skills. */
+const MODULES: readonly ModuleCard[] = [
+  {
+    moduleId: "novatrail/olympiad-math",
+    title: "Olympiad maths 1–6",
+    skills: counts([14, 3, 6, 9, 13]),
+  },
+  {
+    moduleId: "novatrail/school-math-3",
+    title: "School maths · grade 3",
+    skills: counts([20, 2, 4, 6, 4]),
+  },
+  { moduleId: "novatrail/short-essays", title: "Short essays", skills: counts([], 18) },
+].map((card, i) => ({ ...card, digest: `sha256:${String(i + 1).repeat(64)}`, language: "en" }));
+
+/** api by the routing transport: nothing is asked of it until a press. */
+const QUIET = routedApi(() => {});
+
+/** The home screen with the mockup's three modules, a fifth of today's tutor time used. */
+function home() {
+  return inLanguage(
+    <ApiProvider value={QUIET}>
+      <SubjectsScreen
+        connected={MODULES}
+        catalog={MODULES}
+        quota={create(QuotaShareSchema, { profilePercent: 20 })}
+        next={<NextStep profileId="p1" />}
+        onConnect={() => {}}
+        onDisconnect={() => {}}
+      />
+    </ApiProvider>,
+  );
+}
+
+/**
+ * Why the home screen stands lower and its cards are of other heights than the mockup's: app's
+ * screen keeps the heading "My subjects" of section 3.8 and the bar of the learner above it, where
+ * the mockup greets the learner by name under its own bar (T83); the card of what comes next holds
+ * the engine's way, "What's next", which names no lesson before it is pressed (R24), not the
+ * mockup's lesson and its picture; the modules connected are "Connected" of section 3.10, with
+ * Disconnect and License beside their map, the catalog below them in place of "Add a module".
+ */
+const HOME_PLACED =
+  'the heading of section 3.8 and the bar above it (T83); "What\'s next" names no lesson (R24); Disconnect and License on a card (section 3.10)';
+
+/** A card or a bar, whose words are its own regions': the size of its own text is not drawn. */
+const NO_TEXT = "no text of its own: the body's 14 px (R11)";
+
+const HOME: readonly Region[] = [
+  {
+    name: "the heading",
+    mockup: { text: "Hi, Sam" },
+    app: { role: "heading", name: "My subjects" },
+    followsText: "start",
+    differs: { what: ["y", "height", "font-size"], by: HOME_PLACED },
+  },
+  {
+    name: "the card of what comes next",
+    mockup: { css: ".ph-next" },
+    app: { css: ".nt-next-up" },
+    differs: { what: ["y", "height", "font-size"], by: `${HOME_PLACED}; ${NO_TEXT}` },
+  },
+  {
+    name: "A task from my paper",
+    mockup: { css: ".ph-paper" },
+    app: { css: ".nt-paper" },
+    differs: { what: ["y", "height", "font-size"], by: `${HOME_PLACED}; ${NO_TEXT}` },
+  },
+  {
+    name: "the first module",
+    mockup: { css: ".ph-grid > .mc:first-child" },
+    app: { css: ".nt-module:first-child" },
+    differs: { what: ["y", "height", "font-size"], by: `${HOME_PLACED}; ${NO_TEXT}` },
+  },
+  {
+    name: "its bar",
+    mockup: { css: '.ph-grid > .mc:first-child span[style*="height: 8px"]' },
+    app: { css: ".nt-module:first-child .nt-skills-bar" },
+    differs: { what: ["y", "font-size"], by: `${HOME_PLACED}; ${NO_TEXT}` },
+  },
+];
+
+/** The legend standing below the modules, from 600 CSS px. */
+const LEGEND: Region = {
+  name: "the legend",
+  mockup: { css: ".ph-legend" },
+  app: { css: ".nt-legend" },
+  differs: { what: ["y"], by: HOME_PLACED },
+};
+
 const SCREENS: readonly Compared[] = [
   ...WAY_IN,
+  { state: "home", devices: ["ipad"], draw: home, regions: [...HOME, LEGEND] },
+  { state: "home", devices: ["phone"], draw: home, regions: HOME },
+  { state: "home-legend", devices: ["ipad"], draw: home, regions: [LEGEND] },
+  {
+    state: "home-legend",
+    devices: ["phone"],
+    draw: home,
+    settle: () => userEvent.click(screen.getByRole("button", { name: "What the marks mean" })),
+    regions: [
+      {
+        name: "the sheet of the legend",
+        mockup: { css: ".ph-legend.on" },
+        app: { role: "dialog", name: "What the marks mean" },
+      },
+    ],
+  },
   ...(["task-pill", "task-empty"] as const).map((state) => ({
     state,
     draw: sheetTask,
