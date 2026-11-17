@@ -332,7 +332,6 @@ describe("a module's map", () => {
     await drawn();
     const frame = screen.getByRole("region", { name: "Skill map: Fair shares" });
     expect(frame).toContainElement(document.querySelector("novatrail-skill-map"));
-    expect(frame).toHaveAttribute("tabindex", "0");
     const heading = screen.getByRole("heading", { level: 1, name: "Skill map: Fair shares" });
     expect(heading.closest(".nt-top-pill")).toContainElement(
       screen.getByRole("button", { name: "Back" }),

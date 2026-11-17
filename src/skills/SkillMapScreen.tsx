@@ -55,7 +55,8 @@ export interface MapScreenProps {
 
 /**
  * A screen of the map: the top bar, whose Back goes home (R57) and whose other end is the profile's
- * pill, and the frame, named by the title, which the keyboard scrolls as it takes the focus.
+ * pill, and the frame, named by the title, which the keyboard scrolls by the focus of what is in it:
+ * the map's tiles and Practise, the cards' buttons.
  */
 export function MapScreen({ title, heading, children }: MapScreenProps) {
   return (
@@ -68,8 +69,7 @@ export function MapScreen({ title, heading, children }: MapScreenProps) {
         end: <LearnerMenu />,
       }}
     >
-      {/* biome-ignore lint/a11y/noNoninteractiveTabindex: a frame that scrolls inside takes the keyboard's focus to scroll. */}
-      <section className="nt-map-frame" aria-label={title} tabIndex={0}>
+      <section className="nt-map-frame" aria-label={title}>
         {children}
       </section>
     </Screen>
