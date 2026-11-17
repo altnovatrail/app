@@ -98,7 +98,9 @@ export function IconButton({
     return () => clearTimeout(timer);
   }, [wanted]);
 
-  const visible = shown && !dismissed;
+  // Not while what the button opens is open: a tooltip in the top layer would stand over its dialog.
+  const expanded = button["aria-expanded"] === true || button["aria-expanded"] === "true";
+  const visible = shown && !dismissed && !expanded;
 
   useLayoutEffect(() => {
     const drawn = tip.current;

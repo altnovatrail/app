@@ -12,6 +12,7 @@ import type { Language } from "../i18n/language.ts";
 import { inLanguage } from "../test/language.tsx";
 import "../theme/theme.css";
 import { AdultHelp } from "./Help.tsx";
+import { TIP_DELAY_MS } from "./IconButton.tsx";
 
 function chosen(ageCategory: string, openLegal = vi.fn()): Learner {
   return {
@@ -84,6 +85,16 @@ describe("the adult's Help", () => {
     await userEvent.keyboard("{Escape}");
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(button).toHaveFocus();
+  });
+
+  it("shows no tooltip over its open pop-over, the pointer still on its button", async () => {
+    renderHelp(chosen("adult"));
+    const button = screen.getByRole("button", { name: "Help" });
+    await userEvent.hover(button);
+    await userEvent.click(button);
+    await new Promise((later) => setTimeout(later, TIP_DELAY_MS + 200));
+    expect(screen.getByRole("dialog")).toBeVisible();
+    expect(document.querySelector(".nt-tooltip")).toBeNull();
   });
 
   it("speaks Russian on a Russian screen", async () => {

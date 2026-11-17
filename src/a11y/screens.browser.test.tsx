@@ -105,7 +105,7 @@ function homeWith(button: string): [() => ReactNode, () => Promise<void>] {
   return [
     () => (
       <LearnerProvider value={CHOSEN}>
-        <LearnerBar screen="home" />
+        <LearnerBar />
         <SubjectsScreen connected={[]} catalog={[]} onConnect={() => {}} onDisconnect={() => {}} />
       </LearnerProvider>
     ),
@@ -711,7 +711,7 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
     "My subjects, below the bar, with a card of each kind",
     () => (
       <LearnerProvider value={CHOSEN}>
-        <LearnerBar screen="home" />
+        <LearnerBar />
         <SubjectsScreen
           connected={[
             {

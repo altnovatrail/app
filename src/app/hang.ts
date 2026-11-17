@@ -23,6 +23,8 @@ export interface Hung {
 
 /** Between the button and the pop-over, CSS px: the mockup's 12 under its top bar. */
 export const GAP = 12;
+/** Between the home's bar and a pop-over hung from it, CSS px: the mockup's 6 (R63). */
+export const BELOW_BAR = 6;
 /** Between the pop-over and the edge of the window, CSS px: the mockup's 16. */
 export const MARGIN = 16;
 

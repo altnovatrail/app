@@ -74,18 +74,15 @@ export function ModuleSkillMap({
 
 /**
  * The heading of a module's map in its top bar, as the mockup's title (R63): "Skill map" and, on a
- * line under it, the module's title in its own language — a colon between them for whoever reads
- * the heading aloud, where the eye has the line break: drawn, inline, and not seen.
+ * line under it, the module's title in its own language. The screen names the heading by its
+ * title, "Skill map: {module}", where the eye has the line break.
  */
 export function MapBarHeading({ map }: { readonly map: ModuleMap | undefined }) {
   const { words } = useLanguage();
   const manifest = map?.manifest;
   return (
     <>
-      <span className="nt-top-title">
-        {words.text("skillmap.title")}
-        {manifest === undefined ? null : <span className="nt-top-colon">:</span>}
-      </span>
+      <span className="nt-top-title">{words.text("skillmap.title")}</span>
       {manifest === undefined ? null : (
         <span className="nt-top-sub" lang={manifest.languages.explanation}>
           {manifest.title}

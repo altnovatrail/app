@@ -4,7 +4,7 @@
 // stays. `<main lang>` is the screen's language (3.1.1). A heading that is a module's text — a
 // lesson's title — comes as a node of its own, with its `lang`, and the title stays its words. A
 // screen with a top bar has its heading in the bar's glass pill, beside its way back, as the
-// mockup's top bar has its title (R63).
+// mockup's top bar has its title, named by the title, whose words the pill shows on two lines (R63).
 import { type ReactNode, useEffect, useRef } from "react";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 
@@ -86,7 +86,7 @@ export function Screen({
   }, []);
 
   const h1 = (
-    <h1 ref={heading} tabIndex={-1}>
+    <h1 ref={heading} tabIndex={-1} aria-label={bar === undefined ? undefined : title}>
       {shown ?? title}
     </h1>
   );

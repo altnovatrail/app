@@ -6,13 +6,11 @@
 import { useLearner } from "../account/AccountGate.tsx";
 import { Avatar } from "../account/Avatar.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
+import { BELOW_BAR } from "./hang.ts";
 import { Icon } from "./Icon.tsx";
 import type { IconValue } from "./icons.ts";
 import { PopOver } from "./PopOver.tsx";
 import { ADULTS, navigate } from "./router.ts";
-
-/** Between the bottom of the pill and its menu, as the mockup hangs the home's pop-overs (R63). */
-export const BELOW_BAR = 6;
 
 /** A row of the menu: its icon and its words, a target of the menu's whole width. */
 function Row({

@@ -2243,10 +2243,6 @@ button.nt-menu-row {
   font-weight: var(--nt-weight-bold);
   letter-spacing: -0.1px;
 }
-/* The colon between the title and its line, for the heading's name: inline, so no space before it. */
-.nt-top-colon {
-  opacity: 0;
-}
 .nt-top-sub {
   color: var(--nt-text-muted);
   font-size: 0.71875rem;
@@ -2255,16 +2251,20 @@ button.nt-menu-row {
 /*
  * The skill map's screen (R63; the mockup's `map`): the whole window, the top bar 14 from the top
  * and 16 from the sides, and below it, 76 from the top to 16 from the bottom, the white frame of
- * radius 26 that the map stands in and that scrolls inside; 20rem high at least, where the window
- * is lower, and the page scrolls then.
+ * radius 26 that the map stands in and that scrolls inside. The frame takes what the bar leaves of
+ * the window, a bar that wraps into two rows too, and 20rem at least, where the page scrolls then.
  */
 main.nt-map {
+  display: flex;
+  flex-direction: column;
+  min-block-size: 100dvh;
   max-inline-size: none;
   padding: 0.875rem 1rem 1rem;
 }
 .nt-map-frame {
   box-sizing: border-box;
-  block-size: max(calc(100dvh - 5.75rem), 20rem);
+  flex: 1 1 0;
+  min-block-size: 20rem;
   padding: 1.25rem;
   overflow: auto;
   border: 0.0625rem solid transparent;

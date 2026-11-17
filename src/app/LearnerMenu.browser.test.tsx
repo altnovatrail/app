@@ -93,10 +93,11 @@ describe("the profile's menu", () => {
 
 describe("the learner's bar", () => {
   function renderBar(screenName: string) {
+    window.location.hash = `#/${screenName}`;
     return render(
       inLanguage(
         <LearnerProvider value={chosen()}>
-          <LearnerBar screen={screenName} />
+          <LearnerBar />
         </LearnerProvider>,
       ),
     );

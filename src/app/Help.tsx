@@ -7,7 +7,7 @@
 import { useLearner } from "../account/AccountGate.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { ACCESSIBILITY, type LegalPage, legalPage } from "../legal/LegalPages.tsx";
-import { BELOW_BAR } from "./LearnerMenu.tsx";
+import { BELOW_BAR } from "./hang.ts";
 import { PopOver } from "./PopOver.tsx";
 
 /** The pages Help leads to, in the mockup's order, each by the words of its name. */
