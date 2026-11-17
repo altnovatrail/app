@@ -165,18 +165,24 @@ describe("its tooltip", () => {
     await tooltipShown("Tutor");
   });
 
-  it("stays inside the window at its edge, at 320 px", async () => {
+  it("stays inside the window at its edge, at 320 px, its words changed too", async () => {
     await page.viewport(320, 640);
-    render(
+    const shown = (language: "en" | "ru") =>
       inLanguage(
         <div style={{ display: "flex", justifyContent: "flex-end" }}>
           <IconButton value="previous-task" />
         </div>,
-        "ru",
-      ),
-    );
-    await userEvent.hover(page.getByRole("button", { name: "Предыдущая задача" }));
-    const box = (await tooltipShown("Предыдущая задача")).getBoundingClientRect();
+        language,
+      );
+    const { rerender } = render(shown("en"));
+    await userEvent.hover(page.getByRole("button", { name: "Previous task" }));
+    await tooltipShown("Previous task");
+    rerender(shown("ru"));
+    const tip = await tooltipShown("Предыдущая задача");
+    await expect
+      .poll(() => tip.getBoundingClientRect().right)
+      .toBeLessThanOrEqual(320 - MARGIN + 0.5);
+    const box = tip.getBoundingClientRect();
     expect(box.right).toBeLessThanOrEqual(320 - MARGIN + 0.5);
     expect(document.documentElement.scrollWidth).toBe(document.documentElement.clientWidth);
   });

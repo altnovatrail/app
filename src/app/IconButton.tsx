@@ -112,16 +112,21 @@ export function IconButton({
       }
       setDismissed(true);
     };
+    // Placed again when its words or the button's box change size, as with a new language.
+    const resized = new ResizeObserver(() => place());
+    resized.observe(drawn);
+    resized.observe(from);
     window.addEventListener("keydown", dismiss, true);
     window.addEventListener("resize", place);
     window.addEventListener("scroll", place, true);
     return () => {
+      resized.disconnect();
       window.removeEventListener("keydown", dismiss, true);
       window.removeEventListener("resize", place);
       window.removeEventListener("scroll", place, true);
       if (layered && drawn.matches(":popover-open")) drawn.hidePopover();
     };
-  }, [visible, caption]);
+  }, [visible]);
 
   return (
     // The pointer that leaves the button for its tooltip leaves neither: the tooltip is inside.
