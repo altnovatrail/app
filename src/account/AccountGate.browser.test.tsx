@@ -278,7 +278,7 @@ describe("the way in", () => {
     ).toBeTruthy();
     const create = screen.getByRole("button", { name: "Create account" });
     await userEvent.click(screen.getByRole("checkbox", { name: "I am 18 or older" }));
-    expect(create).toBeDisabled();
+    expect(create).toHaveAttribute("aria-disabled", "true");
     // The texts in force, each open in place, and the owner's acceptance of both.
     expect(
       screen.getByRole("heading", { level: 2, name: "Privacy Policy and Terms of Use" }),
@@ -327,7 +327,7 @@ describe("the way in", () => {
       "A made-up name, up to 30 characters. A grown-up's profile needs no age: you stated that you are 18 or older",
     );
     await userEvent.type(pseudonym, "   ");
-    expect(next).toBeDisabled();
+    expect(next).toHaveAttribute("aria-disabled", "true");
     await userEvent.type(pseudonym, "x".repeat(31));
     await userEvent.click(screen.getByRole("button", { name: "Country Choose a country" }));
     await userEvent.click(screen.getByRole("button", { name: "Germany" }));

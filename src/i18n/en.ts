@@ -124,6 +124,8 @@ export const en = {
   "account.adult": "I am 18 or older",
   /** Below the statement: why it is asked. */
   "account.adult-line": "Only grown-ups hold an account",
+  /** Below the checkbox when "Create account" is pressed with it unticked. */
+  "account.adult-needed": "Only someone 18 or older can create an account",
   "account.create": "Create account",
   /** What another account left on this device cannot be erased yet: another tab of the app holds it. */
   "account.held":
@@ -132,6 +134,8 @@ export const en = {
   "account.code-not-accepted": "This code isn't valid or has been used",
   /** Below the field of the code. */
   "account.code-hint": "The code from your invitation",
+  /** Below the field when "Continue" is pressed with it empty. */
+  "account.code-needed": "Enter the invite code",
   /** From the code to the statement and the texts. */
   "account.next": "Continue",
   /** Below the code: the sign-in is done, the account is not yet. */
@@ -147,6 +151,8 @@ export const en = {
   "account.texts": "I accept the {policy} and the {terms}",
   "account.texts-policy": "Privacy Policy",
   "account.texts-terms": "Terms of Use",
+  /** Below the checkbox when "Create account" is pressed with it unticked. */
+  "account.texts-needed": "To create an account, accept the Privacy Policy and the Terms of Use",
   /** api has newer versions of the texts than the screen showed: they are shown anew, unticked. */
   "account.texts-changed": "The texts have changed. Read them again and accept them",
   /** The heading above the legal texts of the account, each opened in place. */

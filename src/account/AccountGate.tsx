@@ -17,6 +17,7 @@ import type { Profile } from "@altnovatrail/contracts/novatrail/api/v1/account_p
 import {
   createContext,
   type ReactNode,
+  type RefObject,
   useCallback,
   useContext,
   useEffect,
@@ -55,7 +56,7 @@ import { SignInScreen } from "../signin/SignInScreen.tsx";
 import type { Device } from "../storage/device.ts";
 import { TutorPages } from "../tutor/TutorPage.tsx";
 import { ChooseScreen } from "./ChooseScreen.tsx";
-import { InviteScreen } from "./InviteScreen.tsx";
+import { type InviteDraft, InviteScreen } from "./InviteScreen.tsx";
 import { OwnerProfileScreen } from "./OwnerProfileScreen.tsx";
 import { Session, type Unfinished, unfinishedWork } from "./session.ts";
 import { PROFILES_CHANNEL, profileMessage, profileOf } from "./settings.ts";
@@ -116,6 +117,12 @@ export function AccountGate({ children }: { readonly children: ReactNode }) {
   // Where the legal pages' bar goes back to: home, unless the section opened them. Memory alone,
   // as the profile the section chose: after a reload, home.
   const [legalBack, setLegalBack] = useState<Route>(HOME);
+  // What the owner typed and ticked on the invite code's screen, kept while the legal pages stand in
+  // its place, and dropped once the step is over: the account made, or signed out.
+  const inviteDraft = useRef<InviteDraft | undefined>(undefined);
+  useEffect(() => {
+    if (state.step !== "invite") inviteDraft.current = undefined;
+  }, [state.step]);
   const openLegal = useCallback((back: Route, page: Route = LEGAL) => {
     setLegalBack(back);
     navigate(page);
@@ -247,7 +254,7 @@ export function AccountGate({ children }: { readonly children: ReactNode }) {
         </Screen>
       );
     case "invite":
-      return <InviteStep session={session} onLegal={() => openLegal(HOME)} />;
+      return <InviteStep session={session} draft={inviteDraft} onLegal={() => openLegal(HOME)} />;
     case "owner-profile":
       return (
         <OwnerProfileScreen
@@ -294,9 +301,11 @@ export function AccountGate({ children }: { readonly children: ReactNode }) {
  */
 function InviteStep({
   session,
+  draft,
   onLegal,
 }: {
   readonly session: Session;
+  readonly draft: RefObject<InviteDraft | undefined>;
   readonly onLegal: () => void;
 }) {
   const { language } = useLanguage();
@@ -311,6 +320,7 @@ function InviteStep({
   return (
     <InviteScreen
       texts={texts}
+      draft={draft}
       onCreate={(code, accepted) => session.createAccount(code, accepted)}
       onLegal={onLegal}
     />

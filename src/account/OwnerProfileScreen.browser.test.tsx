@@ -27,8 +27,15 @@ describe("the owner's profile", () => {
     const next = screen.getByRole("button", { name: "Continue" });
     expect(shown()).toBe("peak");
     await userEvent.type(screen.getByRole("textbox", { name: "Pseudonym" }), " Sam ");
-    expect(next).toBeDisabled();
+    expect(next).toHaveAttribute("aria-disabled", "true");
+    // Pressed while it looks off, it says the country is missing and focuses its row.
+    await userEvent.click(next, { force: true });
+    const row = screen.getByRole("button", { name: "Country Choose a country" });
+    expect(row).toHaveAccessibleDescription("Choose a country");
+    expect(document.activeElement).toBe(row);
+    expect(onCreate).not.toHaveBeenCalled();
     await choose("Country Choose a country", "Canada");
+    expect(next).toHaveAttribute("aria-disabled", "false");
     expect(screen.getByRole("button", { name: "Country Canada" })).toBeTruthy();
     await userEvent.click(next);
     expect(onCreate).toHaveBeenCalledWith("Sam", "CA", undefined);

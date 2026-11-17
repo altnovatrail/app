@@ -3,7 +3,14 @@
 // button and grows from the button's corner; below 600 it is a sheet from the bottom with a button
 // "Close", ×, which shows its icon alone (R60). It is a modal <dialog>: the rest of the page is inert while it is open, Escape and a tap
 // outside it close it, the focus goes into it, and comes back to its button when it closes.
-import { type ReactNode, useCallback, useLayoutEffect, useRef, useState } from "react";
+import {
+  type ReactNode,
+  type RefObject,
+  useCallback,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { hang } from "./hang.ts";
 import { IconButton } from "./IconButton.tsx";
 
@@ -21,8 +28,8 @@ export interface PopOverProps {
   readonly caption?: ReactNode;
   /** The button's class, as `nt-secondary`. */
   readonly className?: string;
-  /** The button's ID, by which a form puts the focus on it. */
-  readonly id?: string;
+  /** The button, for a form that puts the focus on it. */
+  readonly buttonRef?: RefObject<HTMLButtonElement | null>;
   /** What describes the button: the ID of a hint or an error. */
   readonly describedBy?: string | undefined;
   /** Hung below the middle of its button, from 600 CSS px, not from its edge. */
@@ -37,14 +44,15 @@ export function PopOver({
   label,
   caption,
   className,
-  id,
+  buttonRef,
   describedBy,
   centred = false,
   popClassName,
   children,
 }: PopOverProps) {
   const [open, setOpen] = useState(false);
-  const button = useRef<HTMLButtonElement>(null);
+  const own = useRef<HTMLButtonElement>(null);
+  const button = buttonRef ?? own;
   const dialog = useRef<HTMLDialogElement>(null);
   const content = useRef<HTMLDivElement>(null);
   const close = useCallback(() => setOpen(false), []);
@@ -109,14 +117,13 @@ export function PopOver({
       // back: the button takes it, while it is still on the page.
       if (button.current?.isConnected === true) button.current.focus();
     };
-  }, [open, close, centred]);
+  }, [open, close, centred, button]);
 
   return (
     <>
       <button
         ref={button}
         type="button"
-        id={id}
         className={className}
         aria-describedby={describedBy}
         aria-haspopup="dialog"

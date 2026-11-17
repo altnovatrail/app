@@ -28,8 +28,14 @@ function read(version: number, next: LegalText[] = []): TextsRead {
   return { status: "done", value: { texts: [policy(version)], next }, retry: () => {} };
 }
 
-function invite(texts: TextsRead, onCreate: InviteScreenProps["onCreate"]) {
-  return inLanguage(<InviteScreen texts={texts} onCreate={onCreate} onLegal={() => {}} />);
+function invite(
+  texts: TextsRead,
+  onCreate: InviteScreenProps["onCreate"],
+  draft?: InviteScreenProps["draft"],
+) {
+  return inLanguage(
+    <InviteScreen texts={texts} draft={draft} onCreate={onCreate} onLegal={() => {}} />,
+  );
 }
 
 /** The code typed and taken on to the statement and the texts. */
@@ -46,10 +52,16 @@ describe("the invite code's screen", () => {
     const onCreate = vi.fn(async () => "done" as const);
     render(invite(read(2), onCreate));
     const next = screen.getByRole("button", { name: "Continue" });
-    expect(next).toBeDisabled();
-    await userEvent.type(screen.getByRole("textbox", { name: "Invite code" }), "   ");
-    expect(next).toBeDisabled();
-    await userEvent.clear(screen.getByRole("textbox", { name: "Invite code" }));
+    const code = screen.getByRole("textbox", { name: "Invite code" });
+    expect(next).toHaveAttribute("aria-disabled", "true");
+    await userEvent.type(code, "   ");
+    expect(next).toHaveAttribute("aria-disabled", "true");
+    // Pressed while it looks off, it says what is missing, and the field takes the focus.
+    await userEvent.click(next, { force: true });
+    expect(code).toHaveAccessibleDescription("The code from your invitation Enter the invite code");
+    expect(document.activeElement).toBe(code);
+    await userEvent.clear(code);
+    expect(code).toHaveAttribute("aria-invalid", "false");
     await toAgree();
     expect(document.activeElement).toBe(screen.getByRole("heading", { level: 1 }));
     expect(screen.getByRole("button", { name: "Create account" })).toBeDisabled();
@@ -64,12 +76,41 @@ describe("the invite code's screen", () => {
     await toAgree("  CODE ");
     const create = screen.getByRole("button", { name: "Create account" });
     const adult = screen.getByRole("checkbox", { name: "I am 18 or older" });
+    const accept = screen.getByRole("checkbox", ACCEPT);
     expect(adult).toHaveAccessibleDescription("Only grown-ups hold an account");
+    expect(create).toHaveAttribute("aria-disabled", "true");
+    // Each tick missing is said and focused in turn, and nothing is sent.
+    await userEvent.click(create, { force: true });
+    expect(adult).toHaveAccessibleDescription(
+      "Only grown-ups hold an account Only someone 18 or older can create an account",
+    );
+    expect(document.activeElement).toBe(adult);
     await userEvent.click(adult);
-    expect(create).toBeDisabled();
-    await userEvent.click(screen.getByRole("checkbox", ACCEPT));
+    expect(adult).toHaveAttribute("aria-invalid", "false");
+    await userEvent.click(create, { force: true });
+    expect(accept).toHaveAccessibleDescription(
+      "To create an account, accept the Privacy Policy and the Terms of Use",
+    );
+    expect(document.activeElement).toBe(accept);
+    expect(onCreate).not.toHaveBeenCalled();
+    await userEvent.click(accept);
+    expect(create).toHaveAttribute("aria-disabled", "false");
     await userEvent.click(create);
     expect(onCreate).toHaveBeenCalledWith("CODE", [{ id: "privacy-policy", version: 2 }]);
+  });
+
+  it("keeps what was typed and ticked for when it comes again", async () => {
+    const draft = { current: undefined };
+    const { unmount } = render(invite(read(2), async () => "done", draft));
+    await toAgree();
+    await userEvent.click(screen.getByRole("checkbox", { name: "I am 18 or older" }));
+    await userEvent.click(screen.getByRole("checkbox", ACCEPT));
+    unmount();
+    render(invite(read(2), async () => "done", draft));
+    expect(screen.getByRole("checkbox", { name: "I am 18 or older" })).toBeChecked();
+    expect(screen.getByRole("checkbox", ACCEPT)).toBeChecked();
+    await userEvent.click(screen.getByRole("button", { name: "Back" }));
+    expect(screen.getByRole("textbox", { name: "Invite code" })).toHaveValue("CODE");
   });
 
   it("brings the code back with its line when api does not take it", async () => {
@@ -87,6 +128,14 @@ describe("the invite code's screen", () => {
     await vi.waitFor(() => expect(document.activeElement).toBe(code));
     await userEvent.type(code, "2");
     expect(code).toHaveAttribute("aria-invalid", "false");
+    // Taken on unchanged, the line is gone: nothing new was refused.
+    await userEvent.type(code, "{Backspace}");
+    await userEvent.click(screen.getByRole("button", { name: "Continue" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Back" }));
+    expect(screen.getByRole("textbox", { name: "Invite code" })).toHaveAttribute(
+      "aria-invalid",
+      "false",
+    );
   });
 
   it("leads from a text's name in the tick's line down to the text", async () => {

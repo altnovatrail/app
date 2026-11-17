@@ -71,11 +71,13 @@ export const ru = {
   "account.invite-intro": "Пока NovaTrail открыт по приглашениям",
   "account.adult": "Мне 18 лет или больше",
   "account.adult-line": "Аккаунт бывает только у взрослых",
+  "account.adult-needed": "Завести аккаунт может только тот, кому 18 или больше",
   "account.create": "Завести аккаунт",
   "account.held":
     "Данные другого аккаунта на этом устройстве пока не стереть. Нужно закрыть другие вкладки приложения и попробовать снова",
   "account.code-not-accepted": "Этот код не подходит или уже использован",
   "account.code-hint": "Код из приглашения",
+  "account.code-needed": "Нужно ввести инвайт-код",
   "account.next": "Продолжить",
   "account.signed-in": "Вход через Google выполнен",
   "account.agree-title": "Новый аккаунт",
@@ -83,6 +85,8 @@ export const ru = {
   "account.texts": "Принимаю {policy} и {terms}",
   "account.texts-policy": "политику конфиденциальности",
   "account.texts-terms": "условия использования",
+  "account.texts-needed":
+    "Чтобы завести аккаунт, нужно принять политику конфиденциальности и условия использования",
   "account.texts-changed": "Тексты обновились. Нужно прочитать их снова и принять",
   "account.texts-title": "Политика конфиденциальности и условия использования",
   "legal.gist": "Коротко",

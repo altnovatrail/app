@@ -1054,6 +1054,7 @@ Decided by R10. The interface of `app` is in English and Russian, by the recomme
 | a sign-in in another tab | The app is open in another tab with the previous sign-in. Close that tab and try again | «Приложение открыто в другой вкладке с прежним входом. Нужно закрыть ту вкладку и попробовать снова» | a failure screen (section 3.7) |
 | invite code | Invite code | «Инвайт-код» | the start of work |
 | the code's hint | The code from your invitation | «Код из приглашения» | the start of work |
+| no code | Enter the invite code | «Нужно ввести инвайт-код» | the start of work |
 | continue to the statement | Continue | «Продолжить» | the start of work, the code's step |
 | signed in, no account yet | Signed in with Google | «Вход через Google выполнен» | the start of work, the code's step |
 | the step of the statement | Create your account | «Новый аккаунт» | the start of work |
@@ -1061,10 +1062,12 @@ Decided by R10. The interface of `app` is in English and Russian, by the recomme
 | by invitation | NovaTrail is open by invitation for now | «Пока NovaTrail открыт по приглашениям» | the start of work |
 | the statement "I am 18" | I am 18 or older | «Мне 18 лет или больше» | the start of work (R118 spec) |
 | the statement's line | Only grown-ups hold an account | «Аккаунт бывает только у взрослых» | the start of work |
+| without the statement | Only someone 18 or older can create an account | «Завести аккаунт может только тот, кому 18 или больше» | the start of work |
 | create an account | Create account | «Завести аккаунт» | the start of work |
 | the code not accepted | This code isn't valid or has been used | «Этот код не подходит или уже использован» | a response of `api` |
 | the account's texts | Privacy Policy and Terms of Use | «Политика конфиденциальности и условия использования» | the start of work (R27) |
 | accept the texts | I accept the {policy} and the {terms}; Privacy Policy; Terms of Use | «Принимаю {policy} и {terms}»; «политику конфиденциальности»; «условия использования» | the start of work; each name a link down to its text |
+| without the tick on the texts | To create an account, accept the Privacy Policy and the Terms of Use | «Чтобы завести аккаунт, нужно принять политику конфиденциальности и условия использования» | the start of work |
 | the texts changed | The texts have changed. Read them again and accept them | «Тексты обновились. Нужно прочитать их снова и принять» | a response of `api` (R131 spec) |
 | the gist of the text | In short | «Коротко» | a legal text (R116 spec) |
 | the English is in force | The text is in English, and the English text is the one in force | «Текст — на английском, и в силе английский текст» | a legal text (privacy 7 spec) |
@@ -1079,7 +1082,7 @@ Decided by R10. The interface of `app` is in English and Russian, by the recomme
 | the pseudonym's field hint | Not a real name, up to 30 characters | «Не настоящее имя, до 30 знаков» | the start of work |
 | the pseudonym's length | From 1 to 30 characters | «От 1 до 30 знаков» | the start of work |
 | country | Country | «Страна» | the start of work |
-| choose a country | Choose a country | «Выбрать страну» | the start of work |
+| choose a country | Choose a country | «Выбрать страну» | the start of work: the row, and its line without one |
 | the country not accepted | NovaTrail doesn't take learners from this country yet | «NovaTrail пока не принимает учеников из этой страны» | a response of `api` (R131 spec) |
 | continue the start of work | Continue | «Продолжить» | the start of work |
 | the choice of the learner | Who is learning? | «Кто учится?» | the choice of the learner (section 3.6) |
@@ -1423,7 +1426,7 @@ The result of the detailing, T08. The card's items "To decide when detailed" are
 | module widgets | the widget host of `canvas`, in an iframe sandbox (R16 spec) | — | stage 4 |
 
 **The way in** — since T81, 2026-11-17 (R61), by the mockup's states `signin` … `who` (R148 spec):
-- **Where:** the sign-in and the invite code's two steps are `WelcomeScreen`: from 600 CSS px the art at the left — the brand, the trail, the tagline —, on the phone a band of it on the sign-in alone; the column in the middle; the languages in a corner of the sign-in; "Privacy and legal information" at the foot (R31). The code alone first, "Continue" off while it is blank; then the statement "I am 18" and the acceptance, each text's name in the tick's line a link down to the text, shown in place below (R27; R46), and "Back" to the code, kept. "Create account" sends the code, the statement and the versions shown together; a code `api` did not take brings the code's step back, with its line and the focus. The owner's profile: the avatar, the set's own until one is chosen, "Choose an avatar" opening the set in a pop-over centred below it (R59), and the rows "Pseudonym" and "Country", the country's row opening the list in a pop-over; "Continue" off until both are given. "Who is learning?": "For grown-ups", the brand and "Sign out" above; each profile by its avatar and pseudonym, the line whose it is its description; "Add a learner" disabled, with its line why at full opacity in `#6E6E73` (the mockup's README, «Contrast»), until epic E4; the line of made-up names at the foot.
+- **Where:** the sign-in and the invite code's two steps are `WelcomeScreen`: from 600 CSS px the art at the left — the brand, the trail, the tagline —, on the phone a band of it on the sign-in alone; the column in the middle; the languages in a corner of the sign-in; "Privacy and legal information" at the foot (R31). Each step's button looks off until its step is given but keeps the focus, and pressed says what is missing and focuses it (R20). The code alone first; then the statement "I am 18" and the acceptance, each text's name in the tick's line a link down to the text, shown in place below (R27; R46), and "Back" to the code, kept; what is typed and ticked outlives a visit to the legal pages, until the account is made or the owner signs out. "Create account" sends the code, the statement and the versions shown together; a code `api` did not take brings the code's step back, with its line and the focus. The owner's profile: the avatar, the set's own until one is chosen, "Choose an avatar" opening the set in a pop-over centred below it (R59), and the rows "Pseudonym" and "Country", the country's row opening the list in a pop-over; "Continue" waits for both. "Who is learning?": "For grown-ups", the brand and "Sign out" above; each profile by its avatar and pseudonym, the line whose it is its description; "Add a learner" disabled, with its line why at full opacity in `#6E6E73` (the mockup's README, «Contrast»), until epic E4; the line of made-up names at the foot.
 - **The avatars:** the set of `app`, a picture of Material Symbols Rounded, outlined, white on a gradient of the mockup's, in a circle — under Apache-2.0, as every icon of the set (above, "Icons"; section 3.1). The profile's field `avatar` keeps the code; no picture is uploaded (R148 spec). The order is the choice's, the first the set's own:
 
   | code | picture | gradient |
