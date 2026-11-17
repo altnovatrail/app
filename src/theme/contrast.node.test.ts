@@ -13,63 +13,39 @@ const TEXT = 4.5;
 const EDGE = 3;
 
 /**
- * Each pair the screens put together: the foreground, the layers it stands on, the top first and
- * the last opaque, and the least ratio.
+ * The pairs the screens put together, by groups: the least ratio, the foregrounds, and the grounds
+ * each stands on, a ground's layers joined by "/", the top first and the last opaque.
  */
-const PAIRS: readonly [string, readonly string[], number][] = [
-  ["text", ["card"], TEXT],
-  ["text", ["page"], TEXT],
-  ["text", ["page-owner"], TEXT],
-  ["text", ["glass", "page"], TEXT],
-  ["text", ["glass-panel", "page"], TEXT],
-  ["text-muted", ["card"], TEXT],
-  ["text-muted", ["page"], TEXT],
-  ["text-muted", ["page-owner"], TEXT],
-  ["text-muted", ["glass", "page"], TEXT],
-  ["text-muted", ["glass-panel", "page"], TEXT],
+const GROUPS: readonly [number, string, string][] = [
+  [TEXT, "text text-muted", "card page page-owner glass/page glass-panel/page"],
   // Secondary text on a chip, where #6e6e73 misses: #636366, on each grey fill; on the page the
   // fill of 0.16, a disabled button's, gives it 4.47 alone.
-  ["text-muted-on-grey", ["grey-08", "page"], TEXT],
-  ["text-muted-on-grey", ["grey-10", "page"], TEXT],
-  ["text-muted-on-grey", ["grey-12", "page"], TEXT],
-  ["text-muted-on-grey", ["grey-16", "card"], TEXT],
-  ["text-muted-on-grey", ["grey-12", "card"], TEXT],
-  ["segmented", ["card"], TEXT],
+  [TEXT, "text-muted-on-grey", "grey-08/page grey-10/page grey-12/page grey-12/card grey-16/card"],
+  // The tutor's words and marks on the sheet among them.
+  [TEXT, "segmented next tutor-words", "card"],
   // The accent as text, #0066cc, where #0071e3 misses on the page and on its own tint.
-  ["accent-text", ["card"], TEXT],
-  ["accent-text", ["page"], TEXT],
-  ["accent-text", ["page-owner"], TEXT],
-  ["accent-text", ["accent-tint", "card"], TEXT],
-  ["accent-text", ["glass", "page"], TEXT],
-  ["on-fill", ["accent"], TEXT],
-  ["on-fill", ["correct"], TEXT],
-  ["on-fill", ["not-yet"], TEXT],
-  ["on-fill", ["tooltip"], TEXT],
-  ["correct", ["card"], TEXT],
-  ["correct", ["page"], TEXT],
-  ["not-yet", ["card"], TEXT],
-  ["not-yet", ["page"], TEXT],
-  ["error", ["card"], TEXT],
-  ["error", ["page"], TEXT],
-  ["hint-text", ["hint", "card"], TEXT],
-  ["next", ["card"], TEXT],
-  // The tutor's words and marks on the sheet.
-  ["tutor-words", ["card"], TEXT],
+  [TEXT, "accent-text", "card page page-owner accent-tint/card glass/page"],
+  [TEXT, "on-fill", "accent correct not-yet tooltip"],
+  [TEXT, "correct not-yet error", "card page"],
+  [TEXT, "hint-text", "hint/card"],
   // The accent on the skill map's paper, as text too; the focus ring, a primary button's fill and
   // what is selected, against what they stand on.
-  ["accent", ["card"], TEXT],
-  ["accent", ["page"], EDGE],
-  ["accent", ["page-owner"], EDGE],
-  ["accent", ["glass", "page"], EDGE],
-  // The edge of a field against its own fill, white, on the page or on a card.
-  ["edge", ["card"], EDGE],
-  // The segments of a module's bar and the legend's swatches, on a card.
-  ["state-mastered", ["card"], EDGE],
-  ["state-review", ["card"], EDGE],
-  ["state-progress", ["card"], EDGE],
-  ["state-ready", ["card"], EDGE],
-  ["state-locked", ["card"], EDGE],
+  [TEXT, "accent", "card"],
+  [EDGE, "accent", "page page-owner glass/page"],
+  // The edge of a field against its own fill, white; the segments of a module's bar and the
+  // legend's swatches, on a card.
+  [EDGE, "edge state-mastered state-review state-progress state-ready state-locked", "card"],
 ];
+
+/** Each pair: the foreground, the layers it stands on, and the least ratio. */
+const PAIRS: readonly [string, readonly string[], number][] = GROUPS.flatMap(
+  ([least, foregrounds, grounds]) =>
+    foregrounds
+      .split(" ")
+      .flatMap((foreground) =>
+        grounds.split(" ").map((ground) => [foreground, ground.split("/"), least] as const),
+      ),
+);
 
 /**
  * The tokens no pair has to hold, and why: grey on a grey fill is a disabled button, which 1.4.3
