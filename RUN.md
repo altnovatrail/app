@@ -63,7 +63,8 @@ T72–T74 are tasks outside an epic, done before E5 opened; their bodies are in 
 | [x] | T73 | «Проще» и «Сложнее» у уровня модуля | Claude | — | — |
 | [x] | T74 | README без «Status», «License», фразы о языках и версии spec | Claude | — | — |
 | [x] | T75 | Запись и план эпика «Интерфейс по эталону» | Claude | да | — |
-| [ ] | T76 | Эталон в трёх движках и сравнение снимков | Claude | — | T75 |
+| [x] | T88 | Слова наставника — только при открытой панели | Claude | — | T75 |
+| [ ] | T76 | Эталон в трёх движках и сравнение снимков | Claude | — | T88 |
 | [ ] | T77 | Цвета, стекло, радиусы и движение эталона — поправка к R17 | Claude | — | T76 |
 | [ ] | T78 | Раскладка от ширины и всплывающие окна | Claude | — | T77 |
 | [ ] | T79 | Кнопки без подписи: значки, имена и подсказки | Claude | — | T78 |
@@ -75,8 +76,7 @@ T72–T74 are tasks outside an epic, done before E5 opened; their bodies are in 
 | [ ] | T85 | Экран задачи: условие, режим решения и ряд действий | Claude | — | T84 |
 | [ ] | T86 | Тетрадь и сочинение по эталону | Claude | — | T85 |
 | [ ] | T87 | Панель наставника сбоку и лист на телефоне | Claude | — | T86 |
-| [ ] | T88 | Слова наставника — только при открытой панели | Claude | — | T87 |
-| [ ] | T89 | Раздел для взрослых по правилам стиля эталона | Claude | — | T88 |
+| [ ] | T89 | Раздел для взрослых по правилам стиля эталона | Claude | — | T87 |
 | [ ] | T90 | Юридические страницы и экраны сбоев по правилам стиля | Claude | — | T89 |
 | [ ] | T91 | Итог эпика E5 | Claude | — | T90 |
 
@@ -92,7 +92,7 @@ A code task ends with the checks of rule 6: the recipes `ci-lint`, `ci-test`, `c
 
 **Decided at planning (T75, 2026-11-17)** — the executor's choices in a run of the orchestrator, which nobody approves (R156 spec):
 - **The tag of `spec`.** No move in the epic: the tag with T157 is here since v0.18.4 (R51), and v0.18.12 holds the rule of the panel too (R55). A newer tag is a task outside the epic, as before.
-- **The split.** One review a task, in one chain, since every task touches `src/theme/` and the screens' CSS: first what all screens share — the mockup in the browser and the comparison (T76), the style (T77), the layout from the width and the pop-overs (T78), the buttons without a caption (T79), the canvas's bar (T80); then the screens in the path's order (T81–T88); then the screens the mockup lacks (T89, T90); the summary last (T91).
+- **The split.** One review a task, in one chain, since every task touches `src/theme/` and the screens' CSS. The rule of the tutor's panel goes first, on the panel as it is (T88; the author's word of 2026-11-17: the tutor's words take about 97 % of the money spent on AI, measurements 3.20 `tutor`); then what all screens share — the mockup in the browser and the comparison (T76), the style (T77), the layout from the width and the pop-overs (T78), the buttons without a caption (T79), the canvas's bar (T80); then the screens in the path's order (T81–T87); T78 and every task after it keep T88's rule; then the screens the mockup lacks (T89, T90); the summary last (T91).
 - **The comparison of snapshots** (T76 builds it and records it as a decision):
   - *Snapshots:* Playwright in Node, as `walk/`, in Chromium, WebKit and Firefox, viewports 390 × 844 and 1194 × 834, `reducedMotion: "reduce"`, `animations: "disabled"`; the mockup's `#frame` by its README, `app`'s screen as its screen tests draw it — the Vitest browser projects with the routing transport in place of `api` (R45), synthetic data, no `api` and no development token, so that it runs in CI —; the measurements of both sides are compared in Node, and how one run brings them together T76 decides; the PNGs are an artifact of the run, never committed.
   - *Regions, not pixels:* each compared state is a list of regions — a pair of locators, one in the mockup and one in `app` — the top bar, a card, a primary button, the tool bar, the tutor's panel, a pop-over, the row of actions. A region is measured by its box and its computed style: the background and border colours, the radius, the text's colour, size and weight, not its glyphs, nor a width that follows the text.
@@ -231,7 +231,7 @@ A code task ends with the checks of rule 6: the recipes `ci-lint`, `ci-test`, `c
   - состояния `task-mode`, `task-empty`, `task-reading`, `task-not-yet`, `task-correct`, `choice`, `choice-wrong`, `solution-ask`;
   - условие — картой, на телефоне свёрнуто в строку; режим «Step by step» или «On my own» — окном T78; варианты ответа — за «Choose an answer»;
   - состояния `t155` — задача уже решена, сбои, причины нечитаемого ответа, строки скрытой кнопки — по правилам стиля, по ключу строки.
-- **Не делать:** панели наставника — T87; правила слов — T88.
+- **Не делать:** панели наставника — T87; правило слов уже дала T88 — экран его сохраняет.
 - **Как проверить:** сравнение этих состояний (T76); тесты экрана задачи в трёх движках.
 - **Разделы:** R148 spec; R21, R22; [docs/architecture.md](docs/architecture.md), раздел 3.3; README эталона; заметка `t155`.
 
@@ -254,21 +254,9 @@ A code task ends with the checks of rule 6: the recipes `ci-lint`, `ci-test`, `c
   - панель 344 px справа от верхней панели до 16 px снизу, лист сдвигается влево; на телефоне лист на половину высоты, ручка 88 × 44 — на весь экран, `tools-hidden` на канве, пока лист открыт;
   - голова — доля квоты и динамик; шаги решения, пилюля шага при закрытой панели; Hint и «Explain differently»; вердикт строкой в открытой панели; «Report a problem» и её форма;
   - кнопка наставника 56 px у правого края, на телефоне над рядом; без поля ввода и микрофона.
-- **Не делать:** правила слов — T88: до неё слова просятся, как сейчас.
+- **Не делать:** нового правила слов — его дала T88: панель и лист его сохраняют, кнопка наставника, Hint и пилюля шага открывают панель, вердикт — нет.
 - **Как проверить:** сравнение этих состояний (T76); тесты панели, листа и `tools-hidden`.
 - **Разделы:** R148, R82, R123, R98 spec; R33, R37, R36; [docs/architecture.md](docs/architecture.md), раздел 3.3; README эталона.
-
-#### T88. Слова наставника — только при открытой панели
-
-- **Цель:** наставник говорит о работе только при открытой панели, как велит вторая поправка 2026-11-17 к R148 spec.
-- **Почему:** слово автора 2026-11-17 (T182 spec); поправка 2026-11-17 к R97 spec; единственная перемена поведения в эпике.
-- **Сделать:**
-  - при закрытой панели «Check» даёт чтение и вердикт программы карточкой, без `GetRungWords` и `GetCorrectAnswerWords`; панель не открывается вердиктом;
-  - открытие панели — кнопкой наставника, Hint или пилюлей шага — один раз просит слова к последней отправке задачи на экране, давшей «not yet» или «correct», если их не просили: после «not yet» — слова ступени с работой этой отправки, после «correct» — слова верного ответа; позднее «unreadable» или «unchecked» не сбивает; повторное открытие не просит снова;
-  - работа этой отправки — в памяти, пока экран задачи открыт; ушёл с экрана или начал другую попытку — не просить ничего;
-  - при открытой панели — как сейчас; Hint и «Explain differently» — по нажатию; [docs/architecture.md](docs/architecture.md), раздел 3.3, — поправкой к своей записи.
-- **Как проверить:** тесты: закрытая панель — ни одного вызова слов; открытие — один вызов с работой нужной отправки; повторное открытие — ни одного; уход с экрана — ни одного; Д29 — по-прежнему.
-- **Разделы:** R148, R97, R82, R67 spec; О-26; Д29; [docs/architecture.md](docs/architecture.md), раздел 3.3.
 
 #### T89. Раздел для взрослых по правилам стиля эталона
 

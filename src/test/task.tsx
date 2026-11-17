@@ -26,6 +26,7 @@ export function blinkingCheck() {
       notSaved={false}
       pending={false}
       blink
+      panelOpen={false}
       onHistoryChange={() => {}}
       onMode={() => {}}
       onGoTo={() => {}}

@@ -2,7 +2,8 @@
 // R53 in docs/decisions.md): the mode's two buttons by the heading, the voicing switched on and off,
 // the canvas with "Read aloud" above it and what each screen puts under it, the tutor's panel beside
 // it from 64rem and above it on a narrower screen — the hint and the tutor's words at its top, the
-// steps under them, or the attempt's result once it is over —, and the row of Check below them.
+// steps under them, or the attempt's result once it is over —, and the row of Check below them. By
+// steps the panel stands always; on my own, as each screen says.
 // Each screen gives what is its own: under the canvas, the words, the result and the row's buttons.
 import type {
   CanvasElement,
@@ -138,7 +139,7 @@ export function TaskLayout({
   parts,
   over,
   underCanvas,
-  speaking,
+  panel,
   tutor,
   result,
   check,
@@ -148,8 +149,8 @@ export function TaskLayout({
   readonly over: boolean;
   /** What stands under the canvas. */
   readonly underCanvas: ReactNode;
-  /** The tutor has something to say, or is about to: the panel comes for it on my own too. */
-  readonly speaking: boolean;
+  /** The panel stands on my own too: the screen's rule says when. */
+  readonly panel: boolean;
   /** The block "Tutor", under the hint. */
   readonly tutor: ReactNode;
   /** The result, once the attempt is over. */
@@ -197,7 +198,7 @@ export function TaskLayout({
           />
           {underCanvas}
         </div>
-        {over || mode === "steps" || parts.hint !== undefined || speaking ? (
+        {over || mode === "steps" || panel ? (
           <aside className="nt-task-panel" aria-label={words.text("task.tutor")}>
             {over ? (
               result

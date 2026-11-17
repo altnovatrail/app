@@ -2,7 +2,11 @@
 // docs/decisions.md): the canvas and below it the items with their options and what was read, the
 // tutor's panel beside it from 64rem and above it on a narrower screen, and Check in a row of its
 // own below them. The mode's two buttons stand by the heading. The tutor's words stand at the top
-// of the panel, which comes for them on my own too, with the hint asked for. Hint stands beside
+// of the panel, with the hint asked for. By steps the panel stands always, its steps in it; on my
+// own the button "Tutor" beside Check opens and closes it, and Hint opens it — a verdict does not,
+// and with it closed the tutor says nothing of the work (the second 2026-11-17 amendment to R148
+// in spec; T88). Once the task is solved the same button stands in its result, which holds the words
+// after a correct answer only while the panel is open. Hint stands beside
 // Check always, and "Show the solution" too when the learner may ask for it, with a word of what it
 // ends before it does (R22). Once the task is solved or its solution shown, the panel gives way to
 // its result: "Correct" or "Solution shown", the words after a correct answer if any came — or why
@@ -43,6 +47,10 @@ export interface TaskScreenProps extends TaskParts {
   readonly wordsCame?: boolean;
   /** The outcome of AI at the last check, in words: a failure of AI, a quota, a limit. */
   readonly outcome?: string;
+  /** The tutor's panel is open: always by steps, on my own as the learner left it. */
+  readonly panelOpen: boolean;
+  /** The button "Tutor", which opens the panel and closes it: on my own alone. */
+  readonly onPanel?: () => void;
   /** "Explain differently", while the rung has the right to it. */
   readonly onExplain?: () => void;
   readonly explaining?: boolean;
@@ -75,6 +83,17 @@ export function TaskScreen(props: TaskScreenProps) {
   }, [confirming]);
   const explanation = manifest?.languages.explanation;
   const solved = solution !== undefined;
+  const tutorButton =
+    props.onPanel === undefined ? null : (
+      <button
+        type="button"
+        className="nt-secondary"
+        aria-expanded={props.panelOpen}
+        onClick={props.onPanel}
+      >
+        {words.text("task.tutor")}
+      </button>
+    );
   // The crop of a handwriting sheet goes to AI whole: the reminder to write no names stands before
   // each submission, and describes Check (R127 in spec; R53).
   const whole = goesWhole(task);
@@ -109,13 +128,10 @@ export function TaskScreen(props: TaskScreenProps) {
           onChoose={props.onChoose}
         />
       }
-      speaking={
-        props.tutorWords !== undefined ||
-        props.wordsFailure !== undefined ||
-        props.wordsWaiting === true
-      }
+      panel={props.panelOpen}
       tutor={
         <TutorWords
+          always={props.mode === "self"}
           words={props.tutorWords}
           language={explanation}
           {...(props.wordsFailure === undefined ? {} : { failure: props.wordsFailure })}
@@ -135,12 +151,16 @@ export function TaskScreen(props: TaskScreenProps) {
               <Verdict verdict="correct" />
             )}
           </p>
-          <TutorWords
-            words={props.tutorWords}
-            language={explanation}
-            {...(props.wordsFailure === undefined ? {} : { failure: props.wordsFailure })}
-            report={props.report}
-          />
+          {tutorButton === null ? null : <div className="nt-buttons">{tutorButton}</div>}
+          {props.panelOpen ? (
+            <TutorWords
+              words={props.tutorWords}
+              language={explanation}
+              {...(props.wordsFailure === undefined ? {} : { failure: props.wordsFailure })}
+              waiting={props.wordsWaiting === true}
+              report={props.report}
+            />
+          ) : null}
           <Solution parts={solution ?? []} language={explanation} media={props.media} />
           <ResultEnd parts={props} />
         </>
@@ -172,6 +192,7 @@ export function TaskScreen(props: TaskScreenProps) {
                 </span>
               )}
               <HintButton parts={props} />
+              {tutorButton}
               {props.onShow === undefined || confirming ? null : (
                 <button
                   ref={showButton}
