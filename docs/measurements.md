@@ -80,3 +80,13 @@ The times of the release's trial and of the jobs of CI before and after the move
 - **The release.** "Work out the version": 176 s → 27 s — the core alone, built from the Dockerfile with no cache, in 16 s of it. "Build the files": 4 s on `main`, where nothing of `paths` had changed, → 5 s on the trial, which built `app_v0.1.14.tar.gz` in `toolchain-core`, the docker builder reusing the core's layers of the step before.
 - **The checks without a browser**, the image's steps — from the cache, from the job toolchain and the load — and the recipe: "TypeScript / lint" 76 s + 6 s → 22 s + 9 s; "TypeScript / vuln" 48 s + 8 s → 38 s + 1 s; "TypeScript / licenses" 60 s + 18 s → 59 s + 15 s, 48 s of it the artifact's download. Each logged «ci-… runs in the stage toolchain-core», and "Documents" «The checks without a browser run in the stage toolchain-core».
 - **The tests**, in `toolchain`, from the artifact rather than the cache: "TypeScript / test" 79 s + 74 s → 89 s + 72 s; "TypeScript / engines" 60 s + 90 s → 138 s + 96 s. "TypeScript / toolchain" built both stages in 168 s and uploaded them in 40 s; apt fetched its indexes from the snapshot alone, «Fetched 33.6 MB in 8s», then 203 MB of packages in 77 s. The whole run of CI: 333 s → 676 s, the cold build of the first run on a new Dockerfile; a run whose Dockerfile is in the cache, from the next push to `main`, takes both images from it.
+
+## 8. The sessions of epic E3, T52, 2026-11-17
+
+The sessions of Claude Code in this repository over epic E3, at its archive (RUN.md, Epics; R145 spec), by `just -f spec/justfile tokens-report --since 2026-11-12 --row` on 2026-11-17T04:31 UTC, before T52's commit, the columns as in measurements 1.9 spec. The window opens on the first day of the epic, so it also holds the end of E2, T31, of the same day, and the tasks outside the epic, T53–T55 and T61–T71.
+
+| Project | Window, UTC | Sessions | Calls, main / subagents | Context of a call, k, main / subagents | Compactions | Cost at API prices |
+|---|---|---|---|---|---|---|
+| `-workspaces-app` — epic E3, T52 | 2026-11-12T00:00 … 2026-11-17T04:31 | 37 | 4,084 / 3,584 | 167.2 / 149.4 | 14 | $453.67 |
+
+- **Against the threshold of R145 spec.** The reference of `app` is its row of T124 in measurements 1.9 spec, 141.7 thousand over 188 main calls: the context of a main call is 18 % above it, under the 25 % that calls an analysis. `docs-budgets.json` was raised twice since then, by T59 and T62 (`git log -- docs-budgets.json`), under three, and T52 raises nothing; and a quarter has not passed since R145 spec itself, 2026-11-12. No task of analysis comes.
