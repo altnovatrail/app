@@ -1,48 +1,155 @@
 /*
- * The theme of app (section 3.9 of docs/architecture.md; R17 in docs/decisions.md): light, its
- * colours the tokens below, whose contrast the test of src/theme/contrast.node.test.ts reads from
- * this file — text 4.5:1, borders, the focus ring and marks 3:1. Sizes in rem, so that the page's
- * zoom and the reader's font size grow them; each target at least 44 × 44 CSS px (2.5.5); no motion
- * unless prefers-reduced-motion says none is wanted; the system's colours in forced colours, which nothing here turns off.
+ * The theme of app (section 3.9 of docs/architecture.md; R17 and its 2026-11-17 amendment in
+ * docs/decisions.md): light, the roles and colours of the interface mockup's README, «The style»,
+ * with the replacements of its «Contrast», whose pairs the test of src/theme/contrast.node.test.ts
+ * reads from the tokens below — text 4.5:1, an edge, the focus ring and a mark 3:1, a translucent
+ * colour laid over what it stands on. Sizes in rem, so that the page's zoom and the reader's font
+ * size grow them; each target at least 44 × 44 CSS px (2.5.5); motion of 0.15–0.35 s, and none when
+ * prefers-reduced-motion asks for less; the system's colours in forced colours, which nothing here
+ * turns off. The font is the system's, as before.
  */
 :root {
-  --nt-background: #ffffff;
-  --nt-surface: #f3f5f9;
-  --nt-text: #1a1c22;
-  --nt-text-muted: #4b5263;
-  --nt-border: #6b7280;
-  --nt-primary: #1d4ed8;
-  --nt-on-primary: #ffffff;
-  --nt-focus: #1d4ed8;
-  --nt-correct: #15803d;
-  --nt-not-yet: #b45309;
-  --nt-error: #b91c1c;
-  --nt-mark: #2563eb;
+  /* The grounds: the page, the owner's profile and "Who's learning?", a card, a pop-over, the sheet. */
+  --nt-page: #f2f2f7;
+  --nt-page-owner: #f5f5f7;
+  --nt-card: #ffffff;
 
-  /* The canvas in the same colours (its custom properties, R28 in canvas). */
+  /* Text, secondary text — #636366 on a grey fill, where #6e6e73 misses 4.5:1 —, a segmented control. */
+  --nt-text: #1d1d1f;
+  --nt-text-muted: #6e6e73;
+  --nt-text-muted-on-grey: #636366;
+  --nt-segmented: #3a3a3c;
+
+  /*
+   * The accent: a primary button's fill, what is selected, the focus ring; as text #0066cc, since
+   * #0071e3 misses 4.5:1 on the page and on its own tint. White on the accent and on the badges.
+   */
+  --nt-accent: #0071e3;
+  --nt-accent-text: #0066cc;
+  --nt-accent-tint: rgba(0, 113, 227, 0.1);
+  --nt-on-fill: #ffffff;
+
+  /*
+   * "Correct" #1e7a35, since white on the mockup's #248a3d misses 4.5:1; "Not yet" and a mistake —
+   * an error of the PIN and of the own key too — one colour; a hint, what comes next, the tutor's
+   * words and marks on the sheet.
+   */
+  --nt-correct: #1e7a35;
+  --nt-not-yet: #c93400;
+  --nt-error: #c93400;
+  --nt-hint: rgba(255, 204, 0, 0.2);
+  --nt-hint-text: #9a5b00;
+  --nt-next: #a85a00;
+  --nt-tutor-words: #23308c;
+
+  /* The grey fills of fields, chips and disabled buttons; what is disabled; the edge of a field. */
+  --nt-grey-08: rgba(118, 118, 128, 0.08);
+  --nt-grey-10: rgba(118, 118, 128, 0.1);
+  --nt-grey-12: rgba(118, 118, 128, 0.12);
+  --nt-grey-16: rgba(118, 118, 128, 0.16);
+  --nt-disabled: #8e8e93;
+  --nt-edge: #8e8e93;
+
+  /*
+   * The states of a module's skills on its bar and in the legend, by «Contrast»: mastered, time to
+   * review, in progress, ready to start, locked — 3:1 on a card, with a white gap between segments.
+   */
+  --nt-state-mastered: #30a14e;
+  --nt-state-review: #c77700;
+  --nt-state-progress: #0a84ff;
+  --nt-state-ready: #3d8be0;
+  --nt-state-locked: #8e8e93;
+
+  /* A tooltip, opaque: over the canvas a translucent one would part with the strokes beneath it. */
+  --nt-tooltip: #1d1d1f;
+
+  /*
+   * Glass, for the bars and the tutor's panel over the sheet: the fill alone holds the contrast where
+   * backdrop-filter is not supported.
+   */
+  --nt-glass: rgba(255, 255, 255, 0.76);
+  --nt-glass-panel: rgba(255, 255, 255, 0.86);
+  --nt-glass-shadow:
+    0 0 0 0.5px rgba(0, 0, 0, 0.08), 0 8px 28px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --nt-card-shadow: 0 1px 2px rgba(0, 0, 0, 0.05), 0 8px 24px rgba(0, 0, 0, 0.05);
+
+  /*
+   * The radii: a round button and an icon's target 22, the top bar 24, the tool bar 26, the tutor's
+   * panel and a sheet of the phone 28, a card 16 (14–18), the primary button 14, a field and a small
+   * card 12, a tooltip 9, a mark and a bar 4.
+   */
+  --nt-radius-round: 1.375rem;
+  --nt-radius-top-bar: 1.5rem;
+  --nt-radius-tool-bar: 1.625rem;
+  --nt-radius-panel: 1.75rem;
+  --nt-radius-card: 1rem;
+  --nt-radius-main: 0.875rem;
+  --nt-radius-field: 0.75rem;
+  --nt-radius-tooltip: 0.5625rem;
+  --nt-radius-mark: 0.25rem;
+
+  /* The sizes: a target 44, the primary button 52; type 13, 14, 17, 22 and 28; weights 400–700. */
+  --nt-target: 2.75rem;
+  --nt-main: 3.25rem;
+  --nt-size-caption: 0.8125rem;
+  --nt-size-body: 0.875rem;
+  --nt-size-emphasis: 1.0625rem;
+  --nt-size-title: 1.375rem;
+  --nt-size-heading: 1.75rem;
+  --nt-weight-medium: 500;
+  --nt-weight-bold: 600;
+  --nt-weight-heading: 700;
+
+  /* Motion: 0.15 s for a colour, 0.35 s at most for a move, on the mockup's curve. */
+  --nt-quick: 0.15s;
+  --nt-slow: 0.35s;
+  --nt-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  /*
+   * The canvas in the same colours (its custom properties, R28 in canvas): the tutor's marks in the
+   * colour of its words on the sheet; the accent and the glass of its bar, which canvas reads from
+   * 0.3.26 (T80).
+   */
   --novatrail-canvas-ink: var(--nt-text);
-  --novatrail-canvas-paper: var(--nt-background);
-  --novatrail-canvas-mark: var(--nt-mark);
+  --novatrail-canvas-paper: var(--nt-card);
+  --novatrail-canvas-mark: var(--nt-tutor-words);
+  --novatrail-canvas-accent: var(--nt-accent);
+  --novatrail-canvas-glass: var(--nt-glass);
 
   /*
    * The skill map in the same colours (its custom properties, R10 in skill-map): the accent on the
-   * paper and the paper on the accent are the primary's pairs above, 4.5:1 and more.
+   * paper and white on the accent, 4.70:1 either way.
    */
-  --novatrail-skill-map-paper: var(--nt-background);
+  --novatrail-skill-map-paper: var(--nt-card);
   --novatrail-skill-map-ink: var(--nt-text);
-  --novatrail-skill-map-accent: var(--nt-primary);
+  --novatrail-skill-map-accent: var(--nt-accent);
 
   color-scheme: light;
 }
 
 body {
   margin: 0;
-  background: var(--nt-background);
+  background: var(--nt-page);
   color: var(--nt-text);
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", sans-serif;
-  font-size: 100%;
+  font-size: var(--nt-size-body);
   line-height: 1.5;
   overflow-wrap: anywhere;
+}
+
+/*
+ * The weights: 400, 500 and 600, bold being 600, as the mockup's «The style» names them; a heading
+ * 700, as its template draws every heading.
+ */
+b,
+strong,
+th {
+  font-weight: var(--nt-weight-bold);
+}
+h1,
+h2,
+h3 {
+  font-weight: var(--nt-weight-heading);
 }
 
 main {
@@ -54,13 +161,13 @@ main {
 
 h1 {
   margin-block: 0 1rem;
-  font-size: 1.75rem;
+  font-size: var(--nt-size-heading);
   line-height: 1.25;
 }
 
 h2 {
   margin-block: 1.5rem 1rem;
-  font-size: 1.375rem;
+  font-size: var(--nt-size-title);
   line-height: 1.25;
 }
 h1:focus:not(:focus-visible) {
@@ -71,44 +178,82 @@ p {
   margin-block: 0 1rem;
 }
 
+/*
+ * A button as the mockup's pill: 44 high, round, the accent's fill and white semibold text. Its
+ * border has no colour of its own, so that forced colours, which take the fill away, draw its edge.
+ */
 button {
   box-sizing: border-box;
-  min-block-size: 2.75rem;
-  min-inline-size: 2.75rem;
+  min-block-size: var(--nt-target);
+  min-inline-size: var(--nt-target);
   padding: 0.5rem 1rem;
-  border: 0.125rem solid var(--nt-primary);
-  border-radius: 0.5rem;
-  background: var(--nt-primary);
-  color: var(--nt-on-primary);
+  border: 0.0625rem solid transparent;
+  border-radius: var(--nt-radius-round);
+  background: var(--nt-accent);
+  color: var(--nt-on-fill);
   font: inherit;
+  font-weight: var(--nt-weight-bold);
   cursor: pointer;
 }
 
-/* Motion only for whoever has not asked for less (2.3.3). */
+/* The primary button of a screen: 52 high, radius 14, 16 px semibold. */
+button.nt-main {
+  min-block-size: var(--nt-main);
+  border-radius: var(--nt-radius-main);
+  font-size: 1rem;
+}
+
+/*
+ * Motion only for whoever has not asked for less (2.3.3), on the mockup's curve: every transition
+ * and animation of app is under this query, so prefers-reduced-motion: reduce leaves none, as the
+ * mockup's template turns them all off.
+ */
 @media (prefers-reduced-motion: no-preference) {
   button {
     transition:
-      background-color 0.15s,
-      color 0.15s;
+      background-color var(--nt-quick) var(--nt-ease),
+      color var(--nt-quick) var(--nt-ease);
   }
 }
 
 button[aria-pressed="false"] {
-  background: var(--nt-background);
-  color: var(--nt-primary);
+  background: var(--nt-card);
+  color: var(--nt-accent-text);
 }
 
 /* The chosen one is told by more than colour, which forced colours take away (1.4.1). */
 button[aria-pressed="true"] {
-  font-weight: 700;
   text-decoration: underline;
   text-decoration-thickness: 0.125rem;
   text-underline-offset: 0.25rem;
 }
 
 :focus-visible {
-  outline: 0.1875rem solid var(--nt-focus);
+  outline: 0.125rem solid var(--nt-accent);
   outline-offset: 0.125rem;
+}
+
+/*
+ * Glass, the mockup's `.glass`, for what floats over the sheet: a bar, and with .nt-glass-panel the
+ * tutor's panel, more opaque. Where backdrop-filter is not supported, the fill alone is drawn, and
+ * the pairs of the contrast test lay the fill alone over what it stands on.
+ */
+.nt-glass {
+  background: var(--nt-glass);
+  -webkit-backdrop-filter: blur(22px) saturate(180%);
+  backdrop-filter: blur(22px) saturate(180%);
+  box-shadow: var(--nt-glass-shadow);
+}
+.nt-glass.nt-glass-panel {
+  background: var(--nt-glass-panel);
+}
+
+/* The summary of a legal text's gist opens it: a target of 44 × 44 at the body's 14 px too. */
+summary {
+  box-sizing: border-box;
+  min-block-size: var(--nt-target);
+  padding-block: 0.6875rem;
+  cursor: pointer;
 }
 
 /* A group of buttons, which wraps on a narrow screen. */
@@ -128,21 +273,27 @@ button[aria-pressed="true"] {
   padding: 0;
 }
 
-/* The offer to reload, over the screen. */
+/* The offer to reload, over the screen, as a card. */
 .nt-offer {
   box-sizing: border-box;
   padding: 1rem;
-  background: var(--nt-surface);
+  background: var(--nt-card);
+  box-shadow: var(--nt-card-shadow);
 }
-/* A second action beside the main one: the primary's colours the other way round. */
+/*
+ * A second action beside the main one: the accent as text on white, which holds 4.5:1 on the page
+ * too, where the accent's tint would not.
+ */
 button.nt-secondary {
-  background: var(--nt-background);
-  color: var(--nt-primary);
+  background: var(--nt-card);
+  color: var(--nt-accent-text);
 }
+/* A disabled button: grey on a grey fill, as an inactive control may be (1.4.3). */
 button:disabled,
 button[aria-disabled="true"] {
+  background: var(--nt-grey-16);
+  color: var(--nt-disabled);
   cursor: default;
-  opacity: 0.6;
 }
 /* A field of a form: its label above, its hint and its error below (3.3.1, 3.3.2). */
 .nt-field {
@@ -151,18 +302,18 @@ button[aria-disabled="true"] {
 .nt-field > label {
   display: block;
   margin-block-end: 0.25rem;
-  font-weight: 700;
+  font-weight: var(--nt-weight-bold);
 }
 .nt-field input:not([type="checkbox"]),
 .nt-field select,
 .nt-field textarea {
   box-sizing: border-box;
   inline-size: 100%;
-  min-block-size: 2.75rem;
-  padding: 0.5rem;
-  border: 0.125rem solid var(--nt-border);
-  border-radius: 0.5rem;
-  background: var(--nt-background);
+  min-block-size: var(--nt-target);
+  padding: 0.5rem 0.75rem;
+  border: 0.0625rem solid var(--nt-edge);
+  border-radius: var(--nt-radius-field);
+  background: var(--nt-card);
   color: var(--nt-text);
   font: inherit;
 }
@@ -178,7 +329,7 @@ button[aria-disabled="true"] {
   inline-size: 2.75rem;
   block-size: 2.75rem;
   margin: 0;
-  accent-color: var(--nt-primary);
+  accent-color: var(--nt-accent);
 }
 .nt-hint {
   margin: 0.25rem 0 0;
@@ -187,7 +338,7 @@ button[aria-disabled="true"] {
 .nt-error {
   margin: 0.25rem 0 0;
   color: var(--nt-error);
-  font-weight: 700;
+  font-weight: var(--nt-weight-bold);
 }
 /* "Read aloud" beside a text, and the line of why it cannot read, which wraps below it. */
 .nt-read-aloud {
@@ -215,7 +366,7 @@ button[aria-disabled="true"] {
 .nt-bar > p {
   flex: 1 1 auto;
   margin: 0;
-  font-weight: 700;
+  font-weight: var(--nt-weight-bold);
 }
 /*
  * NOTICE and LICENSE on the page of notices, as they are (R31): their lines and spaces kept, and
@@ -223,13 +374,13 @@ button[aria-disabled="true"] {
  */
 .nt-notice {
   margin: 0 0 1rem;
-  font-size: 0.875rem;
+  font-size: var(--nt-size-caption);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
 /* The terms of a place where the app does not meet its standard, on the page Accessibility. */
 .nt-terms > dt {
-  font-weight: 700;
+  font-weight: var(--nt-weight-bold);
 }
 .nt-terms > dd {
   margin: 0 0 0.75rem;
@@ -240,15 +391,18 @@ button[aria-disabled="true"] {
   padding: 0;
   list-style: none;
 }
+/* A card: white on the page, its edge a soft shadow, and in forced colours a border. */
 .nt-card {
   margin: 0 0 1rem;
   padding: 1rem;
-  border: 0.125rem solid var(--nt-border);
-  border-radius: 0.5rem;
+  border: 0.0625rem solid transparent;
+  border-radius: var(--nt-radius-card);
+  background: var(--nt-card);
+  box-shadow: var(--nt-card-shadow);
 }
 .nt-card h3 {
   margin-block: 0 0.5rem;
-  font-size: 1.25rem;
+  font-size: var(--nt-size-emphasis);
 }
 .nt-card .nt-buttons {
   margin: 0;
@@ -309,7 +463,7 @@ novatrail-canvas {
 .nt-choices > legend {
   margin-block-end: 0.5rem;
   padding: 0;
-  font-weight: 700;
+  font-weight: var(--nt-weight-bold);
 }
 .nt-option {
   display: flex;
@@ -328,11 +482,11 @@ novatrail-canvas {
   inline-size: 2.75rem;
   block-size: 2.75rem;
   margin: 0;
-  accent-color: var(--nt-primary);
+  accent-color: var(--nt-accent);
 }
 /* A verdict in a word and a sign: the colour adds to them, never stands alone (1.4.1). */
 .nt-verdict {
-  font-weight: 700;
+  font-weight: var(--nt-weight-bold);
   white-space: nowrap;
 }
 .nt-verdict-correct {
@@ -351,7 +505,7 @@ novatrail-canvas {
   margin-block-end: 0.5rem;
 }
 .nt-step-bar > li[aria-current="step"] {
-  font-weight: 700;
+  font-weight: var(--nt-weight-bold);
 }
 .nt-step {
   display: inline-block;
@@ -363,7 +517,7 @@ novatrail-canvas {
 }
 .nt-steps h2 {
   margin-block: 0 0.5rem;
-  font-size: 1.25rem;
+  font-size: var(--nt-size-emphasis);
 }
 .nt-steps h2:focus:not(:focus-visible) {
   outline: none;
@@ -374,10 +528,10 @@ novatrail-canvas {
   list-style: none;
 }
 .nt-technique-title {
-  font-weight: 700;
+  font-weight: var(--nt-weight-bold);
 }
 .nt-result {
-  font-size: 1.375rem;
+  font-size: var(--nt-size-title);
 }
 .nt-solution img {
   max-inline-size: 100%;
@@ -394,14 +548,14 @@ novatrail-canvas {
 }
 @media (prefers-reduced-motion: reduce) {
   button.nt-blink {
-    outline: 0.1875rem solid var(--nt-focus);
+    outline: 0.1875rem solid var(--nt-accent);
     outline-offset: 0.25rem;
   }
 }
 @keyframes nt-blink {
   50% {
-    background: var(--nt-on-primary);
-    color: var(--nt-primary);
+    background: var(--nt-card);
+    color: var(--nt-accent-text);
   }
 }
 /* What was read in a slot written by hand, or why not, below the item (R21 in docs/decisions.md). */
@@ -411,17 +565,18 @@ novatrail-canvas {
 .nt-item-text {
   margin: 0;
 }
-/* The tutor's words, at the top of the panel. */
+/* The tutor's words, at the top of the panel, as a card. */
 .nt-tutor {
   margin: 0 0 1rem;
   padding: 1rem;
-  border: 0.125rem solid var(--nt-border);
-  border-radius: 0.5rem;
-  background: var(--nt-surface);
+  border: 0.0625rem solid transparent;
+  border-radius: var(--nt-radius-card);
+  background: var(--nt-card);
+  box-shadow: var(--nt-card-shadow);
 }
 .nt-tutor h2 {
   margin-block: 0 0.5rem;
-  font-size: 1.25rem;
+  font-size: var(--nt-size-emphasis);
 }
 .nt-tutor p {
   margin: 0;
@@ -432,7 +587,7 @@ novatrail-canvas {
 }
 .nt-report h3 {
   margin-block: 0 0.5rem;
-  font-size: 1.125rem;
+  font-size: var(--nt-size-emphasis);
 }
 .nt-report .nt-hint {
   margin-block: 0.25rem 0.5rem;
@@ -455,7 +610,7 @@ novatrail-canvas {
 /* The hint asked for: what the task gives and asks, its techniques and its question (R22). */
 .nt-hint-label {
   margin: 0;
-  font-weight: 700;
+  font-weight: var(--nt-weight-bold);
 }
 .nt-hint-list {
   margin: 0 0 0.5rem;
@@ -475,17 +630,16 @@ novatrail-canvas {
   list-style: none;
 }
 button.nt-segment {
-  background: var(--nt-background);
-  color: var(--nt-primary);
+  background: var(--nt-card);
+  color: var(--nt-accent-text);
 }
 /* The sign of a segment passed: drawn, with no text of its own for the chip's name. */
 button.nt-segment-passed::before {
   content: "✓ " / "";
 }
 button.nt-segment-shown {
-  background: var(--nt-primary);
-  color: var(--nt-on-primary);
-  font-weight: 700;
+  background: var(--nt-accent);
+  color: var(--nt-on-fill);
 }
 .nt-segment-kind {
   display: none;
@@ -497,7 +651,7 @@ button.nt-segment-shown {
 }
 .nt-segment-heading {
   margin-block: 0.5rem;
-  font-size: 1.25rem;
+  font-size: var(--nt-size-emphasis);
 }
 .nt-segment-heading:focus:not(:focus-visible) {
   outline: none;

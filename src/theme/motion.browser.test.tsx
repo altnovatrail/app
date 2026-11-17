@@ -14,6 +14,9 @@ describe("motion", () => {
     render(inLanguage(<Offline onRetry={() => {}} />));
     const button = page.getByRole("button", { name: "Try again" }).element() as HTMLElement;
     expect(getComputedStyle(button).transitionDuration).toBe("0.15s, 0.15s");
+    expect(getComputedStyle(button).transitionTimingFunction).toBe(
+      "cubic-bezier(0.2, 0.8, 0.2, 1), cubic-bezier(0.2, 0.8, 0.2, 1)",
+    );
   });
 
   it("blinks Check once on a pause, three times a second at most", () => {
