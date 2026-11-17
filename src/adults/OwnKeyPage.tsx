@@ -7,11 +7,12 @@
 // no field. "Connect" asks `CheckOwnKey`, and only a key it accepted takes the place of the former
 // one; the key is shown by its provider and last four characters alone, never whole, and lives in
 // no state of the page but its field. "Keep on this device" is off until the adult sets it. A
-// refusal of the key, or its limit reached, stays beside it with what to do; "Remove key" is the
+// refusal of the key stays beside it with what to do, and its limit reached with which limit, when
+// access comes back if api says, and what to do about that limit; "Remove key" is the
 // one way to platform AI, and the owner's. In the device's language, as the section is (R10).
 import type { Profile } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import { OwnKeyCheck } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
-import { Cause } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
+import { Cause, LimitCause } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import {
   type FormEvent,
   type ReactNode,
@@ -25,7 +26,7 @@ import { useApi, useRequest } from "../api/ApiContext.tsx";
 import type { Api } from "../api/client.ts";
 import { type Failure, parseFailure } from "../api/failure.ts";
 import { ReadFailure } from "../api/ReadFailure.tsx";
-import { failureText } from "../api/words.ts";
+import { failureText, outcomeText } from "../api/words.ts";
 import { described } from "../app/described.ts";
 import { ADULTS, type Route } from "../app/router.ts";
 import { Screen } from "../app/Screen.tsx";
@@ -212,13 +213,29 @@ function NewKey({
   );
 }
 
-/** What to do about the last refusal of the key, or its limit. */
+/** What to do about a limit of the key, by which one ran out; one not named, or unknown, at large. */
+const LIMIT_STEPS = {
+  [LimitCause.LIMIT]: "ownkey.limit-spend",
+  [LimitCause.TIER]: "ownkey.limit-tier",
+  [LimitCause.BALANCE]: "ownkey.limit-balance",
+  [LimitCause.PAYMENT]: "ownkey.limit-payment",
+} as const;
+
+/**
+ * What to do about the last refusal of the key; or its limit — the task's line of it, with when
+ * access comes back if api said (R47), and then what to do about that limit, each a paragraph.
+ */
 function Refusal({ refusal }: { readonly refusal: KeyRefusal }) {
   const { words } = useLanguage();
+  if (refusal.cause === Cause.KEY_REFUSED) {
+    return <p className="nt-error">{words.text("ownkey.refused")}</p>;
+  }
+  const step = keyFor(LIMIT_STEPS, refusal.ownKeyLimit?.cause ?? -1, "ownkey.limit");
   return (
-    <p className="nt-error">
-      {words.text(refusal.cause === Cause.KEY_REFUSED ? "ownkey.refused" : "ownkey.limit")}
-    </p>
+    <>
+      <p className="nt-error">{outcomeText(refusal, words)}</p>
+      <p className="nt-error">{words.text(step)}</p>
+    </>
   );
 }
 

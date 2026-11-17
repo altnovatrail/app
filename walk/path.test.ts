@@ -10,12 +10,13 @@
 // stub of tutor reads as can't read this, wrong and right (R66 api) — with the tutor's words, an
 // own key api's stub checks by its ending (R73 api), refused and then accepted and kept on this
 // device, a task outside a lesson on that key and continued after a reload, the section for
-// adults with the key removed on This device, the storage of works on the server switched on, its
-// PutWork kept and This device with no warning of loss, and off again (T62), the sign-out that
-// erases the account's data, and
-// the erasure of everything. The key goes with no request but those that call AI and its check,
-// and the provider alone with those that may give a choice (R47). It asks no host but the origin and those
-// section 3.7 names for the sign-in, and nothing on the way logs an error. A response of 4xx of the
+// adults with the key removed on This device, a key the stub refuses at the ceiling of its tier,
+// with when access comes back on the task and beside the key (T71), the storage of works on the
+// server switched on, its PutWork kept and This device with no warning of loss, and off again
+// (T62), the sign-out that erases the account's data, and the erasure of everything. The key goes
+// with no request but those that call AI and its check, and the provider alone with those that may
+// give a choice (R47). It asks no host but the origin and those section 3.7 names for the sign-in,
+// and nothing on the way logs an error. A response of 4xx of the
 // origin is an error in every engine unless it is api's refusal with its cause, which the app reads
 // as the contract says; the line an engine logs for it is left to it. A lesson an earlier walk left
 // open is the lesson it walks.
@@ -79,6 +80,14 @@ const QUOTA_SPENT =
   "walk: the profile of dev-app has spent its tutor time of today: wait for the next day, or run api's just dev-app with API_DEV_APP_UID set to an account of its own (R67 api)";
 /** A synthetic own key, which api's stub accepts by its ending; with `-invalid`, refuses (R73 api). */
 const OWN_KEY = "sk-ant-walk-synthetic-wxyz";
+/**
+ * A synthetic own key on which api's stub reads nothing: the ceiling of its tier, with access back
+ * at 00:00 UTC on the first day of the next month (the 2026-11-16 amendments to R66 and R80 api).
+ */
+const TIER_KEY = "sk-ant-walk-synthetic-limit-tier";
+/** The line of the tier's ceiling and when access comes back, today, tomorrow or on its date. */
+const TIER_LINE =
+  /^Your AI key has reached the limit of its usage tier at the provider\. Access comes back (today|tomorrow|on .+) at /;
 /** The requests that may carry the own key: those that call AI, and its check (R47). */
 const KEYED = new Set([
   "SubmitWork",
@@ -716,6 +725,48 @@ describe.each(NAMED)("the path in %s", (name) => {
     if (practised === "handwriting") expect(walk.keyed.has("SubmitWork")).toBe(true);
     expect(walk.named.has("ChooseNext")).toBe(true);
     expect(walk.named.has("BeginAttempt")).toBe(true);
+    await page.getByRole("button", { name: "Close the section" }).click();
+    await home(page);
+  });
+
+  it("says when access comes back once the stub refuses a key at the ceiling of its tier", async () => {
+    shoot();
+    const { page } = walk;
+    if (practised !== "handwriting") {
+      // A tap task's check reads nothing, so no call meets the key's limit.
+      note("the task in progress is a tap task: no reading to meet the tier's ceiling");
+      return;
+    }
+    await page.getByRole("button", { name: "For grown-ups" }).click();
+    await page.getByRole("button", { name: "Set up an own AI key" }).click();
+    await page.getByRole("heading", { level: 1, name: "Own AI key" }).waitFor();
+    await page.getByLabel("Key", { exact: true }).fill(TIER_KEY);
+    await page.getByRole("button", { name: "Connect" }).click();
+    await page
+      .getByText(`Connected: a key of Anthropic ending in ${TIER_KEY.slice(-4)}`)
+      .waitFor({ timeout: 30_000 });
+    await page.getByRole("button", { name: "Close the section" }).click();
+    await home(page);
+    // The task left with its row of strokes: its check reads them on the key and meets the tier,
+    // which reads nothing — "unchecked" —, so the attempt and its work stay unfinished for the legs
+    // after this one, This device's count, PutWork and the sign-out's list.
+    await page.getByRole("button", { name: "Continue the task" }).click();
+    await page.getByRole("heading", { level: 1, name: "Task" }).waitFor();
+    await expect.poll(() => strokes(page)).toBe(8);
+    await page.getByRole("button", { name: "Check", exact: true }).click();
+    await page.getByText(TIER_LINE).first().waitFor({ timeout: 30_000 });
+    note(`the tier's ceiling: ${(await page.getByText(TIER_LINE).first().textContent()) ?? ""}`);
+    // Beside the key, the same line and what to do until then; Remove key goes to platform AI.
+    await page.goto(`${ORIGIN}/#/home`);
+    await home(page);
+    await page.getByRole("button", { name: "For grown-ups" }).click();
+    await page.getByRole("button", { name: "Set up an own AI key" }).click();
+    await page.getByRole("heading", { level: 1, name: "Own AI key" }).waitFor();
+    await page.getByText(TIER_LINE).first().waitFor();
+    await page.getByText("Replace the key, or remove it to go to the platform's AI").waitFor();
+    await page.getByRole("button", { name: "Remove key" }).click();
+    await page.getByRole("button", { name: "Erase", exact: true }).click();
+    await page.getByText("The key is removed").waitFor();
     await page.getByRole("button", { name: "Close the section" }).click();
     await home(page);
   });

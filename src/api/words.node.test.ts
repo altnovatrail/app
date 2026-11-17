@@ -179,8 +179,65 @@ describe("the words of what a call came to", () => {
       outcomeText(
         { cause: Cause.LIMIT_REACHED, ownKeyLimit: limit(LimitCause.BALANCE, at) },
         WORDS.ru,
+        new Date(2026, 10, 17, 12, 0),
       ),
     ).toBe(`На счёте вашего ключа ИИ кончились деньги. Доступ вернётся 1 декабря в ${time}`);
+  });
+
+  it("says when access comes back beside the tier's ceiling by the device's clock, and none beside the owner's limit", () => {
+    // The ceiling of the tier comes back at 00:00 UTC on the first day of the next month (R80 api).
+    const returns = new Date(Date.UTC(2026, 11, 1));
+    const tier = (at: Date | undefined) =>
+      create(OwnKeyLimitSchema, {
+        cause: LimitCause.TIER,
+        ...(at === undefined ? {} : { accessReturns: timestampFromDate(at) }),
+      });
+    const time = (language: "en" | "ru") =>
+      dateTimeFormat(language, { timeStyle: "short" }).format(returns);
+    const date = (language: "en" | "ru") =>
+      dateTimeFormat(language, { day: "numeric", month: "long" }).format(returns);
+    const on = (now: Date, words = WORDS.en) =>
+      outcomeText({ cause: Cause.LIMIT_REACHED, ownKeyLimit: tier(returns) }, words, now);
+    const daysBefore = (days: number) =>
+      new Date(returns.getFullYear(), returns.getMonth(), returns.getDate() - days, 0, 0, 0);
+    // Today: a moment later on the same day of the device's calendar, as west of UTC.
+    const noon = new Date(Date.UTC(2026, 11, 1, 12));
+    expect(
+      outcomeText(
+        { cause: Cause.LIMIT_REACHED, ownKeyLimit: tier(noon) },
+        WORDS.en,
+        new Date(noon.getTime() - 60_000),
+      ),
+    ).toBe(
+      `Your AI key has reached the limit of its usage tier at the provider. Access comes back today at ${dateTimeFormat("en", { timeStyle: "short" }).format(noon)}`,
+    );
+    expect(on(daysBefore(1), WORDS.ru)).toBe(
+      `Ваш ключ ИИ упёрся в предел своего уровня у поставщика. Доступ вернётся завтра в ${time("ru")}`,
+    );
+    expect(on(daysBefore(14))).toBe(
+      `Your AI key has reached the limit of its usage tier at the provider. Access comes back on ${date("en")} at ${time("en")}`,
+    );
+    expect(on(daysBefore(14), WORDS.ru)).toBe(
+      `Ваш ключ ИИ упёрся в предел своего уровня у поставщика. Доступ вернётся ${date("ru")} в ${time("ru")}`,
+    );
+    // A time already past — a repeat of the first answer under its key — is no promise: none.
+    expect(on(new Date(returns.getTime() + 1))).toBe(
+      "Your AI key has reached the limit of its usage tier at the provider",
+    );
+    // The tier with no time — another provider's adapter gives none —, and the owner's own limit,
+    // which never has one: the line of the limit alone, as before.
+    expect(
+      outcomeText({ cause: Cause.LIMIT_REACHED, ownKeyLimit: tier(undefined) }, WORDS.en),
+    ).toBe("Your AI key has reached the limit of its usage tier at the provider");
+    expect(
+      outcomeText(
+        {
+          cause: Cause.LIMIT_REACHED,
+          ownKeyLimit: create(OwnKeyLimitSchema, { cause: LimitCause.LIMIT }),
+        },
+        WORDS.ru,
+      ),
+    ).toBe("Достигнут предел трат, поставленный для вашего ключа ИИ");
   });
 
   it("words each failure, and a cause with no words of its own by the common string", () => {

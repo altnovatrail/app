@@ -5,8 +5,9 @@
 // are words them itself (T22, T26, T27, T32). The quota says when the tutor comes back by the
 // device's clock: today, tomorrow, or on the date of a family day that begins later (R37), and so
 // does any other line of when the next family day begins, by phrases of its own. The limit of the
-// own key reached says which limit, when the provider named it, and when access comes back, and
-// the checks of an own key exhausted say when the next check opens, by phrases of their own (R47).
+// own key reached says which limit, when the provider named it, and when access comes back, when
+// api gives `access_returns` — the ceiling of the provider's tier —, and the checks of an own key
+// exhausted say when the next check opens, each by phrases of their own (R47).
 // No DOM.
 import { Cause, LimitCause } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import { timestampDate } from "@bufbuild/protobuf/wkt";
@@ -85,6 +86,13 @@ const KEY_CHECK_PHRASES = {
   later: "api.key-checks-later",
 } as const satisfies DayPhrases;
 
+/** The limit of the own key reached, and when access comes back (R47). */
+const ACCESS_PHRASES = {
+  today: "api.access-returns-today",
+  tomorrow: "api.access-returns-tomorrow",
+  later: "api.access-returns",
+} as const satisfies DayPhrases;
+
 /**
  * A line of when a moment of api comes, on the device's clock: today — a time of today the clock
  * has passed, too, when it runs ahead of api's —, tomorrow, or on its date: later, as when a change
@@ -121,23 +129,24 @@ const LIMIT_KEYS = {
   [LimitCause.PAYMENT]: "api.limit-payment",
 } as const;
 
-/** The limit of the own key reached: which one, and when access comes back if the provider said. */
-function limitText(outcome: ReadOutcome, words: Words): string {
+/**
+ * The limit of the own key reached: which one, and when access comes back on the device's clock if
+ * the provider said — api names it beside the ceiling of the tier alone, 00:00 UTC on the first day
+ * of the next month, and never beside the owner's own limit (R80 api) —; with no time, or one
+ * already past — a repeat of an earlier answer, or a refusal kept beside the key —, none.
+ */
+function limitText(outcome: ReadOutcome, words: Words, now: Date): string {
   const limit = outcome.ownKeyLimit;
-  const known = limit !== undefined && limit.cause in LIMIT_KEYS;
-  const line = words.text(
-    known ? LIMIT_KEYS[limit.cause as keyof typeof LIMIT_KEYS] : "api.limit-reached",
-  );
+  const line = words.text(keyFor(LIMIT_KEYS, limit?.cause ?? -1, "api.limit-reached"));
   if (limit?.accessReturns === undefined) return line;
   const at = timestampDate(limit.accessReturns);
-  const date = dateTimeFormat(words.language, { day: "numeric", month: "long" }).format(at);
-  const time = dateTimeFormat(words.language, { timeStyle: "short" }).format(at);
-  return `${line}. ${words.text("api.access-returns", { date, time })}`;
+  if (at <= now) return line;
+  return `${line}. ${dayText(ACCESS_PHRASES, at, words, now)}`;
 }
 
 /** The words of an outcome of AI, as of `now`. */
 export function outcomeText(outcome: ReadOutcome, words: Words, now: Date = new Date()): string {
-  if (outcome.cause === Cause.LIMIT_REACHED) return limitText(outcome, words);
+  if (outcome.cause === Cause.LIMIT_REACHED) return limitText(outcome, words, now);
   return causeText(outcome.cause, outcome.nextFamilyDay, words, now);
 }
 

@@ -55,8 +55,15 @@ export const en = {
   "api.limit-balance": "The balance of your AI key's account has run out",
   /** The same: the provider could not take the payment. */
   "api.limit-payment": "The AI provider couldn't take the payment for your key",
-  /** After one of the four above, when the provider named the moment access comes back. */
+  /**
+   * After one of the four above, when the provider named the moment access comes back: on {date} at
+   * {time}, later than tomorrow on the device's clock (R47).
+   */
   "api.access-returns": "Access comes back on {date} at {time}",
+  /** The same, when access comes back today on the device's clock, at {time}. */
+  "api.access-returns-today": "Access comes back today at {time}",
+  /** The same, when access comes back tomorrow on the device's clock, at {time}. */
+  "api.access-returns-tomorrow": "Access comes back tomorrow at {time}",
   /** The owner checked own keys as many times as api lets an account in its window (R47). */
   "api.key-checks": "You've checked keys too many times. Try again later",
   /** The same, when the next check opens on {date} at {time}, later than tomorrow. */
@@ -758,8 +765,20 @@ export const en = {
   /** What the last request on the key came to, and what the owner can do about it. */
   "ownkey.refused":
     "The provider refused the key at the last request. Replace the key, or remove it to go to the platform's AI",
+  /** After the line of the limit, when the provider named no limit, or one the build does not know. */
   "ownkey.limit":
-    "The key's limit at the provider is used up. Raise the limit or top up the balance there, replace the key, or remove it to go to the platform's AI",
+    "Raise the limit or top up the balance at the provider, replace the key, or remove it to go to the platform's AI",
+  /** The same, after the spending limit the owner set: no time comes beside it (R80 api). */
+  "ownkey.limit-spend":
+    "Raise the spending limit you set at the provider, replace the key, or remove it to go to the platform's AI",
+  /** The same, after the ceiling of the provider's tier, with or without when access comes back. */
+  "ownkey.limit-tier": "Replace the key, or remove it to go to the platform's AI",
+  /** The same, after the balance of the key's account. */
+  "ownkey.limit-balance":
+    "Top up the balance at the provider, replace the key, or remove it to go to the platform's AI",
+  /** The same, after the payment the provider could not take. */
+  "ownkey.limit-payment":
+    "Check the payment details at the provider, replace the key, or remove it to go to the platform's AI",
   /** The page This device (R04; section 3.2): its heading, and its place on the first page. */
   "device.title": "This device",
   "device.hint": "What the app keeps on this device, and how to erase it",

@@ -37,6 +37,7 @@ import {
   Cause,
   ChoiceKind,
   CloseReason,
+  LimitCause,
   type OutcomeSchema,
   RefusalSchema,
 } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
@@ -2411,5 +2412,53 @@ describe("the task screen on the owner's own key", () => {
     await userEvent.click(check());
     expect(await panel().findByText("The limit of your AI key is used up")).toBeVisible();
     expect(holder?.snapshot()).toMatchObject({ refusal: { cause: Cause.LIMIT_REACHED } });
+  });
+
+  it("says when access comes back beside the tier's ceiling of the key, and none beside the owner's limit", async () => {
+    // The ceiling of the tier, back at 00:00 UTC on the first of a month three months on (R80 api).
+    const now = new Date();
+    const returns = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 3, 1));
+    const date = dateTimeFormat("en", { day: "numeric", month: "long" }).format(returns);
+    const time = dateTimeFormat("en", { timeStyle: "short" }).format(returns);
+    const tier = {
+      cause: Cause.LIMIT_REACHED,
+      ownKeyLimit: { cause: LimitCause.TIER, accessReturns: timestampFromDate(returns) },
+    };
+    const { holder } = await renderTask({
+      task: SHEET_TASK,
+      history: WRITTEN,
+      mode: Mode.SELF,
+      ownKey: true,
+      answer: () => ({ ...sheetAnswer("unchecked"), outcome: tier }),
+    });
+    await vi.waitFor(() => expect(check()).toHaveAttribute("aria-disabled", "false"));
+    await userEvent.click(check());
+    expect(
+      await screen.findByText(
+        `Your AI key has reached the limit of its usage tier at the provider. Access comes back on ${date} at ${time}`,
+      ),
+    ).toBeVisible();
+    expect(holder?.snapshot()).toMatchObject({
+      refusal: { cause: Cause.LIMIT_REACHED, ownKeyLimit: { cause: LimitCause.TIER } },
+    });
+  });
+
+  it("says beside the fallback words of a rung that the owner's own limit ran out, with no time", async () => {
+    await renderTask({
+      mode: Mode.SELF,
+      ownKey: true,
+      rung: () => ({
+        rung: 1,
+        words: "Count the gaps between the rungs.",
+        outcome: { cause: Cause.LIMIT_REACHED, ownKeyLimit: { cause: LimitCause.LIMIT } },
+      }),
+    });
+    await userEvent.click(await screen.findByRole("radio", { name: "4" }));
+    await userEvent.click(screen.getByRole("radio", { name: "No" }));
+    await userEvent.click(check());
+    expect(
+      await panel().findByText("The spending limit set for your AI key is reached"),
+    ).toBeVisible();
+    expect(screen.queryByText(/Access comes back/)).toBeNull();
   });
 });
