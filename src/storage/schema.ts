@@ -39,10 +39,11 @@ export const CACHE_SCHEMA: Schema = {
 /**
  * `attempts` by attempt ID; `history` and `submissions` by `[attemptId, n]`, n from 0;
  * `correctWork` by attempt ID; `lessons` by lesson ID; since version 2, `ownKey` holds the owner's
- * own key under `"key"`, only while the adult keeps it on this device (R47).
+ * own key under `"key"`, only while the adult keeps it on this device (R47); since version 3,
+ * `essays` by attempt ID, the essays kept until an adult erases them (R53).
  */
 export const PROFILE_SCHEMA: Schema = {
-  version: 2,
+  version: 3,
   stores: {
     attempts: { digest: "digest", changedAt: "changedAt" },
     history: {},
@@ -50,6 +51,7 @@ export const PROFILE_SCHEMA: Schema = {
     correctWork: {},
     lessons: { digest: "digest", changedAt: "changedAt" },
     ownKey: {},
+    essays: { digest: "digest" },
   },
 };
 

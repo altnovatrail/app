@@ -52,6 +52,12 @@ export const TUTOR: Route = { screen: "tutor", parts: [] };
  */
 export const SKILL_MAP: Route = { screen: "skill-map", parts: [] };
 
+/**
+ * "My essays", where the learner reads again the essays this device keeps (R53): `#/essays`, the
+ * essay opened in memory, as the hash names no attempt.
+ */
+export const ESSAYS: Route = { screen: "essays", parts: [] };
+
 /** The screens this build knows. A hash that names another one shows the home screen. */
 export const SCREENS: ReadonlySet<string> = new Set([
   HOME.screen,
@@ -62,6 +68,7 @@ export const SCREENS: ReadonlySet<string> = new Set([
   MODULE_LICENSE.screen,
   TUTOR.screen,
   SKILL_MAP.screen,
+  ESSAYS.screen,
 ]);
 
 /** The route a hash names: `#/screen/part`, each segment percent-encoded. */

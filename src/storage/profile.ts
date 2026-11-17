@@ -1,6 +1,7 @@
 // The database of one learner's profile (section 3.2 of docs/architecture.md; R04, R16 in
 // docs/decisions.md): attempts with their history of writing and submissions, the work of a correct
-// submission until the words after it, and the state of lessons. History and contexts are kept as
+// submission until the words after it, the state of lessons, and the essays, which outlive their
+// attempts until an adult erases them (R53). History and contexts are kept as
 // the canvas gave them, unchanged; the pictures of the work as bytes with their type, not Blobs,
 // which WebKit does not write in an ephemeral session (the 2026-11-12 amendment to R16), and a Blob
 // that schema version 1 kept before is read as it is. Every write says whether it was saved, so
@@ -72,10 +73,53 @@ export interface StoredAttempt {
   readonly submissions: readonly SubmissionRecord[] | undefined;
 }
 
+/** How a submission of an essay ended (R87 in spec): feedback, unreadable or unchecked. */
+export type EssayEnd = "feedback" | "unreadable" | "unchecked";
+
+/**
+ * A submission of an essay as the device keeps it (R53): when it went, how it ended, and the crop
+ * of the sheet it sent, for the learner to read again — the server keeps neither the crop nor the
+ * text read nor the words of the feedback (R87 in spec).
+ */
+export interface EssaySent {
+  readonly at: number;
+  readonly end: EssayEnd;
+  /** The text read, as it is written; none when the essay was not read. */
+  readonly text?: string;
+  /** Beside "unreadable": "blank" or "illegible", or a reason the build does not know. */
+  readonly reason?: string;
+  /** Beside feedback: its words; none when they did not pass, "no feedback this time". */
+  readonly feedback?: string;
+  /** The answer was a repeat of one lost on the way: neither the text nor the words came. */
+  readonly repeated?: boolean;
+  /** The crop sent; none when its record holds it in a form this build does not read. */
+  readonly crop: Blob | undefined;
+}
+
+/**
+ * An essay: the work of a task whose answer slot is bound `sheet`, kept from the start of its
+ * attempt, ended or not, until an adult erases it (R04; R53). Its history of writing lies in the
+ * store `history` by its attempt ID, as an attempt's does.
+ */
+export interface Essay {
+  readonly attemptId: string;
+  readonly digest: string;
+  /** The open view of its task; gone once its version was withdrawn (section 3.2). */
+  readonly task?: open.Task;
+  /** The module's explanation language, the `lang` of its task and its feedback. */
+  readonly language?: string;
+  readonly startedAt: number;
+  /** Its attempt ended: by "Done", or closed by api. */
+  readonly ended: boolean;
+  readonly sent: readonly EssaySent[];
+}
+
 /** What a profile keeps on this device, for the page This device (R04). */
 export interface Usage {
   /** The attempts kept unfinished, counted. */
   readonly unfinished: number;
+  /** The essays kept, counted. */
+  readonly essays: number;
   /**
    * About how many bytes its records take — the browser does not tell it of one database —; none
    * when a record of it could not be read.
@@ -180,10 +224,63 @@ function keptKeyOf(kept: unknown): KeptKey | undefined {
   };
 }
 
+const ESSAYS = "essays";
+
+/**
+ * An attempt's work goes: its record and its submissions, and its history of writing but for an
+ * essay's, which stays with the essay (section 3.2).
+ */
 async function eraseAttempt(tx: Transaction, attemptId: string): Promise<void> {
   await tx.delete("attempts", attemptId);
-  await tx.delete("history", within(attemptId));
+  if ((await tx.get(ESSAYS, attemptId)) === undefined) {
+    await tx.delete("history", within(attemptId));
+  }
   await tx.delete("submissions", within(attemptId));
+}
+
+const ENDS: readonly unknown[] = ["feedback", "unreadable", "unchecked"] satisfies EssayEnd[];
+
+/** A submission of an essay as this build writes it, with its crop if asked; anything else is none. */
+function sentOf(kept: unknown, crops: boolean): EssaySent | undefined {
+  if (typeof kept !== "object" || kept === null) return undefined;
+  const one = kept as Record<string, unknown>;
+  if (typeof one.at !== "number" || !ENDS.includes(one.end)) return undefined;
+  const text = (key: string) => (typeof one[key] === "string" ? { [key]: one[key] } : {});
+  return {
+    at: one.at,
+    end: one.end as EssayEnd,
+    ...text("text"),
+    ...text("reason"),
+    ...text("feedback"),
+    ...(one.repeated === true ? { repeated: true } : {}),
+    crop: crops ? pictureOf(one.crop) : undefined,
+  };
+}
+
+/**
+ * An essay's record as this build writes it, its submissions of another form left out; anything
+ * else is none. A list of essays reads no crop: only the essay opened shows them.
+ */
+function essayOf(kept: unknown, crops: boolean): Essay | undefined {
+  if (typeof kept !== "object" || kept === null) return undefined;
+  const { attemptId, digest, task, language, startedAt, ended, sent } = kept as Record<
+    string,
+    unknown
+  >;
+  if (typeof attemptId !== "string" || typeof digest !== "string") return undefined;
+  if (typeof startedAt !== "number" || !Array.isArray(sent)) return undefined;
+  return {
+    attemptId,
+    digest,
+    ...(task === undefined ? {} : { task: task as open.Task }),
+    ...(typeof language === "string" ? { language } : {}),
+    startedAt,
+    ended: ended === true,
+    sent: sent.flatMap((one) => {
+      const read = sentOf(one, crops);
+      return read === undefined ? [] : [read];
+    }),
+  };
 }
 
 export class Profile {
@@ -207,12 +304,90 @@ export class Profile {
     }
   }
 
-  /** A new attempt, with no history and no submission. */
+  /**
+   * A new attempt, with no history and no submission: an essay's history of an earlier start
+   * goes too, as the canvas starts again from an empty sheet.
+   */
   beginAttempt(attempt: Omit<Attempt, "changedAt" | "steps">): Promise<Saved> {
-    return this.save(ATTEMPT_STORES, async (tx) => {
+    return this.save([...ATTEMPT_STORES, ESSAYS], async (tx) => {
       await eraseAttempt(tx, attempt.attemptId);
+      await tx.delete("history", within(attempt.attemptId));
       await tx.put("attempts", attempt.attemptId, { ...attempt, changedAt: this.now() });
       return "saved";
+    });
+  }
+
+  /**
+   * The essay of an attempt, which the end of the attempt and the term leave (R53): made if the
+   * device keeps none, the attempt begun by an earlier build too, and moved with its submissions
+   * to the package the attempt is on now.
+   */
+  beginEssay(
+    attempt: Pick<Attempt, "attemptId" | "digest" | "task">,
+    language: string | undefined,
+  ): Promise<Saved> {
+    return this.save([ESSAYS], async (tx) => {
+      const { attemptId, digest, task } = attempt;
+      const record = (await tx.get(ESSAYS, attemptId)) as { sent?: unknown } | undefined;
+      const kept = essayOf(record, false);
+      if (kept?.digest !== digest) {
+        await tx.put(ESSAYS, attemptId, {
+          attemptId,
+          digest,
+          ...(task === undefined ? {} : { task }),
+          ...(language === undefined ? {} : { language }),
+          startedAt: kept?.startedAt ?? this.now(),
+          ended: false,
+          // A record essayOf reads has its submissions as an array.
+          sent: kept === undefined ? [] : record?.sent,
+        });
+      }
+      return "saved";
+    });
+  }
+
+  /** The essay of an attempt; none when the device keeps none, or one this build cannot read. */
+  async essay(attemptId: string): Promise<Essay | undefined> {
+    return essayOf(await this.connection.read([ESSAYS], (tx) => tx.get(ESSAYS, attemptId)), true);
+  }
+
+  /** The essays the profile keeps, the newest first, without their crops: `essay` reads those. */
+  async essays(): Promise<Essay[]> {
+    const kept = await this.connection.read([ESSAYS], (tx) => tx.entries(ESSAYS));
+    return kept
+      .flatMap(({ value }) => {
+        const essay = essayOf(value, false);
+        return essay === undefined ? [] : [essay];
+      })
+      .sort((a, b) => b.startedAt - a.startedAt);
+  }
+
+  /** A submission of an essay, with the crop it sent and how it ended, after those before. */
+  async addEssaySubmission(
+    attemptId: string,
+    crop: Blob,
+    sent: Omit<EssaySent, "at" | "crop">,
+  ): Promise<Saved> {
+    try {
+      const bytes = await bytesOf(crop);
+      return await this.connection.write(["attempts", ESSAYS], async (tx) => {
+        const essay = (await tx.get(ESSAYS, attemptId)) as { sent?: unknown } | undefined;
+        if (!Array.isArray(essay?.sent)) return "unsaved";
+        await this.touch(tx, attemptId);
+        const record = { ...sent, at: this.now(), crop: bytes };
+        await tx.put(ESSAYS, attemptId, { ...essay, sent: [...essay.sent, record] });
+        return "saved";
+      });
+    } catch {
+      return "unsaved";
+    }
+  }
+
+  /** An essay is erased, an adult's action: with its history, and its attempt's work if open. */
+  async eraseEssay(attemptId: string): Promise<void> {
+    await this.connection.write([...ATTEMPT_STORES, ESSAYS], async (tx) => {
+      await tx.delete(ESSAYS, attemptId);
+      await eraseAttempt(tx, attemptId);
     });
   }
 
@@ -317,8 +492,11 @@ export class Profile {
               (record) => (record as { readonly work?: unknown } | undefined)?.work,
               () => undefined,
             );
-    await this.connection.write([...ATTEMPT_STORES, "correctWork"], async (tx) => {
+    await this.connection.write([...ATTEMPT_STORES, "correctWork", ESSAYS], async (tx) => {
       if (work !== undefined) await tx.put("correctWork", attemptId, work);
+      // An essay stays, ended, with its history and the open view of its task.
+      const essay = (await tx.get(ESSAYS, attemptId)) as object | undefined;
+      if (essay !== undefined) await tx.put(ESSAYS, attemptId, { ...essay, ended: true });
       await eraseAttempt(tx, attemptId);
     });
   }
@@ -373,12 +551,14 @@ export class Profile {
 
   /** Versions withdrawn: the open views of their tasks, and the lessons on them, go. */
   async withdraw(digests: readonly string[]): Promise<void> {
-    await this.connection.write(["attempts", "lessons"], async (tx) => {
+    await this.connection.write(["attempts", "lessons", ESSAYS], async (tx) => {
       for (const digest of digests) {
         const range = { lower: digest, upper: digest };
-        for (const { key, value } of await tx.entries("attempts", { index: "digest", range })) {
-          const { task: _, ...attempt } = value as Attempt;
-          await tx.put("attempts", key, attempt);
+        for (const store of ["attempts", ESSAYS]) {
+          for (const { key, value } of await tx.entries(store, { index: "digest", range })) {
+            const { task: _, ...kept } = value as { readonly task?: unknown };
+            await tx.put(store, key, kept);
+          }
         }
         for (const { key } of await tx.entries("lessons", { index: "digest", range })) {
           await tx.delete("lessons", key);
@@ -389,12 +569,14 @@ export class Profile {
 
   /** The digests of the packages of the attempts and the lessons this profile keeps. */
   async digests(): Promise<string[]> {
-    return this.connection.read(["attempts", "lessons"], async (tx) => {
+    return this.connection.read(["attempts", "lessons", ESSAYS], async (tx) => {
       const found = new Set<string>();
-      // An attempt whose task's view a withdrawal took keeps no view of its package.
-      for (const { value } of await tx.entries("attempts")) {
-        const attempt = value as Attempt;
-        if (attempt.task !== undefined) found.add(attempt.digest);
+      // An attempt or an essay whose task's view a withdrawal took keeps no view of its package.
+      for (const store of ["attempts", ESSAYS]) {
+        for (const { value } of await tx.entries(store)) {
+          const kept = value as Pick<Attempt, "digest" | "task">;
+          if (kept.task !== undefined) found.add(kept.digest);
+        }
       }
       for (const { value } of await tx.entries("lessons")) found.add((value as LessonState).digest);
       return [...found];
@@ -409,11 +591,17 @@ export class Profile {
     return this.connection.read(["attempts"], (tx) => tx.count("attempts"));
   }
 
+  /** How many essays the profile keeps that this build reads, and so can list and erase. */
+  async essayCount(): Promise<number> {
+    return (await this.essays()).length;
+  }
+
   /** What the profile keeps on this device: its unfinished attempts, and about how much space. */
   async usage(): Promise<Usage> {
     // Counted first and on its own: a count reads no record, and so it comes even when the sizes,
     // which read every record, do not.
     const unfinished = await this.unfinished();
+    const essays = await this.essayCount();
     const bytes = await this.connection
       .read(STORES, async (tx) => {
         let sum = 0;
@@ -423,7 +611,7 @@ export class Profile {
         return sum;
       })
       .catch(() => undefined);
-    return { unfinished, bytes };
+    return { unfinished, essays, bytes };
   }
 
   /** The own key kept on this device; none when it is not kept, or its record cannot be read. */
@@ -446,12 +634,15 @@ export class Profile {
     await this.connection.write([OWN_KEY_STORE], (tx) => tx.delete(OWN_KEY_STORE, OWN_KEY));
   }
 
-  /** Attempts and lessons last changed at a time or before go, with all of an attempt's work. */
+  /**
+   * Attempts and lessons last changed at a time or before go, with all of an attempt's work; an
+   * essay's attempt stays, as its essay does, until an adult erases it (section 3.2).
+   */
   async expire(cutoff: number): Promise<void> {
     const range = { upper: cutoff };
-    await this.connection.write([...ATTEMPT_STORES, "lessons"], async (tx) => {
+    await this.connection.write([...ATTEMPT_STORES, "lessons", ESSAYS], async (tx) => {
       for (const { key } of await tx.entries("attempts", { index: "changedAt", range })) {
-        await eraseAttempt(tx, key as string);
+        if ((await tx.get(ESSAYS, key)) === undefined) await eraseAttempt(tx, key as string);
       }
       for (const { key } of await tx.entries("lessons", { index: "changedAt", range })) {
         await tx.delete("lessons", key as Key);

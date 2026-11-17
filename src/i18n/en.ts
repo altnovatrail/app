@@ -284,6 +284,11 @@ export const en = {
     one: "{pseudonym}: {count} unfinished task",
     other: "{pseudonym}: {count} unfinished tasks",
   }),
+  /** One line for each profile with essays on this device, which the server does not keep. */
+  "signout.essays": plural({
+    one: "{pseudonym}: {count} essay, which isn't on the server",
+    other: "{pseudonym}: {count} essays, which aren't on the server",
+  }),
   "signout.nothing": "No unfinished work is on this device",
   "signout.confirm": "Sign out and erase",
   /** The sign-in service did not sign out: nothing was erased. */
@@ -332,6 +337,25 @@ export const en = {
   "skillmap.choosing": "Opening what's next…",
   /** A module of those connected from the map: its card says so in place of its button. */
   "skillmap.connected": "Connected: it is in My subjects now",
+  /** The learner's essays kept on this device, read again here (R04; R53). */
+  "essays.title": "My essays",
+  "essays.none": "No essays are kept on this device yet",
+  /** The button that opens one essay: {date} is when it was begun. */
+  "essays.open": "Open the essay of {date}",
+  "essays.finished": "Finished",
+  "essays.not-finished": "Not finished yet",
+  /** The essay's module version was withdrawn: its task's statement is not kept (section 3.2). */
+  "essays.withdrawn": "The version of its module was withdrawn, so its task isn't kept",
+  /** The heading of one submission of the essay: when it was sent. */
+  "essays.sent": "Sent {date}",
+  "essays.not-sent": "It hasn't been sent yet",
+  /** The `alt` of the crop of the sheet that a submission sent. */
+  "essays.sheet": "The sheet as it was sent",
+  /** The heading of what was read of the essay. */
+  "essays.text": "What was read",
+  /** The heading of the feedback of a submission. */
+  "essays.feedback": "Feedback",
+  "essays.all": "All essays",
   /** The heading of the task screen: a task has no title of its own. */
   "task.title": "Task",
   /** The name of the group of the two buttons of the mode. */
@@ -414,6 +438,25 @@ export const en = {
   "task.no-showing": "This task has no solution to show",
   /** A child asks for the solution before the hint ladder is passed. */
   "task.ladder-not-passed": "The solution can be shown after a few more answers",
+  /** Before each submission of a work that goes to AI whole (R127 in spec): beside Check. */
+  "task.no-names": "Don't write your name or the real names of people you know",
+  /** Ends the attempt of an essay: open once it was sent at least once (R87 in spec). */
+  "task.done": "Done",
+  "task.done-locked": "Done opens once the essay has been sent",
+  /** The result of an essay finished by Done. */
+  "task.essay-done": "Essay finished",
+  /** The feedback whose words did not pass the checks of api (section 15 of the contracts). */
+  "task.feedback-none": "No feedback this time",
+  /** A repeat of a submission whose answer was lost: the words are nowhere on the server. */
+  "task.feedback-lost": "The feedback was lost on the way. Send the essay again to get it",
+  /** An essay that cannot be read as a whole: the reason's words follow. */
+  "task.essay-unreadable": "The essay can't be read: {reason}. Write it again and send it",
+  /** No check: a call of AI gave nothing, or the assessment marked no criterion (R87 in spec). */
+  "task.essay-unchecked": "The essay wasn't checked this time",
+  /** Told to a screen reader once the feedback of a submission came. */
+  "task.feedback-came": "The feedback came",
+  /** The criteria of the rubric, once the essay is finished: what the feedback looked at. */
+  "task.criteria": "What the feedback looked at",
   /** The heading of the panel of the solving steps. */
   "steps.title": "Steps",
   /** Leads to the next step; it reads no work. */
@@ -727,6 +770,16 @@ export const en = {
   /** While no copy of the profile's work is on the server (R113): the warning of its loss. */
   "device.only-here":
     "Its work is on this device alone: if the site's data is erased, the work is lost",
+  /** The essays a profile keeps on this device. */
+  "device.essays": plural({
+    one: "{count} essay",
+    other: "{count} essays",
+  }),
+  /** One essay of the profile: {date} is when it was begun. */
+  "device.essay": "Essay of {date}",
+  "device.erase-essay": "Erase the essay",
+  "device.erase-essay-confirm":
+    "The essay of {date} and its feedback are lost: the server doesn't keep them",
   /** The owner's own key kept on this device: {provider} is the provider's name. */
   "device.own-key": "Its own AI key is kept on this device: a key of {provider} ending in {last4}",
   "device.erase-profile": "Erase the profile's data on this device",

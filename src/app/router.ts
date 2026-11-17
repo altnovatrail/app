@@ -5,6 +5,7 @@ import { formatHash, parseHash, type Route } from "./hash.ts";
 
 export {
   ADULTS,
+  ESSAYS,
   HOME,
   LEGAL,
   LESSON,

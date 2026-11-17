@@ -652,7 +652,7 @@ describe("unfinishedWork", () => {
       pseudonym: p.profileId ?? "",
     }));
     expect(await unfinishedWork(device, profiles as never)).toEqual([
-      { profileId: "p1", pseudonym: "p1", count: 2 },
+      { profileId: "p1", pseudonym: "p1", count: 2, essays: 0 },
     ]);
   });
 });
