@@ -143,13 +143,29 @@ export function px(text: string, width = 0): number {
   return text.trim().endsWith("%") ? (value / 100) * width : value;
 }
 
+/** The layers of a computed box-shadow: its commas outside a colour's parentheses. */
+function shadowLayers(shadow: string): string[] {
+  const layers: string[] = [];
+  let depth = 0;
+  let start = 0;
+  for (let i = 0; i < shadow.length; i++) {
+    if (shadow[i] === "(") depth++;
+    else if (shadow[i] === ")") depth--;
+    else if (shadow[i] === "," && depth === 0) {
+      layers.push(shadow.slice(start, i));
+      start = i + 1;
+    }
+  }
+  layers.push(shadow.slice(start));
+  return layers;
+}
+
 /**
  * The colour of the first ring of a computed box-shadow — "rgb(…) 0px 0px 0px 1px inset", inset or
  * not —, or null: a shadow that is offset or blurred is no edge.
  */
 export function ringColour(shadow: string): Rgba | null {
-  const layers = shadow.split(/,(?![^(]*\))/);
-  for (const layer of layers) {
+  for (const layer of shadowLayers(shadow)) {
     const colour = /rgba?\([^)]*\)|#[0-9a-f]+/i.exec(layer)?.[0];
     const lengths = layer
       .replace(colour ?? "", "")
