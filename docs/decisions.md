@@ -1692,6 +1692,8 @@ Rejected: the warning by the profile, as Д16 proposed — a work that did not r
 
 — *Amendment 2026-11-17:* the epic by the mockup no longer waits for a tag: the rules of style and row 6.18 of [COORDINATION.md](../spec/COORDINATION.md) are in `spec` since v0.18.4, as the row says, and `app` stands on v0.18.6 (R52). Its place is decided: by the author's word of 2026-11-16, after E3 and row 6.29, and before E4. — RUN.md, T52.
 
+— *Second amendment 2026-11-17:* the epic by the mockup is written down: E5 of RUN.md, «Интерфейс по эталону», sixteen tasks T76–T91, and Д25 is closed, its content now those tasks — the rule of the tutor's panel is T88, the `canvas` release of row 5.11 with 2.5.7 is T80, which Д24 names. — RUN.md, T75.
+
 ## The move to `spec` v0.18.3
 
 **R49. `app` stands on `spec` v0.18.3: the submodule `spec/`, the packages `@altnovatrail/spec` and `@altnovatrail/contracts` with `@bufbuild/protobuf` 2.17.0, and the part `deployment/` are at this tag, and the devcontainer takes the template's base image `mcr.microsoft.com/devcontainers/base` 3.0.13-noble. The move is in two tasks by rule 11 of RUN.md: this one, T63, takes the tag, the packages, the container and what the tag decided for `app`; the plan's new layout and language — tables 2–4 as files of `run/`, the plan in English and the tasks outside an epic in `run/TASKS.md` (R153–R155 spec; Д250 `spec`), with the line of the orchestrator's contract in the rules (R156 spec) — are T64. The shared workflows of `.github` v0.1.24 are no part of the move: they are T65, the next task after it. The rows «в реестр spec» В62, В63 and В65 are closed: `spec` recorded them.** The orchestrator's wave 0 of epic E14 of `spec`, the author's word of 2026-11-16 (R156 spec; RUN.md, T63).
@@ -1882,6 +1884,8 @@ Rejected: the warning by the profile, as Д16 proposed — a work that did not r
 — *Amendment 2026-11-17:* row 6.29 is built by R56 on `api`'s row 6.28, and Д33 is closed: [architecture.md](architecture.md), section 1, names the correction and the mark as built. — RUN.md, T73.
 
 — *Second amendment 2026-11-17:* README no longer names the tag: its links to `spec` in the opening and in «Documents» lead to the repository, not to `/tree/v0.18.12`, and it has no sections «Status» and «License» and no sentence on the languages of the documents, by the author's word of 2026-11-17 for every repository's README — a status and a tag go stale with each task and move, and LICENSE, NOTICE and the badge name the license. The links to spec's `RULES.md` and part `deployment/` in «Releases» and «Contributing» still name v0.18.12, and a move to a tag still moves them. The template of v0.18.12 still has those sections; the rule for the template and for `spec-tag.md` is a task of `spec` in the same run (an amendment to R21 spec). How to run against a local api is a section of its own, «Run locally with api», and `just dev`, `just dev-canvas` and `just preview` are in «Contributing». — RUN.md, T74; README.md.
+
+— *Third amendment 2026-11-17:* the panel's row 6.18 is E5 of RUN.md, written down by T75: the rule of the panel is its task T88, and Д25 is closed (the second 2026-11-17 amendment to R48). — RUN.md, T75.
 
 ## The adult's correction of a module's level
 
