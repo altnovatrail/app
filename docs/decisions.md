@@ -1684,6 +1684,8 @@ Rejected: the warning by the profile, as Д16 proposed — a work that did not r
 
 — *Amendment 2026-11-16:* `app` stands on `spec` v0.18.3 (R49), and "no row «в реестр spec» of `app` is closed" above no longer holds: `spec` recorded В62, В63 and В65, and R49 closes them; В64 is no row «в реестр spec». — RUN.md, T63.
 
+— *Amendment 2026-11-17:* the epic by the mockup no longer waits for a tag: the rules of style and row 6.18 of [COORDINATION.md](../spec/COORDINATION.md) are in `spec` since v0.18.4, as the row says, and `app` stands on v0.18.6 (R52). Its place is decided: by the author's word of 2026-11-16, after E3 and row 6.29, and before E4. — RUN.md, T52.
+
 ## The move to `spec` v0.18.3
 
 **R49. `app` stands on `spec` v0.18.3: the submodule `spec/`, the packages `@altnovatrail/spec` and `@altnovatrail/contracts` with `@bufbuild/protobuf` 2.17.0, and the part `deployment/` are at this tag, and the devcontainer takes the template's base image `mcr.microsoft.com/devcontainers/base` 3.0.13-noble. The move is in two tasks by rule 11 of RUN.md: this one, T63, takes the tag, the packages, the container and what the tag decided for `app`; the plan's new layout and language — tables 2–4 as files of `run/`, the plan in English and the tasks outside an epic in `run/TASKS.md` (R153–R155 spec; Д250 `spec`), with the line of the orchestrator's contract in the rules (R156 spec) — are T64. The shared workflows of `.github` v0.1.24 are no part of the move: they are T65, the next task after it. The rows «в реестр spec» В62, В63 and В65 are closed: `spec` recorded them.** The orchestrator's wave 0 of epic E14 of `spec`, the author's word of 2026-11-16 (R156 spec; RUN.md, T63).

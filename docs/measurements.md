@@ -89,4 +89,4 @@ The sessions of Claude Code in this repository over epic E3, at its archive (RUN
 |---|---|---|---|---|---|---|
 | `-workspaces-app` — epic E3, T52 | 2026-11-12T00:00 … 2026-11-17T04:31 | 37 | 4,084 / 3,584 | 167.2 / 149.4 | 14 | $453.67 |
 
-- **Against the threshold of R145 spec.** The reference of `app` is its row of T124 in measurements 1.9 spec, 141.7 thousand over 188 main calls: the context of a main call is 18 % above it, under the 25 % that calls an analysis. `docs-budgets.json` was raised twice since then, by T59 and T62 (`git log -- docs-budgets.json`), under three, and T52 raises nothing. No task of analysis comes.
+- **Against the threshold of R145 spec.** The reference of `app` is its row of T124 in measurements 1.9 spec, 141.7 thousand over 188 main calls: the context of a main call is 18 % above it, under the 25 % that calls an analysis. `docs-budgets.json` was raised twice since then, by T59 and T62 (`git log -- docs-budgets.json`), under three, and T52 raises nothing; and a quarter has not passed since R145 spec itself, 2026-11-12. No task of analysis comes.
