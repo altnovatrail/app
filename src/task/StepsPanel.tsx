@@ -9,7 +9,7 @@ import { useEffect, useId, useRef } from "react";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { ReadAloud } from "../voice/ReadAloud.tsx";
 import { stepPhrases } from "../voice/texts.ts";
-import { exitMet, givesChips, givesTechniques, type StepsState } from "./steps.ts";
+import { exitMet, givesChips, givesTechniques, onWorkbook, type StepsState } from "./steps.ts";
 import { TechniqueCards } from "./TechniqueCards.tsx";
 
 /** The line of what opens "Step done", by the exit condition; none for `none`. */
@@ -18,11 +18,17 @@ const EXIT_LINES = {
   answer_slots_filled: "steps.exit-slots",
 } as const;
 
-/** The line of an exit condition, by its own entry alone: a newer format's condition has none. */
-function exitLine(condition: string): "steps.exit-givens" | "steps.exit-slots" | undefined {
-  return Object.hasOwn(EXIT_LINES, condition)
-    ? EXIT_LINES[condition as keyof typeof EXIT_LINES]
-    : undefined;
+/**
+ * The line of an exit condition, by its own entry alone: a newer format's condition has none. On a
+ * workbook the slots are its boxes, as Check names them (R54).
+ */
+function exitLine(
+  condition: string,
+  task: open.Task,
+): "steps.exit-givens" | "steps.exit-slots" | "task.check-boxes" | undefined {
+  if (!Object.hasOwn(EXIT_LINES, condition)) return undefined;
+  const line = EXIT_LINES[condition as keyof typeof EXIT_LINES];
+  return line === "steps.exit-slots" && onWorkbook(task) ? "task.check-boxes" : line;
 }
 
 export interface StepsPanelProps {
@@ -64,7 +70,7 @@ export function StepsPanel({
   const lang = language === undefined ? {} : { lang: language };
   const last = state.place === steps.length;
   const met = exitMet(step, task, state, filled);
-  const lineKey = exitLine(step.exit_condition);
+  const lineKey = exitLine(step.exit_condition, task);
   const techniques = givesTechniques(step) ? (state.techniques[state.place] ?? []) : [];
 
   return (

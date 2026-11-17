@@ -105,6 +105,11 @@ export function slotsOf(item: open.Item): readonly ("choice" | "box" | "sheet" |
   return (item.line ?? []).filter((part) => part.binding === "box").map(() => "box");
 }
 
+/** Whether the task is on a workbook: its answer slots are the boxes of its lines. */
+export function onWorkbook(task: open.Task): boolean {
+  return task.canvas.kind === "workbook";
+}
+
 /** Whether every answer slot of the task is bound `choice`: its work is the options tapped. */
 export function choicesOnly(task: open.Task): boolean {
   const slots = task.items.flatMap(slotsOf);

@@ -4,7 +4,7 @@
 // verdict stands beside the option tapped and beside the item, in a word and a sign, not in colour
 // alone (section 3.9), and below an item answered on the sheet what was read, "Read: 6", or why it
 // could not be (R21). A workbook's lines the canvas shows: once checked, a list below the canvas
-// gives each line's verdict and what was read in its boxes.
+// gives each line's verdict and what was read in its boxes, and each box's verdict (R54).
 import type * as open from "@altnovatrail/spec/formatv0/open";
 import { type ReactNode, useId } from "react";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
@@ -45,7 +45,10 @@ function readingsOf(verdicts: Verdicts, item: number, slots: number): Reading[] 
   return found;
 }
 
-/** A workbook's lines once checked: each line's verdict and what was read in its boxes. */
+/**
+ * A workbook's lines once checked: each line's verdict, which its boxes' make up, and what was read
+ * in its boxes; a line of more boxes than one gives each box's verdict too (R56 in spec; R54).
+ */
 function Lines({ task, verdicts }: { readonly task: open.Task; readonly verdicts: Verdicts }) {
   const { words } = useLanguage();
   if (verdicts.items.size === 0) return null;
@@ -54,17 +57,52 @@ function Lines({ task, verdicts }: { readonly task: open.Task; readonly verdicts
       {task.items.map((item, i) => {
         const verdict = verdicts.items.get(i + 1);
         if (verdict === undefined) return null;
+        const boxes = slotsOf(item).length;
         return (
           // biome-ignore lint/suspicious/noArrayIndexKey: the lines of a task never move.
           <li key={i}>
             {words.text("task.line", { n: i + 1 })} <Verdict verdict={verdict} />
-            {readingsOf(verdicts, i + 1, slotsOf(item).length).map((reading, r) => (
-              // biome-ignore lint/suspicious/noArrayIndexKey: the boxes of a line never move.
-              <ReadingLine key={r} reading={reading} />
-            ))}
+            {boxes > 1 ? (
+              <Boxes verdicts={verdicts} item={i + 1} boxes={boxes} />
+            ) : (
+              readingsOf(verdicts, i + 1, boxes).map((reading, r) => (
+                // biome-ignore lint/suspicious/noArrayIndexKey: the boxes of a line never move.
+                <ReadingLine key={r} reading={reading} />
+              ))
+            )}
           </li>
         );
       })}
+    </ul>
+  );
+}
+
+/** The boxes of one line, each with its verdict and what was read in it, or why not. */
+function Boxes(props: {
+  readonly verdicts: Verdicts;
+  readonly item: number;
+  readonly boxes: number;
+}) {
+  const { words } = useLanguage();
+  const { verdicts, item } = props;
+  // The boxes api gave a verdict, in their order: none, and no empty list stands under the line.
+  const judged = Array.from({ length: props.boxes }, (_, b) => slotKey(item, b + 1)).flatMap(
+    (key, b) => {
+      const verdict = verdicts.slots.get(key);
+      return verdict === undefined
+        ? []
+        : [{ box: b + 1, verdict, reading: verdicts.readings.get(key) }];
+    },
+  );
+  if (judged.length === 0) return null;
+  return (
+    <ul className="nt-boxes">
+      {judged.map(({ box, verdict, reading }) => (
+        <li key={box}>
+          {words.text("task.box", { n: box })} <Verdict verdict={verdict} />
+          {reading === undefined ? null : <ReadingLine reading={reading} />}
+        </li>
+      ))}
     </ul>
   );
 }

@@ -22,7 +22,7 @@ import { summaryText, type Verdicts } from "./attempt.ts";
 import { goesWhole } from "./essay.ts";
 import { Items, Verdict } from "./Items.tsx";
 import { Solution } from "./Solution.tsx";
-import { choicesOnly, slotsFilled, writingFilled } from "./steps.ts";
+import { choicesOnly, onWorkbook, slotsFilled, writingFilled } from "./steps.ts";
 import { HintButton, ResultEnd, TaskLayout, type TaskParts } from "./TaskLayout.tsx";
 import { TutorWords } from "./TutorWords.tsx";
 
@@ -79,17 +79,19 @@ export function TaskScreen(props: TaskScreenProps) {
   // each submission, and describes Check (R127 in spec; R53).
   const whole = goesWhole(task);
   const open = !solved && slotsFilled(task, state.choices, filled);
-  // What locks Check: the sheet first, then the options.
+  // What locks Check: the sheet first — on a workbook, each of its boxes —, then the options.
   const locked = open
     ? undefined
     : !choicesOnly(task) && !writingFilled(task, filled)
-      ? "task.check-write"
+      ? onWorkbook(task)
+        ? "task.check-boxes"
+        : "task.check-write"
       : "task.check-locked";
   const described = [whole ? namesId : "", locked === undefined ? "" : lockedId].join(" ").trim();
   const summary = summaryText(
     verdicts,
     solved ? (props.shown === true ? "shown" : "correct") : undefined,
-    task.items.length,
+    task,
     words,
   );
 

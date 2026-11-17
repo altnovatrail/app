@@ -1,7 +1,7 @@
 // Stand-ins for Google, for the tests that open the sign-in window of the built page with no
 // network: the built page test and the site check's own test (section 3.7 of
 // docs/architecture.md).
-import type { BrowserContext } from "playwright";
+import type { BrowserContext, Route } from "playwright";
 
 /**
  * The script of gapi in place of Google's, which is closed to reading: it gives the SDK what it
@@ -34,9 +34,18 @@ export const GAPI = `(() => {
 })();`;
 
 /**
+ * Whether a stand-in's answer failed only because its page, context or browser closed while it was
+ * on its way: a test that closes them does not wait for the requests the page still makes.
+ */
+export function closedMeanwhile(error: unknown): boolean {
+  return error instanceof Error && error.name === "TargetClosedError";
+}
+
+/**
  * Answers every request of a context off an origin as Google would, with no network: the script of
  * gapi, the project's configuration with its authorized domains, and the sign-in pages as an empty
- * page. Each request's host goes to `seen`, in its order.
+ * page. Each request's host goes to `seen`, in its order. An answer the closing of the context cut
+ * off is no failure.
  */
 export async function standInForGoogle(
   context: BrowserContext,
@@ -49,23 +58,27 @@ export async function standInForGoogle(
     async (route) => {
       const url = new URL(route.request().url());
       seen.push(url.host);
-      if (url.host === "apis.google.com") {
-        await route.fulfill({ contentType: "text/javascript", body: GAPI });
-      } else if (url.host === "identitytoolkit.googleapis.com") {
-        await route.fulfill({
-          contentType: "application/json",
-          headers: { "access-control-allow-origin": "*", "access-control-allow-headers": "*" },
-          body: JSON.stringify({
-            projectId: "example-project",
-            authorizedDomains: authorizedDomains(),
-          }),
-        });
-      } else {
-        await route.fulfill({
-          contentType: "text/html",
-          body: "<!doctype html><title>auth</title>",
-        });
-      }
+      await answer(route, url, authorizedDomains).catch((error: unknown) => {
+        if (!closedMeanwhile(error)) throw error;
+      });
     },
   );
+}
+
+/** Google's answer to one request, by its host. */
+function answer(route: Route, url: URL, authorizedDomains: () => readonly string[]) {
+  if (url.host === "apis.google.com") {
+    return route.fulfill({ contentType: "text/javascript", body: GAPI });
+  }
+  if (url.host === "identitytoolkit.googleapis.com") {
+    return route.fulfill({
+      contentType: "application/json",
+      headers: { "access-control-allow-origin": "*", "access-control-allow-headers": "*" },
+      body: JSON.stringify({
+        projectId: "example-project",
+        authorizedDomains: authorizedDomains(),
+      }),
+    });
+  }
+  return route.fulfill({ contentType: "text/html", body: "<!doctype html><title>auth</title>" });
 }

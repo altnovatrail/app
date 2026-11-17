@@ -8,7 +8,7 @@ Table 4 of [RUN.md](../RUN.md): what was put off on purpose, its risk, when to r
 
 ## Table 4. Technical debt
 
-Numbers are not reused: next — Д38.
+Numbers are not reused: next — Д39.
 
 | ID | Debt | From | Risk while open | When to return |
 |---|---|---|---|---|
@@ -35,3 +35,4 @@ Numbers are not reused: next — Д38.
 | Д35 | The works on the server of T62 (the 2026-11-17 amendment to R30) are checked by the tests only, `api` stood in by connect-es's router: the leg of `just walk` that switches the storage on, waits for `PutWork` 200 and finds no warning on "This device" is written in `walk/path.test.ts` but was not run, as the executor's container had no `api` (`just dev-app`) at `http://api:8080` and no Docker to start it | T62 | A mismatch between the `StoredWork` that `app` builds and the form `api` checks — the history, the contexts, the PNG — shows only on the site, and the warning would stay with storage on | With the next `just walk` on `api`'s `just dev-app`: the leg of T62 green in the three engines |
 | Д36 | The marks of the works on the server (the 2026-11-17 amendment to R16) are the device's own word: each start takes them off a profile whose storage `GetAccount` names off, but a storage switched off and on again on another device between two starts of this one leaves them, though the server erased those copies | T62 | "This device" lifts its warning, and the sign-out names no essay, of works the server no longer keeps | With Д26: `ListWorks` beside the marks — a mark holds only of a work it names, by `stored_at` |
 | Д37 | The picture of a work is drawn on the main thread at each `PutWork` — `exportPicture()` fills and encodes the 1000 × 1400 surface — while the check and its feedback wait; how long it takes on a weak tablet is not measured | T62 | A screen that stalls at "Check" with storage on | With a measurement on a weak tablet: drawn in idle time or in a worker, if it stalls |
+| Д38 | The workbook of T48 (R54) is checked by the tests only: the manual check on `api`'s stub — a page of `novatrail/grade-3-math` by the synthetic child of `just dev-app` (T102 `api`), "Check" with its boxes, each line's and box's verdict, the rung's mark on a box — and a leg of `just walk` were not run, as `api` (`just dev-app`) did not answer at `http://api:8080` in the session; the workbook on models waits for tutor's records (row 5.12 of [COORDINATION.md](../spec/COORDINATION.md)) | T48 | A mismatch between `app` and `api`'s `SubmitWork` with `WorkbookWork`, or a page the canvas lays out otherwise than the module's, shows only on the site | After the merge of T48, on the stub with the child: the manual check and the leg of `just walk`; on models, with row 5.12 |
