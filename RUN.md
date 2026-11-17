@@ -55,7 +55,7 @@ A task starts with «Выполни задачу T01 из RUN.md» in a new sess
 - a session compares its screen with the mockup without the author: Playwright snapshots in Chromium, WebKit and Firefox, 390 × 844 and 1194 × 834 (R146 spec);
 - Д24 closed; E4 of [run/EPICS.md](run/EPICS.md) builds the children's screens by the mockup.
 
-T72–T74 are tasks outside an epic, done before E5 opened; their bodies are in [docs/plan/E3.md](docs/plan/E3.md), section «Задачи вне эпика, сделанные после него», and their rows stay here (R13, R50). T92 is a task outside the epic, written down for spec's orchestrator (rule 6 of [COORDINATION.md](spec/COORDINATION.md)); its body is in [docs/plan/E5.md](docs/plan/E5.md), section «Задачи вне эпика, сделанные за его время».
+T72–T74 are tasks outside an epic, done before E5 opened; their bodies are in [docs/plan/E3.md](docs/plan/E3.md), section «Задачи вне эпика, сделанные после него», and their rows stay here (R13, R50). T92 and T93 are tasks outside the epic, written down for spec's orchestrator (rule 6 of [COORDINATION.md](spec/COORDINATION.md)); their bodies are in [docs/plan/E5.md](docs/plan/E5.md), section «Задачи вне эпика, сделанные за его время».
 
 | Статус | ID | Задача | Кто | План | Зависит от |
 |---|---|---|---|---|---|
@@ -70,6 +70,7 @@ T72–T74 are tasks outside an epic, done before E5 opened; their bodies are in 
 | [x] | T78 | Раскладка от ширины и всплывающие окна | Claude | — | T77 |
 | [x] | T79 | Кнопки без подписи: значки, имена и подсказки | Claude | — | T78 |
 | [x] | T80 | Канва строки 5.11: стеклянная полоса и 2.5.7 | Claude | — | T79 |
+| [x] | T93 | README — только описание компонента и его место в архитектуре | Claude | — | — |
 | [ ] | T81 | Вход, профиль владельца с аватаром и «Кто учится?» | Claude | — | T80 |
 | [ ] | T82 | Главная: карточки модулей по `./states` и легенда | Claude | — | T81 |
 | [ ] | T83 | Помощь взрослого, меню профиля и карта навыков | Claude | — | T82 |
