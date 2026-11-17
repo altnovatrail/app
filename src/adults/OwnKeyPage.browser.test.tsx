@@ -3,7 +3,8 @@
 // IndexedDB: the words before the field, the providers api gives and none, the five answers of the
 // check and one this build does not know, a key not accepted that leaves the former one, the key
 // shown by its last four alone, the mark that keeps it on the device and the key in none of the
-// browser's storages without it, its replacement and removal, a refusal beside it, the account's
+// browser's storages without it, its replacement and removal, a refusal beside it, its limit with
+// which one ran out, when access comes back and what to do, the account's
 // checks exhausted with when the next one opens, and the owner profile opened from the page.
 import {
   AccountService,
@@ -13,7 +14,12 @@ import {
   type Profile,
   ProfileSchema,
 } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
-import { Cause, RefusalSchema } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
+import {
+  Cause,
+  LimitCause,
+  OwnKeyLimitSchema,
+  RefusalSchema,
+} from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import { create, type MessageInitShape } from "@bufbuild/protobuf";
 import { timestampFromDate } from "@bufbuild/protobuf/wkt";
 import { Code, ConnectError, type ConnectRouter, createRouterTransport } from "@connectrpc/connect";
@@ -335,9 +341,73 @@ describe("the page Own AI key", () => {
       await screen.findByText(/The provider refused the key at the last request/),
     ).toBeTruthy();
     holder.noteOutcome("p1", { cause: Cause.LIMIT_REACHED }, sent);
-    expect(await screen.findByText(/Raise the limit or top up the balance there/)).toBeTruthy();
+    expect(await screen.findByText("The limit of your AI key is used up")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Raise the limit or top up the balance at the provider, replace the key, or remove it to go to the platform's AI",
+      ),
+    ).toBeTruthy();
     holder.noteOutcome("p1", undefined, sent);
     await waitFor(() => expect(screen.queryByText(/Raise the limit/)).toBeNull());
+  });
+
+  it("says beside the key which limit ran out, when access comes back if api says, and what to do", async () => {
+    const { holder } = await renderPage();
+    await enter(KEY);
+    await screen.findByText("Connected: a key of Anthropic ending in a1b2");
+    const sent = holder.aiFields("p1");
+    const limit = (cause: LimitCause, at?: Date) => ({
+      cause: Cause.LIMIT_REACHED as const,
+      ownKeyLimit: create(OwnKeyLimitSchema, {
+        cause,
+        ...(at === undefined ? {} : { accessReturns: timestampFromDate(at) }),
+      }),
+    });
+    // The ceiling of the tier, back at 00:00 UTC on the first of a month (R80 api) three months on,
+    // so that the line names its date whatever the day of the run.
+    const now = new Date();
+    const returns = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 3, 1));
+    const date = dateTimeFormat("en", { day: "numeric", month: "long" }).format(returns);
+    const time = dateTimeFormat("en", { timeStyle: "short" }).format(returns);
+    holder.noteOutcome("p1", limit(LimitCause.TIER, returns), sent);
+    expect(
+      await screen.findByText(
+        `Your AI key has reached the limit of its usage tier at the provider. Access comes back on ${date} at ${time}`,
+      ),
+    ).toBeTruthy();
+    expect(
+      screen.getByText("Replace the key, or remove it to go to the platform's AI"),
+    ).toBeTruthy();
+    // A time already past — the refusal kept beside the key since — is no promise: none.
+    holder.noteOutcome("p1", limit(LimitCause.TIER, new Date(Date.now() - 60_000)), sent);
+    expect(
+      await screen.findByText(
+        "Your AI key has reached the limit of its usage tier at the provider",
+      ),
+    ).toBeTruthy();
+    // The owner's own limit has no time: what to do about it alone.
+    holder.noteOutcome("p1", limit(LimitCause.LIMIT), sent);
+    expect(
+      await screen.findByText("The spending limit set for your AI key is reached"),
+    ).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Raise the spending limit you set at the provider, replace the key, or remove it to go to the platform's AI",
+      ),
+    ).toBeTruthy();
+    expect(screen.queryByText(/Access comes back/)).toBeNull();
+    holder.noteOutcome("p1", limit(LimitCause.BALANCE), sent);
+    expect(await screen.findByText(/Top up the balance at the provider/)).toBeTruthy();
+    holder.noteOutcome("p1", limit(LimitCause.PAYMENT), sent);
+    expect(await screen.findByText(/Check the payment details at the provider/)).toBeTruthy();
+    // A limit the build does not know is the limit at large.
+    holder.noteOutcome("p1", limit(99 as LimitCause), sent);
+    expect(await screen.findByText("The limit of your AI key is used up")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "Raise the limit or top up the balance at the provider, replace the key, or remove it to go to the platform's AI",
+      ),
+    ).toBeTruthy();
   });
 
   it("says when the device did not take the key to keep, connected and replaced alike", async () => {

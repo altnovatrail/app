@@ -3,10 +3,13 @@
 // an error: a newer api may send one (section 3.7). No DOM.
 import type { Key } from "./words.ts";
 
-/** The key of a code's words in its table, or the common string's for a code not in it. */
-export function keyFor<T extends Readonly<Record<PropertyKey, Key>>>(
-  table: T,
-  code: PropertyKey,
-): T[keyof T] | "common.unknown" {
-  return Object.hasOwn(table, code) ? (table[code as keyof T] as T[keyof T]) : "common.unknown";
+/**
+ * The key of a code's words in its table, or for a code not in it the fallback — the common
+ * string's unless the table's own caller names another.
+ */
+export function keyFor<
+  T extends Readonly<Record<PropertyKey, Key>>,
+  F extends Key = "common.unknown",
+>(table: T, code: PropertyKey, fallback: F = "common.unknown" as F): T[keyof T] | F {
+  return Object.hasOwn(table, code) ? (table[code as keyof T] as T[keyof T]) : fallback;
 }

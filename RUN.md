@@ -98,6 +98,7 @@ A task starts with «Выполни задачу T01 из RUN.md» in a new sess
 | [x] | T68 | Скорость CI: WebKit и Firefox своей проверкой — строка 7.22 | Claude | — | T67 |
 | [x] | T69 | Скорость CI: переход на `spec` со стадией `toolchain-core` — строка 7.22 | Claude | — | T68 |
 | [x] | T70 | Переход на тег `spec` v0.18.6 | Claude | — | — |
+| [x] | T71 | Когда вернётся доступ: `access_returns` в отказе своего ключа | Claude | — | — |
 
 «Зависит от» names only tasks of this plan. What a task waits for from other repositories is its body's «Ждёт»: it is taken once the neighbour has done that, and until then the queue goes on.
 
