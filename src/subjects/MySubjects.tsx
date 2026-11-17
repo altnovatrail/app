@@ -187,7 +187,7 @@ export function SubjectsScreen({
         );
   const unnamed = [...(mine ?? []), ...(more ?? [])].some((card) => card.unnamed === true);
   return (
-    <Screen title={words.text("subjects.title")}>
+    <Screen title={words.text("subjects.title")} layout="reference">
       {failure === undefined ? null : (
         <p role="alert" className="nt-error">
           {failureText(failure, words)}

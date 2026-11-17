@@ -1,0 +1,151 @@
+// The pop-over in each engine (section 3.9 of docs/architecture.md; the mockup's README, «Pop-overs,
+// not panels»): from 600 CSS px it hangs from its button, below 600 it is a sheet from the bottom
+// with "Close"; Escape, a tap outside and a choice close it; the focus goes into it and comes back to
+// its button; and at 320 px — a zoom of 400 % of 1280 — the page does not scroll sideways.
+import { render } from "@testing-library/react";
+import { afterEach, describe, expect, it } from "vitest";
+import { page, userEvent } from "vitest/browser";
+import "../theme/theme.css";
+import { axeViolations, overflows, smallTargets } from "../test/a11y.ts";
+import { inLanguage } from "../test/language.tsx";
+import { GAP } from "./hang.ts";
+import { PopOver } from "./PopOver.tsx";
+
+function Choice({ place = "start" }: { readonly place?: "start" | "end" }) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        justifyContent: place === "end" ? "flex-end" : "flex-start",
+        padding: "1rem",
+      }}
+    >
+      <PopOver label="Solving mode" className="nt-secondary">
+        {(close) => (
+          <div role="radiogroup" aria-label="Solving mode">
+            <button type="button" onClick={close}>
+              Step by step
+            </button>
+            <button type="button" onClick={close}>
+              On my own
+            </button>
+          </div>
+        )}
+      </PopOver>
+    </div>
+  );
+}
+
+/** Where across its box the pop-over grows from, CSS px from its left. */
+const originX = (dialog: HTMLElement) =>
+  Number.parseFloat(getComputedStyle(dialog).transformOrigin.split(" ")[0] ?? "");
+
+const opener = () => page.getByRole("button", { name: "Solving mode" });
+
+/** The pop-over once it is open and its motion is over, so that its box is its place. */
+async function opened(): Promise<HTMLDialogElement> {
+  await opener().click();
+  const shown = page.getByRole("dialog", { name: "Solving mode" });
+  await expect.element(shown).toBeVisible();
+  const dialog = shown.element() as HTMLDialogElement;
+  await Promise.all(dialog.getAnimations().map((animation) => animation.finished));
+  return dialog;
+}
+
+async function closedToButton() {
+  await expect.element(page.getByRole("dialog")).not.toBeInTheDocument();
+  expect(document.activeElement).toBe(opener().element());
+  await expect.element(opener()).toHaveAttribute("aria-expanded", "false");
+}
+
+afterEach(async () => {
+  await page.viewport(1024, 768);
+});
+
+describe.each([600, 834, 1194])("a pop-over at %i px", (width) => {
+  it("hangs from its button, takes the focus, and gives it back on Escape", async () => {
+    await page.viewport(width, 834);
+    render(inLanguage(<Choice />));
+    const dialog = await opened();
+    await expect.element(opener()).toHaveAttribute("aria-expanded", "true");
+    const from = opener().element().getBoundingClientRect();
+    const box = dialog.getBoundingClientRect();
+    expect(Math.round(box.top)).toBe(Math.round(from.bottom + GAP));
+    expect(Math.round(box.left)).toBe(Math.round(from.left));
+    expect(originX(dialog)).toBe(0);
+    expect(getComputedStyle(dialog).backgroundColor).toBe("rgba(255, 255, 255, 0.86)");
+    expect(document.activeElement).toBe(
+      page.getByRole("button", { name: "Step by step" }).element(),
+    );
+    expect(page.getByRole("button", { name: "Close" }).query()).toBeNull();
+    await userEvent.keyboard("{Escape}");
+    await closedToButton();
+  });
+
+  it("hangs at its button's right edge near the window's right", async () => {
+    await page.viewport(width, 834);
+    render(inLanguage(<Choice place="end" />));
+    const dialog = await opened();
+    const from = opener().element().getBoundingClientRect();
+    const box = dialog.getBoundingClientRect();
+    expect(Math.round(box.right)).toBe(Math.round(from.right));
+    expect(originX(dialog)).toBeCloseTo(box.width, 0);
+  });
+
+  it("closes on a tap outside it, and on a choice", async () => {
+    await page.viewport(width, 834);
+    render(inLanguage(<Choice />));
+    const dialog = await opened();
+    await userEvent.click(dialog, { position: { x: dialog.offsetWidth + 40, y: 20 } });
+    await closedToButton();
+    await opened();
+    await page.getByRole("button", { name: "On my own" }).click();
+    await closedToButton();
+  });
+
+  it("stays open for a press inside that is released outside it", async () => {
+    await page.viewport(width, 834);
+    render(inLanguage(<Choice />));
+    const dialog = await opened();
+    const box = dialog.getBoundingClientRect();
+    const away = { bubbles: true, clientX: box.right + 40, clientY: box.top + 10 };
+    page
+      .getByRole("button", { name: "On my own" })
+      .element()
+      .dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
+    dialog.dispatchEvent(new MouseEvent("click", away));
+    expect(dialog.open).toBe(true);
+    dialog.dispatchEvent(new PointerEvent("pointerdown", away));
+    dialog.dispatchEvent(new MouseEvent("click", { ...away, clientX: box.left + 10 }));
+    expect(dialog.open).toBe(true);
+  });
+});
+
+describe.each([390, 599, 320])("a pop-over at %i px", (width) => {
+  it("is a sheet from the bottom, the whole width, which Close closes", async () => {
+    await page.viewport(width, 844);
+    render(inLanguage(<Choice />));
+    const dialog = await opened();
+    const box = dialog.getBoundingClientRect();
+    expect(Math.round(box.left)).toBe(0);
+    expect(Math.round(box.right)).toBe(document.documentElement.clientWidth);
+    expect(Math.round(box.bottom)).toBe(window.innerHeight);
+    expect(getComputedStyle(dialog).backgroundColor).toBe("rgb(255, 255, 255)");
+    expect(document.activeElement).toBe(
+      page.getByRole("button", { name: "Step by step" }).element(),
+    );
+    expect(await axeViolations()).toEqual([]);
+    expect(smallTargets()).toEqual([]);
+    expect(overflows()).toEqual([]);
+    await page.getByRole("button", { name: "Close" }).click();
+    await closedToButton();
+  });
+
+  it("closes on a tap above the sheet, on the dimmed page", async () => {
+    await page.viewport(width, 844);
+    render(inLanguage(<Choice />));
+    const dialog = await opened();
+    await userEvent.click(dialog, { position: { x: 20, y: -40 } });
+    await closedToButton();
+  });
+});

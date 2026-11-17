@@ -303,6 +303,8 @@ export const en = {
   /** After a sign-out whose erasure the browser did not finish. */
   "signout.left": "Not all of it was erased. The app finishes at the next start",
   "common.cancel": "Cancel",
+  /** The button that closes a pop-over drawn as a sheet from the bottom, on the phone. */
+  "common.close": "Close",
   /** The heading of the learner's home: the modules connected to the profile (product 4 spec). */
   "subjects.title": "My subjects",
   /** The heading of the modules connected to the profile. */

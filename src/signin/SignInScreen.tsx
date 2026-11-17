@@ -41,7 +41,7 @@ export function SignInScreen({ onSignIn, result, left = false, onLegal }: SignIn
   const [pending, setPending] = useState(false);
   const line = result === undefined ? undefined : resultText(result, words);
   return (
-    <Screen title={words.text("signin.title")}>
+    <Screen title={words.text("signin.title")} layout="reference">
       <LanguageButtons />
       {left ? <p role="status">{words.text("signout.left")}</p> : null}
       <p>
