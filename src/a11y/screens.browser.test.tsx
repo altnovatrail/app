@@ -78,7 +78,7 @@ import { AttemptProvider } from "../task/AttemptContext.tsx";
 import { NO_VERDICTS, verdictsOf } from "../task/attempt.ts";
 import { initialState } from "../task/steps.ts";
 import { TaskScreen, type TaskScreenProps } from "../task/TaskScreen.tsx";
-import { axeViolations, overflows, smallTargets } from "../test/a11y.ts";
+import { axeViolations, captionlessOffList, overflows, smallTargets } from "../test/a11y.ts";
 import { memoryDevice } from "../test/device.ts";
 import { inLanguage } from "../test/language.tsx";
 import { PSEUDO } from "../test/pseudo.ts";
@@ -1324,8 +1324,11 @@ describe.each(LANGUAGES)("the screens in %s", (_, language, words) => {
         expect(overflows(), `layout at ${width} px`).toEqual([]);
       }
       await expect.element(page.getByRole("heading", { level: 1 })).toBeVisible();
+      expect(captionlessOffList(words), "buttons without a caption").toEqual([]);
       for (const button of page.getByRole("button").elements()) {
-        await expect.element(button).toHaveAccessibleName(button.textContent ?? "");
+        // A button of the closed list is named by its caption, which it does not show (R60).
+        const caption = button.textContent || (button.getAttribute("aria-label") ?? "");
+        await expect.element(button).toHaveAccessibleName(caption);
       }
     },
   );

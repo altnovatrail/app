@@ -314,7 +314,8 @@ dialog.nt-pop {
   dialog.nt-pop::backdrop {
     background: transparent;
   }
-  .nt-pop-close {
+  /* Over the icon button's own display, which a single class would not outweigh. */
+  .nt-pop-body .nt-pop-close {
     display: none;
   }
 }
@@ -816,6 +817,94 @@ button.nt-icon-button {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
+}
+/*
+ * A button that shows its icon alone, the mockup's `.ib` (R60): 44 round, no fill, the icon 20 in
+ * the text's colour, grey for close and back, the accent for a speaker; a grey wash on hover. Its
+ * border has no colour of its own, so that forced colours draw its edge.
+ */
+.nt-tip-host {
+  display: contents;
+}
+button.nt-icon-only {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  inline-size: var(--nt-target);
+  block-size: var(--nt-target);
+  padding: 0;
+  border-color: transparent;
+  background: transparent;
+  color: var(--nt-text-muted);
+  font-size: 1.25rem;
+}
+/*
+ * Each state by :where(), so that a disabled button, drawn last, holds over it, and in this order:
+ * a switch has no look of a pressed button's, the wash only where the pointer hovers — a tap leaves
+ * none —, and a switch that is on the accent on its tint, with the icon's fill that forced colours
+ * keep.
+ */
+button.nt-icon-only:where([aria-pressed]) {
+  border-color: transparent;
+  background: transparent;
+  color: var(--nt-text-muted);
+  text-decoration: none;
+}
+@media (hover: hover) {
+  button.nt-icon-only:where(:hover) {
+    background: var(--nt-grey-08);
+  }
+}
+button.nt-icon-only:where(.nt-icon-accent) {
+  color: var(--nt-accent);
+}
+button.nt-icon-only:where([aria-pressed="true"]) {
+  background: var(--nt-accent-tint);
+  color: var(--nt-accent);
+}
+/* The grabber of the tutor's sheet on a phone: 88 × 44, a bar of 36 × 5 in the middle. */
+button.nt-icon-only:where(.nt-grabber) {
+  inline-size: calc(var(--nt-target) * 2);
+}
+.nt-grabber-bar {
+  inline-size: 2.25rem;
+  block-size: 0.3125rem;
+  border-radius: var(--nt-radius-mark);
+  background: currentColor;
+}
+/*
+ * The tooltip of such a button, the mockup's `.tip`: white on an opaque fill, 12.5 px, radius 9. Its
+ * gap to the button is its own transparent padding, so that the pointer can move onto it (1.4.13);
+ * the bubble's border has no colour, so that forced colours draw it.
+ */
+.nt-tooltip {
+  position: fixed;
+  inset: auto;
+  z-index: 30;
+  margin: 0;
+  padding: 0.375rem 0 0;
+  border: 0;
+  background: transparent;
+  overflow: visible;
+  color: var(--nt-on-fill);
+}
+.nt-tooltip[data-side="above"] {
+  padding: 0 0 0.375rem;
+}
+.nt-tooltip > span {
+  display: block;
+  inline-size: max-content;
+  max-inline-size: calc(100vw - 1rem);
+  box-sizing: border-box;
+  padding: 0.5rem 0.625rem;
+  border: 0.0625rem solid transparent;
+  border-radius: var(--nt-radius-tooltip);
+  background: var(--nt-tooltip);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+  font-size: 0.78125rem;
+  font-weight: var(--nt-weight-medium);
+  line-height: 1.2;
 }
 .nt-lesson-buttons {
   margin-block-start: 1rem;

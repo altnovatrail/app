@@ -1,8 +1,11 @@
 // The checks of accessibility every screen's test runs in each engine (section 3.9 of
 // docs/architecture.md; R11 in docs/decisions.md): axe-core by the rules of WCAG 2.2 A and AA,
 // outside the canvas element, whose own CI checks it; each target at least 44 × 44 CSS px; and a
-// page that does not scroll sideways, with no text cut or spilling out of its box.
+// page that does not scroll sideways, with no text cut or spilling out of its box; and a button
+// that shows no caption only from the closed list, named by its caption (R60).
 import axe from "axe-core";
+import { CAPTIONLESS } from "../app/IconButton.tsx";
+import type { Words } from "../i18n/words.ts";
 
 /** The tags of the rules of the standard: WCAG 2.0, 2.1 and 2.2, levels A and AA. */
 const STANDARD = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
@@ -58,4 +61,22 @@ export function overflows(root: Element = document.body): string[] {
     }
   }
   return found;
+}
+
+/**
+ * The buttons that show no text but are not of the closed list (R60), by their names: a button of
+ * the list is an IconButton, named by its caption in the screen's words, and every other button
+ * shows its caption.
+ */
+export function captionlessOffList(words: Words, root: ParentNode = document): string[] {
+  const listed = new Set(Object.values(CAPTIONLESS).map(({ word }) => words.text(word)));
+  return [...root.querySelectorAll("button")]
+    .filter((button) => button.closest("novatrail-canvas") === null)
+    .filter((button) => (button.textContent ?? "").trim() === "")
+    .filter(
+      (button) =>
+        !button.classList.contains("nt-icon-only") ||
+        !listed.has(button.getAttribute("aria-label") ?? ""),
+    )
+    .map((button) => button.getAttribute("aria-label") ?? "");
 }

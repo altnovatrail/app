@@ -1,11 +1,11 @@
 // A pop-over (the mockup's README, «Pop-overs, not panels»; section 3.9 of docs/architecture.md): a
 // list or a choice behind a small button, opened over the screen. From 600 CSS px it hangs from its
 // button and grows from the button's corner; below 600 it is a sheet from the bottom with a button
-// "Close". It is a modal <dialog>: the rest of the page is inert while it is open, Escape and a tap
+// "Close", ×, which shows its icon alone (R60). It is a modal <dialog>: the rest of the page is inert while it is open, Escape and a tap
 // outside it close it, the focus goes into it, and comes back to its button when it closes.
 import { type ReactNode, useCallback, useLayoutEffect, useRef, useState } from "react";
-import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { hang } from "./hang.ts";
+import { IconButton } from "./IconButton.tsx";
 
 /** What takes the focus in a pop-over that opens: the first of these, or the pop-over itself. */
 const FOCUSABLE =
@@ -21,7 +21,6 @@ export interface PopOverProps {
 }
 
 export function PopOver({ label, className, children }: PopOverProps) {
-  const { words } = useLanguage();
   const [open, setOpen] = useState(false);
   const button = useRef<HTMLButtonElement>(null);
   const dialog = useRef<HTMLDialogElement>(null);
@@ -108,9 +107,7 @@ export function PopOver({ label, className, children }: PopOverProps) {
           onClose={close}
         >
           <div className="nt-pop-body">
-            <button type="button" className="nt-secondary nt-pop-close" onClick={close}>
-              {words.text("common.close")}
-            </button>
+            <IconButton value="close" className="nt-pop-close" onClick={close} />
             <div ref={content} className="nt-pop-content" tabIndex={-1}>
               {typeof children === "function" ? children(close) : children}
             </div>

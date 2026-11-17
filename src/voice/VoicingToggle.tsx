@@ -8,6 +8,7 @@ import { useState } from "react";
 import { useApi } from "../api/ApiContext.tsx";
 import { ApiError, type Failure, parseFailure } from "../api/failure.ts";
 import { failureText } from "../api/words.ts";
+import { IconButton } from "../app/IconButton.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { useSilentLine } from "./ReadAloud.tsx";
 import { useVoicing } from "./VoicingContext.tsx";
@@ -63,17 +64,15 @@ function Toggle({
     <div className="nt-voicing">
       <div className="nt-buttons">
         {/* Not disabled while it is under way: a disabled button would drop the focus. */}
-        <button
-          type="button"
-          className="nt-secondary"
+        <IconButton
+          value="voicing"
+          chosen={on}
           aria-pressed={on}
           aria-disabled={pending}
           onClick={() => {
             if (!pending) void toggle(!on);
           }}
-        >
-          {words.text("voice.toggle")}
-        </button>
+        />
       </div>
       {why === undefined ? null : <p className="nt-hint">{lineOf(why, language)}</p>}
       {failure === undefined ? null : (

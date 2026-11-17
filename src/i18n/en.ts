@@ -303,8 +303,20 @@ export const en = {
   /** After a sign-out whose erasure the browser did not finish. */
   "signout.left": "Not all of it was erased. The app finishes at the next start",
   "common.cancel": "Cancel",
-  /** The button that closes a pop-over drawn as a sheet from the bottom, on the phone. */
+  /** A button that shows its icon alone, ×, and its tooltip: closes a pop-over or a panel (R60). */
   "common.close": "Close",
+  /**
+   * The captions of the other buttons that show an icon alone, each the button's name and its
+   * tooltip (R60): back, a chevron; the previous and the next task, ‹ ›; Help; the tutor's button at
+   * the edge of the screen; the grabber of the tutor's sheet on a phone, by what it does next.
+   */
+  "icon.back": "Back",
+  "icon.previous-task": "Previous task",
+  "icon.next-task": "Next task",
+  "icon.help": "Help",
+  "icon.tutor": "Tutor",
+  "icon.full-screen": "Full screen",
+  "icon.half-screen": "Half screen",
   /** The heading of the learner's home: the modules connected to the profile (product 4 spec). */
   "subjects.title": "My subjects",
   /** The heading of the modules connected to the profile. */
