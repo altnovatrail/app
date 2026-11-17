@@ -14,6 +14,7 @@ import type { Api } from "../api/client.ts";
 import { Offline } from "../boot/Screens.tsx";
 import { LanguageButtons } from "../i18n/LanguageButtons.tsx";
 import { axeViolations } from "../test/a11y.ts";
+import { memoryDevice } from "../test/device.ts";
 import { inLanguage } from "../test/language.tsx";
 import { ReportProblem } from "../tutor/ReportProblem.tsx";
 
@@ -36,7 +37,12 @@ describe("forced colours", () => {
     render(
       inLanguage(
         <ApiProvider value={{} as Api}>
-          <ProfilePage profile={profile} onSaved={() => {}} onFailed={() => {}} />
+          <ProfilePage
+            device={memoryDevice().device}
+            profile={profile}
+            onSaved={() => {}}
+            onFailed={() => {}}
+          />
         </ApiProvider>,
       ),
     );

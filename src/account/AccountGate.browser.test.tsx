@@ -1082,7 +1082,7 @@ describe("the page This device in the section", () => {
     window.location.hash = "";
   });
 
-  it("keeps its warning of loss once the storage on the server is switched on: api keeps no copy yet", async () => {
+  it("lifts its warning of loss once the storage on the server is on and nothing here is unsent", async () => {
     const service = fakeSignIn("uid-1");
     const account = { accountId: "account-1", profiles: [OWNER] };
     const switched: ReturnType<typeof fromBinary<typeof SetWorkStorageRequestSchema>>[] = [];
@@ -1139,11 +1139,13 @@ describe("the page This device in the section", () => {
       await screen.findByRole("button", { name: "See what is on this device" }),
     );
     expect(await screen.findByRole("heading", { level: 1, name: "This device" })).toBeTruthy();
+    // The device keeps no work of the profile that the server lacks: once read, no warning (T62).
+    expect(await screen.findByText("Nothing of this profile is kept on this device")).toBeTruthy();
     expect(
-      screen.getByText(
+      screen.queryByText(
         "Its work is on this device alone: if the site's data is erased, the work is lost",
       ),
-    ).toBeTruthy();
+    ).toBeNull();
     other.close();
   });
 

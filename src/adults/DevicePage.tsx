@@ -3,8 +3,8 @@
 // how much space its data takes — and for the whole site — the browser's estimate, whether it agreed
 // to keep the data, and what the browser and Safari may erase by themselves, with the Home Screen
 // for advice. A profile's data and everything are erased here, each asked first (WCAG 3.3.4);
-// everything signs out too. While api keeps no copy of a profile's work, the page says that the
-// work is on this device alone (R113 in spec). After the profiles, the voices of the device and on
+// everything signs out too. While a work of a profile is not on the server as far as this device
+// holds it, the page says that the work is on this device alone (R113 in spec; R30). After the profiles, the voices of the device and on
 // Android and Linux the leave for voicing (R07; ../voice/DeviceVoices.tsx). At the owner profile,
 // its own key when it is kept here, by its provider and last four, and "Remove key" — the action of
 // the page Own AI key (R47). Erasing a profile's data takes its key from memory too. Each essay a
@@ -36,13 +36,14 @@ type OnDevice =
   | { readonly kind: "unreadable" };
 
 /**
- * Whether api keeps a copy of the profile's work. None yet, whatever `work_storage` says: api writes
- * the consent and keeps no copy, and the contract has no request that would send one (Д12 api; В53
- * and Д16 in run/DEBT.md), so the warning of its loss stands for every profile, its storage switched on
- * too (R30). The words of the profile's page that say so change with this.
+ * Whether api keeps a copy of every work this device keeps of the profile: its storage is on, and
+ * the last `PutWork` of each work went through, or the device keeps none. A work over 4 MiB, a
+ * refusal and a network that failed leave its mark behind, and the warning of its loss stands, as
+ * it does while the device is not read yet (the 2026-11-17 amendment to R30).
  */
-function copiedOnServer(_profile: Profile): boolean {
-  return false;
+function copiedOnServer(profile: Profile, kept: OnDevice | undefined): boolean {
+  if (!profile.workStorage) return false;
+  return kept?.kind === "none" || (kept?.kind === "kept" && kept.usage.stored);
 }
 
 async function onDevice(device: Device, profileId: string): Promise<OnDevice> {
@@ -324,7 +325,7 @@ function ProfileOnDevice({
       {keyed(profile) ? (
         <KeptKeyLine device={device} profileId={profile.profileId} read={kept} />
       ) : null}
-      {copiedOnServer(profile) ? null : <p>{words.text("device.only-here")}</p>}
+      {copiedOnServer(profile, kept) ? null : <p>{words.text("device.only-here")}</p>}
       {kept === undefined || kept.kind === "none" || gone ? null : (
         <Erase
           label={words.text("device.erase-profile")}

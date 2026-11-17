@@ -21,6 +21,7 @@ import { useKeyHolder } from "../ownkey/OwnKeyContext.tsx";
 import type { Device } from "../storage/device.ts";
 import { attemptOver } from "../storage/profile.ts";
 import { useAttempt } from "../task/AttemptContext.tsx";
+import { useWorks } from "../works/useWorks.ts";
 import { givenOf } from "./choice.ts";
 
 export interface Engine {
@@ -41,18 +42,22 @@ export function useEngine(profileId: string, device: Device | undefined): Engine
   const holder = useKeyHolder();
   const lessons = useLessons();
   const setAttempt = useAttempt()?.setAttempt;
+  const works = useWorks(profileId);
   // One key for the choice of a skill, or of none, and one for the beginning of a task chosen.
   const chooseKey = useRef<{ readonly skill: string; readonly key: string } | undefined>(undefined);
   const beginKey = useRef<string | undefined>(undefined);
 
-  /** The attempt open outside a lesson, which api has closed: its work goes, and it is open no more. */
+  /**
+   * The attempt open outside a lesson, which api has closed: its work goes to the server while the
+   * storage is on, then off the device, and it is open no more.
+   */
   const left = useCallback(
     async (attemptId: string | undefined) => {
       if (attemptId === undefined) return;
-      if (device !== undefined) await attemptOver(device, profileId, attemptId);
+      if (device !== undefined) await attemptOver(device, profileId, attemptId, { works });
       setAttempt?.(undefined);
     },
-    [device, profileId, setAttempt],
+    [device, profileId, setAttempt, works],
   );
 
   const choose = useCallback(

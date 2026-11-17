@@ -23,7 +23,7 @@ import { FIREBASE_HEARTBEAT, profileDatabase, SETTINGS } from "../storage/schema
 import { readLanguage, writeLanguage } from "../storage/settings.ts";
 import { memoryDevice } from "../test/device.ts";
 import { fakeSignIn } from "../test/signin.ts";
-import { pseudonymOf, Session, type SessionState, unfinishedWork } from "./session.ts";
+import { marksFollow, pseudonymOf, Session, type SessionState, unfinishedWork } from "./session.ts";
 
 const PROJECT = { projectId: "example-project", apiKey: "synthetic-web-api-key" };
 
@@ -654,5 +654,59 @@ describe("unfinishedWork", () => {
     expect(await unfinishedWork(device, profiles as never)).toEqual([
       { profileId: "p1", pseudonym: "p1", count: 2, essays: 0 },
     ]);
+  });
+});
+
+describe("unfinishedWork with the storage of works on", () => {
+  it("names only the essays whose last PutWork did not go through, all of them while it is off", async () => {
+    const device = await deviceOf("account-1", "p1");
+    const p1 = await addProfile(device, "p1");
+    const digest = `sha256:${"1".repeat(64)}`;
+    for (const attemptId of ["e1", "e2"]) {
+      await p1?.beginAttempt({ attemptId, digest });
+      await p1?.beginEssay({ attemptId, digest }, "en");
+      const points = [{ x: 1, y: 1, t: 0, p: 0.5 }];
+      await p1?.replaceHistory(attemptId, [
+        { kind: "write", t: 1, stroke: { id: 1, kind: "pen", points } },
+      ]);
+      await p1?.attemptEnded(attemptId);
+    }
+    await p1?.markStored("e1", { history: 1, submissions: 0 });
+    const profile = { ...owner("p1"), pseudonym: "p1" };
+    expect(await unfinishedWork(device, [{ ...profile, workStorage: true }] as never)).toEqual([
+      { profileId: "p1", pseudonym: "p1", count: 0, essays: 1 },
+    ]);
+    expect(await unfinishedWork(device, [{ ...profile, workStorage: false }] as never)).toEqual([
+      { profileId: "p1", pseudonym: "p1", count: 0, essays: 2 },
+    ]);
+  });
+});
+
+describe("marksFollow", () => {
+  it("takes the marks off a profile whose storage the account names off, and no other's", async () => {
+    const device = await deviceOf("account-1", "p1", "p2");
+    const digest = `sha256:${"1".repeat(64)}`;
+    const points = [{ x: 1, y: 1, t: 0, p: 0.5 }];
+    for (const profileId of ["p1", "p2"]) {
+      const kept = await addProfile(device, profileId);
+      await kept?.beginAttempt({ attemptId: "a1", digest });
+      await kept?.replaceHistory("a1", [
+        { kind: "write", t: 1, stroke: { id: 1, kind: "pen", points } },
+      ]);
+      await kept?.markStored("a1", { history: 1, submissions: 0 });
+    }
+    // Switched off on another device: p1's copies are gone; p2's storage is on.
+    await marksFollow(device, [
+      { ...owner("p1"), workStorage: false },
+      { ...owner("p2"), workStorage: true },
+      { ...owner("p3"), workStorage: false },
+    ] as never);
+    expect(
+      (await (await addProfile(device, "p1"))?.readAttempt("a1"))?.attempt.stored,
+    ).toBeUndefined();
+    expect((await (await addProfile(device, "p2"))?.readAttempt("a1"))?.attempt.stored).toEqual({
+      history: 1,
+      submissions: 0,
+    });
   });
 });

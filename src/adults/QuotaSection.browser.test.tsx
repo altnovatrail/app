@@ -20,6 +20,7 @@ import { ApiProvider } from "../api/ApiContext.tsx";
 import { createApi } from "../api/client.ts";
 import { dateTimeFormat, percentText } from "../i18n/intl.ts";
 import type { Language } from "../i18n/language.ts";
+import { memoryDevice } from "../test/device.ts";
 import { inLanguage } from "../test/language.tsx";
 import { ProfilePage } from "./ProfilePage.tsx";
 
@@ -59,7 +60,12 @@ function renderPage(answer?: (asked: number) => Share, language: Language = "en"
   render(
     inLanguage(
       <ApiProvider value={api}>
-        <ProfilePage profile={OWNER} onSaved={() => {}} onFailed={() => {}} />
+        <ProfilePage
+          device={memoryDevice().device}
+          profile={OWNER}
+          onSaved={() => {}}
+          onFailed={() => {}}
+        />
       </ApiProvider>,
       language,
     ),

@@ -317,6 +317,8 @@ describe("what a profile keeps on this device", () => {
       unfinished: 1,
       essays: 0,
       bytes: undefined,
+      // Whether the server keeps it all is not known either: the warning stands.
+      stored: false,
     });
     backend.unreadable.clear();
     expect(await profileUsage(device, "p2")).toBeUndefined();

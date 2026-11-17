@@ -37,11 +37,13 @@ const OPEN = new Set([
 /**
  * The methods whose absence is no build older than api: the legal texts came with spec v0.13.0,
  * and an api on an older tag, which has none in force, answers them `unimplemented` (R27); the
- * share of the quota came with v0.16.3, and an api on an older tag has none to give.
+ * share of the quota came with v0.16.3, and an api on an older tag has none to give; and an api
+ * with no `WorkService` keeps no work, which then stays on the device alone, as before it (T62).
  */
 const MAY_BE_ABSENT = new Set([
   "novatrail.api.v1.LegalService/GetLegalTexts",
   "novatrail.api.v1.AccountService/GetQuota",
+  "novatrail.api.v1.WorkService/PutWork",
 ]);
 
 /** The pauses before each repeat, ms: 7.5 s in all, "for a short while". */
@@ -59,6 +61,12 @@ export function retryAfter(headers: Pick<Headers, "get">): number | undefined {
   return Number.isFinite(seconds) && seconds > 0 ? seconds * 1000 : undefined;
 }
 
+/**
+ * The methods whose `CAUSE_VERSION_NOT_GIVEN` is no withdrawal: `PutWork` gets it for a version out
+ * of the window of formats that api reads, with no work of the attempt kept before (T62).
+ */
+const NOT_WITHDRAWN = new Set(["novatrail.api.v1.WorkService/PutWork"]);
+
 /** The device's part in the refusals that touch it. */
 export function effects(on: ApiEvents): Interceptor {
   return (next) => async (request) => {
@@ -73,7 +81,7 @@ export function effects(on: ApiEvents): Interceptor {
         if (!MAY_BE_ABSENT.has(method)) on.stale();
       } else if (cause === Cause.ACCOUNT_GONE) await on.accountGone().catch(() => {});
       else if (cause === Cause.NO_ACCESS) await on.noAccess().catch(() => {});
-      else if (cause === Cause.VERSION_NOT_GIVEN) on.withdrawn?.();
+      else if (cause === Cause.VERSION_NOT_GIVEN && !NOT_WITHDRAWN.has(method)) on.withdrawn?.();
       throw error;
     }
   };

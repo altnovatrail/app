@@ -170,6 +170,7 @@ export function AdultSection({
       <ProfilePage
         key={profile.profileId}
         profile={profile}
+        device={device}
         onSaved={onSaved}
         onFailed={onFailed}
       />

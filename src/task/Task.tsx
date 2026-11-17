@@ -6,8 +6,10 @@
 // the steps. Every stroke and every change of the steps is written there, and a write that did not
 // land says so. A tap only chooses; Check sends the options tapped and the handwriting, the crop the
 // canvas gives, with one idempotency key for the action and the same with every repeat of it; the
-// submission is kept with its context, for the tutor's marks. "Not yet" asks the words of its rung
-// at once, with the same work, and the marks that come with them go on the canvas (R21). "Correct"
+// submission is kept with its context, for the tutor's marks, and while the profile's storage of
+// works is on the work goes to the server by `PutWork`, as it does once more when the attempt
+// closes (T62). "Not yet" asks the words of its rung at once, with the same work, and the marks that
+// come with them go on the canvas (R21). "Correct"
 // closes the attempt: its work on the device goes but the correct one's, which goes with the request
 // of the words after a correct answer and is erased once it ends, and the solution comes. An attempt
 // api closed meanwhile is a screen of its own, and one closed unchecked asks CheckPackages (T21).
@@ -72,6 +74,7 @@ import {
 import { ReportProblem } from "../tutor/ReportProblem.tsx";
 import type { Said } from "../tutor/report.ts";
 import { hintPhrases } from "../voice/texts.ts";
+import { useWorks } from "../works/useWorks.ts";
 import {
   markNames,
   marksOf,
@@ -176,6 +179,7 @@ export function Task({
   const api = useApi();
   const { views, checks } = usePackages();
   const { words } = useLanguage();
+  const works = useWorks(profileId);
   const [read, setRead] = useState<Read>({ status: "loading" });
   const [attempt, setAttempt] = useState(0);
   // The lesson player, if the attempt is a task of its run: it hears of a closed attempt once,
@@ -296,19 +300,21 @@ export function Task({
   }, [api, views, device, profileId, attemptId, attempt]);
 
   /**
-   * The attempt is over: its work on the device goes, and an unchecked one asks CheckPackages. The
-   * screen of an attempt read gives the database it holds; a read that found it closed opens it.
+   * The attempt is over: its work goes to the server as it was at the end, while the storage is on,
+   * then off the device, and an unchecked one asks CheckPackages. The screen of an attempt read
+   * gives the database it holds; a read that found it closed opens it.
    */
   const ended = useCallback(
     async (reason: CloseReason, held?: Profile, correct?: number) => {
       await attemptOver(device, profileId, attemptId, {
         ...(held === undefined ? {} : { held }),
         ...(correct === undefined ? {} : { correct }),
+        works,
       });
       if (reason === CloseReason.UNCHECKED) void checks.check();
       onAttempt(undefined);
     },
-    [device, profileId, attemptId, checks, onAttempt],
+    [device, profileId, attemptId, checks, onAttempt, works],
   );
 
   const again = useAgain(profileId, attemptId, onAttempt);
@@ -458,6 +464,7 @@ function OpenTask({
   const api = useApi();
   // The own key, or on platform AI the clock's offset, for each request that calls AI (R47).
   const holder = useKeyHolder();
+  const works = useWorks(profileId);
   const { views, files } = usePackages();
   const { language, words } = useLanguage();
   const { auto, prime } = useOwnVoicing();
@@ -729,10 +736,12 @@ function OpenTask({
     const saved = (await profile?.addSubmission(attemptId, work, historyLength)) ?? "unsaved";
     if (saved === "unsaved") unsavedNow();
     else number = saved;
+    // Written to the device, the work goes to the server too, while the storage is on.
+    if (profile !== undefined && saved !== "unsaved") void works.put(profile, attemptId);
     const made: Sent = { key: idempotencyKey(), work, contract: await workOf(work), number };
     if (drawn.current === at) sent.current = made;
     return made;
-  }, [handwriting, profile, attemptId, drawn, unsavedNow]);
+  }, [handwriting, profile, attemptId, drawn, unsavedNow, works]);
 
   const check = useCallback(() => {
     // Within the press: the words that come after it may be said (WebKit; section 3.5).

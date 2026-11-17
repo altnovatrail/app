@@ -80,6 +80,7 @@ function renderPage(
     inLanguage(
       <ApiProvider value={api}>
         <ProfilePage
+          device={memoryDevice().device}
           profile={of}
           onSaved={(changed) => saved.push(changed)}
           onFailed={(failure) => failed.push(failure)}
