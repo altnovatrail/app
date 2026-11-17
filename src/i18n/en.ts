@@ -400,6 +400,41 @@ export const en = {
   "subjects.license": "License",
   /** On a module's card: its skill graph is a chain, so its lessons go one after another (R06). */
   "subjects.sequential": "In order",
+  /** Under the heading of the home screen, where the learner picks up their work. */
+  "subjects.sub": "Pick up where you left off",
+  /** The heading of the card of what comes next: the task in progress, the engine's way, the tutor time. */
+  "subjects.next-up": "Next up",
+  /** The second card at the top: "A task from my paper", shown and not open yet (R148 spec; product 4 spec). */
+  "subjects.paper": "A task from my paper",
+  "subjects.paper-why": "Comes later: solving the tasks of a page from your book is not open yet",
+  /** The button of "A task from my paper", disabled: the camera comes with the tasks from paper. */
+  "subjects.paper-open": "Open camera",
+  /** On a module's card under its bar: of its skills with a verdict, how many are mastered. */
+  "subjects.mastered": "{mastered} of {count} mastered",
+  /** Beside it, the skills whose review is due. */
+  "subjects.review": "{count} time to review",
+  /** On the card of a module whose skills have a rubric and no verdict. */
+  "subjects.rubric": plural({
+    one: "{count} skill, with a rubric",
+    other: "{count} skills, each with a rubric",
+  }),
+  /** The name of a module's bar: {list} is each state and mark of its skills with its count. */
+  "subjects.skills": "All the skills: {list}",
+  /** One state or mark in the bar's name; {state} is its word below. */
+  "subjects.skill-count": "{state}: {count}",
+  /** The legend of the marks of the cards: below the modules, and on a phone a button that opens it. */
+  "subjects.legend": "What the marks mean",
+  /**
+   * The states of a skill and the marks of a skill with a rubric and of one not assessed, the words
+   * of architecture 6 spec, which the skill map shows too.
+   */
+  "skill-state.mastered": "Mastered",
+  "skill-state.time-to-review": "Time to review",
+  "skill-state.in-progress": "In progress",
+  "skill-state.ready-to-start": "Ready to start",
+  "skill-state.locked": "Locked",
+  "skill-state.feedback-by-criteria": "Feedback by criteria",
+  "skill-state.not-assessed": "Not assessed",
   /** The second way in beside My subjects, and its screen's heading (product 4 spec; R34). */
   "skillmap.title": "Skill map",
   /** On a module's card on the screen Skill map: opens the module's map. */

@@ -23,12 +23,16 @@ import {
   GetSkillGraphResponseSchema,
   PackageService,
 } from "@altnovatrail/contracts/novatrail/api/v1/package_pb.js";
+import {
+  GetSkillMapResponseSchema,
+  ProgressService,
+} from "@altnovatrail/contracts/novatrail/api/v1/progress_pb.js";
 import { create, type MessageInitShape } from "@bufbuild/protobuf";
 import { timestampFromDate } from "@bufbuild/protobuf/wkt";
 import { Code, ConnectError, type ConnectRouter, createRouterTransport } from "@connectrpc/connect";
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { userEvent } from "vitest/browser";
+import { page, userEvent } from "vitest/browser";
 import { ApiProvider } from "../api/ApiContext.tsx";
 import { createApi } from "../api/client.ts";
 import { dateTimeFormat } from "../i18n/intl.ts";
@@ -92,6 +96,10 @@ interface Setup {
   runs?: { lessonRunId: string; lesson: string; packageDigest: string }[];
   /** The tiers of the skill graph of each version that has one. */
   tiers?: Record<string, Record<string, number>>;
+  /** The skills of the skill graph of a version, by its digest: none but the tiers' without it. */
+  graphs?: Record<string, unknown>;
+  /** What GetSkillMap gives for a module, by its ID; without it, a module has no map. */
+  maps?: Record<string, MessageInitShape<typeof GetSkillMapResponseSchema>>;
   /** The share GetQuota gives; throwing makes it fail. Without it, api has no GetQuota. */
   quota?: () => MessageInitShape<typeof QuotaShareSchema>;
 }
@@ -142,6 +150,14 @@ async function renderSubjects(setup: Setup, language: "en" | "ru" = "en") {
         return { choice: { kind: ChoiceKind.NOTHING } };
       },
     });
+    router.service(ProgressService, {
+      getSkillMap(request) {
+        asked.push(`map ${request.moduleId} ${request.action}`);
+        const map = setup.maps?.[request.moduleId];
+        if (map === undefined) throw new ConnectError("no map", Code.NotFound);
+        return map;
+      },
+    });
     router.service(PackageService, {
       getManifest(request) {
         setup.manifest?.(request.packageDigest);
@@ -158,7 +174,9 @@ async function renderSubjects(setup: Setup, language: "en" | "ru" = "en") {
             ? {}
             : {
                 skillGraph: {
-                  json: new TextEncoder().encode(JSON.stringify({ skills: {} })),
+                  json: new TextEncoder().encode(
+                    JSON.stringify(setup.graphs?.[request.packageDigest] ?? { skills: {} }),
+                  ),
                   moduleFormatVersion: "0.4",
                 },
                 skillTiers: tiers,
@@ -335,7 +353,14 @@ describe("My subjects", () => {
     expect(await screen.findByText("No subjects are connected yet")).toBeTruthy();
     const back = (await card("Olympiad maths")).getByRole("button", { name: "Connect" });
     await vi.waitFor(() => expect(document.activeElement).toBe(back));
-    expect(asked).toEqual(["list p1", "catalog p1", `connect ${MATH}`, `disconnect ${MATH}`]);
+    // The map of the module connected is read for its card; the lists are not read again.
+    expect(asked.filter((call) => !call.startsWith("map "))).toEqual([
+      "list p1",
+      "catalog p1",
+      `connect ${MATH}`,
+      `disconnect ${MATH}`,
+    ]);
+    expect(asked).toContain(`map ${MATH} 1`);
   });
 
   it("names a module with no current version by the manifest kept of an earlier one, or by its ID", async () => {
@@ -503,13 +528,18 @@ describe("the tutor time", () => {
   /** The line of the tutor time, if the screen shows one. */
   const line = () => screen.queryByText(/^(Tutor time today|Today's tutor time|Время наставника)/);
 
-  it("says, above the way to begin, how much of today's the profile has used, and never the account's", async () => {
+  it("says, at the foot of the card of what comes next, how much of today's the profile has used, and never the account's", async () => {
     const { asked } = await renderSubjects({
       quota: () => ({ profilePercent: 40, accountPercent: 90 }),
     });
-    const said = await screen.findByText("Tutor time today: 40% used");
-    const next = await screen.findByRole("button", { name: "What's next" });
-    expect(said.compareDocumentPosition(next) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    const card = within(await screen.findByRole("region", { name: "Next up" }));
+    const said = await card.findByText("Tutor time today: 40% used");
+    const next = card.getByRole("button", { name: "What's next" });
+    expect(said.compareDocumentPosition(next) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy();
+    // Its bar beside the words, as long as the share, which the words alone name.
+    const bar = said.querySelector<HTMLElement>(".nt-quota-bar");
+    expect(bar).toHaveAttribute("aria-hidden", "true");
+    expect((bar?.firstElementChild as HTMLElement | null)?.style.inlineSize).toBe("40%");
     expect(screen.queryByText(/90/)).toBeNull();
     // By the learner's action, ACTION_LEARNING.
     expect(asked).toContain("quota p1 1");
@@ -585,4 +615,176 @@ describe("the tutor time", () => {
     await userEvent.click(screen.getByRole("button", { name: "Try again" }));
     expect(await screen.findByText("Tutor time today: 40% used")).toBeTruthy();
   }, 30_000);
+});
+
+/** Six skills of one graph, one in each state and one with a rubric. */
+const SKILLS = {
+  skills: {
+    counting: { title: "Counting", assessability: "verdict" },
+    halves: { title: "Halves", assessability: "verdict" },
+    patterns: { title: "Patterns", assessability: "verdict", prerequisites: ["counting"] },
+    rows: { title: "Sums of rows", assessability: "verdict", prerequisites: ["patterns"] },
+    cycles: { title: "Days and cycles", assessability: "verdict" },
+    words: { title: "Wording", assessability: "rubric" },
+  },
+};
+const SKILL_TIERS = { counting: 1, halves: 1, patterns: 2, rows: 3, cycles: 1, words: 1 };
+/** Counting mastered, Halves due for review, Patterns practised, the rest not begun. */
+const STATED: MessageInitShape<typeof GetSkillMapResponseSchema> = {
+  packageDigest: D1,
+  skills: [
+    { skill: "counting", evidenceCount: 4, masteryBand: "b1" },
+    { skill: "halves", evidenceCount: 3, masteryBand: "b1", reviewDue: true },
+    { skill: "patterns", evidenceCount: 2 },
+    { skill: "rows" },
+    { skill: "cycles" },
+  ],
+};
+const ALL_STATES =
+  "All the skills: Mastered: 1, Time to review: 1, In progress: 1, Ready to start: 1, Locked: 1, Feedback by criteria: 1";
+
+describe("the states of the skills", () => {
+  it("are on a card connected as its map has them, by the learner's action, and none in the catalog", async () => {
+    const { asked } = await renderSubjects({
+      connected: [{ moduleId: MATH, packageDigest: D1 }],
+      catalog: [{ moduleId: PHYSICS, packageDigest: D2 }],
+      tiers: { [D1]: SKILL_TIERS },
+      graphs: { [D1]: SKILLS },
+      maps: { [MATH]: STATED },
+    });
+    const math = await card("Olympiad maths");
+    const bar = await math.findByRole("img", { name: ALL_STATES });
+    // Each segment in the colour of its state, as long as its share of the five with a verdict.
+    const segments = [...bar.children] as HTMLElement[];
+    expect(segments.map((segment) => segment.dataset.state)).toEqual([
+      "mastered",
+      "time-to-review",
+      "in-progress",
+      "ready-to-start",
+      "locked",
+    ]);
+    expect(segments.map((segment) => segment.style.inlineSize)).toEqual(Array(5).fill("20%"));
+    expect(getComputedStyle(segments[0] as HTMLElement).backgroundColor).toBe("rgb(48, 161, 78)");
+    expect(getComputedStyle(bar).columnGap).toBe("2px");
+    expect(math.getByText("1 of 5 mastered · 1 time to review")).toBeVisible();
+    expect(asked).toContain(`map ${MATH} 1`);
+    expect((await card("Физика")).queryByRole("img")).toBeNull();
+    expect(asked.some((call) => call.startsWith(`map ${PHYSICS}`))).toBe(false);
+  });
+
+  it("are the ones the skill map draws on the same graph and answer", async () => {
+    await import("@altnovatrail/skill-map");
+    const { ModuleSkillMap } = await import("../skills/SkillMap.tsx");
+    const map = {
+      skillMap: create(GetSkillMapResponseSchema, STATED),
+      graph: { view: SKILLS, skillTiers: SKILL_TIERS },
+      manifest: JSON.parse(new TextDecoder().decode(MANIFESTS[D1]?.json)),
+    } as Parameters<typeof ModuleSkillMap>[0]["map"];
+    render(inLanguage(<ModuleSkillMap map={map} view="learner" headingLevel="2" />));
+    const element = document.querySelector("novatrail-skill-map");
+    const words = {
+      Mastered: 0,
+      "Time to review": 0,
+      "In progress": 0,
+      "Ready to start": 0,
+      Locked: 0,
+      "Feedback by criteria": 0,
+    };
+    await waitFor(() => {
+      const tiles = [...(element?.shadowRoot?.querySelectorAll("button[aria-expanded]") ?? [])];
+      expect(tiles).toHaveLength(6);
+      for (const word of Object.keys(words) as (keyof typeof words)[]) {
+        words[word] = tiles.filter((tile) => tile.textContent?.includes(word)).length;
+      }
+    });
+    // "Time to review" is no part of "Mastered", nor any word of another: each tile has one.
+    expect(words).toEqual({
+      Mastered: 1,
+      "Time to review": 1,
+      "In progress": 1,
+      "Ready to start": 1,
+      Locked: 1,
+      "Feedback by criteria": 1,
+    });
+  });
+
+  it("are a mark in place of the bar for a module whose skills have a rubric and no verdict", async () => {
+    await renderSubjects(
+      {
+        connected: [{ moduleId: MATH, packageDigest: D1 }],
+        tiers: { [D1]: { a: 1, b: 1 } },
+        graphs: {
+          [D1]: {
+            skills: {
+              a: { title: "A", assessability: "rubric" },
+              b: { title: "B", assessability: "rubric" },
+            },
+          },
+        },
+        maps: { [MATH]: { packageDigest: D1 } },
+      },
+      "ru",
+    );
+    const math = await card("Olympiad maths");
+    expect(await math.findByText("Отзыв по критериям")).toBeVisible();
+    expect(math.getByText("2 навыка, у каждого — критерии")).toBeVisible();
+    expect(math.queryByRole("img")).toBeNull();
+  });
+
+  it("leave the card as it is when its map does not come, and lead to the module's map", async () => {
+    const { asked } = await renderSubjects({ connected: [{ moduleId: MATH, packageDigest: D1 }] });
+    const math = await card("Olympiad maths");
+    await waitFor(() => expect(asked).toContain(`map ${MATH} 1`));
+    expect(math.queryByRole("img")).toBeNull();
+    const map = math.getByRole("button", { name: "Skill map" });
+    expect(map).toHaveAccessibleDescription("Olympiad maths");
+    await userEvent.click(map);
+    expect(window.location.hash).toBe(`#/skill-map/${encodeURIComponent(MATH)}`);
+    window.location.hash = "";
+  });
+});
+
+describe("the legend and the task from paper", () => {
+  it("stand below the modules from 600 CSS px, and on a phone open from a button as a sheet", async () => {
+    await page.viewport(1194, 834);
+    const { unmount } = await renderSubjects({
+      connected: [{ moduleId: MATH, packageDigest: D1 }],
+    });
+    const legend = within(await screen.findByRole("region", { name: "What the marks mean" }));
+    expect(legend.getAllByRole("listitem").map((item) => item.textContent)).toEqual([
+      "Mastered",
+      "Time to review",
+      "In progress",
+      "Ready to start",
+      "Locked",
+      "Feedback by criteria",
+      "Not assessed",
+    ]);
+    expect(screen.queryByRole("button", { name: "What the marks mean" })).toBeNull();
+    unmount();
+    await page.viewport(390, 844);
+    await renderSubjects({ connected: [{ moduleId: MATH, packageDigest: D1 }] });
+    await card("Olympiad maths");
+    expect(screen.queryByRole("region", { name: "What the marks mean" })).toBeNull();
+    await userEvent.click(screen.getByRole("button", { name: "What the marks mean" }));
+    const sheet = within(await screen.findByRole("dialog", { name: "What the marks mean" }));
+    expect(sheet.getAllByRole("listitem")).toHaveLength(7);
+    await page.viewport(1194, 834);
+  });
+
+  it("is no legend with no module connected", async () => {
+    await renderSubjects({ connected: [] });
+    await screen.findByText("No subjects are connected yet");
+    expect(screen.queryByRole("region", { name: "What the marks mean" })).toBeNull();
+  });
+
+  it("shows A task from my paper, disabled, with the line why", async () => {
+    await renderSubjects({}, "ru");
+    const paper = within(await screen.findByRole("region", { name: "Задача с моей бумаги" }));
+    const button = paper.getByRole("button", { name: "Открыть камеру" });
+    expect(button).toBeDisabled();
+    expect(button).toHaveAccessibleDescription(
+      "Будет позже: решать задачи со страницы своей книги пока нельзя",
+    );
+  });
 });

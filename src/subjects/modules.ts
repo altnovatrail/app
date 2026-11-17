@@ -9,6 +9,7 @@
 // No DOM.
 import type * as open from "@altnovatrail/spec/formatv0/open";
 import type { OpenViews } from "../packages/views.ts";
+import type { SkillCounts } from "./states.ts";
 
 export interface ModuleCard {
   readonly moduleId: string;
@@ -22,6 +23,8 @@ export interface ModuleCard {
   readonly unnamed?: true;
   /** Its current version's skill graph is a chain: the mark "in order" (R06), once it is known. */
   readonly sequential?: true;
+  /** How many of its skills have each state and mark, once its map has come (R62). */
+  readonly skills?: SkillCounts;
 }
 
 /** A module as the catalog or the list of connected modules gives it. */

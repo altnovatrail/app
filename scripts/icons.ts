@@ -75,6 +75,19 @@ export const TABLE: Readonly<Record<string, Value>> = {
   "avatar-wave": { base: "waves", filled: false, mirrored: false },
   "avatar-sun": { base: "sunny", filled: false, mirrored: false },
   "avatar-bolt": { base: "bolt", filled: false, mirrored: false },
+  // The states of a skill and the marks of one with a rubric and of one not assessed, on a module's
+  // card and in its legend, the table's, as the skill map shows them (R62).
+  "state-mastered": { base: "check-circle", filled: false, mirrored: false },
+  "state-time-to-review": { base: "update", filled: false, mirrored: false },
+  "state-in-progress": { base: "timelapse", filled: false, mirrored: false },
+  "state-ready-to-start": { base: "lock-open-right", filled: false, mirrored: false },
+  "state-locked": { base: "lock", filled: false, mirrored: false },
+  "state-feedback-by-criteria": { base: "rate-review", filled: false, mirrored: false },
+  "state-not-assessed": { base: "remove-done", filled: false, mirrored: false },
+  // The home screen's own (section 3.10 of docs/architecture.md; R62): the camera of "A task from
+  // my paper", shown disabled; the button of the phone that opens what the marks mean, an "i".
+  camera: { base: "photo-camera", filled: false, mirrored: false },
+  legend: { base: "info", filled: false, mirrored: false },
 };
 
 /** An icon as the app draws it: its view box, and the paths it fills in the text's colour. */

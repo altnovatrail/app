@@ -12,7 +12,11 @@
 // second way in, where the learner chooses a skill (R34), and to "My essays" (R53); a card marks a
 // module whose skill graph is a chain "in order" (R06). Under its heading, where the learner begins
 // their work, the screen says how much of today's tutor time the profile has used, or, once it is
-// used up, when it comes back (section 15 of the text of the contracts, "The quota"; R37).
+// used up, when it comes back (section 15 of the text of the contracts, "The quota"; R37). It is
+// drawn as the mockup's `home` (R148 in spec; R62): what comes next and the tutor time on a card
+// at the top, "A task from my paper" beside it, shown and not open; each card of a module connected
+// with the states of its skills, counted by the rule of skill-map's map, and a way to its map; the
+// legend of the marks below the cards, and on a phone behind a button.
 import type { QuotaShare } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 // Whose action a request is; the cards have actions of their own.
 import { Action as Actor } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
@@ -23,6 +27,7 @@ import { useApi, useRequest } from "../api/ApiContext.tsx";
 import type { Api } from "../api/client.ts";
 import { type Failure, parseFailure } from "../api/failure.ts";
 import { failureText } from "../api/words.ts";
+import { Icon } from "../app/Icon.tsx";
 import { ESSAYS, LESSON, navigate, SKILL_MAP, TASK, TUTOR } from "../app/router.ts";
 import { Screen } from "../app/Screen.tsx";
 import { ReadFailed } from "../boot/Screens.tsx";
@@ -34,12 +39,15 @@ import { NextStep } from "../next/NextStep.tsx";
 import { licenseRoute } from "../packages/LicensePage.tsx";
 import { usePackages } from "../packages/PackagesContext.tsx";
 import type { OpenViews } from "../packages/views.ts";
+import { moduleMapRoute } from "../skills/SkillMapScreen.tsx";
 import type { Device } from "../storage/device.ts";
 import { openProfile, type Profile } from "../storage/profile.ts";
 import { useAttempt } from "../task/AttemptContext.tsx";
 import { CardHeading } from "./CardHeading.tsx";
 import { byTitle, cardsOf, type ModuleCard, type ModuleRef } from "./modules.ts";
+import { Legend, SkillBar } from "./SkillBar.tsx";
 import { useSequential } from "./useSequential.ts";
+import { useSkillCounts } from "./useSkillCounts.ts";
 
 /** A lesson run open, as My subjects names it. */
 export interface OpenRun {
@@ -70,6 +78,32 @@ function RunName({ run }: { readonly run: OpenRun }) {
 /** What a card's button does. */
 type Action = "connect" | "disconnect";
 
+/** The gradients of the mockup's tiles of modules, one by the module's ID. */
+const TONES = 3;
+
+/** The tone of a module's tile: the same for a module on every screen and device. */
+function toneOf(moduleId: string): number {
+  let hash = 0;
+  for (const char of moduleId) hash = (hash * 31 + (char.codePointAt(0) ?? 0)) % 1_000_003;
+  return hash % TONES;
+}
+
+/**
+ * A module's tile, the first letter of its title on a gradient: decoration alone, which 1.4.3
+ * excepts, its letter drawn by CSS from `data-glyph` and hidden from assistive technology.
+ */
+function Tile({ card }: { readonly card: ModuleCard }) {
+  const glyph = Array.from(card.title)[0]?.toUpperCase() ?? "";
+  return (
+    <span
+      className="nt-module-tile"
+      aria-hidden="true"
+      data-tone={toneOf(card.moduleId)}
+      data-glyph={glyph}
+    />
+  );
+}
+
 /** A module's card, its buttons described by its title. */
 function Card({
   card,
@@ -87,15 +121,29 @@ function Card({
   const { words } = useLanguage();
   const id = useId();
   const digest = card.digest;
+  const own = action === "disconnect";
   return (
-    <li className="nt-card">
+    <li className="nt-card nt-module">
       <article aria-labelledby={id}>
+        <Tile card={card} />
         <CardHeading card={card} id={id} />
+        {card.skills === undefined ? null : <SkillBar counts={card.skills} />}
         <div className="nt-buttons">
+          {/* A module connected with a current version has its map, as the list of maps has it. */}
+          {own && digest !== undefined ? (
+            <button
+              type="button"
+              className="nt-link"
+              aria-describedby={id}
+              onClick={() => navigate(moduleMapRoute(card.moduleId))}
+            >
+              {words.text("skillmap.title")}
+            </button>
+          ) : null}
           {/* Not disabled while a press is under way: a disabled button would drop the focus. */}
           <button
             type="button"
-            className={action === "disconnect" ? "nt-secondary" : undefined}
+            className={own ? "nt-link" : undefined}
             aria-describedby={id}
             aria-disabled={pending}
             data-module={card.moduleId}
@@ -109,7 +157,7 @@ function Card({
           {digest === undefined || onLicense === undefined ? null : (
             <button
               type="button"
-              className="nt-secondary"
+              className="nt-link"
               aria-describedby={id}
               onClick={() => onLicense(digest)}
             >
@@ -170,6 +218,8 @@ export function SubjectsScreen({
     () => (quota === undefined ? undefined : learnerQuotaText(quota, words)),
     [quota, words],
   );
+  const nextId = useId();
+  const paperId = useId();
   const connectedId = useId();
   const continueId = useId();
   const lessonsId = useId();
@@ -188,32 +238,55 @@ export function SubjectsScreen({
   const unnamed = [...(mine ?? []), ...(more ?? [])].some((card) => card.unnamed === true);
   return (
     <Screen title={words.text("subjects.title")} layout="reference">
+      <p className="nt-home-sub">{words.text("subjects.sub")}</p>
       {failure === undefined ? null : (
         <p role="alert" className="nt-error">
           {failureText(failure, words)}
         </p>
       )}
-      {/* Above where the learner begins their work: how much of today's tutor time is used. */}
-      {spent === undefined ? null : <p>{spent}</p>}
-      {onContinue === undefined ? null : (
-        <section aria-labelledby={continueId} className="nt-continue">
-          <h2 id={continueId}>{words.text("task.continue-title")}</h2>
-          <div className="nt-buttons">
-            <button type="button" onClick={onContinue}>
-              {words.text("task.continue")}
-            </button>
-          </div>
+      <div className="nt-home-top">
+        <section aria-labelledby={nextId} className="nt-next-up">
+          <h2 id={nextId}>{words.text("subjects.next-up")}</h2>
+          {onContinue === undefined ? null : (
+            <section aria-labelledby={continueId} className="nt-continue">
+              <h3 id={continueId}>{words.text("task.continue-title")}</h3>
+              <div className="nt-buttons">
+                <button type="button" onClick={onContinue}>
+                  {words.text("task.continue")}
+                </button>
+              </div>
+            </section>
+          )}
+          {/* One place, whatever is open: the step stays itself while its press closes the attempt. */}
+          {next}
+          {/* At the card's foot, as the mockup has it: how much of today's tutor time is used. */}
+          {spent === undefined ? null : (
+            <p className="nt-quota">
+              {quota?.profilePercent === undefined ? null : (
+                <span className="nt-quota-bar" aria-hidden="true">
+                  <span
+                    style={{ inlineSize: `${Math.min(100, Math.max(0, quota.profilePercent))}%` }}
+                  />
+                </span>
+              )}
+              {spent}
+            </p>
+          )}
         </section>
-      )}
-      {/* One place, whatever is open: the step stays itself while its press closes the attempt. */}
-      {next}
-      <div className="nt-buttons">
-        <button type="button" className="nt-secondary" onClick={() => navigate(SKILL_MAP)}>
-          {words.text("skillmap.title")}
-        </button>
-        <button type="button" className="nt-secondary" onClick={() => navigate(ESSAYS)}>
-          {words.text("essays.title")}
-        </button>
+        {/* Shown, not open: tasks from paper come later (R148 in spec; product 4 and 11 in spec). */}
+        <section aria-labelledby={paperId} className="nt-paper">
+          <span className="nt-paper-icon" aria-hidden="true">
+            <Icon value="camera" />
+          </span>
+          <h2 id={paperId}>{words.text("subjects.paper")}</h2>
+          <p id={`${paperId}-why`} className="nt-hint">
+            {words.text("subjects.paper-why")}
+          </p>
+          <button type="button" disabled aria-describedby={`${paperId}-why`}>
+            <Icon value="camera" />
+            {words.text("subjects.paper-open")}
+          </button>
+        </section>
       </div>
       {runs.length === 0 ? null : (
         <section aria-labelledby={lessonsId} className="nt-continue">
@@ -265,6 +338,15 @@ export function SubjectsScreen({
           </ul>
         )}
       </section>
+      {mine === undefined || mine.length === 0 ? null : <Legend />}
+      <div className="nt-buttons">
+        <button type="button" className="nt-secondary" onClick={() => navigate(SKILL_MAP)}>
+          {words.text("skillmap.title")}
+        </button>
+        <button type="button" className="nt-secondary" onClick={() => navigate(ESSAYS)}>
+          {words.text("essays.title")}
+        </button>
+      </div>
       <section aria-labelledby={catalogId}>
         <h2 id={catalogId}>{words.text("subjects.catalog")}</h2>
         {more === undefined ? null : more.length === 0 ? (
@@ -435,7 +517,12 @@ export function MySubjects({
   );
 
   const done = read.status === "done";
-  const connected = useSequential(views, done ? read.connected : undefined);
+  const connected = useSkillCounts(
+    api,
+    views,
+    profileId,
+    useSequential(views, done ? read.connected : undefined),
+  );
   const catalog = useSequential(views, done ? read.catalog : undefined);
   if (read.status === "failed") return <ReadFailed failure={read.failure} onRetry={retry} />;
   return (
