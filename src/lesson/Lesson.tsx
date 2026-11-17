@@ -25,6 +25,7 @@ import { useApi } from "../api/ApiContext.tsx";
 import { type Failure, parseFailure } from "../api/failure.ts";
 import { idempotencyKey } from "../api/keys.ts";
 import { failureText } from "../api/words.ts";
+import { HomeWay } from "../app/HomeButton.tsx";
 import { HOME, navigate, redirect } from "../app/router.ts";
 import { Screen } from "../app/Screen.tsx";
 import { ReadFailed } from "../boot/Screens.tsx";
@@ -205,7 +206,7 @@ export function Lesson(props: LessonProps) {
 
   if (read.status === "loading") return null;
   if (read.status === "failed") {
-    return <ReadFailed failure={read.failure} onRetry={() => setAttempt((n) => n + 1)} />;
+    return <ReadFailed failure={read.failure} onRetry={() => setAttempt((n) => n + 1)} home />;
   }
   if (read.status === "ended") {
     return <LessonEnd reason={read.reason} next={nextStep(profileId, device, read.choice)} />;
@@ -249,11 +250,7 @@ export function LessonEnd({
     >
       {title === undefined ? null : <p className="nt-result">{end}</p>}
       {next}
-      <div className="nt-buttons">
-        <button type="button" className="nt-secondary" onClick={() => navigate(HOME)}>
-          {words.text("task.home")}
-        </button>
-      </div>
+      <HomeWay />
     </Screen>
   );
 }

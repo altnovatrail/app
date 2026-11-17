@@ -21,7 +21,8 @@ import { type Failure, parseFailure } from "../api/failure.ts";
 import { outcomeOf } from "../api/outcome.ts";
 import { ReadFailure } from "../api/ReadFailure.tsx";
 import { failureText, outcomeText } from "../api/words.ts";
-import { HOME, navigate, type Route, redirect, SKILL_MAP } from "../app/router.ts";
+import { HomeButton } from "../app/HomeButton.tsx";
+import { navigate, type Route, redirect, SKILL_MAP } from "../app/router.ts";
 import { Screen } from "../app/Screen.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { givenOf } from "../next/choice.ts";
@@ -51,9 +52,7 @@ function Ways({ all }: { readonly all: boolean }) {
           {words.text("skillmap.all")}
         </button>
       ) : null}
-      <button type="button" className="nt-secondary" onClick={() => navigate(HOME)}>
-        {words.text("task.home")}
-      </button>
+      <HomeButton />
     </div>
   );
 }
