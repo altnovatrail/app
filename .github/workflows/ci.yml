@@ -18,17 +18,17 @@ concurrency:
 jobs:
   secrets:
     name: Secrets
-    uses: altnovatrail/.github/.github/workflows/secrets.yml@93c848fb51a10a245968cf730b99cc709a7748bf # v0.1.31
+    uses: altnovatrail/.github/.github/workflows/secrets.yml@1704f782e76cee50ea5392cc0ea0d4b76c4b3672 # v0.1.32
 
   # A pull request's commits are what it checks; a push to main has been checked as one.
   dco:
     name: DCO
     if: github.event_name == 'pull_request'
-    uses: altnovatrail/.github/.github/workflows/dco.yml@93c848fb51a10a245968cf730b99cc709a7748bf # v0.1.31
+    uses: altnovatrail/.github/.github/workflows/dco.yml@1704f782e76cee50ea5392cc0ea0d4b76c4b3672 # v0.1.32
 
   documents:
     name: Documents
-    uses: altnovatrail/.github/.github/workflows/documents.yml@93c848fb51a10a245968cf730b99cc709a7748bf # v0.1.31
+    uses: altnovatrail/.github/.github/workflows/documents.yml@1704f782e76cee50ea5392cc0ea0d4b76c4b3672 # v0.1.32
 
   # The app's TypeScript code, by its own ci- recipes, and the coverage of its tests, which the
   # shared workflow sends to Codecov (R19 .github). lint, vuln and licenses run in the stage
@@ -42,6 +42,45 @@ jobs:
     permissions:
       contents: read
       id-token: write
-    uses: altnovatrail/.github/.github/workflows/typescript.yml@93c848fb51a10a245968cf730b99cc709a7748bf # v0.1.31
+    uses: altnovatrail/.github/.github/workflows/typescript.yml@1704f782e76cee50ea5392cc0ea0d4b76c4b3672 # v0.1.32
     with:
       engines: true
+
+  # The comparison with the interface mockup (R58): `just mockup-compare` in the toolchain stage,
+  # with the browsers. The mockup is in the spec submodule, which no job of typescript.yml but the
+  # licenses' checks out, so the job is the repository's own, with the image of the stage by
+  # .github's action toolchain (R49 .github) — from the cache typescript.yml fills, or built — and
+  # without its Go caches, which nothing here has. Its snapshots and reports are an artifact of the
+  # run, kept a week, whatever its end.
+  mockup:
+    name: Mockup
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: true
+          persist-credentials: false
+
+      - name: Toolchain image
+        uses: altnovatrail/.github/.github/actions/toolchain@1704f782e76cee50ea5392cc0ea0d4b76c4b3672 # v0.1.32
+        with:
+          check: mockup
+
+      # As typescript.yml runs ci-engines: the runner's user, HOME in /tmp, CI from the step's
+      # environment, and --ipc=host for Chromium.
+      - name: just mockup-compare
+        run: |
+          docker run --rm --init --ipc=host --user "$(id -u):$(id -g)" \
+              --env HOME=/tmp --env CI \
+              --volume "$PWD:/work" --workdir /work \
+              novatrail-toolchain just mockup-compare
+
+      - name: Snapshots and reports
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: mockup
+          path: mockup/out/
+          retention-days: 7
+          if-no-files-found: warn

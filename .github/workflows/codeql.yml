@@ -20,7 +20,7 @@ jobs:
     permissions:
       contents: read
       security-events: write
-    uses: altnovatrail/.github/.github/workflows/codeql.yml@93c848fb51a10a245968cf730b99cc709a7748bf # v0.1.31
+    uses: altnovatrail/.github/.github/workflows/codeql.yml@1704f782e76cee50ea5392cc0ea0d4b76c4b3672 # v0.1.32
     with:
       # The app's TypeScript, beside the workflows, from its first code (Д9 in table 4 of spec's
       # RUN.md).

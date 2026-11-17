@@ -126,6 +126,17 @@ walk *engines="chromium webkit firefox": _install
     fi
     NOVATRAIL_WALK_ENGINES={{ quote(engines) }} {{ bin }}/vitest run --config walk/vitest.config.ts
 
+# The comparison with the interface mockup (R58 in docs/decisions.md; section 3.9 of
+# docs/architecture.md): mockup/vitest.config.ts in Chromium, WebKit and Firefox — every state of the
+# mockup's first slice, on the iPad and the phone, against the other engines, and app's screens
+# against their states, region by region —, with the snapshots and the reports in mockup/out/, which
+# it empties first. It opens the mockup of the spec folder given: spec/, the submodule, unless a
+# clone of a newer spec is named, e.g. just mockup-compare /tmp/spec. CI runs it as the job Mockup
+# of ci.yml, the one job with the submodule beside the licenses'.
+mockup-compare spec="spec": _install
+    rm -rf mockup/out
+    NOVATRAIL_MOCKUP_SPEC={{ quote(spec) }} {{ bin }}/vitest run --config mockup/vitest.config.ts
+
 # Write src/app/icons.ts again from the set of icons package-lock.json pins.
 icons: _install
     node scripts/icons.ts
