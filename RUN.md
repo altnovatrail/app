@@ -55,6 +55,7 @@ No current epic. The last done one is E3 «Первый срез со взрос
 |---|---|---|---|---|---|
 | [x] | T72 | Переход на тег `spec` v0.18.12 | Claude | — | — |
 | [x] | T73 | «Проще» и «Сложнее» у уровня модуля | Claude | — | — |
+| [x] | T74 | README без «Status», «License», фразы о языках и версии spec | Claude | — | — |
 
 «Зависит от» names only tasks of this plan. What a task waits for from other repositories is its body's «Ждёт»: it is taken once the neighbour has done that, and until then the queue goes on.
 
