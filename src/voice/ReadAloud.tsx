@@ -1,11 +1,11 @@
-// "Read aloud" beside a text (R07 and R36 in docs/decisions.md; sections 3.5
-// and 3.9 of docs/architecture.md): the speaker button reads the text by the voice of its language,
+// "Read aloud" beside a text (R07, R36 and R60 in docs/decisions.md; sections 3.5
+// and 3.9 of docs/architecture.md): the speaker button, its icon alone, reads the text by the voice of its language,
 // the voicing off too, and a second press while it reads stops it. Where the text cannot be said —
 // no voice for its language on this device, or on Android and Linux before an adult's leave — the
 // button stays, not active, and the line beside it, which describes it, says why. It is no status
 // message: it stands from the start, and a status on every button would be read out on every screen.
 import { useEffect, useId, useRef, useSyncExternalStore } from "react";
-import { Icon } from "../app/Icon.tsx";
+import { IconButton } from "../app/IconButton.tsx";
 import { languageName } from "../i18n/intl.ts";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import type { Phrase } from "./texts.ts";
@@ -34,7 +34,6 @@ export function ReadAloud({
   /** The language of the text, the module's explanation language: its voice says it. */
   readonly language: string | undefined;
 }) {
-  const { words } = useLanguage();
   const voicing = useVoicing();
   const lineOf = useSilentLine();
   const id = useId();
@@ -56,9 +55,9 @@ export function ReadAloud({
   return (
     <div className="nt-read-aloud">
       {/* Not disabled while it cannot read: a disabled button would drop the focus and its line. */}
-      <button
-        type="button"
-        className="nt-secondary nt-icon-button"
+      <IconButton
+        value="read-aloud"
+        className="nt-icon-accent"
         aria-disabled={why !== undefined}
         {...(why === undefined || waits ? {} : { "aria-describedby": id })}
         onClick={() => {
@@ -69,10 +68,7 @@ export function ReadAloud({
           }
           mine.current = voicing.read(phrases);
         }}
-      >
-        <Icon value="read-aloud" />
-        {words.text("voice.read")}
-      </button>
+      />
       {why === undefined || waits ? null : (
         <span id={id} className="nt-hint">
           {lineOf(why, language)}

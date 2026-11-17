@@ -35,14 +35,28 @@ export interface Value {
 /**
  * The values of the app, each by the key its buttons name it with. The icons of a value that the
  * table of architecture 6 of spec names are that table's; a value of the app's own has an icon the
- * table does not hold, written down in section 3.1 of docs/architecture.md (R78 in spec).
+ * table does not hold, written down in docs/architecture.md: in section 3.1, and those of the closed
+ * list of buttons that show an icon alone in section 3.9 (R78 in spec; R60).
  */
 export const TABLE: Readonly<Record<string, Value>> = {
   // "Continue" of the lesson player, to the next link (the 2026-11-10 amendment to R06).
   continue: { base: "arrow-circle-right", filled: false, mirrored: true },
+  // The buttons that show an icon alone, the closed list of R90 in spec (R60): back, a chevron
+  // that points the way back; close; the previous and the next task, ‹ ›, chevrons rather than
+  // the arrow of canvas's "next".
+  back: { base: "arrow-back-ios-new", filled: false, mirrored: true },
+  close: { base: "close", filled: false, mirrored: false },
+  "previous-task": { base: "chevron-left", filled: false, mirrored: true },
+  "next-task": { base: "chevron-right", filled: false, mirrored: true },
   // "Read aloud" by the voice of the device beside a text (R36 in docs/decisions.md): a
   // speaker, no fill, as it is in a line that runs right to left — a speaker is no direction.
   "read-aloud": { base: "volume-up", filled: false, mirrored: false },
+  // The switch of voicing: the same speaker, filled while voicing is on (the fourth 2026-11-14
+  // amendment to R90 in spec).
+  voicing: { base: "volume-up", filled: true, mirrored: false },
+  // Help, filled while its pop-over is open; the tutor's button, a bubble of words.
+  help: { base: "help", filled: true, mirrored: false },
+  tutor: { base: "sms", filled: false, mirrored: false },
 };
 
 /** An icon as the app draws it: its view box, and the paths it fills in the text's colour. */

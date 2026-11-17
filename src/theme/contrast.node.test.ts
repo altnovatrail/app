@@ -35,6 +35,10 @@ const GROUPS: readonly [number, string, string][] = [
   // The edge of a field against its own fill, white; the segments of a module's bar and the
   // legend's swatches, on a card.
   [EDGE, "edge state-mastered state-review state-progress state-ready state-locked", "card"],
+  // A button's icon alone (R60), grey or in the accent, under the pointer's wash; a switch that is
+  // on, the accent on its tint, on a card and on the tutor's panel.
+  [EDGE, "text-muted accent", "grey-08/card grey-08/page"],
+  [EDGE, "accent", "accent-tint/card accent-tint/glass-panel/page"],
 ];
 
 /** Each pair: the foreground, the layers it stands on, and the least ratio. */

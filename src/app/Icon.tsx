@@ -1,6 +1,7 @@
 // An icon of a button, from the module scripts/icons.ts writes (R15 in docs/decisions.md; R78 in
-// spec): hidden from assistive technology, since the button's label beside it is its name, without
-// a <title>, and in the colour of the text, so that forced colours give it the button's own.
+// spec): hidden from assistive technology, since the button's caption is its name — the label
+// beside it, or the aria-label of a button of the closed list (R60) —, without a <title>, and in the
+// colour of the text, so that forced colours give it the button's own.
 import "./Icon.css";
 import { ICONS, type IconValue, VALUES } from "./icons.ts";
 
