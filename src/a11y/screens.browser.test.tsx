@@ -1061,6 +1061,7 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
     () => (
       <ApiProvider value={{} as Api}>
         <ProfilePage
+          device={memoryDevice().device}
           profile={{ ...OWNER, interfaceLanguage: "de" }}
           onSaved={() => {}}
           onFailed={() => {}}
@@ -1073,6 +1074,7 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
     () => (
       <ApiProvider value={{} as Api}>
         <ProfilePage
+          device={memoryDevice().device}
           profile={{ ...OWNER, pseudonym: " " }}
           onSaved={() => {}}
           onFailed={() => {}}
@@ -1085,7 +1087,12 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
     "a profile's page asking the consent to keep works on the server, unticked",
     () => (
       <ApiProvider value={STORAGE_API}>
-        <ProfilePage profile={OWNER} onSaved={() => {}} onFailed={() => {}} />
+        <ProfilePage
+          device={memoryDevice().device}
+          profile={OWNER}
+          onSaved={() => {}}
+          onFailed={() => {}}
+        />
       </ApiProvider>
     ),
     consenting,
@@ -1095,6 +1102,7 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
     () => (
       <ApiProvider value={{} as Api}>
         <ProfilePage
+          device={memoryDevice().device}
           profile={{ ...OWNER, workStorage: true }}
           onSaved={() => {}}
           onFailed={() => {}}
@@ -1106,7 +1114,12 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
     "a profile's page with the tutor time of the profile and the account, its cap reached",
     () => (
       <ApiProvider value={QUOTA_API}>
-        <ProfilePage profile={OWNER} onSaved={() => {}} onFailed={() => {}} />
+        <ProfilePage
+          device={memoryDevice().device}
+          profile={OWNER}
+          onSaved={() => {}}
+          onFailed={() => {}}
+        />
       </ApiProvider>
     ),
     async () => {

@@ -5,7 +5,9 @@
 // gives by `SubmitEssay`, with one idempotency key for this work and the same with every repeat of
 // it, and the own key or the clock's offset; how the submission ended — feedback, unreadable or
 // unchecked —, the text read and the words of the feedback are kept with the essay and its crop,
-// which the server keeps none of. The attempt stays open: the learner writes the sheet again and
+// which the server keeps none of; while the profile's storage of works is on, the essay goes there
+// as every work does, its history, the contexts of its submissions and its picture (T62). The
+// attempt stays open: the learner writes the sheet again and
 // sends it again, and closes it by Done, open after the first submission, and then the task is
 // solved. An attempt api closed is the screen of Task.tsx, and the essay stays on the device. The
 // feedback is said by the voicing in the module's language, and "Report a problem" stands at it
@@ -15,7 +17,7 @@ import {
   CloseReason,
   type EngineChoice,
 } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
-import type { CanvasElement, HistoryChangeEvent } from "@altnovatrail/spec/canvas";
+import type { CanvasElement, HistoryChangeEvent, SheetSubmission } from "@altnovatrail/spec/canvas";
 import type * as open from "@altnovatrail/spec/formatv0/open";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useApi } from "../api/ApiContext.tsx";
@@ -29,6 +31,7 @@ import { useKeyHolder } from "../ownkey/OwnKeyContext.tsx";
 import { usePackages } from "../packages/PackagesContext.tsx";
 import { ReportProblem } from "../tutor/ReportProblem.tsx";
 import { hintPhrases } from "../voice/texts.ts";
+import { useWorks } from "../works/useWorks.ts";
 import { solutionOf } from "./attempt.ts";
 import { EssayScreen, type Finished } from "./EssayScreen.tsx";
 import { noteOf, type Shown, sentOf } from "./essay.ts";
@@ -47,11 +50,16 @@ import {
 } from "./steps.ts";
 import type { OpenTaskProps } from "./Task.tsx";
 
-/** The work of a check: its key, and the crop as the canvas gave it and as the contract carries it. */
+/**
+ * The work of a check: its key, the crop as the canvas gave it and as the contract carries it, and
+ * the context of the submission with the history's length then, for the work on the server.
+ */
 interface Sent {
   readonly key: string;
   readonly png: Blob;
   readonly crop: Uint8Array;
+  readonly context: SheetSubmission;
+  readonly historyLength: number;
 }
 
 export function OpenEssay({
@@ -66,6 +74,7 @@ export function OpenEssay({
 }: OpenTaskProps) {
   const api = useApi();
   const holder = useKeyHolder();
+  const works = useWorks(profileId);
   const { views, files } = usePackages();
   const { language, words } = useLanguage();
   const { auto, prime } = useOwnVoicing();
@@ -163,12 +172,15 @@ export function OpenEssay({
   const submission = useCallback(async (): Promise<Sent | undefined> => {
     if (sent.current !== undefined) return sent.current;
     const at = drawn.current;
+    const historyLength = element.current?.history.length ?? 0;
     const work = (await element.current?.exportWork()) ?? null;
     if (work === null || !("png" in work)) return undefined;
     const made = {
       key: idempotencyKey(),
       png: work.png,
       crop: new Uint8Array(await work.png.arrayBuffer()),
+      context: work.submission,
+      historyLength,
     };
     if (drawn.current === at) sent.current = made;
     return made;
@@ -202,8 +214,16 @@ export function OpenEssay({
         setShown(now);
         setSubmissions((n) => n + 1);
         setCame(true);
-        const saved = (await profile?.addEssaySubmission(attemptId, of.png, end)) ?? "unsaved";
+        const { context, historyLength } = of;
+        const saved =
+          (await profile?.addEssaySubmission(attemptId, of.png, {
+            ...end,
+            context,
+            historyLength,
+          })) ?? "unsaved";
         if (saved === "unsaved") unsavedNow();
+        // Written to the device, the essay goes to the server too, while the storage is on.
+        else if (profile !== undefined) void works.put(profile, attemptId);
         const note = noteOf(now, words);
         auto(
           now.feedback === undefined || note !== undefined
@@ -233,6 +253,7 @@ export function OpenEssay({
     explanation,
     closed,
     prime,
+    works,
   ]);
 
   /** "Hint": api gives the task's techniques and its leading question (R82 in spec). */

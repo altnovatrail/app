@@ -655,15 +655,12 @@ export const en = {
   "storage.title": "Keeping works on the server",
   "storage.on": "Keeping this profile's works on the server is on",
   "storage.off": "Keeping this profile's works on the server is off",
-  /** While api keeps no copy of a work: the consent is recorded, and no work goes to the server. */
-  "storage.not-yet":
-    "The server doesn't keep works yet: switching this on records the consent, and the works stay on this device alone",
   /** Opens the consent, in place. */
   "storage.keep": "Keep works on the server",
   /** Switches the storage off at once, with no question. */
   "storage.switch-off": "Stop keeping works on the server",
   "storage.off-hint":
-    "It stops at once, and any copies of this profile's works on the server are erased. The works on this device stay",
+    "It stops at once, and the copies of this profile's works on the server are erased. The works on this device stay",
   /** The heading of the consent, above the text storage-consent. */
   "storage.consent": "Consent to keeping works on the server",
   /** What R127 in spec has the switch say: a work may tell of health and family; nobody reads it. */
@@ -767,7 +764,10 @@ export const en = {
   "device.size": "Its data here takes about {size}",
   "device.none": "Nothing of this profile is kept on this device",
   "device.unreadable": "The data of this profile on this device can't be read",
-  /** While no copy of the profile's work is on the server (R113): the warning of its loss. */
+  /**
+   * While a work of the profile is on this device alone — its storage off, or the last PutWork of a
+   * work not gone through (R113): the warning of its loss.
+   */
   "device.only-here":
     "Its work is on this device alone: if the site's data is erased, the work is lost",
   /** The essays a profile keeps on this device. */

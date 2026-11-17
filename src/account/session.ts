@@ -72,9 +72,27 @@ export interface Unfinished {
 }
 
 /**
- * The attempts each profile of the account keeps unfinished on this device, and its essays, which
- * the server does not keep: the work the sign-out would take (section 3.2; R53). A profile with
- * neither, or with no database here, is not named.
+ * The marks of the works on the server go from each profile whose storage of works is off, as
+ * `GetAccount` names it: switched off on another device or in a closed tab, it erased the copies
+ * (section 3.2; T62). A database that does not open keeps its marks until the next start.
+ */
+export async function marksFollow(device: Device, profiles: readonly Profile[]): Promise<void> {
+  const registry = await readRegistry(device);
+  for (const profile of profiles) {
+    if (profile.workStorage) continue;
+    const name = profileDatabase(profile.profileId);
+    const entry = registry?.databases.get(name);
+    if (entry === undefined || entry.erase) continue;
+    const kept = await openProfileDatabase(device, name).catch(() => undefined);
+    await kept?.clearStored().catch(() => {});
+  }
+}
+
+/**
+ * The attempts each profile of the account keeps unfinished on this device, and its essays the
+ * server does not keep — all of them while the profile's storage of works is off, and those whose
+ * last `PutWork` did not go through while it is on: the work the sign-out would take (section
+ * 3.2; R53; T62). A profile with neither, or with no database here, is not named.
  */
 export async function unfinishedWork(
   device: Device,
@@ -89,7 +107,7 @@ export async function unfinishedWork(
     const kept = await openProfileDatabase(device, name);
     if (kept === undefined) continue;
     const count = await kept.unfinished();
-    const essays = await kept.essayCount();
+    const essays = profile.workStorage ? await kept.essaysOnlyHere() : await kept.essayCount();
     if (count > 0 || essays > 0) {
       found.push({ profileId: profile.profileId, pseudonym: profile.pseudonym, count, essays });
     }
@@ -231,6 +249,7 @@ export class Session {
         account.accountId,
         account.profiles.map((profile) => profile.profileId),
       );
+      await marksFollow(device, account.profiles).catch(() => {});
     } catch {
       if (run === this.run) this.set({ step: "unreadable" });
       return;

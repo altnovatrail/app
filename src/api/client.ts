@@ -12,6 +12,7 @@ import { LegalService } from "@altnovatrail/contracts/novatrail/api/v1/legal_pb.
 import { ModuleService } from "@altnovatrail/contracts/novatrail/api/v1/module_pb.js";
 import { PackageService } from "@altnovatrail/contracts/novatrail/api/v1/package_pb.js";
 import { ProgressService } from "@altnovatrail/contracts/novatrail/api/v1/progress_pb.js";
+import { WorkService } from "@altnovatrail/contracts/novatrail/api/v1/work_pb.js";
 import type { DescService } from "@bufbuild/protobuf";
 import {
   type Client,
@@ -52,6 +53,8 @@ export interface Api {
   readonly progress: Client<typeof ProgressService>;
   /** `GetLegalTexts`, by Connect GET with no token, as the open views, but past the HTTP cache. */
   readonly legal: Client<typeof LegalService>;
+  /** The works kept on the server: `PutWork` (T62). */
+  readonly work: Client<typeof WorkService>;
 }
 
 /** fetch whose failure is the network's: `unavailable`, which the client repeats. */
@@ -141,5 +144,6 @@ export function createApi(options: ApiOptions): Api {
     views: guarded(createClient(PackageService, viewsTransport)),
     progress: client(ProgressService),
     legal: guarded(createClient(LegalService, legalTransport)),
+    work: client(WorkService),
   };
 }

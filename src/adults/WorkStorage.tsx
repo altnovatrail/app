@@ -6,10 +6,9 @@
 // the switch say, its next version below it with the day it applies from (R46), and a checkbox
 // ticked for the version shown; `SetWorkStorage` names that version — the current one —,
 // and a version no longer current reads the text again and asks again, as the invite code does
-// (R27). Switching it off goes at once, with no question. While api keeps no copy of a work — and
-// the contract has no request that would send one (Д12 api; В53 in RUN.md) — the section says that
-// switching on records the consent and the works stay on this device alone, and the page This
-// device keeps its warning of their loss.
+// (R27). Switching it off goes at once, with no question. Switched on, it sends by `PutWork` every
+// work the profile keeps on this device, and switched off, it lets go of the marks of what the
+// server kept, which the server has erased (T62; the 2026-11-17 amendment to R30).
 import type { Profile } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import { Action } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
 import { Cause } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
@@ -19,6 +18,7 @@ import {
   useCallback,
   useEffect,
   useId,
+  useMemo,
   useRef,
   useState,
 } from "react";
@@ -30,6 +30,10 @@ import { failureText } from "../api/words.ts";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { LegalText, NextLegalText } from "../legal/LegalText.tsx";
 import { readLegal, STORAGE_TEXT, type Versions, versionsOf } from "../legal/texts.ts";
+import type { Device } from "../storage/device.ts";
+import { openProfile } from "../storage/profile.ts";
+import { drawPicture } from "../works/picture.ts";
+import { createSender, type Draw } from "../works/stored.ts";
 
 /** No text: before the first read, and after a failure. */
 const NO_TEXT: Versions = { current: undefined, next: undefined };
@@ -170,17 +174,51 @@ function Consent({
 
 export function WorkStorage({
   profile,
+  device,
   onSaved,
   onFailed,
+  draw = drawPicture,
 }: {
   readonly profile: Profile;
+  /** The device whose works of the profile go to the server once the storage is on. */
+  readonly device: Device;
   /** api switched the storage: the profile as its answer gives it. */
   readonly onSaved: (profile: Profile) => void;
   /** The request did not go through: the section says why, and the session may move by it. */
   readonly onFailed: (failure: Failure) => void;
+  readonly draw?: Draw;
 }) {
   const api = useApi();
   const { words } = useLanguage();
+  // The profile as the tab knows it last: switched on by this page before its prop has come again.
+  const latest = useRef(profile);
+  latest.current = profile;
+  const { profileId } = profile;
+  const sender = useMemo(
+    () =>
+      createSender({
+        api,
+        profileId,
+        draw,
+        storageOn: () => latest.current.workStorage,
+        onProfile: onSaved,
+      }),
+    [api, profileId, draw, onSaved],
+  );
+  /** The works this device keeps of the profile: sent, once the storage is on; unmarked, once off. */
+  const followed = useCallback(
+    async (changed: Profile) => {
+      latest.current = changed;
+      // The server keeps no copy of a work now, whatever an earlier mark or put said: once on, each
+      // goes again.
+      sender.forget();
+      const kept = await openProfile(device, profileId).catch(() => undefined);
+      if (kept === undefined) return;
+      await kept.clearStored().catch(() => {});
+      if (changed.workStorage) await sender.putAll(kept);
+    },
+    [device, profileId, sender],
+  );
   const id = useId();
   const toggle = useRef<HTMLButtonElement>(null);
   const [consenting, setConsenting] = useState(false);
@@ -213,6 +251,7 @@ export function WorkStorage({
       });
       if (answer.profile === undefined) throw new ApiError({ kind: "invalid" });
       onSaved(answer.profile);
+      void followed(answer.profile);
       setSettled((n) => n + 1);
     } catch (reason) {
       const failed = parseFailure(reason);
@@ -251,6 +290,7 @@ export function WorkStorage({
         profile={profile}
         onSwitchedOn={(changed) => {
           onSaved(changed);
+          void followed(changed);
           setConsenting(false);
           setSettled((n) => n + 1);
         }}
@@ -282,8 +322,6 @@ export function WorkStorage({
     <section aria-labelledby={`${id}-title`}>
       <h2 id={`${id}-title`}>{words.text("storage.title")}</h2>
       <p role="status">{words.text(on ? "storage.on" : "storage.off")}</p>
-      {/* While api keeps no copy: switching on records the consent, and no work goes there. */}
-      <p>{words.text("storage.not-yet")}</p>
       {control}
       {failure === undefined ? null : (
         <p role="alert" className="nt-error">

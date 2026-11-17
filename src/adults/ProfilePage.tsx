@@ -26,6 +26,7 @@ import { languageName } from "../i18n/intl.ts";
 import { NAMES } from "../i18n/LanguageButtons.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { LANGUAGES, type Language } from "../i18n/language.ts";
+import type { Device } from "../storage/device.ts";
 import { MODULES_PAGE } from "./ModulesPage.tsx";
 import { PROGRESS_PAGE } from "./progress.ts";
 import { QuotaSection } from "./QuotaSection.tsx";
@@ -67,10 +68,13 @@ function Option({
 
 export function ProfilePage({
   profile,
+  device,
   onSaved,
   onFailed,
 }: {
   readonly profile: Profile;
+  /** The device whose works of the profile its storage on the server sends. */
+  readonly device: Device;
   /** api changed the profile: the profile as its answer gives it. */
   readonly onSaved: (profile: Profile) => void;
   /** The request did not go through: the page says why, and the session may move by it. */
@@ -251,7 +255,7 @@ export function ProfilePage({
           </p>
         )}
       </form>
-      <WorkStorage profile={profile} onSaved={onSaved} onFailed={onFailed} />
+      <WorkStorage profile={profile} device={device} onSaved={onSaved} onFailed={onFailed} />
       <section aria-labelledby={`${id}-modules`}>
         <h2 id={`${id}-modules`}>{words.text("adults.modules")}</h2>
         <p id={`${id}-modules-hint`}>{words.text("adults.modules-hint")}</p>

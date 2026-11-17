@@ -8,7 +8,7 @@ import type * as open from "@altnovatrail/spec/formatv0/open";
 import { render, screen, waitFor } from "@testing-library/react";
 import { createRef } from "react";
 import { describe, expect, it, vi } from "vitest";
-import { server, userEvent } from "vitest/browser";
+import { userEvent } from "vitest/browser";
 
 describe("<novatrail-canvas> in JSX", () => {
   it("is the registered element, and takes its language as an attribute and media as a property", () => {
@@ -209,10 +209,10 @@ describe("what canvas declares for app's Accessibility page", () => {
       element.style.blockSize = "12rem";
       await waitFor(() => expect(region(element)?.getAttribute("aria-label")).toBe(name));
       const named = region(element) as HTMLElement;
-      expect(named.hasAttribute("lang")).toBe(false);
-      // Firefox matches no :lang() inside a shadow tree, whatever the host's language or the page's
-      // (measurements 4): there the name alone is held, and what a screen reader takes is Д10's.
-      if (server.browser !== "firefox") expect(named.matches(`:lang(${lang})`)).toBe(true);
+      // Since canvas 0.3.25 the region names the element's language by an attribute of its own:
+      // Firefox, which gives a shadow tree no language of its host (measurements 4), has it too.
+      expect(named.getAttribute("lang")).toBe(lang);
+      expect(named.matches(`:lang(${lang})`)).toBe(true);
       unmount();
     }
   });

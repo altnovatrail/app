@@ -1,8 +1,10 @@
 // The element <novatrail-canvas> in React's JSX, as its contract with app has it (R74 in spec;
 // section 3.1 of docs/architecture.md). The types are spec's, of @altnovatrail/spec/canvas at the
-// tag of the spec submodule, 0.18.6, while canvas 0.3.15 names 0.15.1, which the lock file holds
-// beside it. canvas types its element by that copy, and the types being structural,
-// ElementHoldsContract below fails to compile when the two part ways (R73 in spec; R15).
+// tag of the spec submodule, 0.18.6, which canvas 0.3.25 names too: the lock file holds one copy.
+// canvas types its element by its own copy, and the types being structural, ElementHoldsContract
+// below fails to compile when the two part ways (R73 in spec; R15). `exportPicture()`, the picture
+// of a stored work, is canvas's own and not yet in spec's types: app takes it from canvas's
+// element, `NovatrailCanvas` (../works/picture.ts).
 // React 19 sets a property the element has, and listens for an event by the name after `on`, as
 // the element sends it: lower case. Neither `null` nor undo() and clear() are part of it. `lang` is
 // no option, and one of the build's languages, which canvas's table of labels has: without it the

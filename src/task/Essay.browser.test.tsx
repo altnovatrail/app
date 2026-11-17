@@ -5,7 +5,7 @@
 // api closed meanwhile, and "Report a problem" at the feedback — with api on connect-es's router
 // and the storage on the device's memory.
 import "@altnovatrail/canvas";
-import { Mode } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
+import { Mode, ProfileSchema } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import {
   AttemptService,
   type DoneRequest,
@@ -25,14 +25,19 @@ import {
 } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import { LearningService } from "@altnovatrail/contracts/novatrail/api/v1/learning_pb.js";
 import { PackageService } from "@altnovatrail/contracts/novatrail/api/v1/package_pb.js";
+import {
+  type PutWorkRequest,
+  WorkService,
+} from "@altnovatrail/contracts/novatrail/api/v1/work_pb.js";
 import type { CanvasElement, HistoryEvent } from "@altnovatrail/spec/canvas";
 import type * as open from "@altnovatrail/spec/formatv0/open";
 import { create, type MessageInitShape } from "@bufbuild/protobuf";
 import { timestampFromDate } from "@bufbuild/protobuf/wkt";
 import { Code, ConnectError, type ConnectRouter } from "@connectrpc/connect";
 import { cleanup, render, screen, within } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
+import { LearnerProvider } from "../account/AccountGate.tsx";
 import { ApiProvider } from "../api/ApiContext.tsx";
 import type { PackageChecks } from "../packages/checks.ts";
 import { DeviceFiles } from "../packages/files.ts";
@@ -44,6 +49,7 @@ import { setAccount } from "../storage/registry.ts";
 import { routedApi } from "../test/api.ts";
 import { memoryDevice } from "../test/device.ts";
 import { inLanguage } from "../test/language.tsx";
+import { forgetPuts } from "../works/stored.ts";
 import { Task } from "./Task.tsx";
 
 const D1 = `sha256:${"1".repeat(64)}`;
@@ -115,6 +121,8 @@ interface Setup {
   hint?: () => MessageInitShape<typeof GetHintResponseSchema>;
   adult?: boolean;
   lesson?: boolean;
+  /** Among a learner's screens, the profile's storage of works on the server on (T62). */
+  storage?: boolean;
 }
 
 async function renderEssay(setup: Setup = {}) {
@@ -137,7 +145,14 @@ async function renderEssay(setup: Setup = {}) {
   const submitted: SubmitEssayRequest[] = [];
   const dones: DoneRequest[] = [];
   const reports: ReportProblemRequest[] = [];
+  const puts: PutWorkRequest[] = [];
   const routes = (router: ConnectRouter) => {
+    router.service(WorkService, {
+      putWork(request) {
+        puts.push(request);
+        return { work: { attemptId: request.work?.attemptId ?? "" } };
+      },
+    });
     router.service(LearningService, {
       getOpenAttempt(request) {
         return {
@@ -216,26 +231,43 @@ async function renderEssay(setup: Setup = {}) {
   };
   const attempts: (string | undefined)[] = [];
   const nexts: unknown[] = [];
+  const screenOf = (
+    <Task
+      profileId="p1"
+      attemptId="a1"
+      defaultMode={Mode.SELF}
+      device={device}
+      adult={setup.adult ?? false}
+      onAttempt={(id) => attempts.push(id)}
+      {...(setup.lesson === true
+        ? { lesson: { onNext: (next) => nexts.push(next), onClosed: () => {} } }
+        : {})}
+    />
+  );
   render(
     inLanguage(
       <ApiProvider value={api}>
         <PackagesProvider value={packages}>
-          <Task
-            profileId="p1"
-            attemptId="a1"
-            defaultMode={Mode.SELF}
-            device={device}
-            adult={setup.adult ?? false}
-            onAttempt={(id) => attempts.push(id)}
-            {...(setup.lesson === true
-              ? { lesson: { onNext: (next) => nexts.push(next), onClosed: () => {} } }
-              : {})}
-          />
+          {setup.storage === undefined ? (
+            screenOf
+          ) : (
+            <LearnerProvider
+              value={{
+                learner: create(ProfileSchema, { profileId: "p1", workStorage: setup.storage }),
+                switchLearner: () => {},
+                signOut: () => {},
+                onSaved: () => {},
+                onFailed: () => {},
+              }}
+            >
+              {screenOf}
+            </LearnerProvider>
+          )}
         </PackagesProvider>
       </ApiProvider>,
     ),
   );
-  return { device, backend, submitted, dones, reports, attempts, nexts };
+  return { device, backend, submitted, dones, reports, attempts, nexts, puts };
 }
 
 const check = () => screen.getByRole("button", { name: "Check" });
@@ -243,6 +275,9 @@ const done = () => screen.getByRole("button", { name: "Done" });
 const panel = () => within(screen.getByRole("complementary", { name: "Tutor" }));
 const found = async () => within(await screen.findByRole("complementary", { name: "Tutor" }));
 const essayOf = async (device: Device) => (await openProfile(device, "p1"))?.essay("a1");
+
+// Each test's p1 is another profile: what one put is no copy for the next.
+afterEach(() => forgetPuts("p1"));
 
 describe("the screen of an essay", () => {
   it("reminds to write no names, sends the crop and shows the feedback, which the device keeps", async () => {
@@ -279,6 +314,29 @@ describe("the screen of an essay", () => {
     });
     const bytes = new Uint8Array((await kept?.crop?.arrayBuffer()) ?? new ArrayBuffer(0));
     expect([...bytes.slice(0, 4)]).toEqual(PNG);
+  });
+
+  it("puts the essay on the server at each submission, with its context, and at Done only what changed, while storage is on", async () => {
+    const { puts, device } = await renderEssay({ history: WRITTEN, storage: true });
+    await vi.waitFor(() => expect(check()).toHaveAttribute("aria-disabled", "false"));
+    await userEvent.click(check());
+    await vi.waitFor(() => expect(puts).toHaveLength(1));
+    const decoder = new TextDecoder();
+    const [first] = puts;
+    expect(JSON.parse(decoder.decode(first?.work?.history))).toEqual(WRITTEN);
+    expect(first?.work?.submissions.map((one) => one.historyLength)).toEqual([WRITTEN.length]);
+    const context = JSON.parse(decoder.decode(first?.work?.submissions[0]?.context));
+    expect(context).toEqual((await essayOf(device))?.sent[0]?.context);
+    await vi.waitFor(() => expect(done()).toHaveAttribute("aria-disabled", "false"));
+    await userEvent.click(done());
+    // The essay outlives its attempt on the device, and its mark says the server keeps all of it:
+    // Done read the work the server keeps already.
+    await vi.waitFor(async () => {
+      const essay = await essayOf(device);
+      expect(essay?.ended).toBe(true);
+      expect(essay?.stored).toEqual({ history: WRITTEN.length, submissions: 1 });
+    });
+    expect(puts).toHaveLength(1);
   });
 
   it("locks Check on a blank sheet, and says so", async () => {

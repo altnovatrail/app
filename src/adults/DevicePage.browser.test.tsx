@@ -16,7 +16,7 @@ import { KeyHolder } from "../ownkey/holder.ts";
 import { KeyHolderProvider } from "../ownkey/OwnKeyContext.tsx";
 import type { SiteStorage } from "../storage/browser.ts";
 import { deviceKeyStore, keptKey } from "../storage/ownkey.ts";
-import { addProfile, Profile as KeptProfile } from "../storage/profile.ts";
+import { addProfile, Profile as KeptProfile, openProfile } from "../storage/profile.ts";
 import { readRegistry, setAccount } from "../storage/registry.ts";
 import { profileDatabase } from "../storage/schema.ts";
 import { memoryDevice } from "../test/device.ts";
@@ -76,7 +76,7 @@ const section = (name: string) => screen.getByRole("region", { name });
 describe("the page This device", () => {
   it("names what each profile keeps here, the owner's first, and warns of its loss on each", async () => {
     const { device } = await deviceWithWork();
-    // The storage on the server switched on is no copy there: api keeps none yet (R30).
+    // The storage on the server switched on is no copy there until the work's PutWork went (R30).
     renderPage(device, { profiles: [OTHER, { ...OWNER, workStorage: true }] });
     expect(screen.getByRole("heading", { level: 1, name: "This device" })).toBeTruthy();
     expect(await screen.findByText("1 unfinished task")).toBeTruthy();
@@ -102,6 +102,36 @@ describe("the page This device", () => {
     ).toBeTruthy();
     expect(screen.getByText(/Safari erases it after seven days of use/)).toBeTruthy();
     expect(screen.getByText(/added to the Home Screen/)).toBeTruthy();
+  });
+
+  it("warns of no loss once the server keeps each work as far as this device holds it", async () => {
+    const { device } = await deviceWithWork();
+    const profile = await openProfile(device, "p1");
+    await profile?.markStored("a1", { history: 0, submissions: 1 });
+    const warning =
+      "Its work is on this device alone: if the site's data is erased, the work is lost";
+    const shown = renderPage(device, {
+      profiles: [
+        { ...OTHER, workStorage: true },
+        { ...OWNER, workStorage: true },
+      ],
+    });
+    expect(await screen.findByText("1 unfinished task")).toBeTruthy();
+    // The owner's one work is on the server; the other keeps nothing here to lose.
+    for (const name of ["Profile: Ёжик", "Profile: Аня"]) {
+      expect(within(section(name)).queryByText(warning)).toBeNull();
+    }
+    shown.unmount();
+    // A stroke written since is on this device alone, and so is all of a profile whose storage is off.
+    const points = [{ x: 10, y: 10, t: 0, p: 0.5 }];
+    await profile?.replaceHistory("a1", [
+      { kind: "write", t: 1, stroke: { id: 1, kind: "pen", points } },
+    ]);
+    renderPage(device, { profiles: [OTHER, { ...OWNER, workStorage: true }] });
+    expect(await screen.findByText("1 unfinished task")).toBeTruthy();
+    for (const name of ["Profile: Ёжик", "Profile: Аня"]) {
+      expect(within(section(name)).getByText(warning)).toBeTruthy();
+    }
   });
 
   it("counts the work of a profile whose records cannot be read, and says the rest is unread", async () => {

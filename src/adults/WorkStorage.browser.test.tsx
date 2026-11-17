@@ -17,6 +17,10 @@ import {
   type LegalText,
   LegalTextSchema,
 } from "@altnovatrail/contracts/novatrail/api/v1/legal_pb.js";
+import {
+  type PutWorkRequest,
+  WorkService,
+} from "@altnovatrail/contracts/novatrail/api/v1/work_pb.js";
 import { create } from "@bufbuild/protobuf";
 import { Code, ConnectError, type ConnectRouter, createRouterTransport } from "@connectrpc/connect";
 import { act, render, screen } from "@testing-library/react";
@@ -26,6 +30,10 @@ import { userEvent } from "vitest/browser";
 import { ApiProvider } from "../api/ApiContext.tsx";
 import { createApi } from "../api/client.ts";
 import type { Failure } from "../api/failure.ts";
+import type { Device } from "../storage/device.ts";
+import { addProfile } from "../storage/profile.ts";
+import { setAccount } from "../storage/registry.ts";
+import { memoryDevice } from "../test/device.ts";
 import { inLanguage } from "../test/language.tsx";
 import { WorkStorage } from "./WorkStorage.tsx";
 
@@ -54,7 +62,13 @@ interface Routes {
   readonly next?: LegalText[];
   /** The answer to SetWorkStorage: by default, the profile with the storage as asked. */
   readonly set?: (request: SetWorkStorageRequest, asked: number) => Profile | Promise<Profile>;
+  /** The device whose works the storage sends: an empty one when left out. */
+  readonly device?: Device;
 }
+
+/** The picture the canvas would draw: the signature of PNG is all api reads of it. */
+const draw = async () =>
+  new Blob([new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])]);
 
 /** The section, the profile it shows as api's answers make it, as the session would. */
 function Harness({
@@ -62,8 +76,10 @@ function Harness({
   saved,
   failed,
   elsewhere,
+  device,
 }: {
   readonly shown: Profile;
+  readonly device: Device;
   readonly saved: Profile[];
   readonly failed: Failure[];
   /** Where a test puts the profile another tab saved. */
@@ -73,6 +89,8 @@ function Harness({
   elsewhere.change = setProfile;
   return (
     <WorkStorage
+      device={device}
+      draw={draw}
       profile={profile}
       onSaved={(changed) => {
         saved.push(changed);
@@ -90,6 +108,7 @@ function renderSection(shown: Profile, routes: Routes = {}) {
   const saved: Profile[] = [];
   const failed: Failure[] = [];
   const elsewhere: { change?: (profile: Profile) => void } = {};
+  const puts: PutWorkRequest[] = [];
   const api = createApi({
     baseUrl: "https://api.example.org",
     tokens: { token: async () => "t", signOut: async () => {} },
@@ -105,6 +124,12 @@ function renderSection(shown: Profile, routes: Routes = {}) {
                 (await routes.set?.(request, asked.length)) ??
                 create(ProfileSchema, { ...shown, workStorage: request.enabled });
               return { profile };
+            },
+          });
+          router.service(WorkService, {
+            putWork(request) {
+              puts.push(request);
+              return { work: { attemptId: request.work?.attemptId ?? "" } };
             },
           });
           const { texts } = routes;
@@ -123,31 +148,55 @@ function renderSection(shown: Profile, routes: Routes = {}) {
   render(
     inLanguage(
       <ApiProvider value={api}>
-        <Harness shown={shown} saved={saved} failed={failed} elsewhere={elsewhere} />
+        <Harness
+          shown={shown}
+          saved={saved}
+          failed={failed}
+          elsewhere={elsewhere}
+          device={routes.device ?? memoryDevice().device}
+        />
       </ApiProvider>,
     ),
   );
-  return { asked, read, saved, failed, elsewhere };
+  return { asked, read, saved, failed, elsewhere, puts };
 }
 
 const OFF = "Keeping this profile's works on the server is off";
 const ON = "Keeping this profile's works on the server is on";
+/** The line of T39 that went with T62: the server keeps the works now. */
 const NOT_YET =
   "The server doesn't keep works yet: switching this on records the consent, and the works stay on this device alone";
+
+/** A device whose profile p1 keeps one attempt, a1, with a stroke and its mark of the server. */
+async function seeded(stored?: { history: number; submissions: number }) {
+  const { device } = memoryDevice();
+  await setAccount(device, "account-1");
+  const profile = await addProfile(device, "p1");
+  if (profile === undefined) throw new Error("no profile database");
+  await profile.beginAttempt({ attemptId: "a1", digest: "d1" });
+  const points = [{ x: 10, y: 10, t: 0, p: 0.5 }];
+  await profile.replaceHistory("a1", [
+    { kind: "write", t: 16, stroke: { id: 1, kind: "mouse", points } },
+  ]);
+  if (stored !== undefined) await profile.markStored("a1", stored);
+  return { device, profile };
+}
 const AGREE =
   "I give my explicit consent to keeping this profile's works on the server, with what they tell about health";
 const WHAT = "A work may tell something personal, about health and family too. Nobody reads it";
 
 describe("the storage of works on the server", () => {
-  it("is off, says the server keeps no work yet, and switches on by the consent to the version shown", async () => {
-    const { asked, read, saved } = renderSection(OWNER, {
+  it("is off, and switches on by the consent to the version shown, sending the works kept here", async () => {
+    const { device, profile } = await seeded({ history: 1, submissions: 0 });
+    const { asked, read, saved, puts } = renderSection(OWNER, {
       texts: () => [consent(1)],
+      device,
     });
     expect(
       screen.getByRole("heading", { level: 2, name: "Keeping works on the server" }),
     ).toBeTruthy();
     expect(screen.getByRole("status").textContent).toBe(OFF);
-    expect(screen.getByText(NOT_YET)).toBeTruthy();
+    expect(screen.queryByText(NOT_YET)).toBeNull();
     await userEvent.click(screen.getByRole("button", { name: "Keep works on the server" }));
     // The consent takes the place of the button, and the focus.
     const heading = screen.getByRole("heading", {
@@ -184,8 +233,11 @@ describe("the storage of works on the server", () => {
       text: { id: "storage-consent", version: 1 },
     });
     expect(saved.map((each) => each.workStorage)).toEqual([true]);
-    // Switched on, it still promises no copy, and the focus is on the button now in place.
-    expect(screen.getByText(NOT_YET)).toBeTruthy();
+    // Switched on, it sends the work kept here, whatever its mark said before, and marks it.
+    await vi.waitFor(() => expect(puts).toHaveLength(1));
+    expect(puts[0]?.profileId).toBe("p1");
+    expect(puts[0]?.work?.attemptId).toBe("a1");
+    await vi.waitFor(async () => expect((await profile.usage()).stored).toBe(true));
     const off = screen.getByRole("button", { name: "Stop keeping works on the server" });
     await vi.waitFor(() => expect(document.activeElement).toBe(off));
     expect(screen.queryByRole("checkbox")).toBeNull();
@@ -299,11 +351,17 @@ describe("the storage of works on the server", () => {
   });
 
   it("switches off at once, with no question and no text, and says the copies on the server go", async () => {
-    const { asked, saved } = renderSection(create(ProfileSchema, { ...OWNER, workStorage: true }));
+    const { device, profile } = await seeded({ history: 1, submissions: 0 });
+    expect((await profile.usage()).stored).toBe(true);
+    const { asked, saved, puts } = renderSection(
+      create(ProfileSchema, { ...OWNER, workStorage: true }),
+      { device },
+    );
     expect(screen.getByRole("status").textContent).toBe(ON);
+    expect(screen.queryByText(NOT_YET)).toBeNull();
     const off = screen.getByRole("button", { name: "Stop keeping works on the server" });
     expect(off).toHaveAccessibleDescription(
-      "It stops at once, and any copies of this profile's works on the server are erased. The works on this device stay",
+      "It stops at once, and the copies of this profile's works on the server are erased. The works on this device stay",
     );
     await userEvent.click(off);
     await vi.waitFor(() => expect(screen.getByRole("status").textContent).toBe(OFF));
@@ -314,6 +372,9 @@ describe("the storage of works on the server", () => {
     expect(screen.queryByRole("checkbox")).toBeNull();
     const on = screen.getByRole("button", { name: "Keep works on the server" });
     await vi.waitFor(() => expect(document.activeElement).toBe(on));
+    // The server erased its copies: the work's mark goes, and nothing is sent.
+    await vi.waitFor(async () => expect((await profile.usage()).stored).toBe(false));
+    expect(puts).toEqual([]);
   });
 
   it("says what came of a switch that did not go through, and tells the session", async () => {

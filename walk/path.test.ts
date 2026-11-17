@@ -10,7 +10,9 @@
 // stub of tutor reads as can't read this, wrong and right (R66 api) — with the tutor's words, an
 // own key api's stub checks by its ending (R73 api), refused and then accepted and kept on this
 // device, a task outside a lesson on that key and continued after a reload, the section for
-// adults with the key removed on This device, the sign-out that erases the account's data, and
+// adults with the key removed on This device, the storage of works on the server switched on, its
+// PutWork kept and This device with no warning of loss, and off again (T62), the sign-out that
+// erases the account's data, and
 // the erasure of everything. The key goes with no request but those that call AI and its check,
 // and the provider alone with those that may give a choice (R47). It asks no host but the origin and those
 // section 3.7 names for the sign-in, and nothing on the way logs an error. A response of 4xx of the
@@ -90,6 +92,8 @@ const NO_PROVIDER =
   "walk: api's dev-app lists no provider of an own key: run api v0.1.41 or newer, whose dev-app lists Anthropic (R72 api)";
 /** The address of api's GetAccount, through the development server's proxy. */
 const GET_ACCOUNT = `${ORIGIN}/novatrail.api.v1.AccountService/GetAccount`;
+/** The address of api's PutWork, the same way (T62). */
+const PUT_WORK = `${ORIGIN}/novatrail.api.v1.WorkService/PutWork`;
 
 let server: ViteDevServer;
 
@@ -712,6 +716,47 @@ describe.each(NAMED)("the path in %s", (name) => {
     if (practised === "handwriting") expect(walk.keyed.has("SubmitWork")).toBe(true);
     expect(walk.named.has("ChooseNext")).toBe(true);
     expect(walk.named.has("BeginAttempt")).toBe(true);
+    await page.getByRole("button", { name: "Close the section" }).click();
+    await home(page);
+  });
+
+  it("keeps the works on the server once its storage is on, and This device warns of no loss", async () => {
+    shoot();
+    const { page } = walk;
+    await page.getByRole("button", { name: "For grown-ups" }).click();
+    await page.getByRole("button", { name: "Profile: Dev" }).click();
+    const storage = page.getByRole("region", { name: "Keeping works on the server" });
+    const keep = storage.getByRole("button", { name: "Keep works on the server" });
+    const stop = storage.getByRole("button", { name: "Stop keeping works on the server" });
+    await storage.getByRole("status").waitFor();
+    // An earlier walk that stopped on the way may have left it on: off first, to send anew.
+    if (await stop.isVisible()) {
+      await stop.click();
+      await keep.waitFor();
+    }
+    // Switched on, it sends the unfinished task's work, as every work this device keeps.
+    const kept = page.waitForResponse((response) => response.url() === PUT_WORK, {
+      timeout: 30_000,
+    });
+    await keep.click();
+    await storage.getByRole("checkbox", { name: /^I give my explicit consent/ }).check();
+    await storage.getByRole("button", { name: "Switch it on" }).click();
+    await stop.waitFor();
+    expect((await kept).status()).toBe(200);
+    note("PutWork kept the unfinished task's work");
+    await page.getByRole("button", { name: "Back to the section" }).click();
+    await page.getByRole("button", { name: "See what is on this device" }).click();
+    const dev = page.getByRole("region", { name: "Profile: Dev" });
+    await dev.getByText(/1 unfinished task/).waitFor();
+    expect(await dev.getByText(/^Its work is on this device alone/).count()).toBe(0);
+    // Off again, as the walk found it: the server erases its copies.
+    await page.getByRole("button", { name: "Back to the section" }).click();
+    await page.getByRole("button", { name: "Profile: Dev" }).click();
+    await stop.click();
+    await keep.waitFor();
+    await page.getByRole("button", { name: "Back to the section" }).click();
+    await page.getByRole("button", { name: "See what is on this device" }).click();
+    await dev.getByText(/^Its work is on this device alone/).waitFor();
     await page.getByRole("button", { name: "Close the section" }).click();
     await home(page);
   });

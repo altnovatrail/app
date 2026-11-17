@@ -5,7 +5,9 @@
 // the canvas gave them, unchanged; the pictures of the work as bytes with their type, not Blobs,
 // which WebKit does not write in an ephemeral session (the 2026-11-12 amendment to R16), and a Blob
 // that schema version 1 kept before is read as it is. Every write says whether it was saved, so
-// that the task screen can tell the learner the work is not saved on this device.
+// that the task screen can tell the learner the work is not saved on this device. Each attempt and
+// essay holds the mark of its work on the server: how long a history and how many submissions the
+// last `PutWork` that went through carried (the 2026-11-17 amendments to R16 and R30).
 import type {
   CellPlace,
   DemoState,
@@ -24,6 +26,15 @@ import { PROFILE_SCHEMA, profileDatabase } from "./schema.ts";
 /** Whether a write reached the database. */
 export type Saved = "saved" | "unsaved";
 
+/**
+ * How much of a work the server keeps: the length of the history and the number of submissions the
+ * last `PutWork` that went through carried. A work the device holds no more of is on the server.
+ */
+export interface Stored {
+  readonly history: number;
+  readonly submissions: number;
+}
+
 /** An attempt: its package, the open view of its task, the state of its steps (section 3.3). */
 export interface Attempt {
   readonly attemptId: string;
@@ -33,6 +44,8 @@ export interface Attempt {
   readonly task?: open.Task;
   /** The state of the steps — mode, place, chips, techniques — as the task screen keeps it. */
   readonly steps?: unknown;
+  /** How much of its work the server keeps; none before the first `PutWork` that went through. */
+  readonly stored?: Stored;
   readonly changedAt: number;
 }
 
@@ -94,6 +107,12 @@ export interface EssaySent {
   readonly repeated?: boolean;
   /** The crop sent; none when its record holds it in a form this build does not read. */
   readonly crop: Blob | undefined;
+  /**
+   * The context of the submission, as the canvas gave it, and the history's length then, for the
+   * work on the server; none in a record of a build before T62, which goes to the server without it.
+   */
+  readonly context?: Submission;
+  readonly historyLength?: number;
 }
 
 /**
@@ -112,6 +131,18 @@ export interface Essay {
   /** Its attempt ended: by "Done", or closed by api. */
   readonly ended: boolean;
   readonly sent: readonly EssaySent[];
+  /** How much of it the server keeps, as an attempt's mark says. */
+  readonly stored?: Stored;
+}
+
+/** A work as the device holds it, for `PutWork`: its history and the submissions it keeps. */
+export interface DeviceWork {
+  readonly attemptId: string;
+  readonly history: readonly HistoryEvent[];
+  readonly submissions: readonly {
+    readonly context: Submission;
+    readonly historyLength: number;
+  }[];
 }
 
 /** What a profile keeps on this device, for the page This device (R04). */
@@ -125,6 +156,11 @@ export interface Usage {
    * when a record of it could not be read.
    */
   readonly bytes: number | undefined;
+  /**
+   * The server keeps each of its works as the device holds it: the mark of every attempt and essay
+   * says as much of it as there is here. False when a record of it could not be read.
+   */
+  readonly stored: boolean;
 }
 
 async function bytesOf(picture: Blob): Promise<Bytes> {
@@ -254,7 +290,25 @@ function sentOf(kept: unknown, crops: boolean): EssaySent | undefined {
     ...text("feedback"),
     ...(one.repeated === true ? { repeated: true } : {}),
     crop: crops ? pictureOf(one.crop) : undefined,
+    ...(typeof one.context === "object" && one.context !== null
+      ? { context: one.context as Submission }
+      : {}),
+    ...(typeof one.historyLength === "number" ? { historyLength: one.historyLength } : {}),
   };
+}
+
+/** A mark of a work on the server as this build writes it; anything else is none. */
+function storedOf(kept: unknown): Stored | undefined {
+  const mark = kept as Partial<Record<keyof Stored, unknown>> | null | undefined;
+  if (typeof mark?.history !== "number" || typeof mark.submissions !== "number") return undefined;
+  return { history: mark.history, submissions: mark.submissions };
+}
+
+/** The submissions of an essay that go to the server: those whose context the device keeps. */
+function essaySubmissions(essay: Essay): DeviceWork["submissions"] {
+  return essay.sent.flatMap(({ context, historyLength }) =>
+    context === undefined ? [] : [{ context, historyLength: historyLength ?? 0 }],
+  );
 }
 
 /**
@@ -263,12 +317,13 @@ function sentOf(kept: unknown, crops: boolean): EssaySent | undefined {
  */
 function essayOf(kept: unknown, crops: boolean): Essay | undefined {
   if (typeof kept !== "object" || kept === null) return undefined;
-  const { attemptId, digest, task, language, startedAt, ended, sent } = kept as Record<
+  const { attemptId, digest, task, language, startedAt, ended, sent, stored } = kept as Record<
     string,
     unknown
   >;
   if (typeof attemptId !== "string" || typeof digest !== "string") return undefined;
   if (typeof startedAt !== "number" || !Array.isArray(sent)) return undefined;
+  const mark = storedOf(stored);
   return {
     attemptId,
     digest,
@@ -280,6 +335,7 @@ function essayOf(kept: unknown, crops: boolean): Essay | undefined {
       const read = sentOf(one, crops);
       return read === undefined ? [] : [read];
     }),
+    ...(mark === undefined ? {} : { stored: mark }),
   };
 }
 
@@ -445,10 +501,18 @@ export class Profile {
     });
   }
 
-  /** The whole history in place of what is kept. */
+  /**
+   * The whole history in place of what is kept. The mark of the work on the server goes, on the
+   * attempt and on its essay: a history of the same length may be another one.
+   */
   replaceHistory(attemptId: string, history: readonly HistoryEvent[]): Promise<Saved> {
-    return this.save(["attempts", "history"], async (tx) => {
-      if (!(await this.touch(tx, attemptId))) return "unsaved";
+    return this.save(["attempts", "history", ESSAYS], async (tx) => {
+      if (!(await this.touch(tx, attemptId, { stored: undefined }))) return "unsaved";
+      const essay = (await tx.get(ESSAYS, attemptId)) as { readonly stored?: unknown } | undefined;
+      if (essay !== undefined) {
+        const { stored, ...kept } = essay;
+        if (stored !== undefined) await tx.put(ESSAYS, attemptId, kept);
+      }
       await tx.delete("history", within(attemptId));
       for (const [i, event] of history.entries()) await tx.put("history", [attemptId, i], event);
       return "saved";
@@ -611,7 +675,118 @@ export class Profile {
         return sum;
       })
       .catch(() => undefined);
-    return { unfinished, essays, bytes };
+    return { unfinished, essays, bytes, stored: await this.allStored() };
+  }
+
+  /**
+   * The work of an attempt or an essay as the device holds it now, for `PutWork`: its history, and
+   * its submissions with their contexts — an essay's those it keeps a context of. None when the
+   * device keeps neither, or a record of it could not be read.
+   */
+  async work(attemptId: string): Promise<DeviceWork | undefined> {
+    return this.connection
+      .read([...ATTEMPT_STORES, ESSAYS], async (tx): Promise<DeviceWork | undefined> => {
+        const essay = essayOf(await tx.get(ESSAYS, attemptId), false);
+        const attempt = await tx.get("attempts", attemptId);
+        if (essay === undefined && attempt === undefined) return undefined;
+        const history = await tx.entries("history", { range: within(attemptId) });
+        const submissions =
+          essay === undefined
+            ? (await tx.entries("submissions", { range: within(attemptId) })).map(({ value }) => {
+                const { context, historyLength } = value as SubmissionRecord;
+                return { context, historyLength };
+              })
+            : essaySubmissions(essay);
+        return {
+          attemptId,
+          history: history.map(({ value }) => value as HistoryEvent),
+          submissions,
+        };
+      })
+      .catch(() => undefined);
+  }
+
+  /** The attempts and the essays the profile keeps the work of: every work it may put. */
+  async works(): Promise<string[]> {
+    return this.connection.read(["attempts", ESSAYS], async (tx) => {
+      const found = new Set<string>();
+      for (const store of ["attempts", ESSAYS]) {
+        for (const key of await tx.keys(store)) found.add(key as string);
+      }
+      return [...found];
+    });
+  }
+
+  /** The server keeps the work as far as the mark says: on the attempt, and on its essay. */
+  async markStored(attemptId: string, stored: Stored): Promise<void> {
+    await this.connection.write(["attempts", ESSAYS], async (tx) => {
+      for (const store of ["attempts", ESSAYS]) {
+        const kept = (await tx.get(store, attemptId)) as object | undefined;
+        if (kept !== undefined) await tx.put(store, attemptId, { ...kept, stored: { ...stored } });
+      }
+    });
+  }
+
+  /** The storage switched off: the server erased its copies, and no mark of them holds. */
+  async clearStored(): Promise<void> {
+    await this.connection.write(["attempts", ESSAYS], async (tx) => {
+      for (const store of ["attempts", ESSAYS]) {
+        for (const { key, value } of await tx.entries(store)) {
+          const { stored, ...kept } = value as { readonly stored?: unknown };
+          if (stored !== undefined) await tx.put(store, key, kept);
+        }
+      }
+    });
+  }
+
+  /**
+   * Which works the server keeps as far as the device holds them, the essays and the other
+   * attempts apart: a work is covered when its mark names the history's length and the submissions
+   * the device has, an attempt with none of either needing none, and an essay's mark standing for
+   * its attempt's too.
+   */
+  private async covered(): Promise<{ essays: boolean[]; attempts: boolean[] }> {
+    return this.connection.read([...ATTEMPT_STORES, ESSAYS], async (tx) => {
+      const holds = async (attemptId: string, mark: Stored | undefined, submissions: number) =>
+        (mark?.history ?? 0) === (await tx.count("history", { range: within(attemptId) })) &&
+        (mark?.submissions ?? 0) === submissions;
+      const essays: boolean[] = [];
+      for (const { key, value } of await tx.entries(ESSAYS)) {
+        const essay = essayOf(value, false);
+        // An essay this build cannot read is none of the essays it names, and no work it covers.
+        if (essay !== undefined) {
+          essays.push(await holds(key as string, essay.stored, essaySubmissions(essay).length));
+        } else essays.push(false);
+      }
+      const attempts: boolean[] = [];
+      for (const { key, value } of await tx.entries("attempts")) {
+        const attemptId = key as string;
+        if ((await tx.get(ESSAYS, attemptId)) !== undefined) continue;
+        const count = await tx.count("submissions", { range: within(attemptId) });
+        attempts.push(await holds(attemptId, storedOf((value as Attempt).stored), count));
+      }
+      return { essays, attempts };
+    });
+  }
+
+  /** Whether the server keeps every work of the profile as far as the device holds it. */
+  private async allStored(): Promise<boolean> {
+    return this.covered().then(
+      ({ essays, attempts }) => [...essays, ...attempts].every(Boolean),
+      () => false,
+    );
+  }
+
+  /**
+   * How many essays the device keeps that the server does not, as far as the device holds them:
+   * the sign-out's loss, while the profile's storage is on (R53). All of them, when the marks
+   * cannot be read.
+   */
+  async essaysOnlyHere(): Promise<number> {
+    return this.covered().then(
+      ({ essays }) => essays.filter((stored) => !stored).length,
+      () => this.essayCount(),
+    );
   }
 
   /** The own key kept on this device; none when it is not kept, or its record cannot be read. */
@@ -698,17 +873,32 @@ export async function openProfileDatabase(
   return connection === undefined ? undefined : new Profile(connection, device.now);
 }
 
+/** What puts the work of an attempt on the server as it closes: read before it goes, sent after. */
+export interface Closing {
+  readonly read: (profile: Profile, attemptId: string) => Promise<DeviceWork | undefined>;
+  readonly send: (profile: Profile, work: DeviceWork) => Promise<unknown>;
+}
+
 /**
  * An attempt is over, by whatever way it closed: its work on this device goes (section 3.2), in the
- * database the screen holds or else in the profile's, opened for it. A database that does not open
- * or a write that fails leaves the work to the 30 days' term.
+ * database the screen holds or else in the profile's, opened for it, and with `works` it goes to
+ * the server first, as it was at the end — read before the erasure, sent after it, so that the
+ * screen waits for no network. A database that does not open or a write that fails leaves the work
+ * to the 30 days' term.
  */
 export async function attemptOver(
   device: Device,
   profileId: string,
   attemptId: string,
-  { held, correct }: { readonly held?: Profile; readonly correct?: number } = {},
+  {
+    held,
+    correct,
+    works,
+  }: { readonly held?: Profile; readonly correct?: number; readonly works?: Closing } = {},
 ): Promise<void> {
   const profile = held ?? (await openProfile(device, profileId).catch(() => undefined));
-  await profile?.attemptEnded(attemptId, correct).catch(() => {});
+  if (profile === undefined) return;
+  const work = await works?.read(profile, attemptId).catch(() => undefined);
+  await profile.attemptEnded(attemptId, correct).catch(() => {});
+  if (work !== undefined) void works?.send(profile, work);
 }

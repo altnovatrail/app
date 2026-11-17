@@ -45,6 +45,10 @@ import {
   LearningService,
 } from "@altnovatrail/contracts/novatrail/api/v1/learning_pb.js";
 import { PackageService } from "@altnovatrail/contracts/novatrail/api/v1/package_pb.js";
+import {
+  type PutWorkRequest,
+  WorkService,
+} from "@altnovatrail/contracts/novatrail/api/v1/work_pb.js";
 import type { CanvasElement, HistoryEvent } from "@altnovatrail/spec/canvas";
 import type * as open from "@altnovatrail/spec/formatv0/open";
 import { create, type MessageInitShape } from "@bufbuild/protobuf";
@@ -54,6 +58,7 @@ import { render, screen, within } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
+import { LearnerProvider } from "../account/AccountGate.tsx";
 import { ApiProvider } from "../api/ApiContext.tsx";
 import { createApi } from "../api/client.ts";
 import { dateTimeFormat } from "../i18n/intl.ts";
@@ -70,6 +75,7 @@ import { memoryDevice } from "../test/device.ts";
 import { inLanguage } from "../test/language.tsx";
 import { fakeSpeech, voice } from "../test/speech.ts";
 import { SpeechProvider, VoicingProvider } from "../voice/VoicingContext.tsx";
+import { forgetPuts } from "../works/stored.ts";
 import { Task } from "./Task.tsx";
 
 const D1 = `sha256:${"1".repeat(64)}`;
@@ -196,6 +202,8 @@ interface Setup {
   voicingFails?: boolean;
   /** The owner's own key is held for the learner, p1: its holder, opened with it (R47). */
   ownKey?: boolean;
+  /** The screen among a learner's screens, the profile's storage of works on the server on (T62). */
+  storage?: boolean;
 }
 
 /** A synthetic own key: no provider issued it. */
@@ -259,7 +267,14 @@ async function renderTask(setup: Setup = {}) {
   const voicings: SetVoicingRequest[] = [];
   const saved: Profile[] = [];
   const failed: unknown[] = [];
+  const puts: PutWorkRequest[] = [];
   const routes = (router: ConnectRouter) => {
+    router.service(WorkService, {
+      putWork(request) {
+        puts.push(request);
+        return { work: { attemptId: request.work?.attemptId ?? "" } };
+      },
+    });
     router.service(AccountService, {
       setVoicing(request) {
         voicings.push(request);
@@ -443,20 +458,38 @@ async function renderTask(setup: Setup = {}) {
         </VoicingProvider>
       </SpeechProvider>
     );
+  const learner = (screen: ReactNode) =>
+    setup.storage === undefined ? (
+      screen
+    ) : (
+      <LearnerProvider
+        value={{
+          learner: create(ProfileSchema, { profileId: "p1", workStorage: setup.storage }),
+          switchLearner: () => {},
+          signOut: () => {},
+          onSaved: (profile) => saved.push(profile),
+          onFailed: (failure) => failed.push(failure),
+        }}
+      >
+        {screen}
+      </LearnerProvider>
+    );
   const rendered = render(
     inLanguage(
       <ApiProvider value={api}>
         <PackagesProvider value={packages}>
-          {keyed(
-            voiced(
-              <Task
-                profileId="p1"
-                attemptId="a1"
-                defaultMode={setup.mode ?? Mode.BY_STEPS}
-                device={device}
-                adult={setup.adult ?? false}
-                onAttempt={(id) => attempts.push(id)}
-              />,
+          {learner(
+            keyed(
+              voiced(
+                <Task
+                  profileId="p1"
+                  attemptId="a1"
+                  defaultMode={setup.mode ?? Mode.BY_STEPS}
+                  device={device}
+                  adult={setup.adult ?? false}
+                  onAttempt={(id) => attempts.push(id)}
+                />,
+              ),
             ),
           )}
         </PackagesProvider>
@@ -481,6 +514,7 @@ async function renderTask(setup: Setup = {}) {
     voicings,
     saved,
     failed,
+    puts,
     unmount: rendered.unmount,
   };
 }
@@ -498,6 +532,8 @@ const at = (moment: Date) => dateTimeFormat("en", { timeStyle: "short" }).format
 
 afterEach(() => {
   vi.useRealTimers();
+  // Each test's p1 is another profile: what one put is no copy for the next.
+  forgetPuts("p1");
 });
 
 describe("the task screen", () => {
@@ -1291,6 +1327,53 @@ describe("the task screen with handwriting", () => {
       "en",
     );
     await vi.waitFor(async () => expect(await profile?.correctWork("a1")).toBeUndefined());
+  });
+
+  it("puts the work on the server at Check, and not again as Correct closes the attempt with it, while storage is on", async () => {
+    const { puts, device } = await renderTask({
+      task: SHEET_TASK,
+      history: WRITTEN,
+      mode: Mode.SELF,
+      storage: true,
+      answer: () => ({
+        ...sheetAnswer("correct", { value: "7" }),
+        solved: { solution: encode(SOLUTION), moduleFormatVersion: "0.4" },
+      }),
+    });
+    await vi.waitFor(() => expect(check()).toHaveAttribute("aria-disabled", "false"));
+    await userEvent.click(check());
+    await screen.findByRole("region", { name: "Solution" });
+    await vi.waitFor(() => expect(puts).toHaveLength(1));
+    const decoder = new TextDecoder();
+    for (const put of puts) {
+      expect(put.profileId).toBe("p1");
+      expect(put.work?.attemptId).toBe("a1");
+      expect(JSON.parse(decoder.decode(put.work?.history))).toEqual(WRITTEN);
+      expect(put.work?.submissions.map((one) => one.historyLength)).toEqual([WRITTEN.length]);
+      // The canvas's own picture of the strokes.
+      expect([...(put.work?.picture.slice(0, 4) ?? [])]).toEqual(PNG);
+    }
+    // The attempt closed is off the device: nothing of it is left to warn of, and the work the
+    // close read is the one the server keeps already.
+    const profile = await addProfile(device, "p1");
+    await vi.waitFor(async () => expect(await profile?.readAttempt("a1")).toBeUndefined());
+    expect((await profile?.usage())?.stored).toBe(true);
+    expect(puts).toHaveLength(1);
+  });
+
+  it("puts no work while the profile's storage is off", async () => {
+    const { puts, submitted } = await renderTask({
+      task: SHEET_TASK,
+      history: WRITTEN,
+      mode: Mode.SELF,
+      storage: false,
+      answer: () => sheetAnswer("not_yet", { value: "5", wrong: 1 }),
+    });
+    await vi.waitFor(() => expect(check()).toHaveAttribute("aria-disabled", "false"));
+    await userEvent.click(check());
+    expect(await screen.findByText("Read: 5")).toBeVisible();
+    expect(submitted).toHaveLength(1);
+    expect(puts).toEqual([]);
   });
 
   it("goes on with the words of the rung the attempt keeps, on my own too", async () => {
