@@ -18,17 +18,9 @@
 
 The NovaTrail web app for learners and the adults beside them, on a tablet or a computer. It is the shell around the learner's work: signing in and choosing the learner on a shared device, the lesson player and the task screen with the canvas, the answer slots and the tutor's panel, progress and the skill map, and the adults' section behind a PIN. It builds in the canvas and skill-map UI packages at exact versions and talks only to api and the sign-in service: it gets a task's open view but never its key, solution or traps while the task is unsolved, it never decides a verdict or calls an AI provider, and the learner's strokes stay on the device.
 
-A component of [NovaTrail](https://github.com/altnovatrail/spec/tree/v0.18.12), a universal open platform for adaptive learning, interactive lessons and AI tutoring. It belongs to stage 2, First slice with learners, with tutor, canvas, api, skill-map and infra.
+A component of [NovaTrail](https://github.com/altnovatrail/spec), a universal open platform for adaptive learning, interactive lessons and AI tutoring. It belongs to stage 2, First slice with learners, with tutor, canvas, api, skill-map and infra.
 
-## Status
-
-Detailing is done: the first epic of [RUN.md](RUN.md) decided what the component's card left open, and [docs/architecture.md](docs/architecture.md) holds the result. The second epic, E2, built the first app, which an adult learner uses against a local api, with no children yet and no deployment: signing in with Google, the account with the texts in force and the owner's own profile, "My subjects" with the catalog of modules, the lesson player, the task screen with the canvas — the steps, the choice of options, the check of handwriting, the hint, "Explain differently" and the solution shown —, and what the engine chose next. E2 ended on 2026-11-12 with the first signed release of the build, v0.1.0.
-
-The third epic, E3, ended on 2026-11-17 with the first slice for adult learners. infra deploys the build at https://novatrail.web.app, where so far only the author learns: invite codes for other adults wait for infra's next rollouts. The tutor's words come from tutor through api. The adults' section holds the profile's settings, "This device", the adult's own AI key, keeping works on the server, the share of the platform's AI quota and the learner's progress. The skill map comes from the skill-map package, the device's speech synthesis reads the tutor's words aloud, an essay gets feedback by its rubric, and a workbook is checked box by box. Every reply of the tutor says that the tutor is an AI and offers "Report a problem", and the legal pages hold the texts in force, "Accessibility", the notices of third-party code and the licenses of modules. The screens are in English and Russian, and CI checks every one with axe-core in Chromium, WebKit and Firefox. Nothing is checked on real devices yet, and essays and the workbook only by the tests, since the site offers no such modules. Next come the adult's change of a module's level, then the look by the interface mockup, on a phone too, and then children's profiles with the parent's consent.
-
-Run the five checks of the TypeScript code with `just ci` and the check of the documents with `just -f spec/justfile docs-check-repo` — CI runs both — the app with `just dev` — with a working copy of canvas, built, by `just dev-canvas <folder>` — and its build with `just preview`, all inside the devcontainer.
-
-### Run locally with api
+## Run locally with api
 
 The first app runs against a local api, in api's own devcontainer, with the dev project of Firebase (section 3.7 of [docs/architecture.md](docs/architecture.md)):
 
@@ -53,13 +45,11 @@ Work in the devcontainer: open the repository in VS Code and choose "Reopen in C
 - `just ci-test` — the build, then the tests with Vitest in Node and in Chromium, among them the accessibility checks of every screen with axe-core; it writes their coverage to `coverage/lcov.info`, then builds the tree again and checks that both archives of a release are the same bytes; `just ci-engines` — the same tests of the screens in WebKit and Firefox, without coverage;
 - `just ci-vuln` — `npm audit` of what ships; `just ci-licenses` — the licenses of the lock file against spec's list, the signatures of the packages of `@altnovatrail`, the file of spec's release the build takes the deployment format from, and that `NOTICE` names every package the build ships;
 - `just walk` — the path of the first slice in Chromium, WebKit and Firefox, against api's `just dev-app`, with no one at the keyboard; not in CI;
-- `just build` — the app into `build/`; `just release-files <version>` — the archive of a release into `dist/`.
+- `just build` — the app into `build/`; `just release-files <version>` — the archive of a release into `dist/`; `just dev` — the app on the development server, with a working copy of canvas, built, by `just dev-canvas <folder>`; `just preview` — its build.
 
 A check exits with a non-zero status when it finds a problem. CI runs them all on every pull request and on `main`, and a pull request merges only when they pass. Documents are checked by `just -f spec/justfile docs-check-repo`.
 
 ## Documents
-
-The documents and the work plan are in English; the bodies of the plan's tasks and the archives of its epics are in Russian.
 
 - [docs/architecture.md](docs/architecture.md) — the component: what it does and does not do, its data and links, and what is still to decide.
 - [docs/decisions.md](docs/decisions.md) — the decision log: what was decided, why, and what was rejected.
@@ -67,8 +57,4 @@ The documents and the work plan are in English; the bodies of the plan's tasks a
 - [RUN.md](RUN.md) — the work plan, in epics.
 - `run/` — the plan's other tables: [the epics for later](run/EPICS.md), [the open questions](run/QUESTIONS.md), [the technical debt](run/DEBT.md) and [the tasks outside an epic](run/TASKS.md).
 
-The working rules, for people and coding agents alike, are in [CLAUDE.md](CLAUDE.md) and [AGENTS.md](AGENTS.md). The platform's shared vocabulary, formats, contracts and decisions are in [spec](https://github.com/altnovatrail/spec/tree/v0.18.12), checked out here as a git submodule at `v0.18.12`: clone this repository with `git clone --recurse-submodules`.
-
-## License
-
-[Apache-2.0](LICENSE).
+The working rules, for people and coding agents alike, are in [CLAUDE.md](CLAUDE.md) and [AGENTS.md](AGENTS.md). The platform's shared vocabulary, formats, contracts and decisions are in [spec](https://github.com/altnovatrail/spec), checked out here as a git submodule: clone this repository with `git clone --recurse-submodules`.
