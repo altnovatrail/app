@@ -9,6 +9,13 @@ const STANDARD = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 
 /** What axe-core finds against the standard, a line for each rule and the nodes it found. */
 export async function axeViolations(root: Element = document.body): Promise<string[]> {
+  // A colour in its transition, a button just enabled, is read as it ends, not halfway through.
+  await Promise.all(
+    document
+      .getAnimations()
+      .filter((animation) => "transitionProperty" in animation)
+      .map((animation) => animation.finished.catch(() => {})),
+  );
   const result = await axe.run(
     { include: [root], exclude: [["novatrail-canvas"]] },
     { runOnly: { type: "tag", values: STANDARD }, resultTypes: ["violations"] },

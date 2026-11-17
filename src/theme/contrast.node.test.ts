@@ -1,44 +1,84 @@
 // The contrast of the theme's colours as theme.css has them (WCAG 1.4.3 and 1.4.11; section 3.9 of
-// docs/architecture.md): text 4.5:1 on what it stands on, and the boundaries of a component, the
-// focus ring and marks 3:1. A colour changed in theme.css that misses its ratio fails this test.
+// docs/architecture.md): the pairs of the interface mockup's README, «Contrast», in app's tokens,
+// with its replacements — text 4.5:1 on what it stands on, an edge, the focus ring and a mark 3:1, a
+// translucent colour laid over what it stands on. A colour changed in theme.css that misses its
+// ratio fails this test, and so does a colour token no pair names.
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { contrast, luminance, tokens } from "./contrast.ts";
+import { contrast, luminance, over, tokens } from "./contrast.ts";
 
 const THEME = tokens(readFileSync("src/theme/theme.css", "utf8"));
 
-/** Each pair the screens put together: the foreground, what it stands on, and the least ratio. */
-const PAIRS: readonly [string, string, number][] = [
-  ["text", "background", 4.5],
-  ["text", "surface", 4.5],
-  ["text-muted", "background", 4.5],
-  ["text-muted", "surface", 4.5],
-  ["on-primary", "primary", 4.5],
-  ["primary", "background", 4.5],
-  ["primary", "surface", 4.5],
-  ["correct", "background", 4.5],
-  ["correct", "surface", 4.5],
-  ["not-yet", "background", 4.5],
-  ["not-yet", "surface", 4.5],
-  ["error", "background", 4.5],
-  ["error", "surface", 4.5],
-  ["border", "background", 3],
-  ["border", "surface", 3],
-  ["focus", "background", 3],
-  ["focus", "surface", 3],
-  ["mark", "background", 3],
+const TEXT = 4.5;
+const EDGE = 3;
+
+/**
+ * The pairs the screens put together, by groups: the least ratio, the foregrounds, and the grounds
+ * each stands on, a ground's layers joined by "/", the top first and the last opaque.
+ */
+const GROUPS: readonly [number, string, string][] = [
+  [TEXT, "text text-muted", "card page page-owner glass/page glass-panel/page"],
+  // Secondary text on a chip, where #6e6e73 misses: #636366, on each grey fill; on the page the
+  // fill of 0.16, a disabled button's, gives it 4.47 alone.
+  [TEXT, "text-muted-on-grey", "grey-08/page grey-10/page grey-12/page grey-12/card grey-16/card"],
+  // The tutor's words and marks on the sheet among them.
+  [TEXT, "segmented next tutor-words", "card"],
+  // The accent as text, #0066cc, where #0071e3 misses on the page and on its own tint.
+  [TEXT, "accent-text", "card page page-owner accent-tint/card glass/page"],
+  [TEXT, "on-fill", "accent correct not-yet tooltip"],
+  [TEXT, "correct not-yet error", "card page"],
+  [TEXT, "hint-text", "hint/card"],
+  // The accent on the skill map's paper, as text too; the focus ring, a primary button's fill and
+  // what is selected, against what they stand on.
+  [TEXT, "accent", "card"],
+  [EDGE, "accent", "page page-owner glass/page"],
+  // The edge of a field against its own fill, white; the segments of a module's bar and the
+  // legend's swatches, on a card.
+  [EDGE, "edge state-mastered state-review state-progress state-ready state-locked", "card"],
 ];
 
+/** Each pair: the foreground, the layers it stands on, and the least ratio. */
+const PAIRS: readonly [string, readonly string[], number][] = GROUPS.flatMap(
+  ([least, foregrounds, grounds]) =>
+    foregrounds
+      .split(" ")
+      .flatMap((foreground) =>
+        grounds.split(" ").map((ground) => [foreground, ground.split("/"), least] as const),
+      ),
+);
+
+/**
+ * The tokens no pair has to hold, and why: grey on a grey fill is a disabled button, which 1.4.3
+ * exempts as an inactive control.
+ */
+const EXEMPT = ["disabled"];
+
+/** The pair as its test names it: the foreground on its layers. */
+function ratio(foreground: string, layers: readonly string[]): number {
+  const colour = (name: string) => {
+    const value = THEME.get(name);
+    if (value === undefined) throw new Error(`no token --nt-${name}`);
+    return value;
+  };
+  return contrast(colour(foreground), over(...layers.map(colour)));
+}
+
 describe("the theme", () => {
-  it("has every colour the pairs name, and no other", () => {
-    const named = new Set(PAIRS.flatMap(([foreground, ground]) => [foreground, ground]));
-    expect([...THEME.keys()].sort()).toEqual([...named].sort());
+  it("has every colour the pairs name, and no other but the exempt", () => {
+    const named = new Set(PAIRS.flatMap(([foreground, layers]) => [foreground, ...layers]));
+    expect([...THEME.keys()].sort()).toEqual([...named, ...EXEMPT].sort());
   });
 
-  it.each(PAIRS)("puts %s on %s at %d:1 or more", (foreground, ground, least) => {
-    expect(
-      contrast(THEME.get(foreground) as string, THEME.get(ground) as string),
-    ).toBeGreaterThanOrEqual(least);
+  it.each(PAIRS)("puts %s on %j at %d:1 or more", (foreground, layers, least) => {
+    expect(ratio(foreground, layers)).toBeGreaterThanOrEqual(least);
+  });
+
+  it("gives the ratios of the mockup's «Contrast» for its replacements", () => {
+    expect(ratio("accent-text", ["page"])).toBeCloseTo(4.99, 2);
+    expect(ratio("on-fill", ["correct"])).toBeCloseTo(5.4, 1);
+    expect(ratio("text-muted", ["glass", "page"])).toBeCloseTo(4.95, 2);
+    expect(ratio("on-fill", ["tooltip"])).toBeCloseTo(16.8, 1);
+    expect(ratio("edge", ["card"])).toBeCloseTo(3.26, 2);
   });
 });
 
@@ -51,8 +91,26 @@ describe("contrast", () => {
     expect(luminance("#808080")).toBeCloseTo(0.2158605, 6);
   });
 
-  it("takes only #rrggbb", () => {
+  it("lays a translucent colour over the opaque one under it", () => {
+    expect(over("#123456")).toBe("#123456");
+    expect(over("rgba(0, 0, 0, 0.5)", "#ffffff")).toBe("#808080");
+    expect(over("rgba(255, 255, 255, 0.76)", "#f2f2f7")).toBe("#fcfcfd");
+    expect(over("rgba(0, 0, 0, 1)", "rgba(255, 255, 255, 0.5)", "#ffffff")).toBe("#000000");
+    expect(() => over("#ffffff", "rgba(0, 0, 0, 0.5)")).toThrow("not opaque");
+    expect(() => over()).toThrow("not opaque");
+  });
+
+  it("takes only #rrggbb and rgba(r, g, b, a)", () => {
     expect(() => luminance("#fff")).toThrow("not a colour");
-    expect(tokens("--nt-text: #ABCDEF; --nt-x: red;").get("text")).toBe("#abcdef");
+    expect(() => luminance("rgba(0, 0, 0, 0.5)")).toThrow("not a colour #rrggbb");
+    expect(() => over("rgba(256, 0, 0, 0.5)", "#ffffff")).toThrow("not a colour");
+    expect(() => over("red", "#ffffff")).toThrow("not a colour");
+    const found = tokens(
+      "--nt-text: #ABCDEF; --nt-x: red; --nt-tint: rgba(0, 113, 227, 0.1); --nt-shadow: 0 1px rgba(0, 0, 0, 0.1);",
+    );
+    expect(Object.fromEntries(found)).toEqual({
+      text: "#abcdef",
+      tint: "rgba(0, 113, 227, 0.1)",
+    });
   });
 });

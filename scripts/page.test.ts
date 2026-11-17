@@ -156,9 +156,9 @@ describe.each(ENGINES.map((type) => [type.name(), type] as const))(
       // The theme came with the build, under the lower layer's style-src 'self' (section 3.9).
       expect(
         await page.evaluate(
-          "getComputedStyle(document.documentElement).getPropertyValue('--nt-primary').trim()",
+          "getComputedStyle(document.documentElement).getPropertyValue('--nt-accent').trim()",
         ),
-      ).toBe("#1d4ed8");
+      ).toBe("#0071e3");
       // The storage started without making a database of its own: nobody has signed in (section
       // 3.2). The two there are Firebase's: Auth's persistence, which it opens to see that it can,
       // and the heartbeats of @firebase/app — its versions and the day, sent in X-Firebase-Client
