@@ -50,7 +50,8 @@ describe.each(DEVICES)("the mockup on %s", (device) => {
   it.each(FIRST)("%s in the three engines", async (state) => {
     const shapes: Record<string, Shape[]> = {};
     const problems: string[] = [];
-    await Promise.all(
+    // Each engine to its end, so that one that fails leaves the others' snapshots and the report.
+    const ends = await Promise.allSettled(
       Object.entries(browsers).map(async ([engine, browser]) => {
         const context = await deviceContext(browser, device);
         try {
@@ -66,6 +67,10 @@ describe.each(DEVICES)("the mockup on %s", (device) => {
         }
       }),
     );
+    ends.forEach((end, i) => {
+      if (end.status === "rejected")
+        problems.push(`${Object.keys(browsers)[i]}: ${String(end.reason)}`);
+    });
     const ordered = Object.fromEntries(
       Object.keys(ENGINES).map((engine) => [engine, shapes[engine] ?? []]),
     );

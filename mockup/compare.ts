@@ -20,13 +20,16 @@ import type { Device, Difference, Region } from "./regions.ts";
 /** The spec folder whose mockup the run opens. */
 export const SPEC = process.env.NOVATRAIL_MOCKUP_SPEC ?? "spec";
 
-/** One server of the mockup for the whole run, started by the first comparison. */
+/** One server of the mockup for the whole run, started by the first comparison, again after a failure. */
 let served: Promise<{ origin: string }> | undefined;
 
 export const mockupCompare: BrowserCommand<
   [state: string, device: Device, regions: readonly Region[]]
 > = async (ctx, state, device, regions): Promise<Difference[]> => {
-  served ??= serveMockup(SPEC);
+  served ??= serveMockup(SPEC).catch((error: unknown) => {
+    served = undefined;
+    throw error;
+  });
   const { origin } = await served;
   const browser = ctx.context.browser();
   if (browser === null) throw new Error("the comparison needs the test's browser");

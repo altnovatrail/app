@@ -21,6 +21,7 @@ import {
   openState,
   outName,
   over,
+  type PageElement,
   parseColour,
   px,
   type Raw,
@@ -46,6 +47,7 @@ describe("colours", () => {
     expect(parseColour("rgb(29, 29, 31)")).toEqual(INK);
     expect(parseColour("rgba(255, 255, 255, 0.76)")).toEqual({ ...WHITE, a: 0.76 });
     expect(parseColour("rgb(255 255 255 / 50%)")).toEqual({ ...WHITE, a: 0.5 });
+    expect(parseColour("rgb(100% 0% 50%)")).toEqual({ r: 255, g: 0, b: 127.5, a: 1 });
     expect(parseColour(" Transparent ")).toEqual({ r: 0, g: 0, b: 0, a: 0 });
   });
 
@@ -129,6 +131,12 @@ describe("a measure", () => {
     });
     expect(measure({ ...RAW, shadow: "rgba(0, 0, 0, 0) 0px 0px 0px 1px" }).border).toBeNull();
     expect(measure({ ...RAW, shadow: "none" }).border).toBeNull();
+    expect(measure({ ...RAW, borderWidth: 1, borderColour: "rgba(0, 0, 0, 0)" }).border).toEqual({
+      r: 210,
+      g: 210,
+      b: 215,
+      a: 1,
+    });
   });
 });
 
@@ -316,6 +324,8 @@ interface StandIn {
   style: Record<string, string>;
   tagName: string;
   parentElement: StandIn | null;
+  /** The host of the shadow root the element is in. */
+  host?: StandIn;
   classes: string[];
   label: string | null;
   text: string | null;
@@ -362,8 +372,8 @@ function standIn(
 function asElement(
   item: StandIn,
   stack: readonly StandIn[] | null,
-  made = new Map<StandIn, Element>(),
-): Element {
+  made = new Map<StandIn, PageElement>(),
+): PageElement {
   const known = made.get(item);
   if (known !== undefined) return known;
   const element = {
@@ -377,11 +387,15 @@ function asElement(
     classList: { contains: (name: string) => item.classes.includes(name) },
     getAttribute: () => item.label,
     textContent: item.text,
+    style: { pointerEvents: "none" },
+    getRootNode: () => ({
+      host: item.host === undefined ? undefined : asElement(item.host, stack, made),
+      elementsFromPoint: () => (stack ?? []).map((under) => asElement(under, stack, made)),
+    }),
     ownerDocument: {
       defaultView: stack === null ? null : { innerWidth: 390, innerHeight: 844 },
-      elementsFromPoint: () => (stack ?? []).map((under) => asElement(under, stack, made)),
     },
-  } as unknown as Element;
+  } as unknown as PageElement;
   made.set(item, element);
   return element;
 }
@@ -406,6 +420,16 @@ describe("what runs in the page, stood in for in Node", () => {
     expect(stacked.box).toEqual({ x: 16, y: 0, width: 52, height: 10 });
     const alone = readElement(asElement(glass, null));
     expect(alone.backgrounds).toEqual(["rgba(255, 255, 255, 0.76)", "rgb(242, 242, 247)"]);
+    const shadowed = standIn(20, 20, { backgroundColor: "rgba(0, 0, 0, 0.1)" });
+    shadowed.host = glass;
+    expect(readElement(asElement(shadowed, [])).backgrounds).toEqual([
+      "rgba(0, 0, 0, 0.1)",
+      "rgba(255, 255, 255, 0.76)",
+      "rgb(242, 242, 247)",
+    ]);
+    const element = asElement(glass, []);
+    readElement(element);
+    expect(element.style?.pointerEvents).toBe("none");
     expect(alone.borderWidth).toBe(0);
     expect(readElement(asElement(standIn(0, 1, { borderTopWidth: "auto" }), [])).borderWidth).toBe(
       0,
@@ -534,7 +558,8 @@ describe("in a browser", () => {
           typeof back === "object" && [back.radius, back.fontWeight, hex(back.colour)],
         ).toEqual([22, 600, "#1d1d1f"]);
         const line = await readRegion(page, { text: "Accounts are" });
-        expect(typeof line === "object" && hex(line.background)).toBe("#f2f2f7");
+        expect(typeof line === "object" && hex(line.background)).toBe("#ffffff");
+        expect(await page.locator("p").evaluate((p) => p.style.pointerEvents)).toBe("none");
         expect(await readRegion(page, { role: "button", name: "Next" })).toBe("not found");
         expect(await readRegion(page, { text: "Twice" })).toBe("2 found");
         expect(await readRegion(page, { css: "i" })).toBe("hidden");

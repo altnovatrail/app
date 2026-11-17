@@ -11,7 +11,7 @@ import { defineConfig } from "vitest/config";
 import { FONTS } from "../scripts/mockup.ts";
 import { mockupCompare } from "./compare.ts";
 
-/** The browsers' environment: the system's, with the fonts of the comparison. */
+/** The browsers' environment: the system's, with the fonts of the comparison, as engines.node.test.ts launches its own. */
 const env = { ...process.env, FONTCONFIG_FILE: FONTS } as Record<string, string>;
 
 export default defineConfig({
@@ -24,7 +24,6 @@ export default defineConfig({
           name: "mockup engines",
           include: ["mockup/**/*.node.test.ts"],
           environment: "node",
-          env: { FONTCONFIG_FILE: FONTS },
           testTimeout: 120_000,
           hookTimeout: 120_000,
         },

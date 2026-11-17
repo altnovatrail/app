@@ -5,7 +5,6 @@
 // mockup is also held across the three engines: each reaches data-ready="true" with no error, and
 // the shapes it draws agree. Nothing here reads spec/ by itself: the folder of the spec whose
 // mockup is opened is the caller's, so that a session can compare with a newer spec in a clone.
-/// <reference lib="dom" />
 import { mkdirSync, writeFileSync } from "node:fs";
 import type { Server } from "node:http";
 import { dirname, join, resolve } from "node:path";
@@ -94,8 +93,9 @@ export function parseColour(text: string): Rgba | null {
   if (fn === undefined) return null;
   const parts = fn.split(/[\s,/]+/).filter((part) => part !== "");
   if (parts.length !== 3 && parts.length !== 4) return null;
-  const numbers = parts.map((part) =>
-    part.endsWith("%") ? Number.parseFloat(part) / 100 : Number(part),
+  // A share is of 255 for a channel and of 1 for the alpha.
+  const numbers = parts.map((part, i) =>
+    part.endsWith("%") ? (Number.parseFloat(part) / 100) * (i < 3 ? 255 : 1) : Number(part),
   );
   if (numbers.some((n) => !Number.isFinite(n))) return null;
   const [r, g, b, a = 1] = numbers as [number, number, number, number?];
@@ -168,7 +168,8 @@ export function ringColour(shadow: string): Rgba | null {
 /** What the page gave, as the comparison reads it. */
 export function measure(raw: Raw): Measure {
   const background = composite(raw.backgrounds);
-  const border = raw.borderWidth > 0 ? parseColour(raw.borderColour) : ringColour(raw.shadow);
+  const drawn = raw.borderWidth > 0 ? parseColour(raw.borderColour) : null;
+  const border = drawn !== null && drawn.a > 0 ? drawn : ringColour(raw.shadow);
   return {
     box: raw.box,
     background,
@@ -260,26 +261,73 @@ export function compareRegion(
   return found;
 }
 
+/** What the functions that run in a page read of its style: Node's program has no DOM. */
+interface PageStyle {
+  readonly backgroundColor: string;
+  readonly borderTopWidth: string;
+  readonly borderTopColor: string;
+  readonly boxShadow: string;
+  readonly borderTopLeftRadius: string;
+  readonly color: string;
+  readonly fontSize: string;
+  readonly fontWeight: string;
+  readonly visibility: string;
+  pointerEvents: string;
+}
+
+/** A tree a page's element is in: the document, or a shadow root with its host. */
+interface PageRoot {
+  readonly host?: PageElement;
+  elementsFromPoint(x: number, y: number): PageElement[];
+}
+
+/** What the functions that run in a page read of an element. */
+export interface PageElement {
+  getBoundingClientRect(): Box & { readonly left: number; readonly top: number };
+  getRootNode(): PageRoot;
+  getAttribute(name: string): string | null;
+  contains(other: PageElement): boolean;
+  readonly parentElement: PageElement | null;
+  readonly tagName: string;
+  readonly classList: { contains(name: string): boolean };
+  readonly textContent: string | null;
+  readonly style?: { pointerEvents: string };
+  readonly ownerDocument: {
+    readonly defaultView: { readonly innerWidth: number; readonly innerHeight: number } | null;
+  };
+}
+
+declare function getComputedStyle(element: PageElement): PageStyle;
+declare const document: {
+  getElementById(id: string): { querySelectorAll(selectors: string): Iterable<PageElement> } | null;
+};
+
 /**
  * Reads an element in its page: its box, its computed style, and the backgrounds of what it stands
- * on — the elements under the centre of its box, in the order they are painted, or its ancestors
- * when it takes no pointer. It runs in the page, so it refers to nothing outside itself.
+ * on — the elements under the centre of its box, in the order they are painted, in its own tree
+ * and through the host of a shadow root, the element made to take the pointer for the moment of
+ * the reading; or, when another covers it there, its ancestors. It runs in the page, so it refers
+ * to nothing outside itself.
  */
-export function readElement(element: Element): Raw {
+export function readElement(element: PageElement): Raw {
   const rect = element.getBoundingClientRect();
   const style = getComputedStyle(element);
   const view = element.ownerDocument.defaultView;
-  const width = view?.innerWidth ?? rect.right;
-  const height = view?.innerHeight ?? rect.bottom;
+  const width = view?.innerWidth ?? rect.left + rect.width;
+  const height = view?.innerHeight ?? rect.top + rect.height;
   const x = Math.min(Math.max(rect.left + rect.width / 2, 0), width - 1);
   const y = Math.min(Math.max(rect.top + rect.height / 2, 0), height - 1);
-  const stack = element.ownerDocument.elementsFromPoint(x, y);
+  const was = element.style?.pointerEvents;
+  if (element.style !== undefined) element.style.pointerEvents = "auto";
+  const stack = element.getRootNode().elementsFromPoint(x, y);
+  if (element.style !== undefined) element.style.pointerEvents = was ?? "";
   const at = stack.indexOf(element);
-  const below: Element[] = [];
+  const below: PageElement[] = [];
   if (at >= 0) {
     for (const under of stack.slice(at + 1)) if (!element.contains(under)) below.push(under);
   } else {
-    for (let up = element.parentElement; up !== null; up = up.parentElement) below.push(up);
+    const parent = (e: PageElement) => e.parentElement ?? e.getRootNode().host ?? null;
+    for (let up = parent(element); up !== null; up = parent(up)) below.push(up);
   }
   return {
     box: { x: rect.x, y: rect.y, width: rect.width, height: rect.height },

@@ -30,6 +30,8 @@ interface Compared {
   readonly regions: readonly Region[];
   /** The task of epic E5 that brings the screen to the mockup, while it has not. */
   readonly until?: string;
+  /** What a screen that draws in an effect waits for before it is read: its last element shown. */
+  readonly settle?: () => Promise<unknown>;
 }
 
 const SCREENS: readonly Compared[] = [
@@ -65,10 +67,14 @@ const SCREENS: readonly Compared[] = [
 ];
 
 describe.each(Object.keys(SIZES) as Device[])("on %s", (device) => {
-  it.each(SCREENS)("$state as the mockup", async ({ state, draw, regions, until }) => {
+  it.each(SCREENS)("$state as the mockup", async ({ state, draw, regions, until, settle }) => {
     const [width, height] = SIZES[device];
     await page.viewport(width, height);
     render(draw());
+    // As the mockup's page sets data-ready: the screen drawn, its fonts loaded, a frame painted.
+    await settle?.();
+    await document.fonts.ready;
+    await new Promise((painted) => requestAnimationFrame(painted));
     const differences = await commands.mockupCompare(state, device, regions);
     if (until === undefined) expect(differences.filter((d) => d.by === undefined)).toEqual([]);
   });
