@@ -188,6 +188,41 @@ describe("the items", () => {
     );
     expect(container.textContent).toBe("");
   });
+
+  it("gives the boxes of a line api judged, a reason for one, and no list for a line of none", () => {
+    const line = { line: [{ binding: "box" }, { text: "r" }, { binding: "box" }] };
+    const task = { ...TASK, canvas: { kind: "workbook" }, items: [line, line] } as open.Task;
+    const verdicts = verdictsOf(
+      [
+        {
+          verdict: "unreadable",
+          answerSlots: [
+            { answerSlot: { item: 1, slot: 2 }, verdict: "unreadable", reason: "illegible" },
+          ],
+        },
+        { verdict: "unchecked", answerSlots: [] },
+      ] as unknown as Parameters<typeof verdictsOf>[0],
+      task,
+    );
+    const { container } = render(
+      inLanguage(
+        <Items
+          task={task}
+          choices={{}}
+          verdicts={verdicts}
+          language="en"
+          locked={false}
+          onChoose={() => {}}
+        />,
+      ),
+    );
+    const boxes = container.querySelectorAll(".nt-boxes");
+    expect(boxes).toHaveLength(1);
+    expect(boxes[0]?.textContent).toBe("Box 2 • Can't read thisIt can't be made out");
+    expect(container.querySelectorAll(".nt-lines > li")[1]?.textContent).toBe(
+      "Line 2 • Not checked",
+    );
+  });
 });
 
 describe("the hint", () => {

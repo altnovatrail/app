@@ -383,6 +383,11 @@ export const en = {
     one: "Not right yet: {count} item of {total}",
     other: "Not right yet: {count} items of {total}",
   }),
+  /** After a check of a workbook with lines not right yet. */
+  "task.summary-lines": plural({
+    one: "Not right yet: {count} line of {total}",
+    other: "Not right yet: {count} lines of {total}",
+  }),
   /** The heading of the solution, shown once the task is solved. */
   "task.solution": "Solution",
   /** Begins the same task again: a template may give another instance. */
@@ -410,6 +415,8 @@ export const en = {
   "task.reason-several_final_answers": "There is more than one final answer",
   /** Beside Check while the sheet holds no answer. */
   "task.check-write": "Write an answer on the sheet",
+  /** Beside Check while a box of the workbook holds no answer. */
+  "task.check-boxes": "Write an answer in each box",
   /** Told to a screen reader when the tutor's words have come; the words themselves are not. */
   "task.words-came": "The tutor's words came",
   /** In the block "Tutor" while the tutor's words are asked: they take some seconds to come. */
@@ -420,6 +427,8 @@ export const en = {
   "task.mark-box": "Tutor's mark {n} of {total}: line {line}, box {box}",
   /** A line of a workbook, by its place from 1, beside its verdict. */
   "task.line": "Line {n}",
+  /** A box of a workbook's line, by its place in the line from 1, beside its verdict. */
+  "task.box": "Box {n}",
   /** Asks for a hint: what the task gives and asks, its technique and question, or the rung again. */
   "task.hint": "Hint",
   /** The task has no technique and no question to hint before a wrong answer. */

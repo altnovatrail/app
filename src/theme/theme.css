@@ -446,6 +446,12 @@ novatrail-canvas {
 .nt-lines > li {
   margin-block-end: 0.5rem;
 }
+/* The boxes of a line of more than one, each with its verdict (R54). */
+.nt-boxes {
+  margin: 0.25rem 0 0;
+  padding-inline-start: 1.5rem;
+  list-style: none;
+}
 /* The hint asked for: what the task gives and asks, its techniques and its question (R22). */
 .nt-hint-label {
   margin: 0;

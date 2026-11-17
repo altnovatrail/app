@@ -25,6 +25,7 @@ import {
   gotTechniques,
   initialState,
   type Mode,
+  onWorkbook,
   type StepsState,
   slotKey,
   slotsOf,
@@ -157,19 +158,20 @@ export function notYet(verdicts: Verdicts): number {
 
 /**
  * The summary of the tutor's panel after a check, which the voicing says too: Correct, the solution
- * shown, or how many items are not right yet; empty with none to name.
+ * shown, or how many items are not right yet — on a workbook, lines; empty with none to name.
  */
 export function summaryText(
   verdicts: Verdicts,
   solved: "correct" | "shown" | undefined,
-  items: number,
+  task: open.Task,
   words: Words,
 ): string {
   if (solved !== undefined) {
     return words.text(solved === "shown" ? "task.solution-shown" : "task.correct");
   }
   const count = notYet(verdicts);
-  return count === 0 ? "" : words.text("task.summary-not-yet", { count, total: items });
+  const key = onWorkbook(task) ? "task.summary-lines" : "task.summary-not-yet";
+  return count === 0 ? "" : words.text(key, { count, total: task.items.length });
 }
 
 /** What api keeps of an open attempt that the screen goes on from. */

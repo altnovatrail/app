@@ -785,12 +785,7 @@ function OpenTask({
         // The lines of the panel that came with the check, in the language of the screen.
         verdictSaid.current = auto(
           [
-            summaryText(
-              verdicts,
-              answer.solved === undefined ? undefined : "correct",
-              task.items.length,
-              words,
-            ),
+            summaryText(verdicts, answer.solved === undefined ? undefined : "correct", task, words),
             read === undefined ? "" : outcomeText(read, words),
           ].map((text) => ({ text, language })),
         );
