@@ -5,6 +5,7 @@
 // a learner's screen that did not answer is one of them too: no connection, or what it came to.
 import type { Failure } from "../api/failure.ts";
 import { failureText } from "../api/words.ts";
+import { HomeButton } from "../app/HomeButton.tsx";
 import { Screen } from "../app/Screen.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 
@@ -19,33 +20,57 @@ export function Framed() {
   return <Screen title={words.text("boot.framed")} />;
 }
 
+/** Try again, and on a learner's screen that is not the home the way back to it (R57). */
+function Retry({ onRetry, home }: { readonly onRetry: () => void; readonly home: boolean }) {
+  const { words } = useLanguage();
+  const retry = (
+    <button type="button" onClick={onRetry}>
+      {words.text("boot.retry")}
+    </button>
+  );
+  if (!home) return retry;
+  return (
+    <div className="nt-buttons">
+      {retry}
+      <HomeButton />
+    </div>
+  );
+}
+
 /** The file did not come: the network, or a hosting that answered 5xx. */
-export function Offline({ onRetry }: { readonly onRetry: () => void }) {
+export function Offline({
+  onRetry,
+  home = false,
+}: {
+  readonly onRetry: () => void;
+  readonly home?: boolean;
+}) {
   const { words } = useLanguage();
   return (
     <Screen title={words.text("boot.offline")}>
-      <button type="button" onClick={onRetry}>
-        {words.text("boot.retry")}
-      </button>
+      <Retry onRetry={onRetry} home={home} />
     </Screen>
   );
 }
 
-/** A screen's read did not answer: no connection, or the words of what it came to, and Try again. */
+/**
+ * A screen's read did not answer: no connection, or the words of what it came to, and Try again —
+ * with the way back to My subjects on a screen that is not the home itself.
+ */
 export function ReadFailed({
   failure,
   onRetry,
+  home = false,
 }: {
   readonly failure: Failure;
   readonly onRetry: () => void;
+  readonly home?: boolean;
 }) {
   const { words } = useLanguage();
-  if (failure.kind === "offline") return <Offline onRetry={onRetry} />;
+  if (failure.kind === "offline") return <Offline onRetry={onRetry} home={home} />;
   return (
     <Screen title={failureText(failure, words)}>
-      <button type="button" onClick={onRetry}>
-        {words.text("boot.retry")}
-      </button>
+      <Retry onRetry={onRetry} home={home} />
     </Screen>
   );
 }

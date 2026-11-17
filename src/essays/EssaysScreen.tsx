@@ -8,6 +8,7 @@
 // hash names no attempt (R14): after a reload the list comes again.
 import type * as open from "@altnovatrail/spec/formatv0/open";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { HomeWay } from "../app/HomeButton.tsx";
 import { Screen } from "../app/Screen.tsx";
 import { dateTimeFormat } from "../i18n/intl.ts";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
@@ -167,6 +168,7 @@ export function EssaysScreen({
   const when = dateTimeFormat(language, { dateStyle: "medium", timeStyle: "short" });
   return (
     <Screen title={words.text("essays.title")}>
+      <HomeWay />
       {read === "failed" ? (
         <p role="alert" className="nt-error">
           {words.text("boot.unreadable")}

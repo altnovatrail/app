@@ -55,7 +55,7 @@ A task starts with «Выполни задачу T01 из RUN.md» in a new sess
 - a session compares its screen with the mockup without the author: Playwright snapshots in Chromium, WebKit and Firefox, 390 × 844 and 1194 × 834 (R146 spec);
 - Д24 closed; E4 of [run/EPICS.md](run/EPICS.md) builds the children's screens by the mockup.
 
-T72–T74 are tasks outside an epic, done before E5 opened; their bodies are in [docs/plan/E3.md](docs/plan/E3.md), section «Задачи вне эпика, сделанные после него», and their rows stay here (R13, R50).
+T72–T74 are tasks outside an epic, done before E5 opened; their bodies are in [docs/plan/E3.md](docs/plan/E3.md), section «Задачи вне эпика, сделанные после него», and their rows stay here (R13, R50). T92 is a task outside the epic, written down for spec's orchestrator (rule 6 of [COORDINATION.md](spec/COORDINATION.md)); its body is in [docs/plan/E5.md](docs/plan/E5.md), section «Задачи вне эпика, сделанные за его время».
 
 | Статус | ID | Задача | Кто | План | Зависит от |
 |---|---|---|---|---|---|
@@ -64,6 +64,7 @@ T72–T74 are tasks outside an epic, done before E5 opened; their bodies are in 
 | [x] | T74 | README без «Status», «License», фразы о языках и версии spec | Claude | — | — |
 | [x] | T75 | Запись и план эпика «Интерфейс по эталону» | Claude | да | — |
 | [x] | T88 | Слова наставника — только при открытой панели | Claude | — | T75 |
+| [x] | T92 | С экрана «Мои сочинения» нельзя уйти | Claude | — | — |
 | [ ] | T76 | Эталон в трёх движках и сравнение снимков | Claude | — | T88 |
 | [ ] | T77 | Цвета, стекло, радиусы и движение эталона — поправка к R17 | Claude | — | T76 |
 | [ ] | T78 | Раскладка от ширины и всплывающие окна | Claude | — | T77 |

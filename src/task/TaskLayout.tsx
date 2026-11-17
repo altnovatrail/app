@@ -15,6 +15,7 @@ import type * as open from "@altnovatrail/spec/formatv0/open";
 import { type ReactNode, type Ref, useMemo } from "react";
 import type { Failure } from "../api/failure.ts";
 import { failureText } from "../api/words.ts";
+import { HomeButton, HomeWay } from "../app/HomeButton.tsx";
 import { Screen } from "../app/Screen.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { ReadAloud } from "../voice/ReadAloud.tsx";
@@ -109,9 +110,7 @@ export function ResultEnd({ parts }: { readonly parts: TaskParts }) {
           >
             {words.text("task.again")}
           </button>
-          <button type="button" className="nt-secondary" onClick={parts.onHome}>
-            {words.text("task.home")}
-          </button>
+          <HomeButton onPress={parts.onHome} />
         </div>
       )}
     </>
@@ -164,6 +163,11 @@ export function TaskLayout({
   const statement = useMemo(() => taskPhrases(task, explanation), [task, explanation]);
   return (
     <Frame inLesson={parts.inLesson === true} title={words.text("task.title")}>
+      {/* Once the attempt is over, its result has the way back; in a lesson, its Leave (R57). While
+          a check or the solution is under way, the way waits for its answer. */}
+      {parts.inLesson === true || over ? null : (
+        <HomeWay onPress={parts.onHome} pending={parts.pending} />
+      )}
       {steps.length === 0 || over ? null : (
         <fieldset className="nt-buttons">
           <legend>{words.text("task.mode")}</legend>

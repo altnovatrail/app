@@ -60,6 +60,7 @@ import { type Failure, parseFailure } from "../api/failure.ts";
 import { idempotencyKey } from "../api/keys.ts";
 import { closesAI, outcomeOf } from "../api/outcome.ts";
 import { failureText, outcomeText } from "../api/words.ts";
+import { HomeButton } from "../app/HomeButton.tsx";
 import { HOME, navigate, redirect } from "../app/router.ts";
 import { Screen } from "../app/Screen.tsx";
 import { ReadFailed } from "../boot/Screens.tsx";
@@ -351,7 +352,7 @@ export function Task({
     );
   }
   if (read.status === "failed") {
-    return <ReadFailed failure={read.failure} onRetry={() => setAttempt((n) => n + 1)} />;
+    return <ReadFailed failure={read.failure} onRetry={() => setAttempt((n) => n + 1)} home />;
   }
   if (read.status === "closed") {
     return (
@@ -374,9 +375,7 @@ export function Task({
           >
             {words.text("task.again")}
           </button>
-          <button type="button" className="nt-secondary" onClick={() => navigate(HOME)}>
-            {words.text("task.home")}
-          </button>
+          <HomeButton />
         </div>
         <NextStep profileId={profileId} secondary />
       </Screen>

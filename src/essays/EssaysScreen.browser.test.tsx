@@ -1,10 +1,11 @@
 // "My essays" in the browser (R53): the essays this device keeps, the newest first, each opened in
 // place with its task and its submissions — the crop sent, what was read and the feedback, or why
-// there was none —, and back to the list with the focus on the button it was opened by.
+// there was none —, and back to the list with the focus on the button it was opened by; and home
+// from each of its states (R57).
 import type * as open from "@altnovatrail/spec/formatv0/open";
 import { render, screen } from "@testing-library/react";
 import { StrictMode } from "react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 import type { PackageChecks } from "../packages/checks.ts";
 import { DeviceFiles } from "../packages/files.ts";
@@ -75,6 +76,10 @@ async function renderScreen(
   return { backend, profile };
 }
 
+afterEach(() => {
+  window.location.hash = "";
+});
+
 describe("My essays", () => {
   it("says there are none on this device yet", async () => {
     await renderScreen(false);
@@ -140,6 +145,35 @@ describe("My essays", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "The data on this device can't be read",
     );
+  });
+
+  it.each([
+    ["with none on this device", false],
+    ["with essays", true],
+  ])("goes back to My subjects %s, and from an essay opened", async (_, essays) => {
+    window.location.hash = "#/essays";
+    await renderScreen(essays);
+    await screen.findByText(essays ? "Finished" : "No essays are kept on this device yet");
+    await userEvent.click(screen.getByRole("button", { name: "Back to My subjects" }));
+    expect(window.location.hash).toBe("#/home");
+    if (essays) {
+      window.location.hash = "#/essays";
+      const buttons = await screen.findAllByRole("button", { name: /^Open the essay of / });
+      const older = buttons[1];
+      if (older === undefined) throw new Error("no second essay");
+      await userEvent.click(older);
+      await screen.findByRole("heading", { level: 2, name: /^Essay of / });
+      await userEvent.click(screen.getByRole("button", { name: "Back to My subjects" }));
+      expect(window.location.hash).toBe("#/home");
+    }
+  });
+
+  it("goes back to My subjects when the essays can't be read", async () => {
+    window.location.hash = "#/essays";
+    await renderScreen(true, { before: (backend) => backend.unreadable.add("essays") });
+    await screen.findByRole("alert");
+    await userEvent.click(screen.getByRole("button", { name: "Back to My subjects" }));
+    expect(window.location.hash).toBe("#/home");
   });
 
   it("opens an essay as it was listed, without its crops, once it is gone or can't be read", async () => {

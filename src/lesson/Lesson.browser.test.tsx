@@ -823,9 +823,23 @@ describe("the lesson player", () => {
       },
     });
     const retry = await screen.findByRole("button", { name: "Try again" });
+    expect(screen.getByRole("button", { name: "Back to My subjects" })).toHaveClass("nt-secondary");
     failing = false;
     await userEvent.click(retry);
     await screen.findByText("A fence has posts and gaps between them.");
+  });
+
+  it("goes back to My subjects from a run that did not come (R57)", async () => {
+    window.location.hash = "#/lesson";
+    await renderLesson({
+      run: () => {
+        throw new ConnectError("down", Code.Unavailable);
+      },
+    });
+    await screen.findByRole("heading", { level: 1, name: "No connection" });
+    await userEvent.click(screen.getByRole("button", { name: "Back to My subjects" }));
+    expect(window.location.hash).toBe("#/home");
+    window.location.hash = "";
   });
 
   it("opens again after its last task ended on the task that ended, Continue lesson done", async () => {

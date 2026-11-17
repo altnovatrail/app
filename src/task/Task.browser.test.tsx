@@ -850,6 +850,7 @@ describe("the task screen", () => {
       },
     });
     await screen.findByRole("heading", { level: 1, name: "No connection" });
+    expect(screen.getByRole("button", { name: "Back to My subjects" })).toHaveClass("nt-secondary");
     down = false;
     await userEvent.click(screen.getByRole("button", { name: "Try again" }));
     await screen.findByRole("heading", { name: "Understand the task", level: 2 });
@@ -864,6 +865,21 @@ describe("the task screen", () => {
     });
     await screen.findByRole("heading", { level: 1, name: "A grown-up's consent is needed first" });
     expect(screen.getByRole("button", { name: "Try again" })).toBeVisible();
+    window.location.hash = "#/task";
+    await userEvent.click(screen.getByRole("button", { name: "Back to My subjects" }));
+    expect(window.location.hash).toBe("#/home");
+    window.location.hash = "";
+  });
+
+  it("goes back to My subjects during the attempt, from above the task (R57)", async () => {
+    window.location.hash = "#/task";
+    await renderTask({ mode: Mode.SELF });
+    await screen.findByRole("radio", { name: "5" });
+    const home = screen.getByRole("button", { name: "Back to My subjects" });
+    expect(screen.queryByRole("complementary", { name: "Tutor" })).toBeNull();
+    await userEvent.click(home);
+    expect(window.location.hash).toBe("#/home");
+    window.location.hash = "";
   });
 
   it("asks for the technique again on coming back to the step, when it did not come", async () => {
@@ -937,6 +953,8 @@ describe("the task screen", () => {
     await userEvent.click(screen.getByRole("radio", { name: "Yes" }));
     await userEvent.click(check());
     await userEvent.click(await panel().findByRole("button", { name: "Back to My subjects" }));
+    // Once the attempt is over, the way back is the result's alone.
+    expect(screen.getAllByRole("button", { name: "Back to My subjects" })).toHaveLength(1);
     expect(window.location.hash).toBe("#/home");
     window.location.hash = "";
   });

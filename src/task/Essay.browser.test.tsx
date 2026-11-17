@@ -339,6 +339,15 @@ describe("the screen of an essay", () => {
     expect(puts).toHaveLength(1);
   });
 
+  it("goes back to My subjects before the essay is finished (R57)", async () => {
+    window.location.hash = "#/task";
+    await renderEssay({ history: WRITTEN });
+    await vi.waitFor(() => expect(check()).toHaveAttribute("aria-disabled", "false"));
+    await userEvent.click(screen.getByRole("button", { name: "Back to My subjects" }));
+    expect(window.location.hash).toBe("#/home");
+    window.location.hash = "";
+  });
+
   it("locks Check on a blank sheet, and says so", async () => {
     await renderEssay();
     await vi.waitFor(() =>
