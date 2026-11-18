@@ -11,13 +11,13 @@
     },
     "remoteUser": "vscode",
     // Closing the window leaves the container running: the orchestrator's executor runs in it by
-    // docker exec, with no window (R156 spec, its 2026-11-16 amendment; sources 9.4 spec). docker stop ends it.
+    // docker exec, with no window (R156 spec). docker stop ends it.
     "shutdownAction": "none",
     // Runs on the host before the container starts: gives it its networks, whose MTU is the
     // host's own, so a tunnel on the host does not silently truncate large downloads here.
     "initializeCommand": "bash .devcontainer/host-network.sh",
     // Its own network, and api's, where the development server's proxy finds a local api by the
-    // address of api's container (R19 in docs/decisions.md): api's container is on that network
+    // address of api's container (R19): api's container is on that network
     // alone, publishes no port, and listens on every interface.
     "runArgs": [
         "--network=novatrail-app",
@@ -48,8 +48,8 @@
         "source=novatrail-vscode-extensions-${devcontainerId},target=/home/vscode/.vscode-server/extensions,type=volume",
         // The custom token of api's development account, which api's just dev-app writes into
         // this volume, shared with api's container, every half hour, and removes when it stops
-        // (R67 api). The development server hands it to the local build's sign-in (R43 in
-        // docs/decisions.md); here it is only read.
+        // (R67 api). The development server hands it to the local build's sign-in (R43); here
+        // it is only read.
         "source=novatrail-dev-token,target=/home/vscode/.novatrail-token,type=volume,readonly"
     ],
     "containerEnv": {

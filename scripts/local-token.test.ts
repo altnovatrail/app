@@ -1,5 +1,5 @@
-// The development server's route to api's development token (R44 in docs/decisions.md): the token
-// from its file, read at each request, 404 without it, and nothing of it in `vite preview`.
+// The development server's route to api's development token (R44): the token from its file, read at
+// each request, 404 without it, and nothing of it in `vite preview`.
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";

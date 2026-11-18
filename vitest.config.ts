@@ -1,11 +1,10 @@
-// The tests of the app: logic in Node, screens in Chromium, WebKit and Firefox, and the screens once
-// more in two modes of the browser's context — forced colours and reduced motion — each in a project
-// of its own, its mode there from the start, as canvas has it (R03, R17 and R45 in
-// docs/decisions.md; sections 3.1 and 3.9 of docs/architecture.md). The three engines come from the
-// toolchain stage of .devcontainer/Dockerfile, which names them in PLAYWRIGHT_BROWSERS_PATH (R79
-// spec). Each project has an instance per engine, named "<project> (<engine>)": ci-test runs Node and
-// Chromium with the coverage, and ci-engines WebKit and Firefox without it, since Vitest's v8
-// coverage works in Chromium only (sources 2.5).
+// The tests of the app: logic in Node, screens in Chromium, WebKit and Firefox, and the screens
+// once more in two modes of the browser's context — forced colours and reduced motion — each in a
+// project of its own, its mode there from the start, as canvas has it (R03, R17, R45). The three
+// engines come from the toolchain stage of .devcontainer/Dockerfile, which names them in
+// PLAYWRIGHT_BROWSERS_PATH (R79 spec). Each project has an instance per engine, named "<project>
+// (<engine>)": ci-test runs Node and Chromium with the coverage, and ci-engines WebKit and Firefox
+// without it, since Vitest's v8 coverage works in Chromium only.
 import react from "@vitejs/plugin-react";
 import { playwright } from "@vitest/browser-playwright";
 import { defaultExclude, defineConfig } from "vitest/config";
@@ -52,7 +51,7 @@ export default defineConfig({
       provider: "v8",
       // Every module of the app and of its scripts, so that one no test loads shows with zeros.
       include: ["src/**/*.{ts,tsx}", "scripts/**/*.ts"],
-      // The entry only renders the shell into index.html, which the built page test of T17 opens;
+      // The entry only renders the shell into index.html, which the built page test opens;
       // the setup of the browser tests is no code of the app.
       exclude: ["**/*.test.{ts,tsx}", "src/main.tsx", "src/test/**"],
       reporter: ["lcovonly", "text-summary"],
@@ -68,7 +67,7 @@ export default defineConfig({
       screens("browser", ["src/**/*.browser.test.{ts,tsx}"], {
         exclude: [FORCED_COLORS, REDUCED_MOTION],
       }),
-      // WebKit has no forced colours to emulate (measurements 2).
+      // WebKit has no forced colours to emulate.
       screens("forced colors", [FORCED_COLORS], {
         contextOptions: { forcedColors: "active" },
         engines: ["chromium", "firefox"],

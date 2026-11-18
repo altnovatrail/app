@@ -1,10 +1,10 @@
-// The comparison of app's screens with the interface mockup of spec's draft/mockup/ (R58 in
-// docs/decisions.md; section 3.9 of docs/architecture.md; R146 and R148 spec): the mockup's own
-// server and page, a state of it opened in a browser, and what is measured of each region on
-// either side — its box and its computed style — and compared here, in Node. A state of the
-// mockup is also held across the three engines: each reaches data-ready="true" with no error, and
-// the shapes it draws agree. Nothing here reads spec/ by itself: the folder of the spec whose
-// mockup is opened is the caller's, so that a session can compare with a newer spec in a clone.
+// The comparison of app's screens with the interface mockup of spec's draft/mockup/ (R58; R146 and
+// R148 spec): the mockup's own server and page, a state of it opened in a browser, and what is
+// measured of each region on either side — its box and its computed style — and compared here, in
+// Node. A state of the mockup is also held across the three engines: each reaches data-ready="true"
+// with no error, and the shapes it draws agree. Nothing here reads spec/ by itself: the folder of
+// the spec whose mockup is opened is the caller's, so that a session can compare with a newer spec
+// in a clone.
 import { mkdirSync, writeFileSync } from "node:fs";
 import type { Server } from "node:http";
 import { dirname, join, resolve } from "node:path";

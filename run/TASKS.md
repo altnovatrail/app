@@ -15,18 +15,6 @@ Open tasks outside the current epic, each as its body, in Russian (R154 spec, R1
 - **Как проверить:** `just -f spec/justfile docs-check-repo`.
 - **Разделы:** R145 spec, R143 spec; measurements 1.9 spec; [docs/measurements.md](../docs/measurements.md), разделы 8 и 10.
 
-#### T98. Комментарии кода по R160 spec
-
-- **Цель:** комментарии кода говорят только то, чего не скажут код и имена (R160 spec, «Comments»).
-- **Почему:** правило R160 spec взято переходом на тег в T96; T96 разделена по правилу 11, комментарии — эта задача.
-- **Сделать:**
-  - Комментарии `src/`, `scripts/`, `mockup/`, `walk/`, `.github/`, `justfile` и `.devcontainer/`: почему, ограничение, ловушка, контракт экспортируемого API; без пересказа кода, истории, номеров задач («T88») и разделов документов («section 3.3 of docs/architecture.md», «row 5.14 of COORDINATION.md»).
-  - Номер решения — якорем в конце, `(R25)`; «R53 in docs/decisions.md» → `R53`. `docs-check` ловит номер, которого нет в журнале, но не решение `spec` до R70 без суффикса: сверить такие номера с записью, на которую ссылается текст.
-  - То же — строки с причинами в тестах, где они служат комментарием.
-  - Больше одного ревью — разделить по правилу 11, по каталогам.
-- **Как проверить:** `just -f spec/justfile docs-check-repo`; проверки `.claude/rules/code.md`; `/code-review high`.
-- **Разделы:** R160 spec, «Comments»; R32 spec; RULES.md spec — The bar; [.claude/rules/code.md](../.claude/rules/code.md).
-
 #### T99. Документы без истории: разделы 3.2 и 3.3 (R160 spec)
 
 - **Цель:** разделы 3.2 «Storage on the device» и 3.3 «Solving steps» [docs/architecture.md](../docs/architecture.md) держат текущее устройство, а не историю (R160 spec, «One home», «A done task»).
@@ -58,3 +46,43 @@ Open tasks outside the current epic, each as its body, in Russian (R154 spec, R1
 - **Сделать:** как в T97 ([docs/plan/E5.md](../docs/plan/E5.md)): убрать «since T…», даты, версии и «until T…»; значение — файлом, где оно задано; решение — номером, без пересказа; ссылка на поправку записи, которую тег `spec` или задача переписали на месте, — на запись, а поправка, что ещё стоит в журнале, называется как есть; строки «Checked:» — что держат тесты сейчас, без хроники. Свои записи журнала — только те, что задача меняет, целиком на месте (R160 spec). Предел раздела в `docs-budgets.json` — по новому размеру с запасом 10–20 %, раздел не длиннее 24 КБ свой предел снимает.
 - **Как проверить:** `just -f spec/justfile docs-check-repo`; `/code-review high`.
 - **Разделы:** R160 spec; RULES.md spec — The bar; [docs/architecture.md](../docs/architecture.md), 3.8.
+
+#### T103. Комментарии кода по R160 spec: задача и холст
+
+- **Цель:** комментарии `src/task/`, `src/canvas/`, `src/works/` и `src/essays/` говорят только то, чего не скажут код и имена (R160 spec, «Comments»).
+- **Почему:** T98 разделена по правилу 11 RUN.md, по каталогам: она переписала комментарии `scripts/`, `mockup/`, `walk/`, `.github/`, `justfile` и `.devcontainer/`; эти каталоги — эта задача.
+- **Сделать:** как в T98 ([docs/plan/E5.md](../docs/plan/E5.md)): без пересказа кода, истории, номеров задач и строк Д, разделов документов (`section 3.3 of docs/architecture.md`, `measurements 4`, `contract, section 15`) и поправок с датой — `the 2026-11-12 amendment to R16` → `R16`; `R53 in docs/decisions.md` → `R53`; номер решения сверить с записью. То же — строки с причинами в тестах, где они служат комментарием, и сообщения, что ссылаются на раздел. Имена таблиц README эталона, которые код читает («Contrast», «Where it differs»), остаются.
+- **Как проверить:** `just -f spec/justfile docs-check-repo`; проверки `.claude/rules/code.md`; `/code-review high`.
+- **Разделы:** R160 spec, «Comments»; R32 spec; RULES.md spec — The bar; [.claude/rules/code.md](../.claude/rules/code.md).
+
+#### T104. Комментарии кода по R160 spec: хранилище, учётная запись и вход
+
+- **Цель:** комментарии `src/storage/`, `src/account/`, `src/signin/` и `src/ownkey/` говорят только то, чего не скажут код и имена (R160 spec, «Comments»).
+- **Почему:** T98 разделена по правилу 11 RUN.md, по каталогам; эти каталоги — эта задача.
+- **Сделать:** как в T103.
+- **Как проверить:** `just -f spec/justfile docs-check-repo`; проверки `.claude/rules/code.md`; `/code-review high`.
+- **Разделы:** R160 spec, «Comments»; R32 spec; RULES.md spec — The bar; [.claude/rules/code.md](../.claude/rules/code.md).
+
+#### T105. Комментарии кода по R160 spec: взрослые, уроки и карта навыков
+
+- **Цель:** комментарии `src/adults/`, `src/lesson/`, `src/next/`, `src/skills/` и `src/subjects/` говорят только то, чего не скажут код и имена (R160 spec, «Comments»).
+- **Почему:** T98 разделена по правилу 11 RUN.md, по каталогам; эти каталоги — эта задача.
+- **Сделать:** как в T103.
+- **Как проверить:** `just -f spec/justfile docs-check-repo`; проверки `.claude/rules/code.md`; `/code-review high`.
+- **Разделы:** R160 spec, «Comments»; R32 spec; RULES.md spec — The bar; [.claude/rules/code.md](../.claude/rules/code.md).
+
+#### T106. Комментарии кода по R160 spec: оболочка, api и голос
+
+- **Цель:** комментарии `src/app/`, `src/boot/`, `src/config/`, `src/api/`, `src/tutor/`, `src/voice/`, `src/a11y/`, `src/test/` и `src/main.tsx` говорят только то, чего не скажут код и имена (R160 spec, «Comments»).
+- **Почему:** T98 разделена по правилу 11 RUN.md, по каталогам; эти каталоги — эта задача.
+- **Сделать:** как в T103. `src/app/icons.ts` пишет `scripts/icons.ts`: его комментарии правятся там, затем `just icons`.
+- **Как проверить:** `just -f spec/justfile docs-check-repo`; проверки `.claude/rules/code.md`; `/code-review high`.
+- **Разделы:** R160 spec, «Comments»; R32 spec; RULES.md spec — The bar; [.claude/rules/code.md](../.claude/rules/code.md).
+
+#### T107. Комментарии кода по R160 spec: словари, правовые тексты, пакеты и тема
+
+- **Цель:** комментарии `src/i18n/`, `src/legal/`, `src/packages/` и `src/theme/` говорят только то, чего не скажут код и имена (R160 spec, «Comments»).
+- **Почему:** T98 разделена по правилу 11 RUN.md, по каталогам; эти каталоги — эта задача.
+- **Сделать:** как в T103; в словарях — и описания строк (`/** … */`), где они ссылаются на раздел или задачу.
+- **Как проверить:** `just -f spec/justfile docs-check-repo`; проверки `.claude/rules/code.md`; `/code-review high`.
+- **Разделы:** R160 spec, «Comments»; R32 spec; RULES.md spec — The bar; [.claude/rules/code.md](../.claude/rules/code.md).

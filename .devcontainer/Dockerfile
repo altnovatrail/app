@@ -151,12 +151,12 @@ ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 # image needs a newer archive. apt checks the archive's signatures as it does on any update.
 #
 # apt reads the snapshot alone, from a source of its own that names the snapshot in its URI, with
-# the suites and components of the base image's ubuntu.sources: apt-get update --snapshot reads
-# the live archive's indexes as well as the snapshot's, 67.6 MB against 33.6 MB, and resolves the
-# same packages at the same versions (measurements 3.2 spec; the 2026-11-16 amendment to R40 spec). The
-# base image's own sources stay as they are, for whoever runs apt in the devcontainer, and this
-# RUN reads none of them. snapshot.ubuntu.com/ubuntu serves arm64 as well as amd64. The suites are
-# those of noble, the base image's Ubuntu: a base image of a newer one changes them with the ID.
+# the suites and components of the base image's ubuntu.sources: apt-get update --snapshot reads the
+# live archive's indexes as well as the snapshot's, twice the download, and resolves the same
+# packages at the same versions (R40 spec). The base image's own sources stay as they are, for
+# whoever runs apt in the devcontainer, and this RUN reads none of them. snapshot.ubuntu.com/ubuntu
+# serves arm64 as well as amd64. The suites are those of noble, the base image's Ubuntu: a base
+# image of a newer one changes them with the ID.
 ARG UBUNTU_SNAPSHOT=20261021T000000Z
 RUN sources="$(mktemp -d)"; \
     printf '%s\n' 'Types: deb' "URIs: https://snapshot.ubuntu.com/ubuntu/${UBUNTU_SNAPSHOT}/" \
@@ -256,7 +256,7 @@ RUN echo "claude code ${CLAUDE_CODE_VERSION}" \
 # ownership — a dir Docker makes for a mount belongs to root, and VS Code Server could not write
 # to its own home — and the image is left as that user: nothing in it needs root once it is built.
 # .novatrail-token is the folder of api's development token, which this container only reads
-# (R43 in docs/decisions.md; R67 api).
+# (R43; R67 api).
 USER vscode
 RUN mkdir -p /home/vscode/.claude /home/vscode/.codex /home/vscode/.config/gh \
         /home/vscode/.vscode-server/extensions /home/vscode/.novatrail-token

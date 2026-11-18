@@ -1,12 +1,11 @@
 # app's own recipes: the build of the app, and the five checks .github's typescript.yml runs in CI
 # with its input engines, one job each, in a new container of a stage of .devcontainer/Dockerfile:
 # ci-lint, ci-vuln and ci-licenses in toolchain-core, ci-test and ci-engines in toolchain, with the
-# browsers (R51 in docs/decisions.md). Each runs as the runner's user, with HOME=/tmp and with CI
-# from the step's environment (R14 and R45 in docs/decisions.md; section 3.1 of
-# docs/architecture.md). Of the five only ci-licenses reads spec/:
-# it runs spec's recipes licenses-check-repo and release-verify-npm, and the licenses job alone gets
-# the submodule; site-check, by hand and not in CI, runs spec's release-verify too. The documents
-# are checked by spec's own recipe, just -f spec/justfile docs-check-repo.
+# browsers (R51). Each runs as the runner's user, with HOME=/tmp and with CI from the step's
+# environment (R14, R45). Of the five only ci-licenses reads spec/: it runs spec's recipes
+# licenses-check-repo and release-verify-npm, and the licenses job alone gets the submodule;
+# site-check, by hand and not in CI, runs spec's release-verify too. The documents are checked by
+# spec's own recipe, just -f spec/justfile docs-check-repo.
 
 set shell := ["bash", "-euo", "pipefail", "-c"]
 
@@ -41,8 +40,8 @@ ci-test: build
     again="$(mktemp -d)"; trap 'rm -rf "$again"' EXIT; {{ bin }}/vite build --outDir "$again" --emptyOutDir --logLevel warn && node scripts/release.ts --check "$again"
 
 # The screens in WebKit and Firefox, without the coverage: Vitest's v8 coverage works in Chromium
-# alone (sources 2.5). typescript.yml runs this as the check "TypeScript / engines", beside ci-test,
-# so that the two take their time side by side (R45). No build: no test in a browser reads build/.
+# alone. typescript.yml runs this as the check "TypeScript / engines", beside ci-test, so that the
+# two take their time side by side (R45). No build: no test in a browser reads build/.
 ci-engines: _install
     {{ bin }}/vitest run --project '*(webkit)' --project '*(firefox)'
 
@@ -69,9 +68,8 @@ build: _install
 # The files of a release, for .github's release.yml, which runs this in the stage toolchain-core,
 # without the browsers, on the tree of the commit alone — no git, no spec submodule, no token —
 # with the version as v0.1.0: the archive of the build, app_<version>.tar.gz, the one file of
-# dist/, with NOTICE and LICENSE at its root, checked before it is written (R25 and R51 in
-# docs/decisions.md; section 3.1 of docs/architecture.md). The build reads spec's part from
-# parts/, which git holds.
+# dist/, with NOTICE and LICENSE at its root, checked before it is written (R25, R51). The build
+# reads spec's part from parts/, which git holds.
 release-files version: (_release-version version) build
     rm -rf dist
     node scripts/release.ts {{ quote(version) }}
@@ -85,7 +83,7 @@ dev: _install
     env -u NOVATRAIL_CANVAS {{ bin }}/vite
 
 # The development server with a working copy of canvas, built into its lib/, in place of the
-# package from npm; package.json and the lock file stay as they are (Д3 in RUN.md; R15).
+# package from npm; package.json and the lock file stay as they are (R15).
 # The folder is taken from where the command is typed.
 dev-canvas folder: _install
     NOVATRAIL_CANVAS={{ quote(join(invocation_directory(), folder)) }} {{ bin }}/vite
@@ -94,11 +92,11 @@ dev-canvas folder: _install
 preview: build
     {{ bin }}/vite preview
 
-# Check a deployed site against the release of app it serves, as section 3.7 has it (R42): the
-# archive and its signature from the release, the archive accepted by spec's release-verify, then
-# scripts/site.ts — every file of the build at its path, /deployment.json as app reads it, the
-# headers, and the page in Chromium, WebKit and Firefox up to the sign-in window, which it closes
-# with nobody signed in (R45).
+# Check a deployed site against the release of app it serves (R42): the archive and its signature
+# from the release, the archive accepted by spec's release-verify, then scripts/site.ts — every file
+# of the build at its path, /deployment.json as app reads it, the headers, and the page in
+# Chromium, WebKit and Firefox up to the sign-in window, which it closes with nobody signed in
+# (R45).
 # For the platform: just site-check https://novatrail.web.app <the release in infra's list>.
 site-check origin version: _install (_release-version version)
     #!/usr/bin/env bash
@@ -112,11 +110,11 @@ site-check origin version: _install (_release-version version)
     {{ quote(just_executable()) }} -f spec/justfile release-verify app {{ quote(version) }} "$work/$name"
     node scripts/site.ts {{ quote(origin) }} "$work/$name"
 
-# The path of the first slice in a browser, without the author (R44 in docs/decisions.md; section
-# 3.7 of docs/architecture.md): walk/path.test.ts on the development server, against the api of
-# api's just dev-app at http://api:8080, signed in by its development token, in each engine named —
-# all three unless given, e.g. just walk webkit. Not in CI: it needs api's container. Its AI calls
-# go to api's stub and spend the quota of the day of dev-app's profile (R55 and R67 api).
+# The path of the first slice in a browser, without the author (R44): walk/path.test.ts on the
+# development server, against the api of api's just dev-app at http://api:8080, signed in by its
+# development token, in each engine named — all three unless given, e.g. just walk webkit. Not in
+# CI: it needs api's container. Its AI calls go to api's stub and spend the quota of the day of
+# dev-app's profile (R55 and R67 api).
 walk *engines="chromium webkit firefox": _install
     #!/usr/bin/env bash
     set -euo pipefail
@@ -126,13 +124,12 @@ walk *engines="chromium webkit firefox": _install
     fi
     NOVATRAIL_WALK_ENGINES={{ quote(engines) }} {{ bin }}/vitest run --config walk/vitest.config.ts
 
-# The comparison with the interface mockup (R58 in docs/decisions.md; section 3.9 of
-# docs/architecture.md): mockup/vitest.config.ts in Chromium, WebKit and Firefox — every state of the
-# mockup's first slice, on the iPad and the phone, against the other engines, and app's screens
-# against their states, region by region —, with the snapshots and the reports in mockup/out/, which
-# it empties first. It opens the mockup of the spec folder given: spec/, the submodule, unless a
-# clone of a newer spec is named, e.g. just mockup-compare /tmp/spec. CI runs it as the job Mockup
-# of ci.yml, the one job with the submodule beside the licenses'.
+# The comparison with the interface mockup (R58): mockup/vitest.config.ts in Chromium, WebKit and
+# Firefox — every state of the mockup's first slice, on the iPad and the phone, against the other
+# engines, and app's screens against their states, region by region —, with the snapshots and the
+# reports in mockup/out/, which it empties first. It opens the mockup of the spec folder given:
+# spec/, the submodule, unless a clone of a newer spec is named, e.g. just mockup-compare /tmp/spec.
+# CI runs it as the job Mockup of ci.yml, the one job with the submodule beside the licenses'.
 mockup-compare spec="spec": _install
     rm -rf mockup/out
     NOVATRAIL_MOCKUP_SPEC={{ quote(spec) }} {{ bin }}/vitest run --config mockup/vitest.config.ts

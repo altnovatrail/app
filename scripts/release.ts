@@ -1,13 +1,12 @@
-// The archive of a release of app's build (sections 3.1 and 3.7 of docs/architecture.md; R25 in
-// docs/decisions.md): build/ as it is, with NOTICE and LICENSE beside it at the root — the bundle
-// keeps no licence comment of the packages it takes, so the notices travel with the code. The
-// layout is the one infra's rollout reads (R17 infra; the third amendment of 2026-11-09 to R85
-// spec): index.html, assets/, deployment.schema.json and csp.json at the root, no
-// deployment.json of its own. The archive is packed here, not by a tar of the system: a ustar of
-// the files sorted by name (./archive.ts), gzipped with no name, no time and an unknown system, so
-// that the same build gives the same bytes on any machine. `just release-files` writes it into
-// dist/, which .github's release.yml signs; ci-test packs build/ and a second build of the same
-// tree and checks that the two are the same bytes, in the layout.
+// The archive of a release of app's build (R25): build/ as it is, with NOTICE and LICENSE beside it
+// at the root — the bundle keeps no licence comment of the packages it takes, so the notices travel
+// with the code. The layout is the one infra's rollout reads (R17 infra; R85 spec): index.html,
+// assets/, deployment.schema.json and csp.json at the root, no deployment.json of its own. The
+// archive is packed here, not by a tar of the system: a ustar of the files sorted by name
+// (./archive.ts), gzipped with no name, no time and an unknown system, so that the same build gives
+// the same bytes on any machine. `just release-files` writes it into dist/, which .github's
+// release.yml signs; ci-test packs build/ and a second build of the same tree and checks that the
+// two are the same bytes, in the layout.
 import { createHash } from "node:crypto";
 import { lstatSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { gunzipSync, gzipSync } from "node:zlib";

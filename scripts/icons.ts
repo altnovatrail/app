@@ -1,7 +1,7 @@
-// The icons of the app's buttons (R03 and R15 in docs/decisions.md; R78 spec): Material
-// Symbols, in the style Rounded, from the npm package of the set at the version package-lock.json
-// pins, and of it only the icons the app shows. It writes the module src/app/Icon.tsx draws them
-// from, as canvas's script writes the module of its row:
+// The icons of the app's buttons (R03, R15; R78 spec): Material Symbols, in the style Rounded, from
+// the npm package of the set at the version package-lock.json pins, and of it only the icons the
+// app shows. It writes the module src/app/Icon.tsx draws them from, as canvas's script writes the
+// module of its row:
 //
 //   node scripts/icons.ts           write src/app/icons.ts
 //   node scripts/icons.ts --check   write nothing, and fail unless the module is what it would write
@@ -33,13 +33,12 @@ export interface Value {
 }
 
 /**
- * The values of the app, each by the key its buttons name it with. The icons of a value that the
- * table of architecture 6 of spec names are that table's; a value of the app's own has an icon the
- * table does not hold, written down in docs/architecture.md: in section 3.1, and those of the closed
- * list of buttons that show an icon alone in section 3.9 (R78 spec; R60).
+ * The values of the app, each by the key its buttons name it with. A value the platform's table of
+ * icons names takes that table's icons (R78 spec); a value of the app's own has an icon the table
+ * does not hold (R60).
  */
 export const TABLE: Readonly<Record<string, Value>> = {
-  // "Continue" of the lesson player, to the next link (the 2026-11-10 amendment to R06).
+  // "Continue" of the lesson player, to the next link (R06).
   continue: { base: "arrow-circle-right", filled: false, mirrored: true },
   // The buttons that show an icon alone, the closed list of R90 spec (R60): back, a chevron
   // that points the way back; close; the previous and the next task, ‹ ›, chevrons rather than
@@ -48,18 +47,17 @@ export const TABLE: Readonly<Record<string, Value>> = {
   close: { base: "close", filled: false, mirrored: false },
   "previous-task": { base: "chevron-left", filled: false, mirrored: true },
   "next-task": { base: "chevron-right", filled: false, mirrored: true },
-  // "Read aloud" by the voice of the device beside a text (R36 in docs/decisions.md): a
-  // speaker, no fill, as it is in a line that runs right to left — a speaker is no direction.
+  // "Read aloud" by the voice of the device beside a text (R36): a speaker, no fill, as it is in a
+  // line that runs right to left — a speaker is no direction.
   "read-aloud": { base: "volume-up", filled: false, mirrored: false },
-  // The switch of voicing: the same speaker, filled while voicing is on (the fourth 2026-11-14
-  // amendment to R90 spec).
+  // The switch of voicing: the same speaker, filled while voicing is on (R90 spec).
   voicing: { base: "volume-up", filled: true, mirrored: false },
   // Help, filled while its pop-over is open; the tutor's button, a bubble of words.
   help: { base: "help", filled: true, mirrored: false },
   tutor: { base: "sms", filled: false, mirrored: false },
-  // The way into the app (section 3.10 of docs/architecture.md; R61): the line for grown-ups on the
-  // sign-in, a group; "Signed in with Google" and the country chosen, a tick; the row that opens the
-  // countries, a chevron that points on; "Add a learner", a plus.
+  // The way into the app (R61): the line for grown-ups on the sign-in, a group; "Signed in with
+  // Google" and the country chosen, a tick; the row that opens the countries, a chevron that points
+  // on; "Add a learner", a plus.
   grown: { base: "group", filled: false, mirrored: false },
   ticked: { base: "check", filled: false, mirrored: false },
   more: { base: "chevron-right", filled: false, mirrored: true },
@@ -84,24 +82,23 @@ export const TABLE: Readonly<Record<string, Value>> = {
   "state-locked": { base: "lock", filled: false, mirrored: false },
   "state-feedback-by-criteria": { base: "rate-review", filled: false, mirrored: false },
   "state-not-assessed": { base: "remove-done", filled: false, mirrored: false },
-  // The home screen's own (section 3.10 of docs/architecture.md; R62): the camera of "A task from
-  // my paper", shown disabled; the button of the phone that opens what the marks mean, an "i".
+  // The home screen's own (R62): the camera of "A task from my paper", shown disabled; the button
+  // of the phone that opens what the marks mean, an "i".
   camera: { base: "photo-camera", filled: false, mirrored: false },
   legend: { base: "info", filled: false, mirrored: false },
-  // The profile's menu (section 3.10 of docs/architecture.md; R63): the chevron down of its pill;
-  // "Switch learner", two arrows that swap; "Sign out", a door with an arrow out. "For grown-ups"
-  // is the group of the sign-in's line for grown-ups.
+  // The profile's menu (R63): the chevron down of its pill; "Switch learner", two arrows that swap;
+  // "Sign out", a door with an arrow out. "For grown-ups" is the group of the sign-in's line for
+  // grown-ups.
   "menu-open": { base: "keyboard-arrow-down", filled: false, mirrored: false },
   "switch-learner": { base: "swap-horiz", filled: false, mirrored: false },
   "sign-out": { base: "logout", filled: false, mirrored: true },
-  // The end of a lesson (section 3.4 of docs/architecture.md; R64): a star, filled, before "Lesson
-  // complete". The chevron of the lesson's line under its title is the menu's, and the tick of a
-  // segment passed the sign-in's.
+  // The end of a lesson (R64): a star, filled, before "Lesson complete". The chevron of the
+  // lesson's line under its title is the menu's, and the tick of a segment passed the sign-in's.
   "lesson-complete": { base: "star", filled: true, mirrored: false },
-  // The task screen (section 3.3 of docs/architecture.md; R65): Hint in the row, a bulb; and the
-  // signs of the verdict's card — "Not yet", an exclamation mark; a line that asks for the work, a
-  // pencil; the solution shown, a page. "Correct" is the tick of the way in, and the chevron of the
-  // mode's pill and of "Choose an answer" the menu's.
+  // The task screen (R65): Hint in the row, a bulb; and the signs of the verdict's card — "Not
+  // yet", an exclamation mark; a line that asks for the work, a pencil; the solution shown, a page.
+  // "Correct" is the tick of the way in, and the chevron of the mode's pill and of "Choose an
+  // answer" the menu's.
   hint: { base: "lightbulb", filled: false, mirrored: false },
   "not-yet": { base: "priority-high", filled: false, mirrored: false },
   write: { base: "edit", filled: false, mirrored: false },
@@ -166,7 +163,7 @@ export function module(set: IconSet, version: string, table = TABLE): string {
     ([name, icon]) => `${JSON.stringify(name)}: ${JSON.stringify(icon)},`,
   );
   return `// Written by scripts/icons.ts — \`just icons\` — from ${SET} ${version}:
-// Material Symbols by Google, under the Apache License 2.0 (R15 in docs/decisions.md; R78 spec).
+// Material Symbols by Google, under the Apache License 2.0 (R15; R78 spec).
 // ci-lint fails unless it is what the script writes, so it is never edited by hand.
 
 /** The icons of the app's buttons, by their names in the set, as the app draws them. */
@@ -180,7 +177,7 @@ export type IconName = keyof typeof ICONS;
 /**
  * Each value of the app, by its key: the icon in outline, the one its button shows while chosen —
  * the same for a value without a fill — and whether the icon is mirrored in a line that runs right
- * to left (architecture 6 spec).
+ * to left (R78 spec).
  */
 export const VALUES = {
 ${values.join("\n")}

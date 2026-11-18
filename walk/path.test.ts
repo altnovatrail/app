@@ -1,26 +1,23 @@
-// The path of the first slice in a browser, without the author (R44 in docs/decisions.md; section
-// 3.7 of docs/architecture.md; R146 spec): the development server of vite.config.ts on port 5173,
-// with deployment.local.json, its proxy to the local api — `http://api:8080` unless NOVATRAIL_API
-// names another —, and api's development token, which the local build's sign-in takes instead of
-// Google's window (R67 api).
-// The path runs in each engine NOVATRAIL_WALK_ENGINES names, each in a new context: the sign-in,
-// the choice of the learner with the next versions of the legal texts api gives and the page of
-// each (R46), the learner, My subjects with the line of the tutor's time, a lesson with a reload in
-// it and its task answered in handwriting — a square, a column and a row of strokes, which api's
-// stub of tutor reads as can't read this, wrong and right (R66 api) — with the tutor's words, an
-// own key api's stub checks by its ending (R73 api), refused and then accepted and kept on this
-// device, a task outside a lesson on that key and continued after a reload, the section for
-// adults with the key removed on This device, a key the stub refuses at the ceiling of its tier,
-// with when access comes back on the task and beside the key (T71), the storage of works on the
-// server switched on, its PutWork kept and This device with no warning of loss, and off again
-// (T62), the sign-out that erases the account's data, and the erasure of everything. The key goes
-// with no request but those that call AI and its check, and the provider alone with those that may
-// give a choice (R47). It asks no host but the origin and those section 3.7 names for the sign-in,
-// and nothing on the way logs an error. A response of 4xx of the
-// origin is an error in every engine unless it is api's refusal with its cause, which the app reads
-// as the contract says; the line an engine logs for it is left to it. A lesson an earlier walk left
-// open is the lesson it walks.
-// Its AI calls are api's stub's alone.
+// The path of the first slice in a browser, without the author (R44; R146 spec): the development
+// server of vite.config.ts on port 5173, with deployment.local.json, its proxy to the local api —
+// `http://api:8080` unless NOVATRAIL_API names another —, and api's development token, which the
+// local build's sign-in takes instead of Google's window (R67 api). The path runs in each engine
+// NOVATRAIL_WALK_ENGINES names, each in a new context: the sign-in, the choice of the learner with
+// the next versions of the legal texts api gives and the page of each (R46), the learner, My
+// subjects with the line of the tutor's time, a lesson with a reload in it and its task answered in
+// handwriting — a square, a column and a row of strokes, which api's stub of tutor reads as can't
+// read this, wrong and right (R66 api) — with the tutor's words, an own key api's stub checks by
+// its ending (R73 api), refused and then accepted and kept on this device, a task outside a lesson
+// on that key and continued after a reload, the section for adults with the key removed on This
+// device, a key the stub refuses at the ceiling of its tier, with when access comes back on the
+// task and beside the key, the storage of works on the server switched on, its PutWork kept and
+// This device with no warning of loss, and off again, the sign-out that erases the account's data,
+// and the erasure of everything. The key goes with no request but those that call AI and its check,
+// and the provider alone with those that may give a choice (R47). It asks no host but the origin
+// and those of the sign-in, and nothing on the way logs an error. A response of 4xx of the origin
+// is an error in every engine unless it is api's refusal with its cause, which the app reads as the
+// contract says; the line an engine logs for it is left to it. A lesson an earlier walk left open
+// is the lesson it walks. Its AI calls are api's stub's alone.
 
 import { existsSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -57,9 +54,9 @@ const NAMED = (process.env.NOVATRAIL_WALK_ENGINES ?? "chromium webkit firefox")
   .split(/\s+/)
   .filter((name) => name !== "");
 /**
- * What the sign-in may ask besides the origin (section 3.7): Firebase Auth's two hosts, and in
- * WebKit, whose user agent the SDK takes for Safari's, gapi and the hidden iframe at every start —
- * whose own code then asks www.googleapis.com for the project's configuration (measurements 3).
+ * What the sign-in may ask besides the origin: Firebase Auth's two hosts, and in WebKit, whose user
+ * agent the SDK takes for Safari's, gapi and the hidden iframe at every start — whose own code then
+ * asks www.googleapis.com for the project's configuration.
  */
 const SIGN_IN_HOSTS = new Set([
   "identitytoolkit.googleapis.com",
@@ -71,7 +68,7 @@ const SIGN_IN_HOSTS = new Set([
 /** The questions api's stub of tutor words a step with, in English (R66 api). */
 const STUB_WORDS =
   /Which step of your work would you check first\?|What does the task ask you to find\?|What is given in the task, in your own words\?/;
-/** The databases of the account that the sign-out erases (section 3.2). */
+/** The databases of the account that the sign-out erases. */
 const ACCOUNT_DATABASES = /^novatrail-(profile-.+|registry|cache)$/;
 /** The line Chromium and WebKit log for a response of 4xx, at the resource's address; Firefox none. */
 const FAILED_LOAD = /^Failed to load resource: the server responded with a status of 4\d\d\b/;
@@ -82,7 +79,7 @@ const QUOTA_SPENT =
 const OWN_KEY = "sk-ant-walk-synthetic-wxyz";
 /**
  * A synthetic own key on which api's stub reads nothing: the ceiling of its tier, with access back
- * at 00:00 UTC on the first day of the next month (the 2026-11-16 amendments to R66 and R80 api).
+ * at 00:00 UTC on the first day of the next month (R66 and R80 api).
  */
 const TIER_KEY = "sk-ant-walk-synthetic-limit-tier";
 /** The line of the tier's ceiling and when access comes back, today, tomorrow or on its date. */
@@ -101,7 +98,7 @@ const NO_PROVIDER =
   "walk: api's dev-app lists no provider of an own key: run api v0.1.41 or newer, whose dev-app lists Anthropic (R72 api)";
 /** The address of api's GetAccount, through the development server's proxy. */
 const GET_ACCOUNT = `${ORIGIN}/novatrail.api.v1.AccountService/GetAccount`;
-/** The address of api's PutWork, the same way (T62). */
+/** The address of api's PutWork, the same way. */
 const PUT_WORK = `${ORIGIN}/novatrail.api.v1.WorkService/PutWork`;
 
 let server: ViteDevServer;
@@ -126,8 +123,8 @@ afterAll(async () => {
 
 /**
  * What a response of 4xx of the origin was: api's refusal with a cause the build knows — `Refusal`
- * in the details of Connect's error, read by the app's own `refusalOf` (section 15 of the text of
- * the contracts) —, by the cause's name; or why it is none.
+ * in the details of Connect's error, read by the app's own `refusalOf` —, by the cause's name; or
+ * why it is none.
  */
 async function failedResponse(
   response: Response,
@@ -504,7 +501,7 @@ describe.each(NAMED)("the path in %s", (name) => {
     }
     await chooseDev(page);
     await home(page);
-    // The platform AI quota share of the profile today (R40; Д20).
+    // The platform AI quota share of the profile today (R40).
     const share = page.getByText(/Tutor time today: \d+\s?% used|Today's tutor time is used up/);
     await share.waitFor({ timeout: 30_000 });
     const used = (await share.textContent()) ?? "";
@@ -682,12 +679,12 @@ describe.each(NAMED)("the path in %s", (name) => {
     await expect.poll(() => strokes(page)).toBe(0);
     await write(page, "row");
     await expect.poll(() => strokes(page)).toBe(8);
-    // Its strokes are on the device: after a reload the task comes back with them (Д14).
+    // Its strokes are on the device: after a reload the task comes back with them.
     await page.reload();
     await chooseDev(page);
     await page.getByRole("heading", { level: 1, name: "Task" }).waitFor();
     await expect.poll(() => strokes(page)).toBe(8);
-    // From My subjects, the same task by Continue the task (Д14).
+    // From My subjects, the same task by Continue the task.
     await page.goto(`${ORIGIN}/#/home`);
     await home(page);
     await page.getByRole("heading", { name: "There is a task in progress" }).waitFor();
@@ -705,14 +702,14 @@ describe.each(NAMED)("the path in %s", (name) => {
     await fromMenu(page, "For grown-ups");
     await page.getByRole("button", { name: "Profile: Dev" }).click();
     await page.getByRole("heading", { level: 1, name: "Profile: Dev" }).waitFor();
-    // The quota share of the profile and of the account (R40; Д20).
+    // The quota share of the profile and of the account (R40).
     const time = page.getByRole("region", { name: "Tutor time" });
     await time
       .getByText(/This profile: \d+\s?% used|The platform's AI has no tutor time/)
       .waitFor({ timeout: 30_000 });
     await page.getByRole("button", { name: "See the progress" }).click();
     await page.getByRole("heading", { level: 1, name: "Progress: Dev" }).waitFor();
-    // The lesson's attempt by the lesson's name, not its local ID (R40; Д20).
+    // The lesson's attempt by the lesson's name, not its local ID (R40).
     const lesson = page.getByRole("definition").filter({ hasText: lessonTitle });
     await lesson.first().waitFor();
     expect(await lesson.count()).toBeGreaterThan(0);
@@ -731,7 +728,7 @@ describe.each(NAMED)("the path in %s", (name) => {
     await dev.getByRole("button", { name: "Erase", exact: true }).click();
     await dev.getByText("The key is removed").waitFor();
     // The key went with the requests that call AI and its check alone, and the provider alone with
-    // the choice and the beginning of a task (contract, section 15).
+    // the choice and the beginning of a task.
     note(
       `the own key went with ${[...walk.keyed].join(", ")}; its provider with ${[...walk.named].join(", ")}`,
     );
@@ -840,7 +837,7 @@ describe.each(NAMED)("the path in %s", (name) => {
     expect((await databases(context)).filter((db) => ACCOUNT_DATABASES.test(db))).toEqual([]);
   });
 
-  it("erases everything on this device, and the heartbeats once the tab is closed (Д13)", async () => {
+  it("erases everything on this device, and the heartbeats once the tab is closed", async () => {
     shoot();
     const { page, context } = walk;
     await page.getByRole("button", { name: "Sign in with Google" }).click();

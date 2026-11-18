@@ -1,5 +1,4 @@
-// app's own plugin of Vite for the deployment configuration and the CSP (R09 in
-// docs/decisions.md; sections 3.1 and 3.7 of docs/architecture.md):
+// app's own plugin of Vite for the deployment configuration and the CSP (R09):
 // - at the build, the lower layer of the CSP goes into <head> right after <meta charset>, and the
 //   build stops if anything else stands before it; csp.json and spec's deployment.schema.json, from
 //   the file of spec's release in parts/, go into the build beside index.html, as infra's rollout

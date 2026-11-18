@@ -1,4 +1,4 @@
-// Every version in package.json is exact: no range, tag or link (RULES.md, Hard rules).
+// Every version in package.json is exact: no range, tag or link.
 import { readFileSync } from "node:fs";
 
 const EXACT = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/;

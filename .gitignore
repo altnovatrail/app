@@ -2,7 +2,7 @@
 /node_modules/
 # What `just build` writes: the build of the app, which `vite preview` serves.
 /build/
-# The files of a release, which `just release-files` writes (T29 in RUN.md).
+# The files of a release, which `just release-files` writes.
 /dist/
 # What `just ci-test` writes: the coverage report the shared typescript.yml sends to Codecov.
 /coverage/
@@ -12,8 +12,8 @@
 __screenshots__/
 /.vitest/
 # What `just mockup-compare` writes: the snapshots and the reports of the comparison with the
-# interface mockup, an artifact of the run (R58 in docs/decisions.md).
+# interface mockup, an artifact of the run (R58).
 /mockup/out/
 # The deployment configuration of a local run: the parameters of a Firebase project of the
-# author's own, which stay on the machine (section 3.7 of docs/architecture.md).
+# author's own, which stay on the machine.
 /deployment.local.json
