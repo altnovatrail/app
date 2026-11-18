@@ -7,7 +7,6 @@
 // no map, and the screen says so. The heading of a map's screen is the module's title, here too.
 import type { SkillMapView } from "@altnovatrail/skill-map";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
-import { Phrase } from "../i18n/Phrase.tsx";
 import type { Words } from "../i18n/words.ts";
 import type { HeadingLevel } from "./jsx.ts";
 import type { ModuleMap } from "./map.ts";
@@ -18,19 +17,6 @@ export function mapTitle(map: ModuleMap | undefined, words: Words): string {
   return manifest === undefined
     ? words.text("skillmap.title")
     : words.text("skillmap.module-title", { module: manifest.title });
-}
-
-/** The heading of a module's map: its title, the module's in its own language. */
-export function MapHeading({ map }: { readonly map: ModuleMap | undefined }) {
-  const { words } = useLanguage();
-  const manifest = map?.manifest;
-  if (manifest === undefined) return words.text("skillmap.title");
-  return (
-    <Phrase
-      id="skillmap.module-title"
-      values={{ module: <span lang={manifest.languages.explanation}>{manifest.title}</span> }}
-    />
-  );
 }
 
 export function ModuleSkillMap({

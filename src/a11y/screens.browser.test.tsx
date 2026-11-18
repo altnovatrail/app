@@ -1155,6 +1155,23 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
     },
   ],
   [
+    "This device in the section, below its top bar with Back and Close",
+    () => (
+      <AdultSection
+        route={{ screen: "adults", parts: ["device"] }}
+        device={SEEDED}
+        profiles={[OWNER, create(ProfileSchema, { profileId: "p2", pseudonym: "Аня" })]}
+        onSaved={() => {}}
+        onFailed={() => {}}
+        onEraseAll={async () => "failed"}
+        onLegal={() => {}}
+      />
+    ),
+    async () => {
+      await vi.waitFor(() => expect(document.querySelectorAll("h3 ~ p").length).toBeGreaterThan(4));
+    },
+  ],
+  [
     "This device, with a profile that keeps work and one that cannot be read",
     () => devicePage(),
     async () => {

@@ -38,6 +38,7 @@ describe("formOf", () => {
     expect(
       formOf(
         profile({
+          avatar: "moon",
           defaultMode: Mode.SELF,
           interfaceLanguage: "ru",
           presentationStyle: { voicing: { enabled: true, speed: VoicingSpeed.SLOW } },
@@ -45,6 +46,7 @@ describe("formOf", () => {
       ),
     ).toEqual({
       pseudonym: "Ёжик",
+      avatar: "moon",
       defaultMode: Mode.SELF,
       language: "ru",
       voicing: true,
@@ -82,6 +84,13 @@ describe("changes", () => {
       pseudonym: "Ёж",
       interfaceLanguage: "en",
     });
+  });
+
+  it("names the avatar chosen, and never writes back one the build does not know", () => {
+    expect(changes(profile(), { ...same(), avatar: "leaf" })).toEqual({ avatar: "leaf" });
+    const newer = profile({ avatar: "comet" });
+    expect(changes(newer, same(newer))).toBeUndefined();
+    expect(changes(newer, { ...same(newer), avatar: "sun" })).toEqual({ avatar: "sun" });
   });
 
   it("names whether voicing is on apart from its speed", () => {

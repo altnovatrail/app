@@ -12,7 +12,7 @@
 // (R04; R53).
 import type { Profile } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
-import { Screen } from "../app/Screen.tsx";
+import { Avatar } from "../account/Avatar.tsx";
 import { firstParagraph } from "../essays/EssaysScreen.tsx";
 import { dateTimeFormat, sizeText } from "../i18n/intl.ts";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
@@ -24,6 +24,7 @@ import { keptKey } from "../storage/ownkey.ts";
 import { type Essay, openProfile, profileUsage, type Usage } from "../storage/profile.ts";
 import { DeviceVoices } from "../voice/DeviceVoices.tsx";
 import { inOrder } from "./order.ts";
+import { SectionScreen } from "./SectionScreen.tsx";
 
 /**
  * What this device keeps of a profile: its usage, nothing, a database whose erasure waits for the
@@ -300,9 +301,10 @@ function ProfileOnDevice({
     if (gone) heading.current?.focus();
   }, [gone]);
   return (
-    <section aria-labelledby={id}>
+    <section className="nt-group" aria-labelledby={id}>
       <h3 id={id} ref={heading} tabIndex={-1}>
-        {words.text("adults.profile", { pseudonym: profile.pseudonym })}
+        <Avatar code={profile.avatar} size="menu" />
+        <span>{words.text("adults.profile", { pseudonym: profile.pseudonym })}</span>
       </h3>
       {kept?.kind === "kept" ? (
         <p>{words.text("device.unfinished", { count: kept.usage.unfinished })}</p>
@@ -406,6 +408,7 @@ export function DevicePage({
 }) {
   const { language, words } = useLanguage();
   const sorted = useMemo(() => inOrder(profiles, language), [profiles, language]);
+  const id = useId();
   const [read, setRead] = useState<Read | undefined>(undefined);
   const [said, setSaid] = useState<Said | undefined>(undefined);
   // What the device keeps: read when the page opens, and again after each erasure. Only the last
@@ -432,7 +435,7 @@ export function DevicePage({
   }, [reload]);
   const { kept, estimate } = read ?? {};
   return (
-    <Screen title={words.text("device.title")}>
+    <SectionScreen title={words.text("device.title")}>
       <h2>{words.text("adults.profiles")}</h2>
       {sorted.map((profile) => (
         <ProfileOnDevice
@@ -445,33 +448,37 @@ export function DevicePage({
       ))}
       <DeviceVoices device={device} />
       {estimate === undefined ? null : (
-        <>
-          <h2>{words.text("device.space")}</h2>
+        <section className="nt-group" aria-labelledby={`${id}-space`}>
+          <h2 id={`${id}-space`}>{words.text("device.space")}</h2>
           <p>
             {words.text("device.estimate", {
               usage: sizeText(language, estimate.usage),
               quota: sizeText(language, estimate.quota),
             })}
           </p>
-        </>
+        </section>
       )}
-      <h2>{words.text("device.keeping")}</h2>
-      <Keeping site={site} />
-      <p>{words.text("device.browser-erases")}</p>
-      <p>{words.text("device.home-screen")}</p>
-      <h2>{words.text("device.erase-all")}</h2>
-      <Erase
-        label={words.text("device.erase-all")}
-        question={words.text("device.erase-all-confirm")}
-        onErase={async () => {
-          setSaid(undefined);
-          // Done, the session signs out and the page goes; only a failure is the page's to say.
-          if ((await onEraseAll()) === "failed") {
-            setSaid({ alert: words.text("device.erase-all-failed") });
-          }
-        }}
-      />
-      <Saying said={said} />
-    </Screen>
+      <section className="nt-group" aria-labelledby={`${id}-keeping`}>
+        <h2 id={`${id}-keeping`}>{words.text("device.keeping")}</h2>
+        <Keeping site={site} />
+        <p>{words.text("device.browser-erases")}</p>
+        <p>{words.text("device.home-screen")}</p>
+      </section>
+      <section className="nt-group" aria-labelledby={`${id}-erase`}>
+        <h2 id={`${id}-erase`}>{words.text("device.erase-all")}</h2>
+        <Erase
+          label={words.text("device.erase-all")}
+          question={words.text("device.erase-all-confirm")}
+          onErase={async () => {
+            setSaid(undefined);
+            // Done, the session signs out and the page goes; only a failure is the page's to say.
+            if ((await onEraseAll()) === "failed") {
+              setSaid({ alert: words.text("device.erase-all-failed") });
+            }
+          }}
+        />
+        <Saying said={said} />
+      </section>
+    </SectionScreen>
   );
 }

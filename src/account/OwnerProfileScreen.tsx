@@ -12,8 +12,8 @@ import { Icon } from "../app/Icon.tsx";
 import { PopOver } from "../app/PopOver.tsx";
 import { Screen } from "../app/Screen.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
-import { Avatar } from "./Avatar.tsx";
-import { AVATARS, type AvatarCode } from "./avatars.ts";
+import { AvatarChoice } from "./AvatarChoice.tsx";
+import type { AvatarCode } from "./avatars.ts";
 import { countryNames } from "./countries.ts";
 import { FormFailure } from "./FormFailure.tsx";
 import { pseudonymOf } from "./session.ts";
@@ -70,34 +70,7 @@ export function OwnerProfileScreen({ onCreate }: OwnerProfileScreenProps) {
       before={<Brand className="nt-brand" />}
     >
       <p className="nt-lead">{words.text("profile.intro")}</p>
-      <Avatar code={avatar} size="profile" />
-      <PopOver
-        label={words.text(avatar === undefined ? "profile.avatar-choose" : "profile.avatar-change")}
-        className="nt-link"
-        centred
-        popClassName="nt-pop-avatars"
-      >
-        {(close) => (
-          <ul className="nt-avatars">
-            {AVATARS.map(({ code }) => (
-              <li key={code}>
-                <button
-                  type="button"
-                  className="nt-avatar-option"
-                  aria-pressed={code === avatar}
-                  onClick={() => {
-                    setAvatar(code);
-                    close();
-                  }}
-                >
-                  <Avatar code={code} size="choice" />
-                  <span>{words.text(`avatar.${code}`)}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </PopOver>
+      <AvatarChoice code={avatar} onChoose={setAvatar} />
       <form noValidate onSubmit={(event) => void submit(event)}>
         <div className="nt-rows">
           <div className="nt-row">

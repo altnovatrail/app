@@ -7,9 +7,9 @@
 import type { Profile } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import { ReadFailure } from "../api/ReadFailure.tsx";
 import { ADULTS, navigate, type Route } from "../app/router.ts";
-import { Screen } from "../app/Screen.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { ModuleCardItem, ModuleCardList, useConnectedCards } from "../subjects/ModuleCards.tsx";
+import { SectionScreen } from "./SectionScreen.tsx";
 
 /** The page of the profile's modules: the profile chosen in the section. */
 export const MODULES_PAGE: Route = { screen: ADULTS.screen, parts: ["modules"] };
@@ -57,9 +57,9 @@ export function ModulesPage({ profile }: { readonly profile: Profile }) {
       );
   }
   return (
-    <Screen title={words.text("adults.modules-title", { pseudonym: profile.pseudonym })}>
-      <p>{words.text("adults.modules-hint")}</p>
+    <SectionScreen title={words.text("adults.modules-title", { pseudonym: profile.pseudonym })}>
+      <p className="nt-hint">{words.text("adults.modules-hint")}</p>
       {shown}
-    </Screen>
+    </SectionScreen>
   );
 }

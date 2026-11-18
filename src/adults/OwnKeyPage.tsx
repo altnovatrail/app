@@ -29,12 +29,12 @@ import { ReadFailure } from "../api/ReadFailure.tsx";
 import { failureText, outcomeText } from "../api/words.ts";
 import { described } from "../app/described.ts";
 import { ADULTS, type Route } from "../app/router.ts";
-import { Screen } from "../app/Screen.tsx";
 import { keyFor } from "../i18n/codes.ts";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import type { HeldKey, KeyRefusal } from "../ownkey/holder.ts";
 import { keyed, useHeldKey, useKeyHolder } from "../ownkey/OwnKeyContext.tsx";
 import { Erase } from "./DevicePage.tsx";
+import { SectionScreen } from "./SectionScreen.tsx";
 
 /** The page Own AI key (R08; section 3.6). */
 export const OWN_KEY_PAGE: Route = { screen: ADULTS.screen, parts: ["own-key"] };
@@ -51,12 +51,12 @@ const CHECK_KEYS = {
 function Warning() {
   const { words } = useLanguage();
   return (
-    <>
+    <div className="nt-group">
       <p>{words.text("ownkey.server")}</p>
       <p>{words.text("ownkey.billing")}</p>
       <p>{words.text("ownkey.not-protected")}</p>
       <p>{words.text("ownkey.limits")}</p>
-    </>
+    </div>
   );
 }
 
@@ -365,10 +365,10 @@ export function OwnKeyPage({
     );
   }
   return (
-    <Screen title={words.text("ownkey.title")}>
+    <SectionScreen title={words.text("ownkey.title")}>
       <Warning />
-      {shown}
+      {shown === undefined ? null : <div className="nt-group">{shown}</div>}
       <p role="status">{removed ? words.text("ownkey.removed") : null}</p>
-    </Screen>
+    </SectionScreen>
   );
 }

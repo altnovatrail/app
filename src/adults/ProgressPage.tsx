@@ -25,14 +25,13 @@ import { type Failure, parseFailure } from "../api/failure.ts";
 import { ReadFailure } from "../api/ReadFailure.tsx";
 import { failureText } from "../api/words.ts";
 import { navigate } from "../app/router.ts";
-import { Screen } from "../app/Screen.tsx";
 import { dateTimeFormat, listFormat, numberFormat } from "../i18n/intl.ts";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import type { Language } from "../i18n/language.ts";
 import { usePackages } from "../packages/PackagesContext.tsx";
 import { LevelCorrection } from "../skills/Level.tsx";
 import { type ModuleMap, readModuleMap } from "../skills/map.ts";
-import { MapHeading, ModuleSkillMap, mapTitle } from "../skills/SkillMap.tsx";
+import { MapBarHeading, ModuleSkillMap, mapTitle } from "../skills/SkillMap.tsx";
 import { ModuleCardItem, ModuleCardList, useConnectedCards } from "../subjects/ModuleCards.tsx";
 import { cardsOf, type ModuleCard } from "../subjects/modules.ts";
 import {
@@ -44,6 +43,7 @@ import {
   readProgress,
   skillTitlesOf,
 } from "./progress.ts";
+import { SectionScreen } from "./SectionScreen.tsx";
 
 /** A module's name by its ID, as a card names it: its title, in its own language when known. */
 type Names = (moduleId: string) => ModuleCard;
@@ -459,15 +459,15 @@ export function ProgressPage({ profile }: { readonly profile: Profile }) {
       );
   }
   return (
-    <Screen title={words.text("progress.title", { pseudonym: profile.pseudonym })}>
-      <p>{words.text("progress.hint")}</p>
+    <SectionScreen title={words.text("progress.title", { pseudonym: profile.pseudonym })}>
+      <p className="nt-hint">{words.text("progress.hint")}</p>
       <section aria-labelledby={maps}>
         <h2 id={maps}>{words.text("progress.maps")}</h2>
         <p>{words.text("progress.maps-hint")}</p>
         {shown}
       </section>
       <History profileId={profileId} connected={cards} />
-    </Screen>
+    </SectionScreen>
   );
 }
 
@@ -502,19 +502,25 @@ export function ProgressMap({
     [got],
   );
   return (
-    <Screen title={mapTitle(shown, words)} heading={<MapHeading map={shown} />}>
-      <div className="nt-buttons">
-        <button type="button" className="nt-secondary" onClick={() => navigate(PROGRESS_PAGE)}>
-          {words.text("progress.back")}
-        </button>
-      </div>
-      {map.status === "failed" ? <ReadFailure failure={map.failure} onRetry={map.retry} /> : null}
-      {shown === undefined ? null : (
-        <>
-          <LevelCorrection profileId={profileId} moduleId={moduleId} map={shown} onMap={onMap} />
-          <ModuleSkillMap map={shown} view="adult" headingLevel="2" />
-        </>
-      )}
-    </Screen>
+    <SectionScreen
+      title={mapTitle(shown, words)}
+      heading={<MapBarHeading map={shown} />}
+      layout="map"
+    >
+      <section className="nt-map-frame" aria-label={mapTitle(shown, words)}>
+        <div className="nt-buttons">
+          <button type="button" className="nt-secondary" onClick={() => navigate(PROGRESS_PAGE)}>
+            {words.text("progress.back")}
+          </button>
+        </div>
+        {map.status === "failed" ? <ReadFailure failure={map.failure} onRetry={map.retry} /> : null}
+        {shown === undefined ? null : (
+          <>
+            <LevelCorrection profileId={profileId} moduleId={moduleId} map={shown} onMap={onMap} />
+            <ModuleSkillMap map={shown} view="adult" headingLevel="2" />
+          </>
+        )}
+      </section>
+    </SectionScreen>
   );
 }

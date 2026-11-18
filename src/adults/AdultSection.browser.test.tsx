@@ -1,6 +1,7 @@
 // The section for adults in the browser (R29 in docs/decisions.md; section 3.10 of
-// docs/architecture.md): its first page with the profiles and the device's language, a profile's
-// page and its form — only what changed goes to UpdateProfile, nothing when nothing did, the
+// docs/architecture.md; R68): its first page with the profiles, each by its avatar, and the device's
+// language, the top bar of each page, a profile's page and its form — the avatar changed by its
+// pop-over, only what changed goes to UpdateProfile, nothing when nothing did, the
 // pseudonym checked first, a failure said, the language the build does not have named —, what
 // another tab saved meanwhile, and the next versions of the legal texts on the first page (R46),
 // with api on connect-es's router.
@@ -134,7 +135,7 @@ describe("the section's first page", () => {
     const { api } = apiOf((request) => profile({ profileId: request.profileId }));
     const route: Route = { screen: "adults", parts: [] };
     const profiles = [
-      profile({ profileId: "p2", owner: false, pseudonym: "Аня" }),
+      profile({ profileId: "p2", owner: false, pseudonym: "Аня", avatar: "moon" }),
       profile(),
       profile({ profileId: "p3", owner: false, pseudonym: "Белка" }),
     ];
@@ -156,13 +157,25 @@ describe("the section's first page", () => {
     expect(screen.getByRole("heading", { level: 1, name: "For grown-ups" })).toBeTruthy();
     expect(screen.getByRole("group", { name: "Language" })).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Back to the section" })).toBeNull();
+    // Each a row of its avatar and its pseudonym, named by the words of its page.
+    const rows = screen.getAllByRole("button", { name: /^Profile: / });
+    expect(rows.map((row) => row.getAttribute("aria-label"))).toEqual([
+      "Profile: Ёжик",
+      "Profile: Аня",
+      "Profile: Белка",
+    ]);
+    expect(rows.map((row) => row.textContent)).toEqual(["Ёжик", "Аня", "Белка"]);
     expect(
-      screen.getAllByRole("button", { name: /^Profile: / }).map((button) => button.textContent),
-    ).toEqual(["Profile: Ёжик", "Profile: Аня", "Profile: Белка"]);
+      rows.map((row) => row.querySelector("[data-avatar]")?.getAttribute("data-avatar")),
+    ).toEqual(["peak", "moon", "peak"]);
+    // The section's name is the heading of its first page, and under the heading of each other.
+    expect(screen.queryByText("For grown-ups", { selector: ".nt-top-sub" })).toBeNull();
     await userEvent.click(screen.getByRole("button", { name: "Profile: Аня" }));
     expect(window.location.hash).toBe("#/adults/profile");
     rerender(section({ screen: "adults", parts: ["profile"] }));
     expect(screen.getByRole("heading", { level: 1, name: "Profile: Аня" })).toBeTruthy();
+    expect(screen.getByText("For grown-ups", { selector: ".nt-top-sub" })).toBeTruthy();
+    expect(document.querySelector(".nt-avatar-profile")?.getAttribute("data-avatar")).toBe("moon");
     await userEvent.click(screen.getByRole("button", { name: "Back to the section" }));
     expect(window.location.hash).toBe("#/adults");
     await userEvent.click(screen.getByRole("button", { name: "Close the section" }));
@@ -320,7 +333,29 @@ describe("a profile's page", () => {
     });
     expect(asked[0]?.settings?.defaultMode).toBe(Mode.UNSPECIFIED);
     expect(asked[0]?.settings?.interfaceLanguage).toBeUndefined();
+    expect(asked[0]?.settings?.avatar).toBeUndefined();
     expect(saved.map((each) => each.pseudonym)).toEqual(["Ёж"]);
+  });
+
+  it("changes the avatar by its pop-over, and sends it alone on Save", async () => {
+    const { asked } = renderPage(profile(), (request) =>
+      profile({ avatar: request.settings?.avatar ?? "" }),
+    );
+    const avatar = () => document.querySelector(".nt-avatar-profile")?.getAttribute("data-avatar");
+    // None chosen: the set's own, and the button that chooses one.
+    expect(avatar()).toBe("peak");
+    await userEvent.click(screen.getByRole("button", { name: "Choose an avatar" }));
+    await userEvent.click(screen.getByRole("button", { name: "Leaf" }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(avatar()).toBe("leaf");
+    expect(asked).toEqual([]);
+    await userEvent.click(screen.getByRole("button", { name: "Change the avatar" }));
+    expect(screen.getByRole("button", { name: "Leaf", pressed: true })).toBeTruthy();
+    await userEvent.keyboard("{Escape}");
+    await userEvent.click(screen.getByRole("button", { name: "Save" }));
+    await vi.waitFor(() => expect(saving().textContent).toBe("Saved"));
+    expect(asked.map((request) => request.settings?.avatar)).toEqual(["leaf"]);
+    expect(asked[0]?.settings?.pseudonym).toBeUndefined();
   });
 
   it("checks the pseudonym before it asks, and puts the focus on it", async () => {
