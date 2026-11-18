@@ -4,7 +4,8 @@
 // page that does not scroll sideways, with no text cut or spilling out of its box; and a button
 // that shows no caption only from the closed list, named by its caption (R60).
 import axe from "axe-core";
-import { CAPTIONLESS } from "../app/IconButton.tsx";
+import { CAPTIONLESS, INSTEAD, type Instead } from "../app/IconButton.tsx";
+import { ICONS, VALUES } from "../app/icons.ts";
 import type { Words } from "../i18n/words.ts";
 
 /**
@@ -102,13 +103,22 @@ export function overflows(root: Element = document.body): string[] {
  */
 export function captionlessOffList(words: Words, root: ParentNode = document): string[] {
   const listed = new Set(Object.values(CAPTIONLESS).map(({ word }) => words.text(word)));
+  // A caption of INSTEAD, by the icon of the one button it is for: "Leave the lesson" on back alone.
+  const instead = new Map(
+    (Object.keys(INSTEAD) as Instead[]).map((word) => {
+      const { icon } = CAPTIONLESS[INSTEAD[word]];
+      return [words.text(word), ICONS[VALUES[icon].outline].paths[0]];
+    }),
+  );
+  const named = (button: Element) => {
+    const label = button.getAttribute("aria-label") ?? "";
+    if (listed.has(label)) return true;
+    const path = instead.get(label);
+    return path !== undefined && button.querySelector("path")?.getAttribute("d") === path;
+  };
   return [...root.querySelectorAll("button")]
     .filter(ours)
     .filter((button) => (button.textContent ?? "").trim() === "")
-    .filter(
-      (button) =>
-        !button.classList.contains("nt-icon-only") ||
-        !listed.has(button.getAttribute("aria-label") ?? ""),
-    )
+    .filter((button) => !button.classList.contains("nt-icon-only") || !named(button))
     .map((button) => button.getAttribute("aria-label") ?? "");
 }

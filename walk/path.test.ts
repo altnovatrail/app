@@ -518,7 +518,7 @@ describe.each(NAMED)("the path in %s", (name) => {
     expect(await connected.getByRole("article").count()).toBeGreaterThan(0);
   });
 
-  it("walks a lesson, begun now or before: Continue, back by its bar, a reload in it, and its task", async () => {
+  it("walks a lesson, begun now or before: Continue, back by its segments, a reload in it, and its task", async () => {
     shoot();
     const { page } = walk;
     await Promise.all(walk.reads);
@@ -562,14 +562,17 @@ describe.each(NAMED)("the path in %s", (name) => {
     const first = await place(page);
     const how = begun > 0 ? "begun before" : "given by What's next";
     note(`the lesson "${lessonTitle}", ${how}, opens at "${first}"`);
-    const bar = page.getByRole("navigation", { name: "Segments of the lesson" });
     if (!/^Task · /.test(first)) {
       await page.getByRole("button", { name: "Continue", exact: true }).click();
       await expect.poll(() => place(page)).not.toBe(first);
-      // Back by the bar to the segment it opened at, the first or a later one, then on again.
+      // Back by the segments' pop-over to the segment it opened at, the first or a later one, then
+      // on again.
       const at = Number(/ · (\d+) of /.exec(first)?.[1]);
       if (!Number.isInteger(at)) throw new Error(`the lesson opened at no segment: "${first}"`);
-      await bar
+      await page.getByRole("button", { name: /: segments of the lesson$/ }).click();
+      await page
+        .getByRole("dialog", { name: "Segments of the lesson" })
+        .getByRole("navigation")
         .getByRole("button")
         .nth(at - 1)
         .click();

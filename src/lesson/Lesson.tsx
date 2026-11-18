@@ -21,11 +21,14 @@ import type { DemoState } from "@altnovatrail/spec/canvas";
 import type * as open from "@altnovatrail/spec/formatv0/open";
 import { Code } from "@connectrpc/connect";
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useLearner } from "../account/AccountGate.tsx";
 import { useApi } from "../api/ApiContext.tsx";
 import { type Failure, parseFailure } from "../api/failure.ts";
 import { idempotencyKey } from "../api/keys.ts";
 import { failureText } from "../api/words.ts";
 import { HomeWay } from "../app/HomeButton.tsx";
+import { Icon } from "../app/Icon.tsx";
+import { LearnerMenu } from "../app/LearnerMenu.tsx";
 import { HOME, navigate, redirect } from "../app/router.ts";
 import { Screen } from "../app/Screen.tsx";
 import { ReadFailed } from "../boot/Screens.tsx";
@@ -35,6 +38,7 @@ import { useKeyHolder } from "../ownkey/OwnKeyContext.tsx";
 import { usePackages } from "../packages/PackagesContext.tsx";
 import type { Device } from "../storage/device.ts";
 import { addProfile, type LessonState, openProfile, type Profile } from "../storage/profile.ts";
+import { ModuleTile } from "../subjects/ModuleTile.tsx";
 import { Task, type TaskInLesson } from "../task/Task.tsx";
 import { Example } from "./Example.tsx";
 import { Explanation } from "./Explanation.tsx";
@@ -206,7 +210,12 @@ export function Lesson(props: LessonProps) {
 
   if (read.status === "loading") return null;
   if (read.status === "failed") {
-    return <ReadFailed failure={read.failure} onRetry={() => setAttempt((n) => n + 1)} home />;
+    return (
+      <>
+        <LessonPill className="nt-home-bar" />
+        <ReadFailed failure={read.failure} onRetry={() => setAttempt((n) => n + 1)} home />
+      </>
+    );
   }
   if (read.status === "ended") {
     return <LessonEnd reason={read.reason} next={nextStep(profileId, device, read.choice)} />;
@@ -222,33 +231,70 @@ function nextStep(profileId: string, device: Device, choice: EngineChoice | unde
 }
 
 /**
- * The end of a run: the lesson's title if known, how it ended, the way to what the engine chose —
- * the choice the end gave, or else a press that asks for it (R24) —, and the way to My subjects.
+ * The profile's pill on a screen of the lesson that has no top bar of its own — its end, a lesson
+ * not read —, as on every screen of the profile (section 3.6; R64); none with no learner.
+ */
+function LessonPill({ className }: { readonly className: string }) {
+  const chosen = useLearner();
+  if (chosen === undefined) return null;
+  return (
+    <header className={className}>
+      <LearnerMenu />
+    </header>
+  );
+}
+
+/**
+ * The end of a run, a card in the window's middle as the mockup's `lesson-end` (R64): the module's
+ * tile and title if known, the lesson's title if known, how it ended — "Lesson complete" after a
+ * star —, the way to what the engine chose — the choice the end gave, or else a press that asks for
+ * it (R24) —, and the way to My subjects. No score, grade or comparison (product 7 in spec). The
+ * profile's pill stands at the top, as on every screen of the profile (section 3.6).
  */
 export function LessonEnd({
   reason,
   title,
   language,
+  module,
   next,
 }: {
   readonly reason: RunEndReason;
   readonly title?: string;
   readonly language?: string | undefined;
+  /** The lesson's module, by its manifest: its tile and title above the lesson's. */
+  readonly module?: { readonly id: string; readonly title: string } | undefined;
   /** The way to what the engine chose. */
   readonly next?: ReactNode;
 }) {
   const { words } = useLanguage();
   const end = words.text(endKey(reason));
+  const lang = language === undefined ? {} : { lang: language };
+  const done = reason === RunEndReason.PASSED;
   return (
     <Screen
       title={title ?? end}
-      {...(title === undefined
+      layout="end"
+      before={<LessonPill className="nt-end-bar" />}
+      {...(title === undefined ? {} : { heading: <span {...lang}>{title}</span> })}
+      {...(module === undefined
         ? {}
         : {
-            heading: <span {...(language === undefined ? {} : { lang: language })}>{title}</span>,
+            lead: (
+              <>
+                <ModuleTile moduleId={module.id} title={module.title} className="nt-end-tile" />
+                <p className="nt-end-module" {...lang}>
+                  {module.title}
+                </p>
+              </>
+            ),
           })}
     >
-      {title === undefined ? null : <p className="nt-result">{end}</p>}
+      {title === undefined ? null : (
+        <p className={done ? "nt-result nt-end-done" : "nt-result"}>
+          {done ? <Icon value="lesson-complete" chosen /> : null}
+          {end}
+        </p>
+      )}
       {next}
       <HomeWay />
     </Screen>
@@ -563,6 +609,7 @@ function OpenLesson({
         reason={end.reason}
         title={lesson.title}
         language={language}
+        module={manifest === undefined ? undefined : { id: manifest.id, title: manifest.title }}
         next={nextStep(profileId, device, end.choice)}
       />
     );
@@ -620,6 +667,7 @@ function OpenLesson({
     <LessonScreen
       title={lesson.title}
       language={language}
+      module={manifest?.title}
       course={course}
       place={place}
       shown={shown}

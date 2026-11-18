@@ -252,11 +252,10 @@ button[aria-pressed="false"] {
 }
 
 /*
- * The chosen one, and the segment shown, are told by more than colour, which forced colours take
+ * The chosen one is told by more than colour, which forced colours take
  * away (1.4.1): by an underline, since every button is semibold.
  */
-button[aria-pressed="true"],
-button.nt-segment-shown {
+button[aria-pressed="true"] {
   text-decoration: underline;
   text-decoration-thickness: 0.125rem;
   text-underline-offset: 0.25rem;
@@ -770,47 +769,6 @@ novatrail-canvas {
   margin: 0 0 0.5rem;
   padding-inline-start: 1.25rem;
 }
-/*
- * The lesson player (R23 in docs/decisions.md): the bar of segments, chips of 44 × 44 by place that
- * wrap onto a second line, the one shown filled and underlined; the sign ✓ of a segment passed and the
- * chip's name tell it, not colour alone (1.4.1). From 64rem a chip shows its kind's word too.
- */
-.nt-segment-bar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin: 0 0 0.5rem;
-  padding: 0;
-  list-style: none;
-}
-button.nt-segment {
-  border-color: var(--nt-accent);
-  background: var(--nt-card);
-  color: var(--nt-accent-text);
-}
-/* The sign of a segment passed: drawn, with no text of its own for the chip's name. */
-button.nt-segment-passed::before {
-  content: "✓ " / "";
-}
-button.nt-segment-shown {
-  background: var(--nt-accent);
-  color: var(--nt-on-fill);
-}
-.nt-segment-kind {
-  display: none;
-}
-@media (min-width: 64rem) {
-  .nt-segment-kind {
-    display: inline;
-  }
-}
-.nt-segment-heading {
-  margin-block: 0.5rem;
-  font-size: var(--nt-size-emphasis);
-}
-.nt-segment-heading:focus:not(:focus-visible) {
-  outline: none;
-}
 .nt-explanation img {
   max-inline-size: 100%;
   block-size: auto;
@@ -908,12 +866,6 @@ button.nt-icon-only:where(.nt-grabber) {
   font-size: 0.78125rem;
   font-weight: var(--nt-weight-medium);
   line-height: 1.2;
-}
-.nt-lesson-buttons {
-  margin-block-start: 1rem;
-}
-.nt-lesson-buttons > .nt-buttons {
-  margin-block-end: 0.5rem;
 }
 /*
  * The way in (R61; section 3.9): the sign-in, the invite code and the statement in the frame of
@@ -2276,4 +2228,467 @@ main.nt-map {
 }
 .nt-map-frame > .nt-buttons:first-child {
   margin-block-start: -0.75rem;
+}
+/*
+ * A lesson (R64; the mockup's `lesson`, `example` and `lesson-end`): the whole window, the top bar
+ * 14 from the top and 16 from the sides, the segment between it and the row of glass, 16 from the
+ * bottom. The bar's heading is the lesson's title at 14 semibold, and under it the line of the
+ * segment shown at 11.5 with a chevron, a button whose target is the whole heading, 44 high; its
+ * focus ring goes round the heading. The window's height holds the segment, which scrolls inside,
+ * and 30rem at least, where the page scrolls then.
+ */
+main.nt-lesson {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  block-size: 100dvh;
+  min-block-size: 30rem;
+  max-inline-size: none;
+  padding: 0.875rem 1rem 1rem;
+}
+.nt-top-heading {
+  display: grid;
+  min-block-size: var(--nt-target);
+}
+/*
+ * The title and the button of the line in one cell: the button, 44 high and as wide as the heading,
+ * over the title, its line below the title's, so that the whole heading is its target, as the
+ * mockup's button of two lines.
+ */
+.nt-top .nt-top-heading > h1 {
+  grid-area: 1 / 1;
+  align-self: start;
+  margin: 0.45rem 0 0;
+  font-size: var(--nt-size-body);
+  line-height: 1.15;
+}
+button.nt-segments-open {
+  display: flex;
+  grid-area: 1 / 1;
+  align-items: flex-start;
+  gap: 0.1875rem;
+  min-block-size: var(--nt-target);
+  min-inline-size: 0;
+  padding: 1.4563rem 0 0;
+  border: 0;
+  border-radius: var(--nt-radius-field);
+  background: transparent;
+  color: var(--nt-text-muted);
+  font-size: 0.71875rem;
+  font-weight: 400;
+  line-height: 1.15;
+}
+.nt-top-heading > button.nt-segments-open > svg {
+  font-size: 0.75rem;
+}
+main.nt-lesson .nt-lesson-lines > p {
+  margin: 0;
+  padding: 0;
+}
+main.nt-lesson .nt-lesson-lines > p:not(:empty) {
+  padding-block-end: 0.5rem;
+}
+.nt-segment-body {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-block-size: 0;
+}
+/* The heading of a worked example or a task: in the tree, out of sight; the bar's line shows it. */
+.nt-segment-body:not([data-kind="explanation"]) > .nt-segment-heading {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  margin: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.nt-segment-heading:focus:not(:focus-visible) {
+  outline: none;
+}
+.nt-segment-body[data-kind="task"] {
+  overflow: auto;
+}
+.nt-segment-body[data-kind="example"] > .nt-example {
+  display: grid;
+  flex: 1 1 0;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-block-size: 0;
+}
+/* The canvas is given the height that is left, so that its statement and sheet scroll inside it. */
+.nt-example > .nt-read-aloud {
+  justify-self: end;
+  margin: 0 1rem 0.25rem;
+}
+/*
+ * A worked example's canvas from edge to edge and down to the window's bottom, as the mockup's
+ * sheet: its bar of tools 16 from the left, its row 16 from the bottom (R84 in canvas).
+ */
+main.nt-lesson:has(> .nt-segment-body[data-kind="example"]) {
+  padding-block-end: 0;
+  background: var(--nt-card);
+}
+.nt-segment-body[data-kind="example"] {
+  margin-inline: -1rem;
+}
+/* In the second row with or without "Read aloud" above it, which has no phrases to read at times. */
+.nt-example > novatrail-canvas {
+  grid-row: 2;
+  display: flex;
+  flex-direction: column;
+  block-size: 100%;
+  min-block-size: 0;
+}
+/*
+ * An explanation, the mockup's card of reading: 640 wide in the middle, glass of 0.94, radius 26,
+ * its caption — the heading — at 12 semibold beside "Read aloud", its text at 17 with a line of
+ * 1.5; a picture on a grey of its own, radius 16. It scrolls inside.
+ */
+.nt-segment-body[data-kind="explanation"] {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-content: start;
+  column-gap: 0.5rem;
+  box-sizing: border-box;
+  align-self: center;
+  inline-size: min(40rem, 100%);
+  padding: 1.75rem 2.125rem;
+  overflow-y: auto;
+  border-radius: 1.625rem;
+  background: rgba(255, 255, 255, 0.94);
+  -webkit-backdrop-filter: blur(22px) saturate(180%);
+  backdrop-filter: blur(22px) saturate(180%);
+  box-shadow: var(--nt-glass-shadow);
+  font-size: var(--nt-size-emphasis);
+  line-height: 1.5;
+}
+.nt-segment-body[data-kind="explanation"] > .nt-segment-heading {
+  align-self: start;
+  margin: 0;
+  color: var(--nt-text-muted);
+  font-size: 0.75rem;
+  font-weight: var(--nt-weight-bold);
+  line-height: 1.25;
+}
+.nt-segment-body[data-kind="explanation"] > .nt-read-aloud {
+  grid-row: 1;
+  grid-column: 2;
+  justify-content: flex-end;
+  justify-self: end;
+  max-inline-size: 12rem;
+  margin: 0;
+  font-size: var(--nt-size-body);
+}
+.nt-segment-body[data-kind="explanation"] > .nt-explanation {
+  grid-column: 1 / -1;
+}
+.nt-segment-body div.nt-explanation p {
+  margin: 0.875rem 0 0;
+  padding: 0;
+}
+.nt-explanation ol {
+  margin: 1.125rem 0 0;
+  padding-inline-start: 1.625rem;
+}
+.nt-explanation li {
+  margin-block-start: 0.375rem;
+  padding-inline-start: 0.25rem;
+}
+.nt-segment-body[data-kind="explanation"] .nt-explanation img {
+  display: block;
+  box-sizing: border-box;
+  margin: 1.125rem auto 0;
+  padding: 1rem;
+  border-radius: 1rem;
+  background: var(--nt-page-owner);
+}
+/* The row of glass at the bottom, 56 high, radius 28, in the middle; on a phone the whole width. */
+.nt-lesson-failure {
+  margin: 0.5rem 0 0;
+  padding: 0;
+  text-align: center;
+}
+.nt-lesson-foot {
+  display: flex;
+  justify-content: center;
+}
+.nt-lesson-foot:has(> .nt-lesson-row) {
+  margin-block-start: 1rem;
+}
+.nt-lesson-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  box-sizing: border-box;
+  min-block-size: 3.5rem;
+  padding: 0.375rem;
+  border-radius: 1.75rem;
+}
+.nt-lesson-row > button {
+  min-block-size: var(--nt-target);
+  border-radius: var(--nt-radius-round);
+}
+button.nt-continue {
+  padding: 0 1.125rem 0 1.375rem;
+}
+button.nt-icon-button.nt-continue > svg {
+  font-size: 1.0625rem;
+}
+@media (width < 600px) {
+  main.nt-lesson {
+    padding-inline: 0.75rem;
+  }
+  main.nt-lesson > .nt-top {
+    margin: 0 0.25rem 0.5rem;
+  }
+  .nt-segment-body[data-kind="example"] {
+    margin-inline: -0.75rem;
+  }
+  .nt-segment-body[data-kind="explanation"] {
+    padding: 1.25rem 1.125rem;
+  }
+  .nt-lesson-foot:has(> .nt-lesson-row) {
+    margin-block-start: 0.75rem;
+  }
+  .nt-lesson-foot > .nt-lesson-row {
+    flex: 1 1 auto;
+  }
+}
+/*
+ * The segments' pop-over (the mockup's `lesson-segments`): 340 wide, hung 6 below the bar's pill;
+ * the lesson's title at 13 semibold and its module at 12; a row of 52 for each segment, its number
+ * in a circle of 26 — the accent for the one shown, the tick on green for one passed —, its kind at
+ * 13.5 and how far it is at 11.5; "Leave the lesson" below a line.
+ */
+@media (width >= 600px) {
+  dialog.nt-pop-segments {
+    inline-size: 21.25rem;
+    min-inline-size: 0;
+  }
+}
+.nt-segments-head {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0.125rem 0.5rem 0.375rem;
+  line-height: 1.25;
+}
+.nt-segments-title {
+  font-size: var(--nt-size-caption);
+  font-weight: var(--nt-weight-bold);
+}
+.nt-segments-module {
+  color: var(--nt-text-muted);
+  font-size: 0.75rem;
+}
+.nt-pop-segments nav {
+  margin-block-end: 0.25rem;
+  padding-block-end: 0.25rem;
+  border-block-end: 0.03125rem solid rgba(0, 0, 0, 0.08);
+}
+.nt-segment-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+button.nt-segment {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  inline-size: 100%;
+  min-block-size: 3.25rem;
+  padding: 0.375rem 0.5rem;
+  border-radius: var(--nt-radius-field);
+  background: transparent;
+  color: var(--nt-text);
+  font-weight: 400;
+  text-align: start;
+}
+button.nt-segment.nt-segment-shown {
+  background: var(--nt-accent-tint);
+}
+.nt-segment-number {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  inline-size: 1.625rem;
+  block-size: 1.625rem;
+  border-radius: 0.8125rem;
+  background: rgba(118, 118, 128, 0.14);
+  color: var(--nt-segmented);
+  font-size: 0.78125rem;
+  font-weight: var(--nt-weight-heading);
+}
+.nt-segment-shown > .nt-segment-number {
+  background: var(--nt-accent);
+  color: var(--nt-on-fill);
+}
+.nt-segment-passed > .nt-segment-number {
+  background: var(--nt-correct);
+  color: var(--nt-on-fill);
+}
+.nt-segment-words {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-inline-size: 0;
+  line-height: 1.2;
+}
+.nt-segment-words > .nt-segment-kind {
+  font-size: 0.84375rem;
+  font-weight: var(--nt-weight-medium);
+}
+/* The segment shown is told by more than colour, which forced colours take away (1.4.1). */
+button.nt-segment-shown .nt-segment-kind {
+  font-weight: var(--nt-weight-heading);
+}
+button.nt-segment[aria-disabled="true"]:not(.nt-segment-passed) .nt-segment-kind {
+  color: var(--nt-text-muted);
+}
+/* A row with no fill of the disabled button's, so in forced colours its words are GrayText still. */
+@media (forced-colors: active) {
+  button.nt-segment[aria-disabled="true"],
+  button.nt-segment[aria-disabled="true"] span {
+    color: GrayText;
+  }
+}
+.nt-segment-state {
+  color: var(--nt-text-muted);
+  font-size: 0.71875rem;
+}
+/* On the accent's tint the grey would not hold 4.5:1. */
+.nt-segment-shown .nt-segment-state {
+  color: var(--nt-segmented);
+}
+button.nt-segments-leave {
+  font-size: var(--nt-size-body);
+  font-weight: var(--nt-weight-medium);
+}
+/*
+ * The end of a lesson (the mockup's `lesson-end`): a white card of 460 in the window's middle,
+ * radius 28; the module's tile of 64, radius 18; the module at 13, the lesson's title at 28 bold,
+ * "Lesson complete" at 16 semibold in green after a star; the way on, 52 high, and the way home, 48,
+ * the accent as text.
+ */
+/* The pill's room above the card and as much below, so that a tall card never runs under it. */
+main.nt-end {
+  position: relative;
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  min-block-size: 100dvh;
+  max-inline-size: none;
+  padding: 4.5rem 1rem;
+}
+.nt-end > .nt-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.375rem;
+  box-sizing: border-box;
+  inline-size: min(28.75rem, 100%);
+  padding: 2rem 1.75rem 1.5rem;
+  border-radius: var(--nt-radius-panel);
+  background: var(--nt-card);
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.05),
+    0 16px 44px rgba(0, 0, 0, 0.08);
+  text-align: center;
+}
+.nt-module-tile.nt-end-tile {
+  inline-size: 4rem;
+  block-size: 4rem;
+  margin: 0;
+  border-radius: 1.125rem;
+}
+.nt-end-tile {
+  color: var(--nt-on-fill);
+}
+.nt-end-tile::before {
+  font-size: 1.75rem;
+}
+.nt-end-module {
+  margin: 0.75rem 0 0;
+  padding: 0;
+  color: var(--nt-text-muted);
+  font-size: var(--nt-size-caption);
+  line-height: 1.25;
+}
+.nt-end .nt-column h1 {
+  margin: 0;
+  line-height: 1.1;
+  letter-spacing: -0.5px;
+}
+.nt-end .nt-result {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin: 0.375rem 0 0;
+  padding: 0;
+  color: var(--nt-text-muted);
+  font-size: 1rem;
+  line-height: 1.15;
+  font-weight: var(--nt-weight-bold);
+}
+.nt-end .nt-result.nt-end-done {
+  color: var(--nt-correct);
+}
+main.nt-end .nt-result > svg {
+  font-size: 1.125rem;
+}
+.nt-end .nt-buttons {
+  margin: 0;
+}
+.nt-end .nt-next,
+.nt-end .nt-column > .nt-buttons {
+  align-self: stretch;
+}
+.nt-end .nt-next {
+  margin-block-start: 1.375rem;
+}
+/* The way on's lines, empty until it says something. */
+.nt-end .nt-next > p:empty {
+  margin: 0;
+}
+.nt-end .nt-buttons > button {
+  flex: 1 1 auto;
+}
+.nt-end .nt-next button:not(.nt-secondary) {
+  min-block-size: var(--nt-main);
+  border-radius: var(--nt-radius-main);
+  font-size: 1rem;
+}
+.nt-end .nt-column > .nt-buttons > button.nt-secondary {
+  min-block-size: 3rem;
+  border-color: transparent;
+  border-radius: var(--nt-radius-main);
+  background: transparent;
+  font-size: 0.9375rem;
+}
+@media (width < 600px) {
+  .nt-end > .nt-column {
+    inline-size: 100%;
+  }
+}
+/* The profile's pill at the end of a lesson: at the top, where the bar of a lesson stood. */
+.nt-end-bar {
+  position: absolute;
+  inset-block-start: 0.875rem;
+  inset-inline-start: 1rem;
+}
+/* The place of a segment passed, beside its tick: its name reads it, the eye has the list's order. */
+.nt-segment-place {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }

@@ -1,13 +1,14 @@
-// The bar of a lesson's segments (section 3.4 of docs/architecture.md; R23 in docs/decisions.md):
-// a list of chips by place, each a target of 44 × 44 with its number and a sign — ✓ for a segment
-// passed, which the theme draws and no name reads —, the one shown filled and `aria-current`; the
-// list wraps onto a second line. Each chip's name is its place and its kind, which the chip shows
-// from 64rem, its text the same (2.5.3), and how far it is is its description. A segment that does
-// not open — a task that ended, or one not reached — is `aria-disabled`, with why as its description
-// in place of how far, and a press says it in a line of the screen with the chip's name: under the
-// heading of the segment shown, a bare "Not open yet" would read as said of that one. The kind of
-// the segment shown, its place and the count are the heading below the bar, LessonScreen.tsx's.
-import { useId } from "react";
+// The segments of a lesson (section 3.4 of docs/architecture.md; R23 and R64 in
+// docs/decisions.md): a pop-over behind the line under the lesson's title in the top bar, as the
+// mockup's `lesson-segments` — the lesson's title and its module, the list of segments by place, and
+// "Leave the lesson". Each row is a button with its number — a tick in its place for a segment
+// passed —, its kind, and how far it is, or why it does not open, its words its name (2.5.3); the
+// one shown is `aria-current`. A segment that does not open — a task that ended, or one not reached —
+// is `aria-disabled`, and a press says it in a line of the screen with the row's name: under the
+// heading of the segment shown, a bare "Not open yet" would read as said of that one.
+import { BELOW_BAR } from "../app/hang.ts";
+import { Icon } from "../app/Icon.tsx";
+import { PopOver } from "../app/PopOver.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { type Course, closedWhy } from "./place.ts";
 import type { Kind } from "./run.ts";
@@ -19,7 +20,7 @@ export const KIND_KEYS = {
   task: "lesson.task",
 } as const satisfies Record<Kind, string>;
 
-/** The line of the screen when a chip that does not open is pressed, by why. */
+/** The line of the screen when a row that does not open is pressed, by why. */
 const PRESSED = {
   "lesson.not-open": "lesson.not-open-pressed",
   "lesson.task-over": "lesson.task-over-pressed",
@@ -31,56 +32,120 @@ export interface SegmentBarProps {
   readonly place: number;
   /** The segment shown. */
   readonly shown: number;
+  /** Where the segment shown is, "Worked example · 2 of 4", as its heading says it. */
+  readonly where: string;
+  /** The lesson's title, in its module's explanation language, and that language. */
+  readonly title: string;
+  readonly language: string | undefined;
+  /** The module's title, under the lesson's, if the manifest gave it. */
+  readonly module?: string | undefined;
   readonly onGoTo: (segment: number) => void;
   /** A segment that does not open was pressed: why, in words. */
   readonly onClosed: (why: string) => void;
+  readonly onLeave: () => void;
 }
 
-export function SegmentBar({ course, place, shown, onGoTo, onClosed }: SegmentBarProps) {
+/** The line under the lesson's title — the segment shown, its place and the count — and its pop-over. */
+export function SegmentBar(props: SegmentBarProps) {
+  const { where } = props;
   const { words } = useLanguage();
-  const id = useId();
   return (
-    <nav aria-label={words.text("lesson.segments")} className="nt-segments">
-      <ol className="nt-segment-bar">
-        {course.kinds.map((kind, i) => {
-          const segment = i + 1;
-          const passed = segment < place || course.ended.has(segment);
-          const state = words.text(
-            passed ? "lesson.passed" : segment === place ? "lesson.now" : "lesson.later",
-          );
-          const kindWord = words.text(KIND_KEYS[kind]);
-          const why = closedWhy(course, place, segment);
-          const describedBy = `${id}-${segment}`;
-          const classes = ["nt-segment"];
-          if (segment === shown) classes.push("nt-segment-shown");
-          if (passed) classes.push("nt-segment-passed");
-          return (
-            // biome-ignore lint/suspicious/noArrayIndexKey: the segments never move, and have no ID.
-            <li key={i} {...(segment === shown ? { "aria-current": "step" } : {})}>
-              {/* Not disabled when it does not open: a disabled button would drop the focus. */}
-              <button
-                type="button"
-                className={classes.join(" ")}
-                // The kind's word is hidden on a narrow screen, and still the chip's name.
-                aria-label={`${segment} ${kindWord}`}
-                aria-describedby={describedBy}
-                {...(why === undefined ? {} : { "aria-disabled": true })}
-                onClick={() => {
-                  if (why !== undefined) {
-                    onClosed(words.text(PRESSED[why], { n: segment, kind: kindWord }));
-                  } else if (segment !== shown) onGoTo(segment);
-                }}
-              >
-                {segment}
-                <span className="nt-segment-kind"> {kindWord}</span>
-              </button>
-              <span id={describedBy} hidden>
-                {why === undefined ? state : words.text(why)}
-              </span>
-            </li>
-          );
-        })}
-      </ol>
-    </nav>
+    <PopOver
+      label={words.text("lesson.segments")}
+      buttonLabel={words.text("lesson.segments-open", { where })}
+      caption={
+        <>
+          {where}
+          <Icon value="menu-open" />
+        </>
+      }
+      className="nt-segments-open"
+      anchor=".nt-top-pill"
+      gap={BELOW_BAR}
+      popClassName="nt-pop-segments"
+    >
+      {(close) => <Segments {...props} close={close} />}
+    </PopOver>
+  );
+}
+
+function Segments({
+  course,
+  place,
+  shown,
+  title,
+  language,
+  module,
+  onGoTo,
+  onClosed,
+  onLeave,
+  close,
+}: SegmentBarProps & { readonly close: () => void }) {
+  const { words } = useLanguage();
+  return (
+    <>
+      <p className="nt-segments-head">
+        <span className="nt-segments-title" {...(language === undefined ? {} : { lang: language })}>
+          {title}
+        </span>
+        {module === undefined ? null : (
+          <span
+            className="nt-segments-module"
+            {...(language === undefined ? {} : { lang: language })}
+          >
+            {module}
+          </span>
+        )}
+      </p>
+      <nav>
+        <ol className="nt-segment-list">
+          {course.kinds.map((kind, i) => {
+            const segment = i + 1;
+            const passed = segment < place || course.ended.has(segment);
+            const state = words.text(
+              passed ? "lesson.passed" : segment === place ? "lesson.now" : "lesson.later",
+            );
+            const kindWord = words.text(KIND_KEYS[kind]);
+            const why = closedWhy(course, place, segment);
+            const ticked = passed && segment !== shown;
+            const classes = ["nt-segment"];
+            if (segment === shown) classes.push("nt-segment-shown");
+            else if (passed) classes.push("nt-segment-passed");
+            return (
+              // biome-ignore lint/suspicious/noArrayIndexKey: the segments never move, and have no ID.
+              <li key={i} {...(segment === shown ? { "aria-current": "step" } : {})}>
+                {/* Not disabled when it does not open: a disabled button would drop the focus. */}
+                <button
+                  type="button"
+                  className={classes.join(" ")}
+                  {...(why === undefined ? {} : { "aria-disabled": true })}
+                  onClick={() => {
+                    close();
+                    if (why !== undefined) {
+                      onClosed(words.text(PRESSED[why], { n: segment, kind: kindWord }));
+                    } else if (segment !== shown) onGoTo(segment);
+                  }}
+                >
+                  {/* Its name is its words: the place — out of sight beside a tick —, the kind, how far. */}
+                  <span className="nt-segment-number">
+                    {ticked ? <Icon value="ticked" /> : null}
+                    <span className={ticked ? "nt-segment-place" : undefined}>{segment}</span>
+                  </span>{" "}
+                  <span className="nt-segment-words">
+                    <span className="nt-segment-kind">{kindWord}</span>{" "}
+                    <span className="nt-segment-state">
+                      {why === undefined ? state : words.text(why)}
+                    </span>
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ol>
+      </nav>
+      <button type="button" className="nt-menu-row nt-segments-leave" onClick={onLeave}>
+        {words.text("lesson.leave")}
+      </button>
+    </>
   );
 }

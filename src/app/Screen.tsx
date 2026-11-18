@@ -18,7 +18,15 @@ export const APP_NAME = "NovaTrail";
 let current: symbol | undefined;
 
 /** The width of a screen in the tablet's layout. */
-export type ScreenLayout = "column" | "reference" | "canvas" | "welcome" | "profiles" | "map";
+export type ScreenLayout =
+  | "column"
+  | "reference"
+  | "canvas"
+  | "welcome"
+  | "profiles"
+  | "map"
+  | "lesson"
+  | "end";
 
 const LAYOUT_CLASS: Readonly<Record<ScreenLayout, string | undefined>> = {
   column: undefined,
@@ -27,6 +35,8 @@ const LAYOUT_CLASS: Readonly<Record<ScreenLayout, string | undefined>> = {
   welcome: "nt-welcome",
   profiles: "nt-profiles",
   map: "nt-map",
+  lesson: "nt-lesson",
+  end: "nt-end",
 };
 
 /** The top bar of a screen: its way back, and what stands at its other end. */
@@ -35,6 +45,8 @@ export interface TopBar {
   readonly back: ReactNode;
   /** What stands at the bar's other end: the profile's pill. */
   readonly end?: ReactNode;
+  /** What stands under the heading in the pill: a lesson's segments, behind its line (R64). */
+  readonly under?: ReactNode;
 }
 
 export interface ScreenProps {
@@ -45,8 +57,9 @@ export interface ScreenProps {
    * of reading, `reference` the mockup's frame — the home screen and the sign-in, 1194 px at most —,
    * and `canvas` the whole window, as a screen with a canvas; `welcome` the sign-in's frame, its
    * art beside the column, and `profiles` the frame of the owner's profile and "Who is learning?",
-   * a column in the middle (R61), and `map` the whole window, a frame below the top bar (R63).
-   * Below 600 each is one column.
+   * a column in the middle (R61), and `map` the whole window, a frame below the top bar (R63);
+   * `lesson` the whole window, a lesson's segment between its top bar and its row, and `end` a card
+   * in the window's middle, the end of a lesson (R64). Below 600 each is one column.
    */
   readonly layout?: ScreenLayout;
   /** What stands in the frame before the heading's column: the sign-in's art, the app's name. */
@@ -98,7 +111,14 @@ export function Screen({
         <div className="nt-top">
           <div className="nt-top-pill nt-glass">
             {bar.back}
-            {h1}
+            {bar.under === undefined ? (
+              h1
+            ) : (
+              <div className="nt-top-heading">
+                {h1}
+                {bar.under}
+              </div>
+            )}
           </div>
           {bar.end}
         </div>

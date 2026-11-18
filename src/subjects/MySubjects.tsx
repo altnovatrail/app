@@ -44,6 +44,7 @@ import type { Device } from "../storage/device.ts";
 import { openProfile, type Profile } from "../storage/profile.ts";
 import { useAttempt } from "../task/AttemptContext.tsx";
 import { CardHeading } from "./CardHeading.tsx";
+import { ModuleTile } from "./ModuleTile.tsx";
 import { byTitle, cardsOf, type ModuleCard, type ModuleRef } from "./modules.ts";
 import { Legend, SkillBar } from "./SkillBar.tsx";
 import { useSequential } from "./useSequential.ts";
@@ -87,32 +88,6 @@ function quotaFill(quota: QuotaShare | undefined): number {
 /** What a card's button does. */
 type Action = "connect" | "disconnect";
 
-/** The gradients of the mockup's tiles of modules, one by the module's ID. */
-const TONES = 3;
-
-/** The tone of a module's tile: the same for a module on every screen and device. */
-function toneOf(moduleId: string): number {
-  let hash = 0;
-  for (const char of moduleId) hash = (hash * 31 + (char.codePointAt(0) ?? 0)) % 1_000_003;
-  return hash % TONES;
-}
-
-/**
- * A module's tile, the first letter of its title on a gradient: decoration alone, which 1.4.3
- * excepts, its letter drawn by CSS from `data-glyph` and hidden from assistive technology.
- */
-function Tile({ card }: { readonly card: ModuleCard }) {
-  const glyph = Array.from(card.title)[0]?.toUpperCase() ?? "";
-  return (
-    <span
-      className="nt-module-tile"
-      aria-hidden="true"
-      data-tone={toneOf(card.moduleId)}
-      data-glyph={glyph}
-    />
-  );
-}
-
 /** A module's card, its buttons described by its title. */
 function Card({
   card,
@@ -134,7 +109,7 @@ function Card({
   return (
     <li className="nt-card nt-module">
       <article aria-labelledby={id}>
-        <Tile card={card} />
+        <ModuleTile moduleId={card.moduleId} title={card.title} />
         <CardHeading card={card} id={id} />
         {card.skills === undefined ? null : <SkillBar counts={card.skills} />}
         <div className="nt-buttons">

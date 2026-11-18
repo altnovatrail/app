@@ -437,8 +437,19 @@ async function renderLesson(setup: Setup = {}) {
   };
 }
 
-const bar = () => within(screen.getByRole("navigation", { name: "Segments of the lesson" }));
-const chip = (n: number) => bar().getAllByRole("button")[n - 1] as HTMLButtonElement;
+/** The segments, in their pop-over, which the line under the lesson's title opens if it is shut. */
+async function segments() {
+  if (screen.queryByRole("dialog", { name: "Segments of the lesson" }) === null) {
+    await userEvent.click(
+      screen.getByRole("button", { name: /: segments of the lesson$/ }) as HTMLElement,
+    );
+  }
+  const dialog = await screen.findByRole("dialog", { name: "Segments of the lesson" });
+  return within(within(dialog).getByRole("navigation"));
+}
+const chip = async (n: number) => (await segments()).getAllByRole("button")[n - 1] as HTMLElement;
+/** The segments' pop-over shut by Escape, the focus back on its line. */
+const shut = () => userEvent.keyboard("{Escape}");
 const continueButton = () => screen.findByRole("button", { name: "Continue" });
 const canvas = () => document.querySelector("novatrail-canvas") as CanvasElement;
 
@@ -483,15 +494,15 @@ describe("the lesson player", () => {
         .map((item) => item.textContent),
     ).toEqual(["Count the gaps.", "Add one for the posts."]);
     // The bar: the chip shown in bold and current, the others later, none passed yet.
-    expect(bar().getAllByRole("listitem")[0]).toHaveAttribute("aria-current", "step");
-    expect(chip(1)).toHaveAccessibleName("1 Explanation");
-    expect(chip(1)).toHaveAccessibleDescription("now");
-    expect(chip(2)).toHaveAccessibleDescription("Not open yet");
-    expect(chip(3)).toHaveAccessibleName("3 Task");
-    expect(chip(3)).toHaveAttribute("aria-disabled", "true");
+    expect((await segments()).getAllByRole("listitem")[0]).toHaveAttribute("aria-current", "step");
+    expect(await chip(1)).toHaveAccessibleName("1 Explanation now");
+    expect(await chip(2)).toHaveAccessibleName("2 Worked example Not open yet");
+    expect(await chip(3)).toHaveAccessibleName("3 Task Not open yet");
+    expect(await chip(3)).toHaveAttribute("aria-disabled", "true");
     expect((await kept())?.place).toBe(1);
     // The chip shown goes nowhere.
-    await userEvent.click(chip(1));
+    await userEvent.click(await chip(1));
+    expect(screen.queryByRole("dialog")).toBeNull();
     expect(screen.getByRole("heading", { level: 2 })).toHaveTextContent("Explanation · 1 of 4");
 
     // The worked example: a new element, its demo from the beginning; Continue stands at once.
@@ -500,8 +511,10 @@ describe("the lesson player", () => {
     const heading = screen.getByRole("heading", { level: 2 });
     expect(heading).toHaveTextContent("Worked example · 2 of 4");
     expect(document.activeElement).toBe(heading);
-    expect(chip(1)).toHaveAccessibleDescription("passed");
-    expect(chip(2)).toHaveAccessibleDescription("now");
+    // A segment passed shows a tick, its place still in its name.
+    expect(await chip(1)).toHaveAccessibleName("1 Explanation passed");
+    expect(await chip(2)).toHaveAccessibleName("2 Worked example now");
+    await shut();
     expect((await kept())?.place).toBe(2);
     await waitFor(() => expect(canvas().workedExample).toBeDefined());
     expect(canvas().demoState).toEqual({ opened: 0, hidden: false });
@@ -537,13 +550,13 @@ describe("the lesson player", () => {
 
     // The last explanation: the task passed does not open again, and says why.
     expect(screen.getByRole("heading", { level: 2 })).toHaveTextContent("Explanation · 4 of 4");
-    expect(chip(3)).toHaveAttribute("aria-disabled", "true");
-    expect(chip(3)).toHaveAccessibleDescription("This task is over");
-    chip(3).click();
+    expect(await chip(3)).toHaveAttribute("aria-disabled", "true");
+    expect(await chip(3)).toHaveAccessibleName("3 Task This task is over");
+    (await chip(3)).click();
     expect(await screen.findByText("3 Task: already over", { selector: "p" })).toBeVisible();
     expect(screen.getByRole("heading", { level: 2 })).toHaveTextContent("Explanation · 4 of 4");
     // Back to the example: its demo as it was left; Continue leads to the place, past the task.
-    await userEvent.click(chip(2));
+    await userEvent.click(await chip(2));
     await waitFor(() => expect(canvas().demoState).toEqual({ opened: 3, hidden: true }));
     await userEvent.click(await continueButton());
     expect(screen.getByRole("heading", { level: 2 })).toHaveTextContent("Explanation · 4 of 4");
@@ -565,7 +578,7 @@ describe("the lesson player", () => {
     await screen.findByRole("group", { name: "How many gaps?" });
     expect(asked).toEqual(["run r1", "open a7"]);
     // Off to the example and back: the attempt goes on.
-    await userEvent.click(chip(2));
+    await userEvent.click(await chip(2));
     await waitFor(() => expect(canvas().demoState).toEqual({ opened: 3, hidden: true }));
     await userEvent.click(await continueButton());
     await screen.findByRole("group", { name: "How many gaps?" });
@@ -575,9 +588,9 @@ describe("the lesson player", () => {
   it("opens on another device after the last task that ended, its demos from the beginning", async () => {
     const { kept } = await renderLesson({ ended: [3] });
     await screen.findByText("Each time, count the gaps first.");
-    expect(chip(3)).toHaveAccessibleDescription("This task is over");
+    expect(await chip(3)).toHaveAccessibleName("3 Task This task is over");
     await waitFor(async () => expect((await kept())?.place).toBe(4));
-    await userEvent.click(chip(2));
+    await userEvent.click(await chip(2));
     await waitFor(() => expect(canvas().demoState).toEqual({ opened: 0, hidden: false }));
   });
 
@@ -696,7 +709,7 @@ describe("the lesson player", () => {
     expect(await screen.findByText("The tutor isn't available for this profile")).toBeVisible();
     expect(kept.endedRuns).toEqual([]);
     // The line is the task's: back at the example it is gone, and at the task again it stands.
-    await userEvent.click(chip(2));
+    await userEvent.click(await chip(2));
     expect(screen.queryByText("The tutor isn't available for this profile")).toBeNull();
     await userEvent.click(await continueButton());
     expect(await screen.findByText("The tutor isn't available for this profile")).toBeVisible();
@@ -803,7 +816,7 @@ describe("the lesson player", () => {
   it("says why a segment not reached does not open", async () => {
     await renderLesson();
     await screen.findByText("A fence has posts and gaps between them.");
-    chip(4).click();
+    (await chip(4)).click();
     // The line names the chip pressed: under the heading of segment 1, not said of that one.
     expect(await screen.findByText("4 Explanation: not open yet", { selector: "p" })).toBeVisible();
     expect(screen.getByRole("heading", { level: 2 })).toHaveTextContent("Explanation · 1 of 4");

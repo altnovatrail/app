@@ -411,6 +411,7 @@ export const ru = {
   "steps.exit-givens": "Отметить, что известно и что найти",
   "steps.exit-slots": "Записать ответ в каждую ячейку",
   "lesson.segments": "Звенья урока",
+  "lesson.segments-open": "{where}: звенья урока",
   "lesson.explanation": "Объяснение",
   "lesson.example": "Пример с разбором",
   "lesson.task": "Задача",

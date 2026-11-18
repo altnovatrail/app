@@ -975,6 +975,21 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
       ),
   ],
   [
+    "lesson with its segments open, two passed and a task over",
+    () =>
+      lessonScreen(<p>A fence has posts and gaps between them.</p>, {
+        course: { kinds: ["explanation", "example", "task", "explanation"], ended: new Set([3]) },
+        place: 4,
+        shown: 1,
+        module: "Olympiad maths 1–6",
+      }),
+    async () => {
+      await userEvent.click(
+        document.querySelector<HTMLButtonElement>(".nt-segments-open") as HTMLElement,
+      );
+    },
+  ],
+  [
     "lesson on a worked example, back from its task, a write not saved",
     () =>
       lessonScreen(
@@ -1019,6 +1034,7 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
         reason={RunEndReason.PASSED}
         title="Gaps and posts"
         language="en"
+        module={{ id: "olympiad-math", title: "Olympiad maths 1–6" }}
         next={nextStep({ choice: choice(ChoiceKind.LESSON) })}
       />
     ),

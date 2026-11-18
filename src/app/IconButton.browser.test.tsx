@@ -2,12 +2,12 @@
 // docs/architecture.md): only those of the closed list, each named by its caption, 44 × 44 — the
 // grabber 88 × 44 —, with a tooltip of the same words on hover and on keyboard focus, which stays
 // while the pointer is over it and which Escape dismisses without moving the focus (WCAG 1.4.13).
-import { render } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import { page, userEvent } from "vitest/browser";
 import "../theme/theme.css";
 import { WORDS } from "../i18n/words.ts";
-import { axeViolations, smallTargets } from "../test/a11y.ts";
+import { axeViolations, captionlessOffList, smallTargets } from "../test/a11y.ts";
 import { inLanguage } from "../test/language.tsx";
 import { CAPTIONLESS, type Captionless, IconButton } from "./IconButton.tsx";
 import { ICONS, VALUES } from "./icons.ts";
@@ -66,6 +66,26 @@ describe("a button of the closed list", () => {
       expect(await axeViolations()).toEqual([]);
     },
   );
+
+  it("takes a caption in place of the list's, where it names where it goes, with the same icon", () => {
+    render(inLanguage(<IconButton value="back" caption="lesson.leave" />));
+    const button = screen.getByRole("button", { name: "Leave the lesson" });
+    expect(button.querySelector("path")?.getAttribute("d")).toBe(
+      ICONS[VALUES.back.outline].paths[0],
+    );
+    expect(captionlessOffList(WORDS.en)).toEqual([]);
+  });
+
+  it("takes that caption on its own button alone: on another icon it is off the list", () => {
+    render(
+      <button type="button" className="nt-icon-only" aria-label="Leave the lesson">
+        <svg aria-hidden="true">
+          <path d={ICONS[VALUES.close.outline].paths[0]} />
+        </svg>
+      </button>,
+    );
+    expect(captionlessOffList(WORDS.en)).toEqual(["Leave the lesson"]);
+  });
 
   it("draws the fill while what it stands for is on, for a value that has one", () => {
     const { container } = render(

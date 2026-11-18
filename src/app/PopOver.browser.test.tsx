@@ -118,6 +118,29 @@ describe.each([600, 834, 1194])("a pop-over at %i px", (width) => {
     expect(originX(dialog)).toBeCloseTo(box.width / 2, 0);
   });
 
+  it("hangs from the ancestor its anchor names, as a lesson's segments from the bar's pill", async () => {
+    await page.viewport(width, 834);
+    render(
+      inLanguage(
+        <div
+          className="nt-pill"
+          style={{ display: "inline-flex", margin: "1rem", padding: "1rem" }}
+        >
+          <PopOver label="Segments" anchor=".nt-pill" gap={6}>
+            <button type="button">One</button>
+          </PopOver>
+        </div>,
+      ),
+    );
+    await page.getByRole("button", { name: "Segments" }).click();
+    const dialog = page.getByRole("dialog", { name: "Segments" }).element() as HTMLDialogElement;
+    await Promise.all(dialog.getAnimations().map((animation) => animation.finished));
+    const from = (document.querySelector(".nt-pill") as HTMLElement).getBoundingClientRect();
+    const box = dialog.getBoundingClientRect();
+    expect(Math.round(box.left)).toBe(Math.round(from.left));
+    expect(Math.round(box.top)).toBe(Math.round(from.bottom + 6));
+  });
+
   it("hangs at its button's right edge near the window's right", async () => {
     await page.viewport(width, 834);
     render(inLanguage(<Choice place="end" />));
