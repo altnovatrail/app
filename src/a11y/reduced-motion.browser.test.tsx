@@ -1,6 +1,5 @@
-// The screens for whoever asked for less motion (WCAG 2.3.3; section 3.9 of docs/architecture.md),
-// a mode of the browser's context from the start: no transition moves, and Check on a pause is a
-// still outline, not a blink (the 2026-11-02 amendment to R05).
+// The screens for whoever asked for less motion (WCAG 2.3.3; R11), a mode of the browser's context
+// from the start: no transition moves, and Check on a pause is a still outline, not a blink (R05).
 import { render } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { page } from "vitest/browser";

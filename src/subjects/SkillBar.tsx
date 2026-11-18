@@ -1,11 +1,11 @@
-// What a module's card shows of its skills, and the legend of it (R62 in docs/decisions.md; the
-// mockup's `home` and `home-legend`; R148 spec and architecture 6 spec): the bar of the five states
-// of its skills with a verdict, each segment in its colour of the mockup's «Contrast» and 2 px of
-// white between them, named by every state and mark with its count; beside it, in words, how many
-// are mastered and how many are due for review; for a module whose skills have no verdict, the mark
-// in place of the bar. The legend gives each state its colour, its icon and its word, and each mark
-// its icon and its word, the words and icons the skill map shows too: below the modules from 600
-// CSS px, and on a phone behind a button, as a sheet.
+// What a module's card shows of its skills, and the legend of it (R62; the mockup's `home` and
+// `home-legend`; R148 spec): the bar of the five states of its skills with a verdict, each segment
+// in its colour of the mockup's «Contrast» and 2 px of white between them, named by every state and
+// mark with its count; beside it, in words, how many are mastered and how many are due for review;
+// for a module whose skills have no verdict, the mark in place of the bar. The legend gives each
+// state its colour, its icon and its word, and each mark its icon and its word, the words and icons
+// the skill map shows too: below the modules from 600 CSS px, and on a phone behind a button, as a
+// sheet.
 import { Icon } from "../app/Icon.tsx";
 import { PopOver } from "../app/PopOver.tsx";
 import { listFormat } from "../i18n/intl.ts";

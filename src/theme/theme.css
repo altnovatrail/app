@@ -1,12 +1,11 @@
 /*
- * The theme of app (section 3.9 of docs/architecture.md; R17 and its 2026-11-17 amendment in
- * docs/decisions.md): light, the roles and colours of the interface mockup's README, «The style»,
- * with the replacements of its «Contrast», whose pairs the test of src/theme/contrast.node.test.ts
- * reads from the tokens below — text 4.5:1, an edge, the focus ring and a mark 3:1, a translucent
- * colour laid over what it stands on. Sizes in rem, so that the page's zoom and the reader's font
- * size grow them; each target at least 44 × 44 CSS px (2.5.5); motion of 0.15–0.35 s, and none when
- * prefers-reduced-motion asks for less; the system's colours in forced colours, which nothing here
- * turns off. The font is the system's, as before.
+ * The theme of app (R17): light, the roles and colours of the interface mockup's README, «The
+ * style», with the replacements of its «Contrast», whose pairs the test of
+ * src/theme/contrast.node.test.ts reads from the tokens below — text 4.5:1, an edge, the focus ring
+ * and a mark 3:1, a translucent colour laid over what it stands on. Sizes in rem, so that the
+ * page's zoom and the reader's font size grow them; each target at least 44 × 44 CSS px (2.5.5);
+ * motion of 0.15–0.35 s, and none when prefers-reduced-motion asks for less; the system's colours
+ * in forced colours, which nothing here turns off. The font is the system's.
  */
 :root {
   /* The grounds: the page, the owner's profile and "Who's learning?", a card, a pop-over, the sheet. */
@@ -112,11 +111,11 @@
   --nt-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
 
   /*
-   * The canvas in the same colours (its custom properties, R28 and R84 in canvas): the tutor's marks
-   * in the colour of its words on the sheet; the accent and the glass of its bar of tools. The bar
-   * stands in the middle of the band below --novatrail-canvas-top, the height of a sticky header:
-   * app has none, and the mockup centres the bar in the whole screen, so the band starts at the
-   * window's top.
+   * The canvas in the same colours (its custom properties, R28 canvas, R84 canvas): the tutor's
+   * marks in the colour of its words on the sheet; the accent and the glass of its bar of tools.
+   * The bar stands in the middle of the band below --novatrail-canvas-top, the height of a sticky
+   * header: app has none, and the mockup centres the bar in the whole screen, so the band starts at
+   * the window's top.
    */
   --novatrail-canvas-ink: var(--nt-text);
   --novatrail-canvas-paper: var(--nt-card);
@@ -126,7 +125,7 @@
   --novatrail-canvas-top: 0px;
 
   /*
-   * The skill map in the same colours (its custom properties, R10 in skill-map): the accent on the
+   * The skill map in the same colours (its custom properties, R10 skill-map): the accent on the
    * paper and white on the accent, 4.70:1 either way.
    */
   --novatrail-skill-map-paper: var(--nt-card);
@@ -162,12 +161,12 @@ h3 {
 }
 
 /*
- * The width rule (R148 spec; the mockup's README, «Two sizes»): below 600 CSS px the phone's layout,
- * one column that scrolls, the whole width; from 600 the tablet's — a phone in landscape, a tablet,
- * a computer —, by the width alone, not by the kind of device. A media query reads no custom
- * property, so 600px is written in each query of the rule. From 600 a screen is a column of reading,
- * 40rem; the home screen and the sign-in the mockup's frame, 1194 px at most, centred on the page's
- * colour, with its margins of 40; a screen with a canvas the whole window (section 3.9).
+ * The width rule (R148 spec; R59): below 600 CSS px the phone's layout, one column that scrolls,
+ * the whole width; from 600 the tablet's — a phone in landscape, a tablet, a computer —, by the
+ * width alone, not by the kind of device. A media query reads no custom property, so 600px is
+ * written in each query of the rule. From 600 a screen is a column of reading, 40rem; the home
+ * screen and the sign-in the mockup's frame, 1194 px at most, centred on the page's colour, with
+ * its margins of 40; a screen with a canvas the whole window.
  */
 main {
   box-sizing: border-box;
@@ -547,10 +546,10 @@ button.nt-secondary {
   margin: 0;
 }
 /*
- * In the mockup's frame — the home screen —, a grid: one column on the phone, 12 apart; from 600 two
- * in a row, as an iPad in portrait has them, 16 apart; four in a row where each is still 15rem wide,
- * as the reference of 1194 has them (the mockup's README, «Two sizes»): by the frame's own width, as
- * a container, so that a scroll bar beside it counts.
+ * In the mockup's frame — the home screen —, a grid: one column on the phone, 12 apart; from 600
+ * two in a row, as an iPad in portrait has them, 16 apart; four in a row where each is still 15rem
+ * wide, as the reference of 1194 has them (R59): by the frame's own width, as a container, so that
+ * a scroll bar beside it counts.
  */
 .nt-reference .nt-cards {
   display: grid;
@@ -689,7 +688,7 @@ novatrail-canvas {
     color: var(--nt-accent-text);
   }
 }
-/* What was read in a slot written by hand, or why not, below the item (R21 in docs/decisions.md). */
+/* What was read in a slot written by hand, or why not, below the item (R21). */
 .nt-reading {
   margin: 0.25rem 0 0;
 }
@@ -845,12 +844,12 @@ button.nt-icon-only:where(.nt-grabber) {
   line-height: 1.2;
 }
 /*
- * The way in (R61; section 3.9): the sign-in, the invite code and the statement in the frame of
- * the mockup's `signin` — from 600 its art at the left, 600 of the reference's 1194, and the step's
- * column of 380 in the middle of the rest, the way to the legal pages at its foot; below 600 the
- * art a band of 200 above the first step alone, and one column. The owner's profile and "Who is
- * learning?" in the frame of `owner` and `who`: the page's colour of the owner with its two glows,
- * the app's name at the top, a column in the middle.
+ * The way in (R61): the sign-in, the invite code and the statement in the frame of the mockup's
+ * `signin` — from 600 its art at the left, 600 of the reference's 1194, and the step's column of
+ * 380 in the middle of the rest, the way to the legal pages at its foot; below 600 the art a band
+ * of 200 above the first step alone, and one column. The owner's profile and "Who is learning?" in
+ * the frame of `owner` and `who`: the page's colour of the owner with its two glows, the app's name
+ * at the top, a column in the middle.
  */
 .nt-hidden-label,
 .nt-welcome-corner legend {
@@ -2350,7 +2349,7 @@ main.nt-lesson .nt-lesson-lines > p:not(:empty) {
 }
 /*
  * A worked example's canvas from edge to edge and down to the window's bottom, as the mockup's
- * sheet: its bar of tools 16 from the left, its row 16 from the bottom (R84 in canvas).
+ * sheet: its bar of tools 16 from the left, its row 16 from the bottom (R84 canvas).
  */
 main.nt-lesson:has(> .nt-segment-body[data-kind="example"]) {
   padding-block-end: 0;
@@ -2718,15 +2717,15 @@ main.nt-end .nt-result > svg {
   white-space: nowrap;
 }
 /*
- * The task screen (R20 and R65 in docs/decisions.md; the mockup's `task-pill`): the whole window,
- * the top bar 14 from the top and 16 from the sides — at its end the profile's pill and the pill of
- * the mode —, the lines of the voicing and of "Read aloud" under it, the canvas from edge to edge
- * below them, which its statement and sheet scroll in, and the foot, 16 from the bottom: the
- * screen's lines, the verdict's card and the row of glass, in the middle. Nothing floats over the
- * sheet: the canvas ends where the foot begins, so that neither covers a target of the other
- * (2.4.11, 2.5.8). On a narrow screen the tutor's panel stands above the canvas and the two scroll
- * in the window's height; from 64rem the panel stands at the right, 22rem, and scrolls inside. In a
- * lesson the same, under the lesson's bar.
+ * The task screen (R20, R65; the mockup's `task-pill`): the whole window, the top bar 14 from the
+ * top and 16 from the sides — at its end the profile's pill and the pill of the mode —, the lines
+ * of the voicing and of "Read aloud" under it, the canvas from edge to edge below them, which its
+ * statement and sheet scroll in, and the foot, 16 from the bottom: the screen's lines, the
+ * verdict's card and the row of glass, in the middle. Nothing floats over the sheet: the canvas
+ * ends where the foot begins, so that neither covers a target of the other (2.4.11, 2.5.8). On a
+ * narrow screen the tutor's panel stands above the canvas and the two scroll in the window's
+ * height; from 64rem the panel stands at the right, 22rem, and scrolls inside. In a lesson the
+ * same, under the lesson's bar.
  */
 main.nt-task-screen {
   display: flex;
@@ -2826,7 +2825,7 @@ main.nt-lesson:has(> .nt-segment-body > .nt-lesson-task > .nt-task) {
     padding-inline: 3.25rem 21.5rem;
   }
 }
-/* On a phone the open sheet hides the row (the 2026-11-17 amendment to R148 in spec). */
+/* On a phone the open sheet hides the row (R148 spec). */
 @media (width < 600px) {
   .nt-task-foot[data-beside="panel"] > .nt-task-row {
     display: none;
@@ -3118,7 +3117,7 @@ button.nt-card-button {
   padding: 0 1rem;
   background: var(--nt-accent-tint);
 }
-/* On a phone from the row's edge to 72 before the other, where the tutor's button stands (T87). */
+/* On a phone from the row's edge to 72 before the other, where the tutor's button stands (R67). */
 @media (width < 600px) {
   .nt-task-foot > .nt-card-verdict {
     inline-size: auto;
@@ -3195,11 +3194,11 @@ button.nt-confirm-yes {
   padding: 0 1.125rem;
 }
 /*
- * The tutor's panel (R67 in docs/decisions.md; the mockup's `task`): glass of 0.86, 344 wide at the
- * window's right, from 74 below its top — under the top bar — to 16 above its foot, radius 28; on a
- * phone a sheet from the bottom of the whole width, glass of 0.96, radius 28 at its top, at half the
- * window's height, or by its grabber to 70 below its top. A column: the head, the step's card, the
- * conversation, which scrolls, and the buttons at its foot.
+ * The tutor's panel (R67; the mockup's `task`): glass of 0.86, 344 wide at the window's right, from
+ * 74 below its top — under the top bar — to 16 above its foot, radius 28; on a phone a sheet from
+ * the bottom of the whole width, glass of 0.96, radius 28 at its top, at half the window's height,
+ * or by its grabber to 70 below its top. A column: the head, the step's card, the conversation,
+ * which scrolls, and the buttons at its foot.
  */
 .nt-tutor-panel {
   position: fixed;

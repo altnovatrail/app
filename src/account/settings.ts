@@ -1,9 +1,9 @@
-// What an adult sets of a profile in the section for adults (R29 in docs/decisions.md; R05, R07 and
-// R10; section 15 of the text of the contracts): the form of the profile's page as the profile gives
-// it, and the settings `UpdateProfile` sends — only those that changed, so that a value the build
-// does not know is never written back; the profile api gave after a change, with what the tab
-// learnt itself of its open attempt and lesson runs, which stays the profile GetAccount gave for
-// that; and the message the other tabs hear of a change by. No DOM.
+// What an adult sets of a profile in the section for adults (R05, R07, R10, R29; the contract): the
+// form of the profile's page as the profile gives it, and the settings `UpdateProfile` sends — only
+// those that changed, so that a value the build does not know is never written back; the profile
+// api gave after a change, with what the tab learnt itself of its open attempt and lesson runs,
+// which stays the profile GetAccount gave for that; and the message the other tabs hear of a change
+// by. No DOM.
 import {
   Mode,
   type Profile,

@@ -1,7 +1,7 @@
 // What app's storage on this device stands on: the backend, the origin's web storage, the clock,
-// and the connections it holds, one per database (section 3.2 of docs/architecture.md). It tells
-// whoever listens of a connection the browser or another tab took away, and of a database a newer
-// build has opened. No DOM: the browser's pieces come in from main.tsx.
+// and the connections it holds, one per database. It tells whoever listens of a connection the
+// browser or another tab took away, and of a database a newer build has opened. No DOM: the
+// browser's pieces come in from main.tsx.
 import {
   type Backend,
   type Connection,

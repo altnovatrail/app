@@ -1,6 +1,6 @@
 // The words of a code from api — a verdict, a cause, a reason of the choice — by a typed table
-// (section 3.8 of docs/architecture.md). A code the build does not know gets the common string, not
-// an error: a newer api may send one (section 3.7). No DOM.
+// (R17). A code the build does not know gets the common string, not an error: a newer api may send
+// one. No DOM.
 import type { Key } from "./words.ts";
 
 /**

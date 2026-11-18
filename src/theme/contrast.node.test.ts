@@ -1,8 +1,8 @@
-// The contrast of the theme's colours as theme.css has them (WCAG 1.4.3 and 1.4.11; section 3.9 of
-// docs/architecture.md): the pairs of the interface mockup's README, «Contrast», in app's tokens,
-// with its replacements — text 4.5:1 on what it stands on, an edge, the focus ring and a mark 3:1, a
-// translucent colour laid over what it stands on. A colour changed in theme.css that misses its
-// ratio fails this test, and so does a colour token no pair names.
+// The contrast of the theme's colours as theme.css has them (WCAG 1.4.3 and 1.4.11; R17): the pairs
+// of the interface mockup's README, «Contrast», in app's tokens, with its replacements — text 4.5:1
+// on what it stands on, an edge, the focus ring and a mark 3:1, a translucent colour laid over what
+// it stands on. A colour changed in theme.css that misses its ratio fails this test, and so does a
+// colour token no pair names.
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { contrast, luminance, over, tokens } from "./contrast.ts";

@@ -1,9 +1,9 @@
-// The lessons the learner chosen has open, and the one the player shows, in memory alone (section
-// 3.4 of docs/architecture.md; R23 in docs/decisions.md): no address names a lesson run, so the
-// player `#/lesson` takes it from here. The runs start as `open_lesson_runs` of GetAccount — one at
-// most for each lesson — and change when a run begins or ends in the player. What changed is kept by
-// the learner's profile as GetAccount gave it, as the open attempt is (AttemptContext.tsx), so that
-// switching the learner and back does not bring an ended run back.
+// The lessons the learner chosen has open, and the one the player shows, in memory alone (R23): no
+// address names a lesson run, so the player `#/lesson` takes it from here. The runs start as
+// `open_lesson_runs` of GetAccount — one at most for each lesson — and change when a run begins or
+// ends in the player. What changed is kept by the learner's profile as GetAccount gave it, as the
+// open attempt is (AttemptContext.tsx), so that switching the learner and back does not bring an
+// ended run back.
 import type { Profile } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import { createContext, type ReactNode, useCallback, useContext, useMemo, useState } from "react";
 import { asGiven } from "../account/settings.ts";
@@ -16,7 +16,9 @@ export interface RunRef {
   readonly packageDigest: string;
 }
 
-/** What the player opens: an open run again, or a new one by an engine's choice of a lesson (T28). */
+/**
+ * What the player opens: an open run again, or a new one by an engine's choice of a lesson (R24).
+ */
 export type LessonOpen =
   | { readonly kind: "run"; readonly run: RunRef }
   | { readonly kind: "choice"; readonly choiceId: string };

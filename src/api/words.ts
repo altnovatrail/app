@@ -1,14 +1,12 @@
-// The words of what a call came to, in the language of the screen (section 15 of the text of the
-// contracts; sections 3.3 and 3.8 of docs/architecture.md; R18): the outcomes and the refusals
-// that every screen shows alike — a failure of AI is a neutral phrase, never "not yet" (R04
-// spec) — and the common string for a cause with no words here: a screen whose own causes they
-// are words them itself (T22, T26, T27, T32). The quota says when the tutor comes back by the
+// The words of what a call came to, in the language of the screen (R05, R17, R18): the outcomes and
+// the refusals that every screen shows alike — a failure of AI is a neutral phrase, never "not yet"
+// (R04 spec) — and the common string for a cause with no words here: a screen whose own causes they
+// are words them itself (R19, R22, R23, R27). The quota says when the tutor comes back by the
 // device's clock: today, tomorrow, or on the date of a family day that begins later (R37), and so
 // does any other line of when the next family day begins, by phrases of its own. The limit of the
 // own key reached says which limit, when the provider named it, and when access comes back, when
 // api gives `access_returns` — the ceiling of the provider's tier —, and the checks of an own key
-// exhausted say when the next check opens, each by phrases of their own (R47).
-// No DOM.
+// exhausted say when the next check opens, each by phrases of their own (R47). No DOM.
 import { Cause, LimitCause } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import { timestampDate } from "@bufbuild/protobuf/wkt";
 import { keyFor } from "../i18n/codes.ts";
@@ -32,16 +30,16 @@ export const CAUSE_KEYS = {
   [Cause.NOT_FOUND]: "api.not-found",
   [Cause.NO_PROFILE]: "api.not-found",
   [Cause.ATTEMPT_CLOSED]: "api.attempt-closed",
-  // The causes of the hint and the solution (T26; R22): the same words wherever they come.
+  // The causes of the hint and the solution (R22): the same words wherever they come.
   [Cause.NO_OTHER_WORDS]: "task.no-other-words",
   [Cause.ADULT_NEEDED]: "boot.grown-up",
   [Cause.LADDER_NOT_PASSED]: "task.ladder-not-passed",
   [Cause.NO_SHOWING]: "task.no-showing",
-  // The causes of a lesson run (T27; R23): a run ended, a segment not open yet, a task left.
+  // The causes of a lesson run (R23): a run ended, a segment not open yet, a task left.
   [Cause.RUN_ENDED]: "lesson.ended",
   [Cause.SEGMENT_UNAVAILABLE]: "lesson.not-open",
   [Cause.SEGMENTS_NOT_ENDED]: "lesson.task-left",
-  // The causes of the consent and its texts (T32; R27): a screen of its own words them more.
+  // The causes of the consent and its texts (R27): a screen of its own words them more.
   [Cause.TOO_MANY_CONSENTS]: "api.too-many-consents",
   [Cause.AGE_NEEDED]: "api.age-needed",
   [Cause.TEXT_NOT_CURRENT]: "api.text-not-current",

@@ -1,13 +1,13 @@
-// The one synthesis of the whole app (R36 spec; R07 and R36 in docs/decisions.md; section 3.5 of
-// docs/architecture.md): `speechSynthesis` behind a narrow interface, so that Node's tests give it
-// lists of voices. Every utterance names its voice, by voices.ts; a new text cuts the one before
-// short — `cancel()` — rather than queueing behind it, and each sentence is an utterance of its own,
-// queued after the one before, since Chrome cuts a long utterance after about 15 s. `pause()` and
-// `resume()` are not used: Chrome on Android only stops on the one and does nothing on the other.
-// A press after which a text will come is marked at once by an empty utterance: WebKit on an iPhone
-// or iPad lifts its bar on speech only for a `speak()` called within a user's press, and says
-// nothing otherwise. The list of voices is read when it starts and again on `voiceschanged`. A
-// failure of the synthesis is silent: the text is on the screen.
+// The one synthesis of the whole app (R36 spec; R07, R36): `speechSynthesis` behind a narrow
+// interface, so that Node's tests give it lists of voices. Every utterance names its voice, by
+// voices.ts; a new text cuts the one before short — `cancel()` — rather than queueing behind it,
+// and each sentence is an utterance of its own, queued after the one before, since Chrome cuts a
+// long utterance after about 15 s. `pause()` and `resume()` are not used: Chrome on Android only
+// stops on the one and does nothing on the other. A press after which a text will come is marked at
+// once by an empty utterance: WebKit on an iPhone or iPad lifts its bar on speech only for a
+// `speak()` called within a user's press, and says nothing otherwise. The list of voices is read
+// when it starts and again on `voiceschanged`. A failure of the synthesis is silent: the text is on
+// the screen.
 import { sentencesOf, spokenText } from "./spoken.ts";
 import type { Phrase } from "./texts.ts";
 import {
@@ -173,7 +173,7 @@ export class Speech {
     return token;
   }
 
-  /** Marks a press after which a text will come, so that WebKit lets it be said (section 3.5). */
+  /** Marks a press after which a text will come, so that WebKit lets it be said (R36). */
   prime(): void {
     const synth = this.#synth;
     if (synth === undefined) return;

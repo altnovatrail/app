@@ -1,7 +1,7 @@
-// What a request carries in its message, by the contract's rules (section 15 of the text of the
-// contracts; R18 in docs/decisions.md): the idempotency key of an action that must not be done
-// twice, and, with a request on platform AI alone, the offset of the device's clock from UTC for
-// the family day of the quota; with the learner's own key, the key and not the offset. No DOM.
+// What a request carries in its message, by the contract's rules (R18): the idempotency key of an
+// action that must not be done twice, and, with a request on platform AI alone, the offset of the
+// device's clock from UTC for the family day of the quota; with the learner's own key, the key and
+// not the offset. No DOM.
 import type { OwnKey } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
 
 /**

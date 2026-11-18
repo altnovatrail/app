@@ -1,12 +1,12 @@
-// The way to what the engine chose (section 3.4 of docs/architecture.md; R24 in docs/decisions.md;
-// LearningService in the contract): a lesson opens in the player, a task begins on the task screen,
-// and nothing is a line of the screen, with why when the AI that checks the tasks is closed to the
-// learner — useEngine goes there. The choice an answer gave — the end of an attempt outside a
-// lesson, or of a lesson run — is a press away; with none, the press asks `ChooseNext` with no
-// skill, which gives the lead back to the engine from a skill chosen on the map (R107 spec).
-// Both `ChooseNext` and the beginning of a task close the attempt open outside a lesson for good:
-// while one is open, a question says so first. With no choice in hand and an attempt open the
-// button is "Something else". The reason of the choice is never shown here (concepts 12 in spec).
+// The way to what the engine chose (R24; LearningService in the contract): a lesson opens in the
+// player, a task begins on the task screen, and nothing is a line of the screen, with why when the
+// AI that checks the tasks is closed to the learner — useEngine goes there. The choice an answer
+// gave — the end of an attempt outside a lesson, or of a lesson run — is a press away; with none,
+// the press asks `ChooseNext` with no skill, which gives the lead back to the engine from a skill
+// chosen on the map (R107 spec). Both `ChooseNext` and the beginning of a task close the attempt
+// open outside a lesson for good: while one is open, a question says so first. With no choice in
+// hand and an attempt open the button is "Something else". The reason of the choice is never shown
+// here (R100 spec).
 import type { EngineChoice } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { type Failure, parseFailure } from "../api/failure.ts";
@@ -83,7 +83,7 @@ export function NextStep({ profileId, choice, device, secondary = false }: NextS
 
   return (
     <div className="nt-next">
-      {/* The strings have no full stop of their own: two in one line are two sentences (T57). */}
+      {/* The strings have no full stop of their own: two in one line are two sentences. */}
       <p role="status" className="nt-hint">
         {[nothing ? words.text("next.nothing") : "", outcome ? outcomeText(outcome, words) : ""]
           .filter((sentence) => sentence !== "")

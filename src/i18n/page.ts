@@ -1,7 +1,6 @@
-// The language of the page, `<html lang>` (section 3.8 of docs/architecture.md; WCAG 3.1.1): the
-// device's, which Boot sets, unless a learner's screens are shown, which hold their learner's
-// language over it for as long as they are there. One place writes the attribute, so that which of
-// them set it last does not matter.
+// The language of the page, `<html lang>` (WCAG 3.1.1; R10): the device's, which Boot sets, unless
+// a learner's screens are shown, which hold their learner's language over it for as long as they
+// are there. One place writes the attribute, so that which of them set it last does not matter.
 import type { Language } from "./language.ts";
 
 /** The languages held over the device's, the last one held first. */

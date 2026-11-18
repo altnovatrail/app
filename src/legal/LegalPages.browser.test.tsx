@@ -1,9 +1,9 @@
-// The legal pages in the browser (R31, R46 and R69 in docs/decisions.md), with api on connect-es's
-// router: their list and the head of their sheet, a text as a page in the language of the screen —
-// its version, its gist, the line that the English text is in force, its translation and its body
-// —, a text with no version in force, its next version and the page of it, who runs this copy, a
-// read that failed, the page Accessibility with the places R11 declares, the notices of the build
-// as they are, a page this build does not know, and no link on any of them.
+// The legal pages in the browser (R31, R46, R69), with api on connect-es's router: their list and
+// the head of their sheet, a text as a page in the language of the screen — its version, its gist,
+// the line that the English text is in force, its translation and its body —, a text with no
+// version in force, its next version and the page of it, who runs this copy, a read that failed,
+// the page Accessibility with the places R11 declares, the notices of the build as they are, a page
+// this build does not know, and no link on any of them.
 import {
   LegalService,
   type LegalText,
@@ -365,11 +365,11 @@ describe("the legal pages", () => {
     expect(criteria[0]).toContain("2.1.1");
     expect(criteria[0]).toContain("2.5.1");
     expect(criteria[0]).toContain("2.5.7");
-    // 2.5.7 twice: canvas 0.3.26 moves the sheet by dragging alone (the 2026-11-17 amendment to R11).
+    // 2.5.7 twice: the canvas moves the sheet by dragging alone (R11).
     expect(criteria[1]).toBe("2.5.7 Dragging Movements, level AA");
     expect(criteria[2]).toContain("1.4.12");
     expect(criteria[3]).toContain("3.3.4");
-    // 1.4.4 went with canvas 0.3.15, and 3.1.2 app never has (the 2026-11-12 amendment to R11).
+    // The app meets 1.4.4 and 3.1.2, so no place declares them (R11).
     expect(document.body.textContent).not.toContain("1.4.4");
     expect(document.body.textContent).not.toContain("3.1.2");
     for (const place of places) {

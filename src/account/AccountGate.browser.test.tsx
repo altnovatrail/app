@@ -1,7 +1,7 @@
-// The way in, through Boot, in the browser (sections 3.2, 3.6 and 3.10 of docs/architecture.md): the
-// sign-in, the invite code, the owner's profile, the choice of the learner with the next versions
-// of the legal texts (R46), the bar above the learner's screens and the sign-out, each screen by
-// its role and name, with api answering by the test's fetch and the sign-in service the test's own.
+// The way in, through Boot, in the browser (R16, R19, R61): the sign-in, the invite code, the
+// owner's profile, the choice of the learner with the next versions of the legal texts (R46), the
+// bar above the learner's screens and the sign-out, each screen by its role and name, with api
+// answering by the test's fetch and the sign-in service the test's own.
 import {
   CheckOwnKeyRequestSchema,
   CheckOwnKeyResponseSchema,
@@ -1173,7 +1173,7 @@ describe("the page This device in the section", () => {
       await screen.findByRole("button", { name: "See what is on this device" }),
     );
     expect(await screen.findByRole("heading", { level: 1, name: "This device" })).toBeTruthy();
-    // The device keeps no work of the profile that the server lacks: once read, no warning (T62).
+    // The device keeps no work of the profile that the server lacks: once read, no warning (R30).
     expect(await screen.findByText("Nothing of this profile is kept on this device")).toBeTruthy();
     expect(
       screen.queryByText(

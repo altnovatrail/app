@@ -1,12 +1,11 @@
-// The section Voicing of the page This device (R07 and R36 in
-// docs/decisions.md; sections 3.2 and 3.5 of docs/architecture.md): on Android and Linux, why the
-// voicing waits for an adult here and the leave to give or take back; and for each language a text
-// may be in — the languages of the build, which every profile's screens and the device's are in, and
-// the explanation languages of the modules the cache holds — the voice that says it, chosen among
-// its candidates, with a sample; a language with no voice says so, and how to add one in the
-// system, in words, with no link (privacy 1 and 7 in spec). The choice and the leave lie in the
-// registry of this device, the other tabs hear of a change of them, and the sign-out of the owner
-// or another account signing in erases them.
+// The section Voicing of the page This device (R07, R36): on Android and Linux, why the voicing
+// waits for an adult here and the leave to give or take back; and for each language a text may be
+// in — the languages of the build, which every profile's screens and the device's are in, and the
+// explanation languages of the modules the cache holds — the voice that says it, chosen among its
+// candidates, with a sample; a language with no voice says so, and how to add one in the system, in
+// words, with no link. The choice and the leave lie in the registry of this device, the other tabs
+// hear of a change of them, and the sign-out of the owner or another account signing in erases
+// them.
 import { useEffect, useId, useMemo, useState, useSyncExternalStore } from "react";
 import { languageName } from "../i18n/intl.ts";
 import { useLanguage } from "../i18n/LanguageContext.tsx";

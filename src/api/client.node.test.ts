@@ -1,6 +1,5 @@
-// The client of the contract on connect-es's router, with no network (section 15 of the text of the
-// contracts; R18 in docs/decisions.md): every branch of a refusal, the repeat, the token, and the
-// open views without one.
+// The client of the contract on connect-es's router, with no network (R18): every branch of a
+// refusal, the repeat, the token, and the open views without one.
 import {
   AccountService,
   GetAccountResponseSchema,

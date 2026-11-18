@@ -1,7 +1,7 @@
-// The share of the quota of platform AI, in Node (section 15 of the text of the contracts, "The
-// quota"): GetQuota by whose action, an api with no GetQuota as no share and no reload, and the
-// words of the learner's line and of the adult's section — the shares in percent, the cap reached,
-// when the next family day begins by the device's calendar, and no share at all.
+// The share of the quota of platform AI, in Node (the contract): GetQuota by whose action, an api
+// with no GetQuota as no share and no reload, and the words of the learner's line and of the
+// adult's section — the shares in percent, the cap reached, when the next family day begins by the
+// device's calendar, and no share at all.
 import {
   AccountService,
   type GetQuotaRequest,

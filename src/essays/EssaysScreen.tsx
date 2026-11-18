@@ -1,11 +1,10 @@
-// "My essays", where the learner reads their essays again (R04; R53 in docs/decisions.md; section
-// 3.10 of docs/architecture.md): `#/essays`, from My subjects, lists the essays the profile keeps
-// on this device, the newest first, each by when it was begun and the first paragraph of its task;
-// one opened is read again with the crops it sent, which the list does not read, and shows its task
-// and each submission — when it went, the crop of the sheet it sent, what was read and the
-// feedback, or why there was none. The server keeps none of it (R87 spec),
-// so an essay written on another device is read there. The essay opened is in memory alone, as the
-// hash names no attempt (R14): after a reload the list comes again.
+// "My essays", where the learner reads their essays again (R04, R53): `#/essays`, from My subjects,
+// lists the essays the profile keeps on this device, the newest first, each by when it was begun
+// and the first paragraph of its task; one opened is read again with the crops it sent, which the
+// list does not read, and shows its task and each submission — when it went, the crop of the sheet
+// it sent, what was read and the feedback, or why there was none. The server keeps none of it
+// (R87 spec), so an essay written on another device is read there. The essay opened is in memory
+// alone, as the hash names no attempt (R14): after a reload the list comes again.
 import type * as open from "@altnovatrail/spec/formatv0/open";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { HomeWay } from "../app/HomeButton.tsx";

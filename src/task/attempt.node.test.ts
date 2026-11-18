@@ -1,6 +1,6 @@
-// What the task screen sends and reads of an attempt (section 15 of the text of the contracts): the
-// options tapped in the task's order, the verdicts by item and slot, a code the build does not know,
-// and the solution in the window of versions, which offers a reload outside it.
+// What the task screen sends and reads of an attempt: the options tapped in the task's order, the
+// verdicts by item and slot, a code the build does not know, and the solution in the window of
+// versions, which offers a reload outside it.
 import {
   type ItemVerdict,
   ItemVerdictSchema,

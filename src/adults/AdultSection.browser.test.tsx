@@ -1,10 +1,9 @@
-// The section for adults in the browser (R29 in docs/decisions.md; section 3.10 of
-// docs/architecture.md; R68): its first page with the profiles, each by its avatar, and the device's
-// language, the top bar of each page, a profile's page and its form — the avatar changed by its
-// pop-over, only what changed goes to UpdateProfile, nothing when nothing did, the
-// pseudonym checked first, a failure said, the language the build does not have named —, what
-// another tab saved meanwhile, and the next versions of the legal texts on the first page (R46),
-// with api on connect-es's router.
+// The section for adults in the browser (R29, R68): its first page with the profiles, each by its
+// avatar, and the device's language, the top bar of each page, a profile's page and its form — the
+// avatar changed by its pop-over, only what changed goes to UpdateProfile, nothing when nothing
+// did, the pseudonym checked first, a failure said, the language the build does not have named —,
+// what another tab saved meanwhile, and the next versions of the legal texts on the first page
+// (R46), with api on connect-es's router.
 import {
   AccountService,
   Mode,

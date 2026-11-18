@@ -1,9 +1,8 @@
-// The task screen of a workbook in the browser, with the canvas element itself (section 3.3 of
-// docs/architecture.md; R21, R54): the steps of school maths of grade 3, Check closed until each
-// box holds an answer, SubmitWork with the crop of each filled box and its place and nothing of the
-// draft, the verdict of each line and of each of its boxes with what was read, the summary by lines
-// and the tutor's mark on a box — with api on connect-es's router and the storage on the device's
-// memory.
+// The task screen of a workbook in the browser, with the canvas element itself (R21, R54): the
+// steps of school maths of grade 3, Check closed until each box holds an answer, SubmitWork with
+// the crop of each filled box and its place and nothing of the draft, the verdict of each line and
+// of each of its boxes with what was read, the summary by lines and the tutor's mark on a box —
+// with api on connect-es's router and the storage on the device's memory.
 import "@altnovatrail/canvas";
 import { Mode } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import {
@@ -126,7 +125,7 @@ const ANSWERED: readonly Judged[] = [
   { item: 5, slot: 2, verdict: "not_yet", value: "11" },
 ];
 
-/** The answer to a submission: each line's verdict made of its boxes' (format, section 15). */
+/** The answer to a submission: each line's verdict made of its boxes'. */
 function answerOf(boxes: readonly Judged[]): MessageInitShape<typeof SubmitWorkResponseSchema> {
   return {
     items: WORKBOOK.items.map((_, i) => {
@@ -248,7 +247,7 @@ function boxesOf(request: SubmitWorkRequest | undefined) {
 /** Checks the work the history holds, once Check is open, and gives what went to api. */
 async function checked(history: readonly HistoryEvent[]) {
   const shown = await renderWorkbook({ history });
-  // On my own the rung's words, and their marks, come only while the tutor's panel is open (T88).
+  // On my own the rung's words, and their marks, come only while the tutor's panel is open (R67).
   await userEvent.click(await screen.findByRole("button", { name: "Tutor" }));
   await vi.waitFor(() => expect(check()).toHaveAttribute("aria-disabled", "false"));
   await userEvent.click(check());

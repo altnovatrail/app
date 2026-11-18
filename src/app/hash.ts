@@ -1,8 +1,7 @@
-// The screens of the app live in the hash of its address: /#/<screen>/<part>/… (R14 in
-// docs/decisions.md). Any hosting serves the one index.html at the root, with no rule of its own,
-// and the browser sends no fragment to the server, so no hosting log learns which screen a learner
-// is on. A route names a screen and the IDs of content it shows, never the ID of a profile, an
-// account, an attempt or a lesson run.
+// The screens of the app live in the hash of its address: /#/<screen>/<part>/… (R14). Any hosting
+// serves the one index.html at the root, with no rule of its own, and the browser sends no fragment
+// to the server, so no hosting log learns which screen a learner is on. A route names a screen and
+// the IDs of content it shows, never the ID of a profile, an account, an attempt or a lesson run.
 
 /** A screen and its parts, as the hash names them. */
 export interface Route {
@@ -46,9 +45,9 @@ export const MODULE_LICENSE: Route = { screen: "license", parts: [] };
 export const TUTOR: Route = { screen: "tutor", parts: [] };
 
 /**
- * The skill map, the learner's second way in beside My subjects (product 4 in spec; R34):
- * `#/skill-map` lists the maps of the modules connected, and `#/skill-map/<module>` is a module's
- * map, by the module's ID — an ID of content, never the learner's.
+ * The skill map, the learner's second way in beside My subjects (R34): `#/skill-map` lists the maps
+ * of the modules connected, and `#/skill-map/<module>` is a module's map, by the module's ID — an
+ * ID of content, never the learner's.
  */
 export const SKILL_MAP: Route = { screen: "skill-map", parts: [] };
 

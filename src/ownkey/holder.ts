@@ -1,14 +1,12 @@
-// The holder of the owner's own key (R08 and R47 in docs/decisions.md; section 3.6 of
-// docs/architecture.md; section 15 of the text of the contracts), with no DOM: the one module that
-// gives the key out, and only for the owner profile of the category `adult` while it is the
-// learner chosen. The key lives in the tab's memory while that profile is open, and in its
-// database only while the adult keeps it on this device; it is never in the holder's snapshot,
-// which the screens read. A request that calls AI takes from it the key — and so no clock offset —,
-// or on platform AI the offset; a request that may give an engine's choice, the provider alone. A
-// new key comes in only once `CheckOwnKey` has accepted it, in place of the former one; the other
-// tabs hear of each change and read the database again. A refusal of the key or its limit reached
-// stays beside the key for the section for adults, and nothing moves to platform AI behind the
-// owner's back.
+// The holder of the owner's own key (R08, R47; the contract), with no DOM: the one module that
+// gives the key out, and only for the owner profile of the category `adult` while it is the learner
+// chosen. The key lives in the tab's memory while that profile is open, and in its database only
+// while the adult keeps it on this device; it is never in the holder's snapshot, which the screens
+// read. A request that calls AI takes from it the key — and so no clock offset —, or on platform AI
+// the offset; a request that may give an engine's choice, the provider alone. A new key comes in
+// only once `CheckOwnKey` has accepted it, in place of the former one; the other tabs hear of each
+// change and read the database again. A refusal of the key or its limit reached stays beside the
+// key for the section for adults, and nothing moves to platform AI behind the owner's back.
 
 import { OwnKeySchema } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
 import { Cause } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
@@ -153,7 +151,7 @@ export class KeyHolder {
 
   /**
    * The field of a request of the profile that may give an engine's choice and sends no key: the
-   * provider alone, or nothing on platform AI. Never beside a work or a key (contract, section 15).
+   * provider alone, or nothing on platform AI. Never beside a work or a key (the contract).
    */
   routeFields(profileId: string): { readonly ownKeyProvider: string } | Record<string, never> {
     const key = this.keyFor(profileId);

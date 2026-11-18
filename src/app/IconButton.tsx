@@ -1,9 +1,8 @@
-// A button that shows its icon alone (R60 in docs/decisions.md; section 3.9 of
-// docs/architecture.md): only the buttons of the closed list of R90 spec, each with its caption
-// as its accessible name and a tooltip of the same words. The tooltip is app's own, white on an
-// opaque #1d1d1f (the third 2026-11-17 amendment to R148 spec), and holds WCAG 1.4.13: it comes
-// on pointer hover and on keyboard focus, stays while the pointer is over it, and Escape dismisses
-// it without moving the pointer or the focus. It sits in the top layer, so that no box or dialog
+// A button that shows its icon alone (R60): only the buttons of the closed list of R90 spec, each
+// with its caption as its accessible name and a tooltip of the same words. The tooltip is app's
+// own, white on an opaque #1d1d1f (R148 spec), and holds WCAG 1.4.13: it comes on pointer hover and
+// on keyboard focus, stays while the pointer is over it, and Escape dismisses it without moving the
+// pointer or the focus. It sits in the top layer, so that no box or dialog
 // around the button clips it, and it hides no content but while it is wanted.
 import {
   type ComponentProps,
@@ -23,9 +22,9 @@ import type { IconValue } from "./icons.ts";
 import { tipAt } from "./tip.ts";
 
 /**
- * The closed list (the 2026-11-14 amendments to R90 spec): each button that shows no caption,
- * its icon — none for the grabber, which draws a bar — and the caption that names it. A button
- * joins the list only by an amendment to R90 spec, and then to R60 here.
+ * The closed list (R90 spec): each button that shows no caption, its icon — none for the grabber,
+ * which draws a bar — and the caption that names it. A button joins the list only by a change of
+ * R90 spec, and then of R60.
  */
 export const CAPTIONLESS = {
   back: { icon: "back", word: "icon.back" },

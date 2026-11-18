@@ -1,22 +1,21 @@
-// "My subjects", the learner's home (sections 3.8, 3.9 and 3.10 of docs/architecture.md; R99
-// spec): the modules connected to the profile and, below them, the catalog of the ones it may
-// connect, each a card with its title in its own explanation language and, when that is not the
-// screen's, a line that names it, in the order of the screen's language. Connecting and
-// disconnecting are a press away; api's answer is the list of connected modules, and the focus goes
-// with the card to its new place. An attempt open outside a lesson is a press away, above the lists
-// (T24), and so is each lesson run open, by the lesson's title as this device keeps it, or else its
-// module's name (T27; R23); and "What's next" asks the engine, or "Something else" beside an
-// attempt open, which it closes (T28; R24). A card of a version has the page of its license beside
-// its button (R32). Below the lists the screen says that the tutor is an AI, and leads to the page
-// on how to use it safely (R33). Beside the engine's way the screen leads to the skill map, the
-// second way in, where the learner chooses a skill (R34), and to "My essays" (R53); a card marks a
-// module whose skill graph is a chain "in order" (R06). Under its heading, where the learner begins
-// their work, the screen says how much of today's tutor time the profile has used, or, once it is
-// used up, when it comes back (section 15 of the text of the contracts, "The quota"; R37). It is
-// drawn as the mockup's `home` (R148 spec; R62): what comes next and the tutor time on a card
-// at the top, "A task from my paper" beside it, shown and not open; each card of a module connected
-// with the states of its skills, counted by the rule of skill-map's map, and a way to its map; the
-// legend of the marks below the cards, and on a phone behind a button.
+// "My subjects", the learner's home (R99 spec): the modules connected to the profile and, below
+// them, the catalog of the ones it may connect, each a card with its title in its own explanation
+// language and, when that is not the screen's, a line that names it, in the order of the screen's
+// language. Connecting and disconnecting are a press away; api's answer is the list of connected
+// modules, and the focus goes with the card to its new place. An attempt open outside a lesson is a
+// press away, above the lists (R20), and so is each lesson run open, by the lesson's title as this
+// device keeps it, or else its module's name (R23); and "What's next" asks the engine, or
+// "Something else" beside an attempt open, which it closes (R24). A card of a version has the page
+// of its license beside its button (R32). Below the lists the screen says that the tutor is an AI,
+// and leads to the page on how to use it safely (R33). Beside the engine's way the screen leads to
+// the skill map, the second way in, where the learner chooses a skill (R34), and to "My essays"
+// (R53); a card marks a module whose skill graph is a chain "in order" (R06). Under its heading,
+// where the learner begins their work, the screen says how much of today's tutor time the profile
+// has used, or, once it is used up, when it comes back (the contract's quota; R37). It is drawn as
+// the mockup's `home` (R148 spec; R62): what comes next and the tutor time on a card at the top, "A
+// task from my paper" beside it, shown and not open; each card of a module connected with the
+// states of its skills, counted by the rule of skill-map's map, and a way to its map; the legend of
+// the marks below the cards, and on a phone behind a button.
 import type { QuotaShare } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 // Whose action a request is; the cards have actions of their own.
 import { Action as Actor } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
@@ -253,7 +252,7 @@ export function SubjectsScreen({
             </p>
           )}
         </section>
-        {/* Shown, not open: tasks from paper come later (R148 spec; product 4 and 11 in spec). */}
+        {/* Shown, not open: tasks from paper come later (R148 spec). */}
         <section aria-labelledby={paperId} className="nt-paper">
           <span className="nt-paper-icon" aria-hidden="true">
             <Icon value="camera" />
@@ -456,7 +455,7 @@ export function MySubjects({
 
   // The share of the quota, by the learner's action: the profile's alone. It holds nothing back:
   // a share that did not come is no line, nor is one from an api that has none yet (R27), and the
-  // lists stand as they are. A child's profile, which E4 brings, gets the same: never the account's.
+  // lists stand as they are. A child's profile gets the same: never the account's.
   const readShare = useCallback((of: Api) => readQuota(of, profileId, Actor.LEARNING), [profileId]);
   const share = useRequest(readShare);
   const retryShare = share.retry;

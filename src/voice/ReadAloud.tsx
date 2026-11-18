@@ -1,9 +1,9 @@
-// "Read aloud" beside a text (R07, R36 and R60 in docs/decisions.md; sections 3.5
-// and 3.9 of docs/architecture.md): the speaker button, its icon alone, reads the text by the voice of its language,
-// the voicing off too, and a second press while it reads stops it. Where the text cannot be said —
-// no voice for its language on this device, or on Android and Linux before an adult's leave — the
-// button stays, not active, and the line beside it, which describes it, says why. It is no status
-// message: it stands from the start, and a status on every button would be read out on every screen.
+// "Read aloud" beside a text (R07, R36, R60): the speaker button, its icon alone, reads the text by
+// the voice of its language, the voicing off too, and a second press while it reads stops it. Where
+// the text cannot be said — no voice for its language on this device, or on Android and Linux
+// before an adult's leave — the button stays, not active, and the line beside it, which describes
+// it, says why. It is no status message: it stands from the start, and a status on every button
+// would be read out on every screen.
 import { useEffect, useId, useRef, useSyncExternalStore } from "react";
 import { IconButton } from "../app/IconButton.tsx";
 import { languageName } from "../i18n/intl.ts";

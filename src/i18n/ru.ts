@@ -1,7 +1,7 @@
-// The Russian dictionary: every key of the English one and no other, with the same places, and
-// the forms of a number Russian has — `one`, `few`, `many` and `other`. tsc checks all of it, so a
-// pull request without a Russian string fails ci-lint (section 3.8 of docs/architecture.md). On
-// the learner's screens no address to the learner, no past tense and no short adjective about them.
+// The Russian dictionary: every key of the English one and no other, with the same places, and the
+// forms of a number Russian has — `one`, `few`, `many` and `other`. tsc checks all of it, so a pull
+// request without a Russian string fails ci-lint (R17). On the learner's screens no address to the
+// learner, no past tense and no short adjective about them.
 import type { en } from "./en.ts";
 import { type Holds, plural, type SamePlaces, type Translation } from "./types.ts";
 

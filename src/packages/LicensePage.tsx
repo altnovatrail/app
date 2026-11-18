@@ -1,8 +1,7 @@
-// The page of a module's license (R32 in docs/decisions.md; R62 spec; sections 3.2 and 3.10 of
-// docs/architecture.md): LICENSE and NOTICE of the device part of a version, as they are, each in
-// `<pre lang="en">`, and the module by its manifest — its title in its explanation language, its
-// version and its license by name. The files come from api by the digest of the package
-// (files.ts), and nothing on the page leads out of app (privacy 7 in spec). The page shows at
+// The page of a module's license (R32; R62 spec): LICENSE and NOTICE of the device part of a
+// version, as they are, each in `<pre lang="en">`, and the module by its manifest — its title in
+// its explanation language, its version and its license by name. The files come from api by the
+// digest of the package (files.ts), and nothing on the page leads out of app. The page shows at
 // `#/license/<digest>` at any step, as the legal pages do, opened from a card of My subjects, a
 // sheet of the mockup's legal text that closes home (R69); and in the section for adults as one of
 // its pages (ModulesPage.tsx).
@@ -80,7 +79,7 @@ export type LicenseFrame = (props: { title: string; children?: ReactNode }) => R
 
 /**
  * The page itself, for the version of a digest, read each time it opens: through the HTTP cache,
- * which keeps the files (section 3.2). `back` is what the page leads back to below its heading, and
+ * which keeps the files (R04). `back` is what the page leads back to below its heading, and
  * `frame` the screen it stands in: a page of the section for adults in the section (R68).
  */
 export function ModuleLicense({

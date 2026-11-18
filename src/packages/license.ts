@@ -1,9 +1,9 @@
-// What the page of a module's license shows (R32 in docs/decisions.md; R62 spec; section 3.2 of
-// docs/architecture.md): LICENSE and NOTICE of a version's device part, as they are, by the digest
-// of its package. A part with no NOTICE has none, which the format allows; a version api no longer
-// gives is said so, CheckPackages asked meanwhile (files.ts); a file that did not come is a failure
-// of the read, which the page asks again. The module's manifest, which names it above them, the
-// page reads apart, so that one that is slow to come holds no text back. No DOM.
+// What the page of a module's license shows (R32; R62 spec): LICENSE and NOTICE of a version's
+// device part, as they are, by the digest of its package. A part with no NOTICE has none, which the
+// format allows; a version api no longer gives is said so, CheckPackages asked meanwhile
+// (files.ts); a file that did not come is a failure of the read, which the page asks again. The
+// module's manifest, which names it above them, the page reads apart, so that one that is slow to
+// come holds no text back. No DOM.
 import { Code } from "@connectrpc/connect";
 import { ApiError } from "../api/failure.ts";
 import { type DeviceFiles, FileError } from "./files.ts";

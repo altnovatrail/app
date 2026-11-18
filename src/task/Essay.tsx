@@ -1,17 +1,16 @@
-// The screen of an open attempt of an essay, a task whose answer slot is bound `sheet` (sections
-// 3.2 and 3.3 of docs/architecture.md; R53 in docs/decisions.md; R75, R87 and R127 spec): what
-// Task.tsx read of it, and what the learner does on it, written as it is done. The steps, the
-// history of writing and Hint go as on any task (R05, R20, R22). Check sends the crop the canvas
-// gives by `SubmitEssay`, with one idempotency key for this work and the same with every repeat of
-// it, and the own key or the clock's offset; how the submission ended — feedback, unreadable or
-// unchecked —, the text read and the words of the feedback are kept with the essay and its crop,
-// which the server keeps none of; while the profile's storage of works is on, the essay goes there
-// as every work does, its history, the contexts of its submissions and its picture (T62). The
-// attempt stays open: the learner writes the sheet again and
-// sends it again, and closes it by Done, open after the first submission, and then the task is
-// solved. An attempt api closed is the screen of Task.tsx, and the essay stays on the device. The
-// feedback is said by the voicing in the module's language, and "Report a problem" stands at it
-// for a learner of the category adult (R33).
+// The screen of an open attempt of an essay, a task whose answer slot is bound `sheet` (R53;
+// R75, R87 and R127 spec): what Task.tsx read of it, and what the learner does on it, written as it
+// is done. The steps, the history of writing and Hint go as on any task (R05, R20, R22). Check
+// sends the crop the canvas gives by `SubmitEssay`, with one idempotency key for this work and the
+// same with every repeat of it, and the own key or the clock's offset; how the submission ended —
+// feedback, unreadable or unchecked —, the text read and the words of the feedback are kept with
+// the essay and its crop, which the server keeps none of; while the profile's storage of works is
+// on, the essay goes there as every work does, its history, the contexts of its submissions and its
+// picture (R30). The attempt stays open: the learner writes the sheet again and sends it again, and
+// closes it by Done, open after the first submission, and then the task is solved. An attempt api
+// closed is the screen of Task.tsx, and the essay stays on the device. The feedback is said by the
+// voicing in the module's language, and "Report a problem" stands at it for a learner of the
+// category adult (R33).
 import { TutorReply } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
 import {
   CloseReason,
@@ -78,7 +77,7 @@ export function OpenEssay({
   const { views, files } = usePackages();
   const { language, words } = useLanguage();
   const { auto, prime } = useOwnVoicing();
-  // The tutor's panel, as the screen last told: the feedback is said only while it is open (T88).
+  // The tutor's panel, as the screen last told: the feedback is said only while it is open (R67).
   const panelOpen = useRef(false);
   const onPanelChange = useCallback((open: boolean) => {
     panelOpen.current = open;
@@ -192,7 +191,7 @@ export function OpenEssay({
   }, [drawn]);
 
   const check = useCallback(() => {
-    // Within the press: the words that come after it may be said (WebKit; section 3.5).
+    // Within the press: the words that come after it may be said (WebKit; R07).
     prime();
     setPending(true);
     setFailure(undefined);

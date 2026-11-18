@@ -1,9 +1,8 @@
-// Voicing in the three engines (R07, R36 and R45 in docs/decisions.md; section 3.5 of
-// docs/architecture.md): the speaker button and its line where a text cannot be said, the section
-// Voicing of the page This device with the voices of each language and the adult's leave kept in
-// the registry, and the path "no voice" on the engine's own speechSynthesis: in the container
-// Chromium's and Firefox's have no voice at all, and WebKit's only the four English voices of flite,
-// none of them local by its own word (measurements 4).
+// Voicing in the three engines (R07, R36, R45): the speaker button and its line where a text cannot
+// be said, the section Voicing of the page This device with the voices of each language and the
+// adult's leave kept in the registry, and the path "no voice" on the engine's own speechSynthesis:
+// in the container Chromium's and Firefox's have no voice at all, and WebKit's only the four
+// English voices of flite, none of them local by its own word.
 import { ProfileSchema } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import type * as open from "@altnovatrail/spec/formatv0/open";
 import { create } from "@bufbuild/protobuf";

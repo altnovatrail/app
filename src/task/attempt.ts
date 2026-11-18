@@ -1,10 +1,9 @@
-// What the task screen sends and reads of an attempt (section 15 of the text of the contracts;
-// sections 3.3 and 3.10 of docs/architecture.md): the options tapped, one for each answer slot bound
-// `choice`, in the task's order, and the handwriting as the contract carries it — a sheet's one
-// crop, a workbook's filled boxes with their places, and nothing of the history or the context; the
-// verdict of each item and slot, with what was read or why it could not be, whose codes the build
-// may not know; the tutor's marks as the canvas takes them, each named; and the solution of a task
-// solved, as JSON of the module format. No DOM.
+// What the task screen sends and reads of an attempt: the options tapped, one for each answer slot
+// bound `choice`, in the task's order, and the handwriting as the contract carries it — a sheet's
+// one crop, a workbook's filled boxes with their places, and nothing of the history or the context;
+// the verdict of each item and slot, with what was read or why it could not be, whose codes the
+// build may not know; the tutor's marks as the canvas takes them, each named; and the solution of a
+// task solved, as JSON of the module format. No DOM.
 
 import type { WorkSchema } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
 import {
@@ -54,7 +53,7 @@ export function tappedChoices(
   return tapped;
 }
 
-/** The words of each verdict an item or a slot gets (section 3.8). */
+/** The words of each verdict an item or a slot gets (R17). */
 export const VERDICT_KEYS = {
   correct: "task.correct",
   not_yet: "task.not-yet",
@@ -67,7 +66,7 @@ export function verdictKey(verdict: string) {
   return keyFor(VERDICT_KEYS, verdict);
 }
 
-/** The words of each reason a slot could not be read for (R56, R86 spec; section 3.3). */
+/** The words of each reason a slot could not be read for (R56, R86 spec). */
 export const REASON_KEYS = {
   blank: "task.reason-blank",
   notation: "task.reason-notation",
@@ -239,7 +238,7 @@ export async function workOf(work: ExportedWork): Promise<MessageInitShape<typeo
 /** How a mark is named by its number, the count, and on a workbook its line and box. */
 export type MarkName = (n: number, total: number, cell?: { item: number; slot: number }) => string;
 
-/** The names of marks in a screen's words (section 3.8): on a workbook, with the line and the box. */
+/** The names of marks in a screen's words (R17): on a workbook, with the line and the box. */
 export function markNames(words: Words): MarkName {
   return (n, total, cell) =>
     cell === undefined

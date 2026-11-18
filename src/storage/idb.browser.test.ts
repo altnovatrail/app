@@ -1,6 +1,5 @@
-// The backend on the engine's own IndexedDB: what the store in memory stands in for in Node; and the
-// work kept as bytes, with a Blob that schema version 1 kept read after it (the 2026-11-12
-// amendment to R16).
+// The backend on the engine's own IndexedDB: what the store in memory stands in for in Node; and
+// the work kept as bytes, with a Blob that schema version 1 kept read after it (R16).
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { server } from "vitest/browser";
 import { type Connection, NewerSchemaError, type Schema, within } from "./backend.ts";
@@ -188,8 +187,8 @@ describe("the work in a profile's database on IndexedDB", () => {
     expect(await cell?.png.text()).toBe("box");
   });
 
-  // WebKit writes no Blob in an ephemeral session, and a context of Playwright is one (measurements
-  // 2): schema version 1 could keep none there, so there is none to read.
+  // WebKit writes no Blob in an ephemeral session, and a context of Playwright is one: schema
+  // version 1 could keep none there, so there is none to read.
   it.skipIf(server.browser === "webkit")(
     "reads a Blob that schema version 1 kept before the bytes",
     async () => {

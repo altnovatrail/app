@@ -1,11 +1,10 @@
-// A module's level beside its map (R157 spec and its amendment of T173; R56 in
-// docs/decisions.md; section 3.10 of docs/architecture.md): on every learner's map and in the
-// adult's, "The level was set by an adult" with the day of the last correction, by `level_set_at`;
-// and on the adult's map in the section for adults, the band of the level, by `level_band`, with
-// "Easier" and "Harder", each naming the band next to it by the order of the manifest's bands,
-// which `SetModuleLevel` sets. A band no longer next to the level, `CAUSE_BAND_NOT_NEXT`, reads the
-// map again in place, and the buttons offer the bands next to the level it gives. A band's title is
-// the module's text, in its explanation language.
+// A module's level beside its map (R157 spec; R56): on every learner's map and in the adult's, "The
+// level was set by an adult" with the day of the last correction, by `level_set_at`; and on the
+// adult's map in the section for adults, the band of the level, by `level_band`, with "Easier" and
+// "Harder", each naming the band next to it by the order of the manifest's bands, which
+// `SetModuleLevel` sets. A band no longer next to the level, `CAUSE_BAND_NOT_NEXT`, reads the map
+// again in place, and the buttons offer the bands next to the level it gives. A band's title is the
+// module's text, in its explanation language.
 import { Action } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
 import { Cause } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import type { GetSkillMapResponse } from "@altnovatrail/contracts/novatrail/api/v1/progress_pb.js";

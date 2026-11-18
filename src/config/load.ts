@@ -1,6 +1,5 @@
-// The fetch of /deployment.json at every start, before any other request (R09 in
-// docs/decisions.md; section 3.7 of docs/architecture.md): what the answer has to be, and what
-// the learner sees when it is not. No DOM beyond fetch and its Response.
+// The fetch of /deployment.json at every start, before any other request (R09): what the answer has
+// to be, and what the learner sees when it is not. No DOM beyond fetch and its Response.
 import { type Deployment, readDeployment } from "./deployment.ts";
 
 /** The path of the file: from the root of the origin, wherever the document is. */
@@ -44,7 +43,7 @@ async function bodyOf(response: Response): Promise<Uint8Array | undefined> {
   return body;
 }
 
-/** The line for whoever deployed the copy, in English (the 2026-11-02 amendment to R09). */
+/** The line for whoever deployed the copy, in English (R09). */
 function unconfigured(detail: string): Loaded {
   return { kind: "unconfigured", detail };
 }

@@ -1,5 +1,4 @@
-// The interceptors of the contract's rules (section 15 of the text of the contracts; R18 in
-// docs/decisions.md), outermost first:
+// The interceptors of the contract's rules (R18), outermost first:
 // - what the device does on a refusal: the account gone — erased and signed out; no access — what is
 //   left of the account before erased; a method api no longer has — a reload offered;
 // - the sign-in: the ID token in `Authorization` on every request but the open views and the legal
@@ -15,13 +14,13 @@ import type { Tokens } from "./tokens.ts";
 
 /** What the device does on the refusals that touch it. */
 export interface ApiEvents {
-  /** api no longer has a method: the build is older, and a reload is offered (section 3.7). */
+  /** api no longer has a method: the build is older, and a reload is offered (R18). */
   readonly stale: () => void;
   /** The account is no more: everything of it is erased, and the device signs out. */
   readonly accountGone: () => Promise<void>;
   /** The user has no account: what is left of the one the registry names is erased (R04). */
   readonly noAccess: () => Promise<void>;
-  /** api no longer gives a package's version: CheckPackages is asked (section 15; T21). */
+  /** api no longer gives a package's version: CheckPackages is asked (R18). */
   readonly withdrawn?: () => void;
 }
 
@@ -35,10 +34,9 @@ const OPEN = new Set([
 ]);
 
 /**
- * The methods whose absence is no build older than api: the legal texts came with spec v0.13.0,
- * and an api on an older tag, which has none in force, answers them `unimplemented` (R27); the
- * share of the quota came with v0.16.3, and an api on an older tag has none to give; and an api
- * with no `WorkService` keeps no work, which then stays on the device alone, as before it (T62).
+ * The methods whose absence is no build older than api: an api on an older tag of spec has no
+ * legal texts in force and answers them `unimplemented` (R27), nor a share of the quota to give;
+ * and an api with no `WorkService` keeps no work, which then stays on the device alone (R30).
  */
 const MAY_BE_ABSENT = new Set([
   "novatrail.api.v1.LegalService/GetLegalTexts",
@@ -63,7 +61,7 @@ export function retryAfter(headers: Pick<Headers, "get">): number | undefined {
 
 /**
  * The methods whose `CAUSE_VERSION_NOT_GIVEN` is no withdrawal: `PutWork` gets it for a version out
- * of the window of formats that api reads, with no work of the attempt kept before (T62).
+ * of the window of formats that api reads, with no work of the attempt kept before (R30).
  */
 const NOT_WITHDRAWN = new Set(["novatrail.api.v1.WorkService/PutWork"]);
 
@@ -98,7 +96,7 @@ export function signIn(tokens: Tokens): Interceptor {
       return await next(request);
     } catch (reason) {
       const error = ConnectError.from(reason);
-      // The cause first: a refusal with one is never met by a refresh (section 15).
+      // The cause first: a refusal with one is never met by a refresh.
       if (error.code !== Code.Unauthenticated || refusalOf(error) !== undefined) throw error;
       const fresh = await tokens.token(true).catch(() => undefined);
       if (fresh === undefined) throw error;

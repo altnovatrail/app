@@ -1,6 +1,6 @@
-// The counts of the skills on the cards (R62 in docs/decisions.md): each map asked once for a
-// profile, module and version; a map that failed asked again with the next cards; and another
-// profile's counts never shown on a card of the same module.
+// The counts of the skills on the cards (R62): each map asked once for a profile, module and
+// version; a map that failed asked again with the next cards; and another profile's counts never
+// shown on a card of the same module.
 import { GetSkillMapResponseSchema } from "@altnovatrail/contracts/novatrail/api/v1/progress_pb.js";
 import { create } from "@bufbuild/protobuf";
 import { renderHook, waitFor } from "@testing-library/react";

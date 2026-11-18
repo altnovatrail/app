@@ -1,11 +1,10 @@
-// The sign-in and the account of this tab (sections 3.2 and 3.10 of docs/architecture.md; section
-// 15 of the text of the contracts; R04 with its amendments and R19 in docs/decisions.md), with no
-// DOM: who is signed in, the account `GetAccount` gives at the start and after each sign-in, and
-// what the device erases on each. An account in the registry other than the one api names goes
-// before anything of the app opens; a profile the list does not hold goes; a failure of the network
-// erases nothing. A user with no account gets the invite code, an account with no owner's profile
-// gets that profile, and the learner chosen lives in memory alone. The sign-out signs out of the
-// sign-in service first, then erases everything of the account.
+// The sign-in and the account of this tab (R04, R19; the contract), with no DOM: who is signed in,
+// the account `GetAccount` gives at the start and after each sign-in, and what the device erases on
+// each. An account in the registry other than the one api names goes before anything of the app
+// opens; a profile the list does not hold goes; a failure of the network erases nothing. A user
+// with no account gets the invite code, an account with no owner's profile gets that profile, and
+// the learner chosen lives in memory alone. The sign-out signs out of the sign-in service first,
+// then erases everything of the account.
 import type { Account, Profile } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import { Cause } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import type { LegalTextRef } from "@altnovatrail/contracts/novatrail/api/v1/legal_pb.js";
@@ -49,7 +48,7 @@ export type SessionState =
       readonly owner: Profile;
       readonly first: boolean;
     }
-  /** A learner chosen, in memory alone (section 3.2). */
+  /** A learner chosen, in memory alone (R04). */
   | { readonly step: "learning"; readonly account: Account; readonly learner: Profile };
 
 /** What came of a form that asks api: done, the form's own refusal, or a failure to show. */
@@ -74,7 +73,7 @@ export interface Unfinished {
 /**
  * The marks of the works on the server go from each profile whose storage of works is off, as
  * `GetAccount` names it: switched off on another device or in a closed tab, it erased the copies
- * (section 3.2; T62). A database that does not open keeps its marks until the next start.
+ * (R30). A database that does not open keeps its marks until the next start.
  */
 export async function marksFollow(device: Device, profiles: readonly Profile[]): Promise<void> {
   const registry = await readRegistry(device);
@@ -91,8 +90,8 @@ export async function marksFollow(device: Device, profiles: readonly Profile[]):
 /**
  * The attempts each profile of the account keeps unfinished on this device, and its essays the
  * server does not keep — all of them while the profile's storage of works is off, and those whose
- * last `PutWork` did not go through while it is on: the work the sign-out would take (section
- * 3.2; R53; T62). A profile with neither, or with no database here, is not named.
+ * last `PutWork` did not go through while it is on: the work the sign-out would take (R30, R53). A
+ * profile with neither, or with no database here, is not named.
  */
 export async function unfinishedWork(
   device: Device,
@@ -234,8 +233,8 @@ export class Session {
         this.fresh = account.accountId;
       }
       await accountSeen(device, account.accountId);
-      // Whatever is still to be erased goes before anything opens, as at the start (section 3.2):
-      // a database another tab holds keeps this account shut until it is gone.
+      // Whatever is still to be erased goes before anything opens, as at the start (R16): a
+      // database another tab holds keeps this account shut until it is gone.
       const left = [...((await readRegistry(device))?.databases ?? [])]
         .filter(([, entry]) => entry.erase)
         .map(([name]) => name);

@@ -1,14 +1,14 @@
 // The invite code of a user with no account, in two steps, as the mockup's `invite` and `agree`
-// (R27, R46 and R61 in docs/decisions.md; sections 3.2 and 3.10 of docs/architecture.md): the code,
-// then the owner's statement of being 18 or older (R118 spec) and their acceptance of the privacy
-// policy and the terms of use in force, each shown in place below (R131 spec). Nothing goes to
-// api before "Create account", which sends the code with the statement and the versions shown: a
-// code api does not take brings the first step back with its line. While no text is in force there
-// is nothing to accept; while the texts are not read, nothing is sent. The acceptance holds for the
-// versions it was given for: other versions shown take it back. A text's next version shows in place
-// below it, with the day it applies from, and is accepted by no one: a consent names the current
-// version (R46). A step's button looks off until its step is given but keeps the focus (R20): pressed,
-// it says what is missing and focuses it. What is typed and ticked outlives a visit to the legal pages.
+// (R27, R46, R61): the code, then the owner's statement of being 18 or older (R118 spec) and their
+// acceptance of the privacy policy and the terms of use in force, each shown in place below (R131
+// spec). Nothing goes to api before "Create account", which sends the code with the statement and
+// the versions shown: a code api does not take brings the first step back with its line. While no
+// text is in force there is nothing to accept; while the texts are not read, nothing is sent. The
+// acceptance holds for the versions it was given for: other versions shown take it back. A text's
+// next version shows in place below it, with the day it applies from, and is accepted by no one: a
+// consent names the current version (R46). A step's button looks off until its step is given but
+// keeps the focus (R20): pressed, it says what is missing and focuses it. What is typed and ticked
+// outlives a visit to the legal pages.
 import type { LegalTextRef } from "@altnovatrail/contracts/novatrail/api/v1/legal_pb.js";
 import { type FormEvent, type RefObject, useEffect, useId, useRef, useState } from "react";
 import type { RequestState } from "../api/ApiContext.tsx";

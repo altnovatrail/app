@@ -1,6 +1,6 @@
-// The place in a lesson and the way along its bar (section 3.4 of docs/architecture.md; R06, R23):
-// the lesson of the format's example, gaps-and-posts — an explanation, a worked example, a task and
-// an explanation —, and one that ends with its task, as remainders-on-a-workbook.
+// The place in a lesson and the way along its bar (R06, R23): the lesson of the format's example,
+// gaps-and-posts — an explanation, a worked example, a task and an explanation —, and one that ends
+// with its task, as remainders-on-a-workbook.
 import { describe, expect, it } from "vitest";
 import {
   type Course,

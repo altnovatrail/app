@@ -1,7 +1,7 @@
-// The owner's profile in the browser (R19 and R61 in docs/decisions.md; section 3.10 of
-// docs/architecture.md): a pseudonym, a country and, if the owner chooses one, an avatar of the set,
-// each choice in a pop-over; "Continue" waits for a pseudonym and a country, a pseudonym too long
-// keeps the focus, and a country api does not take brings the focus back to its row with the line.
+// The owner's profile in the browser (R19, R61): a pseudonym, a country and, if the owner chooses
+// one, an avatar of the set, each choice in a pop-over; "Continue" waits for a pseudonym and a
+// country, a pseudonym too long keeps the focus, and a country api does not take brings the focus
+// back to its row with the line.
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";

@@ -1,10 +1,9 @@
-// The body of a legal text as elements of React (section 3.8 of docs/architecture.md; R27 in
-// docs/decisions.md): CommonMark with the tables of GitHub's flavour, as the legal part of spec
-// writes it, with no HTML, no image and no link (section 4 of its text). The lexer of marked reads
-// it, and each token becomes an element here: no HTML string is made and none is set, so that
-// nothing of the text runs or leads out. HTML, a link and an image, which the part refuses, come
-// out as their text — the raw tag, the link's words, the image's description — rather than as what
-// they would be. A heading keeps its order below the level the page gives it.
+// The body of a legal text as elements of React (R27): CommonMark with the tables of GitHub's
+// flavour, as the legal part of spec writes it, with no HTML, no image and no link. The lexer of
+// marked reads it, and each token becomes an element here: no HTML string is made and none is set,
+// so that nothing of the text runs or leads out. HTML, a link and an image, which the part refuses,
+// come out as their text — the raw tag, the link's words, the image's description — rather than as
+// what they would be. A heading keeps its order below the level the page gives it.
 import type { Token, Tokens } from "marked";
 import { type ReactNode, useMemo } from "react";
 import { decoded, tokensOf } from "./body.ts";

@@ -1,24 +1,23 @@
-// The task screen (section 3.3 of docs/architecture.md; R20, R21, R22, R65 and R67 in
-// docs/decisions.md), as the mockup's `task-pill` and `task`, laid out by TaskLayout: the canvas over
-// the window, and at its foot the row of glass — "Choose an answer" where the task has options, which
-// opens them in a pop-over, Hint, "Show the solution" when the learner may ask for it, which asks
-// first in a pop-over of its own, and after a line Check. The tutor's panel opens by the tutor's
-// button, by the step's pill and by Hint, and closes by its × — a verdict does not open it, and with
-// it closed the tutor says nothing of the work (the second 2026-11-17 amendment to R148 spec;
-// R21). In the open panel stand the line that the tutor is an AI, the verdict's line, the hint asked
-// for and the tutor's words, and at its foot Hint and "Explain differently". Above the row stands
-// the verdict's card while the panel is closed: the work being read, "Not yet" with what was read,
-// Hint and "Try again", which puts it away; why Check does not open, once it is pressed so, open or
-// closed; "Correct" or "Solution shown" once the task is over. Then the panel gives way to the
-// result: the button "Tutor" while the panel was closed, the words after a correct answer once it
-// is open — or why none came while platform AI is closed (R37) —, the solution, the way to what the
-// engine chose (T28) and "Try it again"; the options take no tap, the row goes, and the canvas stays
-// as it was. Under a lesson's header it is no screen of its own, and its result ends with the
+// The task screen (R20, R21, R22, R65, R67), as the mockup's `task-pill` and `task`, laid out by
+// TaskLayout: the canvas over the window, and at its foot the row of glass — "Choose an answer"
+// where the task has options, which opens them in a pop-over, Hint, "Show the solution" when the
+// learner may ask for it, which asks first in a pop-over of its own, and after a line Check. The
+// tutor's panel opens by the tutor's button, by the step's pill and by Hint, and closes by its × —
+// a verdict does not open it, and with it closed the tutor says nothing of the work (R148 spec;
+// R21). In the open panel stand the line that the tutor is an AI, the verdict's line, the hint
+// asked for and the tutor's words, and at its foot Hint and "Explain differently". Above the row
+// stands the verdict's card while the panel is closed: the work being read, "Not yet" with what was
+// read, Hint and "Try again", which puts it away; why Check does not open, once it is pressed so,
+// open or closed; "Correct" or "Solution shown" once the task is over. Then the panel gives way to
+// the result: the button "Tutor" while the panel was closed, the words after a correct answer once
+// it is open — or why none came while platform AI is closed (R37) —, the solution, the way to what
+// the engine chose (R24) and "Try it again"; the options take no tap, the row goes, and the canvas
+// stays as it was. Under a lesson's header it is no screen of its own, and its result ends with the
 // lesson's Continue in place of "Try it again" (R23). What it shows it takes from its container,
 // Task.tsx, which also gives the canvas the tutor's marks and "Report a problem" with the tutor's
 // words, for a learner of the category adult (R33). Above the canvas, "Read aloud" of the statement
 // with its items, and the voicing of the profile switched on and off while the panel, whose head
-// has it then, is closed (R07; T45). Above the card on a handwriting sheet, the reminder to write no
+// has it then, is closed (R07). Above the card on a handwriting sheet, the reminder to write no
 // names, whose crop goes to AI whole (R127 spec; R53).
 import type * as open from "@altnovatrail/spec/formatv0/open";
 import { useEffect, useId, useState } from "react";
@@ -342,7 +341,7 @@ function ChooseButton(props: TaskScreenProps) {
   const verdict = only === undefined ? undefined : verdicts.slots.get(only);
   const label = words.text("task.choose");
   const language = manifest?.languages.explanation;
-  // Its name says the verdict in a word, which its sign alone does not (section 3.9).
+  // Its name says the verdict in a word, which its sign alone does not (R11).
   const named =
     chosen === undefined
       ? undefined

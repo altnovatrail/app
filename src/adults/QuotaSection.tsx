@@ -1,12 +1,11 @@
-// The share of the quota of platform AI, "Tutor time", on a profile's page in the section for adults
-// (section 15 of the text of the contracts, "The quota"; concepts 14 in spec; R11 api): read by
-// an adult's action when the page opens, the share of the profile's cap and of the account's that
-// today's spending takes — in percent, never a sum in dollars and never the cap —, that no work of
-// the profile goes to platform AI once a cap is reached, and when the next family day begins, by
-// the device's calendar (R37). An account whose tariff has no caps gets no share: platform AI is
-// closed to it, and the section says so in one line. An api with no `GetQuota` yet shows no
-// section at all, as the legal texts of one that has none are no text (R27). In the device's
-// language, as the section is (R10).
+// The share of the quota of platform AI, "Tutor time", on a profile's page in the section for
+// adults (the contract's quota; R11 api): read by an adult's action when the page opens, the share
+// of the profile's cap and of the account's that today's spending takes — in percent, never a sum
+// in dollars and never the cap —, that no work of the profile goes to platform AI once a cap is
+// reached, and when the next family day begins, by the device's calendar (R37). An account whose
+// tariff has no caps gets no share: platform AI is closed to it, and the section says so in one
+// line. An api with no `GetQuota` yet shows no section at all, as the legal texts of one that has
+// none are no text (R27). In the device's language, as the section is (R10).
 import type { Profile } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import { Action } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
 import { type ReactNode, useCallback, useId } from "react";

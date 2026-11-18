@@ -1,18 +1,17 @@
-// The way into the app (sections 3.2, 3.6 and 3.10 of docs/architecture.md; R19 in
-// docs/decisions.md): the sign-in, the invite code of a user with no account with the legal texts it
-// accepts (R27), the owner's own profile, the choice of the learner and the sign-out, each a screen
-// of its own in the language of the device. The app below it opens only once a learner is chosen,
-// so that nothing of it opens before the device has erased what an account other than the one api
-// names left there. The section for adults opens from the choice of the learner and from the bar
-// above the learner's screens, in place of either, while the account is open (R29); a profile it
-// changes, the other tabs hear of by BroadcastChannel, and a change they tell of comes here. The
-// legal pages show at any step, before signing in too, from the sign-in screen and from the
-// section's first page, and their bar goes back to where they were opened from (R31); the choice
-// of the learner and the section's first page tell of a text's next version and open its page
-// (R46). So does the license of a module's version, opened from a card of My subjects, in the
-// language of the learner's screens while a learner is chosen, and closed home (R32); and so does
-// the page on the AI tutor, opened from My subjects too (R33), which opens the page of who runs
-// this copy, whose bar comes back to it (R46).
+// The way into the app (R16, R19, R61): the sign-in, the invite code of a user with no account with
+// the legal texts it accepts (R27), the owner's own profile, the choice of the learner and the
+// sign-out, each a screen of its own in the language of the device. The app below it opens only
+// once a learner is chosen, so that nothing of it opens before the device has erased what an
+// account other than the one api names left there. The section for adults opens from the choice of
+// the learner and from the bar above the learner's screens, in place of either, while the account
+// is open (R29); a profile it changes, the other tabs hear of by BroadcastChannel, and a change
+// they tell of comes here. The legal pages show at any step, before signing in too, from the
+// sign-in screen and from the section's first page, and their bar goes back to where they were
+// opened from (R31); the choice of the learner and the section's first page tell of a text's next
+// version and open its page (R46). So does the license of a module's version, opened from a card of
+// My subjects, in the language of the learner's screens while a learner is chosen, and closed home
+// (R32); and so does the page on the AI tutor, opened from My subjects too (R33), which opens the
+// page of who runs this copy, whose bar comes back to it (R46).
 import type { Profile } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import {
   createContext,
@@ -67,7 +66,7 @@ export interface Learner {
   readonly signOut: () => void;
   /** Opens a legal page, whose bar goes back home: the adult's Help leads to three (R63). */
   readonly openLegal: (page: Route) => void;
-  /** api changed the profile on a learner's screen — its voicing (T45): the session takes it. */
+  /** api changed the profile on a learner's screen — its voicing (R36): the session takes it. */
   readonly onSaved: (profile: Profile) => void;
   /** A request of a learner's screen about the profile did not go through. */
   readonly onFailed: (failure: Failure) => void;
@@ -202,8 +201,8 @@ export function AccountGate({ children }: { readonly children: ReactNode }) {
           profiles={state.account.profiles}
           onSaved={onSaved}
           onFailed={onFailed}
-          // The own key is the owner profile's: the page opens it, with no PIN while the account has
-          // no child (section 3.6).
+          // The own key is the owner profile's: the page opens it, with no PIN while the account
+          // has no child (R08).
           {...(state.step === "choose" ? { onOpenOwner: () => session.choose() } : {})}
           onEraseAll={async () => {
             const done = await session.signOut(true);
@@ -317,7 +316,7 @@ function InviteStep({
   );
 }
 
-/** Before the sign-out: what it takes from this device (section 3.2), and a way back. */
+/** Before the sign-out: what it takes from this device (R04), and a way back. */
 export function SignOutScreen({
   device,
   profiles,

@@ -1,8 +1,7 @@
-// What the screen of an attempt shares, a task with a verdict and an essay alike (section 3.3 of
-// docs/architecture.md; R20, R53 in docs/decisions.md): why an attempt is over, in words, by its
-// close reason; the close reason a refusal `CAUSE_ATTEMPT_CLOSED` tells; the techniques a solving
-// step asks api for once, in the mode "by steps" (R05); the voicing of the screen; and the work the
-// device keeps of the attempt.
+// What the screen of an attempt shares, a task with a verdict and an essay alike (R20, R53): why an
+// attempt is over, in words, by its close reason; the close reason a refusal `CAUSE_ATTEMPT_CLOSED`
+// tells; the techniques a solving step asks api for once, in the mode "by steps" (R05); the voicing
+// of the screen; and the work the device keeps of the attempt.
 import { Cause, CloseReason } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import type { CanvasElement, HistoryChangeEvent } from "@altnovatrail/spec/canvas";
 import type * as open from "@altnovatrail/spec/formatv0/open";

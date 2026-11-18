@@ -1,7 +1,7 @@
 // The probe of the element in JSX: the package registers it on import, before the first render
 // (R42 canvas), React gives it its properties and listens for its events, and the types of its
-// contract are spec's (section 3.1 of docs/architecture.md). Then what canvas declares against
-// WCAG for app's Accessibility page, held on the element itself (R11; section 3.9).
+// contract are spec's (R15). Then what canvas declares against WCAG for app's Accessibility page,
+// held on the element itself (R11).
 import "@altnovatrail/canvas";
 import type { CanvasElement, HistoryChangeEvent, Media } from "@altnovatrail/spec/canvas";
 import type * as open from "@altnovatrail/spec/formatv0/open";
@@ -104,7 +104,7 @@ const printWidths = (element: CanvasElement) =>
 /**
  * The width of the print from its leftmost piece to its rightmost. Not the sum of the pieces' boxes:
  * a glyph's own box does not scale to the pixel — a lone «r» in Chromium, some 2 px of every box in
- * Firefox (measurements 4).
+ * Firefox.
  */
 function printSpan(element: CanvasElement): number {
   const boxes = [...(element.shadowRoot?.querySelectorAll(".print text") ?? [])].map((text) =>
@@ -133,9 +133,9 @@ async function unzoom(element: CanvasElement) {
   await pressToEnd(await rowButton(element, "Мельче"));
 }
 
-// What canvas declares, or no longer declares, for app's Accessibility page, held on the element
-// itself rather than taken from canvas's documents (R11; section 3.9 of docs/architecture.md). A
-// later canvas that changes any of it fails here, and the page's list is to be read again.
+// What canvas declares, or does not, for app's Accessibility page, held on the element itself
+// rather than taken from canvas's documents (R11). A later canvas that changes any of it fails
+// here, and the page's list is to be read again.
 describe("what canvas declares for app's Accessibility page", () => {
   it("zooms a workbook's print to 200 % by «Крупнее», in a region that scrolls across: 1.4.4 is met", async () => {
     const ref = createRef<CanvasElement>();
@@ -173,9 +173,8 @@ describe("what canvas declares for app's Accessibility page", () => {
       const ref = createRef<CanvasElement>();
       const { unmount } = render(<novatrail-canvas ref={ref} lang="ru" task={task} />);
       const element = ref.current as CanvasElement;
-      // The bar of glass holds the tools and the zoom's pair; «Выше», «Ниже», «Левее» and «Правее»
-      // left the element with canvas 0.3.26 (the second 2026-11-14 amendment to R90 spec):
-      // every button of it, in any row, by its text and by a name of its own.
+      // The bar of glass holds the tools and the zoom's pair, and no button that scrolls
+      // (R90 spec): every button of it, in any row, by its text and by a name of its own.
       await rowButton(element, "Крупнее");
       const labels = [...(element.shadowRoot?.querySelectorAll("button") ?? [])].flatMap(
         (button) => [button.textContent?.trim(), button.getAttribute("aria-label")],
@@ -226,8 +225,8 @@ describe("what canvas declares for app's Accessibility page", () => {
       element.style.blockSize = "12rem";
       await waitFor(() => expect(region(element)?.getAttribute("aria-label")).toBe(name));
       const named = region(element) as HTMLElement;
-      // Since canvas 0.3.25 the region names the element's language by an attribute of its own:
-      // Firefox, which gives a shadow tree no language of its host (measurements 4), has it too.
+      // The region names the element's language by an attribute of its own: Firefox, which gives a
+      // shadow tree no language of its host, has it too.
       expect(named.getAttribute("lang")).toBe(lang);
       expect(named.matches(`:lang(${lang})`)).toBe(true);
       unmount();

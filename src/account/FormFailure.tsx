@@ -1,4 +1,4 @@
-// A failure a form of the way in shows below its button (section 3.10 of docs/architecture.md).
+// A failure a form of the way in shows below its button (R61).
 import type { Failure } from "../api/failure.ts";
 import { failureText } from "../api/words.ts";
 import { useLanguage } from "../i18n/LanguageContext.tsx";

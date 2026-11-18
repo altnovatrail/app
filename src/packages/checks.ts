@@ -1,9 +1,8 @@
-// What the device asks api about the packages whose open views it keeps (section 15 of the text of
-// the contracts; R63 spec; section 3.2 of docs/architecture.md): CheckPackages when app starts
-// and after a sign of a withdrawal — CAUSE_VERSION_NOT_GIVEN, an answer 410, a lesson run ended or an
-// attempt closed unchecked. Of a digest no longer given it erases the open views, in the cache and
-// in the profiles' databases, and the lessons on it; about a digest not known yet it asks later.
-// One check at a time. No DOM.
+// What the device asks api about the packages whose open views it keeps (R63 spec; R16):
+// CheckPackages when app starts and after a sign of a withdrawal — CAUSE_VERSION_NOT_GIVEN, an
+// answer 410, a lesson run ended or an attempt closed unchecked. Of a digest no longer given it
+// erases the open views, in the cache and in the profiles' databases, and the lessons on it; about
+// a digest not known yet it asks later. One check at a time. No DOM.
 import { PackageStatus } from "@altnovatrail/contracts/novatrail/api/v1/package_pb.js";
 import type { Api } from "../api/client.ts";
 import { openCacheDatabase } from "../storage/cache.ts";

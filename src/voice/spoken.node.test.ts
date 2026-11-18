@@ -1,7 +1,6 @@
-// The table of signs in words (R36, which closed Д6 of RUN.md; section 3.5 of
-// docs/architecture.md), on texts of the first slice's modules — grade-3-math, olympiad-math and
-// english-essays of modules v0.2.5, whose explanation language is `en` — and, for `ru`, on texts of
-// the same kinds written for the test.
+// The table of signs in words (R36), on texts of the first slice's modules — grade-3-math,
+// olympiad-math and english-essays of modules v0.2.5, whose explanation language is `en` — and, for
+// `ru`, on texts of the same kinds written for the test.
 import { describe, expect, it } from "vitest";
 import { sentencesOf, spokenText } from "./spoken.ts";
 import { lineText } from "./texts.ts";

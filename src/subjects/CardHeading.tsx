@@ -1,9 +1,8 @@
-// What a module's card says of it (sections 3.8 and 3.10 of docs/architecture.md; R92 spec):
-// its title as the card's heading, in its own explanation language; a line that names that
-// language when it is not the screen's; whether the module is available — a module with no
-// current version for the learner is not —; and the mark "in order" of a module whose skill graph
-// is a chain (R06). My subjects and the skill map name their modules so, and the section for
-// adults its profile's modules and its progress (R32, R34 and R35 in docs/decisions.md).
+// What a module's card says of it (R92 spec): its title as the card's heading, in its own
+// explanation language; a line that names that language when it is not the screen's; whether the
+// module is available — a module with no current version for the learner is not —; and the mark "in
+// order" of a module whose skill graph is a chain (R06). My subjects and the skill map name their
+// modules so, and the section for adults its profile's modules and its progress (R32, R34 and R35).
 import { languageName } from "../i18n/intl.ts";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import type { Language } from "../i18n/language.ts";

@@ -1,8 +1,7 @@
-// Where the tooltip of a button that shows an icon alone goes (R60 in docs/decisions.md; section
-// 3.9 of docs/architecture.md): below the button and centred on it, as the mockup's `.tip-b` has
-// it, or above it where only above has room; moved along so that it stays 8 CSS px inside the
-// window. The gap to the button is the tooltip's own padding, so that the pointer crosses no gap on
-// its way onto it (WCAG 1.4.13, Hoverable). No DOM.
+// Where the tooltip of a button that shows an icon alone goes (R60): below the button and centred
+// on it, as the mockup's `.tip-b` has it, or above it where only above has room; moved along so
+// that it stays 8 CSS px inside the window. The gap to the button is the tooltip's own padding, so
+// that the pointer crosses no gap on its way onto it (WCAG 1.4.13, Hoverable). No DOM.
 import type { Box } from "./hang.ts";
 
 /** The least room between the tooltip and the window's edges, CSS px. */

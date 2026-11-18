@@ -1,8 +1,8 @@
-// The shared cache of the open views of packages, by package digest (section 3.2 of
-// docs/architecture.md; R62 spec): content of modules, not a learner's data, written with
-// relaxed durability. A view untouched for 30 days goes, and a withdrawn version goes at once. A
-// view is kept as api gave it — the bytes of its JSON and the version of the module format they
-// are in, and beside a skill graph its tiers — or as a part the module does not have (T21).
+// The shared cache of the open views of packages, by package digest (R16; R62 spec): content of
+// modules, not a learner's data, written with relaxed durability. A view untouched for 30 days
+// goes, and a withdrawn version goes at once. A view is kept as api gave it — the bytes of its JSON
+// and the version of the module format they are in, and beside a skill graph its tiers — or as a
+// part the module does not have (R20).
 import { type Connection, within } from "./backend.ts";
 import type { Device } from "./device.ts";
 import { addDatabase, readRegistry } from "./registry.ts";

@@ -1,7 +1,6 @@
-// The way back to My subjects from a learner's screen that is not the home itself (R57 in
-// docs/decisions.md; section 3.10 of docs/architecture.md): a secondary button with its words on
-// it, the one element every such screen shows — at the top, under the heading, as the skill map
-// has it, or beside the screen's last buttons.
+// The way back to My subjects from a learner's screen that is not the home itself (R57): a
+// secondary button with its words on it, the one element every such screen shows — at the top,
+// under the heading, as the skill map has it, or beside the screen's last buttons.
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { HOME, navigate } from "./router.ts";
 

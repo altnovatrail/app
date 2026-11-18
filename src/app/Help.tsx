@@ -1,9 +1,9 @@
-// The adult's Help (R148 spec; R63 in docs/decisions.md; section 3.10 of docs/architecture.md):
-// behind its button at the top right of the home screen, a pop-over that says three things — the
-// tutor is an AI and a program checks every answer, and what to do when the AI read the work
-// wrongly; the name is made up, so no real names go into the work — and leads to three pages of the
-// app itself: Privacy Policy, Terms of Use and Accessibility. No external link and no helpline: to an
-// adult R127 spec gives Report a problem, and a learner under 18 gets a Help of their own in E4.
+// The adult's Help (R148 spec; R63): behind its button at the top right of the home screen, a
+// pop-over that says three things — the tutor is an AI and a program checks every answer, and what
+// to do when the AI read the work wrongly; the name is made up, so no real names go into the work —
+// and leads to three pages of the app itself: Privacy Policy, Terms of Use and Accessibility. No
+// external link and no helpline: to an adult R127 spec gives Report a problem. A learner under 18,
+// whom the build has no profile for, would need a Help of their own.
 import { useLearner } from "../account/AccountGate.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { ACCESSIBILITY, type LegalPage, legalPage } from "../legal/LegalPages.tsx";

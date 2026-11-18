@@ -1,9 +1,9 @@
-// The lesson player in the browser, with the canvas element itself (section 3.4 of
-// docs/architecture.md; R06, R23): the path of the lesson of the format's example, gaps-and-posts —
-// an explanation with its picture and list, a worked example and its demo, a task of the run and an
-// explanation —, the place after a restart and on another device, the bar, the task left and begun
-// again, and every end of a run — with api on connect-es's router and the storage on the device's
-// memory. The lessons are synthetic, after the format's examples.
+// The lesson player in the browser, with the canvas element itself (R06, R23): the path of the
+// lesson of the format's example, gaps-and-posts — an explanation with its picture and list, a
+// worked example and its demo, a task of the run and an explanation —, the place after a restart
+// and on another device, the bar, the task left and begun again, and every end of a run — with api
+// on connect-es's router and the storage on the device's memory. The lessons are synthetic, after
+// the format's examples.
 import "@altnovatrail/canvas";
 import { Mode } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import {
@@ -494,7 +494,7 @@ async function solve() {
 }
 
 describe("the lesson player", () => {
-  it("walks the lesson of section 3.4: explanation, worked example, task, explanation, lesson done", async () => {
+  it("walks the lesson of the format's example: explanation, worked example, task, explanation, lesson done", async () => {
     const { begun, kept, asked, endedRuns, began } = await renderLesson();
     const title = await screen.findByRole("heading", { level: 1, name: "Gaps and posts" });
     expect(title.querySelector("[lang]")).toHaveAttribute("lang", "en");

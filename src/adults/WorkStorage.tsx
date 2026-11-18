@@ -1,14 +1,13 @@
 // The storage of a profile's works on the server, on the profile's page in the section for adults
-// (R30 in docs/decisions.md; R113, R127, R131 and R136 spec; section 15 of the text of the
-// contracts, "The storage of works" and "The versions of the texts"): off unless an adult switched
-// it on, as `Profile.work_storage` says. Switching it on is a consent: the text `storage-consent`
-// as `GetLegalTexts` gives it in the language of the section, in place, with what R127 spec has
-// the switch say, its next version below it with the day it applies from (R46), and a checkbox
-// ticked for the version shown; `SetWorkStorage` names that version — the current one —,
-// and a version no longer current reads the text again and asks again, as the invite code does
-// (R27). Switching it off goes at once, with no question. Switched on, it sends by `PutWork` every
-// work the profile keeps on this device, and switched off, it lets go of the marks of what the
-// server kept, which the server has erased (T62; the 2026-11-17 amendment to R30).
+// (R30; R113, R127, R131 and R136 spec; the contract, "The storage of works" and "The versions of
+// the texts"): off unless an adult switched it on, as `Profile.work_storage` says. Switching it on
+// is a consent: the text `storage-consent` as `GetLegalTexts` gives it in the language of the
+// section, in place, with what R127 spec has the switch say, its next version below it with the day
+// it applies from (R46), and a checkbox ticked for the version shown; `SetWorkStorage` names that
+// version — the current one —, and a version no longer current reads the text again and asks again,
+// as the invite code does (R27). Switching it off goes at once, with no question. Switched on, it
+// sends by `PutWork` every work the profile keeps on this device, and switched off, it lets go of
+// the marks of what the server kept, which the server has erased (R30).
 import type { Profile } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import { Action } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
 import { Cause } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";

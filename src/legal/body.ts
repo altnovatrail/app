@@ -1,6 +1,6 @@
-// The body of a legal text as marked reads it (R27 in docs/decisions.md): CommonMark with the tables
-// of GitHub's flavour, its title, the character references it may hold, and the section of the
-// privacy policy that names its operator (R46). ./Markdown.tsx draws it. No DOM.
+// The body of a legal text as marked reads it (R27): CommonMark with the tables of GitHub's
+// flavour, its title, the character references it may hold, and the section of the privacy policy
+// that names its operator (R46). ./Markdown.tsx draws it. No DOM.
 import { Lexer, type Token } from "marked";
 
 /**
@@ -68,7 +68,7 @@ export function titleOf(body: string): string | undefined {
 /**
  * The section of the privacy policy that names its operator and how to reach it: a heading of the
  * second level that reads exactly so, in every version of the policy (`legal.operator` of the
- * legal part; the 2026-11-13 amendment to R115 spec; R46).
+ * legal part; R115 spec; R46).
  */
 export const OPERATOR_SECTION = "Who we are";
 

@@ -1,7 +1,7 @@
-// The English dictionary, the source of every other (section 3.8 of docs/architecture.md): a key
-// is the screen's word, a dot, then what the string is; its places are `{name}`, and the forms of
-// a number are `plural({ one, other })`. A note to the translator is the key's JSDoc. The words
-// that every screen takes alike are the glossary of section 3.8.
+// The English dictionary, the source of every other (R17): a key is the screen's word, a dot, then
+// what the string is; its places are `{name}`, and the forms of a number are
+// `plural({ one, other })`. A note to the translator is the key's JSDoc. The words that every
+// screen takes alike are the glossary's (R10).
 import { type Dictionary, plural } from "./types.ts";
 
 export const en = {
@@ -27,7 +27,7 @@ export const en = {
   "boot.erased": "The data on this device was erased",
   /** The data is there but could not be read; nothing was erased. */
   "boot.unreadable": "The data on this device can't be read",
-  /** The task screen's line when a write of the learner's work failed (T24). */
+  /** The task screen's line when a write of the learner's work failed (R20). */
   "task.not-saved": "Your work isn't saved on this device",
   /** A call of AI that gave nothing, and platform AI out of its limit: a neutral phrase (R04 spec). */
   "api.ai-failure": "The tutor can't answer right now",
@@ -114,7 +114,7 @@ export const en = {
     "The browser didn't open the sign-in window. Allow pop-ups for this site and try again",
   /** The sign-in failed for a reason app cannot name. */
   "signin.failed": "The sign-in didn't go through. Try again",
-  /** Another tab still holds the sign-in of the copy's previous project (section 3.7). */
+  /** Another tab still holds the sign-in of the copy's previous project (R19). */
   "signin.other-tab":
     "The app is open in another tab with the previous sign-in. Close that tab and try again",
   /** The heading of the screen that asks for the invite code. */
@@ -167,7 +167,7 @@ export const en = {
   "legal.original": "The text in force, in English",
   /**
    * The list of the legal pages, its heading, and the button to it on the sign-in screen: it holds
-   * the word "privacy" (Д204 in spec's RUN.md).
+   * the word "privacy" (R31).
    */
   "legal.title": "Privacy and legal information",
   "legal.intro":
@@ -198,7 +198,7 @@ export const en = {
   "legal.next-version": "Version {version}, applies from {date}",
   /** Below it: the version that is in force until that day. */
   "legal.next-until": "Until then, version {version} is in force",
-  /** What a learner's adult can withdraw before a next version applies: in E3, the keeping of works. */
+  /** What a learner's adult can withdraw before a next version applies: the keeping of works. */
   "legal.next-withdraw":
     "Before it applies, you can withdraw a consent you gave in the app: keeping works on the server is switched off on a profile's page in the section for adults",
   "legal.next-none": "This text has no next version now",
@@ -258,7 +258,7 @@ export const en = {
     "Choosing among options, and everything else in the app, works with a tap and from the keyboard",
   "accessibility.handwriting-when":
     "Once there is a second way to answer, such as a keyboard or buttons with digits. The platform has not chosen it yet",
-  /** The sheet's own scrolling, which canvas declares (architecture 3.10 in canvas). */
+  /** The sheet's own scrolling, which canvas declares (R11). */
   "accessibility.moving": "Moving the sheet",
   "accessibility.moving-criteria": "2.5.7 Dragging Movements, level AA",
   "accessibility.moving-why":
@@ -333,7 +333,7 @@ export const en = {
   "choose.add-why": "Comes later: a child's profile waits for a parent's consent",
   /** At the foot of the choice. */
   "choose.foot": "Each learner has a made-up name and an avatar, never a real name or a photo",
-  /** On the first sign-in of an account on this device (section 3.2). */
+  /** On the first sign-in of an account on this device (R04). */
   "persist.line": "Learners' work is kept on this device",
   /** Asks the browser to keep the site's data: navigator.storage.persist(). */
   "persist.ask": "Ask the browser to keep it",
@@ -388,7 +388,7 @@ export const en = {
   "icon.tutor": "Tutor",
   "icon.full-screen": "Full screen",
   "icon.half-screen": "Half screen",
-  /** The heading of the learner's home: the modules connected to the profile (product 4 spec). */
+  /** The heading of the learner's home: the modules connected to the profile (R62). */
   "subjects.title": "My subjects",
   /** The heading of the modules connected to the profile. */
   "subjects.connected": "Connected",
@@ -412,7 +412,7 @@ export const en = {
   "subjects.sub": "Pick up where you left off",
   /** The heading of the card of what comes next: the task in progress, the engine's way, the tutor time. */
   "subjects.next-up": "Next up",
-  /** The second card at the top: "A task from my paper", shown and not open yet (R148 spec; product 4 spec). */
+  /** The second card at the top: "A task from my paper", shown and not open yet (R148 spec). */
   "subjects.paper": "A task from my paper",
   "subjects.paper-why": "Comes later: solving the tasks of a page from your book is not open yet",
   /** The button of "A task from my paper", disabled: the camera comes with the tasks from paper. */
@@ -434,7 +434,7 @@ export const en = {
   "subjects.legend": "What the marks mean",
   /**
    * The states of a skill and the marks of a skill with a rubric and of one not assessed, the words
-   * of architecture 6 spec, which the skill map shows too.
+   * that spec holds for every package, which the skill map shows too (R10).
    */
   "skill-state.mastered": "Mastered",
   "skill-state.time-to-review": "Time to review",
@@ -443,7 +443,7 @@ export const en = {
   "skill-state.locked": "Locked",
   "skill-state.feedback-by-criteria": "Feedback by criteria",
   "skill-state.not-assessed": "Not assessed",
-  /** The second way in beside My subjects, and its screen's heading (product 4 spec; R34). */
+  /** The second way in beside My subjects, and its screen's heading (R34). */
   "skillmap.title": "Skill map",
   /** On a module's card on the screen Skill map: opens the module's map. */
   "skillmap.open": "Open the map",
@@ -455,7 +455,7 @@ export const en = {
   "skillmap.hint": "To practise a skill, open it on the map and press Practise",
   /** A module with no skill graph. */
   "skillmap.none": "This subject has no skill map",
-  /** The modules of the catalog that teach the anchor skills whose holding is unknown (Д211). */
+  /** The modules of the catalog that teach the anchor skills whose holding is unknown. */
   "skillmap.offered-title": "Modules to connect",
   /** "Unknown" and "Skills from other modules" are skill-map's own words on the map. */
   "skillmap.offered-text":
@@ -491,7 +491,7 @@ export const en = {
   "essays.open": "Open the essay of {date}",
   "essays.finished": "Finished",
   "essays.not-finished": "Not finished yet",
-  /** The essay's module version was withdrawn: its task's statement is not kept (section 3.2). */
+  /** The essay's module version was withdrawn: its task's statement is not kept (R53). */
   "essays.withdrawn": "The version of its module was withdrawn, so its task isn't kept",
   /** The heading of one submission of the essay: when it was sent. */
   "essays.sent": "Sent {date}",
@@ -522,7 +522,7 @@ export const en = {
   "task.check-locked": "Choose an answer in each item",
   "task.check-locked-line": "Choose one of the answers, then Check.",
   "task.correct": "Correct",
-  /** Not "wrong": the verdict that the learner can still get it (product 7 spec). */
+  /** Not "wrong": the verdict that the learner can still get it. */
   "task.not-yet": "Not yet",
   "task.unreadable": "Can't read this",
   "task.unchecked": "Not checked",
@@ -573,7 +573,7 @@ export const en = {
   "task.by-steps-line": "The task's steps, one at a time, in the tutor's panel",
   /** Under "On my own" in the pop-over of the mode: the tutor's panel stays closed until opened. */
   "task.on-my-own-line": "The tutor waits until called",
-  /** At the foot of the pop-over of the mode: the choice holds for this attempt (concepts 10 spec). */
+  /** At the foot of the pop-over of the mode: the choice holds for this attempt. */
   "task.mode-note": "For this task. A grown-up sets which one a task starts with.",
   /** The button of the row that opens the options of the task's answer slots bound choice. */
   "task.choose": "Choose an answer",
@@ -629,7 +629,7 @@ export const en = {
   "task.feedback-line": "The feedback is in the tutor's panel. Write again, or press Done.",
   /** The result of an essay finished by Done. */
   "task.essay-done": "Essay finished",
-  /** The feedback whose words did not pass the checks of api (section 15 of the contracts). */
+  /** The feedback whose words did not pass the checks of api (R53). */
   "task.feedback-none": "No feedback this time",
   /** A repeat of a submission whose answer was lost: the words are nowhere on the server. */
   "task.feedback-lost": "The feedback was lost on the way. Send the essay again to get it",
@@ -724,7 +724,7 @@ export const en = {
   "next.else": "Something else",
   "next.else-confirm": "The task in progress closes, and it can't be gone back to",
   "next.else-go": "Go on",
-  /** The section for adults: its heading, and the buttons that open it (section 3.10). */
+  /** The section for adults: its heading, and the buttons that open it (R29). */
   "adults.title": "For grown-ups",
   /** Leaves the section for the learner's home, or the choice of the learner. */
   "adults.close": "Close the section",
@@ -757,7 +757,7 @@ export const en = {
   /** The voice is the device's: chosen on the page This device of each device (R07). */
   "adults.voicing-device":
     "The tutor's words are read by a voice of the device. Each device's voice is chosen on its page This device",
-  /** Voicing and a screen reader would speak at once (section 3.9). */
+  /** Voicing and a screen reader would speak at once. */
   "adults.voicing-reader":
     "If you listen to a screen reader, turn voicing off: the two would speak at once",
   "adults.save": "Save",
@@ -830,7 +830,7 @@ export const en = {
   "progress.chosen": "Chosen",
   /** No choice of the engine: the learner began the same task again. */
   "progress.again": "The learner began it again: the program chose nothing",
-  /** The nine reason codes of the engine's choice (concepts 12 in spec; R100 and R107 spec). */
+  /** The nine reason codes of the engine's choice (R100 spec, R107 spec). */
   "progress.reason-consolidation":
     "Consolidation: after a wrong answer, another task on the same skill",
   "progress.reason-new-skill":
@@ -871,7 +871,7 @@ export const en = {
   "storage.switch-on": "Switch it on",
   /**
    * On My subjects: the share of today's quota of platform AI the learner's profile has used, as a
-   * percentage — never a sum of money (concepts 14 spec). Once it is used up, the line is api.quota.
+   * percentage — never a sum of money (R40). Once it is used up, the line is api.quota.
    */
   "quota.learner": "Tutor time today: {percent} used",
   /** The share of the quota of platform AI, on a profile's page in the section for adults. */
@@ -892,7 +892,7 @@ export const en = {
   "quota.renews": "Tutor time renews on {date} at {time}",
   /** The account's tariff has no caps: platform AI is closed to it, and there is no share. */
   "quota.closed": "The platform's AI has no tutor time on this account now: it is closed to it",
-  /** The page Own AI key (R08; section 3.6): its heading, and its place on the first page. */
+  /** The page Own AI key (R08): its heading, and its place on the first page. */
   "ownkey.title": "Own AI key",
   "ownkey.hint": "Your own key at an AI provider, for the tutor's requests of your profile",
   "ownkey.open": "Set up an own AI key",
@@ -902,14 +902,14 @@ export const en = {
   "ownkey.open-profile": "Open my profile",
   /** The account has no owner's profile of an adult as a learner (R122 spec). */
   "ownkey.no-profile": "Only your own profile as an adult learner can have an own AI key",
-  /** What happens to the key, said before its field, in words and with no links (section 3.6). */
+  /** What happens to the key, said before its field, in words and with no links (R08). */
   "ownkey.server":
     "The key goes to NovaTrail's server with each request of your profile that calls the AI, and lives there only while the request runs: not in the database and not in the logs",
   "ownkey.billing":
     "The provider links each such request to your account with it and to your terms with it",
   "ownkey.not-protected":
     "A PIN doesn't protect the key, and the browser doesn't encrypt it: whoever holds this device can get at a key kept on it",
-  /** How to limit the damage: the advice of section 3.6, for OpenAI and Anthropic. */
+  /** How to limit the damage, for OpenAI and Anthropic (R08). */
   "ownkey.limits":
     "To limit the damage, make the key in a separate OpenAI project with a hard spending limit, or bind it to a separate Anthropic workspace with a monthly limit, not the default workspace, where no limit can be set. Give the key a lifetime, and if it may have fallen into other hands, revoke it at the provider",
   "ownkey.provider": "AI provider",
@@ -936,7 +936,7 @@ export const en = {
   "ownkey.replace": "Replace the key",
   "ownkey.replace-hint": "The key now connected stays until the new one passes the check",
   "ownkey.remove": "Remove key",
-  /** The one way back to platform AI: the owner's action, never the app's (section 3.6). */
+  /** The one way back to platform AI: the owner's action, never the app's (R08). */
   "ownkey.remove-hint":
     "Your profile's requests then go to the platform's AI and spend its tutor time. The key keeps working at the provider: revoke it there if you no longer need it",
   "ownkey.remove-confirm": "The key is erased from this tab and from this device",
@@ -958,7 +958,7 @@ export const en = {
   /** The same, after the payment the provider could not take. */
   "ownkey.limit-payment":
     "Check the payment details at the provider, replace the key, or remove it to go to the platform's AI",
-  /** The page This device (R04; section 3.2): its heading, and its place on the first page. */
+  /** The page This device (R04): its heading, and its place on the first page. */
   "device.title": "This device",
   "device.hint": "What the app keeps on this device, and how to erase it",
   "device.open": "See what is on this device",
@@ -1009,10 +1009,10 @@ export const en = {
   "device.not-persisted": "The browser hasn't agreed to keep the site's data",
   "device.persist": "Ask the browser to keep it",
   "device.refused": "The browser didn't agree. The data is kept, but the browser may erase it",
-  /** What the browser may erase by itself, and Safari's seven days (section 3.2). */
+  /** What the browser may erase by itself, and Safari's seven days (R04). */
   "device.browser-erases":
     "The browser may erase the site's data by itself when space runs low. Safari erases it after seven days of use in which this app isn't touched",
-  /** The data of a web app on the Home Screen is kept apart from Safari's (section 3.2). */
+  /** The data of a web app on the Home Screen is kept apart from Safari's (R04). */
   "device.home-screen":
     "In Safari, the app can be added to the Home Screen: there its data isn't erased after seven days. But it is apart from Safari's: you sign in there again, and unfinished work from this tab doesn't move there",
   "device.erase-all": "Erase everything on this device",
@@ -1020,7 +1020,7 @@ export const en = {
   "device.erase-all-confirm":
     "Everything the app keeps on this device is lost: the work of every profile and the language of the device. The app signs out, and nothing changes on the server",
   "device.erase-all-failed": "The sign-out didn't go through, so nothing was erased. Try again",
-  /** The speaker button beside a text: reads it by the device's voice (section 3.5), not "listen". */
+  /** The speaker button beside a text: reads it by the device's voice (R07), not "listen". */
   "voice.read": "Read aloud",
   /** Beside a speaker button that cannot read: {language} is the name of the text's language. */
   "voice.no-voice": "This device has no voice for {language}",
@@ -1042,7 +1042,7 @@ export const en = {
   "voice.languages": "Each language is read by a voice of this device. You can choose it",
   /** A language this device has no voice for: the text stays, and nothing reads it. */
   "voice.none": "This device has no voice for this language. Its texts stay on the screen",
-  /** How to add a voice, in words with no link (privacy 1, 7 spec; section 3.5). */
+  /** How to add a voice, in words with no link (R07). */
   "voice.add":
     "A voice is added in the system's settings: in Windows, in the speech settings; on a Mac, the voice is downloaded from Apple; on Android, as the voice data of the language",
   /** Says a sentence by the voice chosen. */

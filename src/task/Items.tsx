@@ -1,10 +1,10 @@
-// The items of a task on a handwriting sheet, beside the sheet (section 3.10 of docs/architecture.md;
-// section 14 of the text of the format): what each asks, and the options of each answer slot bound
-// `choice`, which the sheet does not show, in the pop-over of "Choose an answer" (R65). A tap only
-// chooses; Check sends (section 3.3). The verdict stands beside the option tapped and beside the
-// item, in a word and a sign, not in colour alone (section 3.9), and below an item answered on the
-// sheet what was read, "Read: 6", or why it could not be (R21). A workbook's lines the canvas shows: once checked, a list below the canvas
-// gives each line's verdict and what was read in its boxes, and each box's verdict (R54).
+// The items of a task on a handwriting sheet, beside the sheet: what each asks, and the options of
+// each answer slot bound `choice`, which the sheet does not show, in the pop-over of "Choose an
+// answer" (R65). A tap only chooses; Check sends. The verdict stands beside the option tapped and
+// beside the item, in a word and a sign, not in colour alone (R11), and below an item answered on
+// the sheet what was read, "Read: 6", or why it could not be (R21). A workbook's lines the canvas
+// shows: once checked, a list below the canvas gives each line's verdict and what was read in its
+// boxes, and each box's verdict (R54).
 import type * as open from "@altnovatrail/spec/formatv0/open";
 import { type ReactNode, useId } from "react";
 import { useLanguage } from "../i18n/LanguageContext.tsx";

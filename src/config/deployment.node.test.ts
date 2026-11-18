@@ -1,6 +1,5 @@
 // The reading of /deployment.json held to spec's part deployment/, from the file of spec's release
-// in parts/: its schema's patterns, its examples and its vectors of reading (section 3.7 of
-// docs/architecture.md).
+// in parts/: its schema's patterns, its examples and its vectors of reading (R09).
 import type { ReadingVector } from "@altnovatrail/spec/deploymentv1";
 import { describe, expect, it } from "vitest";
 import { parse } from "yaml";

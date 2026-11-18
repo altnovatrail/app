@@ -24,7 +24,7 @@ export function browserDevice(): Device {
   });
 }
 
-/** What the browser tells of keeping the site's data (section 3.2): the Storage Standard's API. */
+/** What the browser tells of keeping the site's data: the Storage Standard's API. */
 export interface SiteStorage {
   /** The browser's estimate of the whole site, in bytes; none when it gives none. */
   estimate(): Promise<{ readonly usage: number; readonly quota: number } | undefined>;

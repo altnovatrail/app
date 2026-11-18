@@ -1,8 +1,8 @@
-// The screen `#/task` (R14 in docs/decisions.md): the attempt the learner has open, from memory. It
-// shows the last attempt open until the learner leaves it — an attempt ended stays on the screen
-// with its result, while "My subjects" no longer offers to continue it — and a new one once "Try it
-// again" or the engine's next task has begun it. With no attempt open it goes home in place of itself, so that "back" does not
-// come here again.
+// The screen `#/task` (R14): the attempt the learner has open, from memory. It shows the last
+// attempt open until the learner leaves it — an attempt ended stays on the screen with its result,
+// while "My subjects" no longer offers to continue it — and a new one once "Try it again" or the
+// engine's next task has begun it. With no attempt open it goes home in place of itself, so that
+// "back" does not come here again.
 import type { Mode } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import { useCallback, useEffect, useState } from "react";
 import { HOME, redirect } from "../app/router.ts";

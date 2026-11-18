@@ -1,9 +1,9 @@
-// The skill map in the browser (R34; section 3.10 of docs/architecture.md; architecture 3.3 in spec):
-// the element of skill-map in JSX, the list of the maps of the modules connected, a module's map
-// with the learner's view in the learner's language, Practise to ChooseNext with the skill and to
-// what the engine gives, the question while an attempt is open, nothing to give, the modules that
-// teach an anchor skill whose holding is unknown with Connect, a module with no skill graph and a
-// refusal — with api on connect-es's router and the open views on the device's memory.
+// The skill map in the browser (R34): the element of skill-map in JSX, the list of the maps of the
+// modules connected, a module's map with the learner's view in the learner's language, Practise to
+// ChooseNext with the skill and to what the engine gives, the question while an attempt is open,
+// nothing to give, the modules that teach an anchor skill whose holding is unknown with Connect, a
+// module with no skill graph and a refusal — with api on connect-es's router and the open views on
+// the device's memory.
 import "@altnovatrail/skill-map";
 import { ProfileSchema } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import { Action } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
@@ -387,7 +387,7 @@ describe("a module's map", () => {
     expect(window.location.hash).toBe("");
   });
 
-  it("says why there is nothing when the AI is closed, as a sentence of its own (T57)", async () => {
+  it("says why there is nothing when the AI is closed, as a sentence of its own", async () => {
     await renderMap(moduleMapRoute(SHARES), {
       choice: () => ({ kind: ChoiceKind.NOTHING, outcome: { cause: Cause.QUOTA } }),
     });

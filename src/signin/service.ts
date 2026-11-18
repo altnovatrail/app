@@ -1,7 +1,6 @@
-// The sign-in service as app needs it (section 3.7 of docs/architecture.md; R19 in
-// docs/decisions.md): who is signed in, the sign-in window, the sign-out, the ID tokens of the
-// client of api (R18) and the language of the window. Firebase Auth gives it in the browser
-// (firebase.ts); the tests give one of their own. No DOM.
+// The sign-in service as app needs it (R19): who is signed in, the sign-in window, the sign-out,
+// the ID tokens of the client of api (R18) and the language of the window. Firebase Auth gives it
+// in the browser (firebase.ts); the tests give one of their own. No DOM.
 import type { Tokens } from "../api/tokens.ts";
 
 /** What came of the sign-in window. */

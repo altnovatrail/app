@@ -1,5 +1,5 @@
 // The open views, the check of packages and the files of a device part, with no network: api is
-// connect-es's router, and fetch the test's own (section 15 of the text of the contracts).
+// connect-es's router, and fetch the test's own.
 import { Cause, RefusalSchema } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import {
   CheckPackagesResponseSchema,

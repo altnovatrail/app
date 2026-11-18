@@ -1,5 +1,5 @@
-// The name of the app with its mark, a four-pointed spark (the mockup's README; section 3.9 of
-// docs/architecture.md): on the sign-in's art, above the owner's profile and "Who is learning?".
+// The name of the app with its mark, a four-pointed spark (R61): on the sign-in's art, above the
+// owner's profile and "Who is learning?".
 // The mark is drawn, hidden from assistive technology; the name is text.
 import { APP_NAME } from "./Screen.tsx";
 

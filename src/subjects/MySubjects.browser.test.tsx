@@ -1,8 +1,8 @@
-// "My subjects" in the browser (section 3.10 of docs/architecture.md; R99 spec): the cards by role
-// and name, connecting and disconnecting, a module with no current version, an empty catalog and
-// the refusals, and the line of the tutor time — the profile's share, the cap reached, and none
-// with no share or no GetQuota or a share that did not come —, with api on connect-es's router
-// and the open views on the device's memory.
+// "My subjects" in the browser (R99 spec): the cards by role and name, connecting and
+// disconnecting, a module with no current version, an empty catalog and the refusals, and the line
+// of the tutor time — the profile's share, the cap reached, and none with no share or no GetQuota
+// or a share that did not come —, with api on connect-es's router and the open views on the
+// device's memory.
 import {
   AccountService,
   ProfileSchema,

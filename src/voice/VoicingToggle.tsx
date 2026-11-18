@@ -1,9 +1,8 @@
-// Voicing on or off on the task screen (R07 and R36 in docs/decisions.md;
-// section 3.5 of docs/architecture.md; section 15 of the text of the contracts): `SetVoicing`, a
-// learning request, so that the learner sets it as the adult does on the profile's page, and it
-// holds on every device. The answer is the profile, which the session takes and the other tabs hear
-// of, as a change of the section for adults. Off, speech stops at once. On, where the tutor's words
-// cannot be said on this device, a line says why. Outside a learner's screens there is no button.
+// Voicing on or off on the task screen (R07, R36): `SetVoicing`, a learning request, so that the
+// learner sets it as the adult does on the profile's page, and it holds on every device. The answer
+// is the profile, which the session takes and the other tabs hear of, as a change of the section
+// for adults. Off, speech stops at once. On, where the tutor's words cannot be said on this device,
+// a line says why. Outside a learner's screens there is no button.
 import { useState } from "react";
 import { useApi } from "../api/ApiContext.tsx";
 import { ApiError, type Failure, parseFailure } from "../api/failure.ts";

@@ -1,7 +1,6 @@
-// The device's settings (section 3.2 and 3.8 of docs/architecture.md; the 2026-11-02 amendment to
-// R04): the language a grown-up chose on this device. Neither a learner's data nor the account's:
-// sign-out and another account leave it, and only "Erase everything on this device" and the browser
-// erase it. The screens take it with T19.
+// The device's settings (R04, R17): the language a grown-up chose on this device. Neither a
+// learner's data nor the account's: sign-out and another account leave it, and only "Erase
+// everything on this device" and the browser erase it.
 import type { Device } from "./device.ts";
 import { SETTINGS, SETTINGS_SCHEMA } from "./schema.ts";
 

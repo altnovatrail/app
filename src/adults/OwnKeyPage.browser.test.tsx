@@ -1,11 +1,10 @@
-// The page Own AI key in the browser (R08 and R47 in docs/decisions.md; section 3.6 of
-// docs/architecture.md), with api on connect-es's router and the storage on the engine's own
-// IndexedDB: the words before the field, the providers api gives and none, the five answers of the
-// check and one this build does not know, a key not accepted that leaves the former one, the key
-// shown by its last four alone, the mark that keeps it on the device and the key in none of the
-// browser's storages without it, its replacement and removal, a refusal beside it, its limit with
-// which one ran out, when access comes back and what to do, the account's
-// checks exhausted with when the next one opens, and the owner profile opened from the page.
+// The page Own AI key in the browser (R08 and R47), with api on connect-es's router and the storage
+// on the engine's own IndexedDB: the words before the field, the providers api gives and none, the
+// five answers of the check and one this build does not know, a key not accepted that leaves the
+// former one, the key shown by its last four alone, the mark that keeps it on the device and the
+// key in none of the browser's storages without it, its replacement and removal, a refusal beside
+// it, its limit with which one ran out, when access comes back and what to do, the account's checks
+// exhausted with when the next one opens, and the owner profile opened from the page.
 import {
   AccountService,
   type CheckOwnKeyRequest,

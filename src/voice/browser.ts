@@ -1,6 +1,6 @@
-// The browser's one synthesis (section 3.5 of docs/architecture.md): speech.ts made of the globals
-// `navigator`, `speechSynthesis`, `SpeechSynthesisUtterance` and `document`, on first use. Apart
-// from speech.ts, so that Node's tests of it see no DOM.
+// The browser's one synthesis (R36): speech.ts made of the globals `navigator`, `speechSynthesis`,
+// `SpeechSynthesisUtterance` and `document`, on first use. Apart from speech.ts, so that Node's
+// tests of it see no DOM.
 import { type Speech, type SynthLike, speechOf, type UtteranceLike } from "./speech.ts";
 
 let browser: Speech | undefined;

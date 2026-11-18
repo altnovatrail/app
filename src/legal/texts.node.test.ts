@@ -1,7 +1,7 @@
-// The legal texts from api on connect-es's router (section 15 of the text of the contracts; R27 and
-// R46): asked in the language of the screen, those of the account in their order, the versions a
-// consent names, the next versions, an api with no LegalService as no text in force, and the
-// title, tokens and the section Who we are of a body.
+// The legal texts from api on connect-es's router (the contract; R27, R46): asked in the language
+// of the screen, those of the account in their order, the versions a consent names, the next
+// versions, an api with no LegalService as no text in force, and the title, tokens and the section
+// Who we are of a body.
 import {
   LegalService,
   type LegalText,
@@ -90,7 +90,7 @@ describe("the legal texts", () => {
       ["parent-consent", 2],
       ["privacy-policy", 3],
     ]);
-    // The pages' own, in their order: a family's text has no page in E3.
+    // The pages' own, in their order: a family's text has no page.
     expect(pageNext(read.next).map((t) => t.id)).toEqual(["privacy-policy"]);
     expect(nextOf(read.next, "privacy-policy")?.version).toBe(3);
     expect(nextOf(read.next, STORAGE_TEXT)).toBeUndefined();

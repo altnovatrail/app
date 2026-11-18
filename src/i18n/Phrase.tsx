@@ -1,5 +1,5 @@
 // A string of the dictionary whose places are elements: a module's or a skill's name with its own
-// `lang` inside a string of app (section 3.8 of docs/architecture.md), never glued from pieces.
+// `lang` inside a string of app (WCAG 3.1.2), never glued from pieces.
 import { createElement, Fragment, type ReactNode } from "react";
 import { useLanguage } from "./LanguageContext.tsx";
 import { type Key, ownValue, type PlacesOf, pieces } from "./words.ts";

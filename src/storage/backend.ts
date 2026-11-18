@@ -1,7 +1,6 @@
-// The narrow interface app keeps its data on the device behind (R04 and R16 in docs/decisions.md;
-// section 3.2 of docs/architecture.md): the operations of IndexedDB it uses and nothing more, so that
-// the rules above it run the same on the browser's IndexedDB (idb.ts) and on the store in memory
-// the tests in Node give it (memory.ts). No DOM here.
+// The narrow interface app keeps its data on the device behind (R04, R16): the operations of
+// IndexedDB it uses and nothing more, so that the rules above it run the same on the browser's
+// IndexedDB (idb.ts) and on the store in memory the tests in Node give it (memory.ts). No DOM here.
 
 /** A key, as app's stores have them: a number, a string, or an array of keys. */
 export type Key = number | string | readonly Key[];
@@ -54,7 +53,7 @@ export interface Transaction {
 
 /**
  * Durability of a write: the browser's default, or `"relaxed"` for a cache, which IndexedDB itself
- * advises there (section 3.2).
+ * advises there.
  */
 export type Durability = "default" | "relaxed";
 

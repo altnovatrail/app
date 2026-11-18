@@ -1,8 +1,8 @@
-// The tutor time on a profile's page in the section for adults, in the browser (section 15 of the text
-// of the contracts, "The quota"), with api on connect-es's router: below the progress, the share of
-// the profile and of the account by an adult's action, when the tutor time renews, the cap reached,
-// no share while platform AI is closed to the account, no section from an api with no GetQuota,
-// and a share that did not come, with its retry.
+// The tutor time on a profile's page in the section for adults, in the browser (the contract's
+// quota), with api on connect-es's router: below the progress, the share of the profile and of the
+// account by an adult's action, when the tutor time renews, the cap reached, no share while
+// platform AI is closed to the account, no section from an api with no GetQuota, and a share that
+// did not come, with its retry.
 import {
   AccountService,
   type GetQuotaRequest,

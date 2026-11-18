@@ -1,9 +1,9 @@
-// The attempt the learner chosen has open, in memory alone (section 3.3 of docs/architecture.md; R14
-// in docs/decisions.md): no address names an attempt, so the task screen `#/task` takes it from
-// here. It starts as the open attempt `GetAccount` named — one outside a lesson: a lesson's is the
-// lesson player's (T27) — and changes when an attempt begins or ends on this screen. What changed
-// is kept by the learner's profile as GetAccount gave it, so that switching the learner and back
-// does not bring an ended attempt back; a new GetAccount gives a new profile, and its own word.
+// The attempt the learner chosen has open, in memory alone (R14): no address names an attempt, so
+// the task screen `#/task` takes it from here. It starts as the open attempt `GetAccount` named —
+// one outside a lesson: a lesson's is the lesson player's (R23) — and changes when an attempt
+// begins or ends on this screen. What changed is kept by the learner's profile as GetAccount gave
+// it, so that switching the learner and back does not bring an ended attempt back; a new GetAccount
+// gives a new profile, and its own word.
 import type { Profile } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import { createContext, type ReactNode, useCallback, useContext, useMemo, useState } from "react";
 import { asGiven } from "../account/settings.ts";

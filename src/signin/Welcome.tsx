@@ -1,9 +1,8 @@
-// The frame of the way in before the account (the mockup's `signin`, `invite` and `agree`; R61 in
-// docs/decisions.md; section 3.9 of docs/architecture.md): from 600 CSS px the art at the left —
-// the name, a trail of subjects to the spark, and the line of what NovaTrail is — and the step's
-// column in the middle of the rest, what the step puts in the corner at its top right; below 600
-// the art a band above the first step alone, and the corner below the column. At the foot, the way
-// to the legal pages (R31).
+// The frame of the way in before the account (the mockup's `signin`, `invite` and `agree`; R11,
+// R61): from 600 CSS px the art at the left — the name, a trail of subjects to the spark, and the
+// line of what NovaTrail is — and the step's column in the middle of the rest, what the step puts
+// in the corner at its top right; below 600 the art a band above the first step alone, and the
+// corner below the column. At the foot, the way to the legal pages (R31).
 import type { ReactNode } from "react";
 import { Brand, Spark } from "../app/Brand.tsx";
 import { Screen } from "../app/Screen.tsx";

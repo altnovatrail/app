@@ -1,6 +1,6 @@
-// What a call of AI in an answer came to when it gave no reading or no words (section 15 of the
-// text of the contracts): the outcome's cause, and beside it when the next family day begins or
-// which limit of the own key ran out. An outcome the build does not know is a failure of AI. No DOM.
+// What a call of AI in an answer came to when it gave no reading or no words (R18): the outcome's
+// cause, and beside it when the next family day begins or which limit of the own key ran out. An
+// outcome the build does not know is a failure of AI. No DOM.
 import {
   Cause,
   type Outcome,

@@ -1,8 +1,8 @@
-// The checks of accessibility every screen's test runs in each engine (section 3.9 of
-// docs/architecture.md; R11 in docs/decisions.md): axe-core by the rules of WCAG 2.2 A and AA,
-// outside the canvas element, whose own CI checks it, but for app's own buttons in its slot; each target at least 44 × 44 CSS px; and a
-// page that does not scroll sideways, with no text cut or spilling out of its box; and a button
-// that shows no caption only from the closed list, named by its caption (R60).
+// The checks of accessibility every screen's test runs in each engine (R11): axe-core by the rules
+// of WCAG 2.2 A and AA, outside the canvas element, whose own CI checks it, but for app's own
+// buttons in its slot; each target at least 44 × 44 CSS px; and a page that does not scroll
+// sideways, with no text cut or spilling out of its box; and a button that shows no caption only
+// from the closed list, named by its caption (R60).
 import axe from "axe-core";
 import { CAPTIONLESS, INSTEAD, type Instead } from "../app/IconButton.tsx";
 import { ICONS, VALUES } from "../app/icons.ts";

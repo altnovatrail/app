@@ -1,10 +1,9 @@
-// The one client of api the screens call (section 15 of the text of the contracts; R18 in
-// docs/decisions.md): connect-es over Connect, the wire binary protobuf (section 9), each call with
-// api's own limit of 30 s, behind the interceptors of the contract's rules. The four open views of a
-// package and the legal texts go by a transport of their own, Connect GET with no token, no deadline
-// and no header, so that a request is simple, needs no preflight and an HTTP cache may keep its
-// answer (T21, T32). A call
-// that does not answer throws an ApiError that says what it came to. No DOM beyond fetch.
+// The one client of api the screens call (R18): connect-es over Connect, the wire binary protobuf,
+// each call with api's own limit of 30 s, behind the interceptors of the contract's rules. The four
+// open views of a package and the legal texts go by a transport of their own, Connect GET with no
+// token, no deadline and no header, so that a request is simple, needs no preflight and an HTTP
+// cache may keep its answer (R18, R27). A call that does not answer throws an ApiError that says
+// what it came to. No DOM beyond fetch.
 import { AccountService } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import { AttemptService } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
 import { LearningService } from "@altnovatrail/contracts/novatrail/api/v1/learning_pb.js";
@@ -53,7 +52,7 @@ export interface Api {
   readonly progress: Client<typeof ProgressService>;
   /** `GetLegalTexts`, by Connect GET with no token, as the open views, but past the HTTP cache. */
   readonly legal: Client<typeof LegalService>;
-  /** The works kept on the server: `PutWork` (T62). */
+  /** The works kept on the server: `PutWork` (R30). */
   readonly work: Client<typeof WorkService>;
 }
 

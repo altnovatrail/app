@@ -1,7 +1,7 @@
-// What a call of api that did not answer comes to, for the screens (section 15 of the text of the
-// contracts; R18 in docs/decisions.md): a refusal with its cause and what it tells, or what the
-// client itself makes of the code — no connection, a sign-in needed, a build that no longer
-// understands api. A cause the build does not know it reads by the code of the error. No DOM.
+// What a call of api that did not answer comes to, for the screens (R18): a refusal with its cause
+// and what it tells, or what the client itself makes of the code — no connection, a sign-in needed,
+// a build that no longer understands api. A cause the build does not know it reads by the code of
+// the error. No DOM.
 import {
   Cause,
   type Cause as CauseValue,
@@ -49,8 +49,8 @@ export class ApiError extends Error {
 }
 
 /**
- * The refusal an error of Connect carries, if any, and if the build knows its cause: a cause it does
- * not know it reads by the code of the error alone (section 15).
+ * The refusal an error of Connect carries, if any, and if the build knows its cause: a cause it
+ * does not know it reads by the code of the error alone.
  */
 export function refusalOf(error: ConnectError): Refusal | undefined {
   const refusal = error.findDetails(RefusalSchema)[0];

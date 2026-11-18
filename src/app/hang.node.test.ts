@@ -1,6 +1,6 @@
-// Where a pop-over hangs from its button (section 3.9 of docs/architecture.md): below it and at its
-// left, or centred below its middle, above it where below has no room, at its right where the left would leave the window, and
-// inside the window's margin whatever the button's place.
+// Where a pop-over hangs from its button (R59): below it and at its left, or centred below its
+// middle, above it where below has no room, at its right where the left would leave the window,
+// and inside the window's margin whatever the button's place.
 import { describe, expect, it } from "vitest";
 import { GAP, hang, MARGIN } from "./hang.ts";
 

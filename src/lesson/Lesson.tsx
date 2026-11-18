@@ -1,13 +1,12 @@
-// The lesson player (section 3.4 of docs/architecture.md; R06, R23 in docs/decisions.md;
-// LearningService in the contract): `GetLessonRun` gives an open run again, `OpenLesson` a run by an
-// engine's choice of a lesson (T28), each with the lesson's open view, its package and the task
-// segments that ended. The lesson opens at the later of the place the device keeps and the one after
-// the last task that ended, its examples' demos as they were — the state of this run alone, by the
-// lesson's full ID, the package and the run's ID. "Continue" goes on; a task segment is an attempt
-// of the run, the task screen under the lesson's header, and "Continue" comes once api said the task
-// ended, which moves the place at once. "Continue" on the last segment is "lesson done",
-// `CompleteLesson`, sent again until api answers; any end of the run erases the state of the lesson.
-// Leaving sends nothing.
+// The lesson player (R06, R23; LearningService in the contract): `GetLessonRun` gives an open run
+// again, `OpenLesson` a run by an engine's choice of a lesson (R24), each with the lesson's open
+// view, its package and the task segments that ended. The lesson opens at the later of the place
+// the device keeps and the one after the last task that ended, its examples' demos as they were —
+// the state of this run alone, by the lesson's full ID, the package and the run's ID. "Continue"
+// goes on; a task segment is an attempt of the run, the task screen under the lesson's header, and
+// "Continue" comes once api said the task ended, which moves the place at once. "Continue" on the
+// last segment is "lesson done", `CompleteLesson`, sent again until api answers; any end of the run
+// erases the state of the lesson. Leaving sends nothing.
 import type { Mode as ProfileMode } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import type { Next } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
 import {
@@ -233,8 +232,8 @@ function nextStep(profileId: string, device: Device, choice: EngineChoice | unde
  * The end of a run, a card in the window's middle as the mockup's `lesson-end` (R64): the module's
  * tile and title if known, the lesson's title if known, how it ended — "Lesson complete" after a
  * star —, the way to what the engine chose — the choice the end gave, or else a press that asks for
- * it (R24) —, and the way to My subjects. No score, grade or comparison (product 7 in spec). The
- * profile's pill stands at the top, as on every screen of the profile (section 3.6).
+ * it (R24) —, and the way to My subjects. No score, grade or comparison. The profile's pill stands
+ * at the top, as on every screen of the profile (R63).
  */
 export function LessonEnd({
   reason,

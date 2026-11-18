@@ -1,9 +1,9 @@
-// The choice of the learner, as the mockup's `who` (sections 3.2 and 3.6 of docs/architecture.md;
-// R46 and R61 in docs/decisions.md; R148 spec): each profile by its avatar and pseudonym, the
-// owner's with no PIN while the account has no child; "Add a learner" shown but not open, with the
-// line why, until a child's profile comes with a parent's consent (epic E4). Above, the way into the
-// section for adults and the sign-out; below, on the first sign-in, the line that learners' work is
-// kept here, and the next versions of the legal texts, which the adult sees here at each start.
+// The choice of the learner, as the mockup's `who` (R08, R46, R61; R148 spec): each profile by its
+// avatar and pseudonym, the owner's with no PIN while the account has no child; "Add a learner"
+// shown but not open, with the line why, until a child's profile comes with a parent's consent.
+// Above, the way into the section for adults and the sign-out; below, on the first sign-in, the
+// line that learners' work is kept here, and the next versions of the legal texts, which the adult
+// sees here at each start.
 import type { Profile } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import { useId, useState } from "react";
 import { Brand } from "../app/Brand.tsx";

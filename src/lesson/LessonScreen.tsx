@@ -1,13 +1,13 @@
-// The lesson's screen (section 3.4 of docs/architecture.md; R06, R23 and R64 in
-// docs/decisions.md), as the mockup's `lesson`: the whole window, the top bar's glass pill at the
-// top — Back, which leaves the lesson, the lesson's title, the module's text with its own `lang`,
-// and under it the line of the segment shown, which opens the segments in a pop-over —, the profile's
-// pill at the bar's other end (section 3.6) — a task's pill of its mode after it (R65) —, the segment itself, and at the bottom the row of glass
-// with "Continue" — a worked example's in the canvas's own row. An explanation is a card that
-// scrolls inside, its heading its caption; a worked example and a task fill the rest of the window,
-// their heading out of sight, the bar's line showing the same. A segment that takes another's place
-// takes the focus on its heading, as a screen does (2.4.3); "Continue" that comes after a task is
-// told by a status line (4.1.3). What it shows it takes from its container, Lesson.tsx.
+// The lesson's screen (R06, R23 and R64), as the mockup's `lesson`: the whole window, the top bar's
+// glass pill at the top — Back, which leaves the lesson, the lesson's title, the module's text with
+// its own `lang`, and under it the line of the segment shown, which opens the segments in a
+// pop-over —, the profile's pill at the bar's other end (R63) — a task's pill of its mode after it
+// (R65) —, the segment itself, and at the bottom the row of glass with "Continue" — a worked
+// example's in the canvas's own row. An explanation is a card that scrolls inside, its heading its
+// caption; a worked example and a task fill the rest of the window, their heading out of sight, the
+// bar's line showing the same. A segment that takes another's place takes the focus on its heading,
+// as a screen does (2.4.3); "Continue" that comes after a task is told by a status line (4.1.3).
+// What it shows it takes from its container, Lesson.tsx.
 import { type ReactNode, useEffect, useId, useRef, useState } from "react";
 import type { Failure } from "../api/failure.ts";
 import { failureText } from "../api/words.ts";
@@ -141,9 +141,9 @@ export function LessonScreen(props: LessonScreenProps) {
 
 /**
  * "Continue", its icon after its word, as the mockup's: in the row under the segment shown, or, on
- * a worked example, a child of the canvas in its slot `actions`, after its Next and Demo (R84
- * canvas; the 2026-11-17 amendment to R36 spec). Not disabled while "lesson done" is under way:
- * a disabled button would drop the focus.
+ * a worked example, a child of the canvas in its slot `actions`, after its Next and Demo
+ * (R84 canvas; R36 spec). Not disabled while "lesson done" is under way: a disabled button would
+ * drop the focus.
  */
 export function ContinueButton({
   pending,

@@ -1,7 +1,7 @@
-// The store in memory for the tests in Node (section 3.2 of docs/architecture.md): the backend's
-// interface as IndexedDB keeps it — keys in IndexedDB's order, records cloned in and out, one
-// transaction at a time per database and nothing of a failed one kept — with what the tests make
-// happen: another tab, a removal blocked or failed, a write refused, the browser closing.
+// The store in memory for the tests in Node: the backend's interface as IndexedDB keeps it — keys
+// in IndexedDB's order, records cloned in and out, one transaction at a time per database and
+// nothing of a failed one kept — with what the tests make happen: another tab, a removal blocked or
+// failed, a write refused, the browser closing.
 import {
   type Backend,
   type Connection,

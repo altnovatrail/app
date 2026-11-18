@@ -1,5 +1,5 @@
-// The sign-in and the account on connect-es's router, with no network (sections 3.2 and 3.10 of
-// docs/architecture.md; section 15 of the text of the contracts): every refusal and every erasure.
+// The sign-in and the account on connect-es's router, with no network (R04, R19; the contract):
+// every refusal and every erasure.
 import {
   AccountService,
   type CreateAccountRequest,
