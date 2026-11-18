@@ -337,6 +337,7 @@ export function OpenEssay({
                 profileId={profileId}
                 attemptId={attemptId}
                 said={{ text: feedback, reply: TutorReply.ESSAY_FEEDBACK, rung: 0 }}
+                language={explanation}
               />
             ),
           }

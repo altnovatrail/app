@@ -1,7 +1,8 @@
 // The screen of an essay, laid out as the task screen is (section 3.3 of docs/architecture.md; R20,
 // R53 and R66 in docs/decisions.md), as the mockup's `essay` and `essay-feedback`: the canvas with
-// what was read under it, the tutor's panel beside it from 64rem and above it on a narrower screen,
-// and the row of glass below them — Hint, Done and Check (R65). An essay has no verdict (R75, R87
+// what was read under it, the row of glass below them — Hint, Done and Check (R65) —, and the
+// tutor's panel of R67, open by steps and with a hint, and closed by its × till the next hint; the
+// essay being read and its feedback do not open it, as a verdict does not (T88). An essay has no verdict (R75, R87
 // in spec): the panel's block "Tutor" holds the feedback of the last submission, or why it gave
 // none — no feedback this time, an essay that cannot be read, no check —, with "Report a problem"
 // for a learner of the category adult (R33). Above the row stands the reminder to write no names,
@@ -23,7 +24,7 @@ import {
   type TaskParts,
   VerdictCard,
 } from "./TaskLayout.tsx";
-import { TutorWords } from "./TutorWords.tsx";
+import { HintAct, TutorWords } from "./TutorWords.tsx";
 
 /** The essay finished by Done: the rubric's criteria and the solution, as `SolvedTask` gives them. */
 export interface Finished {
@@ -75,6 +76,14 @@ export function EssayScreen(props: EssayScreenProps) {
   // Nothing sent yet: the essay was neither read nor answered. Once it was, Done waits only for the
   // submission to be kept on the device, and a press says nothing of writing it.
   const unsent = props.feedback === undefined && props.note === undefined;
+  // The panel opens by steps and with a hint; the learner's × or the tutor's button holds over that,
+  // till the next hint comes (R67).
+  const [chosen, setChosen] = useState<boolean | undefined>(undefined);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: each hint that comes opens it again.
+  useEffect(() => {
+    setChosen(undefined);
+  }, [props.hint]);
+  const open = chosen ?? (props.mode === "steps" || props.hint !== undefined);
   const feedback = (
     <TutorWords
       words={props.feedback}
@@ -133,13 +142,11 @@ export function EssayScreen(props: EssayScreenProps) {
           </section>
         )
       }
-      panel={
-        props.hint !== undefined ||
-        props.feedback !== undefined ||
-        props.note !== undefined ||
-        props.checking
-      }
+      open={open}
+      onOpen={() => setChosen(true)}
+      onClose={() => setChosen(false)}
       tutor={feedback}
+      acts={<HintAct pending={pending} onHint={props.onHint} />}
       result={
         <>
           <p className="nt-result">{words.text("task.essay-done")}</p>

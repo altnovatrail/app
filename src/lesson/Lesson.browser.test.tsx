@@ -33,8 +33,8 @@ import { create, type MessageInitShape } from "@bufbuild/protobuf";
 import { timestampFromDate } from "@bufbuild/protobuf/wkt";
 import { Code, ConnectError, type ConnectRouter, createRouterTransport } from "@connectrpc/connect";
 import { render, screen, waitFor, within } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
-import { userEvent } from "vitest/browser";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { page, userEvent } from "vitest/browser";
 import { ApiProvider } from "../api/ApiContext.tsx";
 import { createApi } from "../api/client.ts";
 import { dateTimeFormat } from "../i18n/intl.ts";
@@ -51,6 +51,12 @@ import { memoryDevice } from "../test/device.ts";
 import { inLanguage } from "../test/language.tsx";
 import { Lesson } from "./Lesson.tsx";
 import type { LessonOpen, RunRef } from "./LessonContext.tsx";
+
+// The tablet's layout, where the row stands beside the open panel: on a phone its sheet hides the row
+// (R67).
+beforeEach(async () => {
+  await page.viewport(1194, 834);
+});
 
 const D1 = `sha256:${"1".repeat(64)}`;
 const encode = (value: unknown) => new TextEncoder().encode(JSON.stringify(value));

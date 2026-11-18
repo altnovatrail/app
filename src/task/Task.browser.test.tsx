@@ -57,8 +57,8 @@ import { timestampFromDate } from "@bufbuild/protobuf/wkt";
 import { Code, ConnectError, type ConnectRouter, createRouterTransport } from "@connectrpc/connect";
 import { render, screen, within } from "@testing-library/react";
 import type { ReactNode } from "react";
-import { afterEach, describe, expect, it, vi } from "vitest";
-import { userEvent } from "vitest/browser";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { page, userEvent } from "vitest/browser";
 import { LearnerProvider } from "../account/AccountGate.tsx";
 import { ApiProvider } from "../api/ApiContext.tsx";
 import { createApi } from "../api/client.ts";
@@ -78,6 +78,12 @@ import { fakeSpeech, voice } from "../test/speech.ts";
 import { SpeechProvider, VoicingProvider } from "../voice/VoicingContext.tsx";
 import { forgetPuts } from "../works/stored.ts";
 import { Task } from "./Task.tsx";
+
+// The tablet's layout, where the row stands beside the open panel: on a phone its sheet hides the row
+// (R67), which the tests of the sheet show.
+beforeEach(async () => {
+  await page.viewport(1194, 834);
+});
 
 const D1 = `sha256:${"1".repeat(64)}`;
 const encode = (value: unknown) => new TextEncoder().encode(JSON.stringify(value));
@@ -551,6 +557,9 @@ async function choose(...options: string[]) {
   }
 }
 
+/** The list of the steps, opened from the line "Step 1 of 4" of the step's card. */
+const openSteps = () => userEvent.click(panel().getByRole("button", { name: /^Step \d+ of \d+$/ }));
+
 /** The pop-over of the mode, opened from its pill. */
 async function modes() {
   await userEvent.click(await screen.findByRole("button", { name: /^Mode: / }));
@@ -586,7 +595,7 @@ describe("the task screen", () => {
     expect(done).toHaveAccessibleDescription("Mark what we know and what to find");
     // A press the browser lets through, as a screen reader's would: aria-disabled does not stop it.
     done.click();
-    expect(panel().getByRole("heading", { level: 2 })).toHaveTextContent("Understand the task");
+    expect(panel().getByRole("heading", { name: "Understand the task", level: 2 })).toBeVisible();
     for (const chip of ["Two apples", "Three pears", "How many fruits"]) {
       await userEvent.click(panel().getByRole("button", { name: chip }));
     }
@@ -600,14 +609,17 @@ describe("the task screen", () => {
     expect(document.activeElement).toBe(plan);
     expect(await panel().findByText("Draw the problem")).toBeVisible();
     // Back to the first step and on again: nothing is reset, nothing asked again.
+    await openSteps();
     await userEvent.click(panel().getByRole("button", { name: /Understand the task/ }));
     expect(panel().getByRole("button", { name: "Three pears" })).toHaveAttribute(
       "aria-pressed",
       "true",
     );
+    await openSteps();
     await userEvent.click(panel().getByRole("button", { name: /Make a plan/ }));
     await panel().findByText("Draw the problem");
     expect(asked).toEqual(["open a1", "step 2"]);
+    await openSteps();
     const bar = panel().getByRole("list", { name: "Steps" });
     expect(within(bar).getAllByRole("listitem")[1]).toHaveAttribute("aria-current", "step");
     expect(within(bar).getAllByRole("listitem")[2]).toHaveTextContent("3. Solve it (later)");
@@ -873,7 +885,7 @@ describe("the task screen", () => {
     await vi.waitFor(() => screen.getByRole("radio", { name: "5" }));
     screen.getByRole("radio", { name: "5" }).click();
     screen.getByRole("radio", { name: "Yes" }).click();
-    screen.getByRole("button", { name: "Close" }).click();
+    screen.getByRole("dialog", { name: "Choose an answer" }).closest("dialog")?.close();
     await vi.waitFor(() => expect(check()).toHaveAttribute("aria-disabled", "false"));
     vi.advanceTimersByTime(6000);
     await vi.waitFor(() => expect(check()).toHaveClass("nt-blink"));
@@ -955,7 +967,9 @@ describe("the task screen", () => {
     await vi.waitFor(() => expect(asked).toContain("step 2"));
     expect(panel().queryByText("Draw the problem")).toBeNull();
     down = false;
+    await openSteps();
     await userEvent.click(panel().getByRole("button", { name: /Understand the task/ }));
+    await openSteps();
     await userEvent.click(panel().getByRole("button", { name: /Make a plan/ }));
     expect(await panel().findByText("Draw the problem")).toBeVisible();
     expect(asked.filter((call) => call === "step 2").length).toBe(2);
@@ -1337,7 +1351,9 @@ describe("the task screen with handwriting", () => {
     await screen.findByRole("region", { name: "Solution" });
     await vi.waitFor(() => expect(second.corrects.length).toBe(1));
     expect(screen.queryByText("The tutor isn't available for this profile")).toBeNull();
-    expect(screen.queryByRole("heading", { name: "Tutor", level: 2 })).toBeNull();
+    expect(
+      panel().getByRole("region", { name: "Conversation" }).querySelector(".nt-talk-note"),
+    ).toBeNull();
   });
 
   it("keeps Check closed with a line until the sheet holds an answer", async () => {
@@ -1486,8 +1502,10 @@ describe("the task screen with handwriting", () => {
     await vi.waitFor(() => expect(check()).toHaveAttribute("aria-disabled", "false"));
     await userEvent.click(check());
     await vi.waitFor(() => expect(rungs.length).toBe(1));
-    // The panel holds its heading and the line that the tutor is an AI, and nothing more.
-    expect(panel().getByRole("region", { name: "Tutor" }).querySelectorAll("p")).toHaveLength(1);
+    // The conversation holds the line that the tutor is an AI and the verdict's, and nothing more.
+    expect(
+      panel().getByRole("region", { name: "Conversation" }).querySelectorAll("p"),
+    ).toHaveLength(1);
     refusal = refused(Code.FailedPrecondition, Cause.NO_CONSENT);
     await userEvent.click(check());
     expect(await screen.findByText("A grown-up's consent is needed first")).toBeVisible();
@@ -1685,6 +1703,8 @@ describe("the task screen with handwriting", () => {
 
 describe("the tutor's words only while its panel is open (T88)", () => {
   const tutorButton = () => screen.getByRole("button", { name: "Tutor" });
+  /** The panel's ×: the tutor's button, which opens it, stands only while it is closed (R67). */
+  const closePanel = () => userEvent.click(panel().getByRole("button", { name: "Close" }));
   const solvedSheet = () => ({
     ...sheetAnswer("correct", { value: "7" }),
     solved: { solution: encode(SOLUTION), moduleFormatVersion: "0.4" },
@@ -1715,7 +1735,7 @@ describe("the tutor's words only while its panel is open (T88)", () => {
     expect(rungs[0]?.work).toEqual(submitted[0]?.work);
     expect(rungs[0]?.work?.surface.case).toBe("sheet");
     // Closed and opened again, the panel shows the words it got, and asks nothing more.
-    await userEvent.click(tutorButton());
+    await closePanel();
     expect(screen.queryByRole("complementary", { name: "Tutor" })).toBeNull();
     await userEvent.click(tutorButton());
     expect(panel().getByText("Count the gaps between the rungs.")).toBeVisible();
@@ -1750,7 +1770,7 @@ describe("the tutor's words only while its panel is open (T88)", () => {
     await checkSheet("Read: 5");
     await vi.waitFor(() => expect(rungs).toHaveLength(1));
     // Closed while the words are asked: they come, and the tutor says nothing of them.
-    await userEvent.click(tutorButton());
+    await closePanel();
     answer();
     const sheet = document.querySelector("novatrail-canvas") as CanvasElement;
     await new Promise((resolve) => setTimeout(resolve, 100));
@@ -1808,7 +1828,7 @@ describe("the tutor's words only while its panel is open (T88)", () => {
     expect(await panel().findByText("Count the gaps between the rungs.")).toBeVisible();
     expect(rungs).toHaveLength(1);
     expect(asked).not.toContain("hint");
-    expect(tutorButton()).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("complementary", { name: "Tutor" })).toBeVisible();
     // Hint again, the panel open: it asks api for the hint, and no words of AI.
     await userEvent.click(rowButton("Hint"));
     await vi.waitFor(() => expect(asked).toContain("hint"));
@@ -1829,7 +1849,7 @@ describe("the tutor's words only while its panel is open (T88)", () => {
     // Back on my own, the panel stays open with the words it holds.
     await chooseMode("On my own");
     expect(panel().getByText("Count the gaps between the rungs.")).toBeVisible();
-    expect(tutorButton()).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("complementary", { name: "Tutor" })).toBeVisible();
   });
 
   it("asks the words after Correct once the Tutor of its result opens, with its work, then lets the work go", async () => {
@@ -2229,9 +2249,13 @@ describe("Report a problem with the tutor's words (R33)", () => {
     await notYet();
     expect(panel().getByText("The tutor is an AI, not a person")).toBeVisible();
     await userEvent.click(panel().getByRole("button", { name: "Report a problem" }));
-    expect(document.activeElement).toBe(
-      screen.getByRole("heading", { name: "Report a problem with these words" }),
-    );
+    // The form opens in a pop-over, its first kind taking the focus, the words quoted above it.
+    expect(document.activeElement).toBe(form().getAllByRole("radio")[0]);
+    expect(
+      within(screen.getByRole("dialog", { name: "Report a problem" })).getByText(
+        "Count the gaps between the rungs.",
+      ),
+    ).toBeVisible();
     expect(form().getAllByRole("radio")).toHaveLength(6);
     expect(form().getByText(/Please write no names in it/)).toBeVisible();
     // No kind chosen: nothing goes, and the group is told why.
@@ -2417,8 +2441,11 @@ describe("Report a problem with the tutor's words (R33)", () => {
     await userEvent.click(panel().getByRole("button", { name: "Report a problem" }));
     await userEvent.click(form().getByRole("radio", { name: "Unclear" }));
     await userEvent.type(form().getByRole("textbox"), "Still unclear.");
+    // The pop-over closed, its form stays as it was, and comes back so.
+    await userEvent.keyboard("{Escape}");
     await userEvent.click(rowButton("Hint"));
     await vi.waitFor(() => expect(rowButton("Hint")).not.toHaveAttribute("aria-disabled", "true"));
+    await userEvent.click(panel().getByRole("button", { name: "Report a problem" }));
     expect(form().getByRole("textbox")).toHaveValue("Still unclear.");
     await send();
     await screen.findByText(thanks);

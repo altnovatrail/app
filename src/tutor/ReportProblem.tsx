@@ -5,8 +5,10 @@
 // `ReportProblem` with one idempotency key for the report, the same with every repeat of it, so
 // that a reply lost on the way brings no second report; another kind or another text is another
 // report, with a key of its own. The answer says by when the operator reviews it, by `review_by`.
-// The form opens in place: leaving the screen would lose the words after a correct answer, which
-// api keeps none of.
+// The form opens in a pop-over over the screen, the words it is about quoted at its top, as the
+// mockup's `task-report` (the second 2026-11-14 amendment to R148 in spec; R67): leaving the screen
+// would lose the words after a correct answer, which api keeps none of. What it holds stays while
+// it is closed, by Cancel or Escape, and comes back as it was once it opens again.
 import type { ProblemKind } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
 import { timestampDate } from "@bufbuild/protobuf/wkt";
 import { useEffect, useId, useRef, useState } from "react";
@@ -14,6 +16,7 @@ import { useApi } from "../api/ApiContext.tsx";
 import { type Failure, parseFailure } from "../api/failure.ts";
 import { idempotencyKey } from "../api/keys.ts";
 import { failureText } from "../api/words.ts";
+import { PopOver } from "../app/PopOver.tsx";
 import { dateTimeFormat } from "../i18n/intl.ts";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { KINDS, reportRequest, type Said, TEXT_LIMIT, unsendable } from "./report.ts";
@@ -23,19 +26,18 @@ export interface ReportProblemProps {
   readonly attemptId: string;
   /** The words the report is about, as the screen shows them, and the reply that brought them. */
   readonly said: Said;
+  /** The module's explanation language, the words' `lang`. */
+  readonly language?: string | undefined;
 }
 
-/** Where the form stands: closed to its button, open, or sent with the day of its review. */
-type Stage =
-  | { readonly is: "closed" }
-  | { readonly is: "open" }
-  | { readonly is: "sent"; readonly reviewBy: Date | undefined };
+/** Where the report stands: a form behind its button, or sent with the day of its review. */
+type Stage = { readonly is: "form" } | { readonly is: "sent"; readonly reviewBy: Date | undefined };
 
-export function ReportProblem({ profileId, attemptId, said }: ReportProblemProps) {
+export function ReportProblem({ profileId, attemptId, said, language: of }: ReportProblemProps) {
   const api = useApi();
   const { language, words } = useLanguage();
   const id = useId();
-  const [stage, setStage] = useState<Stage>({ is: "closed" });
+  const [stage, setStage] = useState<Stage>({ is: "form" });
   const [kind, setKind] = useState<ProblemKind | undefined>(undefined);
   const [text, setText] = useState("");
   const [invalid, setInvalid] = useState<ReturnType<typeof unsendable>>(undefined);
@@ -43,17 +45,11 @@ export function ReportProblem({ profileId, attemptId, said }: ReportProblemProps
   const [pending, setPending] = useState(false);
   // The key of the report as the form holds it: the same with every repeat, new with an edit.
   const key = useRef<string | undefined>(undefined);
-  // The focus goes with the form: to its heading as it opens, back to the button as it closes, and
-  // to the answer once it is sent.
-  const heading = useRef<HTMLHeadingElement>(null);
-  const button = useRef<HTMLButtonElement>(null);
+  // The focus goes into the pop-over as it opens and back to its button as it closes, and to the
+  // answer once the report is sent.
   const answer = useRef<HTMLParagraphElement>(null);
-  const before = useRef<Stage["is"]>("closed");
   useEffect(() => {
-    if (stage.is === "open") heading.current?.focus();
-    else if (stage.is === "sent") answer.current?.focus();
-    else if (before.current === "open") button.current?.focus();
-    before.current = stage.is;
+    if (stage.is === "sent") answer.current?.focus();
   }, [stage]);
 
   const edited = () => {
@@ -103,105 +99,102 @@ export function ReportProblem({ profileId, attemptId, said }: ReportProblemProps
       </p>
     );
   }
-  if (stage.is === "closed") {
-    return (
-      <div className="nt-buttons nt-report">
-        <button
-          ref={button}
-          type="button"
-          className="nt-secondary"
-          onClick={() => setStage({ is: "open" })}
-        >
-          {words.text("report.button")}
-        </button>
-      </div>
-    );
-  }
   const errorId = `${id}-error`;
   return (
-    <form
-      aria-labelledby={`${id}-title`}
-      className="nt-report"
-      noValidate
-      onSubmit={(event) => {
-        event.preventDefault();
-        send();
-      }}
+    <PopOver
+      label={words.text("report.button")}
+      className="nt-report-open"
+      popClassName="nt-pop-report"
     >
-      <h3 id={`${id}-title`} ref={heading} tabIndex={-1}>
-        {words.text("report.title")}
-      </h3>
-      <fieldset
-        className="nt-choices"
-        {...(invalid === "report.no-kind" ? { "aria-describedby": errorId } : {})}
-      >
-        <legend>{words.text("report.kind")}</legend>
-        {KINDS.map(([value, word]) => (
-          <div key={value} className="nt-option">
-            <label>
-              <input
-                type="radio"
-                name={`${id}-kind`}
-                checked={kind === value}
-                onChange={() => {
-                  setKind(value);
-                  edited();
-                }}
-              />
-              {words.text(word)}
-            </label>
-          </div>
-        ))}
-      </fieldset>
-      <div className="nt-field">
-        <label htmlFor={`${id}-text`}>{words.text("report.text")}</label>
-        <textarea
-          id={`${id}-text`}
-          rows={4}
-          maxLength={TEXT_LIMIT}
-          value={text}
-          aria-describedby={invalid === "report.no-text" ? `${id}-hint ${errorId}` : `${id}-hint`}
-          onChange={(event) => {
-            setText(event.target.value);
-            edited();
-          }}
-        />
-        <p id={`${id}-hint`} className="nt-hint">
-          {words.text("report.text-hint")}
-        </p>
-      </div>
-      <p className="nt-hint">{words.text("report.words")}</p>
-      <p className="nt-hint">{words.text("report.danger")}</p>
-      {invalid === undefined ? null : (
-        <p id={errorId} role="alert" className="nt-error">
-          {words.text(invalid)}
-        </p>
-      )}
-      {failure === undefined ? null : (
-        <p role="alert" className="nt-error">
-          {failureText(failure, words)}
-        </p>
-      )}
-      <div className="nt-buttons">
-        {/* Not disabled while it is under way: a disabled button would drop the focus. */}
-        <button type="submit" aria-disabled={pending}>
-          {words.text("report.send")}
-        </button>
-        {/* Not while it is under way: the report may reach api all the same. */}
-        <button
-          type="button"
-          className="nt-secondary"
-          aria-disabled={pending}
-          onClick={() => {
-            if (pending) return;
-            setInvalid(undefined);
-            setFailure(undefined);
-            setStage({ is: "closed" });
+      {(close) => (
+        <form
+          aria-labelledby={`${id}-title`}
+          className="nt-report"
+          noValidate
+          onSubmit={(event) => {
+            event.preventDefault();
+            send();
           }}
         >
-          {words.text("common.cancel")}
-        </button>
-      </div>
-    </form>
+          <h3 id={`${id}-title`}>{words.text("report.title")}</h3>
+          <blockquote className="nt-report-said" {...(of === undefined ? {} : { lang: of })}>
+            {said.text}
+          </blockquote>
+          <p className="nt-hint">{words.text("report.words")}</p>
+          <fieldset
+            className="nt-choices"
+            {...(invalid === "report.no-kind" ? { "aria-describedby": errorId } : {})}
+          >
+            <legend>{words.text("report.kind")}</legend>
+            {KINDS.map(([value, word]) => (
+              <div key={value} className="nt-option">
+                <label>
+                  <input
+                    type="radio"
+                    name={`${id}-kind`}
+                    checked={kind === value}
+                    onChange={() => {
+                      setKind(value);
+                      edited();
+                    }}
+                  />
+                  {words.text(word)}
+                </label>
+              </div>
+            ))}
+          </fieldset>
+          <div className="nt-field">
+            <label htmlFor={`${id}-text`}>{words.text("report.text")}</label>
+            <textarea
+              id={`${id}-text`}
+              rows={4}
+              maxLength={TEXT_LIMIT}
+              value={text}
+              aria-describedby={
+                invalid === "report.no-text" ? `${id}-hint ${errorId}` : `${id}-hint`
+              }
+              onChange={(event) => {
+                setText(event.target.value);
+                edited();
+              }}
+            />
+            <p id={`${id}-hint`} className="nt-hint">
+              {words.text("report.text-hint")}
+            </p>
+          </div>
+          <p className="nt-hint">{words.text("report.danger")}</p>
+          {invalid === undefined ? null : (
+            <p id={errorId} role="alert" className="nt-error">
+              {words.text(invalid)}
+            </p>
+          )}
+          {failure === undefined ? null : (
+            <p role="alert" className="nt-error">
+              {failureText(failure, words)}
+            </p>
+          )}
+          <div className="nt-buttons">
+            {/* Not disabled while it is under way: a disabled button would drop the focus. */}
+            <button type="submit" aria-disabled={pending}>
+              {words.text("report.send")}
+            </button>
+            {/* Not while it is under way: the report may reach api all the same. */}
+            <button
+              type="button"
+              className="nt-secondary"
+              aria-disabled={pending}
+              onClick={() => {
+                if (pending) return;
+                setInvalid(undefined);
+                setFailure(undefined);
+                close();
+              }}
+            >
+              {words.text("common.cancel")}
+            </button>
+          </div>
+        </form>
+      )}
+    </PopOver>
   );
 }

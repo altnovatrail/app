@@ -1,12 +1,17 @@
-// The tutor's panel in the mode "by steps" (section 3.3 of docs/architecture.md; R05 in
-// docs/decisions.md): the bar of steps, each with its place — passed, now or later — in a word, not
-// in colour alone; the step shown, its title and its description in the module's language, the
-// chips and the cards of techniques it gives, and the line of what opens "Step done". A step passed
-// is a touch away; forward goes only "Step done", which reads no work. The last step has no "Step
-// done": it ends with Check. "Read aloud" reads the step shown, its chips and its cards (R07).
+// The solving steps in the tutor's panel (section 3.3 of docs/architecture.md; R05 and R67 in
+// docs/decisions.md; the second 2026-11-14 amendment to R148 in spec), as the mockup's `task` and
+// `task-steps`: a white card at the panel's top — "Step 2 of 4" with a chevron, which opens the
+// list of the steps, each with its place — passed, now or later — in a word, not in colour alone;
+// the step's title and "Read aloud" of the step, its chips and its cards; its description in the
+// module's language, the chips to tick and the cards of techniques it gives, and the line of what
+// opens "Step done". A step passed is a touch away; forward goes only "Step done", which reads no
+// work. The last step has no "Step done": it ends with Check. While the panel is closed the step
+// stands as a pill above the row, which opens the panel, with its "Step done" (R07; StepPill).
 import type * as open from "@altnovatrail/spec/formatv0/open";
-import { useEffect, useId, useRef } from "react";
+import { useEffect, useId, useRef, useState } from "react";
+import { Icon } from "../app/Icon.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
+import type { Words } from "../i18n/words.ts";
 import { ReadAloud } from "../voice/ReadAloud.tsx";
 import { stepPhrases } from "../voice/texts.ts";
 import { exitMet, givesChips, givesTechniques, onWorkbook, type StepsState } from "./steps.ts";
@@ -31,6 +36,11 @@ function exitLine(
   return line === "steps.exit-slots" && onWorkbook(task) ? "task.check-boxes" : line;
 }
 
+/** Where the step shown stands: "Step 2 of 4". */
+function stepOf(state: StepsState, steps: readonly open.Step[], words: Words): string {
+  return words.text("steps.of", { place: state.place, count: steps.length });
+}
+
 export interface StepsPanelProps {
   readonly task: open.Task;
   readonly steps: readonly open.Step[];
@@ -42,6 +52,32 @@ export interface StepsPanelProps {
   readonly onGoTo: (place: number) => void;
   readonly onTick: (chip: number | "unknown") => void;
   readonly onDone: () => void;
+}
+
+/** "Step done", not disabled while it is locked: a disabled button would drop the focus. */
+function StepDone({
+  met,
+  lineId,
+  onDone,
+}: {
+  readonly met: boolean;
+  readonly lineId: string | undefined;
+  readonly onDone: () => void;
+}) {
+  const { words } = useLanguage();
+  return (
+    <button
+      type="button"
+      className="nt-step-done"
+      aria-disabled={!met}
+      {...(lineId === undefined ? {} : { "aria-describedby": lineId })}
+      onClick={() => {
+        if (met) onDone();
+      }}
+    >
+      {words.text("steps.done")}
+    </button>
+  );
 }
 
 export function StepsPanel({
@@ -57,11 +93,17 @@ export function StepsPanel({
 }: StepsPanelProps) {
   const { words } = useLanguage();
   const lineId = useId();
+  const listId = useId();
   const heading = useRef<HTMLHeadingElement>(null);
   const shown = useRef(state.place);
-  // A step that takes another's place takes the focus on its title, as a screen does (2.4.3).
+  const [listed, setListed] = useState(false);
+  // A step that takes another's place takes the focus on its title, as a screen does (2.4.3), and
+  // the list of the steps folds away.
   useEffect(() => {
-    if (shown.current !== state.place) heading.current?.focus();
+    if (shown.current !== state.place) {
+      setListed(false);
+      heading.current?.focus();
+    }
     shown.current = state.place;
   }, [state.place]);
 
@@ -74,8 +116,44 @@ export function StepsPanel({
   const techniques = givesTechniques(step) ? (state.techniques[state.place] ?? []) : [];
 
   return (
-    <div className="nt-steps">
-      <ol className="nt-step-bar" aria-label={words.text("steps.title")}>
+    // Its own scroll, a stop of the keyboard so that a keyboard can scroll it (2.1.1).
+    // biome-ignore lint/a11y/noNoninteractiveTabindex: a region that scrolls takes the focus to scroll.
+    <section className="nt-steps nt-step-card" aria-label={words.text("steps.card")} tabIndex={0}>
+      <div className="nt-step-head">
+        <div className="nt-step-names">
+          <button
+            type="button"
+            className="nt-step-open"
+            aria-expanded={listed}
+            aria-controls={listId}
+            onClick={() => setListed((was) => !was)}
+          >
+            {stepOf(state, steps, words)}
+            <Icon value="menu-open" />
+          </button>
+          <h2 ref={heading} tabIndex={-1} className="nt-step-title" {...lang}>
+            {step.title}
+          </h2>
+        </div>
+        <ReadAloud
+          phrases={stepPhrases(
+            step,
+            givesChips(step, task)
+              ? [...(task.givens ?? []), ...(task.unknown === undefined ? [] : [task.unknown])]
+              : [],
+            techniques,
+            catalog,
+            language,
+          )}
+          language={language}
+        />
+      </div>
+      <ol
+        id={listId}
+        className="nt-step-bar"
+        aria-label={words.text("steps.title")}
+        hidden={!listed}
+      >
         {steps.map((each, i) => {
           const place = i + 1;
           const mark =
@@ -84,31 +162,41 @@ export function StepsPanel({
               : place <= state.reached
                 ? words.text("steps.passed")
                 : words.text("steps.later");
-          const title = <span {...lang}>{each.title}</span>;
+          const inside = (
+            <>
+              <span className="nt-step-number">
+                {place}
+                <span className="nt-hidden-label">.</span>
+              </span>{" "}
+              <span className="nt-step-name" {...lang}>
+                {each.title}
+              </span>{" "}
+              <span className="nt-step-mark">({mark})</span>
+            </>
+          );
           return (
             // biome-ignore lint/suspicious/noArrayIndexKey: the steps never move, and two may share a title.
             <li key={i} {...(place === state.place ? { "aria-current": "step" } : {})}>
               {place !== state.place && place <= state.reached ? (
-                <button type="button" className="nt-secondary" onClick={() => onGoTo(place)}>
-                  {place}. {title} <span className="nt-step-mark">({mark})</span>
+                <button type="button" className="nt-step" onClick={() => onGoTo(place)}>
+                  {inside}
                 </button>
               ) : (
-                <span className="nt-step">
-                  {place}. {title} <span className="nt-step-mark">({mark})</span>
-                </span>
+                <span className="nt-step">{inside}</span>
               )}
             </li>
           );
         })}
       </ol>
-      <h2 ref={heading} tabIndex={-1} {...lang}>
-        {step.title}
-      </h2>
-      {step.description === undefined ? null : <p {...lang}>{step.description}</p>}
+      {step.description === undefined ? null : (
+        <p className="nt-step-text" {...lang}>
+          {step.description}
+        </p>
+      )}
       {givesChips(step, task) ? (
         <div className="nt-chips">
           {(task.givens?.length ?? 0) > 0 ? (
-            <fieldset className="nt-buttons">
+            <fieldset className="nt-chip-group">
               <legend>{words.text("steps.givens")}</legend>
               {task.givens?.map((given, i) => (
                 <button
@@ -120,13 +208,16 @@ export function StepsPanel({
                   onClick={() => onTick(i)}
                   {...lang}
                 >
+                  <span className="nt-chip-tick" aria-hidden="true">
+                    <Icon value="ticked" />
+                  </span>
                   {given}
                 </button>
               ))}
             </fieldset>
           ) : null}
           {task.unknown === undefined ? null : (
-            <fieldset className="nt-buttons">
+            <fieldset className="nt-chip-group">
               <legend>{words.text("steps.unknown")}</legend>
               <button
                 type="button"
@@ -135,6 +226,9 @@ export function StepsPanel({
                 onClick={() => onTick("unknown")}
                 {...lang}
               >
+                <span className="nt-chip-tick" aria-hidden="true">
+                  <Icon value="ticked" />
+                </span>
                 {task.unknown}
               </button>
             </fieldset>
@@ -142,37 +236,66 @@ export function StepsPanel({
         </div>
       ) : null}
       <TechniqueCards ids={techniques} catalog={catalog} language={language} />
-      <ReadAloud
-        phrases={stepPhrases(
-          step,
-          givesChips(step, task)
-            ? [...(task.givens ?? []), ...(task.unknown === undefined ? [] : [task.unknown])]
-            : [],
-          techniques,
-          catalog,
-          language,
-        )}
-        language={language}
-      />
       {lineKey === undefined ? null : (
-        <p id={lineId} className="nt-hint">
+        <p id={lineId} className="nt-step-line">
           {words.text(lineKey)}
         </p>
       )}
       {last ? null : (
-        <div className="nt-buttons">
-          {/* Not disabled while it is locked: a disabled button would drop the focus. */}
-          <button
-            type="button"
-            aria-disabled={!met}
-            {...(lineKey === undefined ? {} : { "aria-describedby": lineId })}
-            onClick={() => {
-              if (met) onDone();
-            }}
-          >
-            {words.text("steps.done")}
-          </button>
-        </div>
+        <StepDone met={met} lineId={lineKey === undefined ? undefined : lineId} onDone={onDone} />
+      )}
+    </section>
+  );
+}
+
+/**
+ * The step while the tutor's panel is closed, the mockup's `task-pill`: a pill of glass above the
+ * row — "Step 1 of 4" and the step's title, a press on which opens the panel (the second 2026-11-14
+ * amendment to R148 in spec), and its "Step done".
+ */
+export function StepPill({
+  task,
+  steps,
+  state,
+  filled,
+  language,
+  onOpen,
+  onDone,
+}: Pick<StepsPanelProps, "task" | "steps" | "state" | "filled" | "language" | "onDone"> & {
+  readonly onOpen: () => void;
+}) {
+  const { words } = useLanguage();
+  const lineId = useId();
+  const step = steps[state.place - 1];
+  if (step === undefined) return null;
+  const of = stepOf(state, steps, words);
+  const lineKey = exitLine(step.exit_condition, task);
+  return (
+    <div className="nt-step-pill nt-glass">
+      <button
+        type="button"
+        className="nt-step-pill-open"
+        aria-label={words.text("steps.pill", { of, title: step.title })}
+        onClick={onOpen}
+      >
+        <span className="nt-step-of">{of}</span>
+        <span className="nt-step-title" {...(language === undefined ? {} : { lang: language })}>
+          {step.title}
+        </span>
+      </button>
+      {state.place === steps.length ? null : (
+        <>
+          {lineKey === undefined ? null : (
+            <span id={lineId} className="nt-hidden-label">
+              {words.text(lineKey)}
+            </span>
+          )}
+          <StepDone
+            met={exitMet(step, task, state, filled)}
+            lineId={lineKey === undefined ? undefined : lineId}
+            onDone={onDone}
+          />
+        </>
       )}
     </div>
   );

@@ -621,33 +621,6 @@ novatrail-canvas {
 .nt-verdict-other {
   color: var(--nt-not-yet);
 }
-/* The bar of steps: the step shown is told by its word and its weight, not by colour alone. */
-.nt-step-bar {
-  margin: 0 0 1rem;
-  padding: 0;
-  list-style: none;
-}
-.nt-step-bar > li {
-  margin-block-end: 0.5rem;
-}
-.nt-step-bar > li[aria-current="step"] {
-  font-weight: var(--nt-weight-bold);
-}
-.nt-step {
-  display: inline-block;
-  padding-block: 0.5rem;
-}
-.nt-step-mark {
-  color: var(--nt-text-muted);
-  font-weight: 400;
-}
-.nt-steps h2 {
-  margin-block: 0 0.5rem;
-  font-size: var(--nt-size-emphasis);
-}
-.nt-steps h2:focus:not(:focus-visible) {
-  outline: none;
-}
 .nt-techniques {
   margin: 0 0 1rem;
   padding: 0;
@@ -691,26 +664,7 @@ novatrail-canvas {
 .nt-item-text {
   margin: 0;
 }
-/* The tutor's words, at the top of the panel, as a card. */
-.nt-tutor {
-  margin: 0 0 1rem;
-  padding: 1rem;
-  border: 0.0625rem solid transparent;
-  border-radius: var(--nt-radius-card);
-  background: var(--nt-card);
-  box-shadow: var(--nt-card-shadow);
-}
-.nt-tutor h2 {
-  margin-block: 0 0.5rem;
-  font-size: var(--nt-size-emphasis);
-}
-.nt-tutor p {
-  margin: 0;
-}
-/* "Report a problem" below the tutor's words, and its form in place (R33). */
-.nt-report {
-  margin-block-start: 1rem;
-}
+/* "Report a problem" below the tutor's words, and its form in a pop-over (R33; R67). */
 .nt-report h3 {
   margin-block: 0 0.5rem;
   font-size: var(--nt-size-emphasis);
@@ -2761,9 +2715,7 @@ main.nt-lesson:has(> .nt-segment-body > .nt-lesson-task > .nt-task) {
 .nt-task {
   display: grid;
   flex: 1 1 0;
-  grid-template-areas: "panel" "work";
-  grid-template-rows: auto minmax(20rem, 1fr);
-  gap: 1rem;
+  grid-template-rows: minmax(20rem, 1fr);
   min-block-size: 0;
   margin-inline: -1rem;
   overflow: auto;
@@ -2775,7 +2727,6 @@ main.nt-lesson:has(> .nt-segment-body > .nt-lesson-task > .nt-task) {
  */
 .nt-task-work {
   display: grid;
-  grid-area: work;
   grid-template-rows: minmax(min(20rem, 50dvh), 1fr) auto;
   min-inline-size: 0;
   min-block-size: 0;
@@ -2791,21 +2742,26 @@ main.nt-lesson:has(> .nt-segment-body > .nt-lesson-task > .nt-task) {
 .nt-task-work > .nt-essay-text {
   margin: 0.5rem 1rem 0;
 }
-.nt-task-panel {
-  grid-area: panel;
-  min-inline-size: 0;
-  padding-inline: 1rem;
-}
-@media (min-width: 64rem) {
-  .nt-task {
-    grid-template-columns: minmax(0, 1fr) 22rem;
-    grid-template-areas: "work panel";
-    grid-template-rows: minmax(0, 1fr);
-    overflow: hidden auto;
+/*
+ * Beside the open panel (R67): the canvas, the lines above it and the foot end where the panel
+ * begins, 344 + 16 from the window's right edge, so that the task stays in view; the foot's middle is
+ * the middle between the canvas's bar of tools, 16 + 52, and the panel, as the mockup's `task-rung`.
+ */
+@media (width >= 600px) {
+  .nt-task-lines[data-beside="panel"] {
+    margin-inline-end: 21.5rem;
   }
-  .nt-task-panel {
-    overflow-y: auto;
-    padding-inline: 0 1rem;
+  .nt-task[data-beside="panel"] {
+    margin-inline-end: 21.5rem;
+  }
+  .nt-task-foot[data-beside="panel"] {
+    padding-inline: 3.25rem 21.5rem;
+  }
+}
+/* On a phone the open sheet hides the row (the 2026-11-17 amendment to R148 in spec). */
+@media (width < 600px) {
+  .nt-task-foot[data-beside="panel"] > .nt-task-row {
+    display: none;
   }
 }
 .nt-task-foot {
@@ -3169,4 +3125,670 @@ p.nt-confirm-title {
 }
 button.nt-confirm-yes {
   padding: 0 1.125rem;
+}
+/*
+ * The tutor's panel (R67 in docs/decisions.md; the mockup's `task`): glass of 0.86, 344 wide at the
+ * window's right, from 74 below its top — under the top bar — to 16 above its foot, radius 28; on a
+ * phone a sheet from the bottom of the whole width, glass of 0.96, radius 28 at its top, at half the
+ * window's height, or by its grabber to 70 below its top. A column: the head, the step's card, the
+ * conversation, which scrolls, and the buttons at its foot.
+ */
+.nt-tutor-panel {
+  position: fixed;
+  inset-block: 4.625rem 1rem;
+  inset-inline-end: 1rem;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  inline-size: 21.5rem;
+  overflow: hidden;
+  border-radius: var(--nt-radius-panel);
+}
+@media (width < 600px) {
+  .nt-tutor-panel {
+    inset: auto 0 0;
+    inline-size: auto;
+    block-size: 51dvh;
+    border-radius: var(--nt-radius-panel) var(--nt-radius-panel) 0 0;
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.14);
+  }
+  .nt-tutor-panel[data-size="full"] {
+    block-size: calc(100dvh - 4.375rem);
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .nt-tutor-panel {
+    animation: nt-panel-in var(--nt-slow) var(--nt-ease);
+  }
+}
+@keyframes nt-panel-in {
+  from {
+    opacity: 0;
+    transform: translateX(1.5rem) scale(0.96);
+  }
+}
+@media (width < 600px) and (prefers-reduced-motion: no-preference) {
+  .nt-tutor-panel {
+    animation-name: nt-sheet-in;
+  }
+}
+@keyframes nt-sheet-in {
+  from {
+    opacity: 0;
+    transform: translateY(2.5rem);
+  }
+}
+/* The grabber, 88 × 44 at the sheet's top in its middle, with no fill of its own. */
+.nt-tutor-panel > .nt-tip-host > button.nt-tutor-grab,
+.nt-tutor-panel > .nt-tip-host > button.nt-tutor-grab:hover {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: calc(50% - 2.75rem);
+  z-index: 1;
+  align-items: flex-start;
+  padding-block-start: 0.4375rem;
+  background: transparent;
+  color: rgba(60, 60, 67, 0.3);
+}
+/*
+ * The head: the tutor's sign of 38 in its gradient, its name at 15 semibold, the share at 12; on a
+ * phone 20 below the sheet's top, under the grabber. A line of 0.5 under it, 14 in from each side.
+ */
+.nt-tutor-head {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 0.5rem;
+  padding: 0.625rem 0.375rem 0.5rem 0.875rem;
+  background:
+    linear-gradient(rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0.08)) no-repeat center bottom /
+    calc(100% - 1.75rem) 0.5px;
+}
+@media (width < 600px) {
+  .nt-tutor-head {
+    padding-block-start: 1.25rem;
+  }
+}
+.nt-tutor-sign {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  inline-size: 2.375rem;
+  block-size: 2.375rem;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #5e5ce6 0%, #0a84ff 100%);
+  color: var(--nt-on-fill);
+  font-size: 1.1875rem;
+}
+.nt-tutor-names {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 1px;
+  min-inline-size: 0;
+  line-height: 1.2;
+}
+.nt-tutor-names > h2 {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: var(--nt-weight-bold);
+}
+.nt-tutor-status {
+  overflow: hidden;
+  color: var(--nt-text-muted);
+  font-size: 0.75rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* The switch of voicing beside the name; why it says nothing, or its failure, under the head's row. */
+.nt-tutor-head > .nt-voicing,
+.nt-tutor-head > .nt-voicing > .nt-buttons {
+  display: contents;
+}
+.nt-tutor-panel .nt-tutor-head > .nt-voicing > p {
+  flex: 1 1 100%;
+  order: 1;
+  margin: 0.25rem 0 0;
+}
+/* On a short sheet the step's card and the conversation scroll together, the latter 44 at least. */
+.nt-tutor-body {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-block-size: 0;
+  overflow-y: auto;
+}
+/*
+ * The step's card (the mockup's `.ph-stepcard`): white, radius 18, 330 high at most and 172 on a
+ * phone, scrolling inside; "Step 1 of 4" at 11.5 semibold, the title at 15 semibold, the words at
+ * 13.5, the chips rows of 44 at least on grey, radius 14, a ticked one on the accent's tint with a
+ * filled circle; the list of steps on grey, radius 14, each a row of 44 with its number in a circle
+ * of 22; "Step done" the accent's fill, or grey while it does not open.
+ */
+.nt-step-card {
+  display: flex;
+  flex: none;
+  box-sizing: content-box;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-block-size: 20.625rem;
+  margin: 0.625rem 0.75rem 0;
+  padding: 0.25rem 0.25rem 0.75rem 0.875rem;
+  overflow-y: auto;
+  border-radius: 1.125rem;
+  background: var(--nt-card);
+  box-shadow:
+    0 0 0 0.5px rgba(0, 0, 0, 0.08),
+    0 1px 3px rgba(0, 0, 0, 0.05);
+}
+@media (width < 600px) {
+  .nt-step-card {
+    max-block-size: 10.75rem;
+  }
+}
+.nt-step-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 0.125rem;
+}
+/* The speaker beside the names; the line why it does not read, when there is one, under them. */
+.nt-step-card .nt-step-head > .nt-read-aloud {
+  display: contents;
+}
+.nt-step-head > .nt-read-aloud > .nt-hint {
+  flex: 1 1 100%;
+  order: 1;
+  margin: 0 0.625rem 0 0;
+}
+/*
+ * "Step 1 of 4" opens the list, a target of 48 as the mockup's, whose title stands in it as the
+ * step's heading: the two share one cell, the title under the button's words, and lets a press
+ * through to the button.
+ */
+.nt-step-names {
+  display: grid;
+  flex: 1 1 auto;
+  min-inline-size: 0;
+  line-height: 1.2;
+}
+.nt-step-names > * {
+  grid-area: 1 / 1;
+}
+button.nt-step-open {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.1875rem;
+  min-block-size: 3rem;
+  padding: 0.3125rem 0 0;
+  border-color: transparent;
+  background: transparent;
+  color: var(--nt-text-muted);
+  font-size: 0.71875rem;
+  font-weight: var(--nt-weight-bold);
+}
+.nt-step-names > button.nt-step-open > svg {
+  font-size: 0.75rem;
+}
+.nt-step-title {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: var(--nt-weight-bold);
+}
+h2.nt-step-title {
+  padding-block: 1.25rem 0.3125rem;
+  pointer-events: none;
+}
+h2.nt-step-title:focus:not(:focus-visible) {
+  outline: none;
+}
+.nt-step-bar {
+  display: flex;
+  flex-direction: column;
+  margin: -0.25rem 0.5rem 0.125rem 0;
+  padding: 0.25rem;
+  list-style: none;
+  border-radius: 0.875rem;
+  background: var(--nt-grey-08);
+}
+.nt-step-bar[hidden] {
+  display: none;
+}
+.nt-step {
+  display: flex;
+  box-sizing: border-box;
+  align-items: center;
+  gap: 0.625rem;
+  inline-size: 100%;
+  min-block-size: var(--nt-target);
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.625rem;
+  font-size: 0.84375rem;
+  font-weight: var(--nt-weight-medium);
+  text-align: start;
+}
+button.nt-step {
+  border-color: transparent;
+  background: transparent;
+  color: var(--nt-text);
+}
+.nt-step-bar > li[aria-current="step"] > .nt-step {
+  background: var(--nt-card);
+  font-weight: var(--nt-weight-bold);
+}
+.nt-step-number {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  inline-size: 1.375rem;
+  block-size: 1.375rem;
+  border-radius: 50%;
+  background: var(--nt-grey-16);
+  font-size: 0.71875rem;
+  font-weight: var(--nt-weight-heading);
+}
+.nt-step-bar > li[aria-current="step"] .nt-step-number {
+  background: var(--nt-accent);
+  color: var(--nt-on-fill);
+}
+.nt-step-name {
+  flex: 1 1 auto;
+}
+.nt-step-mark {
+  color: var(--nt-text-muted);
+  font-size: 0.71875rem;
+  font-weight: 400;
+}
+.nt-step-text {
+  margin: 0 0.625rem 0 0;
+  color: var(--nt-segmented);
+  font-size: 0.84375rem;
+  line-height: 1.4;
+}
+.nt-step-line {
+  margin: 0 0.625rem 0 0;
+  color: var(--nt-text-muted);
+  font-size: 0.75rem;
+}
+.nt-step-card .nt-chips {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  margin-inline-end: 0.625rem;
+}
+.nt-chip-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.nt-chips > .nt-chip-group > legend {
+  margin-block-end: 0.375rem;
+  padding: 0;
+  color: var(--nt-text-muted);
+  font-size: 0.71875rem;
+  font-weight: var(--nt-weight-bold);
+}
+button.nt-chip {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  min-block-size: var(--nt-target);
+  padding: 0.5rem 0.75rem 0.5rem 0.625rem;
+  border-color: transparent;
+  border-radius: 0.875rem;
+  background: var(--nt-grey-08);
+  color: var(--nt-text);
+  font-size: 0.8125rem;
+  font-weight: 400;
+  line-height: 1.35;
+  text-align: start;
+}
+button.nt-chip[aria-pressed="true"] {
+  background: rgba(0, 113, 227, 0.08);
+  box-shadow: inset 0 0 0 1.5px var(--nt-accent);
+  color: var(--nt-text);
+  text-decoration: none;
+}
+.nt-chip-tick {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  inline-size: 1.125rem;
+  block-size: 1.125rem;
+  margin-block-start: 1px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1.5px rgba(60, 60, 67, 0.3);
+  color: transparent;
+  font-size: 0.6875rem;
+}
+button.nt-chip[aria-pressed="true"] > .nt-chip-tick {
+  background: var(--nt-accent);
+  box-shadow: none;
+  color: var(--nt-on-fill);
+}
+.nt-step-card .nt-techniques {
+  margin: 0 0.625rem 0 0;
+}
+button.nt-step-done {
+  align-self: flex-start;
+  min-block-size: var(--nt-target);
+  padding: 0 1.125rem;
+  border-color: transparent;
+  border-radius: var(--nt-radius-round);
+  background: var(--nt-accent);
+  color: var(--nt-on-fill);
+  font-size: var(--nt-size-body);
+  font-weight: var(--nt-weight-bold);
+}
+button.nt-step-done[aria-disabled="true"] {
+  background: var(--nt-grey-12);
+  color: var(--nt-text-muted);
+}
+/*
+ * The conversation (the mockup's): it scrolls from its foot, where its newest words stand; bubbles of 14.5, radius 18
+ * with a corner of 6 — the tutor's on grey, a hint on the hint's yellow with its label at 11.5
+ * semibold —; the verdict a line in the middle, white, radius 14, its sign in a circle of 22; the
+ * notes a white card at 13 semibold.
+ */
+.nt-talk {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column-reverse;
+  min-block-size: var(--nt-target);
+  padding: 0 0.75rem;
+  overflow-y: auto;
+}
+.nt-talk-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  padding: 0.625rem 0 0.5rem;
+}
+.nt-talk > .nt-talk-lines p.nt-bubble,
+.nt-talk > .nt-talk-lines p:not(.nt-bubble) {
+  margin: 0;
+}
+.nt-bubble {
+  align-self: flex-start;
+  box-sizing: border-box;
+  max-inline-size: 88%;
+  padding: 0.5625rem 0.8125rem;
+  border-radius: 1.125rem 1.125rem 1.125rem 0.375rem;
+  background: var(--nt-grey-12);
+  font-size: 0.90625rem;
+  line-height: 1.38;
+}
+.nt-bubble-hint,
+.nt-bubble-words[data-rung="true"] {
+  background: var(--nt-hint);
+}
+.nt-talk .nt-bubble-hint > :last-child,
+.nt-talk .nt-bubble-words > .nt-read-aloud {
+  margin-block-end: -0.375rem;
+}
+.nt-bubble-label {
+  display: flex;
+  align-items: center;
+  gap: 0.3125rem;
+  margin: 0 0 0.1875rem;
+  color: var(--nt-hint-text);
+  font-size: 0.71875rem;
+  font-weight: var(--nt-weight-bold);
+}
+.nt-bubble-hint .nt-hint-label {
+  margin: 0.375rem 0 0.125rem;
+  font-size: 0.71875rem;
+  font-weight: var(--nt-weight-bold);
+}
+.nt-bubble-hint .nt-hint-list {
+  margin: 0;
+  padding-inline-start: 1.125rem;
+}
+.nt-bubble-hint .nt-techniques {
+  margin: 0.375rem 0 0;
+}
+/* A line of a speaker inside a bubble, on its tint: the darker grey holds 4.5:1 on the hint's. */
+.nt-talk .nt-bubble .nt-hint {
+  color: var(--nt-segmented);
+}
+p.nt-typing {
+  color: var(--nt-text-muted);
+  font-size: var(--nt-size-caption);
+}
+.nt-verdict-line {
+  display: flex;
+  align-self: center;
+  align-items: center;
+  gap: 0.5rem;
+  max-inline-size: 94%;
+  margin-block: 0.25rem;
+  padding: 0.4375rem 0.75rem 0.4375rem 0.5rem;
+  border-radius: 0.875rem;
+  background: var(--nt-card);
+  box-shadow:
+    0 0 0 0.5px rgba(0, 0, 0, 0.08),
+    0 1px 3px rgba(0, 0, 0, 0.05);
+}
+.nt-talk .nt-verdict-line > .nt-card-sign {
+  inline-size: 1.375rem;
+  block-size: 1.375rem;
+  font-size: 0.75rem;
+}
+.nt-verdict-line[data-kind="not-yet"] > .nt-card-sign {
+  background: var(--nt-not-yet);
+  color: var(--nt-on-fill);
+}
+.nt-verdict-line > .nt-card-sign > .nt-spin {
+  inline-size: 1rem;
+  block-size: 1rem;
+}
+.nt-verdict-line .nt-card-title {
+  font-size: var(--nt-size-caption);
+}
+.nt-verdict-line .nt-card-line {
+  font-size: 0.75rem;
+}
+p.nt-talk-note {
+  margin-block: 0.25rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.875rem;
+  background: var(--nt-card);
+  box-shadow:
+    0 0 0 0.5px rgba(0, 0, 0, 0.08),
+    0 1px 3px rgba(0, 0, 0, 0.05);
+  font-size: var(--nt-size-caption);
+  font-weight: var(--nt-weight-bold);
+  line-height: 1.3;
+}
+/* "Report a problem" under the words: the accent as text, 12.5 medium, a target of 44. */
+button.nt-report-open {
+  align-self: flex-start;
+  min-block-size: var(--nt-target);
+  margin: -0.5rem 0 -0.375rem 0.125rem;
+  padding: 0 0.5rem;
+  border-color: transparent;
+  border-radius: var(--nt-radius-round);
+  background: transparent;
+  color: var(--nt-accent-text);
+  font-size: 0.78125rem;
+  font-weight: var(--nt-weight-medium);
+}
+p.nt-report {
+  margin: 0;
+  color: var(--nt-text-muted);
+  font-size: var(--nt-size-caption);
+}
+/*
+ * Its form, the mockup's `task-report`: 440 wide, 40 below the window's top in its middle, whatever
+ * part of the panel the words stood in; the title at 17 bold, the words on grey at 13.5, the hints
+ * at 11.5, all 8 apart. Its options keep app's radio buttons of 44 (R11).
+ */
+@media (width >= 600px) {
+  dialog.nt-pop.nt-pop-report {
+    inset: 2.5rem auto auto calc(50% - 13.75rem);
+    inline-size: 27.5rem;
+    min-inline-size: 0;
+    max-block-size: min(47.5rem, calc(100dvh - 3.5rem));
+    transform-origin: 50% 0;
+  }
+  dialog.nt-pop-report .nt-pop-body {
+    padding: 1.0625rem;
+  }
+}
+.nt-pop-report form.nt-report {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.nt-pop-report form.nt-report > h3 {
+  margin: 0;
+  font-size: 1.0625rem;
+}
+.nt-pop-report form.nt-report .nt-hint {
+  margin: 0;
+  font-size: 0.71875rem;
+  line-height: 1.35;
+}
+.nt-pop-report form.nt-report > .nt-choices,
+.nt-pop-report form.nt-report > .nt-field {
+  margin: 0;
+}
+.nt-pop-report form.nt-report > .nt-choices > legend,
+.nt-pop-report form.nt-report > .nt-field > label {
+  margin: 0;
+  padding: 0.375rem 0 0.25rem;
+  font-size: 0.8125rem;
+}
+.nt-pop-report form.nt-report .nt-option {
+  margin: 0;
+  font-size: var(--nt-size-body);
+}
+.nt-pop-report form.nt-report .nt-field textarea {
+  border-color: transparent;
+  border-radius: 0.75rem;
+  background: var(--nt-grey-12);
+  resize: none;
+}
+.nt-pop-report form.nt-report > .nt-buttons {
+  margin-block-start: 0.25rem;
+}
+.nt-report-said {
+  margin: 0;
+  padding: 0.625rem 0.75rem;
+  border-radius: 0.75rem;
+  background: var(--nt-grey-12);
+  font-size: 0.84375rem;
+  line-height: 1.4;
+}
+/* The buttons at the panel's foot: white, an edge of 0.5, the accent's words at 14 semibold. */
+.nt-tutor-acts {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  padding: 0.125rem 0.625rem 0.625rem;
+}
+button.nt-act {
+  gap: 0.375rem;
+  min-block-size: var(--nt-target);
+  padding: 0 0.875rem 0 0.75rem;
+  border-color: transparent;
+  border-radius: var(--nt-radius-round);
+  background: var(--nt-card);
+  box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.16);
+  color: var(--nt-accent-text);
+  font-size: var(--nt-size-body);
+  font-weight: var(--nt-weight-bold);
+}
+button.nt-act[aria-disabled="true"] {
+  background: var(--nt-grey-12);
+  color: var(--nt-text-muted);
+}
+/*
+ * The tutor's button: 56 round, an edge of 6 of glass round its sign of 44 in the tutor's gradient,
+ * 16 from the window's right edge in the middle of its height; on a phone 172 above its foot, over
+ * the row and the step's pill.
+ */
+.nt-tutor-call {
+  position: fixed;
+  inset-block-start: calc(50% - 1.75rem);
+  inset-inline-end: 1rem;
+  z-index: 5;
+}
+@media (width < 600px) {
+  .nt-tutor-call {
+    inset-block: auto 10.75rem;
+  }
+}
+button.nt-icon-only.nt-tutor-button,
+button.nt-icon-only.nt-tutor-button:hover {
+  box-sizing: border-box;
+  inline-size: 3.5rem;
+  block-size: 3.5rem;
+  border: 0.375rem solid var(--nt-glass);
+  border-radius: 50%;
+  background: linear-gradient(135deg, #5e5ce6 0%, #0a84ff 100%) padding-box;
+  box-shadow: var(--nt-glass-shadow);
+  color: var(--nt-on-fill);
+  font-size: 1.375rem;
+}
+/*
+ * The step's pill above the row (the mockup's `task-pill`): glass of 0.92, radius 26, "Step 1 of 4"
+ * at 11.5 semibold and the title at 14 semibold, cut short, and its "Step done".
+ */
+.nt-step-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  box-sizing: border-box;
+  max-inline-size: 100%;
+  padding: 0.25rem;
+  border-radius: 1.625rem;
+  background: rgba(255, 255, 255, 0.92);
+  white-space: nowrap;
+}
+button.nt-step-pill-open {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  min-inline-size: 0;
+  min-block-size: var(--nt-target);
+  padding: 0 0.75rem;
+  border-color: transparent;
+  border-radius: var(--nt-radius-round);
+  background: transparent;
+  color: var(--nt-text);
+  line-height: 1.2;
+  text-align: start;
+}
+.nt-step-pill .nt-step-of {
+  color: var(--nt-text-muted);
+  font-size: 0.71875rem;
+  font-weight: var(--nt-weight-bold);
+}
+.nt-step-pill .nt-step-title {
+  max-inline-size: 100%;
+  overflow: hidden;
+  font-size: var(--nt-size-body);
+  text-overflow: ellipsis;
+}
+.nt-step-pill button.nt-step-done {
+  align-self: center;
+  padding: 0 1rem;
+}
+@media (width < 600px) {
+  .nt-task-foot > .nt-step-pill {
+    margin-inline: 0.25rem 4.5rem;
+  }
 }

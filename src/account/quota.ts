@@ -56,6 +56,18 @@ export function learnerQuotaText(
   });
 }
 
+/**
+ * The line of the tutor's panel's head, the mockup's: the profile's share alone, "100% used" too once
+ * its cap is reached — why the tutor says nothing then is the panel's own line (R37). None without a
+ * share of the profile.
+ */
+export function shareText(share: QuotaShare | undefined, words: Words): string | undefined {
+  if (share?.profilePercent === undefined) return undefined;
+  return words.text("quota.learner", {
+    percent: percentText(words.language, share.profilePercent),
+  });
+}
+
 /** When the next family day brings the quota back, beside the shares of the section for adults. */
 const RENEWS = {
   today: "quota.renews-today",

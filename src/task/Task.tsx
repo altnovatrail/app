@@ -55,6 +55,7 @@ import type {
 import type * as open from "@altnovatrail/spec/formatv0/open";
 import type { MessageInitShape } from "@bufbuild/protobuf";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { readQuota, shareText } from "../account/quota.ts";
 import { useApi } from "../api/ApiContext.tsx";
 import { type Failure, parseFailure } from "../api/failure.ts";
 import { idempotencyKey } from "../api/keys.ts";
@@ -549,13 +550,31 @@ function OpenTask({
   latest.current = { state, solution, filled };
   const mode = modeOf(state, steps);
   const handwriting = !choicesOnly(task);
-  // The tutor's panel: always open by steps, whose steps stand in it; on my own, opened by the
-  // learner — the button "Tutor" or Hint —, and by what the attempt kept of it.
-  const [panel, setPanel] = useState(opened.hint !== undefined || opened.rung !== undefined);
-  const open = mode === "steps" || panel;
+  // The tutor's panel: open from the start by steps, whose steps stand in it, and on my own by what
+  // the attempt kept of it; then as the learner leaves it — opened by the tutor's button, the step's
+  // pill, Hint or the choice of "by steps", closed by its × (R67).
+  const [open, setPanel] = useState(
+    mode === "steps" || opened.hint !== undefined || opened.rung !== undefined,
+  );
   const isOpen = useRef(open);
   isOpen.current = open;
   const unasked = useRef<Unasked | undefined>(undefined);
+  // The learner's share of the quota in the panel's head, read anew at each opening: the checks
+  // between spend it. None from an api that has no share, nor from one that failed (R98 in spec).
+  const [quota, setQuota] = useState<string | undefined>(undefined);
+  useEffect(() => {
+    if (!open) return;
+    let current = true;
+    readQuota(api, profileId, Action.LEARNING).then(
+      (share) => {
+        if (current) setQuota(shareText(share, words));
+      },
+      () => {},
+    );
+    return () => {
+      current = false;
+    };
+  }, [open, api, profileId, words]);
   // The screen is left with the words after a correct answer unasked: its work goes.
   useEffect(
     () => () => {
@@ -1115,7 +1134,8 @@ function OpenTask({
       {...(again.failure === undefined ? {} : { againFailure: again.failure })}
       {...(tutorWords === undefined ? {} : { tutorWords })}
       panelOpen={open}
-      {...(mode === "self" ? { onPanel: togglePanel } : {})}
+      onPanel={togglePanel}
+      {...(quota === undefined ? {} : { quota })}
       {...(adult && said !== undefined && said.text !== ""
         ? {
             report: (
@@ -1125,6 +1145,7 @@ function OpenTask({
                 profileId={profileId}
                 attemptId={attemptId}
                 said={said}
+                language={explanation}
               />
             ),
           }
@@ -1146,11 +1167,11 @@ function OpenTask({
       onHistoryChange={onHistoryChange}
       onMode={(next: Mode) => {
         save({ ...state, mode: next });
-        // By steps the panel is open, its steps in it: the opening asks what was left unasked. Back
-        // on my own, it stays open while it holds the tutor's words or a hint.
-        if (next === "steps" && unasked.current !== undefined) openPanel();
-        if (next === "self" && open && (said !== undefined || hint !== undefined || wordsWaiting)) {
-          setPanel(true);
+        // By steps the panel opens, its steps in it, and asks what was left unasked. Back on my
+        // own, it stays open while it holds the tutor's words or a hint, and closes otherwise.
+        if (next === "steps") openPanel();
+        if (next === "self" && said === undefined && hint === undefined && !wordsWaiting) {
+          setPanel(false);
         }
       }}
       onGoTo={(to) => save(goTo(state, to))}
