@@ -1,6 +1,5 @@
-// The databases app keeps on the device, their stores and their versions (R16 in
-// docs/decisions.md; section 3.2 of docs/architecture.md). Every store has its keys out of its
-// records; an index names the property of a record it reads.
+// The databases app keeps on the device, their stores and their versions (R16). Every store has its
+// keys out of its records; an index names the property of a record it reads.
 import type { Schema } from "./backend.ts";
 
 /** The device's settings: the language a grown-up chose. Sign-out leaves it. */
@@ -9,9 +8,9 @@ export const SETTINGS = "novatrail-settings";
 export const REGISTRY = "novatrail-registry";
 /** The shared cache of the open views of packages, by package digest. */
 export const CACHE = "novatrail-cache";
-/** Firebase Auth's own database, where it keeps the session (section 3.7). */
+/** Firebase Auth's own database, where it keeps the session. */
 export const FIREBASE_AUTH = "firebaseLocalStorageDb";
-/** The database of @firebase/app's heartbeats: its versions and the days it ran (section 3.7). */
+/** The database of @firebase/app's heartbeats: its versions and the days it ran. */
 export const FIREBASE_HEARTBEAT = "firebase-heartbeat-database";
 
 const PROFILE = "novatrail-profile-";

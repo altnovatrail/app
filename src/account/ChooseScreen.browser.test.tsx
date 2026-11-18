@@ -1,7 +1,7 @@
-// The choice of the learner in the browser (R61 in docs/decisions.md; section 3.10 of
-// docs/architecture.md; R148 spec): each profile by its avatar — the one of its code, or the
-// set's own for none and for a code this build does not know — and its pseudonym, whose profile it is
-// its description; "Add a learner" shown, disabled, with the line why.
+// The choice of the learner in the browser (R61; R148 spec): each profile by its avatar — the one
+// of its code, or the set's own for none and for a code this build does not know — and its
+// pseudonym, whose profile it is its description; "Add a learner" shown, disabled, with the line
+// why.
 import {
   type Profile,
   ProfileSchema,

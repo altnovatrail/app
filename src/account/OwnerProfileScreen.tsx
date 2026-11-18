@@ -1,9 +1,9 @@
-// The owner's own profile as a learner, as the mockup's `owner` (R19 and R61 in docs/decisions.md;
-// R98 and R148 spec; section 3.10 of docs/architecture.md): a pseudonym, the country and an
-// avatar of the set, of the category `adult`. The avatar may stay unchosen, and the profile then
-// shows the set's own (R98 spec keeps the field optional); the avatars and the countries are each
-// a choice in a pop-over (R59). "Continue" looks off until a pseudonym and a country are given but
-// keeps the focus (R20): pressed, it says what is missing and focuses it.
+// The owner's own profile as a learner, as the mockup's `owner` (R19, R61; R98 and R148 spec): a
+// pseudonym, the country and an avatar of the set, of the category `adult`. The avatar may stay
+// unchosen, and the profile then shows the set's own (R98 spec keeps the field optional); the
+// avatars and the countries are each a choice in a pop-over (R59). "Continue" looks off until a
+// pseudonym and a country are given but keeps the focus (R20): pressed, it says what is missing and
+// focuses it.
 import { type FormEvent, useId, useMemo, useRef, useState } from "react";
 import type { Failure } from "../api/failure.ts";
 import { Brand } from "../app/Brand.tsx";

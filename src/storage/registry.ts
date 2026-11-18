@@ -1,12 +1,12 @@
-// The device's registry (section 3.2 of docs/architecture.md; R16 in docs/decisions.md): which
-// account signed in, with which project of the sign-in service, and app's databases of the
-// account. A database is named here before it is first opened, and its erasure is written here
-// before it is asked for, so that one the browser did not delete is deleted again at the next start.
+// The device's registry (R16): which account signed in, with which project of the sign-in service,
+// and app's databases of the account. A database is named here before it is first opened, and its
+// erasure is written here before it is asked for, so that one the browser did not delete is deleted
+// again at the next start.
 import type { Transaction } from "./backend.ts";
 import type { Device } from "./device.ts";
 import { REGISTRY, REGISTRY_SCHEMA } from "./schema.ts";
 
-/** The project of the sign-in service the session was made with (section 3.7). */
+/** The project of the sign-in service the session was made with (R19). */
 export interface SignIn {
   readonly projectId: string;
   readonly apiKey: string;

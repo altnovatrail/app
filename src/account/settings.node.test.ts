@@ -1,7 +1,6 @@
-// What an adult sets of a profile, with no DOM (R29 in docs/decisions.md; section 15 of the text of
-// the contracts): the form as a profile gives it, only what changed for UpdateProfile — never a
-// value the build does not know written back —, a profile with another's settings, and the message
-// the tabs tell each other by.
+// What an adult sets of a profile, with no DOM (R29; the contract): the form as a profile gives it,
+// only what changed for UpdateProfile — never a value the build does not know written back —, a
+// profile with another's settings, and the message the tabs tell each other by.
 import {
   Mode,
   ProfileSchema,

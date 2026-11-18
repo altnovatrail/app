@@ -1,8 +1,7 @@
-// The set of avatars of app (R98 and R148 spec; R61 in docs/decisions.md; section 3.10 of
-// docs/architecture.md): a profile keeps the code of one, and no picture is uploaded. Each is a
-// picture of Material Symbols Rounded, in outline, white on a gradient of the mockup's. A profile
-// with no avatar, or with a code this build does not know — one a newer build gave —, shows the
-// set's own, the first. No DOM.
+// The set of avatars of app (R61; R98 and R148 spec): a profile keeps the code of one, and no
+// picture is uploaded. Each is a picture of Material Symbols Rounded, in outline, white on a
+// gradient of the mockup's. A profile with no avatar, or with a code this build does not know — one
+// a newer build gave —, shows the set's own, the first. No DOM.
 import type { IconValue } from "../app/icons.ts";
 
 export interface Avatar {

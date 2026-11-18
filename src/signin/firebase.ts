@@ -1,9 +1,8 @@
-// The sign-in by Firebase Auth (R09 and R19 in docs/decisions.md; section 3.7 of
-// docs/architecture.md): `initializeApp` with the parameters of /deployment.json, explicitly, and
-// `initializeAuth` with indexedDBLocalPersistence alone and the popup resolver — never `getAuth`,
-// which looks for parameters and an emulator in the environment. The sign-in is Google's window,
-// in the language of the screen. Nothing of it asks the network before the sign-in window on a
-// computer: the script of gapi and the hidden iframe come with the window (section 4). The local
+// The sign-in by Firebase Auth (R09, R19): `initializeApp` with the parameters of /deployment.json,
+// explicitly, and `initializeAuth` with indexedDBLocalPersistence alone and the popup resolver —
+// never `getAuth`, which looks for parameters and an emulator in the environment. The sign-in is
+// Google's window, in the language of the screen. Nothing of it asks the network before the sign-in
+// window on a computer: the script of gapi and the hidden iframe come with the window. The local
 // build signs in by api's development token instead, when the development server has one (R44).
 import { initializeApp } from "@firebase/app";
 import {

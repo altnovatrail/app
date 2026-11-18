@@ -1,10 +1,9 @@
 // The start of app's storage of the account — the registry and the databases it names — before
-// anything of it opens; the device's settings are none of it (section 3.2 of docs/architecture.md;
-// R16 in docs/decisions.md): first the erasures the browser did not finish, then the project of the
-// sign-in service against the registry's, then what app closed before it went — the work of a
-// correct submission whose words never came — and last the term of 30 days, in every profile's
-// database the registry names and in the cache. A step that fails holds up none of the others:
-// what it did not do, the next start does.
+// anything of it opens; the device's settings are none of it (R16): first the erasures the browser
+// did not finish, then the project of the sign-in service against the registry's, then what app
+// closed before it went — the work of a correct submission whose words never came — and last the
+// term of 30 days, in every profile's database the registry names and in the cache. A step that
+// fails holds up none of the others: what it did not do, the next start does.
 import { openCacheDatabase } from "./cache.ts";
 import type { Device } from "./device.ts";
 import { type SignInCheck, signInProject } from "./erase.ts";

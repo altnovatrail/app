@@ -1,9 +1,9 @@
-// The sign-in screen (sections 3.7 and 3.8 of docs/architecture.md; R61): the mockup's `signin`,
-// in the frame of the way in, in the language of the device, whose buttons are in its corner, and
-// Google's window on a press, the button saying so while it is open. What came of the last window
-// is a line below its button; a project that does not take this copy has the line for whoever
-// deployed it. Below, the line that accounts are for grown-ups alone, and at the foot the way to the
-// legal pages, by a button that holds the word "privacy" (R31).
+// The sign-in screen (R17, R19, R61): the mockup's `signin`, in the frame of the way in, in the
+// language of the device, whose buttons are in its corner, and Google's window on a press, the
+// button saying so while it is open. What came of the last window is a line below its button; a
+// project that does not take this copy has the line for whoever deployed it. Below, the line that
+// accounts are for grown-ups alone, and at the foot the way to the legal pages, by a button that
+// holds the word "privacy" (R31).
 import { useState } from "react";
 import { Spark } from "../app/Brand.tsx";
 import { Icon } from "../app/Icon.tsx";

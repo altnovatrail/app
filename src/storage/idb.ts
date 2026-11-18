@@ -1,8 +1,8 @@
-// The backend on the browser's IndexedDB (section 3.2 of docs/architecture.md). Every connection
-// closes on versionchange, so that a deletion or a newer build in another tab does not wait for it;
-// a database that is not there is made only when asked, so that a tab whose database another tab
-// erased does not make it again, empty; and a removal another's connection holds is "blocked" at
-// once, not awaited — Firebase Auth's connection closes only on pagehide (R16).
+// The backend on the browser's IndexedDB. Every connection closes on versionchange, so that a
+// deletion or a newer build in another tab does not wait for it; a database that is not there is
+// made only when asked, so that a tab whose database another tab erased does not make it again,
+// empty; and a removal another's connection holds is "blocked" at once, not awaited — Firebase
+// Auth's connection closes only on pagehide (R16).
 import {
   type Backend,
   type Connection,

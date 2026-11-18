@@ -1,7 +1,7 @@
-// A profile's avatar and its choice (R61 and R68 in docs/decisions.md; R98 and R148 spec): the
-// avatar shown, and below it "Choose an avatar" — "Change the avatar" once one is given — opening the
-// set in a pop-over centred below it (R59), each a picture with its name. A choice closes it. The
-// owner's profile chooses so, and a profile's page in the section for adults changes one so.
+// A profile's avatar and its choice (R61, R68; R98 and R148 spec): the avatar shown, and below it
+// "Choose an avatar" — "Change the avatar" once one is given — opening the set in a pop-over
+// centred below it (R59), each a picture with its name. A choice closes it. The owner's profile
+// chooses so, and a profile's page in the section for adults changes one so.
 import { PopOver } from "../app/PopOver.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { Avatar } from "./Avatar.tsx";

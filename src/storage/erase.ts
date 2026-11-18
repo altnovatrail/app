@@ -1,5 +1,4 @@
-// The erasures of section 3.2 of docs/architecture.md that reach past one database, as the first
-// app has their events (R04 with its amendments; R16 in docs/decisions.md). Those within one
+// The erasures that reach past one database, as app has their events (R04, R16). Those within one
 // profile — an attempt ended, a lesson ended — are the profile's own (profile.ts). Each takes the
 // registry as it is now; a database the browser did not delete stays named, to be erased again at
 // the next start (start.ts). The device's settings stay through all of them.
@@ -24,10 +23,10 @@ function accountDatabases(registry: Registry): string[] {
 }
 
 /**
- * Sign-out of the account's owner, and an account that is no more (architecture 4.5 in spec):
- * every profile's database, the cache, the origin's localStorage and sessionStorage, and last the
- * registry. Firebase Auth's own `signOut()` comes first, from the sign-in (T22). Gives whether
- * all of it is gone; what is not, the next start erases.
+ * Sign-out of the account's owner, and an account that is no more: every profile's database, the
+ * cache, the origin's localStorage and sessionStorage, and last the registry. Firebase Auth's own
+ * `signOut()` comes first, from the sign-in (R19). Gives whether all of it is gone; what is not,
+ * the next start erases.
  */
 export async function eraseAccount(device: Device): Promise<boolean> {
   const registry = await readRegistry(device);
@@ -50,11 +49,11 @@ export function eraseProfile(device: Device, profileId: string): Promise<boolean
 }
 
 /**
- * What "Erase everything on this device" erases past the sign-out (section 3.2; the 2026-11-12
- * amendment to R04): the device's settings, and the heartbeats of @firebase/app. The SDK holds its
- * own connection to those and does not close it on versionchange, so their removal is "blocked"
- * while the tab is open: IndexedDB does not cancel it for that, and it goes once that connection
- * closes (R16). Gives whether the settings are gone and the heartbeats' removal did not fail.
+ * What "Erase everything on this device" erases past the sign-out (R04): the device's settings, and
+ * the heartbeats of @firebase/app. The SDK holds its own connection to those and does not close it
+ * on versionchange, so their removal is "blocked" while the tab is open: IndexedDB does not cancel
+ * it for that, and it goes once that connection closes (R16). Gives whether the settings are gone
+ * and the heartbeats' removal did not fail.
  */
 export async function eraseDevice(device: Device): Promise<boolean> {
   const settings = await eraseSettings(device);
@@ -80,9 +79,9 @@ export async function accountSeen(device: Device, accountId: string): Promise<bo
 }
 
 /**
- * `CAUSE_NO_ACCESS` while the registry names an account: another account signed in, with no
- * account of NovaTrail, and what is left of the one named goes (the 2026-11-10 amendment to R04),
- * the voicing of the device with it (R36).
+ * `CAUSE_NO_ACCESS` while the registry names an account: another account signed in, with no account
+ * of NovaTrail, and what is left of the one named goes (R04), the voicing of the device with it
+ * (R36).
  */
 export async function noAccess(device: Device): Promise<boolean> {
   const registry = await readRegistry(device);
@@ -118,8 +117,8 @@ export type SignInCheck = "same" | "erased" | "blocked" | "failed";
 /**
  * The project of the sign-in service in /deployment.json, before `initializeAuth`. If the registry
  * has another, Firebase Auth's database and the origin's web storage go, the learners' data stays,
- * and the registry forgets the project until the next sign-in (section 3.7). `"blocked"`: another
- * tab's Firebase Auth holds its database, nothing is erased, and the next start tries again.
+ * and the registry forgets the project until the next sign-in (R19). `"blocked"`: another tab's
+ * Firebase Auth holds its database, nothing is erased, and the next start tries again.
  */
 export async function signInProject(device: Device, signIn: SignIn): Promise<SignInCheck> {
   const held = (await readRegistry(device))?.signIn;

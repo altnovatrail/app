@@ -1,8 +1,8 @@
-// The own key's holder for the screens (R08 and R47 in docs/decisions.md; section 3.6 of
-// docs/architecture.md): one for the tab, made by the account's gate, which opens it while the
-// owner profile of the category `adult` is the learner chosen and closes it otherwise. The tabs
-// tell each other of a key changed on the channel `novatrail-own-key`. Outside the gate — a
-// screen's own test — the holder holds nothing, and every request goes on platform AI.
+// The own key's holder for the screens (R08, R47): one for the tab, made by the account's gate,
+// which opens it while the owner profile of the category `adult` is the learner chosen and closes
+// it otherwise. The tabs tell each other of a key changed on the channel `novatrail-own-key`.
+// Outside the gate — a screen's own test — the holder holds nothing, and every request goes on
+// platform AI.
 import type { Profile } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import {
   createContext,

@@ -1,13 +1,12 @@
-// The database of one learner's profile (section 3.2 of docs/architecture.md; R04, R16 in
-// docs/decisions.md): attempts with their history of writing and submissions, the work of a correct
-// submission until the words after it, the state of lessons, and the essays, which outlive their
-// attempts until an adult erases them (R53). History and contexts are kept as
-// the canvas gave them, unchanged; the pictures of the work as bytes with their type, not Blobs,
-// which WebKit does not write in an ephemeral session (the 2026-11-12 amendment to R16), and a Blob
-// that schema version 1 kept before is read as it is. Every write says whether it was saved, so
-// that the task screen can tell the learner the work is not saved on this device. Each attempt and
-// essay holds the mark of its work on the server: how long a history and how many submissions the
-// last `PutWork` that went through carried (the 2026-11-17 amendments to R16 and R30).
+// The database of one learner's profile (R04, R16): attempts with their history of writing and
+// submissions, the work of a correct submission until the words after it, the state of lessons, and
+// the essays, which outlive their attempts until an adult erases them (R53). History and contexts
+// are kept as the canvas gave them, unchanged; the pictures of the work as bytes with their type,
+// not Blobs, which WebKit does not write in an ephemeral session (R16), and a Blob that schema
+// version 1 kept before is read as it is. Every write says whether it was saved, so that the task
+// screen can tell the learner the work is not saved on this device. Each attempt and essay holds
+// the mark of its work on the server: how long a history and how many submissions the last
+// `PutWork` that went through carried (R16, R30).
 import type {
   CellPlace,
   DemoState,
@@ -35,7 +34,7 @@ export interface Stored {
   readonly submissions: number;
 }
 
-/** An attempt: its package, the open view of its task, the state of its steps (section 3.3). */
+/** An attempt: its package, the open view of its task, the state of its steps (R05). */
 export interface Attempt {
   readonly attemptId: string;
   /** The digest of the attempt's package. */
@@ -109,7 +108,8 @@ export interface EssaySent {
   readonly crop: Blob | undefined;
   /**
    * The context of the submission, as the canvas gave it, and the history's length then, for the
-   * work on the server; none in a record of a build before T62, which goes to the server without it.
+   * work on the server; none in a record of an older build, which goes to the server without it
+   * (R30).
    */
   readonly context?: Submission;
   readonly historyLength?: number;
@@ -123,7 +123,7 @@ export interface EssaySent {
 export interface Essay {
   readonly attemptId: string;
   readonly digest: string;
-  /** The open view of its task; gone once its version was withdrawn (section 3.2). */
+  /** The open view of its task; gone once its version was withdrawn. */
   readonly task?: open.Task;
   /** The module's explanation language, the `lang` of its task and its feedback. */
   readonly language?: string;
@@ -220,7 +220,7 @@ export function sizeOf(value: unknown): number {
   return 1;
 }
 
-/** The state of a lesson on one package, in one passage (section 3.4). */
+/** The state of a lesson on one package, in one passage (R06). */
 export interface LessonState {
   readonly lessonId: string;
   readonly digest: string;
@@ -264,7 +264,7 @@ const ESSAYS = "essays";
 
 /**
  * An attempt's work goes: its record and its submissions, and its history of writing but for an
- * essay's, which stays with the essay (section 3.2).
+ * essay's, which stays with the essay (R53).
  */
 async function eraseAttempt(tx: Transaction, attemptId: string): Promise<void> {
   await tx.delete("attempts", attemptId);
@@ -542,8 +542,8 @@ export class Profile {
   }
 
   /**
-   * The attempt ended (section 3.2): its history, submissions, steps and the open view of its task
-   * go. The work of a correct submission, by its number from 0, stays until the words after it.
+   * The attempt ended (R04): its history, submissions, steps and the open view of its task go. The
+   * work of a correct submission, by its number from 0, stays until the words after it.
    */
   async attemptEnded(attemptId: string, correct?: number): Promise<void> {
     // Read first, on its own: a record the browser cannot give back would abort the erasure with it.
@@ -592,7 +592,7 @@ export class Profile {
 
   /**
    * The state of a lesson on this package and in this passage. One kept on another package or of
-   * another passage is over, and goes (section 3.4).
+   * another passage is over, and goes (R06).
    */
   async readLesson(
     lessonId: string,
@@ -649,7 +649,7 @@ export class Profile {
 
   /**
    * How many attempts the profile keeps unfinished: each one ended is erased, so every attempt kept
-   * is one the sign-out would take (section 3.2). They are counted, not read.
+   * is one the sign-out would take. They are counted, not read.
    */
   async unfinished(): Promise<number> {
     return this.connection.read(["attempts"], (tx) => tx.count("attempts"));
@@ -811,7 +811,7 @@ export class Profile {
 
   /**
    * Attempts and lessons last changed at a time or before go, with all of an attempt's work; an
-   * essay's attempt stays, as its essay does, until an adult erases it (section 3.2).
+   * essay's attempt stays, as its essay does, until an adult erases it (R53).
    */
   async expire(cutoff: number): Promise<void> {
     const range = { upper: cutoff };
@@ -880,7 +880,7 @@ export interface Closing {
 }
 
 /**
- * An attempt is over, by whatever way it closed: its work on this device goes (section 3.2), in the
+ * An attempt is over, by whatever way it closed: its work on this device goes (R04), in the
  * database the screen holds or else in the profile's, opened for it, and with `works` it goes to
  * the server first, as it was at the end — read before the erasure, sent after it, so that the
  * screen waits for no network. A database that does not open or a write that fails leaves the work

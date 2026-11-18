@@ -1,7 +1,7 @@
-// The adapter of Firebase Auth on mocks of its packages (section 3.7 of docs/architecture.md): the
-// parameters of the file explicitly, indexedDBLocalPersistence alone and the popup resolver, Google's
-// window, the language of the window, the tokens, and what each error of the window comes to; and,
-// as Vitest runs it with import.meta.env.DEV, the local build's sign-in by the development token.
+// The adapter of Firebase Auth on mocks of its packages (R19): the parameters of the file
+// explicitly, indexedDBLocalPersistence alone and the popup resolver, Google's window, the language
+// of the window, the tokens, and what each error of the window comes to; and, as Vitest runs it
+// with import.meta.env.DEV, the local build's sign-in by the development token.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const auth = vi.hoisted(() => ({

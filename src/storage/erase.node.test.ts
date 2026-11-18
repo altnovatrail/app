@@ -1,5 +1,5 @@
-// Every erasure of section 3.2 of docs/architecture.md that the first app has, on the store in
-// memory: what goes, what stays, and what a database the browser did not delete leaves named.
+// Every erasure app has (R04), on the store in memory: what goes, what stays, and what a database
+// the browser did not delete leaves named.
 import { describe, expect, it, vi } from "vitest";
 import { memoryDevice } from "../test/device.ts";
 import { openCache } from "./cache.ts";
