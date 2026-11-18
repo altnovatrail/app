@@ -79,7 +79,7 @@ T72–T74 are tasks outside an epic, done before E5 opened; their bodies are in 
 | [x] | T86 | Тетрадь и сочинение по эталону | Claude | — | T85 |
 | [x] | T87 | Панель наставника сбоку и лист на телефоне | Claude | — | T86 |
 | [x] | T89 | Раздел для взрослых по правилам стиля эталона | Claude | — | T87 |
-| [ ] | T90 | Юридические страницы и экраны сбоев по правилам стиля | Claude | — | T89 |
+| [x] | T90 | Юридические страницы и экраны сбоев по правилам стиля | Claude | — | T89 |
 | [ ] | T91 | Итог эпика E5 | Claude | — | T90 |
 
 «Зависит от» names only tasks of this plan. What a task waits for from other repositories is its body's «Ждёт»: it is taken once the neighbour has done that, and until then the queue goes on.
@@ -113,16 +113,6 @@ A code task ends with the checks of rule 6: the recipes `ci-lint`, `ci-test`, `c
 **E3's result** «с iPad, Android и компьютера» reads «с телефона, планшета и компьютера» (the second 2026-11-14 amendment to R76 spec).
 
 ## Задачи эпика
-
-#### T90. Юридические страницы и экраны сбоев по правилам стиля
-
-- **Цель:** юридические страницы, «Accessibility» и экраны сбоев — по эталону и его правилам стиля.
-- **Почему:** R148 spec; R130 spec — суть текста — `summary` его версии в силе.
-- **Сделать:**
-  - состояния `legal-privacy`, `legal-terms`, `legal-access`: на телефоне текст на весь экран;
-  - уведомления о чужом коде, лицензии модулей, экраны сбоев загрузки и сети — по правилам стиля.
-- **Как проверить:** сравнение трёх состояний (T76); тесты страниц.
-- **Разделы:** R148, R130 spec; R31, R32, R46, R09; README эталона.
 
 #### T91. Итог эпика E5
 
