@@ -1,7 +1,6 @@
-// What app writes of numbers, shares, sizes, dates, lists, names of languages and orders (section
-// 3.8 of docs/architecture.md): Intl in the screen's language, English after it for what that
-// language lacks. The numbers of a module and what a learner might copy into an answer Intl does
-// not touch. No DOM.
+// What app writes of numbers, shares, sizes, dates, lists, names of languages and orders: Intl in
+// the screen's language, English after it for what that language lacks (R17). The numbers of a
+// module and what a learner might copy into an answer Intl does not touch. No DOM.
 import type { Language } from "./language.ts";
 
 const locales = (language: Language): string[] => [language, "en"];
@@ -35,8 +34,8 @@ export function languageNames(language: Language) {
 /**
  * A language's name in the screen's language, as it stands inside a sentence. Engines differ on its
  * first letter in Russian: V8 and SpiderMonkey give CLDR's "английский", JavaScriptCore gives
- * "Английский" (T34 in RUN.md), and inside a Russian sentence a language's name is in lower case.
- * A tag Intl cannot read throws, as `of` does; one it reads but cannot name stands for itself.
+ * "Английский", and inside a Russian sentence a language's name is in lower case. A tag Intl cannot
+ * read throws, as `of` does; one it reads but cannot name stands for itself.
  */
 export function languageName(language: Language, tag: string): string {
   const name = languageNames(language).of(tag) ?? tag;

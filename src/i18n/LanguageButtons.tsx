@@ -1,6 +1,6 @@
-// The buttons that choose the device's language (section 3.8 of docs/architecture.md): buttons, not
-// a list whose choice would change the screen by itself (WCAG 3.2.2), each language by its own name
-// in its own language, the chosen one pressed. A tap changes the screen at once.
+// The buttons that choose the device's language (R17): buttons, not a list whose choice would
+// change the screen by itself (WCAG 3.2.2), each language by its own name in its own language, the
+// chosen one pressed. A tap changes the screen at once.
 import { useLanguage } from "./LanguageContext.tsx";
 import { LANGUAGES, type Language } from "./language.ts";
 

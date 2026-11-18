@@ -1,10 +1,9 @@
-// The next versions of the legal texts after signing in (R46 in docs/decisions.md; section 15 of the
-// text of the contracts, "The legal texts"; sources 3.11 in spec): on the choice of the learner,
-// which the adult sees at each start, and on the first page of the section for adults, each next
-// version of a text that is a legal page with the day it applies from and the way to its page, and,
-// while a profile keeps its works on the server, that this can be switched off before then. An api
-// that gives no next version, and a read that failed, show nothing: the texts' own pages say the
-// rest, and the next start reads them again.
+// The next versions of the legal texts after signing in (the contract; R46): on the choice of the
+// learner, which the adult sees at each start, and on the first page of the section for adults,
+// each next version of a text that is a legal page with the day it applies from and the way to its
+// page, and, while a profile keeps its works on the server, that this can be switched off before
+// then. An api that gives no next version, and a read that failed, show nothing: the texts' own
+// pages say the rest, and the next start reads them again.
 import { useCallback, useId } from "react";
 import { useRequest } from "../api/ApiContext.tsx";
 import type { Api } from "../api/client.ts";

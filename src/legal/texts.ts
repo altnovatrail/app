@@ -1,11 +1,9 @@
-// The legal texts app shows, from api (section 3.8 of docs/architecture.md; section 15 of the text
-// of the contracts, "The legal texts" and "The versions of the texts"; R27 and R46 in
-// docs/decisions.md): `GetLegalTexts` in the language of the screen, by Connect GET with no token —
-// the current version of each text and its next one, which app shows before its day —, and the
-// versions a consent names: the current ones alone. A text with no current version is absent, and
-// a request names it not; an api on a tag of spec older than v0.13.0 has no `LegalService`, and none
-// of its texts is in force there, so its `unimplemented` is the empty list; one older than v0.17.0
-// gives no next version, and the list of them is empty. No DOM.
+// The legal texts app shows, from api (the contract; R27, R46): `GetLegalTexts` in the language of
+// the screen, by Connect GET with no token — the current version of each text and its next one,
+// which app shows before its day —, and the versions a consent names: the current ones alone. A
+// text with no current version is absent, and a request names it not; an older api with no
+// `LegalService` has none of its texts in force, so its `unimplemented` is the empty list, and one
+// that gives no next version has the list of them empty. No DOM.
 import type { LegalText, LegalTextRef } from "@altnovatrail/contracts/novatrail/api/v1/legal_pb.js";
 import type { Api } from "../api/client.ts";
 import { parseFailure } from "../api/failure.ts";
@@ -58,7 +56,7 @@ export const STORAGE_TEXT = "storage-consent";
 
 /**
  * The texts that are legal pages of their own (R31): the account's two and the consent to the
- * storage of works. The texts for a family come with the screens of a child's consent, in E4.
+ * storage of works. A family's text has none: the build has no screens of a child's consent.
  */
 export const PAGE_TEXTS = [...ACCOUNT_TEXTS, STORAGE_TEXT] as const;
 

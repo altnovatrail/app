@@ -1,5 +1,5 @@
 // The packages for every screen below Boot: their open views, the files of their device parts, and
-// the check that erases what api no longer gives (T21).
+// the check that erases what api no longer gives (R18).
 import { createContext, useContext } from "react";
 import type { PackageChecks } from "./checks.ts";
 import type { DeviceFiles } from "./files.ts";

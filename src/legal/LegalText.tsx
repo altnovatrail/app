@@ -1,8 +1,7 @@
-// A legal text as app shows it, in place (section 3.8 of docs/architecture.md; section 15 of the
-// text of the contracts; R27 in docs/decisions.md): its title, which opens it; its gist in the
-// language api found, with that `lang`; on a screen in another language than English, the line
-// that the English text is the one in force and the version's translation, when it has one, which
-// has no force of its own (R141 spec); and the English body, `lang="en"`. Nothing in it leads
+// A legal text as app shows it, in place (the contract; R27): its title, which opens it; its gist
+// in the language api found, with that `lang`; on a screen in another language than English, the
+// line that the English text is the one in force and the version's translation, when it has one,
+// which has no force of its own (R141 spec); and the English body, `lang="en"`. Nothing in it leads
 // out of app. The legal pages show the same, open (R31). A text's next version, which does not
 // apply yet, shows in place below it, closed too, with the day it applies from (R46).
 import type { LegalText as Text } from "@altnovatrail/contracts/novatrail/api/v1/legal_pb.js";

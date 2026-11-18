@@ -1,7 +1,6 @@
-// The language of a learner's screens (section 3.8 of docs/architecture.md; R10 in
-// docs/decisions.md): the field of the profile, which an adult sets in the section for adults, as
-// the build finds it, else the device's. The page's `<html lang>` is it while the screens are there;
-// the device's language is chosen as before, by the buttons outside them.
+// The language of a learner's screens (R10): the field of the profile, which an adult sets in the
+// section for adults, as the build finds it, else the device's. The page's `<html lang>` is it
+// while the screens are there; the device's language is still chosen by the buttons outside them.
 import { type ReactNode, useEffect, useMemo } from "react";
 import { LanguageProvider, type LanguageState, useLanguage } from "./LanguageContext.tsx";
 import { learnerLanguage } from "./language.ts";

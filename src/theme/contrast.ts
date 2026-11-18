@@ -1,6 +1,6 @@
-// The contrast of two colours by WCAG 2.2's formula (section 3.9 of docs/architecture.md): the
-// relative luminance of each, and (lighter + 0.05) / (darker + 0.05); a translucent colour laid over
-// what it stands on first, as the mockup's README, «Contrast», reads its pairs. No DOM.
+// The contrast of two colours by WCAG 2.2's formula (R17): the relative luminance of each, and
+// (lighter + 0.05) / (darker + 0.05); a translucent colour laid over what it stands on first, as
+// the mockup's README, «Contrast», reads its pairs. No DOM.
 
 /**
  * A colour written #rrggbb or rgba(r, g, b, a), its channels 0–255 — fractional while layers are laid

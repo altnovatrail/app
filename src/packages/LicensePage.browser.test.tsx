@@ -1,8 +1,8 @@
-// The page of a module's license in the browser (R32 in docs/decisions.md): LICENSE and NOTICE of a
-// version as they come, in English, with the module named by its manifest; a module with no
-// NOTICE; a version api no longer gives; a read that failed and its retry; a route that names no
-// digest; and the profile's modules in the section for adults, each with the way to its license.
-// api is connect-es's router, and the files come by the test's own fetch.
+// The page of a module's license in the browser (R32): LICENSE and NOTICE of a version as they
+// come, in English, with the module named by its manifest; a module with no NOTICE; a version api
+// no longer gives; a read that failed and its retry; a route that names no digest; and the
+// profile's modules in the section for adults, each with the way to its license. api is
+// connect-es's router, and the files come by the test's own fetch.
 import { ProfileSchema } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import { ModuleService } from "@altnovatrail/contracts/novatrail/api/v1/module_pb.js";
 import {

@@ -1,14 +1,12 @@
-// The legal pages (R31 and R46 in docs/decisions.md; sections 3.8, 3.9 and 3.10 of
-// docs/architecture.md): their list, `#/legal`, and each page, `#/legal/<page>` — the privacy
+// The legal pages (R31, R46): their list, `#/legal`, and each page, `#/legal/<page>` — the privacy
 // policy, the terms of use and the consent to keeping works, as GetLegalTexts gives them in force,
 // and the next version of each, `#/legal/<text>/next`, before the day it applies from; who runs
 // this copy, `#/legal/operator` — the section Who we are of the privacy policy in force; the page
 // Accessibility; and the notices of third-party code, NOTICE and LICENSE of the build (R25). They
 // show before signing in as well as after, in the language of the device (R10), each a sheet of the
 // mockup's legal text (R69) whose head leads back to their list and closes them back to where they
-// were opened from. Nothing on them leads out of app (privacy 7 in spec): a text's own words lead
-// nowhere (R27), and the operator of the copy, whom a page names, is reached as the section Who we
-// are says.
+// were opened from. Nothing on them leads out of app: a text's own words lead nowhere (R27), and
+// the operator of the copy, whom a page names, is reached as the section Who we are says.
 import {
   createContext,
   type ReactNode,
@@ -250,7 +248,7 @@ export function NextTextPage({ id }: { readonly id: PageText }) {
 }
 
 /**
- * Who runs this copy (R46; the 2026-11-12 amendment to R115 spec): the section Who we are of the
+ * Who runs this copy (R46; R115 spec): the section Who we are of the
  * privacy policy in force, in English as it is — the contract has no field for the operator —,
  * with the version it comes from and the way to the whole policy. A policy with no such section,
  * and a copy with no policy in force, say so.
@@ -297,11 +295,10 @@ export function OperatorPage() {
 }
 
 /**
- * The page Accessibility (R11; section 3.9 of docs/architecture.md): the standard, each place where
- * the app does not meet it yet — its criteria, why, what there is instead and when it goes — in
- * the set of the 2026-11-12 amendment to R11, how it is checked, and whom to write to: the
- * operator of this copy, whose contacts the section Who we are of its privacy policy gives (R115,
- * R131 spec; R46).
+ * The page Accessibility (R11): the standard, each place where the app does not meet it yet — its
+ * criteria, why, what there is instead and when it goes — in the set R11 declares, how it is
+ * checked, and whom to write to: the operator of this copy, whose contacts the section Who we are
+ * of its privacy policy gives (R115 spec, R131 spec; R46).
  */
 export function AccessibilityPage() {
   const { words } = useLanguage();
@@ -359,8 +356,8 @@ export function NoticesPage() {
 }
 
 /**
- * The legal pages by the hash: a page this build does not know — a family's text among them, whose
- * page comes with its screens in E4 — goes to their list in place of itself.
+ * The legal pages by the hash: a page this build does not know — a family's text among them, as the
+ * build has no screens of a child's consent — goes to their list in place of itself.
  */
 export function LegalPages({ route, back }: { readonly route: Route; readonly back: Route }) {
   const page = route.parts.join("/");
