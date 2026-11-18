@@ -1998,7 +1998,7 @@ button[aria-disabled="true"] {
  * from the top of the frame, the adult's Help in a glass of its own at the right, 48 high each.
  */
 .nt-help,
-.nt-top-end {
+.nt-top-close {
   display: inline-flex;
   flex: none;
   padding: 0.125rem;
@@ -2067,7 +2067,7 @@ button.nt-learner-pill {
 }
 /* The icons of a bar in the text's colour, as the mockup's: Help, Back, Close. */
 .nt-help button.nt-icon-only,
-.nt-top-end button.nt-icon-only,
+.nt-top-close button.nt-icon-only,
 .nt-top-pill button.nt-icon-only {
   color: var(--nt-text);
 }

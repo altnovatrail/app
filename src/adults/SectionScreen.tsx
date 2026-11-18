@@ -56,7 +56,7 @@ export function SectionScreen({ title, heading, layout = "adults", children }: S
           <IconButton value="back" caption="adults.back" onClick={() => navigate(ADULTS)} />
         ),
         end: (
-          <div className="nt-top-end nt-glass">
+          <div className="nt-top-close nt-glass">
             <IconButton value="close" caption="adults.close" onClick={() => navigate(HOME)} />
           </div>
         ),
