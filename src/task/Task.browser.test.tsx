@@ -1361,7 +1361,7 @@ describe("the task screen with handwriting", () => {
     await renderTask({ task: SHEET_TASK, mode: Mode.SELF });
     await screen.findByText("How many rungs?");
     expect(check()).toHaveAttribute("aria-disabled", "true");
-    // The reminder not to write names describes Check too: the sheet goes to AI whole (R127 in spec).
+    // The reminder not to write names describes Check too: the sheet goes to AI whole (R127 spec).
     expect(check()).toHaveAccessibleDescription(
       "Don't write your name or the real names of people you know Write an answer on the sheet",
     );

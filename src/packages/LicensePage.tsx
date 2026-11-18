@@ -1,4 +1,4 @@
-// The page of a module's license (R32 in docs/decisions.md; R62 in spec; sections 3.2 and 3.10 of
+// The page of a module's license (R32 in docs/decisions.md; R62 spec; sections 3.2 and 3.10 of
 // docs/architecture.md): LICENSE and NOTICE of the device part of a version, as they are, each in
 // `<pre lang="en">`, and the module by its manifest — its title in its explanation language, its
 // version and its license by name. The files come from api by the digest of the package

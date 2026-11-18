@@ -1,5 +1,5 @@
 // The solving steps in the tutor's panel (section 3.3 of docs/architecture.md; R05 and R67 in
-// docs/decisions.md; the second 2026-11-14 amendment to R148 in spec), as the mockup's `task` and
+// docs/decisions.md; the second 2026-11-14 amendment to R148 spec), as the mockup's `task` and
 // `task-steps`: a white card at the panel's top — "Step 2 of 4" with a chevron, which opens the
 // list of the steps, each with its place — passed, now or later — in a word, not in colour alone;
 // the step's title and "Read aloud" of the step, its chips and its cards; its description in the
@@ -250,7 +250,7 @@ export function StepsPanel({
 /**
  * The step while the tutor's panel is closed, the mockup's `task-pill`: a pill of glass above the
  * row — "Step 1 of 4" and the step's title, a press on which opens the panel (the second 2026-11-14
- * amendment to R148 in spec), and its "Step done".
+ * amendment to R148 spec), and its "Step done".
  */
 export function StepPill({
   task,

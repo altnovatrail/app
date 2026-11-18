@@ -2,7 +2,7 @@
 // more in two modes of the browser's context — forced colours and reduced motion — each in a project
 // of its own, its mode there from the start, as canvas has it (R03, R17 and R45 in
 // docs/decisions.md; sections 3.1 and 3.9 of docs/architecture.md). The three engines come from the
-// toolchain stage of .devcontainer/Dockerfile, which names them in PLAYWRIGHT_BROWSERS_PATH (R79 in
+// toolchain stage of .devcontainer/Dockerfile, which names them in PLAYWRIGHT_BROWSERS_PATH (R79
 // spec). Each project has an instance per engine, named "<project> (<engine>)": ci-test runs Node and
 // Chromium with the coverage, and ci-engines WebKit and Firefox without it, since Vitest's v8
 // coverage works in Chromium only (sources 2.5).

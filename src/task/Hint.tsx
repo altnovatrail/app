@@ -1,5 +1,5 @@
 // The hint asked for before the first wrong answer (section 3.3 of docs/architecture.md; R82, R108
-// in spec): what the task gives and asks to find, from its open view; the cards of its techniques,
+// spec): what the task gives and asks to find, from its open view; the cards of its techniques,
 // which api gave, from the open catalog; and its leading question, the author's question that
 // breaks the task down, in the module's explanation language. After a wrong answer the hint is the
 // words of the current rung again, which the block "Tutor" shows. Nothing of it needs the key.

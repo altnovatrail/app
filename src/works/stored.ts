@@ -1,5 +1,5 @@
 // The works of a profile on the server (section 3.2 of docs/architecture.md; the 2026-11-17
-// amendments to R16 and R30 in docs/decisions.md; R113 in spec; section 15 of the text of the
+// amendments to R16 and R30 in docs/decisions.md; R113 spec; section 15 of the text of the
 // contracts, "Stored works"; `WorkService`), with no DOM: while the profile's storage of works is
 // on, `PutWork` keeps each work as the device holds it — the history of writing, the contexts of
 // its submissions and the picture the canvas draws of it — at each submission, when its attempt
@@ -18,7 +18,7 @@ import type { Api } from "../api/client.ts";
 import { parseFailure, refusedWith } from "../api/failure.ts";
 import type { DeviceWork, Profile } from "../storage/profile.ts";
 
-/** The largest work the server keeps, as `StoredWork` counts it: 4 MiB (R113 in spec). */
+/** The largest work the server keeps, as `StoredWork` counts it: 4 MiB (R113 spec). */
 export const MAX_WORK = 4_194_304;
 
 /**

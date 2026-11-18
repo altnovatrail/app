@@ -1,4 +1,4 @@
-// The one synthesis of the whole app (R36 in spec; R07 and R36 in docs/decisions.md; section 3.5 of
+// The one synthesis of the whole app (R36 spec; R07 and R36 in docs/decisions.md; section 3.5 of
 // docs/architecture.md): `speechSynthesis` behind a narrow interface, so that Node's tests give it
 // lists of voices. Every utterance names its voice, by voices.ts; a new text cuts the one before
 // short — `cancel()` — rather than queueing behind it, and each sentence is an utterance of its own,

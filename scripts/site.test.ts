@@ -260,7 +260,7 @@ describe("the whole check", () => {
 
   beforeAll(async () => {
     writeFileSync(archivePath, archive);
-    // As infra's rollout serves the build (R06 in infra): outside /assets/ the CSP header and
+    // As infra's rollout serves the build (R06 infra): outside /assets/ the CSP header and
     // no-cache, under it immutable; deployment.json the rollout's own; nosniff on all.
     server = createServer((request, response) => {
       const path = new URL(request.url ?? "/", ORIGIN).pathname;

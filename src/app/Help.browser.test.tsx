@@ -1,4 +1,4 @@
-// The adult's Help (R63; R148 in spec): behind its button, filled while open, the three things and
+// The adult's Help (R63; R148 spec): behind its button, filled while open, the three things and
 // the three pages of the app itself — no link out of it —, each opened home's way back; none for a
 // learner of another category, nor with no learner.
 

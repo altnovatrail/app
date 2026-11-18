@@ -1,7 +1,7 @@
 // The invite code of a user with no account, in two steps, as the mockup's `invite` and `agree`
 // (R27, R46 and R61 in docs/decisions.md; sections 3.2 and 3.10 of docs/architecture.md): the code,
-// then the owner's statement of being 18 or older (R118 in spec) and their acceptance of the privacy
-// policy and the terms of use in force, each shown in place below (R131 in spec). Nothing goes to
+// then the owner's statement of being 18 or older (R118 spec) and their acceptance of the privacy
+// policy and the terms of use in force, each shown in place below (R131 spec). Nothing goes to
 // api before "Create account", which sends the code with the statement and the versions shown: a
 // code api does not take brings the first step back with its line. While no text is in force there
 // is nothing to accept; while the texts are not read, nothing is sent. The acceptance holds for the

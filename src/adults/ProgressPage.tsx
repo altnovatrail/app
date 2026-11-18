@@ -5,7 +5,7 @@
 // "Harder" at the module's level (R56); the traps that repeat, from the first page of GetProgress
 // alone; and the attempts, newest first, a page at a time, each with how it came out, its wrong
 // answers, its times and why the engine gave its task or its lesson — the reason code, which the
-// adult alone sees (concepts 12 in spec; R100 in spec). The progress names a task by its full ID
+// adult alone sees (concepts 12 in spec; R100 spec). The progress names a task by its full ID
 // alone, and the screen shows its local ID; a lesson by its title, or by its local ID when api no
 // longer reads the package the attempt went on; and a solved attempt the skills its task trains, by
 // their titles. A module is named by the manifest of its current version, or of the one the cache
@@ -282,7 +282,7 @@ function Attempt({
           )}
         </dl>
         {/* The submissions of an essay, each with its end and the marks of its rubric, come here
-            with the module of essays (T47; R87 in spec). */}
+            with the module of essays (T47; R87 spec). */}
       </article>
     </li>
   );
@@ -473,7 +473,7 @@ export function ProgressPage({ profile }: { readonly profile: Profile }) {
 
 /**
  * `#/adults/progress/<module>`: the adult's view of a module's map, `GetSkillMap` by an adult's
- * action; it chooses nothing (R03 and R04 in skill-map), and leads back to the progress. Above it,
+ * action; it chooses nothing (R03 and R04 skill-map), and leads back to the progress. Above it,
  * the adult's correction of the module's level, "Easier" and "Harder" (R56).
  */
 export function ProgressMap({

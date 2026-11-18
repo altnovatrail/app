@@ -261,7 +261,7 @@ describe("the task screen of a workbook", () => {
     const { submitted } = await renderWorkbook({ history: [...IN_BOXES.slice(0, -1), DRAFT] });
     await vi.waitFor(() => expect(canvas().filled?.[4]).toEqual([true, false]));
     expect(check()).toHaveAttribute("aria-disabled", "true");
-    // A workbook sends its boxes, not the whole ink: no reminder not to write names (R127 in spec).
+    // A workbook sends its boxes, not the whole ink: no reminder not to write names (R127 spec).
     expect(check()).toHaveAccessibleDescription("Write an answer in each box");
     // A press the browser lets through, as a screen reader's would: nothing goes to api.
     check().click();
@@ -287,7 +287,7 @@ describe("the task screen of a workbook", () => {
     if (lines === undefined) throw new Error("no lines below the canvas");
     const [first, , , , fifth] = within(lines).getAllByRole("listitem", { name: "" });
     expect(first).toHaveTextContent("Line 1 ✓ CorrectRead: 8");
-    // A line of two boxes gives each box's verdict and what was read in it (R56 in spec; R54).
+    // A line of two boxes gives each box's verdict and what was read in it (R56 spec; R54).
     expect(fifth?.textContent?.startsWith("Line 5 • Not yet")).toBe(true);
     const boxes = within(fifth as HTMLElement).getAllByRole("listitem");
     expect(boxes.map((box) => box.textContent)).toEqual([

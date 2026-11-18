@@ -1,4 +1,4 @@
-// The profile's menu (R148 in spec; R63 in docs/decisions.md; section 3.10 of docs/architecture.md):
+// The profile's menu (R148 spec; R63 in docs/decisions.md; section 3.10 of docs/architecture.md):
 // the pill of the learner chosen — the avatar, the pseudonym and a chevron — at the top of the home
 // screen and of the skill map, and behind it, as a pop-over, who is learning now, "Switch learner",
 // "For grown-ups" and "Sign out", the buttons of the profile's header (section 3.6). The pill stands

@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { pinProblems, run, SET, UI_PACKAGES } from "./pins.ts";
+import { pinProblems, run, SET, specTag, TAGGED, tagProblems, UI_PACKAGES } from "./pins.ts";
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -78,10 +78,43 @@ describe("pinProblems", () => {
   });
 });
 
+describe("tagProblems", () => {
+  it("passes spec's packages at the tag, in dependencies or devDependencies", () => {
+    const at = {
+      dependencies: { "@altnovatrail/contracts": "0.18.34" },
+      devDependencies: { "@altnovatrail/spec": "0.18.34" },
+    };
+    expect(tagProblems(at, "0.18.34")).toEqual([]);
+  });
+
+  it("names a package of spec at another version, or missing", () => {
+    const off = { devDependencies: { "@altnovatrail/spec": "0.18.12" } };
+    expect(tagProblems(off, "0.18.34")).toEqual([
+      "@altnovatrail/contracts is missing, but spec_tag is v0.18.34",
+      "@altnovatrail/spec is 0.18.12, but spec_tag is v0.18.34",
+    ]);
+  });
+
+  it("reads the tag from a justfile's spec_tag, and none from one without it", () => {
+    expect(specTag('bin := "x"\nspec_tag := "v0.18.34"\n')).toBe("0.18.34");
+    expect(specTag("ci: ci-lint\n")).toBeUndefined();
+  });
+});
+
 describe("run", () => {
   it("passes this repository, as npm ci installed it", () => {
     vi.spyOn(console, "log").mockImplementation(() => {});
     expect(run()).toBe(0);
+  });
+
+  it("holds this repository's packages of spec to the spec_tag its justfile names", () => {
+    const tag = specTag(readFileSync("justfile", "utf8"));
+    expect(tag).toBeDefined();
+    const app = JSON.parse(readFileSync("package.json", "utf8"));
+    expect(TAGGED.map((name) => app.dependencies[name] ?? app.devDependencies[name])).toEqual([
+      tag,
+      tag,
+    ]);
   });
 
   it.each(UI_PACKAGES)(
@@ -107,6 +140,28 @@ describe("run", () => {
       const error = vi.spyOn(console, "error").mockImplementation(() => {});
       expect(run(root)).toBe(1);
       expect(error.mock.calls[0]?.[0]).toContain("but @altnovatrail/canvas takes 1.2.97");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("fails a tree whose packages of spec are not at its spec_tag, and names them", () => {
+    const root = mkdtempSync(join(tmpdir(), "pins-"));
+    try {
+      writeFileSync(join(root, "justfile"), 'spec_tag := "v0.18.34"\n');
+      writeFileSync(
+        join(root, "package.json"),
+        JSON.stringify({
+          dependencies: { "@altnovatrail/contracts": "0.18.34" },
+          devDependencies: { "@altnovatrail/spec": "0.18.12" },
+        }),
+      );
+      writeFileSync(join(root, "package-lock.json"), JSON.stringify({ packages: {} }));
+      const error = vi.spyOn(console, "error").mockImplementation(() => {});
+      expect(run(root)).toBe(1);
+      expect(error.mock.calls[0]?.[0]).toBe(
+        "pins: @altnovatrail/spec is 0.18.12, but spec_tag is v0.18.34",
+      );
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

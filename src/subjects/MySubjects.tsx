@@ -1,4 +1,4 @@
-// "My subjects", the learner's home (sections 3.8, 3.9 and 3.10 of docs/architecture.md; R99 in
+// "My subjects", the learner's home (sections 3.8, 3.9 and 3.10 of docs/architecture.md; R99
 // spec): the modules connected to the profile and, below them, the catalog of the ones it may
 // connect, each a card with its title in its own explanation language and, when that is not the
 // screen's, a line that names it, in the order of the screen's language. Connecting and
@@ -13,7 +13,7 @@
 // module whose skill graph is a chain "in order" (R06). Under its heading, where the learner begins
 // their work, the screen says how much of today's tutor time the profile has used, or, once it is
 // used up, when it comes back (section 15 of the text of the contracts, "The quota"; R37). It is
-// drawn as the mockup's `home` (R148 in spec; R62): what comes next and the tutor time on a card
+// drawn as the mockup's `home` (R148 spec; R62): what comes next and the tutor time on a card
 // at the top, "A task from my paper" beside it, shown and not open; each card of a module connected
 // with the states of its skills, counted by the rule of skill-map's map, and a way to its map; the
 // legend of the marks below the cards, and on a phone behind a button.
@@ -253,7 +253,7 @@ export function SubjectsScreen({
             </p>
           )}
         </section>
-        {/* Shown, not open: tasks from paper come later (R148 in spec; product 4 and 11 in spec). */}
+        {/* Shown, not open: tasks from paper come later (R148 spec; product 4 and 11 in spec). */}
         <section aria-labelledby={paperId} className="nt-paper">
           <span className="nt-paper-icon" aria-hidden="true">
             <Icon value="camera" />

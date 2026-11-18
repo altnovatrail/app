@@ -2,7 +2,7 @@
 // amendment to R17): the mockup's pill and primary button, a field with its edge, a card, the glass
 // and its panel, the page and the weights, a group of the section for adults (R68), in CSS px at the
 // root's 16; and the canvas's bar of tools in the same glass and accent, from the top of the window
-// (R84 in canvas).
+// (R84 canvas).
 import "@altnovatrail/canvas";
 import type { CanvasElement } from "@altnovatrail/spec/canvas";
 import type * as open from "@altnovatrail/spec/formatv0/open";

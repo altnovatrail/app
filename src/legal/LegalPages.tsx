@@ -63,7 +63,7 @@ export function nextPage(id: PageText): Route {
   return { screen: LEGAL.screen, parts: [id, NEXT] };
 }
 
-/** The policy whose section Who we are names the operator of the copy (R115 in spec). */
+/** The policy whose section Who we are names the operator of the copy (R115 spec). */
 const POLICY: PageText = "privacy-policy";
 
 /** The places where the app does not meet its standard yet, as R11 declares them. */
@@ -250,7 +250,7 @@ export function NextTextPage({ id }: { readonly id: PageText }) {
 }
 
 /**
- * Who runs this copy (R46; the 2026-11-12 amendment to R115 in spec): the section Who we are of the
+ * Who runs this copy (R46; the 2026-11-12 amendment to R115 spec): the section Who we are of the
  * privacy policy in force, in English as it is — the contract has no field for the operator —,
  * with the version it comes from and the way to the whole policy. A policy with no such section,
  * and a copy with no policy in force, say so.
@@ -301,7 +301,7 @@ export function OperatorPage() {
  * the app does not meet it yet — its criteria, why, what there is instead and when it goes — in
  * the set of the 2026-11-12 amendment to R11, how it is checked, and whom to write to: the
  * operator of this copy, whose contacts the section Who we are of its privacy policy gives (R115,
- * R131 in spec; R46).
+ * R131 spec; R46).
  */
 export function AccessibilityPage() {
   const { words } = useLanguage();

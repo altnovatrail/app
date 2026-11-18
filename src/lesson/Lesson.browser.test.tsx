@@ -537,7 +537,7 @@ describe("the lesson player", () => {
     expect((await kept())?.place).toBe(2);
     await waitFor(() => expect(canvas().workedExample).toBeDefined());
     expect(canvas().demoState).toEqual({ opened: 0, hidden: false });
-    // Its Continue is the element's child, in its row after Next and Demo (R84 in canvas).
+    // Its Continue is the element's child, in its row after Next and Demo (R84 canvas).
     const inRow = await continueButton();
     expect(inRow.parentElement).toBe(canvas());
     expect(inRow.assignedSlot?.name).toBe("actions");

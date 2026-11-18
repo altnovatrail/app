@@ -1,5 +1,5 @@
 // The share of the quota of platform AI, "Tutor time", on a profile's page in the section for adults
-// (section 15 of the text of the contracts, "The quota"; concepts 14 in spec; R11 in api): read by
+// (section 15 of the text of the contracts, "The quota"; concepts 14 in spec; R11 api): read by
 // an adult's action when the page opens, the share of the profile's cap and of the account's that
 // today's spending takes — in percent, never a sum in dollars and never the cap —, that no work of
 // the profile goes to platform AI once a cap is reached, and when the next family day begins, by

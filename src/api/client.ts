@@ -27,7 +27,7 @@ import { ApiError, parseFailure } from "./failure.ts";
 import { type ApiEvents, effects, repeat, signIn } from "./interceptors.ts";
 import type { Tokens } from "./tokens.ts";
 
-/** api's own limit of a request (R33 in api): no call of app waits longer. */
+/** api's own limit of a request (R33 api): no call of app waits longer. */
 export const TIMEOUT_MS = 30_000;
 
 export interface ApiOptions {

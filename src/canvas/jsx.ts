@@ -1,16 +1,12 @@
-// The element <novatrail-canvas> in React's JSX, as its contract with app has it (R74 in spec;
-// section 3.1 of docs/architecture.md). The types are spec's, of @altnovatrail/spec/canvas at the
-// tag of the spec submodule, 0.18.12; canvas 0.3.31 names 0.18.27, a nested copy of its own.
-// canvas types its element by its own copy, and the types being structural, ElementHoldsContract
-// below fails to compile when the two part ways (R73 in spec; R15). `exportPicture()`, the picture
-// of a stored work, is in spec's types from 0.18.27, canvas's copy, but not in app's 0.18.12: app
-// takes it from canvas's element, `NovatrailCanvas` (../works/picture.ts).
+// The element <novatrail-canvas> in React's JSX, by the contract's types of app's own copy of
+// @altnovatrail/spec (R74 spec). canvas types its element by a copy of its own, and the types being
+// structural, ElementHoldsContract below fails to compile when the two part ways: in a .d.ts file
+// skipLibCheck would silence it (R73 spec; R15).
 // React 19 sets a property the element has, and listens for an event by the name after `on`, as
 // the element sends it: lower case. Neither `null` nor undo() and clear() are part of it. `lang` is
 // no option, and one of the build's languages, which canvas's table of labels has: without it the
-// element's scroll container would say its name in the page's language, which canvas declares
-// against WCAG 3.1.2 and app does not (R11), and with a tag the table has not, its buttons would
-// be English on a screen in another language.
+// element's scroll container would say its name in the page's language, against WCAG 3.1.2 (R11),
+// and with a tag the table has not, its buttons would be English on a screen in another language.
 
 import type { NovatrailCanvas } from "@altnovatrail/canvas";
 import type {
@@ -44,10 +40,10 @@ export interface CanvasProps
   > {
   readonly key?: Key;
   readonly ref?: Ref<CanvasElement>;
-  /** The language of the element's own buttons: the screen's (section 3.8). */
+  /** The language of the element's own buttons: the screen's. */
   readonly lang: Language;
   readonly className?: string;
-  /** A worked example's buttons of app, each `slot="actions"`, in the element's row (R84 in canvas). */
+  /** A worked example's buttons of app, each `slot="actions"`, in the element's row (R84 canvas). */
   readonly children?: ReactNode;
   readonly onhistorychange?: (event: HistoryChangeEvent) => void;
   readonly ontoolchange?: (event: ToolChangeEvent) => void;

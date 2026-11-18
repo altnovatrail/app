@@ -1,5 +1,5 @@
 // What the task screen knows of an essay and of the reminder to write no names (R75, R87 and R127
-// in spec; R53 in docs/decisions.md; section 3.3 of docs/architecture.md): a task is an essay when
+// spec; R53 in docs/decisions.md; section 3.3 of docs/architecture.md): a task is an essay when
 // its answer slot is bound `sheet`, which the open view gives with no check; a work goes to AI whole
 // when it is a handwriting sheet's crop — an essay's, or a final answer anywhere on the sheet —,
 // not a workbook's boxes nor options tapped; and how a submission of an essay ended, as the device
@@ -23,7 +23,7 @@ export function isEssay(task: open.Task): boolean {
 
 /**
  * Whether the work of the task goes to AI whole, so that the reminder to write no names stands
- * before each submission (R127 in spec): the crop of a handwriting sheet is the whole of its ink,
+ * before each submission (R127 spec): the crop of a handwriting sheet is the whole of its ink,
  * while a workbook sends the crops of its boxes and a choice no picture at all.
  */
 export function goesWhole(task: open.Task): boolean {

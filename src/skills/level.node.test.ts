@@ -1,4 +1,4 @@
-// The level of a module on the scale of its bands, and the bands next to it (R157 in spec; R56).
+// The level of a module on the scale of its bands, and the bands next to it (R157 spec; R56).
 import type * as open from "@altnovatrail/spec/formatv0/open";
 import { describe, expect, it } from "vitest";
 import { levelOf } from "./level.ts";

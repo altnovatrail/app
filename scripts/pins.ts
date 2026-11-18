@@ -1,16 +1,17 @@
-// The versions in package.json that another package decides, held to it (R15 in docs/decisions.md;
-// section 3.1 of docs/architecture.md):
+// The versions in package.json that another package or the spec submodule decides, held to it (R15):
 // - the set of icons is the version that the UI packages of @altnovatrail installed name in their
-//   devDependencies, canvas and skill-map: one set of icons in every interface (R78 in spec).
+//   devDependencies, canvas and skill-map: one set of icons in every interface (R78 spec).
 //   A package that names no set is passed over;
 // - @bufbuild/protobuf is the version @altnovatrail/contracts names in its dependencies, so that the
 //   contracts' code and the app's client share one runtime of protobuf;
+// - @altnovatrail/contracts and @altnovatrail/spec are the version of spec_tag in the justfile, the
+//   submodule's tag, so that a move to a tag cannot raise one and leave the other;
 // - each package of @firebase is in the lock file once: @firebase/auth registers itself with the
 //   component container of @firebase/app, and a second copy of @firebase/component would hold a
 //   container of its own;
 // - no package is a link to a folder: a working copy of canvas reaches the development server by
 //   `just dev-canvas`, never through package.json or the lock file, and release-verify-npm passes
-//   a link over unverified (R77 in spec).
+//   a link over unverified (R77 spec).
 // Run as `node scripts/pins.ts` it prints what is wrong; a test in ci-test runs it on this tree.
 import { readFileSync } from "node:fs";
 import { packageName } from "./notice.ts";
@@ -24,6 +25,22 @@ interface LockPackage {
   readonly version?: string;
   readonly link?: boolean;
   readonly resolved?: string;
+}
+
+/** The packages of spec's release, at the version of the submodule's tag. */
+export const TAGGED = ["@altnovatrail/contracts", "@altnovatrail/spec"] as const;
+
+/** The version `spec_tag` of a justfile names, without its "v"; undefined when it names none. */
+export function specTag(justfile: string): string | undefined {
+  return /^spec_tag := "v([^"]+)"$/m.exec(justfile)?.[1];
+}
+
+/** What is wrong with the versions of spec's packages in a package.json, against the tag. */
+export function tagProblems(app: Manifest, tag: string): string[] {
+  const all = { ...app.dependencies, ...app.devDependencies };
+  return TAGGED.filter((name) => all[name] !== tag).map(
+    (name) => `${name} is ${all[name] ?? "missing"}, but spec_tag is v${tag}`,
+  );
 }
 
 /** The lock file, as far as this check reads it. */
@@ -85,7 +102,18 @@ export function run(root = "."): number {
       return undefined;
     }
   };
-  const problems = pinProblems(read("package.json"), installed, read("package-lock.json"));
+  let justfile = "";
+  try {
+    justfile = readFileSync(`${root}/justfile`, "utf8");
+  } catch {
+    // A tree without a justfile has no tag to hold the packages to.
+  }
+  const tag = specTag(justfile);
+  const app: Manifest = read("package.json");
+  const problems = [
+    ...pinProblems(app, installed, read("package-lock.json")),
+    ...(tag === undefined ? [] : tagProblems(app, tag)),
+  ];
   if (problems.length > 0) {
     console.error(`pins: ${problems.join("; ")}`);
     return 1;

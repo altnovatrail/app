@@ -1,6 +1,6 @@
 // The words of what a call came to, in the language of the screen (section 15 of the text of the
 // contracts; sections 3.3 and 3.8 of docs/architecture.md; R18): the outcomes and the refusals
-// that every screen shows alike — a failure of AI is a neutral phrase, never "not yet" (R04 in
+// that every screen shows alike — a failure of AI is a neutral phrase, never "not yet" (R04
 // spec) — and the common string for a cause with no words here: a screen whose own causes they
 // are words them itself (T22, T26, T27, T32). The quota says when the tutor comes back by the
 // device's clock: today, tomorrow, or on the date of a family day that begins later (R37), and so

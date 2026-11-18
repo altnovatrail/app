@@ -49,7 +49,7 @@ export function readingsOf(verdicts: Verdicts, item: number, slots: number): Rea
 
 /**
  * A workbook's lines once checked: each line's verdict, which its boxes' make up, and what was read
- * in its boxes; a line of more boxes than one gives each box's verdict too (R56 in spec; R54).
+ * in its boxes; a line of more boxes than one gives each box's verdict too (R56 spec; R54).
  */
 function Lines({ task, verdicts }: { readonly task: open.Task; readonly verdicts: Verdicts }) {
   const { words } = useLanguage();

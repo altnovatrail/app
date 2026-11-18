@@ -4,7 +4,7 @@
 // to keep the data, and what the browser and Safari may erase by themselves, with the Home Screen
 // for advice. A profile's data and everything are erased here, each asked first (WCAG 3.3.4);
 // everything signs out too. While a work of a profile is not on the server as far as this device
-// holds it, the page says that the work is on this device alone (R113 in spec; R30). After the profiles, the voices of the device and on
+// holds it, the page says that the work is on this device alone (R113 spec; R30). After the profiles, the voices of the device and on
 // Android and Linux the leave for voicing (R07; ../voice/DeviceVoices.tsx). At the owner profile,
 // its own key when it is kept here, by its provider and last four, and "Remove key" — the action of
 // the page Own AI key (R47). Erasing a profile's data takes its key from memory too. Each essay a

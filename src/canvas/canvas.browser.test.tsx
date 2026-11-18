@@ -1,5 +1,5 @@
 // The probe of the element in JSX: the package registers it on import, before the first render
-// (R42 in canvas), React gives it its properties and listens for its events, and the types of its
+// (R42 canvas), React gives it its properties and listens for its events, and the types of its
 // contract are spec's (section 3.1 of docs/architecture.md). Then what canvas declares against
 // WCAG for app's Accessibility page, held on the element itself (R11; section 3.9).
 import "@altnovatrail/canvas";
@@ -174,7 +174,7 @@ describe("what canvas declares for app's Accessibility page", () => {
       const { unmount } = render(<novatrail-canvas ref={ref} lang="ru" task={task} />);
       const element = ref.current as CanvasElement;
       // The bar of glass holds the tools and the zoom's pair; «Выше», «Ниже», «Левее» and «Правее»
-      // left the element with canvas 0.3.26 (the second 2026-11-14 amendment to R90 in spec):
+      // left the element with canvas 0.3.26 (the second 2026-11-14 amendment to R90 spec):
       // every button of it, in any row, by its text and by a name of its own.
       await rowButton(element, "Крупнее");
       const labels = [...(element.shadowRoot?.querySelectorAll("button") ?? [])].flatMap(

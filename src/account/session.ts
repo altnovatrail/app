@@ -55,7 +55,7 @@ export type SessionState =
 /** What came of a form that asks api: done, the form's own refusal, or a failure to show. */
 export type FormResult<Own extends string> = "done" | Own | Failure;
 
-/** The pseudonym api takes: trimmed at its ends, from 1 to 30 Unicode code points (R98 in spec). */
+/** The pseudonym api takes: trimmed at its ends, from 1 to 30 Unicode code points (R98 spec). */
 export function pseudonymOf(text: string): string | undefined {
   const trimmed = text.trim();
   const length = [...trimmed].length;
@@ -319,7 +319,7 @@ export class Session {
   /**
    * `CreateAccount` with the invite code — the form sends it trimmed at its ends, and api ignores
    * dashes and spaces within it —, the statement of being 18 or older, and the versions of the
-   * privacy policy and the terms of use the owner accepted, as `GetLegalTexts` gave them (R131 in
+   * privacy policy and the terms of use the owner accepted, as `GetLegalTexts` gave them (R131
    * spec; R27): none while none is in force. A version no longer current is the form's to show anew.
    */
   async createAccount(
@@ -359,7 +359,7 @@ export class Session {
     avatar?: string,
   ): Promise<FormResult<"country-not-accepted">> {
     try {
-      // An avatar left unchosen is no field: the profile shows the set's own (R98 in spec).
+      // An avatar left unchosen is no field: the profile shows the set's own (R98 spec).
       await this.options.api.account.createOwnerProfile({
         country,
         settings: {

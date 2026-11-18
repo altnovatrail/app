@@ -3,7 +3,7 @@
 // assigned code elements", lists them — https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2, read
 // 2026-11-10; the ISO Online Browsing Platform, the primary source, answered 403 to a reading, so
 // the list is the article's (section 4). They are the codes `Country` of spec's table of the age
-// of digital consent too, which api takes as well (R134 in spec; Д175 of its RUN.md): the type
+// of digital consent too, which api takes as well (R134 spec; Д175 of its RUN.md): the type
 // holds the list to them, none left out and none more. Which of them a deployment takes learners
 // from is api's to say, by CAUSE_COUNTRY_NOT_ACCEPTED: app has no list of its own of those. A name
 // is Intl's, in the language of the screen. No DOM.

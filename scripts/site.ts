@@ -1,7 +1,7 @@
 // The check of a deployed site against the release of app it serves (section 3.7 of
 // docs/architecture.md; R42 in docs/decisions.md). `just site-check <origin> <version>` downloads
 // the release's archive, has spec's release-verify accept it, and runs this on it. infra's rollout
-// checks its own release of the site (R06 in infra); this is app's own look, the same for the
+// checks its own release of the site (R06 infra); this is app's own look, the same for the
 // platform and for a self-hosted copy, and it reads only what the site serves to anyone:
 // - every file of the archive at its path, byte for byte: the build, its csp.json and schema, and
 //   NOTICE and LICENSE (R25);

@@ -12,7 +12,7 @@ import { parseFailure } from "../api/failure.ts";
 import { dateTimeFormat } from "../i18n/intl.ts";
 import type { Language } from "../i18n/language.ts";
 
-/** The texts `CreateAccount` names: the owner accepts both (R131 in spec). */
+/** The texts `CreateAccount` names: the owner accepts both (R131 spec). */
 export const ACCOUNT_TEXTS = ["privacy-policy", "terms-of-use"] as const;
 
 /** The texts of the place `app`: the current version of each, and the next version of some. */
@@ -53,7 +53,7 @@ export function versionsOf(legal: Legal, id: string): Versions {
   return { current: legal.texts.find((text) => text.id === id), next: nextOf(legal.next, id) };
 }
 
-/** The text `SetWorkStorage` names when it switches the storage of works on (R113, R131 in spec). */
+/** The text `SetWorkStorage` names when it switches the storage of works on (R113, R131 spec). */
 export const STORAGE_TEXT = "storage-consent";
 
 /**

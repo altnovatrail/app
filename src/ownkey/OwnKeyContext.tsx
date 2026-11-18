@@ -31,7 +31,7 @@ export function keyMessageOf(data: unknown): string | undefined {
   return typeof profileId === "string" && profileId !== "" ? profileId : undefined;
 }
 
-/** Whether a profile may have an own key: the owner's, of the category `adult` (R122 in spec). */
+/** Whether a profile may have an own key: the owner's, of the category `adult` (R122 spec). */
 export function keyed(profile: Profile): boolean {
   return profile.owner && profile.ageCategory === "adult";
 }

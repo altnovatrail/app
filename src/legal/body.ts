@@ -68,7 +68,7 @@ export function titleOf(body: string): string | undefined {
 /**
  * The section of the privacy policy that names its operator and how to reach it: a heading of the
  * second level that reads exactly so, in every version of the policy (`legal.operator` of the
- * legal part; the 2026-11-13 amendment to R115 in spec; R46).
+ * legal part; the 2026-11-13 amendment to R115 spec; R46).
  */
 export const OPERATOR_SECTION = "Who we are";
 

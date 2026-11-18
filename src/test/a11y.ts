@@ -10,7 +10,7 @@ import type { Words } from "../i18n/words.ts";
 
 /**
  * Whether an element is app's to check: outside the canvas element, or app's own child of it in a
- * slot, as "Continue" in a worked example's row (R84 in canvas).
+ * slot, as "Continue" in a worked example's row (R84 canvas).
  */
 function ours(element: Element): boolean {
   const canvas = element.closest("novatrail-canvas");

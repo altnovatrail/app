@@ -1,5 +1,5 @@
 // The screen of an open attempt of an essay, a task whose answer slot is bound `sheet` (sections
-// 3.2 and 3.3 of docs/architecture.md; R53 in docs/decisions.md; R75, R87 and R127 in spec): what
+// 3.2 and 3.3 of docs/architecture.md; R53 in docs/decisions.md; R75, R87 and R127 spec): what
 // Task.tsx read of it, and what the learner does on it, written as it is done. The steps, the
 // history of writing and Hint go as on any task (R05, R20, R22). Check sends the crop the canvas
 // gives by `SubmitEssay`, with one idempotency key for this work and the same with every repeat of
@@ -263,7 +263,7 @@ export function OpenEssay({
     works,
   ]);
 
-  /** "Hint": api gives the task's techniques and its leading question (R82 in spec). */
+  /** "Hint": api gives the task's techniques and its leading question (R82 spec). */
   const askHint = useCallback(() => {
     prime();
     setFailure(undefined);
@@ -283,7 +283,7 @@ export function OpenEssay({
       .finally(() => setPending(false));
   }, [api, profileId, attemptId, closed, prime, auto, task, opened.catalog, explanation]);
 
-  /** Done: the learner ends the attempt, and the task is solved (R87 in spec). */
+  /** Done: the learner ends the attempt, and the task is solved (R87 spec). */
   const finish = useCallback(() => {
     setFailure(undefined);
     setPending(true);

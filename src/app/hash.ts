@@ -39,7 +39,7 @@ export const LEGAL: Route = { screen: "legal", parts: [] };
 export const MODULE_LICENSE: Route = { screen: "license", parts: [] };
 
 /**
- * The page on the AI tutor and how to use it safely, the learning material of R123 in spec:
+ * The page on the AI tutor and how to use it safely, the learning material of R123 spec:
  * `#/tutor`, opened from My subjects (R33). It shows at any step, as the license of a module does,
  * in the language of the learner's screens while a learner is chosen.
  */

@@ -11,7 +11,7 @@
 // under the top bar to 16 above the window's foot, the canvas, its lines and the foot ending where
 // it begins; on a phone it is a sheet from the bottom, at half the height or by its grabber over
 // the whole screen, which hides the row and the canvas's bar of tools (the 2026-11-17 amendment to
-// R148 in spec). Its head — the tutor's sign, its name, the learner's share of the quota, the
+// R148 spec). Its head — the tutor's sign, its name, the learner's share of the quota, the
 // switch of voicing and ×; the step's card by steps; the conversation, which scrolls — the line that
 // the tutor is an AI, the verdict's line, the hint and the tutor's words, or the attempt's result
 // once it is over —; and at its foot Hint and "Explain differently". Each screen gives what is its
@@ -385,7 +385,7 @@ export function TaskLayout({
   readonly onOpen?: () => void;
   /** The panel's ×; none, and it has none. */
   readonly onClose?: () => void;
-  /** The line of the panel's head: the learner's share of the quota (R98 in spec). */
+  /** The line of the panel's head: the learner's share of the quota (R98 spec). */
   readonly quota?: string | undefined;
   /** What the tutor and the program said in the panel: the verdict's line, the hint, the words. */
   readonly tutor: ReactNode;
@@ -425,7 +425,7 @@ export function TaskLayout({
     (shown ? heading.current : call.current)?.focus();
   }, [shown]);
   // Beside the open panel the canvas, its lines and the foot end where it begins; on a phone its
-  // sheet hides the row and the canvas's bar of tools (the 2026-11-17 amendment to R148 in spec).
+  // sheet hides the row and the canvas's bar of tools (the 2026-11-17 amendment to R148 spec).
   const beside = shown ? { "data-beside": "panel" } : {};
   const stepsShown = !over && mode === "steps";
   return (

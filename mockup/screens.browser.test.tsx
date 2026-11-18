@@ -514,15 +514,15 @@ async function barDrawn() {
  * Why the canvas's bar stands lower than the mockup has it, the sheet scrolled to the top: the line
  * of "Read aloud" and the voicing stands above the element, where the mockup has the statement's card
  * and its speaker (R65; В74 in run/QUESTIONS.md); and "Draw with finger" with its line, 57 px, comes
- * only in pen mode (R29 in canvas), so the bar is that much shorter.
+ * only in pen mode (R29 canvas), so the bar is that much shorter.
  */
 const PLACED =
-  'the line of "Read aloud" above the canvas, R65; "Draw with finger" only in pen mode, R29 in canvas';
+  'the line of "Read aloud" above the canvas, R65; "Draw with finger" only in pen mode, R29 canvas';
 
 /** A button the bar shows by its icon alone: the font of its caption, out of sight, is not drawn. */
-const ICON_ALONE = "the caption is out of sight (R60; R84 in canvas)";
+const ICON_ALONE = "the caption is out of sight (R60; R84 canvas)";
 
-/** The canvas's bar of glass, its first tool and the zoom (R84 in canvas). */
+/** The canvas's bar of glass, its first tool and the zoom (R84 canvas). */
 const BAR: readonly Region[] = [
   {
     name: "the tool bar",
@@ -1588,11 +1588,10 @@ const SEGMENTS: readonly Region[] = [
 /**
  * Why the canvas's row is wider on a phone: it keeps the line between Demo and the lesson's
  * Continue, which the mockup's phone hides; and why Next is paler with every part open: canvas pales
- * a button that does not act by its colour, the mockup by its opacity (R84 in canvas).
+ * a button that does not act by its colour, the mockup by its opacity (R84 canvas).
  */
-const ROW_LINE = "the canvas's row keeps its line on a phone (R84 in canvas)";
-const PALE =
-  "canvas pales a button that does not act by its colour, not its opacity (R84 in canvas)";
+const ROW_LINE = "the canvas's row keeps its line on a phone (R84 canvas)";
+const PALE = "canvas pales a button that does not act by its colour, not its opacity (R84 canvas)";
 
 /** The canvas's row of a worked example on a device, all its parts open or not. */
 function exampleRow(device: Device, open = false): readonly Region[] {
@@ -1612,7 +1611,7 @@ function exampleRow(device: Device, open = false): readonly Region[] {
   });
 }
 
-/** The canvas's row of a worked example: Next, Demo and the lesson's Continue (R84 in canvas). */
+/** The canvas's row of a worked example: Next, Demo and the lesson's Continue (R84 canvas). */
 const EXAMPLE_ROW: readonly Region[] = [
   {
     name: "the row of Next, Demo and Continue",
@@ -1620,7 +1619,7 @@ const EXAMPLE_ROW: readonly Region[] = [
     app: { css: ".tools.row" },
     followsText: "centre",
     // Its words are its buttons', compared below.
-    differs: { what: ["font-size"], by: "no text of its own (R84 in canvas)" },
+    differs: { what: ["font-size"], by: "no text of its own (R84 canvas)" },
   },
   {
     name: "Next",
@@ -1711,10 +1710,10 @@ function besidePanel(device: Device, regions: readonly Region[]): readonly Regio
 
 /**
  * Why the row's glass is whiter on a workbook: canvas draws the page on its own white paper over
- * the whole window (R84 in canvas), where the mockup lays a white page on the page's `#F2F2F7`,
+ * the whole window (R84 canvas), where the mockup lays a white page on the page's `#F2F2F7`,
  * which its glass lets through.
  */
-const WORKBOOK_PAPER = "canvas draws the workbook on its white paper (R84 in canvas)";
+const WORKBOOK_PAPER = "canvas draws the workbook on its white paper (R84 canvas)";
 
 /** The row on a workbook, its glass over canvas's paper. */
 const WORKBOOK_ROW: readonly Region[] = ROW.map((region) =>
@@ -1731,10 +1730,10 @@ const CRITERIA = [
 /**
  * Why no row stands under a finished essay: the way on is the lesson's row, or the result in the
  * panel (R23; R53), which names the criteria without the marks — those are the adult's, in the
- * progress (R87 in spec) —, where the mockup's panel, T87's, shows them.
+ * progress (R87 spec) —, where the mockup's panel, T87's, shows them.
  */
 const DONE_ON =
-  "the way on after Done: the lesson's row, or the result in the panel (R23; R53; R87 in spec)";
+  "the way on after Done: the lesson's row, or the result in the panel (R23; R53; R87 spec)";
 
 /** "Try again" in the card of "Not yet". */
 const TRY_AGAIN: Region = {

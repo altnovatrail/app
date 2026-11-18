@@ -1,7 +1,7 @@
 // The template of the Content Security Policy, csp.json, and the two layers built from it (R09 in
 // docs/decisions.md; section 3.7 of docs/architecture.md). The template is an object "directive →
 // string of sources" with the places {api} and {authDomain}, the form infra's rollout reads and
-// builds the header from (R17 in infra; the third 2026-11-09 amendment to R85 in spec):
+// builds the header from (R17 infra; the third 2026-11-09 amendment to R85 spec):
 // - the lower layer, a <meta> in the signed index.html, takes `https:` for a source with a place,
 //   since the build knows no address, and leaves frame-ancestors out: a <meta> cannot hold it;
 // - the header takes the values of /deployment.json for the places, and frame-ancestors 'none'

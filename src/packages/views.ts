@@ -1,8 +1,8 @@
-// The open views of a package by its digest (section 15 of the text of the contracts; R62, R99 in
+// The open views of a package by its digest (section 15 of the text of the contracts; R62, R99
 // spec; section 3.2 of docs/architecture.md): from the shared cache when it keeps them, otherwise
 // from api by Connect GET, and kept then. A view is the JSON of the module format, read by the types
 // of @altnovatrail/spec, in a version of the format the build reads — 0.4 —; a view in another
-// version is the build's to give up on: a reload is offered (R44 in spec), and the cache keeps none
+// version is the build's to give up on: a reload is offered (R44 spec), and the cache keeps none
 // of it. A part the module does not have is no view, and the cache keeps that too. A call waits
 // 30 s at most, by its own signal: a deadline in a header would make the request one with a
 // preflight. No DOM.

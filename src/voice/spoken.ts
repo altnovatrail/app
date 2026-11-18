@@ -3,7 +3,7 @@
 // words by the table of its language, since every engine reads a sign its own way and reads a box
 // of a workbook's line not at all; and the text cut into sentences, each an utterance of its own,
 // since Chrome cuts a long one short. The screen shows the text as it is: only what is spoken
-// changes. This is app's code, after api's checks, not the model's (R56 in tutor). A language with
+// changes. This is app's code, after api's checks, not the model's (R56 tutor). A language with
 // no table of its own is spoken with its signs as they are. No DOM.
 import { tagOf } from "./voices.ts";
 

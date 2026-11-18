@@ -86,13 +86,13 @@ export interface StoredAttempt {
   readonly submissions: readonly SubmissionRecord[] | undefined;
 }
 
-/** How a submission of an essay ended (R87 in spec): feedback, unreadable or unchecked. */
+/** How a submission of an essay ended (R87 spec): feedback, unreadable or unchecked. */
 export type EssayEnd = "feedback" | "unreadable" | "unchecked";
 
 /**
  * A submission of an essay as the device keeps it (R53): when it went, how it ended, and the crop
  * of the sheet it sent, for the learner to read again — the server keeps neither the crop nor the
- * text read nor the words of the feedback (R87 in spec).
+ * text read nor the words of the feedback (R87 spec).
  */
 export interface EssaySent {
   readonly at: number;

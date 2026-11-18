@@ -4,7 +4,7 @@
 // opens them in a pop-over, Hint, "Show the solution" when the learner may ask for it, which asks
 // first in a pop-over of its own, and after a line Check. The tutor's panel opens by the tutor's
 // button, by the step's pill and by Hint, and closes by its × — a verdict does not open it, and with
-// it closed the tutor says nothing of the work (the second 2026-11-17 amendment to R148 in spec;
+// it closed the tutor says nothing of the work (the second 2026-11-17 amendment to R148 spec;
 // R21). In the open panel stand the line that the tutor is an AI, the verdict's line, the hint asked
 // for and the tutor's words, and at its foot Hint and "Explain differently". Above the row stands
 // the verdict's card while the panel is closed: the work being read, "Not yet" with what was read,
@@ -19,7 +19,7 @@
 // words, for a learner of the category adult (R33). Above the canvas, "Read aloud" of the statement
 // with its items, and the voicing of the profile switched on and off while the panel, whose head
 // has it then, is closed (R07; T45). Above the card on a handwriting sheet, the reminder to write no
-// names, whose crop goes to AI whole (R127 in spec; R53).
+// names, whose crop goes to AI whole (R127 spec; R53).
 import type * as open from "@altnovatrail/spec/formatv0/open";
 import { useEffect, useId, useState } from "react";
 import { Icon } from "../app/Icon.tsx";
@@ -71,7 +71,7 @@ export interface TaskScreenProps extends TaskParts {
   readonly panelOpen: boolean;
   /** The tutor's button, the step's pill and the panel's ×, which open the panel and close it. */
   readonly onPanel?: () => void;
-  /** The learner's share of the quota, the line of the panel's head (R98 in spec). */
+  /** The learner's share of the quota, the line of the panel's head (R98 spec). */
   readonly quota?: string;
   /** "Explain differently", while the rung has the right to it. */
   readonly onExplain?: () => void;
@@ -135,7 +135,7 @@ export function TaskScreen(props: TaskScreenProps) {
       </button>
     );
   // The crop of a handwriting sheet goes to AI whole: the reminder to write no names stands before
-  // each submission, and describes Check (R127 in spec; R53).
+  // each submission, and describes Check (R127 spec; R53).
   const whole = goesWhole(task);
   const open = !solved && slotsFilled(task, state.choices, filled);
   // What locks Check: the sheet first — on a workbook, each of its boxes —, then the options.

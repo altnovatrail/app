@@ -1,5 +1,5 @@
-// A module's level on the scale of its bands, as the skill map gives it (R157 in spec and its
-// amendment of T173; the 2026-11-16 amendment of T178 to R99 in spec; R56 in docs/decisions.md):
+// A module's level on the scale of its bands, as the skill map gives it (R157 spec and its
+// amendment of T173; the 2026-11-16 amendment of T178 to R99 spec; R56 in docs/decisions.md):
 // the band of the level, `level_band`, among the bands of the manifest of the module's current
 // version, in their order from the easiest, and the bands next to it, which the adult's "Easier"
 // and "Harder" name to `SetModuleLevel`. An empty `level_band` is a level below the lowest band:
