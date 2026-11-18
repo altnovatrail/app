@@ -106,6 +106,13 @@ Read 2026-11-16 (architecture 3.1; the 2026-11-16 amendment to R03) — the code
 - **The releases** — `npm view picomatch versions`, read 2026-11-18: the latest is 4.0.7, of 2026-08-24. `npm ls picomatch` in `app`: 4.0.7 only under `vite` 8.3.8, its `tinyglobby` 0.2.17 with `fdir` 6.5.0, and `vitest` 5.1.0.
 - **The alert** — `gh api repos/altnovatrail/app/code-scanning/alerts/10`, read 2026-11-18: rule `VulnerabilitiesID` of `.github/workflows/scorecard.yml`, created 2026-11-17, on `main` e90a896: "score is 9: 1 existing vulnerabilities detected: Warn: Project is vulnerable to: https://osv.dev/GHSA-fc5q-39xc-vjpf".
 
+### 2.8. Canvas 0.3.31 and skill-map 0.1.19 on the icon set 1.2.99, 2026-11-18
+
+Read 2026-11-18 (architecture 3.1; the 2026-11-18 amendment to R15):
+- **The npm registry**, `npm view @altnovatrail/<package> versions time dependencies devDependencies`: `canvas` 0.3.29 (2026-11-17T20:02Z), 0.3.30 (2026-11-18T01:19Z) and 0.3.31 (2026-11-18T06:15Z), the latest; 0.3.30 and 0.3.31 name the set 1.2.99 in `devDependencies`, and `@altnovatrail/spec` 0.18.14 and 0.18.27 in `dependencies`. `skill-map` 0.1.13 (2026-11-16T15:02Z) to 0.1.19 (2026-11-18T06:09Z), the latest; 0.1.19 names the set 1.2.99 and `@altnovatrail/spec` 0.18.27. `@iconify-json/material-symbols` 1.2.99 is of 2026-11-12T06:12Z, and 1.2.100 of 2026-11-14 came after it.
+- **The packages**, `npm pack` and `diff -r` of `canvas` 0.3.28 and 0.3.30 and of `skill-map` 0.1.12 against the installed 0.3.31 and 0.1.19: in `canvas` only `NOTICE`, `README.md`, the version line of `lib/element/icons.js` and a comment of `exportPicture()`; in `skill-map` only `NOTICE`, `README.md`, the version line of `lib/element/icons.js` and the release and digest of `lib/element/anchor-titles`. The copies of `@altnovatrail/spec` 0.18.27 differ from 0.18.12 in `types/canvas` by `exportPicture(): Promise<Blob>` of `CanvasElement`, and `formatv0` is the same.
+- **`release-verify-npm`** on the lock file: "canvas v0.3.31, signed by the shared release.yml of .github v0.1.33", "skill-map v0.1.19, signed by the shared release.yml of .github v0.1.33", "spec v0.18.27, signed by spec's release.yml".
+
 ## 3. Storage on the device
 
 For architecture 3.2: the browser's storages, their quotas and clearing, IndexedDB and the sign-in session on the device.

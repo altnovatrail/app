@@ -53,7 +53,9 @@ updates:
       # (R73 and R83 in spec).
       - dependency-name: "@altnovatrail/spec"
       - dependency-name: "@altnovatrail/contracts"
-      # The runtime of protobuf is the one @altnovatrail/contracts names, and the set of icons the
-      # one canvas names: both move with that package, and scripts/pins.ts holds them to it (R15).
+      # The runtime of protobuf is the one @altnovatrail/contracts names, and moves with it. The set
+      # of icons is the one canvas and skill-map name, raised in the three together only by a row of
+      # spec's COORDINATION.md (the 2026-11-17 amendment to R78 in spec). scripts/pins.ts holds both
+      # (R15).
       - dependency-name: "@bufbuild/protobuf"
       - dependency-name: "@iconify-json/material-symbols"
