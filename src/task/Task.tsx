@@ -61,6 +61,7 @@ import { idempotencyKey } from "../api/keys.ts";
 import { closesAI, outcomeOf } from "../api/outcome.ts";
 import { failureText, outcomeText } from "../api/words.ts";
 import { HomeButton } from "../app/HomeButton.tsx";
+import { ProfilePill } from "../app/LearnerMenu.tsx";
 import { HOME, navigate, redirect } from "../app/router.ts";
 import { Screen } from "../app/Screen.tsx";
 import { ReadFailed } from "../boot/Screens.tsx";
@@ -352,33 +353,42 @@ export function Task({
     );
   }
   if (read.status === "failed") {
-    return <ReadFailed failure={read.failure} onRetry={() => setAttempt((n) => n + 1)} home />;
+    return (
+      <>
+        <ProfilePill className="nt-home-bar" />
+        <ReadFailed failure={read.failure} onRetry={() => setAttempt((n) => n + 1)} home />
+      </>
+    );
   }
   if (read.status === "closed") {
+    // The task screen has no bar of the learner: the profile's pill stands above (R65).
     return (
-      <Screen title={words.text("api.attempt-closed")}>
-        {read.reason === CloseReason.UNSPECIFIED ? null : (
-          <p>{words.text(keyFor(CLOSED_KEYS, read.reason))}</p>
-        )}
-        {again.failure === undefined ? null : (
-          <p role="alert" className="nt-error">
-            {failureText(again.failure, words)}
-          </p>
-        )}
-        <div className="nt-buttons">
-          <button
-            type="button"
-            aria-disabled={again.pending}
-            onClick={() => {
-              if (!again.pending) again.start();
-            }}
-          >
-            {words.text("task.again")}
-          </button>
-          <HomeButton />
-        </div>
-        <NextStep profileId={profileId} secondary />
-      </Screen>
+      <>
+        <ProfilePill className="nt-home-bar" />
+        <Screen title={words.text("api.attempt-closed")}>
+          {read.reason === CloseReason.UNSPECIFIED ? null : (
+            <p>{words.text(keyFor(CLOSED_KEYS, read.reason))}</p>
+          )}
+          {again.failure === undefined ? null : (
+            <p role="alert" className="nt-error">
+              {failureText(again.failure, words)}
+            </p>
+          )}
+          <div className="nt-buttons">
+            <button
+              type="button"
+              aria-disabled={again.pending}
+              onClick={() => {
+                if (!again.pending) again.start();
+              }}
+            >
+              {words.text("task.again")}
+            </button>
+            <HomeButton />
+          </div>
+          <NextStep profileId={profileId} secondary />
+        </Screen>
+      </>
     );
   }
   const Open = read.opened.essay === undefined ? OpenTask : OpenEssay;

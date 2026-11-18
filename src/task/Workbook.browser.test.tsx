@@ -274,7 +274,9 @@ describe("the task screen of a workbook", () => {
     expect(submitted[0]?.tappedChoices).toEqual([]);
     expect(submitted[0]?.clockOffsetMinutes).toBeDefined();
     // The summary counts lines, and each line has its verdict, made of its boxes'.
-    expect(await screen.findByText("Not right yet: 1 line of 5")).toBeVisible();
+    expect(
+      await screen.findByText("Not right yet: 1 line of 5", { selector: ".nt-card-line" }),
+    ).toBeVisible();
     const lines = screen.getAllByRole("list").find((list) => list.classList.contains("nt-lines"));
     if (lines === undefined) throw new Error("no lines below the canvas");
     const [first, , , , fifth] = within(lines).getAllByRole("listitem", { name: "" });

@@ -208,6 +208,30 @@ export const ICONS = {
       "m12 17.275l-4.15 2.5q-.275.175-.575.15t-.525-.2t-.35-.437t-.05-.588l1.1-4.725L3.775 10.8q-.25-.225-.312-.513t.037-.562t.3-.45t.55-.225l4.85-.425l1.875-4.45q.125-.3.388-.45t.537-.15t.537.15t.388.45l1.875 4.45l4.85.425q.35.05.55.225t.3.45t.038.563t-.313.512l-3.675 3.175l1.1 4.725q.075.325-.05.588t-.35.437t-.525.2t-.575-.15z",
     ],
   },
+  "lightbulb-outline-rounded": {
+    viewBox: "0 0 24 24",
+    paths: [
+      "M10.588 21.413Q10 20.825 10 20h4q0 .825-.587 1.413T12 22t-1.412-.587M9 19q-.425 0-.712-.288T8 18t.288-.712T9 17h6q.425 0 .713.288T16 18t-.288.713T15 19zm-.75-3q-1.725-1.025-2.738-2.75T4.5 9.5q0-3.125 2.188-5.312T12 2t5.313 2.188T19.5 9.5q0 2.025-1.012 3.75T15.75 16zm.6-2h6.3q1.125-.8 1.738-1.975T17.5 9.5q0-2.3-1.6-3.9T12 4T8.1 5.6T6.5 9.5q0 1.35.613 2.525T8.85 14M12 14",
+    ],
+  },
+  "priority-high-outline-rounded": {
+    viewBox: "0 0 24 24",
+    paths: [
+      "M12 21q-.825 0-1.412-.587T10 19t.588-1.412T12 17t1.413.588T14 19t-.587 1.413T12 21m0-6q-.825 0-1.412-.587T10 13V5q0-.825.588-1.412T12 3t1.413.588T14 5v8q0 .825-.587 1.413T12 15",
+    ],
+  },
+  "edit-outline-rounded": {
+    viewBox: "0 0 24 24",
+    paths: [
+      "M5 19h1.425L16.2 9.225L14.775 7.8L5 17.575zm-1 2q-.425 0-.712-.288T3 20v-2.425q0-.4.15-.763t.425-.637L16.2 3.575q.3-.275.663-.425t.762-.15t.775.15t.65.45L20.425 5q.3.275.437.65T21 6.4q0 .4-.138.763t-.437.662l-12.6 12.6q-.275.275-.638.425t-.762.15zM19 6.4L17.6 5zm-3.525 2.125l-.7-.725L16.2 9.225z",
+    ],
+  },
+  "description-outline-rounded": {
+    viewBox: "0 0 24 24",
+    paths: [
+      "M9 18h6q.425 0 .713-.288T16 17t-.288-.712T15 16H9q-.425 0-.712.288T8 17t.288.713T9 18m0-4h6q.425 0 .713-.288T16 13t-.288-.712T15 12H9q-.425 0-.712.288T8 13t.288.713T9 14m-3 8q-.825 0-1.412-.587T4 20V4q0-.825.588-1.412T6 2h7.175q.4 0 .763.15t.637.425l4.85 4.85q.275.275.425.638t.15.762V20q0 .825-.587 1.413T18 22zm7-14V4H6v16h12V9h-4q-.425 0-.712-.288T13 8M6 4v5zv16z",
+    ],
+  },
 } as const;
 
 /** The name of an icon of the app. */
@@ -349,6 +373,22 @@ export const VALUES = {
     mirrored: true,
   },
   "lesson-complete": { outline: "star-outline-rounded", filled: "star-rounded", mirrored: false },
+  hint: {
+    outline: "lightbulb-outline-rounded",
+    filled: "lightbulb-outline-rounded",
+    mirrored: false,
+  },
+  "not-yet": {
+    outline: "priority-high-outline-rounded",
+    filled: "priority-high-outline-rounded",
+    mirrored: false,
+  },
+  write: { outline: "edit-outline-rounded", filled: "edit-outline-rounded", mirrored: false },
+  shown: {
+    outline: "description-outline-rounded",
+    filled: "description-outline-rounded",
+    mirrored: false,
+  },
 } as const satisfies Record<string, { outline: IconName; filled: IconName; mirrored: boolean }>;
 
 /** A value of the app. */

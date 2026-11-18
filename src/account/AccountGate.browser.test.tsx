@@ -897,11 +897,7 @@ describe("the section for adults", () => {
     // The open attempt GetAccount named stays: other settings make no other profile of it.
     await userEvent.click(screen.getByRole("button", { name: "Продолжить задачу" }));
     expect(await screen.findByRole("heading", { level: 1, name: "Задача" })).toBeTruthy();
-    const mode = screen.getByRole("group", { name: "Режим" });
-    expect(within(mode).getByRole("button", { name: "Самостоятельно" })).toHaveAttribute(
-      "aria-pressed",
-      "true",
-    );
+    expect(await screen.findByRole("button", { name: "Режим: Самостоятельно" })).toBeTruthy();
     other.close();
   });
 
@@ -1431,7 +1427,7 @@ describe("the reason code of the engine's choice", () => {
     expect(reasonsShown()).toEqual([]);
     await userEvent.click(screen.getByRole("button", { name: "Продолжить задачу" }));
     expect(await screen.findByRole("heading", { level: 1, name: "Задача" })).toBeTruthy();
-    expect(await screen.findByRole("group", { name: "Режим" })).toBeTruthy();
+    expect(await screen.findByRole("button", { name: /^Режим: / })).toBeTruthy();
     expect(reasonsShown()).toEqual([]);
     window.location.hash = "#/home";
     await userEvent.click(await screen.findByRole("button", { name: "Что-то другое" }));

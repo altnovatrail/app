@@ -528,6 +528,39 @@ async function renderTask(setup: Setup = {}) {
 
 const panel = () => within(screen.getByRole("complementary", { name: "Tutor" }));
 const check = () => screen.getByRole("button", { name: "Check" });
+/** A button of the row under the canvas, not the card's of the same name. */
+const rowButton = (name: string) =>
+  within(document.querySelector(".nt-task-row") as HTMLElement).getByRole("button", { name });
+
+/** The pop-over of the options, opened from "Choose an answer" in the row if it is not open (R65). */
+async function answers() {
+  const open = screen.queryByRole("dialog", { name: "Choose an answer" });
+  if (open !== null) return within(open);
+  await userEvent.click(
+    await screen.findByRole("button", { name: /^(Choose an answer|Your answer)/ }),
+  );
+  return within(await screen.findByRole("dialog", { name: "Choose an answer" }));
+}
+
+/** The options named, chosen in their pop-over, which then closes. */
+async function choose(...options: string[]) {
+  for (const option of options)
+    await userEvent.click((await answers()).getByRole("radio", { name: option }));
+  if (screen.queryByRole("dialog", { name: "Choose an answer" }) !== null) {
+    await userEvent.keyboard("{Escape}");
+  }
+}
+
+/** The pop-over of the mode, opened from its pill. */
+async function modes() {
+  await userEvent.click(await screen.findByRole("button", { name: /^Mode: / }));
+  return within(await screen.findByRole("dialog", { name: "Mode" }));
+}
+
+/** The mode named, chosen in its pop-over. */
+async function chooseMode(mode: "Step by step" | "On my own") {
+  await userEvent.click((await modes()).getByRole("button", { name: new RegExp(`^${mode}`) }));
+}
 
 /** The midnight after now on the device's clock: the next family day, by the offset it sends. */
 function tomorrow(): Date {
@@ -582,33 +615,55 @@ describe("the task screen", () => {
 
   it("takes the options and Check from the keyboard, and gives Not yet, then Correct", async () => {
     const { keys, device } = await renderTask({ mode: Mode.SELF });
-    const fruits = await screen.findByRole("group", { name: "How many fruits?" });
+    await screen.findByRole("button", { name: "Choose an answer" });
     expect(check()).toHaveAttribute("aria-disabled", "true");
     expect(check()).toHaveAccessibleDescription("Choose an answer in each item");
+    // Check pressed while it does not open: the card says why, and OK puts it away (R65).
+    // Forced: a button that says it is disabled takes no click of Playwright's own.
+    await userEvent.click(check(), { force: true });
+    const card = () => document.querySelector(".nt-card-verdict");
+    await vi.waitFor(() =>
+      expect(card()).toHaveTextContent(
+        "Choose an answer in each itemChoose one of the answers, then Check.OK",
+      ),
+    );
+    await userEvent.click(screen.getByRole("button", { name: "OK" }));
+    expect(card()).toBeNull();
     // On my own, the tutor answers only when called: no panel until the task is solved.
     expect(screen.queryByRole("complementary", { name: "Tutor" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Step done" })).toBeNull();
-    await userEvent.click(screen.getByRole("radio", { name: "No" }));
-    // The screen has taken the focus on its heading by now: the keyboard goes on from here.
-    within(fruits).getByRole("radio", { name: "4" }).focus();
+    // The options are in a pop-over, its first option in focus: the keyboard chooses there.
+    const options = await answers();
+    expect(document.activeElement).toBe(options.getByRole("radio", { name: "4" }));
     await userEvent.keyboard(" ");
+    await userEvent.click(options.getByRole("radio", { name: "No" }));
+    await userEvent.keyboard("{Escape}");
     await vi.waitFor(() => expect(check()).toHaveAttribute("aria-disabled", "false"));
     check().focus();
     await userEvent.keyboard("{Enter}");
-    await screen.findByText("Not right yet: 2 items of 2");
+    await screen.findByText("Not right yet: 2 items of 2", { selector: "[role=status]" });
+    // The card: "Not yet" and the summary; "Try again" puts it away.
+    expect(card()).toHaveTextContent("Not yetNot right yet: 2 items of 2HintTry again");
+    await userEvent.click(screen.getByRole("button", { name: "Try again" }));
+    expect(card()).toBeNull();
     // On the item and on the option tapped, which it describes.
-    expect(within(fruits).getAllByText("Not yet").length).toBe(2);
-    expect(within(fruits).getByRole("radio", { name: "4" })).toHaveAccessibleDescription("Not yet");
+    const fruits = within((await answers()).getByRole("group", { name: /How many fruits\?/ }));
+    expect(fruits.getAllByText("Not yet").length).toBe(2);
+    expect(fruits.getByRole("radio", { name: "4" })).toHaveAccessibleDescription("Not yet");
     // Another option drops its slot's verdict: it was the verdict of another answer.
-    await userEvent.click(within(fruits).getByRole("radio", { name: "5" }));
-    expect(within(fruits).queryByText("Not yet")).toBeNull();
-    await userEvent.click(screen.getByRole("radio", { name: "Yes" }));
+    await userEvent.click(fruits.getByRole("radio", { name: "5" }));
+    expect(fruits.queryByText("Not yet")).toBeNull();
+    await choose("Yes");
     await userEvent.click(check());
-    expect(await panel().findByText("Correct")).toBeVisible();
+    expect(await panel().findByText("Two and three make five.")).toBeVisible();
+    expect(card()).toHaveTextContent("Correct");
     // The summary tells a screen reader, as a status does.
     expect(screen.getAllByRole("status").map((status) => status.textContent)).toContain("Correct");
-    expect(within(fruits).getByRole("radio", { name: "5" })).toBeDisabled();
+    // The attempt is over: Check goes, and the options stay in sight, taking no tap.
     expect(screen.queryByRole("button", { name: "Check" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Hint" })).toBeNull();
+    expect((await answers()).getByRole("radio", { name: "5" })).toBeDisabled();
+    await userEvent.keyboard("{Escape}");
     const solution = panel().getByRole("region", { name: "Solution" });
     expect(within(solution).getByText("Two and three make five.")).toBeVisible();
     const image = await within(solution).findByRole("img", { name: "Five fruits" });
@@ -644,17 +699,16 @@ describe("the task screen", () => {
         if (down) throw new ConnectError("down", Code.Unavailable);
       },
     });
-    await userEvent.click(await screen.findByRole("radio", { name: "4" }));
-    await userEvent.click(screen.getByRole("radio", { name: "No" }));
+    await choose("4", "No");
     await vi.waitFor(() => expect(check()).toHaveAttribute("aria-disabled", "false"));
     await userEvent.click(check());
     expect(await screen.findByRole("alert")).toHaveTextContent("No connection");
     down = false;
     await userEvent.click(check());
-    await screen.findByText("Not right yet: 2 items of 2");
-    await userEvent.click(screen.getByRole("radio", { name: "Yes" }));
+    await screen.findByText("Not right yet: 2 items of 2", { selector: "[role=status]" });
+    await choose("Yes");
     await userEvent.click(check());
-    await screen.findByText("Not right yet: 1 item of 2");
+    await screen.findByText("Not right yet: 1 item of 2", { selector: "[role=status]" });
     const first = keys[0];
     // The client's own repeats of the failed call, then the learner's: all with the first key.
     expect(keys.slice(0, -1).every((key) => key === first)).toBe(true);
@@ -663,8 +717,7 @@ describe("the task screen", () => {
 
   it("begins the same task again after Correct", async () => {
     const { begun, attempts } = await renderTask({ mode: Mode.SELF });
-    await userEvent.click(await screen.findByRole("radio", { name: "5" }));
-    await userEvent.click(screen.getByRole("radio", { name: "Yes" }));
+    await choose("5", "Yes");
     await userEvent.click(check());
     await userEvent.click(await panel().findByRole("button", { name: "Try it again" }));
     await vi.waitFor(() => expect(attempts).toEqual([undefined, "a2"]));
@@ -682,8 +735,7 @@ describe("the task screen", () => {
         next: { next: { case: "choice", value: { choiceId: "c2", kind: ChoiceKind.TASK } } },
       }),
     });
-    await userEvent.click(await screen.findByRole("radio", { name: "5" }));
-    await userEvent.click(screen.getByRole("radio", { name: "Yes" }));
+    await choose("5", "Yes");
     await userEvent.click(check());
     expect(await panel().findByRole("button", { name: "Next task" })).toBeVisible();
     expect(panel().getByRole("button", { name: "Try it again" })).toHaveClass("nt-secondary");
@@ -704,8 +756,7 @@ describe("the task screen", () => {
 
     // An answer with no choice: the press asks for it.
     await renderTask({ mode: Mode.SELF });
-    await userEvent.click(await screen.findByRole("radio", { name: "5" }));
-    await userEvent.click(screen.getByRole("radio", { name: "Yes" }));
+    await choose("5", "Yes");
     await userEvent.click(check());
     expect(await panel().findByRole("button", { name: "What's next" })).toBeVisible();
   });
@@ -731,8 +782,7 @@ describe("the task screen", () => {
         throw refused(Code.FailedPrecondition, Cause.ATTEMPT_CLOSED, CloseReason.LEFT);
       },
     });
-    await userEvent.click(await screen.findByRole("radio", { name: "5" }));
-    await userEvent.click(screen.getByRole("radio", { name: "Yes" }));
+    await choose("5", "Yes");
     await userEvent.click(check());
     await screen.findByRole("heading", { name: "This task is already over", level: 1 });
     expect(screen.getByText("Another task was begun")).toBeVisible();
@@ -742,8 +792,8 @@ describe("the task screen", () => {
   it("goes on where it was after a restart: the mode, the step and the history of writing", async () => {
     const first = await renderTask();
     await screen.findByRole("heading", { name: "Understand the task", level: 2 });
-    await userEvent.click(screen.getByRole("button", { name: "On my own" }));
-    await userEvent.click(screen.getByRole("radio", { name: "4" }));
+    await chooseMode("On my own");
+    await choose("4");
     const profile = await addProfile(first.device, "p1");
     const stroke: HistoryEvent = {
       kind: "write",
@@ -766,9 +816,10 @@ describe("the task screen", () => {
     first.unmount();
 
     const again = await renderTask({ device: first.device });
-    await screen.findByRole("radio", { name: "4" });
-    expect(screen.getByRole("radio", { name: "4" })).toBeChecked();
-    expect(screen.getByRole("button", { name: "On my own" })).toHaveAttribute(
+    expect((await answers()).getByRole("radio", { name: "4" })).toBeChecked();
+    await userEvent.keyboard("{Escape}");
+    expect(screen.getByRole("button", { name: "Mode: On my own" })).toBeVisible();
+    expect((await modes()).getByRole("button", { name: /^On my own/ })).toHaveAttribute(
       "aria-pressed",
       "true",
     );
@@ -790,9 +841,10 @@ describe("the task screen", () => {
       wrongAnswers: 1,
       stepTechniqueIds: ["draw"],
     });
-    const fruits = await screen.findByRole("group", { name: /How many fruits\?/ });
+    const fruits = (await answers()).getByRole("group", { name: /How many fruits\?/ });
     expect(within(fruits).getByRole("radio", { name: "4" })).toBeChecked();
     expect(within(fruits).getAllByText("Not yet").length).toBe(2);
+    await userEvent.keyboard("{Escape}");
     for (const chip of ["Two apples", "Three pears", "How many fruits"]) {
       await userEvent.click(panel().getByRole("button", { name: chip }));
     }
@@ -808,17 +860,20 @@ describe("the task screen", () => {
 
   it("has no switch of the mode for a module without steps", async () => {
     await renderTask({ steps: [] });
-    await screen.findByRole("radio", { name: "4" });
-    expect(screen.queryByRole("button", { name: "Step by step" })).toBeNull();
+    await screen.findByRole("button", { name: "Choose an answer" });
+    expect(screen.queryByRole("button", { name: /^Mode: / })).toBeNull();
     expect(screen.queryByRole("heading", { level: 2 })).toBeNull();
   });
 
   it("blinks Check once on a pause, while it is open", async () => {
     vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
     await renderTask({ mode: Mode.SELF });
+    await vi.waitFor(() => screen.getByRole("button", { name: "Choose an answer" }));
+    screen.getByRole("button", { name: "Choose an answer" }).click();
     await vi.waitFor(() => screen.getByRole("radio", { name: "5" }));
     screen.getByRole("radio", { name: "5" }).click();
     screen.getByRole("radio", { name: "Yes" }).click();
+    screen.getByRole("button", { name: "Close" }).click();
     await vi.waitFor(() => expect(check()).toHaveAttribute("aria-disabled", "false"));
     vi.advanceTimersByTime(6000);
     await vi.waitFor(() => expect(check()).toHaveClass("nt-blink"));
@@ -875,7 +930,7 @@ describe("the task screen", () => {
   it("goes back to My subjects during the attempt, from above the task (R57)", async () => {
     window.location.hash = "#/task";
     await renderTask({ mode: Mode.SELF });
-    await screen.findByRole("radio", { name: "5" });
+    await screen.findByRole("button", { name: "Choose an answer" });
     const home = screen.getByRole("button", { name: "Back to My subjects" });
     expect(screen.queryByRole("complementary", { name: "Tutor" })).toBeNull();
     await userEvent.click(home);
@@ -926,8 +981,7 @@ describe("the task screen", () => {
         if (down) throw refused(Code.FailedPrecondition, Cause.NO_CURRENT_VERSION);
       },
     });
-    await userEvent.click(await screen.findByRole("radio", { name: "5" }));
-    await userEvent.click(screen.getByRole("radio", { name: "Yes" }));
+    await choose("5", "Yes");
     await userEvent.click(check());
     await userEvent.click(await panel().findByRole("button", { name: "Try it again" }));
     expect(await panel().findByRole("alert")).toHaveTextContent(
@@ -946,16 +1000,16 @@ describe("the task screen", () => {
     window.location.hash = "#/task";
     await renderTask();
     await screen.findByRole("heading", { name: "Understand the task", level: 2 });
-    await userEvent.click(screen.getByRole("button", { name: "On my own" }));
+    await chooseMode("On my own");
     expect(screen.queryByRole("complementary", { name: "Tutor" })).toBeNull();
-    await userEvent.click(screen.getByRole("button", { name: "Step by step" }));
+    await chooseMode("Step by step");
     await screen.findByRole("heading", { name: "Understand the task", level: 2 });
-    await userEvent.click(screen.getByRole("radio", { name: "5" }));
-    await userEvent.click(screen.getByRole("radio", { name: "Yes" }));
+    await choose("5", "Yes");
     await userEvent.click(check());
-    await userEvent.click(await panel().findByRole("button", { name: "Back to My subjects" }));
-    // Once the attempt is over, the way back is the result's alone.
+    await panel().findByRole("button", { name: "Try it again" });
+    // Once the attempt is over, the way back is still the bar's, and the result has none (R65).
     expect(screen.getAllByRole("button", { name: "Back to My subjects" })).toHaveLength(1);
+    await userEvent.click(screen.getByRole("button", { name: "Back to My subjects" }));
     expect(window.location.hash).toBe("#/home");
     window.location.hash = "";
   });
@@ -987,7 +1041,7 @@ describe("the task screen", () => {
 
   it("goes on my own for a module that has no part of solving steps", async () => {
     await renderTask({ noSteps: true });
-    await screen.findByRole("radio", { name: "4" });
+    await screen.findByRole("button", { name: "Choose an answer" });
     expect(screen.queryByRole("button", { name: "Step by step" })).toBeNull();
     expect(screen.queryByRole("complementary", { name: "Tutor" })).toBeNull();
   });
@@ -1539,12 +1593,11 @@ describe("the task screen with handwriting", () => {
         hint: { case: "rung", value: { rung: 1, words: "Look at the pears again." } },
       }),
     });
-    await userEvent.click(await screen.findByRole("radio", { name: "4" }));
-    await userEvent.click(screen.getByRole("radio", { name: "No" }));
+    await choose("4", "No");
     await userEvent.click(check());
     await panel().findByText("The tutor is writing…");
     // Hint gives the rung's words it keeps meanwhile: the right to other words waits for the model's.
-    await userEvent.click(screen.getByRole("button", { name: "Hint" }));
+    await userEvent.click(rowButton("Hint"));
     await panel().findByText("Look at the pears again.");
     expect(screen.queryByRole("button", { name: "Explain differently" })).toBeNull();
     words();
@@ -1751,13 +1804,13 @@ describe("the tutor's words only while its panel is open (T88)", () => {
       answer: () => sheetAnswer("not_yet", { value: "5", wrong: 1 }),
     });
     await checkSheet("Read: 5");
-    await userEvent.click(screen.getByRole("button", { name: "Hint" }));
+    await userEvent.click(rowButton("Hint"));
     expect(await panel().findByText("Count the gaps between the rungs.")).toBeVisible();
     expect(rungs).toHaveLength(1);
     expect(asked).not.toContain("hint");
     expect(tutorButton()).toHaveAttribute("aria-expanded", "true");
     // Hint again, the panel open: it asks api for the hint, and no words of AI.
-    await userEvent.click(screen.getByRole("button", { name: "Hint" }));
+    await userEvent.click(rowButton("Hint"));
     await vi.waitFor(() => expect(asked).toContain("hint"));
     expect(rungs).toHaveLength(1);
   });
@@ -1770,11 +1823,11 @@ describe("the tutor's words only while its panel is open (T88)", () => {
       answer: () => sheetAnswer("not_yet", { value: "5", wrong: 1 }),
     });
     await checkSheet("Read: 5");
-    await userEvent.click(screen.getByRole("button", { name: "Step by step" }));
+    await chooseMode("Step by step");
     expect(await panel().findByText("Count the gaps between the rungs.")).toBeVisible();
     expect(rungs).toHaveLength(1);
     // Back on my own, the panel stays open with the words it holds.
-    await userEvent.click(screen.getByRole("button", { name: "On my own" }));
+    await chooseMode("On my own");
     expect(panel().getByText("Count the gaps between the rungs.")).toBeVisible();
     expect(tutorButton()).toHaveAttribute("aria-expanded", "true");
   });
@@ -1831,7 +1884,7 @@ describe("the tutor's words only while its panel is open (T88)", () => {
     await checkSheet("Read: 5");
     await userEvent.click(screen.getByRole("button", { name: "Show the solution" }));
     await userEvent.click(screen.getByRole("button", { name: "Show it" }));
-    expect(await screen.findByText("Solution shown", { selector: ".nt-result" })).toBeVisible();
+    expect(await screen.findByText("Solution shown", { selector: ".nt-card-title" })).toBeVisible();
     expect(shows).toHaveLength(1);
     await userEvent.click(tutorButton());
     expect(tutorButton()).toHaveAttribute("aria-expanded", "true");
@@ -1840,11 +1893,11 @@ describe("the tutor's words only while its panel is open (T88)", () => {
 });
 
 describe("the hint, Explain differently and the solution", () => {
-  const hintButton = () => screen.getByRole("button", { name: "Hint" });
+  const hintButton = () => rowButton("Hint");
 
   it("gives before a wrong answer what the task gives and asks, its technique and its question", async () => {
     const { asked } = await renderTask({ mode: Mode.SELF });
-    await screen.findByRole("radio", { name: "4" });
+    await screen.findByRole("button", { name: "Choose an answer" });
     await userEvent.click(hintButton());
     const hint = await screen.findByRole("region", { name: "Hint" });
     expect(within(hint).getByText("Two apples")).toHaveAttribute("lang", "en");
@@ -1862,7 +1915,7 @@ describe("the hint, Explain differently and the solution", () => {
       mode: Mode.SELF,
       hint: () => ({ hint: { case: "techniques", value: { techniqueIds: [] } } }),
     });
-    await screen.findByRole("radio", { name: "4" });
+    await screen.findByRole("button", { name: "Choose an answer" });
     await userEvent.click(hintButton());
     expect(await screen.findByText("This task has nothing more to hint")).toBeVisible();
   });
@@ -1875,7 +1928,7 @@ describe("the hint, Explain differently and the solution", () => {
         hint: { case: "rung", value: { rung: 1, words: "Look at the pears again." } },
       }),
     });
-    await screen.findByRole("radio", { name: "4" });
+    await screen.findByRole("button", { name: "Choose an answer" });
     await userEvent.click(hintButton());
     expect(await screen.findByText("Look at the pears again.")).toHaveAttribute("lang", "en");
   });
@@ -1897,7 +1950,7 @@ describe("the hint, Explain differently and the solution", () => {
         throw refusal;
       },
     });
-    await screen.findByRole("radio", { name: "4" });
+    await screen.findByRole("button", { name: "Choose an answer" });
     await userEvent.click(hintButton());
     expect(await screen.findByRole("alert")).toHaveTextContent("No connection");
     refusal = refused(Code.FailedPrecondition, Cause.ATTEMPT_CLOSED, CloseReason.LEFT);
@@ -1907,8 +1960,7 @@ describe("the hint, Explain differently and the solution", () => {
 
   it("explains the rung differently once, with its wrong answer and its key", async () => {
     const { explains } = await renderTask({ mode: Mode.SELF, tutor: true });
-    await userEvent.click(await screen.findByRole("radio", { name: "4" }));
-    await userEvent.click(screen.getByRole("radio", { name: "No" }));
+    await choose("4", "No");
     await userEvent.click(check());
     await screen.findByText("Count the gaps between the rungs.");
     await userEvent.click(panel().getByRole("button", { name: "Explain differently" }));
@@ -1918,7 +1970,7 @@ describe("the hint, Explain differently and the solution", () => {
     expect(explains[0]?.clockOffsetMinutes).toBeDefined();
     expect(screen.queryByRole("button", { name: "Explain differently" })).toBeNull();
     // A new wrong answer is a new rung: its own "Explain differently" once more.
-    await userEvent.click(screen.getByRole("radio", { name: "5" }));
+    await choose("5");
     await userEvent.click(check());
     expect(await screen.findByRole("button", { name: "Explain differently" })).toBeVisible();
   });
@@ -1967,14 +2019,15 @@ describe("the hint, Explain differently and the solution", () => {
 
   it("shows the solution to an adult from the start, once confirmed, and ends the attempt", async () => {
     const { shows, attempts } = await renderTask({ mode: Mode.SELF, adult: true });
-    await screen.findByRole("radio", { name: "4" });
+    await screen.findByRole("button", { name: "Choose an answer" });
     await userEvent.click(screen.getByRole("button", { name: "Show the solution" }));
-    const question = screen.getByRole("group", {
-      name: "Once the solution is shown, the task is over",
-    });
-    // The button that asked has gone: the focus is on the answer, and back after Cancel.
-    expect(document.activeElement).toBe(within(question).getByRole("button", { name: "Show it" }));
-    await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    const question = await screen.findByRole("dialog", { name: "Show the solution" });
+    expect(
+      within(question).getByText("Once the solution is shown, the task is over"),
+    ).toBeVisible();
+    // The focus is on Cancel, the answer that keeps the task, and back on the button after it.
+    expect(document.activeElement).toBe(within(question).getByRole("button", { name: "Cancel" }));
+    await userEvent.click(within(question).getByRole("button", { name: "Cancel" }));
     expect(shows).toEqual([]);
     await vi.waitFor(() =>
       expect(document.activeElement).toBe(
@@ -1983,7 +2036,7 @@ describe("the hint, Explain differently and the solution", () => {
     );
     await userEvent.click(screen.getByRole("button", { name: "Show the solution" }));
     await userEvent.click(screen.getByRole("button", { name: "Show it" }));
-    expect(await panel().findByText("Solution shown")).toBeVisible();
+    expect(await screen.findByText("Solution shown", { selector: ".nt-card-title" })).toBeVisible();
     expect(panel().getByText("Two and three make five.")).toBeVisible();
     expect(shows[0]?.action).toBe(Action.LEARNING);
     expect(attempts).toEqual([undefined]);
@@ -1992,7 +2045,7 @@ describe("the hint, Explain differently and the solution", () => {
 
   it("offers a child the solution from the fourth wrong answer, and says why it was not shown", async () => {
     const before = await renderTask({ mode: Mode.SELF, wrongAnswers: 3 });
-    await screen.findByRole("radio", { name: "4" });
+    await screen.findByRole("button", { name: "Choose an answer" });
     expect(screen.queryByRole("button", { name: "Show the solution" })).toBeNull();
     before.unmount();
     let refusal = refused(Code.PermissionDenied, Cause.ADULT_NEEDED);
@@ -2038,12 +2091,11 @@ describe("the hint and the solution, against late answers and lost replies", () 
             })
           : { words: "Rung 2 in other words." },
     });
-    await userEvent.click(await screen.findByRole("radio", { name: "4" }));
-    await userEvent.click(screen.getByRole("radio", { name: "No" }));
+    await choose("4", "No");
     await userEvent.click(check());
     await userEvent.click(await screen.findByRole("button", { name: "Explain differently" }));
     // The next wrong answer, while the first explanation is still under way.
-    await userEvent.click(screen.getByRole("radio", { name: "Yes" }));
+    await choose("Yes");
     await vi.waitFor(() => expect(check()).toHaveAttribute("aria-disabled", "false"));
     await userEvent.click(check());
     expect(await screen.findByText("Rung 2.")).toBeVisible();
@@ -2071,7 +2123,7 @@ describe("the hint and the solution, against late answers and lost replies", () 
     await show();
     expect(await screen.findByText("This version of the app doesn't know this yet")).toBeVisible();
     await show();
-    expect(await screen.findByText("Solution shown", { selector: ".nt-result" })).toBeVisible();
+    expect(await screen.findByText("Solution shown", { selector: ".nt-card-title" })).toBeVisible();
     expect(shows[1]?.idempotencyKey).toBe(shows[0]?.idempotencyKey);
     // What came before the solution does not stay on its result.
     expect(screen.queryByText("This version of the app doesn't know this yet")).toBeNull();
@@ -2079,10 +2131,10 @@ describe("the hint and the solution, against late answers and lost replies", () 
 
   it("takes the hint off once a wrong answer begins the ladder", async () => {
     await renderTask({ mode: Mode.SELF });
-    await userEvent.click(await screen.findByRole("radio", { name: "4" }));
-    await userEvent.click(screen.getByRole("button", { name: "Hint" }));
+    await choose("4");
+    await userEvent.click(rowButton("Hint"));
     await screen.findByRole("region", { name: "Hint" });
-    await userEvent.click(screen.getByRole("radio", { name: "No" }));
+    await choose("No");
     await userEvent.click(check());
     await screen.findByText("Count the gaps between the rungs.");
     expect(screen.queryByRole("region", { name: "Hint" })).toBeNull();
@@ -2140,13 +2192,13 @@ describe("the hint and the solution on their edges", () => {
     await screen.findByText("Other words.");
     expect(explains.length).toBe(1);
     // A hint that gives neither techniques nor words changes nothing.
-    await userEvent.click(screen.getByRole("button", { name: "Hint" }));
+    await userEvent.click(rowButton("Hint"));
     await vi.waitFor(() => expect(asked).toContain("hint"));
     expect(screen.queryByRole("region", { name: "Hint" })).toBeNull();
     // The solution shown with nothing to show is still the end of the attempt.
     await userEvent.click(screen.getByRole("button", { name: "Show the solution" }));
     await userEvent.click(screen.getByRole("button", { name: "Show it" }));
-    expect(await screen.findByText("Solution shown", { selector: ".nt-result" })).toBeVisible();
+    expect(await screen.findByText("Solution shown", { selector: ".nt-card-title" })).toBeVisible();
     expect(shows.length).toBe(1);
     expect(screen.queryByRole("region", { name: "Solution" })).toBeNull();
   });
@@ -2155,8 +2207,7 @@ describe("the hint and the solution on their edges", () => {
 describe("Report a problem with the tutor's words (R33)", () => {
   /** A wrong answer on my own: the words of its rung come. */
   async function notYet(): Promise<void> {
-    await userEvent.click(await screen.findByRole("radio", { name: "4" }));
-    await userEvent.click(screen.getByRole("radio", { name: "No" }));
+    await choose("4", "No");
     await userEvent.click(check());
     await screen.findByText("Count the gaps between the rungs.");
   }
@@ -2305,8 +2356,7 @@ describe("Report a problem with the tutor's words (R33)", () => {
       adult: true,
       correct: () => ({ words: "Well done: five fruits." }),
     });
-    await userEvent.click(await screen.findByRole("radio", { name: "5" }));
-    await userEvent.click(screen.getByRole("radio", { name: "Yes" }));
+    await choose("5", "Yes");
     await userEvent.click(check());
     await screen.findByText("Well done: five fruits.");
     expect(panel().getByText("The tutor is an AI, not a person")).toBeVisible();
@@ -2367,13 +2417,8 @@ describe("Report a problem with the tutor's words (R33)", () => {
     await userEvent.click(panel().getByRole("button", { name: "Report a problem" }));
     await userEvent.click(form().getByRole("radio", { name: "Unclear" }));
     await userEvent.type(form().getByRole("textbox"), "Still unclear.");
-    await userEvent.click(screen.getByRole("button", { name: "Hint" }));
-    await vi.waitFor(() =>
-      expect(screen.getByRole("button", { name: "Hint" })).not.toHaveAttribute(
-        "aria-disabled",
-        "true",
-      ),
-    );
+    await userEvent.click(rowButton("Hint"));
+    await vi.waitFor(() => expect(rowButton("Hint")).not.toHaveAttribute("aria-disabled", "true"));
     expect(form().getByRole("textbox")).toHaveValue("Still unclear.");
     await send();
     await screen.findByText(thanks);
@@ -2454,10 +2499,9 @@ describe("the task screen's voicing", () => {
   it("says the verdict and then the tutor's words by itself while the voicing is on", async () => {
     const speech = fakeSpeech([SAMANTHA]);
     await renderTask({ mode: Mode.SELF, tutor: true, voicing: { speech, on: true } });
-    await userEvent.click(await screen.findByRole("radio", { name: "4" }));
-    await userEvent.click(screen.getByRole("radio", { name: "No" }));
+    await choose("4", "No");
     await userEvent.click(check());
-    await screen.findByText("Not right yet: 2 items of 2");
+    await screen.findByText("Not right yet: 2 items of 2", { selector: "[role=status]" });
     await vi.waitFor(() =>
       expect(speech.texts()).toEqual([
         "Not right yet: 2 items of 2",
@@ -2473,8 +2517,8 @@ describe("the task screen's voicing", () => {
   it("says a hint by itself, in the module's language, while the voicing is on", async () => {
     const speech = fakeSpeech([SAMANTHA]);
     await renderTask({ mode: Mode.SELF, voicing: { speech, on: true } });
-    await screen.findByRole("radio", { name: "4" });
-    await userEvent.click(screen.getByRole("button", { name: "Hint" }));
+    await screen.findByRole("button", { name: "Choose an answer" });
+    await userEvent.click(rowButton("Hint"));
     await screen.findByRole("region", { name: "Hint" });
     await vi.waitFor(() =>
       expect(speech.texts()).toEqual([
@@ -2507,10 +2551,9 @@ describe("the task screen's voicing", () => {
     expect(speech.speech.speaking()).toBeUndefined();
     expect(speech.asked.at(-1)).toEqual({ cancel: true });
     const before = speech.asked.length;
-    await userEvent.click(screen.getByRole("radio", { name: "4" }));
-    await userEvent.click(screen.getByRole("radio", { name: "No" }));
+    await choose("4", "No");
     await userEvent.click(check());
-    await screen.findByText("Not right yet: 2 items of 2");
+    await screen.findByText("Not right yet: 2 items of 2", { selector: "[role=status]" });
     await screen.findByText("Count the gaps between the rungs.");
     expect(speech.asked).toHaveLength(before);
   });
@@ -2575,8 +2618,7 @@ describe("the task screen's voicing, once the screen is gone", () => {
           answer = (words) => resolve({ rung: request.wrongAnswers ?? 1, words });
         }),
     });
-    await userEvent.click(await screen.findByRole("radio", { name: "4" }));
-    await userEvent.click(screen.getByRole("radio", { name: "No" }));
+    await choose("4", "No");
     await userEvent.click(check());
     await vi.waitFor(() => expect(speech.texts()).toEqual(["Not right yet: 2 items of 2"]));
     unmount();
@@ -2590,8 +2632,7 @@ describe("the task screen's voicing, once the screen is gone", () => {
 describe("the task screen on the owner's own key", () => {
   it("sends no key and no provider on platform AI", async () => {
     const { submitted, rungs } = await renderTask({ mode: Mode.SELF, tutor: true });
-    await userEvent.click(await screen.findByRole("radio", { name: "4" }));
-    await userEvent.click(screen.getByRole("radio", { name: "No" }));
+    await choose("4", "No");
     await userEvent.click(check());
     await screen.findByText("Count the gaps between the rungs.");
     expect(submitted[0]?.ownKeyProvider).toBe("");
@@ -2607,8 +2648,7 @@ describe("the task screen on the owner's own key", () => {
       adult: true,
       ownKey: true,
     });
-    await userEvent.click(await screen.findByRole("radio", { name: "4" }));
-    await userEvent.click(screen.getByRole("radio", { name: "No" }));
+    await choose("4", "No");
     await userEvent.click(check());
     await screen.findByText("Count the gaps between the rungs.");
     // Taps alone: no work AI reads, so the provider, and neither the key nor the clock's offset.
@@ -2624,7 +2664,7 @@ describe("the task screen on the owner's own key", () => {
     expect(explains[0]?.clockOffsetMinutes).toBeUndefined();
     await userEvent.click(screen.getByRole("button", { name: "Show the solution" }));
     await userEvent.click(screen.getByRole("button", { name: "Show it" }));
-    expect(await panel().findByText("Solution shown")).toBeVisible();
+    expect(await screen.findByText("Solution shown", { selector: ".nt-card-title" })).toBeVisible();
     expect(shows[0]?.ownKeyProvider).toBe("anthropic");
     await userEvent.click(await panel().findByRole("button", { name: "Try it again" }));
     await vi.waitFor(() => expect(begun[0]?.ownKeyProvider).toBe("anthropic"));
@@ -2661,8 +2701,7 @@ describe("the task screen on the owner's own key", () => {
         outcome: { cause: Cause.LIMIT_REACHED },
       }),
     });
-    await userEvent.click(await screen.findByRole("radio", { name: "4" }));
-    await userEvent.click(screen.getByRole("radio", { name: "No" }));
+    await choose("4", "No");
     await userEvent.click(check());
     expect(await panel().findByText("The limit of your AI key is used up")).toBeVisible();
     expect(holder?.snapshot()).toMatchObject({ refusal: { cause: Cause.LIMIT_REACHED } });
@@ -2708,8 +2747,7 @@ describe("the task screen on the owner's own key", () => {
         outcome: { cause: Cause.LIMIT_REACHED, ownKeyLimit: { cause: LimitCause.LIMIT } },
       }),
     });
-    await userEvent.click(await screen.findByRole("radio", { name: "4" }));
-    await userEvent.click(screen.getByRole("radio", { name: "No" }));
+    await choose("4", "No");
     await userEvent.click(check());
     expect(
       await panel().findByText("The spending limit set for your AI key is reached"),

@@ -97,3 +97,18 @@ export function LearnerMenu() {
     </PopOver>
   );
 }
+
+/**
+ * The profile's pill on a screen of a lesson or a task that has no top bar of its own — a lesson's
+ * end, a lesson or a task not read, a task already over —, as on every screen of the profile
+ * (section 3.6; R64, R65); none with no learner.
+ */
+export function ProfilePill({ className }: { readonly className: string }) {
+  const chosen = useLearner();
+  if (chosen === undefined) return null;
+  return (
+    <header className={className}>
+      <LearnerMenu />
+    </header>
+  );
+}

@@ -103,19 +103,19 @@ describe("the learner's bar", () => {
     );
   }
 
-  it("is the pill and Help on My subjects, none on the skill map and the lesson, the buttons on the others", () => {
+  it("is the pill and Help on My subjects, none on the skill map, the lesson and the task, the buttons on the others", () => {
     renderBar("home");
     expect(screen.getByRole("button", { name: "Sam, profile menu" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Help" })).toBeVisible();
     expect(screen.queryByRole("button", { name: "Switch learner" })).toBeNull();
     cleanup();
-    // The skill map and the lesson have the pill in their own top bar (R63, R64).
-    for (const own of ["skill-map", "lesson"]) {
+    // The skill map, the lesson and the task have the pill in their own top bar (R63, R64, R65).
+    for (const own of ["skill-map", "lesson", "task"]) {
       renderBar(own);
       expect(screen.queryByRole("banner")).toBeNull();
       cleanup();
     }
-    for (const shown of ["task", "essays"]) {
+    for (const shown of ["essays"]) {
       renderBar(shown);
       expect(screen.getByRole("button", { name: "Switch learner" })).toBeVisible();
       expect(screen.queryByRole("button", { name: "Help" })).toBeNull();

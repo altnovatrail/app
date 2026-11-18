@@ -365,11 +365,15 @@ async function answerInHandwriting(page: Page) {
   await page.getByText("Correct", { exact: true }).first().waitFor({ timeout: 60_000 });
 }
 
-/** A task by its radios: each option in turn until Correct. */
+/** A task by its radios, in the pop-over of "Choose an answer": each option in turn until Correct. */
 async function answerByTap(page: Page) {
-  const options = page.getByRole("radio");
+  const chooser = page.getByRole("button", { name: /^(Choose an answer|Your answer)/ });
+  const options = page.getByRole("dialog", { name: "Choose an answer" }).getByRole("radio");
+  await chooser.click();
   const count = await options.count();
+  await page.keyboard.press("Escape");
   for (let n = 0; n < count; n++) {
+    await chooser.click();
     await options.nth(n).check();
     await check(page);
     const outcome = page
@@ -382,13 +386,15 @@ async function answerByTap(page: Page) {
   throw new Error("no option of the task came back Correct");
 }
 
-/** A task's sheet, or the radios of a task by tap, which has no sheet. */
+/** A task's sheet, or "Choose an answer" of a task by tap, which has no sheet. */
 function taskAnswer(page: Page): Locator {
-  return page.locator("novatrail-canvas").or(page.getByRole("radio"));
+  return page
+    .locator("novatrail-canvas")
+    .or(page.getByRole("button", { name: /^(Choose an answer|Your answer)/ }));
 }
 
 /**
- * Once a task's attempt has begun, by what shows it — the sheet or the radios unless named: the
+ * Once a task's attempt has begun, by what shows it — the sheet or "Choose an answer" unless named: the
  * steps' panel beside a sheet has buttons of its own. A beginning refused for the quota of the day
  * stops the walk, as its first step does.
  */

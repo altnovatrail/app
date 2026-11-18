@@ -7,8 +7,8 @@
 // The bar and the screens are in the language of the learner's profile, else the device's; the
 // buttons of the device's language are on the sign-in screen and in the section for adults
 // (section 3.8). On "My subjects" the bar is the mockup's: the profile's pill and its menu at the
-// left, the adult's Help at the right (R63); the skill map and the lesson have the pill in their own
-// top bar (R64), and the task and "My essays" keep the bar of buttons until their tasks draw theirs.
+// left, the adult's Help at the right (R63); the skill map, the lesson and the task have the pill in
+// their own top bar (R64, R65), and "My essays" keeps the bar of buttons.
 // The voicing of the screens is the learner's profile's and this device's, and speech
 // stops when the screen changes (T45; R07). With no learner — a screen's own test — the home is a
 // bare screen.
@@ -28,7 +28,7 @@ import { VoicingProvider } from "../voice/VoicingContext.tsx";
 import { AdultHelp } from "./Help.tsx";
 import { LearnerMenu } from "./LearnerMenu.tsx";
 import type { Route } from "./router.ts";
-import { ADULTS, ESSAYS, HOME, LESSON, navigate, SKILL_MAP, useRoute } from "./router.ts";
+import { ADULTS, ESSAYS, HOME, LESSON, navigate, SKILL_MAP, TASK, useRoute } from "./router.ts";
 import { Screen } from "./Screen.tsx";
 
 /** The top of "My subjects": the profile's pill at the left, the adult's Help at the right. */
@@ -44,14 +44,21 @@ export function HomeBar() {
 /**
  * Who is learning, and the buttons to switch the learner, to open the section for adults or to sign
  * out, by the route's screen: the home's bar on My subjects, none on the skill map and in a lesson,
- * whose screens hold the pill themselves (R63, R64), and the bar of buttons on any other; none with
- * no learner.
+ * whose screens hold the pill themselves (R63, R64), none on the task screen either (R65), and the
+ * bar of buttons on any other; none with no learner.
  */
 export function LearnerBar() {
   const chosen = useLearner();
   const { screen } = useRoute();
   const { words } = useLanguage();
-  if (chosen === undefined || screen === SKILL_MAP.screen || screen === LESSON.screen) return null;
+  if (
+    chosen === undefined ||
+    screen === SKILL_MAP.screen ||
+    screen === LESSON.screen ||
+    screen === TASK.screen
+  ) {
+    return null;
+  }
   if (screen === HOME.screen) return <HomeBar />;
   return (
     <header className="nt-bar">
