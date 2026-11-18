@@ -26,6 +26,7 @@ export type ScreenLayout =
   | "profiles"
   | "map"
   | "lesson"
+  | "task"
   | "end";
 
 const LAYOUT_CLASS: Readonly<Record<ScreenLayout, string | undefined>> = {
@@ -36,6 +37,7 @@ const LAYOUT_CLASS: Readonly<Record<ScreenLayout, string | undefined>> = {
   profiles: "nt-profiles",
   map: "nt-map",
   lesson: "nt-lesson",
+  task: "nt-task-screen",
   end: "nt-end",
 };
 
@@ -43,7 +45,7 @@ const LAYOUT_CLASS: Readonly<Record<ScreenLayout, string | undefined>> = {
 export interface TopBar {
   /** The way back, before the heading in the bar's pill: `IconButton` "back". */
   readonly back: ReactNode;
-  /** What stands at the bar's other end: the profile's pill. */
+  /** What stands at the bar's other end: the profile's pill, and a task's pill of its mode (R65). */
   readonly end?: ReactNode;
   /** What stands under the heading in the pill: a lesson's segments, behind its line (R64). */
   readonly under?: ReactNode;
@@ -59,7 +61,8 @@ export interface ScreenProps {
    * art beside the column, and `profiles` the frame of the owner's profile and "Who is learning?",
    * a column in the middle (R61), and `map` the whole window, a frame below the top bar (R63);
    * `lesson` the whole window, a lesson's segment between its top bar and its row, and `end` a card
-   * in the window's middle, the end of a lesson (R64). Below 600 each is one column.
+   * in the window's middle, the end of a lesson (R64); `task` the whole window, the canvas between
+   * the top bar and the row of glass (R65). Below 600 each is one column.
    */
   readonly layout?: ScreenLayout;
   /** What stands in the frame before the heading's column: the sign-in's art, the app's name. */

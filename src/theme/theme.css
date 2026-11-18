@@ -469,6 +469,10 @@ button.nt-secondary {
   margin: 0;
   min-inline-size: 0;
 }
+/* On the task screen, in the line above the canvas. */
+.nt-task-lines > .nt-read-aloud {
+  margin: 0;
+}
 /* The bar above a learner's screens: who is learning, and the buttons to switch or sign out. */
 .nt-bar {
   display: flex;
@@ -562,39 +566,6 @@ main.nt-reference {
 @container (width >= 1008px) {
   .nt-reference .nt-cards {
     grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-}
-/*
- * The task screen (R20 in docs/decisions.md): on a narrow screen one column — the panel, the canvas
- * and the items, then Check; from 64rem the canvas and the items on the left, the tutor's panel on
- * the right, Check across below them. Check does not stick to the bottom: a bar there would cover
- * the targets below it (2.4.11, 2.5.8).
- */
-.nt-task {
-  display: grid;
-  grid-template-areas: "panel" "work" "check";
-  gap: 1rem;
-}
-.nt-task-work {
-  grid-area: work;
-  min-inline-size: 0;
-}
-.nt-task-panel {
-  grid-area: panel;
-  min-inline-size: 0;
-}
-.nt-task-check {
-  grid-area: check;
-}
-.nt-task-check .nt-buttons,
-.nt-task-check p {
-  margin: 0;
-}
-@media (min-width: 64rem) {
-  .nt-task {
-    grid-template-columns: minmax(0, 1fr) 22rem;
-    grid-template-areas: "work panel" "check check";
-    align-items: start;
   }
 }
 novatrail-canvas {
@@ -1959,6 +1930,13 @@ button[aria-disabled="true"] {
   color: var(--nt-disabled);
   cursor: default;
 }
+/* Check, which a learner reads before the work opens it, in the muted text's grey, as the mockup
+   has it; in forced colours GrayText, as below. */
+@media not (forced-colors: active) {
+  .nt-task-row button.nt-check-button[aria-disabled="true"] {
+    color: var(--nt-text-muted);
+  }
+}
 @media (forced-colors: active) {
   button:disabled,
   button[aria-disabled="true"] {
@@ -2691,4 +2669,464 @@ main.nt-end .nt-result > svg {
   overflow: hidden;
   clip-path: inset(50%);
   white-space: nowrap;
+}
+/*
+ * The task screen (R20 and R65 in docs/decisions.md; the mockup's `task-pill`): the whole window,
+ * the top bar 14 from the top and 16 from the sides — at its end the profile's pill and the pill of
+ * the mode —, the lines of the voicing and of "Read aloud" under it, the canvas from edge to edge
+ * below them, which its statement and sheet scroll in, and the foot, 16 from the bottom: the
+ * screen's lines, the verdict's card and the row of glass, in the middle. Nothing floats over the
+ * sheet: the canvas ends where the foot begins, so that neither covers a target of the other
+ * (2.4.11, 2.5.8). On a narrow screen the tutor's panel stands above the canvas and the two scroll
+ * in the window's height; from 64rem the panel stands at the right, 22rem, and scrolls inside. In a
+ * lesson the same, under the lesson's bar.
+ */
+main.nt-task-screen {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  block-size: 100dvh;
+  min-block-size: 30rem;
+  max-inline-size: none;
+  padding: 0.875rem 1rem 1rem;
+  background: var(--nt-card);
+}
+main.nt-task-screen > .nt-top {
+  margin-block-end: 0.375rem;
+}
+.nt-top-end,
+.nt-top-slot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+.nt-top-slot:empty {
+  display: none;
+}
+.nt-lesson-task {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-block-size: 0;
+}
+/* The task's canvas reaches the screen's edges, past the main's padding, as on the task screen: the
+   segment's body takes that padding, and gives it back to what stands above and below the canvas. */
+.nt-segment-body[data-kind="task"]:has(> .nt-lesson-task > .nt-task) {
+  overflow: visible;
+  margin-inline: -1rem;
+}
+.nt-segment-body > .nt-lesson-task:has(> .nt-task) {
+  padding-inline: 1rem;
+}
+main.nt-lesson:has(> .nt-segment-body > .nt-lesson-task > .nt-task) {
+  background: var(--nt-card);
+}
+.nt-task-lines {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0 0.5rem;
+}
+.nt-task-lines > p.nt-hint {
+  flex: 1 1 auto;
+  margin: 0;
+}
+.nt-task {
+  display: grid;
+  flex: 1 1 0;
+  grid-template-areas: "panel" "work";
+  grid-template-rows: auto minmax(20rem, 1fr);
+  gap: 1rem;
+  min-block-size: 0;
+  margin-inline: -1rem;
+  overflow: auto;
+}
+.nt-task-work {
+  display: grid;
+  grid-area: work;
+  grid-template-rows: minmax(0, 1fr) auto;
+  min-inline-size: 0;
+  min-block-size: 0;
+}
+.nt-task-work > novatrail-canvas {
+  display: flex;
+  flex-direction: column;
+  block-size: 100%;
+  min-block-size: 0;
+}
+.nt-task-work > .nt-items,
+.nt-task-work > .nt-lines,
+.nt-task-work > .nt-essay-text {
+  margin: 0.5rem 1rem 0;
+}
+.nt-task-panel {
+  grid-area: panel;
+  min-inline-size: 0;
+  padding-inline: 1rem;
+}
+@media (min-width: 64rem) {
+  .nt-task {
+    grid-template-columns: minmax(0, 1fr) 22rem;
+    grid-template-areas: "work panel";
+    grid-template-rows: minmax(0, 1fr);
+    overflow: hidden;
+  }
+  .nt-task-panel {
+    overflow-y: auto;
+    padding-inline: 0 1rem;
+  }
+}
+.nt-task-foot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.875rem;
+  padding-block-start: 0.5rem;
+}
+.nt-task-foot > p.nt-hint,
+.nt-task-foot > .nt-error {
+  margin: 0;
+  text-align: center;
+}
+/*
+ * The row of glass (the mockup's `.ph-row`): 56 high, radius 28, its buttons 44 high and round,
+ * the text's colour at 14 medium on no fill; "Show the solution" the accent as text; Check the
+ * accent's fill, white and semibold, after a line of 24; "Choose an answer" on a grey fill, 250 at
+ * most, its words cut short with an ellipsis. On a phone the row takes the whole width, its buttons
+ * in the middle and wrapping, "Choose an answer" a row of its own, and no line.
+ */
+.nt-task-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  box-sizing: border-box;
+  max-inline-size: 100%;
+  min-block-size: 3.5rem;
+  padding: 0.375rem;
+  border-radius: 1.75rem;
+}
+.nt-task-row .nt-row-button,
+.nt-task-row .nt-check-button {
+  min-block-size: var(--nt-target);
+  border-radius: var(--nt-radius-round);
+  font-size: var(--nt-size-body);
+}
+.nt-task-row button.nt-row-button {
+  padding: 0 0.75rem;
+  border-color: transparent;
+  background: transparent;
+  color: var(--nt-text);
+  font-weight: var(--nt-weight-medium);
+}
+.nt-task-row button.nt-icon-button.nt-row-button {
+  gap: 0.375rem;
+  padding: 0 0.875rem 0 0.75rem;
+}
+.nt-task-row button.nt-row-button > svg {
+  font-size: 1.0625rem;
+}
+.nt-task-row button.nt-row-button.nt-row-accent {
+  color: var(--nt-accent-text);
+}
+.nt-task-row button.nt-choose {
+  max-inline-size: 15.625rem;
+  padding: 0 0.75rem 0 0.875rem;
+  background: var(--nt-grey-10);
+}
+.nt-choose-words {
+  min-inline-size: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.nt-task-row button.nt-icon-button > svg:last-child:not(:first-child),
+.nt-mode button.nt-mode-open > svg {
+  color: var(--nt-text-muted);
+  font-size: 0.75rem;
+}
+.nt-choose-sign {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9375rem;
+}
+.nt-choose-sign[data-correct="true"] {
+  color: var(--nt-correct);
+}
+.nt-choose-sign[data-correct="false"] {
+  inline-size: 0.4375rem;
+  block-size: 0.4375rem;
+  border-radius: 50%;
+  background: var(--nt-not-yet);
+}
+.nt-task-row button.nt-check-button {
+  padding: 0 1.375rem;
+}
+.nt-row-line {
+  flex: none;
+  inline-size: 1px;
+  block-size: 1.5rem;
+  margin: 0 0.25rem;
+  background: rgba(0, 0, 0, 0.1);
+}
+@media (width < 600px) {
+  main.nt-task-screen {
+    padding-inline: 0.75rem;
+  }
+  main.nt-task-screen > .nt-top {
+    margin: 0 0.25rem 0.375rem;
+  }
+  .nt-task {
+    margin-inline: -0.75rem;
+  }
+  .nt-segment-body[data-kind="task"]:has(> .nt-lesson-task > .nt-task) {
+    margin-inline: -0.75rem;
+  }
+  .nt-segment-body > .nt-lesson-task:has(> .nt-task) {
+    padding-inline: 0.75rem;
+  }
+  .nt-task-foot {
+    align-items: stretch;
+  }
+  .nt-task-row {
+    row-gap: 0.25rem;
+  }
+  .nt-task-row button.nt-choose {
+    flex: 1 1 100%;
+    justify-content: center;
+    max-inline-size: none;
+  }
+  .nt-row-line {
+    display: none;
+  }
+}
+/*
+ * The pill of the mode (the mockup's `task-mode`): glass of 48, radius 24, the mode at 13
+ * semibold and a chevron; its pop-over 300 wide, hung 6 below it, each mode a card of radius 14 —
+ * the one shown on the accent's tint with a ring of 2 in the accent, the other white with an edge
+ * of 1 —, its name at 14 semibold and what it does at 12, and the line at its foot at 11.5.
+ */
+.nt-mode {
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  min-block-size: 3rem;
+  padding: 0.125rem;
+  border-radius: var(--nt-radius-top-bar);
+}
+.nt-mode button.nt-mode-open {
+  gap: 0.375rem;
+  padding: 0 0.75rem 0 0.875rem;
+  border-color: transparent;
+  background: transparent;
+  color: var(--nt-text);
+  font-size: var(--nt-size-caption);
+}
+@media (width >= 600px) {
+  dialog.nt-pop-mode {
+    inline-size: 18.75rem;
+    min-inline-size: 0;
+  }
+}
+.nt-pop-mode .nt-pop-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+button.nt-mode-choice {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.125rem;
+  padding: 0.625rem 0.75rem;
+  border: 0;
+  border-radius: 0.875rem;
+  background: var(--nt-card);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.1);
+  color: var(--nt-text);
+  font-weight: 400;
+  line-height: 1.2;
+  text-align: start;
+  text-decoration: none;
+}
+button.nt-mode-choice[aria-pressed="true"] {
+  background: rgba(0, 113, 227, 0.06);
+  box-shadow: inset 0 0 0 2px var(--nt-accent);
+  text-decoration: none;
+}
+.nt-mode-name {
+  font-size: var(--nt-size-body);
+  font-weight: var(--nt-weight-bold);
+  line-height: normal;
+}
+.nt-mode-line {
+  color: var(--nt-text-muted);
+  font-size: 0.75rem;
+  font-weight: 400;
+  line-height: 1.3;
+}
+p.nt-mode-note {
+  margin: 0;
+  padding: 0.125rem 0.25rem 0;
+  color: var(--nt-text-muted);
+  font-size: 0.71875rem;
+  line-height: 1.35;
+}
+/*
+ * The verdict's card (the mockup's `.ph-verdict`): 460 wide above the row, glass of 0.92, radius
+ * 22; its sign in a circle of 36 — white on "Correct" or "Not yet", the accent on its tint for a
+ * line that asks for the work, grey for the solution shown, a ring that turns while the work is
+ * read —, its title at 15 semibold and its line at 13; its buttons the accent as text, or on the
+ * accent's tint. On a phone the whole width.
+ */
+.nt-card-verdict {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  box-sizing: border-box;
+  inline-size: min(28.75rem, 100%);
+  padding: 0.75rem 0.75rem 0.75rem 0.875rem;
+  border-radius: 1.375rem;
+  background: rgba(255, 255, 255, 0.92);
+}
+.nt-card-sign {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  inline-size: 2.25rem;
+  block-size: 2.25rem;
+  border-radius: 50%;
+  font-size: 1.125rem;
+}
+.nt-card-verdict[data-kind="correct"] > .nt-card-sign {
+  background: var(--nt-correct);
+  color: var(--nt-on-fill);
+}
+.nt-card-verdict[data-kind="not-yet"] > .nt-card-sign {
+  background: var(--nt-not-yet);
+  color: var(--nt-on-fill);
+}
+.nt-card-verdict[data-kind="write"] > .nt-card-sign {
+  background: rgba(0, 113, 227, 0.12);
+  color: var(--nt-accent);
+}
+.nt-card-verdict[data-kind="shown"] > .nt-card-sign {
+  background: rgba(118, 118, 128, 0.14);
+  color: var(--nt-segmented);
+}
+.nt-card-sign > .nt-spin {
+  inline-size: 1.375rem;
+  block-size: 1.375rem;
+}
+.nt-card-words {
+  display: flex;
+  flex: 1 1 10rem;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-inline-size: 0;
+}
+.nt-card-title {
+  font-size: 0.9375rem;
+  line-height: 1.15;
+  font-weight: var(--nt-weight-bold);
+}
+.nt-card-line {
+  color: var(--nt-text-muted);
+  font-size: var(--nt-size-caption);
+  line-height: 1.35;
+}
+button.nt-card-link,
+button.nt-card-button {
+  padding: 0 0.875rem;
+  border-color: transparent;
+  background: transparent;
+  color: var(--nt-accent-text);
+}
+button.nt-card-button {
+  padding: 0 1rem;
+  background: var(--nt-accent-tint);
+}
+/* On a phone from the row's edge to 72 before the other, where the tutor's button stands (T87). */
+@media (width < 600px) {
+  .nt-task-foot > .nt-card-verdict {
+    inline-size: auto;
+    margin-inline: 0.25rem 4.5rem;
+  }
+}
+/*
+ * The pop-overs of the row (the mockup's `choice` and `solution-ask`), hung 14 above it in its
+ * middle: the options 400 wide, each a row of 48 at least, radius 12, its word at 15 beside the
+ * browser's own radio button of 44; the question 340 wide, its line at 15 semibold, Cancel and
+ * "Show it" at its end.
+ */
+@media (width >= 600px) {
+  dialog.nt-pop-choose {
+    inline-size: 25rem;
+    min-inline-size: 0;
+  }
+  dialog.nt-pop-confirm {
+    inline-size: 21.25rem;
+    min-inline-size: 0;
+  }
+}
+.nt-pop-choose .nt-item,
+.nt-pop-choose .nt-choices {
+  margin: 0;
+}
+.nt-pop-choose .nt-item + .nt-item {
+  margin-block-start: 0.5rem;
+}
+.nt-pop-choose .nt-choices > legend,
+.nt-pop-choose .nt-item > legend {
+  margin: 0;
+  padding: 0.125rem 0.375rem 0.375rem;
+  font-size: var(--nt-size-caption);
+  line-height: 1.2;
+}
+.nt-pop-choose .nt-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.nt-pop-choose .nt-option {
+  margin: 0;
+  padding: 0 0.625rem 0 0;
+  border-radius: var(--nt-radius-field);
+}
+.nt-pop-choose .nt-option > label {
+  flex: 1 1 auto;
+  min-block-size: 3rem;
+  gap: 0.25rem;
+  font-size: 0.9375rem;
+  line-height: 1.35;
+}
+.nt-pop-choose .nt-option:has(input:checked) {
+  background: rgba(0, 113, 227, 0.06);
+}
+@media (width >= 600px) {
+  .nt-pop-confirm .nt-pop-body {
+    padding: 1rem;
+  }
+}
+p.nt-confirm-title {
+  margin: 0 0 0.75rem;
+  font-size: 0.9375rem;
+  font-weight: var(--nt-weight-bold);
+  line-height: 1.3;
+}
+.nt-confirm-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+button.nt-confirm-yes {
+  padding: 0 1.125rem;
 }

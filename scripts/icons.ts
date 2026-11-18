@@ -98,6 +98,14 @@ export const TABLE: Readonly<Record<string, Value>> = {
   // complete". The chevron of the lesson's line under its title is the menu's, and the tick of a
   // segment passed the sign-in's.
   "lesson-complete": { base: "star", filled: true, mirrored: false },
+  // The task screen (section 3.3 of docs/architecture.md; R65): Hint in the row, a bulb; and the
+  // signs of the verdict's card — "Not yet", an exclamation mark; a line that asks for the work, a
+  // pencil; the solution shown, a page. "Correct" is the tick of the way in, and the chevron of the
+  // mode's pill and of "Choose an answer" the menu's.
+  hint: { base: "lightbulb", filled: false, mirrored: false },
+  "not-yet": { base: "priority-high", filled: false, mirrored: false },
+  write: { base: "edit", filled: false, mirrored: false },
+  shown: { base: "description", filled: false, mirrored: false },
 };
 
 /** An icon as the app draws it: its view box, and the paths it fills in the text's colour. */

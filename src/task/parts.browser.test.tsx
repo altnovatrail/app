@@ -8,7 +8,7 @@ import { describe, expect, it, vi } from "vitest";
 import { inLanguage } from "../test/language.tsx";
 import { NO_VERDICTS, verdictsOf } from "./attempt.ts";
 import { Hint } from "./Hint.tsx";
-import { Items } from "./Items.tsx";
+import { ChoiceGroups, Items } from "./Items.tsx";
 import { Solution } from "./Solution.tsx";
 import { StepsPanel } from "./StepsPanel.tsx";
 import { initialState } from "./steps.ts";
@@ -154,23 +154,48 @@ describe("the items", () => {
       ],
     };
     const verdicts = verdictsOf([], task);
+    const chosen = vi.fn();
     render(
       inLanguage(
-        <Items
-          task={task}
-          choices={{}}
-          verdicts={verdicts}
-          language={undefined}
-          locked={false}
-          onChoose={() => {}}
-        />,
+        <>
+          <Items task={task} verdicts={verdicts} language={undefined} />
+          <ChoiceGroups
+            task={task}
+            choices={{}}
+            verdicts={verdicts}
+            language={undefined}
+            locked={false}
+            onChoose={chosen}
+          />
+        </>,
       ),
     );
     expect(screen.getByText("Draw it.")).toBeVisible();
     expect(screen.queryByText("Item 2")).toBeNull();
+    // Only the item of the options has a group, in the pop-over of "Choose an answer".
+    expect(screen.getAllByRole("group")).toHaveLength(3);
     const third = screen.getByRole("group", { name: "Item 3" });
     expect(within(third).getByRole("group", { name: "Answer 2" })).toBeVisible();
     expect(within(third).getByRole("radio", { name: "c" })).toBeVisible();
+    within(third).getByRole("radio", { name: "c" }).click();
+    expect(chosen).toHaveBeenCalledWith("3.2", "c");
+  });
+
+  it("names the one item of a task by its card, not under the canvas", () => {
+    const task: open.Task = { ...TASK, items: [{ answer_slots: [{ binding: "anywhere" }] }] };
+    const verdicts = verdictsOf(
+      [
+        {
+          verdict: "not_yet",
+          answerSlots: [{ answerSlot: { item: 1, slot: 1 }, verdict: "not_yet", value: "32" }],
+        },
+      ] as unknown as Parameters<typeof verdictsOf>[0],
+      task,
+    );
+    const { container } = render(
+      inLanguage(<Items task={task} verdicts={verdicts} language="en" />),
+    );
+    expect(container.textContent).toBe("");
   });
 
   it("shows nothing for a workbook, whose lines the canvas shows", () => {
@@ -178,11 +203,8 @@ describe("the items", () => {
       inLanguage(
         <Items
           task={{ ...TASK, canvas: { kind: "workbook" }, items: [{ line: [{ binding: "box" }] }] }}
-          choices={{}}
           verdicts={NO_VERDICTS}
           language="en"
-          locked={false}
-          onChoose={() => {}}
         />,
       ),
     );
@@ -205,16 +227,7 @@ describe("the items", () => {
       task,
     );
     const { container } = render(
-      inLanguage(
-        <Items
-          task={task}
-          choices={{}}
-          verdicts={verdicts}
-          language="en"
-          locked={false}
-          onChoose={() => {}}
-        />,
-      ),
+      inLanguage(<Items task={task} verdicts={verdicts} language="en" />),
     );
     const boxes = container.querySelectorAll(".nt-boxes");
     expect(boxes).toHaveLength(1);

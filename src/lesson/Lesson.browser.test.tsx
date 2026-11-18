@@ -192,6 +192,8 @@ interface Setup {
   readonly noDatabase?: boolean;
   /** The owner's own key is held for p1 (R47). */
   readonly ownKey?: boolean;
+  /** The package has solving steps, which the pill of the mode stands for. */
+  readonly steps?: boolean;
 }
 
 const RUN: RunRef = { lessonRunId: "r1", lesson: GAPS_ID, packageDigest: D1 };
@@ -363,7 +365,17 @@ async function renderLesson(setup: Setup = {}) {
         setup.noManifest === true
           ? {}
           : { manifest: { json: encode(MANIFEST), moduleFormatVersion: "0.4" } },
-      getSolvingSteps: () => ({}),
+      getSolvingSteps: () =>
+        setup.steps === true
+          ? {
+              solvingSteps: {
+                json: encode({
+                  steps: [{ title: "Solve it", exit_condition: "answer_slots_filled" }],
+                }),
+                moduleFormatVersion: "0.4",
+              },
+            }
+          : {},
       getTechniques: () => ({}),
     });
   };
@@ -468,6 +480,7 @@ async function canvasButton(label: string): Promise<HTMLButtonElement> {
 
 /** The task of the segment answered right. */
 async function solve() {
+  await userEvent.click(await screen.findByRole("button", { name: "Choose an answer" }));
   const gaps = await screen.findByRole("group", { name: "How many gaps?" });
   await userEvent.click(within(gaps).getByRole("radio", { name: "4" }));
   await userEvent.click(screen.getByRole("button", { name: "Check" }));
@@ -533,7 +546,7 @@ describe("the lesson player", () => {
 
     // The task: an attempt of the run's segment; Continue only once api said it ended.
     await userEvent.click(await continueButton());
-    await screen.findByRole("group", { name: "How many gaps?" });
+    await screen.findByRole("button", { name: "Choose an answer" });
     expect(begun).toHaveLength(1);
     expect(begun[0]?.start).toEqual({
       case: "segment",
@@ -575,13 +588,13 @@ describe("the lesson player", () => {
       kept: { place: 3, demo: { 2: { opened: 3, hidden: true } } },
       openAttempt: { attemptId: "a7", segment: 3 },
     });
-    await screen.findByRole("group", { name: "How many gaps?" });
+    await screen.findByRole("button", { name: "Choose an answer" });
     expect(asked).toEqual(["run r1", "open a7"]);
     // Off to the example and back: the attempt goes on.
     await userEvent.click(await chip(2));
     await waitFor(() => expect(canvas().demoState).toEqual({ opened: 3, hidden: true }));
     await userEvent.click(await continueButton());
-    await screen.findByRole("group", { name: "How many gaps?" });
+    await screen.findByRole("button", { name: "Choose an answer" });
     expect(asked).toEqual(["run r1", "open a7", "open a7"]);
   });
 
@@ -661,7 +674,7 @@ describe("the lesson player", () => {
 
   it("goes on with the solution shown, as with a correct answer", async () => {
     const { kept } = await renderLesson({ kept: { place: 3 }, adult: true });
-    await screen.findByRole("group", { name: "How many gaps?" });
+    await screen.findByRole("button", { name: "Choose an answer" });
     await userEvent.click(screen.getByRole("button", { name: "Show the solution" }));
     await userEvent.click(screen.getByRole("button", { name: "Show it" }));
     await screen.findAllByText("Solution shown");
@@ -714,7 +727,7 @@ describe("the lesson player", () => {
     await userEvent.click(await continueButton());
     expect(await screen.findByText("The tutor isn't available for this profile")).toBeVisible();
     await userEvent.click(screen.getByRole("button", { name: "Begin the task again" }));
-    await screen.findByRole("group", { name: "How many gaps?" });
+    await screen.findByRole("button", { name: "Choose an answer" });
     // A refusal ended the action: the new one has its own key.
     expect(kept.begun[0]?.idempotencyKey).not.toBe(kept.begun[1]?.idempotencyKey);
     expect(kept.left).toHaveBeenCalledOnce();
@@ -767,7 +780,7 @@ describe("the lesson player", () => {
     });
     await userEvent.click(await continueButton());
     expect(await screen.findByText("The lesson has a task to finish")).toBeVisible();
-    await screen.findByRole("group", { name: "How many gaps?" });
+    await screen.findByRole("button", { name: "Choose an answer" });
     expect(screen.getByRole("heading", { level: 2 })).toHaveTextContent("Task · 3 of 4");
   });
 
@@ -927,7 +940,46 @@ describe("the lesson player", () => {
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Gaps and posts");
     failing = false;
     await userEvent.click(retry);
-    await screen.findByRole("group", { name: "How many gaps?" });
+    await screen.findByRole("button", { name: "Choose an answer" });
+  });
+
+  it("puts the pill of the task's mode at the end of the lesson's bar, beside the profile's (R65)", async () => {
+    await renderLesson({
+      kept: { place: 3 },
+      openAttempt: { attemptId: "a7", segment: 3 },
+      steps: true,
+    });
+    const pill = await screen.findByRole("button", { name: /^Mode: / });
+    expect(pill.closest(".nt-top-slot")).not.toBeNull();
+    await userEvent.click(pill);
+    expect(await screen.findByRole("dialog", { name: "Mode" })).toBeVisible();
+  });
+
+  it("names the answer chosen with its verdict, walks the options by the arrows, and keeps them once solved (R65)", async () => {
+    await renderLesson({ kept: { place: 3 }, openAttempt: { attemptId: "a7", segment: 3 } });
+    await userEvent.click(await screen.findByRole("button", { name: "Choose an answer" }));
+    const options = () => screen.queryByRole("dialog", { name: "Choose an answer" });
+    await vi.waitFor(() => expect(document.activeElement).toHaveAccessibleName("4"));
+    // The arrows walk the group and leave the pop-over open; Enter picks and closes it.
+    await userEvent.keyboard("{ArrowDown}");
+    expect(within(options() as HTMLElement).getByRole("radio", { name: "5" })).toBeChecked();
+    expect(options()).not.toBeNull();
+    await userEvent.keyboard("{Enter}");
+    await vi.waitFor(() => expect(options()).toBeNull());
+    await userEvent.click(screen.getByRole("button", { name: "Check" }));
+    const chosen = await screen.findByRole("button", {
+      name: "Your answer: 5, Not yet. Change it",
+    });
+    // "Try again" puts the card away, and a new option does not bring it back.
+    await userEvent.click(screen.getByRole("button", { name: "Try again" }));
+    await userEvent.click(chosen);
+    await userEvent.click(within(options() as HTMLElement).getByRole("radio", { name: "4" }));
+    expect(document.querySelector(".nt-card-verdict")).toBeNull();
+    await userEvent.click(screen.getByRole("button", { name: "Check" }));
+    // Solved: the answer and its verdict stay in sight, and take no tap.
+    await userEvent.click(await screen.findByRole("button", { name: "Your answer: 4, Correct" }));
+    expect(within(options() as HTMLElement).getByRole("radio", { name: "4" })).toBeDisabled();
+    expect(screen.queryByRole("button", { name: "Check" })).toBeNull();
   });
 
   it("says when the device does not keep the lesson, and leaves it sending nothing", async () => {
@@ -959,7 +1011,7 @@ describe("the lesson player", () => {
         if (refusals-- > 0) throw endedSegments(Cause.SEGMENT_UNAVAILABLE, []);
       },
     });
-    await screen.findByRole("group", { name: "How many gaps?" });
+    await screen.findByRole("button", { name: "Choose an answer" });
     expect(screen.getByRole("heading", { level: 2 })).toHaveTextContent("Task · 2 of 4");
     expect(begun.map((request) => request.start.value)).toEqual([
       expect.objectContaining({ segment: 4 }),
@@ -976,7 +1028,7 @@ describe("the lesson player", () => {
       },
     });
     await userEvent.click(await continueButton());
-    await screen.findByRole("group", { name: "How many gaps?" });
+    await screen.findByRole("button", { name: "Choose an answer" });
     expect(screen.getByRole("heading", { level: 2 })).toHaveTextContent("Task · 3 of 4");
     expect(asked.filter((a) => a === "run r1")).toHaveLength(2);
   });
@@ -991,7 +1043,7 @@ describe("the lesson player", () => {
       },
     });
     await waitFor(() => expect(begun).toHaveLength(1));
-    await screen.findByRole("group", { name: "How many gaps?" });
+    await screen.findByRole("button", { name: "Choose an answer" });
     expect(window.location.hash).toBe("#/lesson");
     window.location.hash = "";
   });
@@ -1053,7 +1105,7 @@ describe("the lesson player", () => {
     expect(await screen.findByText("No connection", { selector: "p" })).toBeVisible();
     offline = false;
     await userEvent.click(screen.getByRole("button", { name: "Begin the task again" }));
-    await screen.findByRole("group", { name: "How many gaps?" });
+    await screen.findByRole("button", { name: "Choose an answer" });
     expect(new Set(same.begun.map((request) => request.idempotencyKey)).size).toBe(1);
     same.unmount();
 

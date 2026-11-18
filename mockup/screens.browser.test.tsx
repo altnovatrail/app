@@ -17,9 +17,10 @@ import {
   LegalService,
   LegalTextSchema,
 } from "@altnovatrail/contracts/novatrail/api/v1/legal_pb.js";
+import type * as open from "@altnovatrail/spec/formatv0/open";
 import { create } from "@bufbuild/protobuf";
 import { render, screen, waitFor } from "@testing-library/react";
-import type { ReactNode } from "react";
+import { type ReactNode, useState } from "react";
 import { describe, expect, it } from "vitest";
 import { commands, page, userEvent } from "vitest/browser";
 import "@altnovatrail/canvas";
@@ -42,7 +43,7 @@ import { MapScreen } from "../src/skills/SkillMapScreen.tsx";
 import { SubjectsScreen } from "../src/subjects/MySubjects.tsx";
 import type { ModuleCard } from "../src/subjects/modules.ts";
 import type { SkillCounts } from "../src/subjects/states.ts";
-import { NO_VERDICTS } from "../src/task/attempt.ts";
+import { NO_VERDICTS, type Verdicts, verdictsOf } from "../src/task/attempt.ts";
 import { initialState } from "../src/task/steps.ts";
 import { TaskScreen } from "../src/task/TaskScreen.tsx";
 import { routedApi } from "../src/test/api.ts";
@@ -77,42 +78,116 @@ interface Compared {
 
 const noMedia = () => Promise.reject(new Error("no file in this test"));
 
-/** The task screen on a squared sheet, on my own, with nothing written: the canvas's bar of tools. */
-function sheetTask() {
-  return inLanguage(
+/** The mockup's first task of olympiad maths, on a squared sheet: the dots in rows. */
+const DOTS: open.Task = {
+  id: "dots",
+  statement: [
+    {
+      text: "Row 1 has 2 dots, row 2 has 5 dots, and row 3 has 8 dots: each row has 3 more dots than the row before. How many dots are there in row 10?",
+    },
+  ],
+  canvas: { kind: "handwriting_sheet", grid: "squares" },
+  items: [{ answer_slots: [{ binding: "anywhere" }] }],
+};
+
+/** The mockup's second task, a choice: which number comes next. */
+const NEXT: open.Task = {
+  id: "next",
+  statement: [{ text: "Which number comes next: 1, 4, 9, 16, …?" }],
+  canvas: { kind: "handwriting_sheet", grid: "squares" },
+  items: [{ answer_slots: [{ binding: "choice", options: ["20", "24", "25", "36"] }] }],
+};
+
+/** The solving steps of the mockup's module, which the pill of the mode stands for. */
+const STEPS: readonly open.Step[] = [
+  { title: "Understand the task", gives: ["givens"], exit_condition: "none" },
+  { title: "Plan", exit_condition: "none" },
+  { title: "Solve", exit_condition: "none" },
+  { title: "Check the answer", exit_condition: "none" },
+];
+
+/** A verdict of the one item of a task: "Not yet" or "Correct", with what was read, or the option. */
+function judged(task: open.Task, verdict: string, value?: string): Verdicts {
+  return verdictsOf(
+    [
+      {
+        verdict,
+        answerSlots: [
+          { answerSlot: { item: 1, slot: 1 }, verdict, ...(value === undefined ? {} : { value }) },
+        ],
+      },
+    ] as unknown as Parameters<typeof verdictsOf>[0],
+    task,
+  );
+}
+
+interface Drawn {
+  readonly task?: open.Task;
+  readonly mode?: "steps" | "self";
+  readonly verdicts?: Verdicts;
+  readonly choices?: Readonly<Record<string, string>>;
+  readonly filled?: boolean;
+  readonly solution?: readonly open.StatementPart[];
+  /** Check leaves the screen waiting: the work being read. */
+  readonly waits?: boolean;
+}
+
+/**
+ * The task screen of an adult, who may ask for the solution: on my own by default, its panel closed,
+ * or by steps, as the mockup's module has them; the sheet empty unless `filled`.
+ */
+function TaskDrawn({
+  task = DOTS,
+  mode = "self",
+  verdicts = NO_VERDICTS,
+  choices = {},
+  filled = false,
+  solution,
+  waits = false,
+}: Drawn) {
+  const [pending, setPending] = useState(false);
+  const [shown, setShown] = useState(mode);
+  return (
     <TaskScreen
-      task={{
-        id: "rungs",
-        statement: [{ text: "The rungs are 30 cm apart." }],
-        canvas: { kind: "handwriting_sheet", grid: "squares" },
-        items: [{ text: "How many rungs?", answer_slots: [{ binding: "anywhere" }] }],
-      }}
+      task={task}
       manifest={undefined}
-      steps={[]}
+      steps={STEPS}
       catalog={undefined}
-      state={initialState("self")}
-      mode="self"
-      verdicts={NO_VERDICTS}
-      filled={[[false]]}
+      state={{ ...initialState(shown), choices }}
+      mode={shown}
+      verdicts={verdicts}
+      filled={[[filled]]}
       history={[]}
       media={noMedia}
       notSaved={false}
-      pending={false}
+      pending={pending}
       blink={false}
       panelOpen={false}
+      {...(solution === undefined ? {} : { solution })}
       onHistoryChange={() => {}}
-      onMode={() => {}}
+      onMode={setShown}
       onGoTo={() => {}}
       onTick={() => {}}
       onDone={() => {}}
       onChoose={() => {}}
-      onCheck={() => {}}
+      onCheck={() => {
+        if (waits) setPending(true);
+      }}
       onHint={() => {}}
+      onShow={() => {}}
       onAgain={() => {}}
       onHome={() => {}}
-    />,
+    />
   );
 }
+
+/** The task screen as `TaskDrawn` draws it. */
+function aTask(drawn: Drawn = {}) {
+  return () => inLanguage(<TaskDrawn {...drawn} />);
+}
+
+/** The task screen on a squared sheet, on my own, with nothing written: the canvas's bar of tools. */
+const sheetTask = aTask();
 
 /**
  * What a screen says aloud by, as a learner's: a voice for English on this device, so that Read
@@ -256,13 +331,13 @@ async function barDrawn() {
 }
 
 /**
- * Why the canvas's bar stands elsewhere than the mockup has it, the sheet scrolled to the top: the
- * screen keeps its padding of 16 around the element (R59), till the task screen and the lesson are
- * drawn as the mockup, T84 and T85; and "Draw with finger" with its line, 57 px, comes only in pen
- * mode (R29 in canvas), so the bar is that much lower and its top half of it further down.
+ * Why the canvas's bar stands lower than the mockup has it, the sheet scrolled to the top: the line
+ * of "Read aloud" and the voicing stands above the element, where the mockup has the statement's card
+ * and its speaker (R65; В74 in run/QUESTIONS.md); and "Draw with finger" with its line, 57 px, comes
+ * only in pen mode (R29 in canvas), so the bar is that much shorter.
  */
 const PLACED =
-  'the screen\'s padding of 16, R59; "Draw with finger" only in pen mode, R29 in canvas';
+  'the line of "Read aloud" above the canvas, R65; "Draw with finger" only in pen mode, R29 in canvas';
 
 /** A button the bar shows by its icon alone: the font of its caption, out of sight, is not drawn. */
 const ICON_ALONE = "the caption is out of sight (R60; R84 in canvas)";
@@ -700,6 +775,110 @@ const HOME_PLACED =
 /** A card or a bar, whose words are its own regions': the size of its own text is not drawn. */
 const NO_TEXT = "no text of its own: the body's 14 px (R11)";
 
+/**
+ * Why the row and what hangs from it stand further right on the iPad than the mockup has them: its
+ * tutor's panel is open, 344 at the right over the sheet, and the row stands in the middle of what
+ * is left; app's panel is T87's, and its row stands in the window's middle.
+ */
+const PANEL_OPEN = "the mockup's panel open at the right, T87";
+
+/** Why the row is in sight under the options on a phone: the mockup hides it under its sheet. */
+const UNDER_SHEET =
+  "the mockup hides the row under a sheet of the phone; app's sheet stands over it (R59)";
+
+/** Why Check is grey while the work is read: it takes no press till the verdict comes (R65). */
+const READING = "Check takes no press while the work is read, and looks so (R65)";
+
+/** Why the way on after "Correct" is not in the card: a lesson's Continue is its row's (R23). */
+const WAY_ON =
+  'the way on after "Correct": the lesson\'s row, or the result in the panel (R23; R65)';
+
+/** The row of glass and its buttons, on a task with no options. */
+const ROW: readonly Region[] = [
+  {
+    name: "the row",
+    mockup: { css: ".ph-row" },
+    app: { css: ".nt-task-row" },
+    followsText: "centre",
+    differs: { what: ["font-size"], by: NO_TEXT },
+  },
+  {
+    name: "Hint",
+    mockup: { css: '.ph-row button:text-is("Hint")' },
+    app: { css: '.nt-task-row button:text-is("Hint")' },
+    followsText: "start",
+  },
+  {
+    name: "Show the solution",
+    mockup: { css: '.ph-row button:text-is("Show the solution")' },
+    app: { role: "button", name: "Show the solution" },
+    followsText: "start",
+  },
+  {
+    name: "Check",
+    mockup: { css: '.ph-row button:text-is("Check")' },
+    app: { css: "button.nt-check-button" },
+    followsText: "end",
+  },
+];
+
+/** The row with "Choose an answer" at its start, the mockup's panel open beside it on the iPad. */
+function choiceRow(device: Device): readonly Region[] {
+  const beside = device === "ipad" ? { differs: { what: ["x" as const], by: PANEL_OPEN } } : {};
+  return [
+    ...ROW.map((region) =>
+      device === "ipad" && region.name !== "the row"
+        ? { ...region, differs: { what: ["x" as const], by: PANEL_OPEN } }
+        : region.name === "the row" && device === "ipad"
+          ? {
+              ...region,
+              differs: {
+                what: ["x" as const, "font-size" as const],
+                by: `${PANEL_OPEN}; ${NO_TEXT}`,
+              },
+            }
+          : region,
+    ),
+    {
+      name: "Choose an answer",
+      mockup: { css: "button.ph-rowfull" },
+      app: { css: "button.nt-choose" },
+      followsText: "start",
+      ...beside,
+    },
+  ];
+}
+
+/** The verdict's card, 460 wide above the row. */
+function card(why?: string): Region {
+  return {
+    name: "the verdict's card",
+    mockup: { css: ".ph-verdict" },
+    app: { css: ".nt-card-verdict" },
+    differs:
+      why === undefined
+        ? { what: ["font-size"], by: NO_TEXT }
+        : { what: ["x", "y", "height", "font-size"], by: `${why}; ${NO_TEXT}` },
+  };
+}
+
+/** The card's title, as its words follow. */
+const CARD_TITLE: Region = {
+  name: "the card's title",
+  mockup: { css: ".ph-vtext > span:first-child" },
+  app: { css: ".nt-card-title" },
+  followsText: "start",
+};
+
+/** The pill of the mode, at the top bar's right. */
+const MODE_PILL: Region = {
+  name: "the pill of the mode",
+  mockup: { css: ".ph-mode" },
+  app: { css: ".nt-mode" },
+  followsText: "end",
+  differs: { what: ["font-size"], by: NO_TEXT },
+};
+
 const HOME: readonly Region[] = [
   {
     name: "the heading",
@@ -1088,13 +1267,178 @@ const SCREENS: readonly Compared[] = [
   },
   { state: "map", draw: skillMap("Olympiad maths 1–6"), regions: MAP },
   { state: "map-essays", draw: skillMap("Short essays"), regions: MAP },
-  ...(["task-pill", "task-empty"] as const).map((state) => ({
-    state,
-    draw: sheetTask,
-    settle: barDrawn,
-    regions: BAR,
-  })),
+  { state: "task-pill", draw: sheetTask, settle: barDrawn, regions: [...BAR, ...ROW] },
   { state: "task", devices: ["ipad"], draw: sheetTask, settle: barDrawn, regions: BAR },
+  {
+    state: "task-mode",
+    draw: aTask({ mode: "steps" }),
+    settle: () => userEvent.click(screen.getByRole("button", { name: "Mode: Step by step" })),
+    regions: [
+      MODE_PILL,
+      {
+        name: "the pop-over of the mode",
+        mockup: { css: 'div.nt-pop:has(> button[aria-pressed="true"])' },
+        app: { role: "dialog", name: "Mode" },
+        differs: { what: ["font-size"], by: NO_TEXT },
+      },
+      {
+        name: "Step by step, chosen",
+        mockup: { css: 'div.nt-pop > button[aria-pressed="true"]' },
+        app: { css: 'button.nt-mode-choice[aria-pressed="true"]' },
+        differs: { what: ["font-size"], by: NO_TEXT },
+      },
+    ],
+  },
+  ...DEVICES.map(
+    (device): Compared => ({
+      state: "task-empty",
+      devices: [device],
+      draw: sheetTask,
+      settle: async () => {
+        await barDrawn();
+        // Forced: Playwright takes no click on a button that says it is disabled.
+        await userEvent.click(screen.getByRole("button", { name: "Check" }), { force: true });
+      },
+      regions: [...ROW, card(), CARD_TITLE],
+    }),
+  ),
+  ...DEVICES.map(
+    (device): Compared => ({
+      state: "task-reading",
+      devices: [device],
+      draw: aTask({ filled: true, waits: true }),
+      settle: async () => {
+        await barDrawn();
+        await userEvent.click(screen.getByRole("button", { name: "Check" }));
+      },
+      regions: [
+        ...ROW.map((region) =>
+          region.name === "Check"
+            ? {
+                ...region,
+                differs: { what: ["background" as const, "colour" as const], by: READING },
+              }
+            : region,
+        ),
+        card(),
+        CARD_TITLE,
+      ],
+    }),
+  ),
+  ...DEVICES.map(
+    (device): Compared => ({
+      state: "task-not-yet",
+      devices: [device],
+      draw: aTask({ filled: true, verdicts: judged(DOTS, "not_yet", "32") }),
+      settle: barDrawn,
+      regions: [
+        ...ROW,
+        card(),
+        CARD_TITLE,
+        {
+          name: "Try again",
+          mockup: { css: '.ph-verdict button:text-is("Try again")' },
+          app: { role: "button", name: "Try again" },
+          followsText: "end",
+          contrast: ACCENT_TEXT,
+        },
+      ],
+    }),
+  ),
+  ...DEVICES.map(
+    (device): Compared => ({
+      state: "task-correct",
+      devices: [device],
+      draw: aTask({
+        filled: true,
+        verdicts: judged(DOTS, "correct", "29"),
+        solution: [{ text: "Row 10 has 29 dots." }],
+      }),
+      settle: barDrawn,
+      regions: [card(WAY_ON), { ...CARD_TITLE, differs: { what: ["y"], by: WAY_ON } }],
+    }),
+  ),
+  ...DEVICES.map(
+    (device): Compared => ({
+      state: "choice",
+      devices: [device],
+      draw: aTask({ task: NEXT }),
+      settle: async () => {
+        await barDrawn();
+        await userEvent.click(screen.getByRole("button", { name: "Choose an answer" }));
+      },
+      regions: [
+        ...choiceRow(device).map((region) =>
+          device === "phone"
+            ? { ...region, differs: { what: ["missing" as const], by: UNDER_SHEET } }
+            : region,
+        ),
+        {
+          name: "the options",
+          mockup: { role: "radiogroup", name: "Choose an answer" },
+          app: { role: "dialog", name: "Choose an answer" },
+          differs: {
+            what: device === "ipad" ? ["x", "font-size"] : ["font-size"],
+            by: device === "ipad" ? `${PANEL_OPEN}; ${NO_TEXT}` : NO_TEXT,
+          },
+        },
+      ],
+    }),
+  ),
+  ...DEVICES.map(
+    (device): Compared => ({
+      state: "choice-wrong",
+      devices: [device],
+      draw: aTask({ task: NEXT, choices: { "1.1": "20" }, verdicts: judged(NEXT, "not_yet") }),
+      settle: barDrawn,
+      regions: [
+        ...choiceRow(device).map((region) =>
+          device === "phone"
+            ? {
+                ...region,
+                differs: {
+                  what: ["missing" as const],
+                  by: `${PANEL_OPEN}: its sheet over the row`,
+                },
+              }
+            : region,
+        ),
+        {
+          ...card(),
+          differs: { what: ["missing"], by: `${PANEL_OPEN}: the verdict a line in it` },
+        },
+      ],
+    }),
+  ),
+  ...DEVICES.map(
+    (device): Compared => ({
+      state: "solution-ask",
+      devices: [device],
+      draw: aTask({ task: NEXT, choices: { "1.1": "20" }, verdicts: judged(NEXT, "not_yet") }),
+      settle: async () => {
+        await barDrawn();
+        await userEvent.click(screen.getByRole("button", { name: "Show the solution" }));
+      },
+      regions: [
+        {
+          name: "the question",
+          mockup: { role: "dialog", name: "Show the solution" },
+          app: { role: "dialog", name: "Show the solution" },
+          differs: {
+            what: device === "ipad" ? ["x", "font-size"] : ["font-size"],
+            by: device === "ipad" ? `${PANEL_OPEN}; ${NO_TEXT}` : NO_TEXT,
+          },
+        },
+        {
+          name: "Show it",
+          mockup: { role: "button", name: "Show it" },
+          app: { role: "button", name: "Show it" },
+          followsText: "end",
+          ...(device === "ipad" ? { differs: { what: ["x" as const], by: PANEL_OPEN } } : {}),
+        },
+      ],
+    }),
+  ),
   {
     state: "lesson",
     draw: explanation,

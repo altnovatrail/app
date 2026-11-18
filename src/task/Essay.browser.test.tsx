@@ -273,6 +273,13 @@ async function renderEssay(setup: Setup = {}) {
 
 const check = () => screen.getByRole("button", { name: "Check" });
 const done = () => screen.getByRole("button", { name: "Done" });
+
+/** The mode named, chosen in the pop-over of its pill. */
+async function chooseMode(mode: "Step by step" | "On my own") {
+  await userEvent.click(await screen.findByRole("button", { name: /^Mode: / }));
+  const modes = within(await screen.findByRole("dialog", { name: "Mode" }));
+  await userEvent.click(modes.getByRole("button", { name: new RegExp(`^${mode}`) }));
+}
 const panel = () => within(screen.getByRole("complementary", { name: "Tutor" }));
 const found = async () => within(await screen.findByRole("complementary", { name: "Tutor" }));
 const essayOf = async (device: Device) => (await openProfile(device, "p1"))?.essay("a1");
@@ -470,7 +477,7 @@ describe("the screen of an essay", () => {
     const { backend } = await renderEssay({ history: WRITTEN });
     await vi.waitFor(() => expect(check()).toHaveAttribute("aria-disabled", "false"));
     backend.refuseWrites = true;
-    await userEvent.click(screen.getByRole("button", { name: "Step by step" }));
+    await chooseMode("Step by step");
     const status = () => screen.getAllByRole("status").map((line) => line.textContent);
     await vi.waitFor(() => expect(status()).toContain("Your work isn't saved on this device"));
     cleanup();
@@ -530,7 +537,7 @@ describe("the screen of an essay", () => {
     expect(await (await found()).findByText("Essay finished")).toBeVisible();
     expect(panel().queryByRole("heading", { name: "What the feedback looked at" })).toBeNull();
     expect(panel().getByRole("button", { name: "Next task" })).toBeVisible();
-    await userEvent.click(panel().getByRole("button", { name: "Back to My subjects" }));
+    await userEvent.click(screen.getByRole("button", { name: "Back to My subjects" }));
     expect(window.location.hash).toBe("#/home");
     window.location.hash = "";
   });
@@ -623,7 +630,7 @@ describe("the screen of an essay", () => {
     await userEvent.click(screen.getByRole("button", { name: "Hint" }));
     expect(await (await found()).findByText("What does the umbrella say?")).toBeVisible();
     expect(panel().getByText("Start in the middle")).toBeVisible();
-    await userEvent.click(screen.getByRole("button", { name: "Step by step" }));
+    await chooseMode("Step by step");
     expect(
       await (await found()).findByRole("heading", { name: "Plan the essay", level: 2 }),
     ).toBeVisible();

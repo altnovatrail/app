@@ -21,14 +21,13 @@ import type { DemoState } from "@altnovatrail/spec/canvas";
 import type * as open from "@altnovatrail/spec/formatv0/open";
 import { Code } from "@connectrpc/connect";
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useLearner } from "../account/AccountGate.tsx";
 import { useApi } from "../api/ApiContext.tsx";
 import { type Failure, parseFailure } from "../api/failure.ts";
 import { idempotencyKey } from "../api/keys.ts";
 import { failureText } from "../api/words.ts";
 import { HomeWay } from "../app/HomeButton.tsx";
 import { Icon } from "../app/Icon.tsx";
-import { LearnerMenu } from "../app/LearnerMenu.tsx";
+import { ProfilePill } from "../app/LearnerMenu.tsx";
 import { HOME, navigate, redirect } from "../app/router.ts";
 import { Screen } from "../app/Screen.tsx";
 import { ReadFailed } from "../boot/Screens.tsx";
@@ -212,7 +211,7 @@ export function Lesson(props: LessonProps) {
   if (read.status === "failed") {
     return (
       <>
-        <LessonPill className="nt-home-bar" />
+        <ProfilePill className="nt-home-bar" />
         <ReadFailed failure={read.failure} onRetry={() => setAttempt((n) => n + 1)} home />
       </>
     );
@@ -227,20 +226,6 @@ export function Lesson(props: LessonProps) {
 function nextStep(profileId: string, device: Device, choice: EngineChoice | undefined) {
   return (
     <NextStep profileId={profileId} device={device} {...(choice === undefined ? {} : { choice })} />
-  );
-}
-
-/**
- * The profile's pill on a screen of the lesson that has no top bar of its own — its end, a lesson
- * not read —, as on every screen of the profile (section 3.6; R64); none with no learner.
- */
-function LessonPill({ className }: { readonly className: string }) {
-  const chosen = useLearner();
-  if (chosen === undefined) return null;
-  return (
-    <header className={className}>
-      <LearnerMenu />
-    </header>
   );
 }
 
@@ -274,7 +259,7 @@ export function LessonEnd({
     <Screen
       title={title ?? end}
       layout="end"
-      before={<LessonPill className="nt-end-bar" />}
+      before={<ProfilePill className="nt-end-bar" />}
       {...(title === undefined ? {} : { heading: <span {...lang}>{title}</span> })}
       {...(module === undefined
         ? {}

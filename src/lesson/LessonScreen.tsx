@@ -2,19 +2,20 @@
 // docs/decisions.md), as the mockup's `lesson`: the whole window, the top bar's glass pill at the
 // top — Back, which leaves the lesson, the lesson's title, the module's text with its own `lang`,
 // and under it the line of the segment shown, which opens the segments in a pop-over —, the profile's
-// pill at the bar's other end (section 3.6), the segment itself, and at the bottom the row of glass
+// pill at the bar's other end (section 3.6) — a task's pill of its mode after it (R65) —, the segment itself, and at the bottom the row of glass
 // with "Continue" — a worked example's in the canvas's own row. An explanation is a card that
 // scrolls inside, its heading its caption; a worked example and a task fill the rest of the window,
 // their heading out of sight, the bar's line showing the same. A segment that takes another's place
 // takes the focus on its heading, as a screen does (2.4.3); "Continue" that comes after a task is
 // told by a status line (4.1.3). What it shows it takes from its container, Lesson.tsx.
-import { type ReactNode, useEffect, useId, useRef } from "react";
+import { type ReactNode, useEffect, useId, useRef, useState } from "react";
 import type { Failure } from "../api/failure.ts";
 import { failureText } from "../api/words.ts";
 import { Icon } from "../app/Icon.tsx";
 import { IconButton } from "../app/IconButton.tsx";
 import { LearnerMenu } from "../app/LearnerMenu.tsx";
 import { Screen } from "../app/Screen.tsx";
+import { TopEndProvider } from "../app/TopEnd.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import type { Course } from "./place.ts";
 import type { Kind } from "./run.ts";
@@ -66,6 +67,8 @@ export function LessonScreen(props: LessonScreenProps) {
     total: course.kinds.length,
   });
   const buttons = props.onAgain !== undefined || props.onContinue !== undefined;
+  // The end of the bar, where a task segment puts the pill of its mode (R65).
+  const [end, setEnd] = useState<HTMLElement | null>(null);
   return (
     <Screen
       title={props.title}
@@ -91,7 +94,12 @@ export function LessonScreen(props: LessonScreenProps) {
             onLeave={props.onLeave}
           />
         ),
-        end: <LearnerMenu />,
+        end: (
+          <div className="nt-top-end">
+            <LearnerMenu />
+            <div ref={setEnd} className="nt-top-slot" />
+          </div>
+        ),
       }}
     >
       <div className="nt-lesson-lines">
@@ -106,7 +114,7 @@ export function LessonScreen(props: LessonScreenProps) {
         <h2 ref={heading} id={headingId} tabIndex={-1} className="nt-segment-heading">
           {where}
         </h2>
-        {props.children}
+        <TopEndProvider place={end}>{props.children}</TopEndProvider>
       </section>
       {props.failure === undefined ? null : (
         <p role="alert" className="nt-error nt-lesson-failure">

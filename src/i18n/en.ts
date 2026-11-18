@@ -378,6 +378,8 @@ export const en = {
   "common.cancel": "Cancel",
   /** A button that shows its icon alone, ×, and its tooltip: closes a pop-over or a panel (R60). */
   "common.close": "Close",
+  /** Puts a card away once it is read. */
+  "common.ok": "OK",
   /**
    * The captions of the other buttons that show an icon alone, each the button's name and its
    * tooltip (R60): back, a chevron; the previous and the next task, ‹ ›; Help; the tutor's button at
@@ -522,6 +524,7 @@ export const en = {
   "task.check": "Check",
   /** Beside Check while an answer slot bound choice has no option tapped. */
   "task.check-locked": "Choose an answer in each item",
+  "task.check-locked-line": "Choose one of the answers, then Check.",
   "task.correct": "Correct",
   /** Not "wrong": the verdict that the learner can still get it (product 7 spec). */
   "task.not-yet": "Not yet",
@@ -564,8 +567,30 @@ export const en = {
   "task.reason-several_final_answers": "There is more than one final answer",
   /** Beside Check while the sheet holds no answer. */
   "task.check-write": "Write an answer on the sheet",
+  "task.check-write-line": "Write it with the pen, then Check.",
   /** Beside Check while a box of the workbook holds no answer. */
   "task.check-boxes": "Write an answer in each box",
+  "task.check-boxes-line": "Write it in each box with the pen, then Check.",
+  /** The name of the pill of the mode, which opens its pop-over: the mode shown follows. */
+  "task.mode-open": "Mode: {mode}",
+  /** Under "Step by step" in the pop-over of the mode. */
+  "task.by-steps-line": "The task's steps, one at a time, in the tutor's panel",
+  /** Under "On my own" in the pop-over of the mode: the tutor's panel stays closed until opened. */
+  "task.on-my-own-line": "The tutor waits until called",
+  /** At the foot of the pop-over of the mode: the choice holds for this attempt (concepts 10 spec). */
+  "task.mode-note": "For this task. A grown-up sets which one a task starts with.",
+  /** The button of the row that opens the options of the task's answer slots bound choice. */
+  "task.choose": "Choose an answer",
+  /** The same button's name once the one option is chosen, which it shows. */
+  "task.chosen": "Your answer: {option}. Change it",
+  "task.chosen-judged": "Your answer: {option}, {verdict}. Change it",
+  "task.chosen-over": "Your answer: {option}, {verdict}",
+  /** The verdict's card while the work is read and checked. */
+  "task.reading": "Reading your work…",
+  /** Under "Reading your work…": what goes, and what does not. */
+  "task.reading-line": "A picture of the work goes to be read, with no name.",
+  /** Puts the card of "Not yet" away, back to the work. */
+  "task.try-again": "Try again",
   /** Told to a screen reader when the tutor's words have come; the words themselves are not. */
   "task.words-came": "The tutor's words came",
   /** In the block "Tutor" while the tutor's words are asked: they take some seconds to come. */
