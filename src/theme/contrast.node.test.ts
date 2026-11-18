@@ -23,6 +23,10 @@ const GROUPS: readonly [number, string, string][] = [
   [TEXT, "text-muted-on-grey", "grey-08/page grey-10/page grey-12/page grey-12/card grey-16/card"],
   // The tutor's words and marks on the sheet among them.
   [TEXT, "segmented next tutor-words", "card"],
+  // The note of a text's next version on its sheet, in the owner's grey (R69).
+  [TEXT, "segmented", "page-owner"],
+  // The chip of a text's version on its sheet (R69).
+  [TEXT, "correct", "correct-tint/card"],
   // The rubric's purple: the sign of an essay's feedback, its glyph on the card (R66).
   [EDGE, "rubric", "card"],
   // The accent as text, #0066cc, where #0071e3 misses on the page and on its own tint.
@@ -40,6 +44,8 @@ const GROUPS: readonly [number, string, string][] = [
   // A button's icon alone (R60), grey or in the accent, under the pointer's wash; a switch that is
   // on, the accent on its tint, on a card and on the tutor's panel.
   [EDGE, "text-muted accent", "grey-08/card grey-08/page"],
+  // The close of a sheet, on the page's grey, under the pointer's wash (R69).
+  [EDGE, "text-muted", "grey-16/card"],
   [EDGE, "accent", "accent-tint/card accent-tint/glass-panel/page"],
 ];
 

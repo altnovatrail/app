@@ -140,8 +140,10 @@ describe("the page of a module's license", () => {
       LICENSE: [text(LICENSE)],
       NOTICE: [text(NOTICE)],
     });
-    const bar = within(screen.getByRole("banner"));
-    expect(bar.getByText("Licenses of modules")).toBeTruthy();
+    // A sheet of the mockup's legal text (R69): its heading, and its close at the other end.
+    expect(screen.queryByRole("banner")).toBeNull();
+    const head = document.querySelector<HTMLElement>("main.nt-sheet .nt-sheet-head");
+    expect(head).not.toBeNull();
     expect(
       screen.getByRole("heading", { level: 1, name: "The module's license and notices" }),
     ).toBeTruthy();
@@ -160,7 +162,7 @@ describe("the page of a module's license", () => {
       `https://api.example.org/packages/sha256-${"1".repeat(64)}/device/NOTICE`,
     ]);
     expect(document.querySelector("a")).toBeNull();
-    await userEvent.click(bar.getByRole("button", { name: "Close" }));
+    await userEvent.click(within(head as HTMLElement).getByRole("button", { name: "Close" }));
     expect(window.location.hash).toBe("#/home");
   });
 

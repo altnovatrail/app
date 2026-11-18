@@ -6,7 +6,7 @@
 // out of app. The legal pages show the same, open (R31). A text's next version, which does not
 // apply yet, shows in place below it, closed too, with the day it applies from (R46).
 import type { LegalText as Text } from "@altnovatrail/contracts/novatrail/api/v1/legal_pb.js";
-import { useMemo } from "react";
+import { type ReactNode, useId, useMemo } from "react";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { titleOf } from "./body.ts";
 import { Markdown } from "./Markdown.tsx";
@@ -59,17 +59,43 @@ export function NextLegalText({
 /**
  * What a text holds, below its title: the gist, the line that the English text is in force, the
  * translation and the English body, whose own headings begin at `level`. The legal pages show it
- * open, as a page of its own (R31).
+ * open, as a page of its own (R31): the gist below its caption, as the mockup's legal text has it,
+ * and their `note` below the gist — the next version's (R69).
  */
-export function LegalContent({ text, level }: { readonly text: Text; readonly level: number }) {
+export function LegalContent({
+  text,
+  level,
+  captioned = false,
+  note = null,
+}: {
+  readonly text: Text;
+  readonly level: number;
+  /** The gist below its caption, which names it, in place of a name alone. */
+  readonly captioned?: boolean;
+  readonly note?: ReactNode;
+}) {
   const { language, words } = useLanguage();
+  const caption = useId();
   const translated = text.translation !== "" && text.translationLanguage !== "";
   return (
     <>
-      <section aria-label={words.text("legal.gist")}>
+      <section
+        className="nt-gist"
+        {...(captioned
+          ? { "aria-labelledby": caption }
+          : { "aria-label": words.text("legal.gist") })}
+      >
+        {captioned ? (
+          <p id={caption} className="nt-sheet-caption">
+            {words.text("legal.gist")}
+          </p>
+        ) : null}
         <p lang={text.summaryLanguage === "" ? "en" : text.summaryLanguage}>{text.summary}</p>
       </section>
-      {language === "en" ? null : <p>{words.text("legal.english-in-force")}</p>}
+      {note}
+      {language === "en" ? null : (
+        <p className="nt-in-force">{words.text("legal.english-in-force")}</p>
+      )}
       {translated ? (
         <section aria-label={words.text("legal.translation")} lang={text.translationLanguage}>
           <p lang={language}>{words.text("legal.translation")}</p>

@@ -5,14 +5,13 @@
 // AI tools and how to use them responsibly" (privacy 5.3 in spec) — and app gives every learner.
 // What it says is what the platform's documents say of the tutor: that it is an AI, that a program
 // decides the verdict, what goes to the AI and what never does, and how a problem is reported. The
-// page is `#/tutor`, at any step, opened from My subjects below a bar that closes it home, in the
-// language of the learner's screens while a learner is chosen; nothing on it leads out of app
+// page is `#/tutor`, at any step, opened from My subjects, a sheet of the mockup's legal text that
+// closes home (R69), in the language of the learner's screens while a learner is chosen; nothing on it leads out of app
 // (privacy 7 in spec). Where it names the operator of the app, it leads to the page of who runs
 // this copy, the section Who we are of the privacy policy in force (R46).
 import { useEffect, useId } from "react";
-import { PageBar } from "../app/PageBar.tsx";
-import { HOME, type Route, redirect, TUTOR } from "../app/router.ts";
-import { Screen } from "../app/Screen.tsx";
+import { HOME, navigate, type Route, redirect, TUTOR } from "../app/router.ts";
+import { SheetScreen } from "../app/SheetScreen.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 
 /** The sections of the page, each a heading and its paragraphs, by the keys of their words. */
@@ -25,12 +24,21 @@ const SECTIONS = [
   ["tutor.problem", ["tutor.problem-1", "tutor.problem-2", "report.danger"]],
 ] as const;
 
-/** The page itself, below its bar; `onOperator` opens the page of who runs this copy. */
-export function TutorPage({ onOperator }: { readonly onOperator: () => void }) {
+/**
+ * The page itself; `onOperator` opens the page of who runs this copy, and `onClose`, where given,
+ * closes the sheet.
+ */
+export function TutorPage({
+  onOperator,
+  onClose,
+}: {
+  readonly onOperator: () => void;
+  readonly onClose?: () => void;
+}) {
   const { words } = useLanguage();
   const id = useId();
   return (
-    <Screen title={words.text("tutor.title")}>
+    <SheetScreen title={words.text("tutor.title")} {...(onClose === undefined ? {} : { onClose })}>
       {SECTIONS.map(([heading, paragraphs]) => (
         <section key={heading} aria-labelledby={`${id}-${heading}`}>
           <h2 id={`${id}-${heading}`}>{words.text(heading)}</h2>
@@ -46,32 +54,26 @@ export function TutorPage({ onOperator }: { readonly onOperator: () => void }) {
           ) : null}
         </section>
       ))}
-    </Screen>
+    </SheetScreen>
   );
 }
 
-/** `#/tutor` with its bar; a route with parts this build does not know goes to it in place. */
+/**
+ * `#/tutor` in its sheet, which closes home; a route with parts this build does not know goes to it
+ * in place.
+ */
 export function TutorPages({
   route,
   onOperator,
 }: {
   readonly route: Route;
-  /** Opens the page of who runs this copy, whose bar comes back here. */
+  /** Opens the page of who runs this copy, whose close comes back here. */
   readonly onOperator: () => void;
 }) {
-  const { words } = useLanguage();
   const known = route.parts.length === 0;
   useEffect(() => {
     if (!known) redirect(TUTOR);
   }, [known]);
   if (!known) return null;
-  return (
-    <>
-      <PageBar
-        title={words.text("tutor.bar")}
-        close={{ text: words.text("tutor.close"), to: HOME }}
-      />
-      <TutorPage onOperator={onOperator} />
-    </>
-  );
+  return <TutorPage onOperator={onOperator} onClose={() => navigate(HOME)} />;
 }

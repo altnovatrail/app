@@ -5,6 +5,8 @@
 // lesson's title — comes as a node of its own, with its `lang`, and the title stays its words. A
 // screen with a top bar has its heading in the bar's glass pill, beside its way back, as the
 // mockup's top bar has its title, named by the title, whose words the pill shows on two lines (R63).
+// A screen drawn as the mockup's legal text has its heading in the sheet's head instead, between its
+// way back and its close (R69).
 import { type ReactNode, useEffect, useRef } from "react";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 
@@ -28,7 +30,9 @@ export type ScreenLayout =
   | "lesson"
   | "task"
   | "end"
-  | "adults";
+  | "adults"
+  | "sheet"
+  | "failure";
 
 const LAYOUT_CLASS: Readonly<Record<ScreenLayout, string | undefined>> = {
   column: undefined,
@@ -41,7 +45,12 @@ const LAYOUT_CLASS: Readonly<Record<ScreenLayout, string | undefined>> = {
   task: "nt-task-screen",
   end: "nt-end",
   adults: "nt-adults",
+  sheet: "nt-sheet",
+  failure: "nt-failure",
 };
+
+/** The layouts whose column is a card on the page's colour: the screen is framed by it. */
+const CARDS: ReadonlySet<ScreenLayout> = new Set(["sheet", "failure"]);
 
 /** The top bar of a screen: its way back, and what stands at its other end. */
 export interface TopBar {
@@ -50,6 +59,16 @@ export interface TopBar {
   /** What stands at the bar's other end: the profile's pill, and a task's pill of its mode (R65). */
   readonly end?: ReactNode;
   /** What stands under the heading in the pill: a lesson's segments, behind its line (R64). */
+  readonly under?: ReactNode;
+}
+
+/** The head of a sheet, the mockup's legal text (R69): its way back, its close, and a chip. */
+export interface SheetHead {
+  /** The way back, before the heading: `IconButton` "back". */
+  readonly back?: ReactNode;
+  /** The close at the head's other end: `IconButton` "close". */
+  readonly close?: ReactNode;
+  /** What stands under the heading: a text's version as a chip. */
   readonly under?: ReactNode;
 }
 
@@ -65,7 +84,9 @@ export interface ScreenProps {
    * `lesson` the whole window, a lesson's segment between its top bar and its row, and `end` a card
    * in the window's middle, the end of a lesson (R64); `task` the whole window, the canvas between
    * the top bar and the row of glass (R65); `adults` a column of reading under the top bar, a page
-   * of the section for adults (R68). Below 600 each is one column.
+   * of the section for adults (R68); `sheet` a card of 35rem, its top where the mockup's legal text
+   * has it, and the whole screen below 600, and `failure` a card of 28.75rem in the window's middle
+   * (R69). Below 600 each is one column.
    */
   readonly layout?: ScreenLayout;
   /** What stands in the frame before the heading's column: the sign-in's art, the app's name. */
@@ -78,6 +99,8 @@ export interface ScreenProps {
   readonly heading?: ReactNode;
   /** The top bar, which then holds the heading. */
   readonly bar?: TopBar;
+  /** The head of a sheet, which then holds the heading. */
+  readonly head?: SheetHead;
 }
 
 export function Screen({
@@ -89,6 +112,7 @@ export function Screen({
   lead,
   after,
   bar,
+  head,
 }: ScreenProps) {
   const { language, words } = useLanguage();
   const heading = useRef<HTMLHeadingElement>(null);
@@ -109,10 +133,23 @@ export function Screen({
       {shown ?? title}
     </h1>
   );
+  const top =
+    head === undefined ? (
+      h1
+    ) : (
+      <div className="nt-sheet-head">
+        {head.back}
+        <div className="nt-sheet-title">
+          {h1}
+          {head.under}
+        </div>
+        {head.close}
+      </div>
+    );
   const content = (
     <>
       {bar === undefined ? (
-        h1
+        top
       ) : (
         <div className="nt-top">
           <div className="nt-top-pill nt-glass">
@@ -132,7 +169,8 @@ export function Screen({
       {children}
     </>
   );
-  const framed = before !== undefined || lead !== undefined || after !== undefined;
+  const framed =
+    before !== undefined || lead !== undefined || after !== undefined || CARDS.has(layout);
   return (
     <main lang={language} className={LAYOUT_CLASS[layout]}>
       {framed ? (
