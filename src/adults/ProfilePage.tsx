@@ -2,13 +2,13 @@
 // 3.3, 3.5 and 3.8 of docs/architecture.md): what an adult sets of the profile — its avatar (R68),
 // its pseudonym, its default mode, the language of its learner's screens and its voicing — in one
 // form, saved by its button with `UpdateProfile` and only the fields that changed. The choices are
-// radio buttons, and the avatar a choice in a pop-over, that change nothing until Save (WCAG 3.2.2). What another tab changed meanwhile shows in the fields not
-// edited here; what is edited here stays until it is saved — an edit made while the request was on
-// its way among them. A failure that is the session's own goes to it as well (`onFailed`). Below the
-// form, the storage of the profile's works on the server, a consent of its own (R30), the way to
-// the profile's modules and their licenses (R32) and to its progress (R35), and the share of
-// today's tutor time the profile and the account have used (section 15 of the text of the
-// contracts, "The quota").
+// radio buttons, and the avatar a choice in a pop-over, that change nothing until Save (WCAG
+// 3.2.2). What another tab changed meanwhile shows in the fields not edited here; what is edited
+// here stays until it is saved — an edit made while the request was on its way among them. A
+// failure that is the session's own goes to it as well (`onFailed`). Below the form, the storage
+// of the profile's works on the server, a consent of its own (R30), the way to the profile's
+// modules and their licenses (R32) and to its progress (R35), and the share of today's tutor time
+// the profile and the account have used (section 15 of the text of the contracts, "The quota").
 import {
   Mode,
   type Profile,
@@ -21,6 +21,7 @@ import { changes, formOf, type ProfileForm } from "../account/settings.ts";
 import { useApi } from "../api/ApiContext.tsx";
 import { ApiError, type Failure, parseFailure } from "../api/failure.ts";
 import { failureText } from "../api/words.ts";
+import { described } from "../app/described.ts";
 import { navigate } from "../app/router.ts";
 import { languageName } from "../i18n/intl.ts";
 import { NAMES } from "../i18n/LanguageButtons.tsx";
@@ -161,11 +162,10 @@ export function ProfilePage({
                 autoComplete="off"
                 value={pseudonym}
                 aria-invalid={pseudonymError}
-                aria-describedby={
-                  pseudonymError
-                    ? `${id}-pseudonym-hint ${id}-pseudonym-error`
-                    : `${id}-pseudonym-hint`
-                }
+                aria-describedby={described(
+                  `${id}-pseudonym-hint`,
+                  pseudonymError && `${id}-pseudonym-error`,
+                )}
                 onChange={(event) => edit({ pseudonym: event.target.value })}
               />
             </div>
@@ -179,83 +179,89 @@ export function ProfilePage({
             </p>
           ) : null}
         </div>
-        <fieldset className="nt-choices nt-group" aria-describedby={`${id}-mode-hint`}>
-          <legend>{words.text("adults.mode")}</legend>
-          <Option
-            name={`${id}-mode`}
-            checked={form.defaultMode === Mode.BY_STEPS}
-            onChange={() => edit({ defaultMode: Mode.BY_STEPS })}
-          >
-            {words.text("task.by-steps")}
-          </Option>
-          <Option
-            name={`${id}-mode`}
-            checked={form.defaultMode === Mode.SELF}
-            onChange={() => edit({ defaultMode: Mode.SELF })}
-          >
-            {words.text("task.on-my-own")}
-          </Option>
-          <p id={`${id}-mode-hint`} className="nt-hint">
-            {words.text("adults.mode-hint")}
-          </p>
-        </fieldset>
-        <fieldset
-          className="nt-choices nt-group"
-          aria-describedby={form.language === undefined ? `${id}-language-hint` : undefined}
-        >
-          <legend>{words.text("adults.language")}</legend>
-          {LANGUAGES.map((tag) => (
+        <div className="nt-group">
+          <fieldset className="nt-choices" aria-describedby={`${id}-mode-hint`}>
+            <legend>{words.text("adults.mode")}</legend>
             <Option
-              key={tag}
-              name={`${id}-language`}
-              lang={tag}
-              checked={form.language === tag}
-              onChange={() => edit({ language: tag })}
+              name={`${id}-mode`}
+              checked={form.defaultMode === Mode.BY_STEPS}
+              onChange={() => edit({ defaultMode: Mode.BY_STEPS })}
             >
-              {NAMES[tag]}
+              {words.text("task.by-steps")}
             </Option>
-          ))}
-          {form.language === undefined ? (
-            <p id={`${id}-language-hint`} className="nt-hint">
-              {unknownName === undefined
-                ? words.text("adults.language-none")
-                : words.text("adults.language-unknown", { language: unknownName })}
+            <Option
+              name={`${id}-mode`}
+              checked={form.defaultMode === Mode.SELF}
+              onChange={() => edit({ defaultMode: Mode.SELF })}
+            >
+              {words.text("task.on-my-own")}
+            </Option>
+            <p id={`${id}-mode-hint`} className="nt-hint">
+              {words.text("adults.mode-hint")}
             </p>
-          ) : null}
-        </fieldset>
-        <fieldset className="nt-choices nt-group" aria-describedby={`${id}-voicing-hint`}>
-          <legend>{words.text("adults.voicing")}</legend>
-          <div className="nt-check">
-            <input
-              id={`${id}-voicing`}
-              type="checkbox"
-              checked={form.voicing}
-              onChange={(event) => edit({ voicing: event.target.checked })}
-            />
-            <label htmlFor={`${id}-voicing`}>{words.text("adults.voicing-on")}</label>
-          </div>
-          <fieldset className="nt-choices">
-            <legend>{words.text("adults.speed")}</legend>
-            <Option
-              name={`${id}-speed`}
-              checked={form.speed === VoicingSpeed.NORMAL}
-              onChange={() => edit({ speed: VoicingSpeed.NORMAL })}
-            >
-              {words.text("adults.speed-normal")}
-            </Option>
-            <Option
-              name={`${id}-speed`}
-              checked={form.speed === VoicingSpeed.SLOW}
-              onChange={() => edit({ speed: VoicingSpeed.SLOW })}
-            >
-              {words.text("adults.speed-slow")}
-            </Option>
           </fieldset>
-          <div id={`${id}-voicing-hint`}>
-            <p className="nt-hint">{words.text("adults.voicing-device")}</p>
-            <p className="nt-hint">{words.text("adults.voicing-reader")}</p>
-          </div>
-        </fieldset>
+        </div>
+        <div className="nt-group">
+          <fieldset
+            className="nt-choices"
+            aria-describedby={form.language === undefined ? `${id}-language-hint` : undefined}
+          >
+            <legend>{words.text("adults.language")}</legend>
+            {LANGUAGES.map((tag) => (
+              <Option
+                key={tag}
+                name={`${id}-language`}
+                lang={tag}
+                checked={form.language === tag}
+                onChange={() => edit({ language: tag })}
+              >
+                {NAMES[tag]}
+              </Option>
+            ))}
+            {form.language === undefined ? (
+              <p id={`${id}-language-hint`} className="nt-hint">
+                {unknownName === undefined
+                  ? words.text("adults.language-none")
+                  : words.text("adults.language-unknown", { language: unknownName })}
+              </p>
+            ) : null}
+          </fieldset>
+        </div>
+        <div className="nt-group">
+          <fieldset className="nt-choices" aria-describedby={`${id}-voicing-hint`}>
+            <legend>{words.text("adults.voicing")}</legend>
+            <div className="nt-check">
+              <input
+                id={`${id}-voicing`}
+                type="checkbox"
+                checked={form.voicing}
+                onChange={(event) => edit({ voicing: event.target.checked })}
+              />
+              <label htmlFor={`${id}-voicing`}>{words.text("adults.voicing-on")}</label>
+            </div>
+            <fieldset className="nt-choices">
+              <legend>{words.text("adults.speed")}</legend>
+              <Option
+                name={`${id}-speed`}
+                checked={form.speed === VoicingSpeed.NORMAL}
+                onChange={() => edit({ speed: VoicingSpeed.NORMAL })}
+              >
+                {words.text("adults.speed-normal")}
+              </Option>
+              <Option
+                name={`${id}-speed`}
+                checked={form.speed === VoicingSpeed.SLOW}
+                onChange={() => edit({ speed: VoicingSpeed.SLOW })}
+              >
+                {words.text("adults.speed-slow")}
+              </Option>
+            </fieldset>
+            <div id={`${id}-voicing-hint`}>
+              <p className="nt-hint">{words.text("adults.voicing-device")}</p>
+              <p className="nt-hint">{words.text("adults.voicing-reader")}</p>
+            </div>
+          </fieldset>
+        </div>
         <button type="submit" className="nt-main" disabled={pending}>
           {words.text("adults.save")}
         </button>

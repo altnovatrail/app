@@ -438,7 +438,6 @@ button.nt-secondary {
 }
 /* A checkbox as large as any target, its label beside it. */
 .nt-check {
-  clear: both;
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -593,7 +592,6 @@ novatrail-canvas {
   font-weight: var(--nt-weight-bold);
 }
 .nt-option {
-  clear: both;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -624,8 +622,7 @@ novatrail-canvas {
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 .nt-group > h2,
-.nt-group > h3,
-.nt-group > legend {
+.nt-group > h3 {
   margin-block: 0 0.5rem;
   font-size: var(--nt-size-emphasis);
   line-height: 1.3;
@@ -1482,23 +1479,20 @@ button.nt-row > svg {
   margin-block-start: 1.375rem;
 }
 /*
- * The section for adults (R68): a choice's legend in its card's padding, as a heading is — floated,
- * it leaves the fieldset's edge, and an option or a checkbox clears it —, the profiles' rows, and a profile's pseudonym a row of a card.
+ * The section for adults (R68): a choice in its card, its legend the card's heading, the profiles'
+ * rows, and a profile's pseudonym a row of a card.
  */
-fieldset.nt-group {
-  display: flow-root;
-}
-fieldset.nt-group > legend {
-  float: inline-start;
-  inline-size: 100%;
-  padding: 0;
+.nt-group > .nt-choices > legend {
+  margin-block-end: 0.5rem;
+  font-size: var(--nt-size-emphasis);
+  line-height: 1.3;
 }
 .nt-row-item + .nt-row-item {
   box-shadow:
     inset 1rem 0.5px 0 var(--nt-card),
     inset 0 0.5px 0 rgba(0, 0, 0, 0.1);
 }
-.nt-rows button.nt-row {
+.nt-group > .nt-rows button.nt-row {
   block-size: auto;
   min-block-size: 3.25rem;
 }
@@ -3879,7 +3873,7 @@ button.nt-step-pill-open {
 main.nt-adults {
   padding-block-start: 0.875rem;
 }
-.nt-top-pill > h1:first-child {
+main.nt-adults .nt-top-pill > h1:first-child {
   padding-inline-start: 0.875rem;
 }
 .nt-adults form > button.nt-main {

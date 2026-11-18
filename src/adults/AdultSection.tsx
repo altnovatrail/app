@@ -42,27 +42,44 @@ export const PROFILE_PAGE: Route = { screen: ADULTS.screen, parts: ["profile"] }
 export const DEVICE_PAGE: Route = { screen: ADULTS.screen, parts: ["device"] };
 
 /**
- * A group of a page as a card: its heading, the line of what it is, which `<id>-hint` names, and
- * its buttons.
+ * A group of a page as a card: its heading, the line of what it is, and what it holds — its button,
+ * which that line describes, or the content given.
  */
 function Group({
   id,
   title,
   hint,
+  action,
   children,
 }: {
   readonly id: string;
   readonly title: string;
-  readonly hint: string;
-  readonly children: ReactNode;
+  readonly hint?: string;
+  /** The group's one button: its words and what it does. */
+  readonly action?: { readonly text: string; readonly onPress: () => void };
+  readonly children?: ReactNode;
 }) {
+  const hintId = `${id}-hint`;
   return (
     <section className="nt-group" aria-labelledby={id}>
       <h2 id={id}>{title}</h2>
-      <p id={`${id}-hint`} className="nt-hint">
-        {hint}
-      </p>
-      <div className="nt-buttons">{children}</div>
+      {hint === undefined ? null : (
+        <p id={hintId} className="nt-hint">
+          {hint}
+        </p>
+      )}
+      {action === undefined ? null : (
+        <div className="nt-buttons">
+          <button
+            type="button"
+            aria-describedby={hint === undefined ? undefined : hintId}
+            onClick={action.onPress}
+          >
+            {action.text}
+          </button>
+        </div>
+      )}
+      {children}
     </section>
   );
 }
@@ -86,8 +103,7 @@ export function SectionHome({
   const id = useId();
   return (
     <SectionScreen title={words.text("adults.title")}>
-      <section className="nt-group" aria-labelledby={`${id}-profiles`}>
-        <h2 id={`${id}-profiles`}>{words.text("adults.profiles")}</h2>
+      <Group id={`${id}-profiles`} title={words.text("adults.profiles")}>
         <ul className="nt-rows">
           {sorted.map((profile) => (
             <li key={profile.profileId} className="nt-row-item">
@@ -104,42 +120,35 @@ export function SectionHome({
             </li>
           ))}
         </ul>
-      </section>
+      </Group>
       <Group
         id={`${id}-device`}
         title={words.text("device.title")}
         hint={words.text("device.hint")}
-      >
-        <button
-          type="button"
-          aria-describedby={`${id}-device-hint`}
-          onClick={() => navigate(DEVICE_PAGE)}
-        >
-          {words.text("device.open")}
-        </button>
-      </Group>
+        action={{ text: words.text("device.open"), onPress: () => navigate(DEVICE_PAGE) }}
+      />
       {/* The own key is the owner's as an adult learner: an account with no such profile has none. */}
       {profiles.some(keyed) ? (
-        <Group id={`${id}-key`} title={words.text("ownkey.title")} hint={words.text("ownkey.hint")}>
-          <button
-            type="button"
-            aria-describedby={`${id}-key-hint`}
-            onClick={() => navigate(OWN_KEY_PAGE)}
-          >
-            {words.text("ownkey.open")}
-          </button>
-        </Group>
+        <Group
+          id={`${id}-key`}
+          title={words.text("ownkey.title")}
+          hint={words.text("ownkey.hint")}
+          action={{ text: words.text("ownkey.open"), onPress: () => navigate(OWN_KEY_PAGE) }}
+        />
       ) : null}
-      <section className="nt-group" aria-labelledby={`${id}-language`}>
-        <h2 id={`${id}-language`}>{words.text("adults.device-language")}</h2>
-        <p className="nt-hint">{words.text("adults.device-language-hint")}</p>
+      <Group
+        id={`${id}-language`}
+        title={words.text("adults.device-language")}
+        hint={words.text("adults.device-language-hint")}
+      >
         <LanguageButtons />
-      </section>
-      <Group id={`${id}-legal`} title={words.text("legal.title")} hint={words.text("legal.hint")}>
-        <button type="button" aria-describedby={`${id}-legal-hint`} onClick={() => onLegal()}>
-          {words.text("legal.open")}
-        </button>
       </Group>
+      <Group
+        id={`${id}-legal`}
+        title={words.text("legal.title")}
+        hint={words.text("legal.hint")}
+        action={{ text: words.text("legal.open"), onPress: () => onLegal() }}
+      />
       <NextVersions storing={profiles.some((profile) => profile.workStorage)} onRead={onLegal} />
     </SectionScreen>
   );
