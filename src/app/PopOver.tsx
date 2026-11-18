@@ -1,8 +1,8 @@
-// A pop-over (the mockup's README, «Pop-overs, not panels»; section 3.9 of docs/architecture.md): a
-// list or a choice behind a small button, opened over the screen. From 600 CSS px it hangs from its
-// button and grows from the button's corner; below 600 it is a sheet from the bottom with a button
-// "Close", ×, which shows its icon alone (R60). It is a modal <dialog>: the rest of the page is inert while it is open, Escape and a tap
-// outside it close it, the focus goes into it, and comes back to its button when it closes.
+// A pop-over (R59): a list or a choice behind a small button, opened over the screen. From 600 CSS
+// px it hangs from its button and grows from the button's corner; below 600 it is a sheet from the
+// bottom with a button "Close", ×, which shows its icon alone (R60). It is a modal <dialog>: the
+// rest of the page is inert while it is open, Escape and a tap outside it close it, the focus goes
+// into it, and comes back to its button when it closes.
 import {
   type ReactNode,
   type RefObject,

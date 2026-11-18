@@ -1,12 +1,11 @@
-// The voicing of the learner's screens (R07 and R36 in docs/decisions.md;
-// section 3.5 of docs/architecture.md): the one synthesis of the app, and what the profile and
-// this device say of it — whether the voicing is on and its speed, a field of the profile on the
-// server that goes with the learner to every device; the voice an adult chose for a language and,
-// on Android and Linux, the adult's leave, in the device's registry. The tutor's words are said by
-// themselves only while the voicing is on and the device lets it; a speaker button reads at any
-// time a voice is there, the voicing off too. Speech stops when the learner leaves a screen, when
-// another learner comes, and when the tab is hidden (speech.ts). Outside a learner's screens — a
-// screen's own test — the voicing is off and nothing is chosen.
+// The voicing of the learner's screens (R07, R36): the one synthesis of the app, and what the
+// profile and this device say of it — whether the voicing is on and its speed, a field of the
+// profile on the server that goes with the learner to every device; the voice an adult chose for a
+// language and, on Android and Linux, the adult's leave, in the device's registry. The tutor's
+// words are said by themselves only while the voicing is on and the device lets it; a speaker
+// button reads at any time a voice is there, the voicing off too. Speech stops when the learner
+// leaves a screen, when another learner comes, and when the tab is hidden (speech.ts). Outside a
+// learner's screens — a screen's own test — the voicing is off and nothing is chosen.
 import type { Profile } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import {
   createContext,

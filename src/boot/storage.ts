@@ -1,5 +1,4 @@
-// What the start makes of the storage taken away while app is open (section 3.2 of
-// docs/architecture.md; R16 in docs/decisions.md).
+// What the start makes of the storage taken away while app is open (R16).
 // - The browser closed a connection: the registry is opened again, without making it. No registry,
 //   where this tab had one, is data erased; a registry there is data that could not be read, and
 //   nothing is erased.

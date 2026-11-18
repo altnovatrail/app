@@ -1,7 +1,6 @@
-// What a report of a problem with the tutor's words names (R123 spec, its amendment of
-// 2026-11-10; section 15 of the text of the contracts; R33 in docs/decisions.md): which reply of
-// the tutor the words came by and beside a rung its number, the words as the screen shows them,
-// one word of the closed set, and the person's text. No DOM.
+// What a report of a problem with the tutor's words names (R123 spec; R33): which reply of the
+// tutor the words came by and beside a rung its number, the words as the screen shows them, one
+// word of the closed set, and the person's text. No DOM.
 import {
   ProblemKind,
   type ReportProblemRequestSchema,

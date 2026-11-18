@@ -1,5 +1,4 @@
-// The reading of the deployment configuration, /deployment.json, format 1 (R09 in
-// docs/decisions.md; section 3.7 of docs/architecture.md): section 5 of spec's text of
+// The reading of the deployment configuration, /deployment.json, format 1 (R09): by spec's text of
 // deployment/, in two steps. The schema step is written in code, with the schema's own patterns,
 // and the tests hold it to the schema, its examples and the part's vectors of reading. No DOM.
 import type { Deployment } from "@altnovatrail/spec/deploymentv1";
@@ -27,7 +26,7 @@ export const AUTH_DOMAIN_PATTERN =
 const API = new RegExp(API_PATTERN, "u");
 const AUTH_DOMAIN = new RegExp(AUTH_DOMAIN_PATTERN, "u");
 
-/** The hosts of a loopback origin, written as the URL Standard serializes them (section 5). */
+/** The hosts of a loopback origin, written as the URL Standard serializes them. */
 const LOOPBACK = new Set(["127.0.0.1", "localhost", "[::1]"]);
 
 type Check = (value: unknown) => boolean;

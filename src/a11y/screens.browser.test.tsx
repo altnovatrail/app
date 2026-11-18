@@ -1,7 +1,6 @@
-// Every screen of app so far, in English, in Russian and in the pseudo-language, at a plain width
-// and at 320 CSS px (section 3.9 of docs/architecture.md): no violation of WCAG 2.2 A and AA that
-// axe-core finds, every target at least 44 × 44 CSS px, no sideways scroll and no text cut. Each
-// screen is found by its role and name.
+// Every screen of app, in English, in Russian and in the pseudo-language, at a plain width and at
+// 320 CSS px (R11): no violation of WCAG 2.2 A and AA that axe-core finds, every target at least
+// 44 × 44 CSS px, no sideways scroll and no text cut. Each screen is found by its role and name.
 import "@altnovatrail/canvas";
 import "@altnovatrail/skill-map";
 import { render } from "@testing-library/react";
@@ -226,7 +225,7 @@ function taskScreen(props: Partial<TaskScreenProps> = {}) {
   );
 }
 
-/** The lesson player on a segment of the lesson of section 3.4, with the segment given. */
+/** The lesson player on a segment of a lesson of four, with the segment given. */
 function lessonScreen(children: ReactNode, props: Partial<LessonScreenProps> = {}) {
   return (
     <LessonScreen

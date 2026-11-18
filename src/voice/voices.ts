@@ -1,12 +1,11 @@
-// Which voice of the device speaks a text, and where the device must ask an adult first (R07 and
-// R36 in docs/decisions.md; section 3.5 of docs/architecture.md): app names the voice of every
-// utterance itself and leaves the browser no choice. The candidates for a
-// language are the voices the browser says are local, with no "Online" in their name — Edge's
+// Which voice of the device speaks a text, and where the device must ask an adult first (R07, R36):
+// app names the voice of every utterance itself and leaves the browser no choice. The candidates
+// for a language are the voices the browser says are local, with no "Online" in their name — Edge's
 // voices that Azure speaks —, whose `lang` the language matches by RFC 4647's Basic Filtering, the
-// same tag first, then a longer one; failing that, the same for the language less its last
-// subtag. Of them the voice the adult chose on this device, else the one `default` marks if the
-// language has one alone, else the first. On Android and Linux the browser cannot know whether the
-// system speaks on the device, so voicing waits there for the adult's leave on this device. No DOM.
+// same tag first, then a longer one; failing that, the same for the language less its last subtag.
+// Of them the voice the adult chose on this device, else the one `default` marks if the language
+// has one alone, else the first. On Android and Linux the browser cannot know whether the system
+// speaks on the device, so voicing waits there for the adult's leave on this device. No DOM.
 import { VoicingSpeed } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 
 /** What app reads of a voice: SpeechSynthesisVoice has it all. */
@@ -28,7 +27,7 @@ function matches(range: string, tag: string): boolean {
   return tag === range || tag.startsWith(`${range}-`);
 }
 
-/** Whether a voice may speak at all: local, and none that Edge speaks by Azure (section 3.5). */
+/** Whether a voice may speak at all: local, and none that Edge speaks by Azure (R07). */
 export function mayUse(voice: VoiceLike): boolean {
   return voice.localService && !/online/i.test(voice.name);
 }
@@ -70,7 +69,7 @@ export function voiceFor<V extends VoiceLike>(
   return marked.length === 1 ? marked[0] : found[0];
 }
 
-/** The system as app tells it apart for voicing; ChromeOS is no Linux (section 3.5). */
+/** The system as app tells it apart for voicing; ChromeOS is no Linux (R36). */
 export type Platform = "android" | "chromeos" | "linux" | "other";
 
 /** What app reads of `navigator` to tell the system. */
@@ -106,7 +105,7 @@ export function needsLeave(platform: Platform): boolean {
 
 /**
  * The rate of the slow speed: three quarters of the voice's own, which the rate `1` is. Not tuned
- * on devices yet: each engine maps the rate its own way, and T51 tunes it (Д5 in run/DEBT.md).
+ * on devices: each engine maps the rate its own way.
  */
 export const SLOW_RATE = 0.75;
 

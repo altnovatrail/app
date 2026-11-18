@@ -1,7 +1,7 @@
-// The voice of a language, by tables of the lists that browsers give (section 3.5 of
-// docs/architecture.md): names and flags as the sources of section 4 report them, read 2026-11-02.
-// The voices are synthetic stand-ins with the names that matter — a network voice of Chrome, an
-// "Online" voice of Edge, WebKit's every voice marked default, Android's `en_US`.
+// The voice of a language, by tables of the lists that browsers give (R07): names and flags as the
+// records of docs/sources.md report them. The voices are synthetic stand-ins with the names that
+// matter — a network voice of Chrome, an "Online" voice of Edge, WebKit's every voice marked
+// default, Android's `en_US`.
 import { VoicingSpeed } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import { describe, expect, it } from "vitest";
 import { voice } from "../test/speech.ts";

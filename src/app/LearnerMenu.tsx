@@ -1,8 +1,8 @@
-// The profile's menu (R148 spec; R63 in docs/decisions.md; section 3.10 of docs/architecture.md):
-// the pill of the learner chosen — the avatar, the pseudonym and a chevron — at the top of the home
-// screen and of the skill map, and behind it, as a pop-over, who is learning now, "Switch learner",
-// "For grown-ups" and "Sign out", the buttons of the profile's header (section 3.6). The pill stands
-// on each of those screens, so that an adult who hands the tablet over finds the switch on it.
+// The profile's menu (R148 spec; R63): the pill of the learner chosen — the avatar, the pseudonym
+// and a chevron — at the top of the home screen and of the skill map, and behind it, as a pop-over,
+// who is learning now, "Switch learner", "For grown-ups" and "Sign out", the buttons of the
+// profile's header. The pill stands on each of those screens, so that an adult who hands the tablet
+// over finds the switch on it.
 import { useLearner } from "../account/AccountGate.tsx";
 import { Avatar } from "../account/Avatar.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
@@ -101,7 +101,7 @@ export function LearnerMenu() {
 /**
  * The profile's pill on a screen of a lesson or a task that has no top bar of its own — a lesson's
  * end, a lesson or a task not read, a task already over —, as on every screen of the profile
- * (section 3.6; R64, R65); none with no learner.
+ * (R63, R64, R65); none with no learner.
  */
 export function ProfilePill({ className }: { readonly className: string }) {
   const chosen = useLearner();

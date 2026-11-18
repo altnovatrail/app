@@ -1,7 +1,7 @@
-// The pop-over in each engine (section 3.9 of docs/architecture.md; the mockup's README, «Pop-overs,
-// not panels»): from 600 CSS px it hangs from its button, below 600 it is a sheet from the bottom
-// with "Close"; Escape, a tap outside and a choice close it; the focus goes into it and comes back to
-// its button; and at 320 px — a zoom of 400 % of 1280 — the page does not scroll sideways.
+// The pop-over in each engine (R59): from 600 CSS px it hangs from its button, below 600 it is a
+// sheet from the bottom with "Close"; Escape, a tap outside and a choice close it; the focus goes
+// into it and comes back to its button; and at 320 px — a zoom of 400 % of 1280 — the page does not
+// scroll sideways.
 import { render } from "@testing-library/react";
 import { createRef } from "react";
 import { afterEach, describe, expect, it } from "vitest";

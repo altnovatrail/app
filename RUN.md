@@ -65,7 +65,7 @@ No current epic. The last done one is E5 «Интерфейс по эталон�
 | [x] | T103 | Комментарии кода по R160 spec: задача и холст | Claude | — | T98 |
 | [x] | T104 | Комментарии кода по R160 spec: хранилище, учётная запись и вход | Claude | — | T98 |
 | [x] | T105 | Комментарии кода по R160 spec: взрослые, уроки и карта навыков | Claude | — | T98 |
-| [ ] | T106 | Комментарии кода по R160 spec: оболочка, api и голос | Claude | — | T98 |
+| [x] | T106 | Комментарии кода по R160 spec: оболочка, api и голос | Claude | — | T98 |
 | [ ] | T107 | Комментарии кода по R160 spec: словари, правовые тексты, пакеты и тема | Claude | — | T98 |
 
 «Зависит от» names only tasks of this plan. What a task waits for from other repositories is its body's «Ждёт»: it is taken once the neighbour has done that, and until then the queue goes on.

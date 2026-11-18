@@ -1,7 +1,7 @@
-// The buttons that show an icon alone, in each engine (R60 in docs/decisions.md; section 3.9 of
-// docs/architecture.md): only those of the closed list, each named by its caption, 44 × 44 — the
-// grabber 88 × 44 —, with a tooltip of the same words on hover and on keyboard focus, which stays
-// while the pointer is over it and which Escape dismisses without moving the focus (WCAG 1.4.13).
+// The buttons that show an icon alone, in each engine (R60): only those of the closed list, each
+// named by its caption, 44 × 44 — the grabber 88 × 44 —, with a tooltip of the same words on hover
+// and on keyboard focus, which stays while the pointer is over it and which Escape dismisses
+// without moving the focus (WCAG 1.4.13).
 import { render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import { page, userEvent } from "vitest/browser";

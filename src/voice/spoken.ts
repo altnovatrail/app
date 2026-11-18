@@ -1,10 +1,9 @@
-// A module's text as the synthesis reads it (section 3.5 of docs/architecture.md; R07 and R36 in
-// docs/decisions.md, which closed Д6 of RUN.md): the signs a module's plain text holds, written in
-// words by the table of its language, since every engine reads a sign its own way and reads a box
-// of a workbook's line not at all; and the text cut into sentences, each an utterance of its own,
-// since Chrome cuts a long one short. The screen shows the text as it is: only what is spoken
-// changes. This is app's code, after api's checks, not the model's (R56 tutor). A language with
-// no table of its own is spoken with its signs as they are. No DOM.
+// A module's text as the synthesis reads it (R07, R36): the signs a module's plain text holds,
+// written in words by the table of its language, since every engine reads a sign its own way and
+// reads a box of a workbook's line not at all; and the text cut into sentences, each an utterance
+// of its own, since Chrome cuts a long one short. The screen shows the text as it is: only what is
+// spoken changes. This is app's code, after api's checks, not the model's (R56 tutor). A language
+// with no table of its own is spoken with its signs as they are. No DOM.
 import { tagOf } from "./voices.ts";
 
 /** The box of a workbook's line, as app writes a line for speech (texts.ts). */
@@ -57,7 +56,7 @@ const RU_PARTS: Readonly<Record<number, readonly [string, string]>> = {
   12: ["двенадцатая", "двенадцатых"],
 };
 
-/** The tables of the build's languages (Д6). */
+/** The tables of the build's languages (R36). */
 const TABLES: Readonly<Record<string, Table>> = {
   en: {
     between: {
@@ -158,7 +157,7 @@ export function spokenText(text: string, language: string): string {
 }
 
 /**
- * The sentences of a text, each an utterance of its own (section 3.5): by `Intl.Segmenter` where
+ * The sentences of a text, each an utterance of its own (R36): by `Intl.Segmenter` where
  * the browser has it, else after a full stop, a question or an exclamation mark and a space. An
  * empty text has none.
  */

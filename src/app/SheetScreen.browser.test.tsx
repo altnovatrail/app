@@ -1,9 +1,8 @@
-// A sheet, the mockup's legal text, and a failure screen's card in the browser (R69 in
-// docs/decisions.md): from 600 the sheet a white card of 560, radius 28, its top where the
-// mockup's centred card of 580 has it, its head the heading at 24 bold with the chip under it, the
-// way back before it where given and the close × on the page's grey at its other end; below 600 the
-// whole screen, its heading 52 from the top; a failure screen a card of 460 in the window's middle,
-// its button of the card's width.
+// A sheet, the mockup's legal text, and a failure screen's card in the browser (R69): from 600 the
+// sheet a white card of 560, radius 28, its top where the mockup's centred card of 580 has it, its
+// head the heading at 24 bold with the chip under it, the way back before it where given and the
+// close × on the page's grey at its other end; below 600 the whole screen, its heading 52 from the
+// top; a failure screen a card of 460 in the window's middle, its button of the card's width.
 import { render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { page, userEvent } from "vitest/browser";

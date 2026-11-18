@@ -1,10 +1,9 @@
-// Where a pop-over hangs from its button in the tablet's layout (the mockup's README, «Pop-overs, not
-// panels»; section 3.9 of docs/architecture.md): below the button, or above it where below has no
-// room and above has, or more of it where neither has; at the button's left edge, or at its right
-// where the left would leave the window — or, centred, below the button's middle, as the mockup
-// hangs the avatars from their button in the middle of the owner's column —; inside the window by
-// its margin, where what does not fit scrolls inside the pop-over. It grows from the corner nearest
-// the button, or from the middle of its edge. Without DOM.
+// Where a pop-over hangs from its button in the tablet's layout (R59): below the button, or above
+// it where below has no room and above has, or more of it where neither has; at the button's left
+// edge, or at its right where the left would leave the window — or, centred, below the button's
+// middle, as the mockup hangs the avatars from their button in the middle of the owner's column —;
+// inside the window by its margin, where what does not fit scrolls inside the pop-over. It grows
+// from the corner nearest the button, or from the middle of its edge. Without DOM.
 
 /** A box in CSS px of the viewport, as `getBoundingClientRect` gives it. */
 export interface Box {

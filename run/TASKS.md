@@ -15,14 +15,6 @@ Open tasks outside the current epic, each as its body, in Russian (R154 spec, R1
 - **Как проверить:** `just -f spec/justfile docs-check-repo`.
 - **Разделы:** R145 spec, R143 spec; measurements 1.9 spec; [docs/measurements.md](../docs/measurements.md), разделы 8 и 10.
 
-#### T106. Комментарии кода по R160 spec: оболочка, api и голос
-
-- **Цель:** комментарии `src/app/`, `src/boot/`, `src/config/`, `src/api/`, `src/tutor/`, `src/voice/`, `src/a11y/`, `src/test/` и `src/main.tsx` говорят только то, чего не скажут код и имена (R160 spec, «Comments»).
-- **Почему:** T98 разделена по правилу 11 RUN.md, по каталогам; эти каталоги — эта задача.
-- **Сделать:** как в T103. `src/app/icons.ts` пишет `scripts/icons.ts`: его комментарии правятся там, затем `just icons`.
-- **Как проверить:** `just -f spec/justfile docs-check-repo`; проверки `.claude/rules/code.md`; `/code-review high`.
-- **Разделы:** R160 spec, «Comments»; R32 spec; RULES.md spec — The bar; [.claude/rules/code.md](../.claude/rules/code.md).
-
 #### T107. Комментарии кода по R160 spec: словари, правовые тексты, пакеты и тема
 
 - **Цель:** комментарии `src/i18n/`, `src/legal/`, `src/packages/` и `src/theme/` говорят только то, чего не скажут код и имена (R160 spec, «Comments»).

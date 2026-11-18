@@ -1,6 +1,6 @@
-// The phone's layout, a width below 600 CSS px (R59 in docs/decisions.md; the mockup's README, «Two
-// sizes»), for what CSS alone cannot say: the canvas's attribute `tools-hidden` while the tutor's
-// sheet is open (the 2026-11-17 amendment to R148 spec), and the grabber of that sheet.
+// The phone's layout, a width below 600 CSS px (R59), for what CSS alone cannot say: the canvas's
+// attribute `tools-hidden` while the tutor's sheet is open (R148 spec), and the grabber of that
+// sheet.
 import { useSyncExternalStore } from "react";
 
 /** The media query of the phone's layout, as theme.css has it. */
