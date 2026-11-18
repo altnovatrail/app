@@ -54,9 +54,9 @@ const NAMED = (process.env.NOVATRAIL_WALK_ENGINES ?? "chromium webkit firefox")
   .split(/\s+/)
   .filter((name) => name !== "");
 /**
- * What the sign-in may ask besides the origin: Firebase Auth's two hosts, and in
- * WebKit, whose user agent the SDK takes for Safari's, gapi and the hidden iframe at every start —
- * whose own code then asks www.googleapis.com for the project's configuration.
+ * What the sign-in may ask besides the origin: Firebase Auth's two hosts, and in WebKit, whose user
+ * agent the SDK takes for Safari's, gapi and the hidden iframe at every start — whose own code then
+ * asks www.googleapis.com for the project's configuration.
  */
 const SIGN_IN_HOSTS = new Set([
   "identitytoolkit.googleapis.com",
@@ -68,7 +68,7 @@ const SIGN_IN_HOSTS = new Set([
 /** The questions api's stub of tutor words a step with, in English (R66 api). */
 const STUB_WORDS =
   /Which step of your work would you check first\?|What does the task ask you to find\?|What is given in the task, in your own words\?/;
-/** The databases of the account that the sign-out erases */
+/** The databases of the account that the sign-out erases. */
 const ACCOUNT_DATABASES = /^novatrail-(profile-.+|registry|cache)$/;
 /** The line Chromium and WebKit log for a response of 4xx, at the resource's address; Firefox none. */
 const FAILED_LOAD = /^Failed to load resource: the server responded with a status of 4\d\d\b/;
@@ -123,7 +123,8 @@ afterAll(async () => {
 
 /**
  * What a response of 4xx of the origin was: api's refusal with a cause the build knows — `Refusal`
- * in the details of Connect's error, read by the app's own `refusalOf` —, by the cause's name; or why it is none.
+ * in the details of Connect's error, read by the app's own `refusalOf` —, by the cause's name; or
+ * why it is none.
  */
 async function failedResponse(
   response: Response,

@@ -40,8 +40,8 @@ ci-test: build
     again="$(mktemp -d)"; trap 'rm -rf "$again"' EXIT; {{ bin }}/vite build --outDir "$again" --emptyOutDir --logLevel warn && node scripts/release.ts --check "$again"
 
 # The screens in WebKit and Firefox, without the coverage: Vitest's v8 coverage works in Chromium
-# alone (sources 2.5). typescript.yml runs this as the check "TypeScript / engines", beside ci-test,
-# so that the two take their time side by side (R45). No build: no test in a browser reads build/.
+# alone. typescript.yml runs this as the check "TypeScript / engines", beside ci-test, so that the
+# two take their time side by side (R45). No build: no test in a browser reads build/.
 ci-engines: _install
     {{ bin }}/vitest run --project '*(webkit)' --project '*(firefox)'
 
@@ -127,9 +127,9 @@ walk *engines="chromium webkit firefox": _install
 # The comparison with the interface mockup (R58): mockup/vitest.config.ts in Chromium, WebKit and
 # Firefox — every state of the mockup's first slice, on the iPad and the phone, against the other
 # engines, and app's screens against their states, region by region —, with the snapshots and the
-# reports in mockup/out/, which it empties first. It opens the mockup of the spec folder given: spec/, the submodule, unless a
-# clone of a newer spec is named, e.g. just mockup-compare /tmp/spec. CI runs it as the job Mockup
-# of ci.yml, the one job with the submodule beside the licenses'.
+# reports in mockup/out/, which it empties first. It opens the mockup of the spec folder given:
+# spec/, the submodule, unless a clone of a newer spec is named, e.g. just mockup-compare /tmp/spec.
+# CI runs it as the job Mockup of ci.yml, the one job with the submodule beside the licenses'.
 mockup-compare spec="spec": _install
     rm -rf mockup/out
     NOVATRAIL_MOCKUP_SPEC={{ quote(spec) }} {{ bin }}/vitest run --config mockup/vitest.config.ts

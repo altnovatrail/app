@@ -151,11 +151,12 @@ ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 # image needs a newer archive. apt checks the archive's signatures as it does on any update.
 #
 # apt reads the snapshot alone, from a source of its own that names the snapshot in its URI, with
-# the suites and components of the base image's ubuntu.sources: apt-get update --snapshot reads
-# the live archive's indexes as well as the snapshot's, twice the download, and resolves the same
+# the suites and components of the base image's ubuntu.sources: apt-get update --snapshot reads the
+# live archive's indexes as well as the snapshot's, twice the download, and resolves the same
 # packages at the same versions (R40 spec). The base image's own sources stay as they are, for
-# whoever runs apt in the devcontainer, and this RUN reads none of them. snapshot.ubuntu.com/ubuntu serves arm64 as well as amd64. The suites are
-# those of noble, the base image's Ubuntu: a base image of a newer one changes them with the ID.
+# whoever runs apt in the devcontainer, and this RUN reads none of them. snapshot.ubuntu.com/ubuntu
+# serves arm64 as well as amd64. The suites are those of noble, the base image's Ubuntu: a base
+# image of a newer one changes them with the ID.
 ARG UBUNTU_SNAPSHOT=20261021T000000Z
 RUN sources="$(mktemp -d)"; \
     printf '%s\n' 'Types: deb' "URIs: https://snapshot.ubuntu.com/ubuntu/${UBUNTU_SNAPSHOT}/" \

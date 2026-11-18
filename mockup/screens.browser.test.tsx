@@ -73,7 +73,7 @@ interface Compared {
   readonly state: string;
   readonly draw: () => ReactNode;
   readonly regions: readonly Region[];
-  /** What is to bring the screen to the mockup, while nothing has: its differences are not held. */
+  /** Why the screen is not brought to the mockup yet, in words: its differences are reported, not held. */
   readonly until?: string;
   /** What a screen that draws in an effect waits for before it is read: its last element shown. */
   readonly settle?: () => Promise<unknown>;
@@ -1116,7 +1116,7 @@ function home() {
  * with Disconnect and License beside their map, the catalog below them in place of "Add a module".
  */
 const HOME_PLACED =
-  'the heading "My subjects" (R63); "What\'s next" names no lesson (R24); Disconnect and License on a card (R62)';
+  'the heading "My subjects" (R63); "What\'s next" names no lesson (R24); Disconnect and License on a card (R32; R62)';
 
 /** A card or a bar, whose words are its own regions': the size of its own text is not drawn. */
 const NO_TEXT = "no text of its own: the body's 14 px (R11)";
