@@ -1,6 +1,6 @@
-// A module's tile (R62 in docs/decisions.md): the first letter of its title on one of the mockup's
-// gradients, by the module's ID, so that a module has the same tile on every screen and device —
-// its card in My subjects and the end of its lesson (R64).
+// A module's tile (R62): the first letter of its title on one of the mockup's gradients, by the
+// module's ID, so that a module has the same tile on every screen and device — its card in My
+// subjects and the end of its lesson (R64).
 
 /** The gradients of the mockup's tiles of modules, one by the module's ID. */
 const TONES = 3;

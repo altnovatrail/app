@@ -1,10 +1,9 @@
-// The skill map of a module, as the element of skill-map takes it (architecture 3.3 in spec; R99
-// spec; R34 in docs/decisions.md): the state of its skills from `GetSkillMap` — by the learner's
-// action on the learner's screen, by an adult's in the section for adults — and, by the digest of
-// that answer, the open views of its skill graph with its tiers and of its manifest, from the
-// shared cache or api. And the modules the answer offers beside an anchor skill whose holding is
-// unknown: skill-map does not show `teaching_modules`, so app does, beside the map (Д211 in the
-// table 4 of spec's RUN.md). No DOM.
+// The skill map of a module, as the element of skill-map takes it (R99 spec; R34): the state of its
+// skills from `GetSkillMap` — by the learner's action on the learner's screen, by an adult's in the
+// section for adults — and, by the digest of that answer, the open views of its skill graph with
+// its tiers and of its manifest, from the shared cache or api. And the modules the answer offers
+// beside an anchor skill whose holding is unknown: skill-map does not show `teaching_modules`, so
+// app does, beside the map. No DOM.
 import type { Action } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
 import {
   AnchorSkillHolding,
@@ -53,7 +52,7 @@ function unknown(holding: AnchorSkillHolding): boolean {
 /**
  * The modules of the catalog the answer offers: those that teach an anchor skill whose holding is
  * unknown, each once, in the order the answer names them. api names them whatever the holding, and
- * app offers them beside an unknown one alone (section 15 of the text of the contracts).
+ * app offers them beside an unknown one alone (the contract).
  */
 export function offeredModules(skillMap: GetSkillMapResponse): string[] {
   const offered = new Set<string>();

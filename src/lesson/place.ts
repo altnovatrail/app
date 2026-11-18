@@ -1,9 +1,9 @@
-// The place in a lesson and the way along its bar (section 3.4 of docs/architecture.md; R06, R23 in
-// docs/decisions.md). The place is the segment the learner has reached: "Continue" moves it, and so
-// does api's word that the task on it ended. A lesson opens at the later of the place the device
-// keeps and the one after the last task segment that ended, and never on a task that ended but the
-// last. Back is a touch of the bar, to any explanation or example passed; a task that ended does not
-// open again, for its attempt is closed. Segments are named by their places, from 1. No DOM.
+// The place in a lesson and the way along its bar (R06, R23). The place is the segment the learner
+// has reached: "Continue" moves it, and so does api's word that the task on it ended. A lesson
+// opens at the later of the place the device keeps and the one after the last task segment that
+// ended, and never on a task that ended but the last. Back is a touch of the bar, to any
+// explanation or example passed; a task that ended does not open again, for its attempt is closed.
+// Segments are named by their places, from 1. No DOM.
 import type { Kind } from "./run.ts";
 
 /** The lesson as the place needs it: the kind of each segment, and the task segments that ended. */

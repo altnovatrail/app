@@ -1,6 +1,6 @@
-// The counts of a module's skills on its card (R62 in docs/decisions.md): by the function ./states
-// of skill-map, the five states with a verdict and the two marks, a status the build does not know
-// left out, and the segments of the bar in the legend's order, the states with no skill left out.
+// The counts of a module's skills on its card (R62): by the function ./states of skill-map, the
+// five states with a verdict and the two marks, a status the build does not know left out, and the
+// segments of the bar in the legend's order, the states with no skill left out.
 import { GetSkillMapResponseSchema } from "@altnovatrail/contracts/novatrail/api/v1/progress_pb.js";
 import { create } from "@bufbuild/protobuf";
 import { describe, expect, it } from "vitest";

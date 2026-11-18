@@ -1,15 +1,14 @@
-// The page This device in the section for adults (R04 with its 2026-11-12 amendment; section 3.2 of
-// docs/architecture.md): what app keeps on this device, by profile — its unfinished work and about
-// how much space its data takes — and for the whole site — the browser's estimate, whether it agreed
-// to keep the data, and what the browser and Safari may erase by themselves, with the Home Screen
-// for advice. A profile's data and everything are erased here, each asked first (WCAG 3.3.4);
-// everything signs out too. While a work of a profile is not on the server as far as this device
-// holds it, the page says that the work is on this device alone (R113 spec; R30). After the profiles, the voices of the device and on
-// Android and Linux the leave for voicing (R07; ../voice/DeviceVoices.tsx). At the owner profile,
-// its own key when it is kept here, by its provider and last four, and "Remove key" — the action of
-// the page Own AI key (R47). Erasing a profile's data takes its key from memory too. Each essay a
-// profile keeps here, by when it was begun and the first paragraph of its task, with its own Erase
-// (R04; R53).
+// The page This device in the section for adults (R04): what app keeps on this device, by profile —
+// its unfinished work and about how much space its data takes — and for the whole site — the
+// browser's estimate, whether it agreed to keep the data, and what the browser and Safari may erase
+// by themselves, with the Home Screen for advice. A profile's data and everything are erased here,
+// each asked first (WCAG 3.3.4); everything signs out too. While a work of a profile is not on the
+// server as far as this device holds it, the page says that the work is on this device alone
+// (R113 spec; R30). After the profiles, the voices of the device and on Android and Linux the leave
+// for voicing (R07; ../voice/DeviceVoices.tsx). At the owner profile, its own key when it is kept
+// here, by its provider and last four, and "Remove key" — the action of the page Own AI key (R47).
+// Erasing a profile's data takes its key from memory too. Each essay a profile keeps here, by when
+// it was begun and the first paragraph of its task, with its own Erase (R04, R53).
 import type { Profile } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { Avatar } from "../account/Avatar.tsx";
@@ -40,7 +39,7 @@ type OnDevice =
  * Whether api keeps a copy of every work this device keeps of the profile: its storage is on, and
  * the last `PutWork` of each work went through, or the device keeps none. A work over 4 MiB, a
  * refusal and a network that failed leave its mark behind, and the warning of its loss stands, as
- * it does while the device is not read yet (the 2026-11-17 amendment to R30).
+ * it does while the device is not read yet (R30).
  */
 function copiedOnServer(profile: Profile, kept: OnDevice | undefined): boolean {
   if (!profile.workStorage) return false;
@@ -336,7 +335,7 @@ function ProfileOnDevice({
             setSaid(undefined);
             try {
               const all = await eraseProfile(device, profile.profileId);
-              // The own key goes from memory with the profile's data, in every tab (section 3.6).
+              // The own key goes from memory with the profile's data, in every tab (R08).
               if (keyed(profile)) await holder.remove(profile.profileId);
               setSaid({ status: words.text(all ? "device.erased" : "device.left") });
               if (all) setGone(true);

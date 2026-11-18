@@ -1,15 +1,14 @@
-// The page Own AI key in the section for adults (R08 and R47 in docs/decisions.md; section 3.6 of
-// docs/architecture.md; section 15 of the text of the contracts): the owner connects, replaces and
-// removes their own key at an AI provider. It works while the owner profile of the category
-// `adult` is the learner chosen: with none chosen, it opens that profile — no PIN while the account
-// has no child. Before the field it says in words what happens to the key. The providers are those
-// `ListOwnKeyProviders` gives, with no list of the build's own; with none, the page says so and has
-// no field. "Connect" asks `CheckOwnKey`, and only a key it accepted takes the place of the former
-// one; the key is shown by its provider and last four characters alone, never whole, and lives in
-// no state of the page but its field. "Keep on this device" is off until the adult sets it. A
-// refusal of the key stays beside it with what to do, and its limit reached with which limit, when
-// access comes back if api says, and what to do about that limit; "Remove key" is the
-// one way to platform AI, and the owner's. In the device's language, as the section is (R10).
+// The page Own AI key in the section for adults (R08 and R47; the contract): the owner connects,
+// replaces and removes their own key at an AI provider. It works while the owner profile of the
+// category `adult` is the learner chosen: with none chosen, it opens that profile — no PIN while
+// the account has no child. Before the field it says in words what happens to the key. The
+// providers are those `ListOwnKeyProviders` gives, with no list of the build's own; with none, the
+// page says so and has no field. "Connect" asks `CheckOwnKey`, and only a key it accepted takes the
+// place of the former one; the key is shown by its provider and last four characters alone, never
+// whole, and lives in no state of the page but its field. "Keep on this device" is off until the
+// adult sets it. A refusal of the key stays beside it with what to do, and its limit reached with
+// which limit, when access comes back if api says, and what to do about that limit; "Remove key" is
+// the one way to platform AI, and the owner's. In the device's language, as the section is (R10).
 import type { Profile } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import { OwnKeyCheck } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import { Cause, LimitCause } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
@@ -36,7 +35,7 @@ import { keyed, useHeldKey, useKeyHolder } from "../ownkey/OwnKeyContext.tsx";
 import { Erase } from "./DevicePage.tsx";
 import { SectionScreen } from "./SectionScreen.tsx";
 
-/** The page Own AI key (R08; section 3.6). */
+/** The page Own AI key (R08). */
 export const OWN_KEY_PAGE: Route = { screen: ADULTS.screen, parts: ["own-key"] };
 
 /** The words of a check that did not accept the key, by its answer; an unknown one did not go. */
@@ -47,7 +46,7 @@ const CHECK_KEYS = {
   [OwnKeyCheck.UNSPECIFIED]: "ownkey.check-failed",
 } as const;
 
-/** What the page says before the field, in words and with no links (privacy 1, 7 in spec). */
+/** What the page says before the field, in words and with no links. */
 function Warning() {
   const { words } = useLanguage();
   return (

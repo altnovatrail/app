@@ -1,7 +1,7 @@
-// What app reads of a lesson run (section 3.4 of docs/architecture.md; R06, R23 in
-// docs/decisions.md; LearningService in the contract): the lesson's full ID, which keys its state on
-// the device; the kind of each segment; how a run ended, in words; and the places of the task
-// segments that ended, from a refusal that carries them. None of it needs the DOM.
+// What app reads of a lesson run (R06, R23; LearningService in the contract): the lesson's full ID,
+// which keys its state on the device; the kind of each segment; how a run ended, in words; and the
+// places of the task segments that ended, from a refusal that carries them. None of it needs the
+// DOM.
 import {
   Cause,
   type EngineChoice,
@@ -11,7 +11,7 @@ import type { DemoState } from "@altnovatrail/spec/canvas";
 import type * as open from "@altnovatrail/spec/formatv0/open";
 import type { Failure } from "../api/failure.ts";
 
-/** The kind of a segment: exactly one of the three the format knows (section 21 of its text). */
+/** The kind of a segment: exactly one of the three the format knows. */
 export type Kind = "explanation" | "example" | "task";
 
 /** A segment's kind; a segment of a kind this build does not know reads as an explanation. */
@@ -22,8 +22,8 @@ export function kindOf(segment: open.Segment): Kind {
 }
 
 /**
- * A lesson's full ID — its module's ID, `lesson` and its local ID, joined by `/` (section 10 of the
- * format's text) — as the contract keys the state of a lesson by it and `LessonRunRef` names it.
+ * A lesson's full ID — its module's ID, `lesson` and its local ID, joined by `/` — as the contract
+ * keys the state of a lesson by it and `LessonRunRef` names it.
  */
 export function fullId(moduleId: string, lessonId: string): string {
   return `${moduleId}/lesson/${lessonId}`;
@@ -86,7 +86,7 @@ export function endedOf(failure: Failure): readonly number[] | "unsaid" | undefi
 /**
  * The demo state kept of an example, if the element would take it: `opened` a whole number from 0
  * to the count of the demo's parts and `hidden` true or false. A record that fails it is a broken
- * database, and the demo starts from the beginning (R06; section 3.4).
+ * database, and the demo starts from the beginning (R06).
  */
 export function demoOf(kept: unknown, parts: number): DemoState | undefined {
   if (typeof kept !== "object" || kept === null) return undefined;

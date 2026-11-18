@@ -1,9 +1,9 @@
-// The lesson's screen (R06, R23, R64 and the second 2026-11-17 amendment to R06): its top bar —
-// Back that leaves the lesson, the lesson's title and the line of the segment shown, which opens the
-// segments in a pop-over hung from the bar's pill —, the row with "Continue", enabled at once, in
-// the slot of a worked example's canvas when it is given one, and only aria-disabled while "lesson
-// done" is under way, so that it keeps the focus and does nothing; and the end of a lesson, a card
-// with the module's tile.
+// The lesson's screen (R06, R23, R64 and R06): its top bar — Back that leaves the lesson, the
+// lesson's title and the line of the segment shown, which opens the segments in a pop-over hung
+// from the bar's pill —, the row with "Continue", enabled at once, in the slot of a worked
+// example's canvas when it is given one, and only aria-disabled while "lesson done" is under way,
+// so that it keeps the focus and does nothing; and the end of a lesson, a card with the module's
+// tile.
 import { RunEndReason } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";

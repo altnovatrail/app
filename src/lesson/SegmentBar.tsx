@@ -1,11 +1,11 @@
-// The segments of a lesson (section 3.4 of docs/architecture.md; R23 and R64 in
-// docs/decisions.md): a pop-over behind the line under the lesson's title in the top bar, as the
-// mockup's `lesson-segments` — the lesson's title and its module, the list of segments by place, and
-// "Leave the lesson". Each row is a button with its number — a tick in its place for a segment
-// passed —, its kind, and how far it is, or why it does not open, its words its name (2.5.3); the
-// one shown is `aria-current`. A segment that does not open — a task that ended, or one not reached —
-// is `aria-disabled`, and a press says it in a line of the screen with the row's name: under the
-// heading of the segment shown, a bare "Not open yet" would read as said of that one.
+// The segments of a lesson (R23 and R64): a pop-over behind the line under the lesson's title in
+// the top bar, as the mockup's `lesson-segments` — the lesson's title and its module, the list of
+// segments by place, and "Leave the lesson". Each row is a button with its number — a tick in its
+// place for a segment passed —, its kind, and how far it is, or why it does not open, its words its
+// name (2.5.3); the one shown is `aria-current`. A segment that does not open — a task that ended,
+// or one not reached — is `aria-disabled`, and a press says it in a line of the screen with the
+// row's name: under the heading of the segment shown, a bare "Not open yet" would read as said of
+// that one.
 import { BELOW_BAR } from "../app/hang.ts";
 import { Icon } from "../app/Icon.tsx";
 import { PopOver } from "../app/PopOver.tsx";

@@ -1,5 +1,4 @@
-// A module's level on the scale of its bands, as the skill map gives it (R157 spec and its
-// amendment of T173; the 2026-11-16 amendment of T178 to R99 spec; R56 in docs/decisions.md):
+// A module's level on the scale of its bands, as the skill map gives it (R157 spec; R99 spec; R56):
 // the band of the level, `level_band`, among the bands of the manifest of the module's current
 // version, in their order from the easiest, and the bands next to it, which the adult's "Easier"
 // and "Harder" name to `SetModuleLevel`. An empty `level_band` is a level below the lowest band:
@@ -18,8 +17,8 @@ export interface Level {
 
 /**
  * The level of a module by the band the skill map names and the bands of its manifest: none when
- * the manifest has no bands, or does not name the band — which a band's ID kept in every version
- * of a module rules out (section 27 of the module format), and a correction could only be refused.
+ * the manifest has no bands, or does not name the band — which a band's ID kept in every version of
+ * a module rules out, and a correction could only be refused.
  */
 export function levelOf(
   levelBand: string,

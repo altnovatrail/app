@@ -1,9 +1,8 @@
-// The page This device in the browser (R04 with its 2026-11-12 amendment; section 3.2 of
-// docs/architecture.md): what each profile keeps here and about how much, the profile with nothing
-// here and the one that cannot be read, the warning of loss on every profile while api keeps no
-// copy (R113 spec), with the storage on the server switched on too (R30), the browser's
-// estimate, persistent storage asked for and refused, Safari's seven days, and both erasures, each
-// asked first, with the focus where it belongs.
+// The page This device in the browser (R04): what each profile keeps here and about how much, the
+// profile with nothing here and the one that cannot be read, the warning of loss on every profile
+// while api keeps no copy (R113 spec), with the storage on the server switched on too (R30), the
+// browser's estimate, persistent storage asked for and refused, Safari's seven days, and both
+// erasures, each asked first, with the focus where it belongs.
 import {
   type Profile,
   ProfileSchema,

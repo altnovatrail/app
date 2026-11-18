@@ -1,12 +1,11 @@
-// The cards of "My subjects" (section 3.10 of docs/architecture.md; R99 spec; ModuleService in
-// the contract): each module by the title and explanation language of the open view of its current
-// version's manifest. A module with no current version for the learner is named by the manifest the
-// cache keeps of an earlier version, or else by its ID, and shown unavailable; a manifest that cannot
-// be had names the module by its ID too, and says so, so that the screen can ask again. A module
-// whose skill graph is a chain is marked "in order", by the tiers of the open view of its current
-// version's graph (R58 spec; section 3.4): the mark comes apart from the card, when the graph
-// has come, so a graph slow to come holds no card back, and one that cannot be had marks nothing.
-// No DOM.
+// The cards of "My subjects" (R99 spec; ModuleService in the contract): each module by the title
+// and explanation language of the open view of its current version's manifest. A module with no
+// current version for the learner is named by the manifest the cache keeps of an earlier version,
+// or else by its ID, and shown unavailable; a manifest that cannot be had names the module by its
+// ID too, and says so, so that the screen can ask again. A module whose skill graph is a chain is
+// marked "in order", by the tiers of the open view of its current version's graph (R58 spec; R06):
+// the mark comes apart from the card, when the graph has come, so a graph slow to come holds no
+// card back, and one that cannot be had marks nothing. No DOM.
 import type * as open from "@altnovatrail/spec/formatv0/open";
 import type { OpenViews } from "../packages/views.ts";
 import type { SkillCounts } from "./states.ts";
@@ -35,8 +34,8 @@ export interface ModuleRef {
 
 /**
  * Whether the tiers of a skill graph make it a chain: two skills or more, each in a tier of its own
- * — anchor skills have no tier (R58 spec; its amendment of 2026-11-02). The tiers are those
- * module-kit computed and api gives with the graph, so the mark and the map's tiers never part.
+ * — anchor skills have no tier (R58 spec). The tiers are those module-kit computed and api gives
+ * with the graph, so the mark and the map's tiers never part.
  */
 export function isSequential(tiers: Readonly<Record<string, number>>): boolean {
   const each = Object.values(tiers);
@@ -99,7 +98,7 @@ export async function cardsOf(
   return Promise.all(modules.map((module) => cardOf(views, module, kept)));
 }
 
-/** Cards by their titles in the order of the screen's language, then by ID (section 3.8). */
+/** Cards by their titles in the order of the screen's language, then by ID (R17). */
 export function byTitle(
   cards: readonly ModuleCard[],
   compare: (a: string, b: string) => number,

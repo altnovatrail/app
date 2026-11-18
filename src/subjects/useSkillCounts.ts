@@ -1,10 +1,10 @@
-// The states of the skills on the cards of the modules connected (R62 in docs/decisions.md;
-// section 3.10 of docs/architecture.md): the cards show at once, and each of a module with a current
-// version takes its counts when its map has come — GetSkillMap by the learner's action, and the open
-// view of the skill graph of the version that answer names, as the skill map reads them (R34) —,
-// counted by the function ./states of skill-map at the time of the device. A map that does not
-// come, or a module with no skill graph, leaves its card with no bar; the next lists read — a retry,
-// a connection — ask again for a map that failed, and never again for one that came.
+// The states of the skills on the cards of the modules connected (R62): the cards show at once, and
+// each of a module with a current version takes its counts when its map has come — GetSkillMap by
+// the learner's action, and the open view of the skill graph of the version that answer names, as
+// the skill map reads them (R34) —, counted by the function ./states of skill-map at the time of
+// the device. A map that does not come, or a module with no skill graph, leaves its card with no
+// bar; the next lists read — a retry, a connection — ask again for a map that failed, and never
+// again for one that came.
 import { Action } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Api } from "../api/client.ts";

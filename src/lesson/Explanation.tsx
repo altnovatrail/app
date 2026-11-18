@@ -1,8 +1,8 @@
-// An explanation of a lesson (section 3.4 of docs/architecture.md; R06 in docs/decisions.md): its
-// paragraphs and pictures, as a statement's, and from format 0.4 its numbered lists, which app draws
-// itself, without the canvas — a picture an <img> with its `alt`, by an address `blob:`, and a list
-// an <ol>, whose numbers the list sets, not the text (R111 spec). All of it is the module's text,
-// in its explanation language. "Read aloud" above it reads its paragraphs and lists (R07).
+// An explanation of a lesson (R06): its paragraphs and pictures, as a statement's, and from format
+// 0.4 its numbered lists, which app draws itself, without the canvas — a picture an <img> with its
+// `alt`, by an address `blob:`, and a list an <ol>, whose numbers the list sets, not the text
+// (R111 spec). All of it is the module's text, in its explanation language. "Read aloud" above it
+// reads its paragraphs and lists (R07).
 import type { Media } from "@altnovatrail/spec/canvas";
 import type * as open from "@altnovatrail/spec/formatv0/open";
 import { Picture } from "../packages/Picture.tsx";

@@ -1,9 +1,9 @@
-// The modules of a profile in the section for adults (R32 in docs/decisions.md; section 3.10 of
-// docs/architecture.md), a page of the profile chosen, `#/adults/modules`: the modules connected to
-// it, as ListConnectedModules gives them, each a card named by the manifest of its current version
-// as My subjects names it, in the order of the screen's language, with the page of its license —
-// LICENSE and NOTICE of that version, `#/adults/license/<digest>`, a page of the section too. A
-// module with no current version has no files to show, and its card says it is unavailable.
+// The modules of a profile in the section for adults (R32), a page of the profile chosen,
+// `#/adults/modules`: the modules connected to it, as ListConnectedModules gives them, each a card
+// named by the manifest of its current version as My subjects names it, in the order of the
+// screen's language, with the page of its license — LICENSE and NOTICE of that version,
+// `#/adults/license/<digest>`, a page of the section too. A module with no current version has no
+// files to show, and its card says it is unavailable.
 import type { Profile } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import { ReadFailure } from "../api/ReadFailure.tsx";
 import { ADULTS, navigate, type Route } from "../app/router.ts";
