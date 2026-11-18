@@ -8,7 +8,7 @@ Table 4 of [RUN.md](../RUN.md): what was put off on purpose, its risk, when to r
 
 ## Table 4. Technical debt
 
-Numbers are not reused: next — Д43.
+Numbers are not reused: next — Д44.
 
 | ID | Debt | From | Risk while open | When to return |
 |---|---|---|---|---|
@@ -35,3 +35,4 @@ Numbers are not reused: next — Д43.
 | Д37 | The picture of a work is drawn on the main thread at each `PutWork` — `exportPicture()` fills and encodes the 1000 × 1400 surface — while the check and its feedback wait; how long it takes on a weak tablet is not measured | T62 | A screen that stalls at "Check" with storage on | With a measurement on a weak tablet: drawn in idle time or in a worker, if it stalls |
 | Д38 | The workbook of T48 (R54) is checked by the tests only: the manual check on `api`'s stub — a page of `novatrail/grade-3-math` by the synthetic child of `just dev-app` (T102 `api`), "Check" with its boxes, each line's and box's verdict, the rung's mark on a box — and a leg of `just walk` were not run, as `api` (`just dev-app`) did not answer at `http://api:8080` in the session; the workbook on models waits for tutor's records (row 5.12 of [COORDINATION.md](../spec/COORDINATION.md)) | T48 | A mismatch between `app` and `api`'s `SubmitWork` with `WorkbookWork`, or a page the canvas lays out otherwise than the module's, shows only on the site | After the merge of T48, on the stub with the child: the manual check and the leg of `just walk`; on models, with row 5.12 |
 | Д42 | Scorecard's alert #10, `VulnerabilitiesID`, of 2026-11-17: GHSA-fc5q-39xc-vjpf, a ReDoS of `picomatch` by repeated extglobs, every version to 4.0.7, the latest on 2026-11-18, with no fixed release ([docs/sources.md](../docs/sources.md), section 2.7). `picomatch` 4.0.7 comes only with `vite` and `vitest`, dev tools that never ship: `npm audit --omit=dev` of `ci-vuln` finds nothing, and the build holds none of it. No change of `app` closes the alert (R70) | T91 | A glob of a hostile pattern in the build or the tests — `app`'s are its own — could hang the run; nothing reaches a learner | Once `picomatch` releases a fix: in 4.x Dependabot raises it with `vite` or `vitest`; only in a new major, past their `^4` ranges, an `overrides` entry in `package.json` takes it. The alert closes on the next scan |
+| Д43 | The modules for an anchor beside the skill map (R34; [docs/architecture.md](../docs/architecture.md), section 3.10, «Skill map») are checked on the stub of `api` alone: that a real `api` fills `teaching_modules` of `AnchorSkillState` is not checked | T43 | If a real `api` leaves the field empty, the section «Modules to connect» never shows, and an anchor at «unknown» offers the learner nothing | A walk on a real `api` with an anchor at «unknown» |

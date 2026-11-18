@@ -2,7 +2,7 @@
   "entry": 12,
   "comments": true,
   "sections": {
-    "architecture 3.1": 32,
+    "architecture 3.1": 30,
     "architecture 3.2": 40,
     "architecture 3.3": 32,
     "architecture 3.4": 31,
@@ -10,7 +10,7 @@
     "architecture 3.7": 39,
     "architecture 3.8": 81,
     "architecture 3.9": 29,
-    "architecture 3.10": 72
+    "architecture 3.10": 60
   },
   "entries": {
     "R03": 13,
