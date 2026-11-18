@@ -48,6 +48,7 @@ import { App, LearnerBar } from "../app/App.tsx";
 import { HOME, LEGAL, SKILL_MAP, TUTOR } from "../app/router.ts";
 import {
   Framed,
+  Held,
   Offline,
   OtherTab,
   ReloadOffer,
@@ -592,6 +593,7 @@ const PROGRESS_API = {
 const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
   ["framed", () => <Framed />],
   ["offline", () => <Offline onRetry={() => {}} />],
+  ["held", () => <Held onRetry={() => {}} />],
   [
     "unconfigured",
     () => <Unconfigured detail="/deployment.json is refused by schema: signIn.measurementId" />,

@@ -64,8 +64,8 @@ import { en } from "../i18n/en.ts";
 import { ru } from "../i18n/ru.ts";
 import { OWN_KEY_CHANNEL } from "../ownkey/OwnKeyContext.tsx";
 import { addProfile } from "../storage/profile.ts";
-import { readRegistry } from "../storage/registry.ts";
-import { SETTINGS } from "../storage/schema.ts";
+import { readRegistry, setAccount } from "../storage/registry.ts";
+import { profileDatabase, SETTINGS } from "../storage/schema.ts";
 import { writeLanguage } from "../storage/settings.ts";
 import { memoryDevice } from "../test/device.ts";
 import { type FakeSignIn, fakeSignIn } from "../test/signin.ts";
@@ -1206,6 +1206,30 @@ describe("the page This device in the section", () => {
     expect(await readRegistry(device)).toBeUndefined();
     expect(backend.databases.has(SETTINGS)).toBe(false);
     expect(window.location.hash).toBe("#/home");
+  });
+
+  it("holds the account on a failure screen while another tab holds what another account left", async () => {
+    const { device, backend } = memoryDevice();
+    await setAccount(device, "account-0");
+    await addProfile(device, "old");
+    backend.blocked.add(profileDatabase("old"));
+    const account = { accountId: "account-1", profiles: [OWNER] };
+    renderApp(
+      { getAccount: () => message(GetAccountResponseSchema, { account }) },
+      fakeSignIn("uid-1"),
+      device,
+    );
+    const held = await screen.findByRole("heading", {
+      level: 1,
+      name: "Another account's data on this device can't be erased yet. Close the app's other tabs and try again",
+    });
+    // A failure screen's card, its Try again the primary button (R69).
+    expect(held.closest("main")).toHaveClass("nt-failure");
+    const retry = screen.getByRole("button", { name: "Try again" });
+    expect(retry).toHaveClass("nt-main");
+    backend.blocked.clear();
+    await userEvent.click(retry);
+    expect(await screen.findByRole("heading", { level: 1, name: "Who is learning?" })).toBeTruthy();
   });
 });
 
