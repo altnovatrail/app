@@ -214,6 +214,8 @@ export function OpenEssay({
         setShown(now);
         setSubmissions((n) => n + 1);
         setCame(true);
+        // The answer came: the card says so at once, while the submission is written to the device.
+        setChecking(false);
         const { context, historyLength } = of;
         const saved =
           (await profile?.addEssaySubmission(attemptId, of.png, {

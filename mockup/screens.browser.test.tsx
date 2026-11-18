@@ -44,7 +44,8 @@ import { SubjectsScreen } from "../src/subjects/MySubjects.tsx";
 import type { ModuleCard } from "../src/subjects/modules.ts";
 import type { SkillCounts } from "../src/subjects/states.ts";
 import { NO_VERDICTS, type Verdicts, verdictsOf } from "../src/task/attempt.ts";
-import { initialState } from "../src/task/steps.ts";
+import { EssayScreen, type EssayScreenProps } from "../src/task/EssayScreen.tsx";
+import { initialState, slotsOf } from "../src/task/steps.ts";
 import { TaskScreen } from "../src/task/TaskScreen.tsx";
 import { routedApi } from "../src/test/api.ts";
 import { memoryDevice } from "../src/test/device.ts";
@@ -106,6 +107,58 @@ const STEPS: readonly open.Step[] = [
   { title: "Check the answer", exit_condition: "none" },
 ];
 
+/** The mockup's workbook page of grade 3: six lines of a division with a remainder, two boxes each. */
+const REMAINDERS: open.Task = {
+  id: "remainders",
+  statement: [{ text: "Divide, and write the quotient and the remainder." }],
+  canvas: { kind: "workbook" },
+  items: ["47 ÷ 6 =", "38 ÷ 5 =", "29 ÷ 4 =", "52 ÷ 7 =", "44 ÷ 9 =", "33 ÷ 8 ="].map((sum) => ({
+    line: [{ text: sum }, { binding: "box" }, { text: "r" }, { binding: "box" }],
+  })),
+};
+
+/** The mockup's six lines read: the second and the fifth not right yet, as its demo has them. */
+const REMAINDERS_READ: Verdicts = verdictsOf(
+  [
+    ["7", "5", true],
+    ["6", "8", false],
+    ["7", "1", true],
+    ["7", "3", true],
+    ["4", "7", false],
+    ["4", "1", true],
+  ].map(([quotient, remainder, right], i) => {
+    const verdict = right === true ? "correct" : "not_yet";
+    return {
+      verdict,
+      answerSlots: [quotient, remainder].map((value, slot) => ({
+        answerSlot: { item: i + 1, slot: slot + 1 },
+        verdict,
+        value,
+      })),
+    };
+  }) as unknown as Parameters<typeof verdictsOf>[0],
+  REMAINDERS,
+);
+
+/** The mockup's essay, on a lined sheet, to a rubric. */
+const UMBRELLA: open.Task = {
+  id: "umbrella",
+  statement: [
+    {
+      text: "A shop sells an umbrella that can talk, but only when it rains. Write three different first sentences for an essay about it. Then put a ring round the one you would keep.",
+    },
+  ],
+  canvas: { kind: "handwriting_sheet", grid: "lines" },
+  items: [{ answer_slots: [{ binding: "sheet" }] }],
+};
+
+/** The steps of the mockup's essays, which its panel opens with. */
+const ESSAY_STEPS: readonly open.Step[] = [
+  { title: "Plan the essay", gives: ["techniques"], exit_condition: "none" },
+  { title: "Write it", exit_condition: "none" },
+  { title: "Read it again", exit_condition: "none" },
+];
+
 /** A verdict of the one item of a task: "Not yet" or "Correct", with what was read, or the option. */
 function judged(task: open.Task, verdict: string, value?: string): Verdicts {
   return verdictsOf(
@@ -156,7 +209,7 @@ function TaskDrawn({
       state={{ ...initialState(shown), choices }}
       mode={shown}
       verdicts={verdicts}
-      filled={[[filled]]}
+      filled={task.items.map((item) => slotsOf(item).map(() => filled))}
       history={[]}
       media={noMedia}
       notSaved={false}
@@ -188,6 +241,61 @@ function aTask(drawn: Drawn = {}) {
 
 /** The task screen on a squared sheet, on my own, with nothing written: the canvas's bar of tools. */
 const sheetTask = aTask();
+
+/** What the screen of an essay is drawn with, beside what every drawing shares. */
+type EssayDrawn = Partial<
+  Pick<EssayScreenProps, "mode" | "feedback" | "mayFinish" | "finished">
+> & {
+  readonly filled?: boolean;
+};
+
+/**
+ * The screen of an essay, by steps unless told otherwise, the sheet empty unless `filled`; Check
+ * leaves it reading.
+ */
+function EssayDrawnScreen({ mode = "steps", filled = false, ...drawn }: EssayDrawn) {
+  const [pending, setPending] = useState(false);
+  const [shown, setShown] = useState(mode);
+  return (
+    <EssayScreen
+      task={UMBRELLA}
+      manifest={undefined}
+      steps={ESSAY_STEPS}
+      catalog={undefined}
+      state={initialState(shown)}
+      mode={shown}
+      filled={[[filled]]}
+      history={[]}
+      media={noMedia}
+      notSaved={false}
+      pending={pending}
+      checking={pending}
+      blink={false}
+      came={false}
+      mayFinish={false}
+      {...drawn}
+      onHint={() => {}}
+      onHistoryChange={() => {}}
+      onMode={setShown}
+      onGoTo={() => {}}
+      onTick={() => {}}
+      onDone={() => {}}
+      onAgain={() => {}}
+      onHome={() => {}}
+      onCheck={() => setPending(true)}
+      onFinish={() => {}}
+    />
+  );
+}
+
+/** The screen of an essay as `EssayDrawnScreen` draws it. */
+function anEssay(drawn: EssayDrawn = {}) {
+  return () => inLanguage(<EssayDrawnScreen {...drawn} />);
+}
+
+/** Feedback on the mockup's essay, synthetic. */
+const FEEDBACK =
+  "The second sentence makes a reader want to know why. The other two tell what happens before it happens.";
 
 /**
  * What a screen says aloud by, as a learner's: a voice for English on this device, so that Read
@@ -1235,6 +1343,178 @@ const LESSON_END: readonly Region[] = [
   },
 ];
 
+/** Done in the row of an essay, open or not. */
+const DONE: Region = {
+  name: "Done",
+  mockup: { css: '.ph-row button:text-is("Done")' },
+  app: { css: '.nt-task-row button:text-is("Done")' },
+  followsText: "start",
+};
+
+/** The row of an essay: Hint, Done and Check. */
+const ESSAY_ROW: readonly Region[] = [
+  ...ROW.filter((region) => region.name !== "Show the solution"),
+  DONE,
+];
+
+/** A region that differs as well by what `what` and `by` name. */
+function differing(
+  region: Region,
+  what: NonNullable<Region["differs"]>["what"],
+  by: string,
+): Region {
+  return {
+    ...region,
+    differs: {
+      what: [...(region.differs?.what ?? []), ...what],
+      by: region.differs === undefined ? by : `${by}; ${region.differs.by}`,
+    },
+  };
+}
+
+/**
+ * Why the row stands elsewhere by steps: the mockup's tutor's panel is open, at the right of the
+ * iPad and as the phone's sheet over the row, and app's is T87's.
+ */
+const SHEET_OPEN = "the mockup's tutor's sheet open over the row on a phone, T87";
+
+/** The regions of the row by steps, the mockup's panel open beside it or its sheet over it. */
+function besidePanel(device: Device, regions: readonly Region[]): readonly Region[] {
+  return regions.map((region) =>
+    device === "ipad"
+      ? differing(region, ["x"], PANEL_OPEN)
+      : differing(region, ["missing"], SHEET_OPEN),
+  );
+}
+
+/**
+ * Why the row's glass is whiter on a workbook: canvas draws the page on its own white paper over
+ * the whole window (R84 in canvas), where the mockup lays a white page on the page's `#F2F2F7`,
+ * which its glass lets through.
+ */
+const WORKBOOK_PAPER = "canvas draws the workbook on its white paper (R84 in canvas)";
+
+/** The row on a workbook, its glass over canvas's paper. */
+const WORKBOOK_ROW: readonly Region[] = ROW.map((region) =>
+  differing(region, ["background", "border"], WORKBOOK_PAPER),
+);
+
+/** The criteria of the mockup's rubric, which the result names once the essay is finished. */
+const CRITERIA = [
+  "Three different first sentences",
+  "Each makes a reader want to go on",
+  "One sentence is ringed",
+];
+
+/**
+ * Why no row stands under a finished essay: the way on is the lesson's row, or the result in the
+ * panel (R23; R53), which names the criteria without the marks — those are the adult's, in the
+ * progress (R87 in spec) —, where the mockup's panel, T87's, shows them.
+ */
+const DONE_ON =
+  "the way on after Done: the lesson's row, or the result in the panel (R23; R53; R87 in spec)";
+
+/** "Try again" in the card of "Not yet". */
+const TRY_AGAIN: Region = {
+  name: "Try again",
+  mockup: { css: '.ph-verdict button:text-is("Try again")' },
+  app: { role: "button", name: "Try again" },
+  followsText: "end",
+  contrast: ACCENT_TEXT,
+};
+
+const WORKBOOK_AND_ESSAY: readonly Compared[] = [
+  ...DEVICES.map(
+    (device): Compared => ({
+      state: "workbook",
+      devices: [device],
+      draw: aTask({ task: REMAINDERS, mode: "steps" }),
+      settle: barDrawn,
+      regions: besidePanel(device, WORKBOOK_ROW),
+    }),
+  ),
+  // The mockup closes its panel before this check, and app's row stands in the window's middle with
+  // the panel open or not: the row is compared as it is.
+  ...DEVICES.map(
+    (device): Compared => ({
+      state: "workbook-not-yet",
+      devices: [device],
+      draw: aTask({ task: REMAINDERS, mode: "steps", filled: true, verdicts: REMAINDERS_READ }),
+      settle: barDrawn,
+      regions: [...WORKBOOK_ROW, card(), CARD_TITLE, TRY_AGAIN],
+    }),
+  ),
+  ...DEVICES.map(
+    (device): Compared => ({
+      state: "workbook-shown",
+      devices: [device],
+      draw: aTask({
+        task: REMAINDERS,
+        mode: "steps",
+        filled: true,
+        verdicts: REMAINDERS_READ,
+        solution: [{ text: "47 ÷ 6 = 7 r 5." }],
+      }),
+      settle: barDrawn,
+      regions: [card(WAY_ON), { ...CARD_TITLE, differs: { what: ["y"], by: WAY_ON } }],
+    }),
+  ),
+  ...DEVICES.map(
+    (device): Compared => ({
+      state: "essay",
+      devices: [device],
+      draw: anEssay(),
+      settle: barDrawn,
+      regions: besidePanel(device, ESSAY_ROW),
+    }),
+  ),
+  ...DEVICES.map(
+    (device): Compared => ({
+      state: "essay-feedback",
+      devices: [device],
+      draw: anEssay({ mode: "self", filled: true, feedback: FEEDBACK, mayFinish: true }),
+      settle: barDrawn,
+      regions: [
+        ...ESSAY_ROW.map((region) =>
+          region === DONE ? { ...region, contrast: ACCENT_TEXT } : region,
+        ),
+        card(),
+        CARD_TITLE,
+        {
+          name: "Done, in the card",
+          mockup: { css: '.ph-verdict button:text-is("Done")' },
+          app: { css: '.nt-card-verdict button:text-is("Done")' },
+          followsText: "end",
+          contrast: ACCENT_TEXT,
+        },
+      ],
+    }),
+  ),
+  ...DEVICES.map(
+    (device): Compared => ({
+      state: "essay-done",
+      devices: [device],
+      draw: anEssay({
+        mode: "self",
+        filled: true,
+        feedback: FEEDBACK,
+        mayFinish: true,
+        finished: { criteria: CRITERIA, solution: [] },
+      }),
+      settle: barDrawn,
+      regions: [
+        {
+          name: "the row of Continue",
+          mockup: { css: ".ph-row" },
+          app: { css: ".nt-task-row" },
+          followsText: "centre",
+          differs: { what: ["missing"], by: DONE_ON },
+        },
+      ],
+    }),
+  ),
+];
+
 const SCREENS: readonly Compared[] = [
   ...WAY_IN,
   { state: "home", devices: ["ipad"], draw: home, regions: [...HOME, LEGEND] },
@@ -1331,18 +1611,7 @@ const SCREENS: readonly Compared[] = [
       devices: [device],
       draw: aTask({ filled: true, verdicts: judged(DOTS, "not_yet", "32") }),
       settle: barDrawn,
-      regions: [
-        ...ROW,
-        card(),
-        CARD_TITLE,
-        {
-          name: "Try again",
-          mockup: { css: '.ph-verdict button:text-is("Try again")' },
-          app: { role: "button", name: "Try again" },
-          followsText: "end",
-          contrast: ACCENT_TEXT,
-        },
-      ],
+      regions: [...ROW, card(), CARD_TITLE, TRY_AGAIN],
     }),
   ),
   ...DEVICES.map(
@@ -1439,6 +1708,7 @@ const SCREENS: readonly Compared[] = [
       ],
     }),
   ),
+  ...WORKBOOK_AND_ESSAY,
   {
     state: "lesson",
     draw: explanation,
