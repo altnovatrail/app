@@ -530,28 +530,34 @@ export function TaskLayout({
                 onDone={parts.onDone}
               />
             ) : null}
+            {/*
+              It scrolls with the buttons at its foot inside, which a keyboard reaches, as the steps'
+              card holds its own (2.1.1), and is held at its foot, where the newest words stand.
+            */}
             <section className="nt-talk" aria-label={words.text("tutor.conversation")}>
-              <div className="nt-talk-lines">
-                <p className="nt-bubble">{words.text("tutor.ai")}</p>
-                {over ? (
-                  result
-                ) : (
-                  <>
-                    {parts.hint === undefined ? null : (
-                      <Hint
-                        hint={parts.hint}
-                        task={task}
-                        catalog={parts.catalog}
-                        language={explanation}
-                      />
-                    )}
-                    {tutor}
-                  </>
-                )}
+              <div className="nt-talk-end">
+                <div className="nt-talk-lines">
+                  <p className="nt-bubble">{words.text("tutor.ai")}</p>
+                  {over ? (
+                    result
+                  ) : (
+                    <>
+                      {parts.hint === undefined ? null : (
+                        <Hint
+                          hint={parts.hint}
+                          task={task}
+                          catalog={parts.catalog}
+                          language={explanation}
+                        />
+                      )}
+                      {tutor}
+                    </>
+                  )}
+                </div>
+                {over || acts === undefined ? null : <div className="nt-tutor-acts">{acts}</div>}
               </div>
             </section>
           </div>
-          {over || acts === undefined ? null : <div className="nt-tutor-acts">{acts}</div>}
         </aside>
       ) : null}
     </Frame>

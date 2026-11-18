@@ -186,7 +186,7 @@ describe("the tutor's panel on a tablet", () => {
     expect(talk.getByText("Read: 32")).toBeVisible();
     expect(talk.getByText("Count the steps again.")).toBeVisible();
     // The words of a rung are a hint, as the mockup marks them; Explain differently at the foot.
-    expect(talk.getByText("Hint")).toBeVisible();
+    expect(talk.getByText("Hint", { selector: ".nt-bubble-label" })).toBeVisible();
     expect(panel().getByRole("button", { name: "Explain differently" })).toBeVisible();
     expect(document.querySelector(".nt-card-verdict")).toBeNull();
     await userEvent.click(panel().getByRole("button", { name: "Close" }));
