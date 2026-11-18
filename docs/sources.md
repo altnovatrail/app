@@ -100,6 +100,12 @@ Read 2026-11-16 (architecture 3.1; the 2026-11-16 amendment to R03) — the code
 - `react-dom` 19.3.1, `cjs/react-dom-client.development.js`: `IS_REACT_ACT_ENVIRONMENT` is read by `isConcurrentActEnvironment()` alone, and that is called in two places, each only to warn — "An update to %s inside a test was not wrapped in act(...)" and "A suspended resource finished loading inside a test, but the event was not wrapped in act(...)" —, both when `null === ReactSharedInternals.actQueue`; the same function, with the flag off and an `actQueue` set, warns "The current testing environment is not configured to support act(...)". Where React's work goes is `scheduleCallback$1`: "null !== actQueue ? (actQueue.push(callback), fakeActCallbackNode$1) : scheduleCallback$3(priorityLevel, callback)" — by the queue of `act`, not by the flag;
 - `@testing-library/react` 16.3.3, `dist/act-compat.js`: its `act` is `withGlobalActEnvironment(reactAct)`, which calls `setIsReactActEnvironment(true)` before the callback and sets back `previousActEnvironment` once the callback, or the promise it returns, has ended; its `render` renders through this `act`.
 
+### 2.7. `picomatch` and Scorecard's alert #10, 2026-11-18
+
+- **The advisory** — GHSA-fc5q-39xc-vjpf, CVE-2026-112366, by the API of osv.dev, `https://api.osv.dev/v1/vulns/GHSA-fc5q-39xc-vjpf`, published 2026-10-19, modified 2026-11-17, read 2026-11-18: "Picomatch through 4.0.7 contains a regular expression denial of service vulnerability that allows attackers to block the event loop by supplying single-branch repeated extglob patterns"; its range — `"introduced": "0"`, `"last_affected": "4.0.7"`, no `fixed`.
+- **The releases** — `npm view picomatch versions`, read 2026-11-18: the latest is 4.0.7, of 2026-08-24. `npm ls picomatch` in `app`: 4.0.7 only under `vite` 8.3.8, its `tinyglobby` 0.2.17 with `fdir` 6.5.0, and `vitest` 5.1.0.
+- **The alert** — `gh api repos/altnovatrail/app/code-scanning/alerts/10`, read 2026-11-18: rule `VulnerabilitiesID` of `.github/workflows/scorecard.yml`, created 2026-11-17, on `main` e90a896: "score is 9: 1 existing vulnerabilities detected: Warn: Project is vulnerable to: https://osv.dev/GHSA-fc5q-39xc-vjpf".
+
 ## 3. Storage on the device
 
 For architecture 3.2: the browser's storages, their quotas and clearing, IndexedDB and the sign-in session on the device.

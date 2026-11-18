@@ -45,79 +45,16 @@ A task starts with «Выполни задачу T01 из RUN.md» in a new sess
 - **Table 1** is the current epic: its tasks in detail, run one at a time. A task outside an epic — a move to a tag of `spec` (RULES.md, Across repositories), a task of analysis by R145 spec — has its row in table 1 too, with or without an epic, and its body in `run/TASKS.md` (R13, R50).
 - **Next epic.** Once table 1 is all checked, the author picks the next epic from [run/EPICS.md](run/EPICS.md) and splits it with Claude in plan mode into tasks of one review each, into table 1 and this file.
 - **A done epic** goes to `docs/plan/<epic>.md` (R59 canvas-api): bodies and gist sentences are there already (rule 9); move its description and table of tasks verbatim; questions and debt stay in `run/`; until the next epic, table 1 reads «Current epic — none» and names it as the last done epic; measure the epic's sessions — `just -f spec/justfile tokens-report --since <first day of the epic> --row` — as a row of the table of measurements of [docs/measurements.md](docs/measurements.md), after measurements 1.9 spec; a new analysis by the threshold of R145 spec. Never read an archive whole: take the task cited.
-- **Archives:** E1 — [docs/plan/E1.md](docs/plan/E1.md); E2 — [docs/plan/E2.md](docs/plan/E2.md); E3 — [docs/plan/E3.md](docs/plan/E3.md); E5, the current epic, its done tasks — [docs/plan/E5.md](docs/plan/E5.md).
+- **Archives:** E1 — [docs/plan/E1.md](docs/plan/E1.md); E2 — [docs/plan/E2.md](docs/plan/E2.md); E3 — [docs/plan/E3.md](docs/plan/E3.md); E5 — [docs/plan/E5.md](docs/plan/E5.md).
 
-## Table 1. Current epic — E5. Интерфейс по эталону
+## Table 1. Current epic — none
 
-**Result:**
-- `app`'s screens of the first slice look as the interface mockup of `spec/draft/mockup/` has them, on a phone, a tablet and a computer, by its README's «Two sizes, and the rules between them», «The style» and «Contrast»; the screens the mockup lacks — the section for adults, the legal pages, the failure screens, the task's states of the note `t155` of its `canvas.json` — by its rules of style (R148 spec and its amendments);
-- the behaviour stays the documents', but for the one change R148 spec names: the tutor speaks of the work only while its panel is open (its second 2026-11-17 amendment);
-- a session compares its screen with the mockup without the author: Playwright snapshots in Chromium, WebKit and Firefox, 390 × 844 and 1194 × 834 (R146 spec);
-- Д24 closed; E4 of [run/EPICS.md](run/EPICS.md) builds the children's screens by the mockup.
-
-T72–T74 are tasks outside an epic, done before E5 opened; their bodies are in [docs/plan/E3.md](docs/plan/E3.md), section «Задачи вне эпика, сделанные после него», and their rows stay here (R13, R50). T92 and T93 are tasks outside the epic, written down for spec's orchestrator (rule 6 of [COORDINATION.md](spec/COORDINATION.md)); their bodies are in [docs/plan/E5.md](docs/plan/E5.md), section «Задачи вне эпика, сделанные за его время».
+No current epic. The last done one is E5 «Интерфейс по эталону», archive — [docs/plan/E5.md](docs/plan/E5.md). Next, by the author's word of 2026-11-16 (T52): E4 of [run/EPICS.md](run/EPICS.md), which the author splits with Claude in plan mode (Epics). T94 is a task of analysis by R145 spec, outside an epic, written down by T91 (measurements 10); its body is in [run/TASKS.md](run/TASKS.md) (R13, R50).
 
 | Статус | ID | Задача | Кто | План | Зависит от |
 |---|---|---|---|---|---|
-| [x] | T72 | Переход на тег `spec` v0.18.12 | Claude | — | — |
-| [x] | T73 | «Проще» и «Сложнее» у уровня модуля | Claude | — | — |
-| [x] | T74 | README без «Status», «License», фразы о языках и версии spec | Claude | — | — |
-| [x] | T75 | Запись и план эпика «Интерфейс по эталону» | Claude | да | — |
-| [x] | T88 | Слова наставника — только при открытой панели | Claude | — | T75 |
-| [x] | T92 | С экрана «Мои сочинения» нельзя уйти | Claude | — | — |
-| [x] | T76 | Эталон в трёх движках и сравнение снимков | Claude | — | T88 |
-| [x] | T77 | Цвета, стекло, радиусы и движение эталона — поправка к R17 | Claude | — | T76 |
-| [x] | T78 | Раскладка от ширины и всплывающие окна | Claude | — | T77 |
-| [x] | T79 | Кнопки без подписи: значки, имена и подсказки | Claude | — | T78 |
-| [x] | T80 | Канва строки 5.11: стеклянная полоса и 2.5.7 | Claude | — | T79 |
-| [x] | T93 | README — только описание компонента и его место в архитектуре | Claude | — | — |
-| [x] | T81 | Вход, профиль владельца с аватаром и «Кто учится?» | Claude | — | T80 |
-| [x] | T82 | Главная: карточки модулей по `./states` и легенда | Claude | — | T81 |
-| [x] | T83 | Помощь взрослого, меню профиля и карта навыков | Claude | — | T82 |
-| [x] | T84 | Плеер урока | Claude | — | T83 |
-| [x] | T85 | Экран задачи: условие, режим решения и ряд действий | Claude | — | T84 |
-| [x] | T86 | Тетрадь и сочинение по эталону | Claude | — | T85 |
-| [x] | T87 | Панель наставника сбоку и лист на телефоне | Claude | — | T86 |
-| [x] | T89 | Раздел для взрослых по правилам стиля эталона | Claude | — | T87 |
-| [x] | T90 | Юридические страницы и экраны сбоев по правилам стиля | Claude | — | T89 |
-| [ ] | T91 | Итог эпика E5 | Claude | — | T90 |
+| [ ] | T94 | Анализ расхода сессий по порогу R145 spec | Claude | да | — |
 
 «Зависит от» names only tasks of this plan. What a task waits for from other repositories is its body's «Ждёт»: it is taken once the neighbour has done that, and until then the queue goes on.
 
 A code task ends with the checks of rule 6: the recipes `ci-lint`, `ci-test`, `ci-engines`, `ci-vuln`, `ci-licenses` and `build` green locally and in CI; `codecov/patch` at least 90 % of the changed lines; `just -f spec/justfile docs-check-repo` green; then `/code-review high`, one round. A task's «Как проверить» names only what goes beyond them.
-
-## Epic E5. Интерфейс по эталону
-
-**Why.** Row 6.18 of [COORDINATION.md](spec/COORDINATION.md), the text of T157 `spec` (the third 2026-11-14 amendment to R76 spec); R148 spec and its amendments; Д24 and Д25. The epic changes the look, not the behaviour, but for the rule of the tutor's panel (the second 2026-11-17 amendment to R148 spec; the author's word of 2026-11-17).
-
-**Decided by the author (2026-11-16, T52):** the place — after row 6.29 (T73) and before E4 ([run/EPICS.md](run/EPICS.md)). The third 2026-11-14 amendment to R76 spec left it to the author; no other decision of the plan is reserved for the author.
-
-**Decided at planning (T75, 2026-11-17)** — the executor's choices in a run of the orchestrator, which nobody approves (R156 spec):
-- **The tag of `spec`.** No move in the epic: the tag with T157 is here since v0.18.4 (R51), and v0.18.12 holds the rule of the panel too (R55). A newer tag is a task outside the epic, as before.
-- **The split.** One review a task, in one chain, since every task touches `src/theme/` and the screens' CSS. The rule of the tutor's panel goes first, on the panel as it is (T88; the author's word of 2026-11-17: the tutor's words take about 97 % of the money spent on AI, measurements 3.20 `tutor`); then what all screens share — the mockup in the browser and the comparison (T76), the style (T77), the layout from the width and the pop-overs (T78), the buttons without a caption (T79), the canvas's bar (T80); then the screens in the path's order (T81–T87); T78 and every task after it keep T88's rule; then the screens the mockup lacks (T89, T90); the summary last (T91).
-- **The comparison of snapshots** (T76 builds it and records it as a decision):
-  - *Snapshots:* Playwright in Node, as `walk/`, in Chromium, WebKit and Firefox, viewports 390 × 844 and 1194 × 834, `reducedMotion: "reduce"`, `animations: "disabled"`; the mockup's `#frame` by its README, `app`'s screen as its screen tests draw it — the Vitest browser projects with the routing transport in place of `api` (R45), synthetic data, no `api` and no development token, so that it runs in CI —; the measurements of both sides are compared in Node, and how one run brings them together T76 decides; the PNGs are an artifact of the run, never committed.
-  - *Regions, not pixels:* each compared state is a list of regions — a pair of locators, one in the mockup and one in `app` — the top bar, a card, a primary button, the tool bar, the tutor's panel, a pop-over, the row of actions. A region is measured by its box and its computed style: the background and border colours, the radius, the text's colour, size and weight, not its glyphs, nor a width that follows the text.
-  - *Thresholds:* a box within 4 CSS px in x, y, width and height; a region whose width follows its caption is compared in height and place only, and its entry says so; a colour equal, each channel within 2 of 255, after the replacements of «Contrast» and with a translucent colour laid over what it stands on; a radius and a font size within 0.5 px; a weight equal.
-  - *A difference:* a region missing, a box or a colour beyond the threshold. Not a difference: glyphs, the icons' shapes (inline SVG in the mockup shows place, size and weight — its README, «The style»), the text's width, and what the README's «Where it differs from the documents» names — each such region says which of its rows holds.
-  - *The mockup across engines:* each state of «First slice» reaches `data-ready="true"` with no error in the console, and the regions of its three engines agree within 2 CSS px and with equal colours. A failure, or engines that disagree, is a row «В реестр spec» of [run/QUESTIONS.md](run/QUESTIONS.md) naming the run with the snapshots, not an edit of `app`'s screen (Д244 spec).
-- **Rejected at planning:** a pixel diff of whole snapshots — glyphs and the system font differ by engine and device, and the mockup draws other fonts (R148 spec), so every state would differ; tighter thresholds — the engines round boxes differently, and 4 CSS px is below what the eye takes for another layout at these sizes; snapshots committed as references — a binary in every pull request, and no reference beyond the mockup itself; tasks in parallel — each touches `src/theme/` and the shared components, and the orchestrator would merge conflicting branches; a move to a newer tag of `spec` inside the epic — nothing of the epic needs it.
-- **Where `app` departs from the mockup by the documents** — the screen keeps the documents' behaviour, and the comparison's entry for the region names the row of «Where it differs» or the decision.
-
-**Each screen task** compares its states of the mockup's table «Screens and states» by T76's recipe in three engines and two sizes, holds `axe-core` and 320 CSS px (R17), writes its strings in `en` and `ru` with no first person of AI (R91, R92 spec), and keeps the behaviour of the documents.
-
-**Not in the epic** (row 6.18): behaviour the documents do not have — the paper flow, the switch of canvas kinds, «Show where», the tutor's text field and microphone (epic E11 spec), the highlighter of the bar; the children's screens — E4.
-
-**Waits:** T82 — `./states` of `skill-map`, row 6.19: in its package since 0.1.11, 0.1.15 the latest on 2026-11-17. Nothing else waits.
-
-**E3's result** «с iPad, Android и компьютера» reads «с телефона, планшета и компьютера» (the second 2026-11-14 amendment to R76 spec).
-
-## Задачи эпика
-
-#### T91. Итог эпика E5
-
-- **Цель:** E5 подведён и ушёл в архив, следующий — E4.
-- **Почему:** RUN.md, раздел Epics.
-- **Сделать:** README и [docs/architecture.md](docs/architecture.md), раздел 3.10; замер сессий эпика — строка таблицы [docs/measurements.md](docs/measurements.md); описание и таблица эпика — в [docs/plan/E5.md](docs/plan/E5.md); таблица 1 — «Current epic — none», следующий — E4 по слову автора 2026-11-16; строки «в реестр spec», которые эпик оставил, — в отчёт.
-- **Как проверить:** `just -f spec/justfile docs-check-repo`.
-- **Разделы:** RUN.md, Epics; R19 spec; measurements 1.9 spec.
