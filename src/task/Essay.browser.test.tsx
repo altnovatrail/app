@@ -728,47 +728,78 @@ describe("the reminder on the task screen", () => {
   });
 });
 
+/** The screen of an essay alone, with what a test gives it, and what it was asked to do. */
+function drawnEssay(given: Partial<Parameters<typeof EssayScreen>[0]> = {}) {
+  const asked: string[] = [];
+  const props = {
+    task: ESSAY,
+    manifest: undefined,
+    steps: [],
+    catalog: undefined,
+    state: initialState("self"),
+    mode: "self" as const,
+    filled: [[true]],
+    history: [],
+    media: () => Promise.reject(new Error("no file")),
+    notSaved: false,
+    pending: false,
+    checking: false,
+    blink: false,
+    came: false,
+    mayFinish: false,
+    onHint: () => {},
+    onHistoryChange: () => {},
+    onMode: () => {},
+    onGoTo: () => {},
+    onTick: () => {},
+    onDone: () => {},
+    onAgain: () => {},
+    onHome: () => {},
+    onCheck: () => asked.push("check"),
+    onFinish: () => asked.push("done"),
+  };
+  const shown = (more: Partial<Parameters<typeof EssayScreen>[0]>) =>
+    inLanguage(<EssayScreen {...props} {...given} {...more} />);
+  const { rerender } = render(shown({}));
+  return {
+    asked,
+    redraw: (more: Partial<Parameters<typeof EssayScreen>[0]>) => rerender(shown(more)),
+  };
+}
+
 describe("the card of an essay's feedback", () => {
   it("says nothing of writing while Done waits only for the submission to be kept", async () => {
-    const finished: string[] = [];
-    render(
-      inLanguage(
-        <EssayScreen
-          task={ESSAY}
-          manifest={undefined}
-          steps={[]}
-          catalog={undefined}
-          state={initialState("self")}
-          mode="self"
-          filled={[[true]]}
-          history={[]}
-          media={() => Promise.reject(new Error("no file"))}
-          notSaved={false}
-          pending={false}
-          checking={false}
-          blink={false}
-          came
-          feedback="Each sentence makes a reader ask why."
-          mayFinish={false}
-          onHint={() => {}}
-          onHistoryChange={() => {}}
-          onMode={() => {}}
-          onGoTo={() => {}}
-          onTick={() => {}}
-          onDone={() => {}}
-          onAgain={() => {}}
-          onHome={() => {}}
-          onCheck={() => {}}
-          onFinish={() => finished.push("done")}
-        />,
-      ),
-    );
+    const { asked } = drawnEssay({ came: true, feedback: "Each sentence makes a reader ask why." });
     const inCard = within(card() as HTMLElement).getByRole("button", { name: "Done" });
     expect(inCard).toHaveAttribute("aria-disabled", "true");
     expect(inCard).toHaveAccessibleDescription("Done opens once the essay has been sent");
     await userEvent.click(inCard, { force: true });
     await userEvent.click(done(), { force: true });
     expect(card()).toHaveAttribute("data-kind", "feedback");
-    expect(finished).toEqual([]);
+    expect(asked).toEqual([]);
+  });
+
+  it("puts the card of a lock away once its button opens", async () => {
+    const { redraw } = drawnEssay({ filled: [[false]] });
+    await userEvent.click(check(), { force: true });
+    expect(card()).toHaveTextContent(
+      "Write an answer on the sheetWrite it with the pen, then Check.OK",
+    );
+    redraw({ filled: [[true]] });
+    expect(card()).toBeNull();
+    await userEvent.click(done(), { force: true });
+    expect(card()).toHaveTextContent(
+      "Done opens once the essay has been sentWrite the essay, then send it with Check.OK",
+    );
+    redraw({ filled: [[true]], mayFinish: true });
+    expect(card()).toBeNull();
+  });
+
+  it("takes no press of Check or Done while a request is under way", async () => {
+    const { asked } = drawnEssay({ mayFinish: true, pending: true });
+    await userEvent.click(check(), { force: true });
+    await userEvent.click(done(), { force: true });
+    expect(asked).toEqual([]);
+    expect(card()).toBeNull();
   });
 });
