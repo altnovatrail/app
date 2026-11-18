@@ -3,7 +3,7 @@
 // and nothing is a line of the screen, with why when the AI that checks the tasks is closed to the
 // learner — useEngine goes there. The choice an answer gave — the end of an attempt outside a
 // lesson, or of a lesson run — is a press away; with none, the press asks `ChooseNext` with no
-// skill, which gives the lead back to the engine from a skill chosen on the map (R107 in spec).
+// skill, which gives the lead back to the engine from a skill chosen on the map (R107 spec).
 // Both `ChooseNext` and the beginning of a task close the attempt open outside a lesson for good:
 // while one is open, a question says so first. With no choice in hand and an attempt open the
 // button is "Something else". The reason of the choice is never shown here (concepts 12 in spec).

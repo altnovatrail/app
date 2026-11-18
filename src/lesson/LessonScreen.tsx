@@ -141,8 +141,8 @@ export function LessonScreen(props: LessonScreenProps) {
 
 /**
  * "Continue", its icon after its word, as the mockup's: in the row under the segment shown, or, on
- * a worked example, a child of the canvas in its slot `actions`, after its Next and Demo (R84 in
- * canvas; the 2026-11-17 amendment to R36 in spec). Not disabled while "lesson done" is under way:
+ * a worked example, a child of the canvas in its slot `actions`, after its Next and Demo (R84
+ * canvas; the 2026-11-17 amendment to R36 spec). Not disabled while "lesson done" is under way:
  * a disabled button would drop the focus.
  */
 export function ContinueButton({

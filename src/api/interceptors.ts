@@ -51,7 +51,7 @@ export const PAUSES = [500, 1000, 2000, 4000] as const;
 
 /**
  * How long a repeat waits for a first request still going, ms: as long as api lets a request go
- * (R33 in api), at the pause `Retry-After` asks, else at the last of PAUSES.
+ * (R33 api), at the pause `Retry-After` asks, else at the last of PAUSES.
  */
 export const STILL_GOING_MS = 30_000;
 

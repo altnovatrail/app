@@ -1,8 +1,8 @@
 // The storage of a profile's works on the server, on the profile's page in the section for adults
-// (R30 in docs/decisions.md; R113, R127, R131 and R136 in spec; section 15 of the text of the
+// (R30 in docs/decisions.md; R113, R127, R131 and R136 spec; section 15 of the text of the
 // contracts, "The storage of works" and "The versions of the texts"): off unless an adult switched
 // it on, as `Profile.work_storage` says. Switching it on is a consent: the text `storage-consent`
-// as `GetLegalTexts` gives it in the language of the section, in place, with what R127 in spec has
+// as `GetLegalTexts` gives it in the language of the section, in place, with what R127 spec has
 // the switch say, its next version below it with the day it applies from (R46), and a checkbox
 // ticked for the version shown; `SetWorkStorage` names that version — the current one —,
 // and a version no longer current reads the text again and asks again, as the invite code does

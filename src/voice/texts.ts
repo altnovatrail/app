@@ -1,5 +1,5 @@
 // What a speaker button reads (section 3.5 of docs/architecture.md; R07 in docs/decisions.md): the
-// open texts of a module that the learner reads anyway (R05 in spec), each a phrase in the module's
+// open texts of a module that the learner reads anyway (R05 spec), each a phrase in the module's
 // explanation language — a task's statement with its items, its workbook's lines and the options of
 // its `choice` slots; what a hint gives; the step shown, with its chips and the cards of its
 // techniques; a lesson's explanation; and a worked example's statement, lines and the parts of its

@@ -1,6 +1,6 @@
 // The storage of works on the server on a profile's page, in the browser (R30 in docs/decisions.md;
-// R113, R127 and R131 in spec), with api on connect-es's router: off by default, the words that the
-// server keeps no work yet, the consent with the text storage-consent and what R127 in spec has it
+// R113, R127 and R131 spec), with api on connect-es's router: off by default, the words that the
+// server keeps no work yet, the consent with the text storage-consent and what R127 spec has it
 // say, the version shown named by SetWorkStorage, its next version shown below it and named by none
 // (R46), a version no longer current read and agreed to again, no text in force, switching off at
 // once with no question, and the failures said.

@@ -2,10 +2,10 @@
 // of the contract (section 15 of the text of the contracts; section 3.2 of docs/architecture.md):
 // HTTP GET at api's address, /packages/sha256-<hex>/device/<path>, with no token and no header, so
 // that fetch needs no preflight and goes through the HTTP cache, which keeps them; app stores none
-// itself. A media file goes to the canvas as a Blob (R36 in spec). 404 is a path the part has not;
+// itself. A media file goes to the canvas as a Blob (R36 spec). 404 is a path the part has not;
 // 410 a version api no longer gives, and CheckPackages is asked; 503 a deployment going on, repeated
 // after the time Retry-After names. LICENSE and NOTICE come as text, UTF-8 as the module format has
-// them (R62 in spec), for the page of a module's license (R32 in docs/decisions.md). No DOM beyond
+// them (R62 spec), for the page of a module's license (R32 in docs/decisions.md). No DOM beyond
 // fetch and Blob.
 import type { Media } from "@altnovatrail/spec/canvas";
 import { PAUSES, retryAfter, STILL_GOING_MS } from "../api/interceptors.ts";

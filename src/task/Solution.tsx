@@ -1,4 +1,4 @@
-// The solution of a task solved (section 3.3 of docs/architecture.md; R05 in spec): its paragraphs
+// The solution of a task solved (section 3.3 of docs/architecture.md; R05 spec): its paragraphs
 // and pictures, as its statement's, in the module's explanation language; a picture as
 // ../packages/Picture.tsx shows it.
 import type { Media } from "@altnovatrail/spec/canvas";

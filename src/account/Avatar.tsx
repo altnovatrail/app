@@ -1,4 +1,4 @@
-// A profile's avatar (R148 in spec; R61 in docs/decisions.md): the picture of its code from the set
+// A profile's avatar (R148 spec; R61 in docs/decisions.md): the picture of its code from the set
 // of app, white on its gradient in a circle, or the set's own where the profile has none of the set.
 // The picture says nothing the name beside it does not: it is hidden from assistive technology.
 import type { CSSProperties } from "react";

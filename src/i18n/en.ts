@@ -345,7 +345,7 @@ export const en = {
   "learner.menu": "Profile menu",
   "learner.menu-button": "{pseudonym}, profile menu",
   "learner.now": "Learning now",
-  /** The adult's Help on the home screen (R148 in spec; R63): three things, and three pages. */
+  /** The adult's Help on the home screen (R148 spec; R63): three things, and three pages. */
   "help.ai": "The tutor is an AI",
   "help.ai-text":
     "A computer program, not a person — and a program checks every answer. If the AI read your work wrongly, write it again, or tell the operator with Report a problem at the task",
@@ -466,7 +466,7 @@ export const en = {
   "skillmap.connected": "Connected: it is in My subjects now",
   /**
    * Under a module's map, on the learner's screen and in the section for adults alike: an adult set
-   * the module's level, {date} the day of the last correction (R157 in spec).
+   * the module's level, {date} the day of the last correction (R157 spec).
    */
   "level.set-by-adult": "The level was set by an adult on {date}",
   /** The adult's correction of a module's level, on its map in the section for adults (R56). */
@@ -617,9 +617,9 @@ export const en = {
   "task.no-showing": "This task has no solution to show",
   /** A child asks for the solution before the hint ladder is passed. */
   "task.ladder-not-passed": "The solution can be shown after a few more answers",
-  /** Before each submission of a work that goes to AI whole (R127 in spec): beside Check. */
+  /** Before each submission of a work that goes to AI whole (R127 spec): beside Check. */
   "task.no-names": "Don't write your name or the real names of people you know",
-  /** Ends the attempt of an essay: open once it was sent at least once (R87 in spec). */
+  /** Ends the attempt of an essay: open once it was sent at least once (R87 spec). */
   "task.done": "Done",
   "task.done-locked": "Done opens once the essay has been sent",
   /** Under "Done opens once…" in the card, once Done is pressed before the first submission. */
@@ -635,7 +635,7 @@ export const en = {
   "task.feedback-lost": "The feedback was lost on the way. Send the essay again to get it",
   /** An essay that cannot be read as a whole: the reason's words follow. */
   "task.essay-unreadable": "The essay can't be read: {reason}. Write it again and send it",
-  /** No check: a call of AI gave nothing, or the assessment marked no criterion (R87 in spec). */
+  /** No check: a call of AI gave nothing, or the assessment marked no criterion (R87 spec). */
   "task.essay-unchecked": "The essay wasn't checked this time",
   /** Told to a screen reader once the feedback of a submission came. */
   "task.feedback-came": "The feedback came",
@@ -778,7 +778,7 @@ export const en = {
     "The skill maps, the attempts with why each task was given, and the traps that repeat",
   "progress.open": "See the progress",
   "progress.title": "Progress: {pseudonym}",
-  /** The reason codes are the adult's alone: no learner's screen shows them (R100 in spec). */
+  /** The reason codes are the adult's alone: no learner's screen shows them (R100 spec). */
   "progress.hint": "Why each task was given shows here alone: the learner's screens don't say it",
   "progress.maps": "Skill maps",
   "progress.maps-hint": "The skills of each module connected, as the learner model reads them",
@@ -830,7 +830,7 @@ export const en = {
   "progress.chosen": "Chosen",
   /** No choice of the engine: the learner began the same task again. */
   "progress.again": "The learner began it again: the program chose nothing",
-  /** The nine reason codes of the engine's choice (concepts 12 in spec; R100 and R107 in spec). */
+  /** The nine reason codes of the engine's choice (concepts 12 in spec; R100 and R107 spec). */
   "progress.reason-consolidation":
     "Consolidation: after a wrong answer, another task on the same skill",
   "progress.reason-new-skill":
@@ -846,7 +846,7 @@ export const en = {
   "progress.reason-open-run": "The lesson begun: the learner goes on with it",
   "progress.reason-rotation":
     "In rotation: a skill given before comes round again, the one not given for longest first",
-  /** The storage of a profile's works on the server (R113 in spec), on the profile's page. */
+  /** The storage of a profile's works on the server (R113 spec), on the profile's page. */
   "storage.title": "Keeping works on the server",
   "storage.on": "Keeping this profile's works on the server is on",
   "storage.off": "Keeping this profile's works on the server is off",
@@ -858,7 +858,7 @@ export const en = {
     "It stops at once, and the copies of this profile's works on the server are erased. The works on this device stay",
   /** The heading of the consent, above the text storage-consent. */
   "storage.consent": "Consent to keeping works on the server",
-  /** What R127 in spec has the switch say: a work may tell of health and family; nobody reads it. */
+  /** What R127 spec has the switch say: a work may tell of health and family; nobody reads it. */
   "storage.what":
     "A work may tell something personal, about health and family too. Nobody reads it",
   /** The checkbox of the consent: explicit, to what the works tell about health too. */
@@ -973,7 +973,7 @@ export const en = {
   "device.unreadable": "The data of this profile on this device can't be read",
   /**
    * While a work of the profile is on this device alone — its storage off, or the last PutWork of a
-   * work not gone through (R113): the warning of its loss.
+   * work not gone through (R113 spec): the warning of its loss.
    */
   "device.only-here":
     "Its work is on this device alone: if the site's data is erased, the work is lost",

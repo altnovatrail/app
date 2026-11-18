@@ -1,5 +1,5 @@
 // The picture of a work, drawn by the canvas itself from the history the device keeps (section 3.2
-// of docs/architecture.md; R83 in canvas): it begins with the signature of PNG and stands the size
+// of docs/architecture.md; R83 canvas): it begins with the signature of PNG and stands the size
 // of the surface, and the stored work with it has the form api checks before it keeps one —
 // the history a JSON array and each context a JSON object, in UTF-8, no history length below zero,
 // and the picture a PNG by its signature (`WorkMalformed` of api's internal/learning/works.go). A

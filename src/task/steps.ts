@@ -22,7 +22,7 @@ export interface StepsState {
   readonly techniques: Readonly<Record<number, readonly string[]>>;
   /** The option tapped in each answer slot bound `choice`, by `slotKey`. */
   readonly choices: Readonly<Record<string, string>>;
-  /** How many submissions had a slot "not yet" (R82 in spec). */
+  /** How many submissions had a slot "not yet" (R82 spec). */
   readonly wrongAnswers: number;
 }
 
@@ -119,7 +119,7 @@ export function choicesOnly(task: open.Task): boolean {
 /**
  * Whether every answer slot holds something (`answer_slots_filled`): an option tapped in a slot
  * bound `choice`, and for the others the canvas's `filled` — a workbook's box by its item and slot,
- * a sheet's one answer anywhere on it by its first (the second 2026-11-01 amendment to R36 in spec).
+ * a sheet's one answer anywhere on it by its first (the second 2026-11-01 amendment to R36 spec).
  */
 export function slotsFilled(
   task: open.Task,
@@ -152,7 +152,7 @@ function everySlot(
 /**
  * Whether a slot written by hand holds something, by the canvas's `filled`: a workbook's box by
  * its item and slot, a sheet's one answer anywhere on it by its first (the second 2026-11-01
- * amendment to R36 in spec). The canvas takes no zone: a slot in one is never filled.
+ * amendment to R36 spec). The canvas takes no zone: a slot in one is never filled.
  */
 function writtenIn(
   slot: SlotKind,

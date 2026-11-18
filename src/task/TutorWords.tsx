@@ -1,6 +1,6 @@
 // The tutor's words on the task screen (sections 3.3 and 3.9 of docs/architecture.md; R10, R21 and
 // R67 in docs/decisions.md): bubbles of the conversation in the tutor's panel, under the line that
-// the tutor is an AI (R123 in spec; R33) — the words of the rung after "Not yet", marked a hint as the
+// the tutor is an AI (R123 spec; R33) — the words of the rung after "Not yet", marked a hint as the
 // mockup's `task-rung`, or of the correct answer, in the module's explanation language with its own
 // `lang`. Until a model's words are admitted, the words of the rung are its fallback text, which api
 // gives as words (R10 api). While the words of a rung or "Explain differently" are asked, a bubble
@@ -8,8 +8,8 @@
 // The words are no live region: the whole text would be read out at once, so a line of the screen
 // tells that the words came, and the learner reads them here; "Read aloud" below them says them again
 // by the device's voice (R07; ../voice/ReadAloud.tsx). Below the words stands "Report a problem" for
-// a learner of the category adult, in E3 the adult of the account (R123 in spec; R33). "Explain
-// differently", once on a rung (R82 in spec; R22), is the panel's, at its foot: ExplainButton.
+// a learner of the category adult, in E3 the adult of the account (R123 spec; R33). "Explain
+// differently", once on a rung (R82 spec; R22), is the panel's, at its foot: ExplainButton.
 import type { ReactNode } from "react";
 import { Icon } from "../app/Icon.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";

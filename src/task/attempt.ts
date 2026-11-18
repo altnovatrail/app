@@ -67,7 +67,7 @@ export function verdictKey(verdict: string) {
   return keyFor(VERDICT_KEYS, verdict);
 }
 
-/** The words of each reason a slot could not be read for (R56, R86 in spec; section 3.3). */
+/** The words of each reason a slot could not be read for (R56, R86 spec; section 3.3). */
 export const REASON_KEYS = {
   blank: "task.reason-blank",
   notation: "task.reason-notation",
@@ -249,7 +249,7 @@ export function markNames(words: Words): MarkName {
 
 /**
  * A mark of the contract where the canvas puts it: on a workbook a cell alone, on a sheet a box of
- * the crop alone (R53 in spec); none for a kind or a place the build knows not, or for this canvas.
+ * the crop alone (R53 spec); none for a kind or a place the build knows not, or for this canvas.
  */
 function anchorOf(mark: ContractMark, workbook: boolean): Mark["at"] | undefined {
   if (mark.kind !== MarkKind.FRAME) return undefined;
@@ -265,7 +265,7 @@ function anchorOf(mark: ContractMark, workbook: boolean): Mark["at"] | undefined
 
 /**
  * The tutor's marks as the canvas takes them, with the context of the submission they are of (R74
- * in spec), each named by its number among the marks placed — "Tutor's mark 1 of 2", and on a
+ * spec), each named by its number among the marks placed — "Tutor's mark 1 of 2", and on a
  * workbook with its line and box. None when no mark has a place the build knows.
  */
 export function marksOf(

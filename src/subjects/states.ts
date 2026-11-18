@@ -1,6 +1,6 @@
-// The states of a module's skills on its card (R148 in spec; architecture 3.3 and 6 in spec; R62
+// The states of a module's skills on its card (R148 spec; architecture 3.3 and 6 in spec; R62
 // in docs/decisions.md): the state or mark of each skill is what the function ./states of
-// skill-map gives — the very rule its map draws by (R03 in skill-map) —, so that the card and the
+// skill-map gives — the very rule its map draws by (R03 skill-map) —, so that the card and the
 // map never part, and the card counts them: the five states of a skill with a verdict on its bar,
 // in the order of the mockup's legend, and the two marks of the rest beside it. No DOM.
 import type { GetSkillMapResponse } from "@altnovatrail/contracts/novatrail/api/v1/progress_pb.js";

@@ -1,7 +1,7 @@
 // The versions in package.json that another package decides, held to it (R15 in docs/decisions.md;
 // section 3.1 of docs/architecture.md):
 // - the set of icons is the version that the UI packages of @altnovatrail installed name in their
-//   devDependencies, canvas and skill-map: one set of icons in every interface (R78 in spec).
+//   devDependencies, canvas and skill-map: one set of icons in every interface (R78 spec).
 //   A package that names no set is passed over;
 // - @bufbuild/protobuf is the version @altnovatrail/contracts names in its dependencies, so that the
 //   contracts' code and the app's client share one runtime of protobuf;
@@ -10,7 +10,7 @@
 //   container of its own;
 // - no package is a link to a folder: a working copy of canvas reaches the development server by
 //   `just dev-canvas`, never through package.json or the lock file, and release-verify-npm passes
-//   a link over unverified (R77 in spec).
+//   a link over unverified (R77 spec).
 // Run as `node scripts/pins.ts` it prints what is wrong; a test in ci-test runs it on this tree.
 import { readFileSync } from "node:fs";
 import { packageName } from "./notice.ts";

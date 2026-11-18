@@ -1,4 +1,4 @@
-// What the page of a module's license shows (R32 in docs/decisions.md; R62 in spec; section 3.2 of
+// What the page of a module's license shows (R32 in docs/decisions.md; R62 spec; section 3.2 of
 // docs/architecture.md): LICENSE and NOTICE of a version's device part, as they are, by the digest
 // of its package. A part with no NOTICE has none, which the format allows; a version api no longer
 // gives is said so, CheckPackages asked meanwhile (files.ts); a file that did not come is a failure

@@ -16,7 +16,7 @@ bin := "node_modules/.bin"
 
 # The tag of the spec submodule, whose release the file in parts/ comes from: it moves with the
 # submodule, by the task that moves to a new tag.
-spec_tag := "v0.18.12"
+spec_tag := "v0.18.34"
 
 # Run the five checks CI runs, before a pull request.
 ci: ci-lint ci-test ci-engines ci-vuln ci-licenses
@@ -47,15 +47,15 @@ ci-engines: _install
     {{ bin }}/vitest run --project '*(webkit)' --project '*(firefox)'
 
 # npm audit reads the lock file and asks the registry, so nothing is installed first. Only what
-# ships: the tools of development do not reach a learner (R39 in spec).
+# ships: the tools of development do not reach a learner (R39 spec).
 ci-vuln:
     npm audit --omit=dev --audit-level=high
 
 # The licenses of package-lock.json, against spec's list and the exceptions of licenses.json
-# (R39 in spec), and the signatures of the packages of @altnovatrail in it (R77 in spec); and a
+# (R39 spec), and the signatures of the packages of @altnovatrail in it (R77 spec); and a
 # NOTICE that names every package the build ships, with their own NOTICE files, read from
 # node_modules; and the file of spec's release the build and the tests take the part deployment/
-# from, which the code reads instead of spec/ (R21 and R85 in spec).
+# from, which the code reads instead of spec/ (R21 and R85 spec).
 ci-licenses: _install
     {{ quote(just_executable()) }} -f spec/justfile licenses-check-repo package-lock.json licenses.json
     {{ quote(just_executable()) }} -f spec/justfile release-verify-npm package-lock.json
@@ -116,7 +116,7 @@ site-check origin version: _install (_release-version version)
 # 3.7 of docs/architecture.md): walk/path.test.ts on the development server, against the api of
 # api's just dev-app at http://api:8080, signed in by its development token, in each engine named —
 # all three unless given, e.g. just walk webkit. Not in CI: it needs api's container. Its AI calls
-# go to api's stub and spend the quota of the day of dev-app's profile (R55 and R67 in api).
+# go to api's stub and spend the quota of the day of dev-app's profile (R55 and R67 api).
 walk *engines="chromium webkit firefox": _install
     #!/usr/bin/env bash
     set -euo pipefail

@@ -1,5 +1,5 @@
 // What a module's card shows of its skills, and the legend of it (R62 in docs/decisions.md; the
-// mockup's `home` and `home-legend`; R148 and architecture 6 in spec): the bar of the five states
+// mockup's `home` and `home-legend`; R148 spec and architecture 6 spec): the bar of the five states
 // of its skills with a verdict, each segment in its colour of the mockup's «Contrast» and 2 px of
 // white between them, named by every state and mark with its count; beside it, in words, how many
 // are mastered and how many are due for review; for a module whose skills have no verdict, the mark

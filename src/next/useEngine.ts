@@ -1,7 +1,7 @@
 // The way to what the engine chooses, for every screen that asks it (section 3.4 of
 // docs/architecture.md; R24 and R34 in docs/decisions.md; LearningService in the contract):
 // `choose` asks `ChooseNext` — with the full ID of a skill the learner chose on the skill map, or
-// with none, which gives the lead back to the engine (R107 in spec) — and `act` goes to what a
+// with none, which gives the lead back to the engine (R107 spec) — and `act` goes to what a
 // choice gives: a lesson opens in the player by `OpenLesson`, a task begins by `BeginAttempt` on
 // the task screen, and nothing stays with the screen. Both `ChooseNext` and the beginning of a task
 // close the attempt open outside a lesson for good, and once closed its work on the device goes:

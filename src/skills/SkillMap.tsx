@@ -2,7 +2,7 @@
 // map read (architecture 3.3 in spec; R34 in docs/decisions.md), in the screen's language — the
 // learner's on the learner's screen, the device's in the section for adults —, its bands' headings
 // at the level the screen gives. The view is the screen's: the learner's, whose Practise sends the
-// skill chosen, or the adult's, which shows more and chooses nothing (R03 and R04 in skill-map).
+// skill chosen, or the adult's, which shows more and chooses nothing (R03 and R04 skill-map).
 // The element loads nothing and keeps nothing beyond its memory; a module with no skill graph has
 // no map, and the screen says so. The heading of a map's screen is the module's title, here too.
 import type { SkillMapView } from "@altnovatrail/skill-map";

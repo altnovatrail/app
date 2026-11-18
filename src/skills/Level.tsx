@@ -1,4 +1,4 @@
-// A module's level beside its map (R157 in spec and its amendment of T173; R56 in
+// A module's level beside its map (R157 spec and its amendment of T173; R56 in
 // docs/decisions.md; section 3.10 of docs/architecture.md): on every learner's map and in the
 // adult's, "The level was set by an adult" with the day of the last correction, by `level_set_at`;
 // and on the adult's map in the section for adults, the band of the level, by `level_band`, with

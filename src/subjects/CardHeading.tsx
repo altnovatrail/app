@@ -1,4 +1,4 @@
-// What a module's card says of it (sections 3.8 and 3.10 of docs/architecture.md; R92 in spec):
+// What a module's card says of it (sections 3.8 and 3.10 of docs/architecture.md; R92 spec):
 // its title as the card's heading, in its own explanation language; a line that names that
 // language when it is not the screen's; whether the module is available — a module with no
 // current version for the learner is not —; and the mark "in order" of a module whose skill graph

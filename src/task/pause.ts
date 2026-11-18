@@ -1,5 +1,5 @@
 // The pause on the task screen (section 3.3 of docs/architecture.md; the 2026-11-02 amendment to
-// R05 in docs/decisions.md; R69 in spec): 6 s with no stroke and no option tapped, and Check, if it
+// R05 in docs/decisions.md; R69 spec): 6 s with no stroke and no option tapped, and Check, if it
 // is open, blinks once — shorter than 5 s and no more than three times a second (WCAG 2.2.2,
 // 2.3.1). It blinks again only after a new stroke or a new tap, not after every next 6 s. Nothing is
 // read and no AI is called. No DOM: the screen gives the timer.

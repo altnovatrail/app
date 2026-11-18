@@ -1,4 +1,4 @@
-// "Report a problem" beside a reply of the tutor (R123 in spec and its amendments; section 15 of
+// "Report a problem" beside a reply of the tutor (R123 spec and its amendments; section 15 of
 // the text of the contracts; R33 in docs/decisions.md): a button, and in its place a form — one of
 // the six kinds of a problem, a text of up to 1000 characters with the plea to write no name in
 // it, the words that go with it and what to do when someone is in danger now. "Send" is
@@ -6,7 +6,7 @@
 // that a reply lost on the way brings no second report; another kind or another text is another
 // report, with a key of its own. The answer says by when the operator reviews it, by `review_by`.
 // The form opens in a pop-over over the screen, the words it is about quoted at its top, as the
-// mockup's `task-report` (the second 2026-11-14 amendment to R148 in spec; R67): leaving the screen
+// mockup's `task-report` (the second 2026-11-14 amendment to R148 spec; R67): leaving the screen
 // would lose the words after a correct answer, which api keeps none of. What it holds stays while
 // it is closed, by Cancel or Escape, and comes back as it was once it opens again.
 import type { ProblemKind } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";

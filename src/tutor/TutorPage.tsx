@@ -1,4 +1,4 @@
-// The page on the AI tutor and how to use it safely (R33 in docs/decisions.md; R123 in spec;
+// The page on the AI tutor and how to use it safely (R33 in docs/decisions.md; R123 spec;
 // section 3.10 of docs/architecture.md): the learning material that the providers' terms ask of an
 // organization that serves minors — Anthropic's "Educational resources and guidance for minors on
 // safe and responsible use of the product", OpenAI's "age-appropriate disclosures to minors about

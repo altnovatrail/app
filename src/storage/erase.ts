@@ -96,7 +96,7 @@ export async function noAccess(device: Device): Promise<boolean> {
 
 /**
  * The profiles of the account as `GetAccount` answered: a profile's database it does not list was
- * deleted on another device, and goes. Only for the account the registry names (R98 in spec).
+ * deleted on another device, and goes. Only for the account the registry names (R98 spec).
  */
 export async function profilesListed(
   device: Device,
@@ -133,7 +133,7 @@ export async function signInProject(device: Device, signIn: SignIn): Promise<Sig
 }
 
 /**
- * Versions withdrawn, as `CheckPackages` told (R63 in spec): their open views go from the cache and
+ * Versions withdrawn, as `CheckPackages` told (R63 spec): their open views go from the cache and
  * from every profile's database, and the lessons on them.
  */
 export async function versionsWithdrawn(device: Device, digests: readonly string[]): Promise<void> {

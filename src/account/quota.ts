@@ -1,5 +1,5 @@
 // The share of the family day's quota of platform AI that a profile has spent (section 15 of the
-// text of the contracts, "The quota"; concepts 14 in spec; R11 in api): `GetQuota` by the learner's
+// text of the contracts, "The quota"; concepts 14 in spec; R11 api): `GetQuota` by the learner's
 // action, where the learner begins their work — the share of their own profile alone —, and by an
 // adult's, in the section for adults — the account's beside it, so that a child never sees what the
 // family spends. A share is of a cap, in whole percent: never a sum in dollars, and never the cap.

@@ -9,7 +9,7 @@
 // submission is kept with its context, for the tutor's marks, and while the profile's storage of
 // works is on the work goes to the server by `PutWork`, as it does once more when the attempt
 // closes (T62). The tutor speaks of the work only while its panel is open (the second 2026-11-17
-// amendment to R148 in spec; R21): then "Not yet" asks the words of its rung at once, with the same
+// amendment to R148 spec; R21): then "Not yet" asks the words of its rung at once, with the same
 // work, and the marks that come with them go on the canvas, and "Correct" the words after it; with
 // the panel closed the check ends at the verdict, and the panel's opening asks, once, the words of
 // the last submission that gave "not yet" or "correct", with its work, which the screen holds in
@@ -22,10 +22,10 @@
 // leading question, after it the words of the current rung again; "Explain differently" asks the
 // same rung in other words, once on a rung; "Show the solution" — the learner's from the start of
 // the attempt if an adult, from the fourth wrong answer if a child — ends the attempt with its
-// solution (R82 in spec; R22). A task of a lesson is a segment of its run: under the lesson's header,
+// solution (R82 spec; R22). A task of a lesson is a segment of its run: under the lesson's header,
 // with no "Try it again", and what api says comes next after it goes up to the player (R23). The
 // tutor's words are kept with the reply that brought them and its rung, so that the adult of the
-// account can report a problem with them as they are shown (R123 in spec; R33). While the voicing
+// account can report a problem with them as they are shown (R123 spec; R33). While the voicing
 // is on, what comes after a press is said by itself — the verdict and the outcome of a check in the
 // screen's language, then the tutor's words and a hint in the module's —, and the press itself,
 // Check, Hint or "Explain differently", marks the synthesis at once for WebKit (R07; T45). While
@@ -561,7 +561,7 @@ function OpenTask({
   const unasked = useRef<Unasked | undefined>(undefined);
   // The learner's share of the quota in the panel's head, read anew at each opening, and while it is
   // open at each answer to a check and each of the tutor's words, which spend it. None from an api
-  // that has no share, nor from one that failed (R98 in spec).
+  // that has no share, nor from one that failed (R98 spec).
   const [quota, setQuota] = useState<string | undefined>(undefined);
   const [answers, setAnswers] = useState(0);
   // biome-ignore lint/correctness/useExhaustiveDependencies: an answer or words read the share again.
@@ -602,7 +602,7 @@ function OpenTask({
   useEffect(() => () => pause.stop(), [pause]);
 
   // The tutor's marks go to the canvas after its task and its history, which React gave it in the
-  // render (R36 in spec). Marks it refuses — a box it cannot place — are dropped, not a broken screen.
+  // render (R36 spec). Marks it refuses — a box it cannot place — are dropped, not a broken screen.
   // They are the tutor's: out of sight while its panel is closed, and back once it opens.
   useEffect(() => {
     const canvas = element.current;
@@ -671,7 +671,7 @@ function OpenTask({
 
   const markName = useMemo(() => markNames(words), [words]);
 
-  /** The words of the rung of a wrong answer, asked at once with the same work (R82 in spec). */
+  /** The words of the rung of a wrong answer, asked at once with the same work (R82 spec). */
   const rungWords = useCallback(
     (wrongAnswers: number, of: Sent) => {
       setWordsFailure(undefined);
@@ -957,7 +957,7 @@ function OpenTask({
     prime();
     setFailure(undefined);
     // The rung's words of a wrong answer the closed panel left unasked: the opening asks them, by AI
-    // and with the work, and they are the hint (the 2026-11-17 amendment to R82 in spec).
+    // and with the work, and they are the hint (the 2026-11-17 amendment to R82 spec).
     const rungUnasked = unasked.current?.reply === "rung";
     openPanel();
     if (rungUnasked) return;
@@ -1062,7 +1062,7 @@ function OpenTask({
       .finally(() => setExplaining(false));
   }, [api, holder, profileId, attemptId, words, prime, explanation, close, tutorSays]);
 
-  /** "Show the solution": the attempt ends with the solution shown (R82 in spec). */
+  /** "Show the solution": the attempt ends with the solution shown (R82 spec). */
   const showSolution = useCallback(() => {
     showKey.current ??= idempotencyKey();
     setPending(true);
@@ -1113,7 +1113,7 @@ function OpenTask({
   }, [api, holder, views, profileId, attemptId, profile, words, pause, onEnded, comesNext, close]);
 
   // An adult may ask for the solution from the start of the attempt, a child from the fourth wrong
-  // answer, once the ladder of hints is passed (R82 in spec).
+  // answer, once the ladder of hints is passed (R82 spec).
   const mayShow = adult || state.wrongAnswers >= 4;
   // Not while the words of the rung are still asked: the right would go on the words before them.
   const mayExplain =

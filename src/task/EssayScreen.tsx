@@ -3,10 +3,10 @@
 // what was read under it, the row of glass below them — Hint, Done and Check (R65) —, and the
 // tutor's panel of R67, open by steps and with a hint, and closed by its × till the next hint; the
 // essay being read and its feedback do not open it, as a verdict does not (T88). An essay has no verdict (R75, R87
-// in spec): the panel's block "Tutor" holds the feedback of the last submission, or why it gave
+// spec): the panel's block "Tutor" holds the feedback of the last submission, or why it gave
 // none — no feedback this time, an essay that cannot be read, no check —, with "Report a problem"
 // for a learner of the category adult (R33). Above the row stands the reminder to write no names,
-// before each submission (R127 in spec), and the card: the essay being read; "Feedback", which says
+// before each submission (R127 spec), and the card: the essay being read; "Feedback", which says
 // where the feedback is, with Done; why Check or Done does not open, once it is pressed so. Done
 // opens once the essay was sent; there is no "Show the solution". Done gives way to the result:
 // "Essay finished", the last feedback, the criteria of the rubric and the solution if the task has
@@ -43,7 +43,7 @@ export interface EssayScreenProps extends TaskParts {
   readonly note?: string;
   /** The feedback came at the last check: a screen reader is told. */
   readonly came: boolean;
-  /** Done is open: the essay was sent at least once (R87 in spec). */
+  /** Done is open: the essay was sent at least once (R87 spec). */
   readonly mayFinish: boolean;
   /** The essay was finished by Done; none while it is not. */
   readonly finished?: Finished;
@@ -178,7 +178,7 @@ export function EssayScreen(props: EssayScreenProps) {
         <>
           {ended ? null : (
             <>
-              {/* Before each submission, as the description of Check too (R127 in spec). */}
+              {/* Before each submission, as the description of Check too (R127 spec). */}
               <p id={namesId} className="nt-hint">
                 {words.text("task.no-names")}
               </p>

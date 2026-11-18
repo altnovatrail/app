@@ -1,5 +1,5 @@
 // A page of the section for adults (R29 and R68 in docs/decisions.md; section 3.10 of
-// docs/architecture.md), by the mockup's rules of style, as the mockup draws no such page (R148 in
+// docs/architecture.md), by the mockup's rules of style, as the mockup draws no such page (R148
 // spec): the top bar of a screen, its glass pill holding the page's heading — with "For grown-ups"
 // under it on every page but the first — and "Back to the section" before it on every page but the
 // first, and at the bar's other end "Close the section", which goes home; below it a column of

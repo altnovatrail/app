@@ -1,4 +1,4 @@
-// The icons of the app's buttons (R03 and R15 in docs/decisions.md; R78 in spec): Material
+// The icons of the app's buttons (R03 and R15 in docs/decisions.md; R78 spec): Material
 // Symbols, in the style Rounded, from the npm package of the set at the version package-lock.json
 // pins, and of it only the icons the app shows. It writes the module src/app/Icon.tsx draws them
 // from, as canvas's script writes the module of its row:
@@ -36,12 +36,12 @@ export interface Value {
  * The values of the app, each by the key its buttons name it with. The icons of a value that the
  * table of architecture 6 of spec names are that table's; a value of the app's own has an icon the
  * table does not hold, written down in docs/architecture.md: in section 3.1, and those of the closed
- * list of buttons that show an icon alone in section 3.9 (R78 in spec; R60).
+ * list of buttons that show an icon alone in section 3.9 (R78 spec; R60).
  */
 export const TABLE: Readonly<Record<string, Value>> = {
   // "Continue" of the lesson player, to the next link (the 2026-11-10 amendment to R06).
   continue: { base: "arrow-circle-right", filled: false, mirrored: true },
-  // The buttons that show an icon alone, the closed list of R90 in spec (R60): back, a chevron
+  // The buttons that show an icon alone, the closed list of R90 spec (R60): back, a chevron
   // that points the way back; close; the previous and the next task, ‹ ›, chevrons rather than
   // the arrow of canvas's "next".
   back: { base: "arrow-back-ios-new", filled: false, mirrored: true },
@@ -52,7 +52,7 @@ export const TABLE: Readonly<Record<string, Value>> = {
   // speaker, no fill, as it is in a line that runs right to left — a speaker is no direction.
   "read-aloud": { base: "volume-up", filled: false, mirrored: false },
   // The switch of voicing: the same speaker, filled while voicing is on (the fourth 2026-11-14
-  // amendment to R90 in spec).
+  // amendment to R90 spec).
   voicing: { base: "volume-up", filled: true, mirrored: false },
   // Help, filled while its pop-over is open; the tutor's button, a bubble of words.
   help: { base: "help", filled: true, mirrored: false },
