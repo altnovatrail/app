@@ -63,7 +63,9 @@ function Lines({ task, verdicts }: { readonly task: open.Task; readonly verdicts
         return (
           // biome-ignore lint/suspicious/noArrayIndexKey: the lines of a task never move.
           <li key={i}>
-            {words.text("task.line", { n: i + 1 })} <Verdict verdict={verdict} />
+            <span className="nt-line-head">
+              {words.text("task.line", { n: i + 1 })} <Verdict verdict={verdict} />
+            </span>
             {boxes > 1 ? (
               <Boxes verdicts={verdicts} item={i + 1} boxes={boxes} />
             ) : (

@@ -106,6 +106,8 @@ export const TABLE: Readonly<Record<string, Value>> = {
   "not-yet": { base: "priority-high", filled: false, mirrored: false },
   write: { base: "edit", filled: false, mirrored: false },
   shown: { base: "description", filled: false, mirrored: false },
+  // The card of an essay's feedback (R66): a speech bubble, as the mockup's `essay-feedback`.
+  feedback: { base: "chat-bubble", filled: false, mirrored: false },
 };
 
 /** An icon as the app draws it: its view box, and the paths it fills in the text's colour. */

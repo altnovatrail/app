@@ -6,6 +6,7 @@
 import { render } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import { page } from "vitest/browser";
+import "@altnovatrail/canvas";
 import "./theme.css";
 import { Screen, type ScreenLayout } from "../app/Screen.tsx";
 import { inLanguage } from "../test/language.tsx";
@@ -106,4 +107,32 @@ describe("the layout from the width", () => {
     render(inLanguage(<Shown layout="column" />));
     expect(inRow()).toBe(1);
   });
+
+  it.each([
+    [1194, 834],
+    [390, 844],
+  ])(
+    "keeps the canvas 20rem high at %i × %i, however long the list under it (R66)",
+    async (width, height) => {
+      await page.viewport(width, height);
+      render(
+        inLanguage(
+          <Screen title="Task" layout="task">
+            <div className="nt-task">
+              <div className="nt-task-work">
+                <novatrail-canvas lang="en" />
+                <ul className="nt-lines">
+                  {Array.from({ length: 40 }, (_, n) => (
+                    // biome-ignore lint/suspicious/noArrayIndexKey: the lines never move.
+                    <li key={n}>Line {n + 1}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </Screen>,
+        ),
+      );
+      expect(box("novatrail-canvas").height).toBeGreaterThanOrEqual(320);
+    },
+  );
 });

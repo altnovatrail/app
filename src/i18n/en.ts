@@ -626,6 +626,11 @@ export const en = {
   /** Ends the attempt of an essay: open once it was sent at least once (R87 in spec). */
   "task.done": "Done",
   "task.done-locked": "Done opens once the essay has been sent",
+  /** Under "Done opens once…" in the card, once Done is pressed before the first submission. */
+  "task.done-locked-line": "Write the essay, then send it with Check.",
+  /** The card of an essay whose feedback came: it says where the words are, the tutor's panel. */
+  "task.feedback": "Feedback",
+  "task.feedback-line": "The feedback is in the tutor's panel. Write again, or press Done.",
   /** The result of an essay finished by Done. */
   "task.essay-done": "Essay finished",
   /** The feedback whose words did not pass the checks of api (section 15 of the contracts). */

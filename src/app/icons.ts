@@ -232,6 +232,12 @@ export const ICONS = {
       "M9 18h6q.425 0 .713-.288T16 17t-.288-.712T15 16H9q-.425 0-.712.288T8 17t.288.713T9 18m0-4h6q.425 0 .713-.288T16 13t-.288-.712T15 12H9q-.425 0-.712.288T8 13t.288.713T9 14m-3 8q-.825 0-1.412-.587T4 20V4q0-.825.588-1.412T6 2h7.175q.4 0 .763.15t.637.425l4.85 4.85q.275.275.425.638t.15.762V20q0 .825-.587 1.413T18 22zm7-14V4H6v16h12V9h-4q-.425 0-.712-.288T13 8M6 4v5zv16z",
     ],
   },
+  "chat-bubble-outline-rounded": {
+    viewBox: "0 0 24 24",
+    paths: [
+      "m6 18l-2.3 2.3q-.475.475-1.088.213T2 19.575V4q0-.825.588-1.412T4 2h16q.825 0 1.413.588T22 4v12q0 .825-.587 1.413T20 18zm-.85-2H20V4H4v13.125zM4 16V4z",
+    ],
+  },
 } as const;
 
 /** The name of an icon of the app. */
@@ -387,6 +393,11 @@ export const VALUES = {
   shown: {
     outline: "description-outline-rounded",
     filled: "description-outline-rounded",
+    mirrored: false,
+  },
+  feedback: {
+    outline: "chat-bubble-outline-rounded",
+    filled: "chat-bubble-outline-rounded",
     mirrored: false,
   },
 } as const satisfies Record<string, { outline: IconName; filled: IconName; mirrored: boolean }>;

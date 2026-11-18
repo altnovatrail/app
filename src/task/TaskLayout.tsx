@@ -252,14 +252,15 @@ export function ModePill({
   );
 }
 
-/** What the verdict's card tells: its sign, which `IconValue` draws, or the turning of a reading. */
-export type CardKind = "correct" | "not-yet" | "write" | "reading" | "shown";
+/** What the verdict's card tells: its sign, which `IconValue` draws, or the turning of a reading; an essay's feedback has a card of the same kind (R66). */
+export type CardKind = "correct" | "not-yet" | "write" | "reading" | "shown" | "feedback";
 
 const CARD_SIGNS: Readonly<Record<Exclude<CardKind, "reading">, IconValue>> = {
   correct: "ticked",
   "not-yet": "not-yet",
   write: "write",
   shown: "shown",
+  feedback: "feedback",
 };
 
 /**

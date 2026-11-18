@@ -23,6 +23,8 @@ const GROUPS: readonly [number, string, string][] = [
   [TEXT, "text-muted-on-grey", "grey-08/page grey-10/page grey-12/page grey-12/card grey-16/card"],
   // The tutor's words and marks on the sheet among them.
   [TEXT, "segmented next tutor-words", "card"],
+  // The rubric's purple: the sign of an essay's feedback, its glyph on the card (R66).
+  [EDGE, "rubric", "card"],
   // The accent as text, #0066cc, where #0071e3 misses on the page and on its own tint.
   [TEXT, "accent-text", "card page page-owner accent-tint/card glass/page"],
   [TEXT, "on-fill", "accent correct not-yet tooltip"],

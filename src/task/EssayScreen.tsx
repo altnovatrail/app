@@ -1,19 +1,28 @@
 // The screen of an essay, laid out as the task screen is (section 3.3 of docs/architecture.md; R20,
-// R53 in docs/decisions.md): the canvas with what was read under it, the tutor's panel beside it from
-// 64rem and above it on a narrower screen, and the row of glass below them — Hint, Done and Check
-// (R65). An essay has no verdict
-// (R75, R87 in spec): the panel's block "Tutor" holds the feedback of the last submission, or why
-// it gave none — no feedback this time, an essay that cannot be read, no check —, with "Report a
-// problem" for a learner of the category adult (R33). Above the row stands the reminder to write no
-// names, before each submission (R127 in spec); Done opens once the essay was sent; there is no
-// "Show the solution". Done gives way to the result: "Essay finished", the last feedback, the
-// criteria of the rubric and the solution if the task has one, the way to what the engine chose,
-// "Try it again" and the way back. What it shows it takes from its container, Essay.tsx.
+// R53 and R66 in docs/decisions.md), as the mockup's `essay` and `essay-feedback`: the canvas with
+// what was read under it, the tutor's panel beside it from 64rem and above it on a narrower screen,
+// and the row of glass below them — Hint, Done and Check (R65). An essay has no verdict (R75, R87
+// in spec): the panel's block "Tutor" holds the feedback of the last submission, or why it gave
+// none — no feedback this time, an essay that cannot be read, no check —, with "Report a problem"
+// for a learner of the category adult (R33). Above the row stands the reminder to write no names,
+// before each submission (R127 in spec), and the card: the essay being read; "Feedback", which says
+// where the feedback is, with Done; why Check or Done does not open, once it is pressed so. Done
+// opens once the essay was sent; there is no "Show the solution". Done gives way to the result:
+// "Essay finished", the last feedback, the criteria of the rubric and the solution if the task has
+// one, the way to what the engine chose, "Try it again" and the way back. What it shows it takes
+// from its container, Essay.tsx.
 import type * as open from "@altnovatrail/spec/formatv0/open";
-import { useId } from "react";
+import { useEffect, useId, useState } from "react";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { Solution } from "./Solution.tsx";
-import { HintButton, ResultEnd, RowLine, TaskLayout, type TaskParts } from "./TaskLayout.tsx";
+import {
+  HintButton,
+  ResultEnd,
+  RowLine,
+  TaskLayout,
+  type TaskParts,
+  VerdictCard,
+} from "./TaskLayout.tsx";
 import { TutorWords } from "./TutorWords.tsx";
 
 /** The essay finished by Done: the rubric's criteria and the solution, as `SolvedTask` gives them. */
@@ -41,6 +50,9 @@ export interface EssayScreenProps extends TaskParts {
   readonly onFinish: () => void;
 }
 
+/** The button whose press, while it does not open, the card explains. */
+type Locked = "task.check-write" | "task.done-locked";
+
 export function EssayScreen(props: EssayScreenProps) {
   const { manifest, filled, finished, pending } = props;
   const { words } = useLanguage();
@@ -53,6 +65,16 @@ export function EssayScreen(props: EssayScreenProps) {
   const ended = finished !== undefined;
   // The sheet holds something: Check opens (`answer_slots_filled`; section 3.3).
   const written = !ended && filled?.[0]?.[0] === true;
+  // Check or Done pressed while it does not open: the card says why, till OK or till it opens.
+  const [asked, setAsked] = useState<Locked | undefined>(undefined);
+  const opened =
+    (asked === "task.check-write" && written) || (asked === "task.done-locked" && props.mayFinish);
+  useEffect(() => {
+    if (opened) setAsked(undefined);
+  }, [opened]);
+  // Nothing sent yet: the essay was neither read nor answered. Once it was, Done waits only for the
+  // submission to be kept on the device, and a press says nothing of writing it.
+  const unsent = props.feedback === undefined && props.note === undefined;
   const feedback = (
     <TutorWords
       words={props.feedback}
@@ -62,6 +84,42 @@ export function EssayScreen(props: EssayScreenProps) {
       report={props.report}
     />
   );
+  const finish = () => {
+    if (pending) return;
+    if (props.mayFinish) props.onFinish();
+    else if (unsent) setAsked("task.done-locked");
+  };
+
+  const card = ended ? null : props.checking ? (
+    <VerdictCard
+      kind="reading"
+      title={words.text("task.reading")}
+      line={words.text("task.reading-line")}
+    />
+  ) : asked !== undefined && !opened ? (
+    <VerdictCard kind="write" title={words.text(asked)} line={words.text(`${asked}-line`)}>
+      <button type="button" className="nt-card-button" onClick={() => setAsked(undefined)}>
+        {words.text("common.ok")}
+      </button>
+    </VerdictCard>
+  ) : props.feedback !== undefined && props.note === undefined ? (
+    // Where the feedback is, not its words, which the panel holds (R53).
+    <VerdictCard
+      kind="feedback"
+      title={words.text("task.feedback")}
+      line={words.text("task.feedback-line")}
+    >
+      <button
+        type="button"
+        className="nt-card-button"
+        aria-disabled={pending || !props.mayFinish}
+        {...(props.mayFinish ? {} : { "aria-describedby": doneId })}
+        onClick={finish}
+      >
+        {words.text("task.done")}
+      </button>
+    </VerdictCard>
+  ) : null;
 
   return (
     <TaskLayout
@@ -108,15 +166,16 @@ export function EssayScreen(props: EssayScreenProps) {
               <p id={namesId} className="nt-hint">
                 {words.text("task.no-names")}
               </p>
+              {/* Why Check and Done do not open, their descriptions: the card says it on a press. */}
               {written ? null : (
-                <p id={lockedId} className="nt-hint">
+                <span id={lockedId} className="nt-hidden-label">
                   {words.text("task.check-write")}
-                </p>
+                </span>
               )}
               {props.mayFinish ? null : (
-                <p id={doneId} className="nt-hint">
+                <span id={doneId} className="nt-hidden-label">
                   {words.text("task.done-locked")}
-                </p>
+                </span>
               )}
             </>
           )}
@@ -125,18 +184,18 @@ export function EssayScreen(props: EssayScreenProps) {
           </p>
         </>
       }
+      card={card}
       row={
         ended ? null : (
           <>
             <HintButton parts={props} />
+            {/* The accent's words once it opens, the muted text's while it does not (R66). */}
             <button
               type="button"
-              className="nt-row-button"
+              className="nt-row-button nt-done"
               aria-disabled={!props.mayFinish || pending}
               {...(props.mayFinish ? {} : { "aria-describedby": doneId })}
-              onClick={() => {
-                if (props.mayFinish && !pending) props.onFinish();
-              }}
+              onClick={finish}
             >
               {words.text("task.done")}
             </button>
@@ -148,7 +207,9 @@ export function EssayScreen(props: EssayScreenProps) {
               aria-disabled={!written || pending}
               aria-describedby={written ? namesId : `${namesId} ${lockedId}`}
               onClick={() => {
-                if (written && !pending) props.onCheck();
+                if (pending) return;
+                if (written) props.onCheck();
+                else setAsked("task.check-write");
               }}
             >
               {words.text("task.check")}

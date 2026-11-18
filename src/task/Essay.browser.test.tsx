@@ -50,6 +50,8 @@ import { routedApi } from "../test/api.ts";
 import { memoryDevice } from "../test/device.ts";
 import { inLanguage } from "../test/language.tsx";
 import { forgetPuts } from "../works/stored.ts";
+import { EssayScreen } from "./EssayScreen.tsx";
+import { initialState } from "./steps.ts";
 import { Task } from "./Task.tsx";
 
 const D1 = `sha256:${"1".repeat(64)}`;
@@ -113,6 +115,8 @@ interface Setup {
     request: SubmitEssayRequest,
     n: number,
   ) => MessageInitShape<typeof SubmitEssayResponseSchema>;
+  /** What the answer to a submission waits for: the essay is read till then. */
+  submitWait?: Promise<void>;
   /** Throws in place of the answer to Done. */
   done?: () => void;
   /** The answer to Done, in place of the criteria and the model answer. */
@@ -170,8 +174,9 @@ async function renderEssay(setup: Setup = {}) {
       },
     });
     router.service(AttemptService, {
-      submitEssay(request) {
+      async submitEssay(request) {
         submitted.push(request);
+        await setup.submitWait;
         return (
           setup.answer?.(request, submitted.length - 1) ?? {
             end: SubmissionEnd.FEEDBACK,
@@ -272,7 +277,13 @@ async function renderEssay(setup: Setup = {}) {
 }
 
 const check = () => screen.getByRole("button", { name: "Check" });
-const done = () => screen.getByRole("button", { name: "Done" });
+/** The row's Done: the card of the feedback has one too. */
+const done = () =>
+  within(document.querySelector(".nt-task-row") as HTMLElement).getByRole("button", {
+    name: "Done",
+  });
+/** The card above the row, while there is one. */
+const card = () => document.querySelector(".nt-card-verdict");
 
 /** The mode named, chosen in the pop-over of its pill. */
 async function chooseMode(mode: "Step by step" | "On my own") {
@@ -309,6 +320,11 @@ describe("the screen of an essay", () => {
     const sent = submitted[0];
     expect([...(sent?.crop.slice(0, 4) ?? [])]).toEqual(PNG);
     expect(sent?.clockOffsetMinutes).toBeDefined();
+    // The card says where the feedback is, not its words, and holds a Done of its own.
+    expect(card()).toHaveAttribute("data-kind", "feedback");
+    expect(card()).toHaveTextContent(
+      "FeedbackThe feedback is in the tutor's panel. Write again, or press Done.Done",
+    );
     // Done opens once the submission is kept on the device, which may come after the feedback.
     await vi.waitFor(() => expect(done()).toHaveAttribute("aria-disabled", "false"));
     // No report for a learner who is not of the category adult.
@@ -364,6 +380,21 @@ describe("the screen of an essay", () => {
       ),
     );
     expect(check()).toHaveAttribute("aria-disabled", "true");
+    // The lines why are descriptions alone, till a press asks for them: the card says each, and OK
+    // puts it away.
+    expect(
+      [...document.querySelectorAll(".nt-task-foot .nt-hint")].map((line) => line.textContent),
+    ).toEqual(["Don't write your name or the real names of people you know"]);
+    await userEvent.click(check(), { force: true });
+    expect(card()).toHaveTextContent(
+      "Write an answer on the sheetWrite it with the pen, then Check.OK",
+    );
+    await userEvent.click(done(), { force: true });
+    expect(card()).toHaveTextContent(
+      "Done opens once the essay has been sentWrite the essay, then send it with Check.OK",
+    );
+    await userEvent.click(screen.getByRole("button", { name: "OK" }));
+    expect(card()).toBeNull();
   });
 
   it("says no feedback this time, an essay it cannot read and no check, each in its own words", async () => {
@@ -570,6 +601,30 @@ describe("the screen of an essay", () => {
     await vi.waitFor(async () => expect((await essayOf(device))?.ended).toBe(true));
   });
 
+  it("finishes by the Done of the card of the feedback, and shows the essay read meanwhile", async () => {
+    let answer: (() => void) | undefined;
+    const { dones } = await renderEssay({
+      history: WRITTEN,
+      submitWait: new Promise<void>((resolve) => {
+        answer = resolve;
+      }),
+    });
+    await vi.waitFor(() => expect(check()).toHaveAttribute("aria-disabled", "false"));
+    await userEvent.click(check());
+    await vi.waitFor(() => expect(card()).toHaveAttribute("data-kind", "reading"));
+    expect(card()).toHaveTextContent(
+      "Reading your work…A picture of the work goes to be read, with no name.",
+    );
+    answer?.();
+    await vi.waitFor(() => expect(card()).toHaveAttribute("data-kind", "feedback"));
+    const inCard = within(card() as HTMLElement).getByRole("button", { name: "Done" });
+    await vi.waitFor(() => expect(inCard).toHaveAttribute("aria-disabled", "false"));
+    await userEvent.click(inCard);
+    expect(await (await found()).findByText("Essay finished")).toBeVisible();
+    expect(card()).toBeNull();
+    expect(dones).toHaveLength(1);
+  });
+
   it("says why Done did not go, and a closed attempt is a screen of its own", async () => {
     let refusal = new ConnectError("down", Code.Unavailable);
     await renderEssay({
@@ -670,5 +725,50 @@ describe("the reminder on the task screen", () => {
       ),
     );
     expect(screen.queryByRole("button", { name: "Done" })).toBeNull();
+  });
+});
+
+describe("the card of an essay's feedback", () => {
+  it("says nothing of writing while Done waits only for the submission to be kept", async () => {
+    const finished: string[] = [];
+    render(
+      inLanguage(
+        <EssayScreen
+          task={ESSAY}
+          manifest={undefined}
+          steps={[]}
+          catalog={undefined}
+          state={initialState("self")}
+          mode="self"
+          filled={[[true]]}
+          history={[]}
+          media={() => Promise.reject(new Error("no file"))}
+          notSaved={false}
+          pending={false}
+          checking={false}
+          blink={false}
+          came
+          feedback="Each sentence makes a reader ask why."
+          mayFinish={false}
+          onHint={() => {}}
+          onHistoryChange={() => {}}
+          onMode={() => {}}
+          onGoTo={() => {}}
+          onTick={() => {}}
+          onDone={() => {}}
+          onAgain={() => {}}
+          onHome={() => {}}
+          onCheck={() => {}}
+          onFinish={() => finished.push("done")}
+        />,
+      ),
+    );
+    const inCard = within(card() as HTMLElement).getByRole("button", { name: "Done" });
+    expect(inCard).toHaveAttribute("aria-disabled", "true");
+    expect(inCard).toHaveAccessibleDescription("Done opens once the essay has been sent");
+    await userEvent.click(inCard, { force: true });
+    await userEvent.click(done(), { force: true });
+    expect(card()).toHaveAttribute("data-kind", "feedback");
+    expect(finished).toEqual([]);
   });
 });
