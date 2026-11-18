@@ -1,9 +1,8 @@
-// The stored works of the learner chosen, for the screens that write a work to the device (section
-// 3.2 of docs/architecture.md; the 2026-11-17 amendment to R30 in docs/decisions.md): the task
-// screens and the way to what the engine chooses. The storage is on as the profile the tab holds
-// says, read at each send, and api's word that it is off reads the profile again for the session
-// and the other tabs. Outside the gate — a screen's own test — no learner is chosen, and nothing
-// is sent.
+// The stored works of the learner chosen, for the screens that write a work to the device (R30):
+// the task screens and the way to what the engine chooses. The storage is on as the profile the tab
+// holds says, read at each send, and api's word that it is off reads the profile again for the
+// session and the other tabs. Outside the gate — a screen's own test — no learner is chosen, and
+// nothing is sent.
 import { useMemo, useRef } from "react";
 import { useLearner } from "../account/AccountGate.tsx";
 import { useApi } from "../api/ApiContext.tsx";

@@ -1,9 +1,9 @@
-// What the task screen knows of an essay and of the reminder to write no names (R75, R87 and R127
-// spec; R53 in docs/decisions.md; section 3.3 of docs/architecture.md): a task is an essay when
-// its answer slot is bound `sheet`, which the open view gives with no check; a work goes to AI whole
-// when it is a handwriting sheet's crop — an essay's, or a final answer anywhere on the sheet —,
-// not a workbook's boxes nor options tapped; and how a submission of an essay ended, as the device
-// keeps it and the screen says it. No DOM.
+// What the task screen knows of an essay and of the reminder to write no names
+// (R75, R87 and R127 spec; R53): a task is an essay when its answer slot is bound `sheet`, which
+// the open view gives with no check; a work goes to AI whole when it is a handwriting sheet's
+// crop — an essay's, or a final answer anywhere on the sheet —, not a workbook's boxes nor options
+// tapped; and how a submission of an essay ended, as the device keeps it and the screen says it. No
+// DOM.
 import {
   SubmissionEnd,
   type SubmitEssayResponse,
@@ -16,7 +16,7 @@ import type { EssayEnd, EssaySent } from "../storage/profile.ts";
 import { reasonKey } from "./attempt.ts";
 import { choicesOnly } from "./steps.ts";
 
-/** Whether the task is an essay: its one answer slot is bound `sheet` (format, section 14). */
+/** Whether the task is an essay: its one answer slot is bound `sheet`. */
 export function isEssay(task: open.Task): boolean {
   return task.items.some((item) => item.answer_slots?.some((slot) => slot.binding === "sheet"));
 }

@@ -1,37 +1,35 @@
-// The task screen of an open attempt (sections 3.2 and 3.3 of docs/architecture.md; R05, R20 in
-// docs/decisions.md; AttemptService and LearningService in the contract): `GetOpenAttempt` gives
-// the attempt's start — the open view of its task and its package — and the screen takes the
-// package's manifest, solving steps and technique catalog from the shared cache, and what this
-// device wrote of the attempt from the profile's database: the history of writing and the state of
-// the steps. Every stroke and every change of the steps is written there, and a write that did not
-// land says so. A tap only chooses; Check sends the options tapped and the handwriting, the crop the
-// canvas gives, with one idempotency key for the action and the same with every repeat of it; the
-// submission is kept with its context, for the tutor's marks, and while the profile's storage of
-// works is on the work goes to the server by `PutWork`, as it does once more when the attempt
-// closes (T62). The tutor speaks of the work only while its panel is open (the second 2026-11-17
-// amendment to R148 spec; R21): then "Not yet" asks the words of its rung at once, with the same
+// The task screen of an open attempt (R05, R20; AttemptService and LearningService of the
+// contract): `GetOpenAttempt` gives the attempt's start — the open view of its task and its
+// package — and the screen takes the package's manifest, solving steps and technique catalog from
+// the shared cache, and what this device wrote of the attempt from the profile's database: the
+// history of writing and the state of the steps. Every stroke and every change of the steps is
+// written there, and a write that did not land says so. A tap only chooses; Check sends the options
+// tapped and the handwriting, the crop the canvas gives, with one idempotency key for the action
+// and the same with every repeat of it; the submission is kept with its context, for the tutor's
+// marks, and while the profile's storage of works is on the work goes to the server by `PutWork`,
+// as it does once more when the attempt closes (R30). The tutor speaks of the work only while its
+// panel is open (R148 spec; R21): then "Not yet" asks the words of its rung at once, with the same
 // work, and the marks that come with them go on the canvas, and "Correct" the words after it; with
 // the panel closed the check ends at the verdict, and the panel's opening asks, once, the words of
 // the last submission that gave "not yet" or "correct", with its work, which the screen holds in
-// memory until then. "Correct"
-// closes the attempt: its work on the device goes but the correct one's, which goes with the request
-// of the words after a correct answer and is erased once it ends, or once the screen is left with
-// them unasked, and the solution comes. An attempt
-// api closed meanwhile is a screen of its own, and one closed unchecked asks CheckPackages (T21).
-// Hint asks api, with no work and no AI: before the first wrong answer the task's techniques and its
-// leading question, after it the words of the current rung again; "Explain differently" asks the
-// same rung in other words, once on a rung; "Show the solution" — the learner's from the start of
-// the attempt if an adult, from the fourth wrong answer if a child — ends the attempt with its
-// solution (R82 spec; R22). A task of a lesson is a segment of its run: under the lesson's header,
-// with no "Try it again", and what api says comes next after it goes up to the player (R23). The
-// tutor's words are kept with the reply that brought them and its rung, so that the adult of the
-// account can report a problem with them as they are shown (R123 spec; R33). While the voicing
-// is on, what comes after a press is said by itself — the verdict and the outcome of a check in the
-// screen's language, then the tutor's words and a hint in the module's —, and the press itself,
-// Check, Hint or "Explain differently", marks the synthesis at once for WebKit (R07; T45). While
-// platform AI is closed beyond a call — its quota for the family day is spent, or its limit ran
-// out —, the block "Tutor" says why beside the fallback text of a rung, and in place of the words
-// after a correct answer (R37).
+// memory until then. "Correct" closes the attempt: its work on the device goes but the correct
+// one's, which goes with the request of the words after a correct answer and is erased once it
+// ends, or once the screen is left with them unasked, and the solution comes. An attempt api closed
+// meanwhile is a screen of its own, and one closed unchecked asks CheckPackages (R20). Hint asks
+// api, with no work and no AI: before the first wrong answer the task's techniques and its leading
+// question, after it the words of the current rung again; "Explain differently" asks the same rung
+// in other words, once on a rung; "Show the solution" — the learner's from the start of the attempt
+// if an adult, from the fourth wrong answer if a child — ends the attempt with its solution
+// (R82 spec; R22). A task of a lesson is a segment of its run: under the lesson's header, with no
+// "Try it again", and what api says comes next after it goes up to the player (R23). The tutor's
+// words are kept with the reply that brought them and its rung, so that the adult of the account
+// can report a problem with them as they are shown (R123 spec; R33). While the voicing is on, what
+// comes after a press is said by itself — the verdict and the outcome of a check in the screen's
+// language, then the tutor's words and a hint in the module's —, and the press itself, Check, Hint
+// or "Explain differently", marks the synthesis at once for WebKit (R07). While platform AI is
+// closed beyond a call — its quota for the family day is spent, or its limit ran out —, the block
+// "Tutor" says why beside the fallback text of a rung, and in place of the words after a correct
+// answer (R37).
 import { Mode as ProfileMode } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import {
   Action,
@@ -521,7 +519,7 @@ function OpenTask({
   // The keys of "Explain differently" and "Show the solution": each the same with its repeats.
   const explainKey = useRef<string | undefined>(undefined);
   const showKey = useRef<string | undefined>(undefined);
-  // One key for a check of this work, the same with every repeat of it (section 3.3): a new
+  // One key for a check of this work, the same with every repeat of it (R18): a new
   // stroke or a new option is a new action.
   const sent = useRef<Sent | undefined>(undefined);
   // The checks begun: an answer of words that belongs to an earlier check is dropped.
@@ -806,7 +804,7 @@ function OpenTask({
 
   /** The panel opens — the button "Tutor", Hint, the choice of "by steps" —, and asks what it must. */
   const openPanel = useCallback(() => {
-    // Within the press: the words the opening asks may be said (WebKit; section 3.5).
+    // Within the press: the words the opening asks may be said (WebKit; R07).
     if (unasked.current !== undefined) prime();
     setPanel(true);
     askUnasked();
@@ -848,7 +846,7 @@ function OpenTask({
   }, [handwriting, profile, attemptId, drawn, unsavedNow, works]);
 
   const check = useCallback(() => {
-    // Within the press: the words that come after it may be said (WebKit; section 3.5).
+    // Within the press: the words that come after it may be said (WebKit; R07).
     prime();
     verdictSaid.current = undefined;
     setPending(true);
@@ -874,7 +872,7 @@ function OpenTask({
           idempotencyKey: of.key,
           tappedChoices: tappedChoices(task, latest.current.state.choices),
           // A work AI reads goes with the key, or the clock's offset; taps alone name the provider
-          // of the key, and never beside a work (contract, section 15).
+          // of the key, and never beside a work (the contract).
           ...(of.contract === undefined
             ? holder.routeFields(profileId)
             : { work: of.contract, ...ai }),
@@ -957,7 +955,7 @@ function OpenTask({
     prime();
     setFailure(undefined);
     // The rung's words of a wrong answer the closed panel left unasked: the opening asks them, by AI
-    // and with the work, and they are the hint (the 2026-11-17 amendment to R82 spec).
+    // and with the work, and they are the hint (R82 spec).
     const rungUnasked = unasked.current?.reply === "rung";
     openPanel();
     if (rungUnasked) return;

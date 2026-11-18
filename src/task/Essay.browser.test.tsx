@@ -1,9 +1,8 @@
-// The screen of an essay in the browser, with the canvas element itself (section 3.3 of
-// docs/architecture.md; R53): the reminder to write no names before each submission, SubmitEssay
-// with the crop and one key for a check and its repeat, each way a submission ends, the essay kept
-// on the device with its crop, what was read and the feedback, Done once it was sent, an attempt
-// api closed meanwhile, and "Report a problem" at the feedback — with api on connect-es's router
-// and the storage on the device's memory.
+// The screen of an essay in the browser, with the canvas element itself (R53): the reminder to
+// write no names before each submission, SubmitEssay with the crop and one key for a check and its
+// repeat, each way a submission ends, the essay kept on the device with its crop, what was read and
+// the feedback, Done once it was sent, an attempt api closed meanwhile, and "Report a problem" at
+// the feedback — with api on connect-es's router and the storage on the device's memory.
 import "@altnovatrail/canvas";
 import {
   Mode,
@@ -137,7 +136,7 @@ interface Setup {
   hint?: () => MessageInitShape<typeof GetHintResponseSchema>;
   adult?: boolean;
   lesson?: boolean;
-  /** Among a learner's screens, the profile's storage of works on the server on (T62). */
+  /** Among a learner's screens, the profile's storage of works on the server on (R30). */
   storage?: boolean;
   /** The synthesis the screen speaks by, the profile's voicing on. */
   speech?: ReturnType<typeof fakeSpeech>;
@@ -327,7 +326,7 @@ async function chooseMode(mode: "Step by step" | "On my own") {
 const panel = () => within(screen.getByRole("complementary", { name: "Tutor" }));
 /** The panel, shown: by steps, with a hint, or with the result. */
 const shown = async () => within(await screen.findByRole("complementary", { name: "Tutor" }));
-/** The panel, opened by the tutor's button where it is closed: feedback does not open it (T88). */
+/** The panel, opened by the tutor's button where it is closed: feedback does not open it (R67). */
 const found = async () => {
   if (screen.queryByRole("complementary", { name: "Tutor" }) === null) {
     await userEvent.click(await screen.findByRole("button", { name: "Tutor" }));

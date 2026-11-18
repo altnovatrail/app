@@ -1,8 +1,7 @@
-// The works on the server, in Node (section 3.2 of docs/architecture.md; the 2026-11-17 amendment
-// to R30): the form of `StoredWork`, the limit of 4 MiB, each answer of `PutWork` and what the
-// device's marks say after it, the order of the sends, a work put once, a put the switch-off
-// overtook, and the works the storage sends once on.
-// The picture is a stand-in: the browser's test draws the canvas's own.
+// The works on the server, in Node (R30): the form of `StoredWork`, the limit of 4 MiB, each answer
+// of `PutWork` and what the device's marks say after it, the order of the sends, a work put once, a
+// put the switch-off overtook, and the works the storage sends once on. The picture is a stand-in:
+// the browser's test draws the canvas's own.
 import {
   AccountService,
   ProfileSchema,
@@ -339,7 +338,7 @@ describe("switching the storage on", () => {
       context: CONTEXT,
       historyLength: 1,
     });
-    // An essay of a build before T62 keeps no context: that submission does not go.
+    // An essay an older build kept has no context: that submission does not go.
     await profile.addEssaySubmission("e1", await draw(), { end: "unchecked" });
     await profile.attemptEnded("e1");
     // An attempt just opened, with neither strokes nor submissions, needs no copy.

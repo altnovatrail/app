@@ -1,10 +1,10 @@
-// The hint asked for before the first wrong answer (section 3.3 of docs/architecture.md; R82, R108
-// spec): what the task gives and asks to find, from its open view; the cards of its techniques,
-// which api gave, from the open catalog; and its leading question, the author's question that
-// breaks the task down, in the module's explanation language. After a wrong answer the hint is the
-// words of the current rung again, which the block "Tutor" shows. Nothing of it needs the key.
-// "Read aloud" below it reads it all (R07). In the tutor's panel it is a bubble of the hint's tint,
-// its heading the bubble's label with a bulb, as the mockup's `task-hint` (R67).
+// The hint asked for before the first wrong answer (R82, R108 spec): what the task gives and asks
+// to find, from its open view; the cards of its techniques, which api gave, from the open catalog;
+// and its leading question, the author's question that breaks the task down, in the module's
+// explanation language. After a wrong answer the hint is the words of the current rung again, which
+// the block "Tutor" shows. Nothing of it needs the key. "Read aloud" below it reads it all (R07).
+// In the tutor's panel it is a bubble of the hint's tint, its heading the bubble's label with a
+// bulb, as the mockup's `task-hint` (R67).
 import type * as open from "@altnovatrail/spec/formatv0/open";
 import { useId } from "react";
 import { Icon } from "../app/Icon.tsx";

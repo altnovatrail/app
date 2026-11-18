@@ -1,9 +1,8 @@
-// The solving steps of an attempt as app leads them on the device (section 3.3 of
-// docs/architecture.md; R05 in docs/decisions.md): the mode, the step the learner is on and the
-// furthest reached, the chips ticked, the techniques api gave at a step, the options tapped and the
-// count of wrong answers — kept with the attempt in the profile's database, read back after a
-// restart. A step's exit condition opens its "Step done", which leads on and reads no work; no
-// condition needs the key. No DOM.
+// The solving steps of an attempt as app leads them on the device (R05): the mode, the step the
+// learner is on and the furthest reached, the chips ticked, the techniques api gave at a step, the
+// options tapped and the count of wrong answers — kept with the attempt in the profile's database,
+// read back after a restart. A step's exit condition opens its "Step done", which leads on and
+// reads no work; no condition needs the key. No DOM.
 import type * as open from "@altnovatrail/spec/formatv0/open";
 
 /** "By steps" shows the steps; "on my own" none, and a module without steps has only that. */
@@ -119,7 +118,7 @@ export function choicesOnly(task: open.Task): boolean {
 /**
  * Whether every answer slot holds something (`answer_slots_filled`): an option tapped in a slot
  * bound `choice`, and for the others the canvas's `filled` — a workbook's box by its item and slot,
- * a sheet's one answer anywhere on it by its first (the second 2026-11-01 amendment to R36 spec).
+ * a sheet's one answer anywhere on it by its first (R36 spec).
  */
 export function slotsFilled(
   task: open.Task,
@@ -151,8 +150,8 @@ function everySlot(
 
 /**
  * Whether a slot written by hand holds something, by the canvas's `filled`: a workbook's box by
- * its item and slot, a sheet's one answer anywhere on it by its first (the second 2026-11-01
- * amendment to R36 spec). The canvas takes no zone: a slot in one is never filled.
+ * its item and slot, a sheet's one answer anywhere on it by its first (R36 spec).
+ * The canvas takes no zone: a slot in one is never filled.
  */
 function writtenIn(
   slot: SlotKind,

@@ -1,13 +1,12 @@
-// The works of a profile on the server (section 3.2 of docs/architecture.md; the 2026-11-17
-// amendments to R16 and R30 in docs/decisions.md; R113 spec; section 15 of the text of the
-// contracts, "Stored works"; `WorkService`), with no DOM: while the profile's storage of works is
-// on, `PutWork` keeps each work as the device holds it — the history of writing, the contexts of
-// its submissions and the picture the canvas draws of it — at each submission, when its attempt
-// closes, and when the storage is switched on. A work over 4 MiB goes nowhere, and one that did not
-// go through stays on the device alone: only a `PutWork` that went through marks how much of the
-// work the server keeps, and the page This device warns of the loss of every work no mark covers.
-// The works go one after another, in the order they were read, so that the last one read stands,
-// and one the tab put already, the same history and contexts, does not go again.
+// The works of a profile on the server (R16, R30; R113 spec; `WorkService` of the contract), with
+// no DOM: while the profile's storage of works is on, `PutWork` keeps each work as the device holds
+// it — the history of writing, the contexts of its submissions and the picture the canvas draws of
+// it — at each submission, when its attempt closes, and when the storage is switched on. A work
+// over 4 MiB goes nowhere, and one that did not go through stays on the device alone: only a
+// `PutWork` that went through marks how much of the work the server keeps, and the page This device
+// warns of the loss of every work no mark covers. The works go one after another, in the order they
+// were read, so that the last one read stands, and one the tab put already, the same history and
+// contexts, does not go again.
 import type { Profile as Learner } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import { Cause } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import type { StoredWorkSchema } from "@altnovatrail/contracts/novatrail/api/v1/work_pb.js";

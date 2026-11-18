@@ -1,9 +1,8 @@
-// The task screen in the browser, with the canvas element itself (sections 3.2 and 3.3 of
-// docs/architecture.md; R05, R20): the steps, the chips and the technique api gives once, the mode,
-// the options tapped and Check from the keyboard, "Not yet" and "Correct" with the solution, one
-// idempotency key for a check and its repeat, an attempt api closed meanwhile, the history of writing
-// in the profile's database, and a write that did not land — with api on connect-es's router and
-// the storage on the device's memory.
+// The task screen in the browser, with the canvas element itself (R05, R20): the steps, the chips
+// and the technique api gives once, the mode, the options tapped and Check from the keyboard, "Not
+// yet" and "Correct" with the solution, one idempotency key for a check and its repeat, an attempt
+// api closed meanwhile, the history of writing in the profile's database, and a write that did not
+// land — with api on connect-es's router and the storage on the device's memory.
 import "@altnovatrail/canvas";
 import {
   AccountService,
@@ -209,7 +208,7 @@ interface Setup {
   voicingFails?: boolean;
   /** The owner's own key is held for the learner, p1: its holder, opened with it (R47). */
   ownKey?: boolean;
-  /** The screen among a learner's screens, the profile's storage of works on the server on (T62). */
+  /** The screen among a learner's screens, the profile's storage of works on the server on (R30). */
   storage?: boolean;
   /** On my own, the learner opens the tutor's panel once the screen is up: its words come at Check. */
   tutor?: boolean;
@@ -1702,7 +1701,7 @@ describe("the task screen with handwriting", () => {
   });
 });
 
-describe("the tutor's words only while its panel is open (T88)", () => {
+describe("the tutor's words only while its panel is open (R67)", () => {
   const tutorButton = () => screen.getByRole("button", { name: "Tutor" });
   /** The panel's ×: the tutor's button, which opens it, stands only while it is closed (R67). */
   const closePanel = () => userEvent.click(panel().getByRole("button", { name: "Close" }));

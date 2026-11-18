@@ -1,17 +1,16 @@
-// The screen of an essay, laid out as the task screen is (section 3.3 of docs/architecture.md; R20,
-// R53 and R66 in docs/decisions.md), as the mockup's `essay` and `essay-feedback`: the canvas with
-// what was read under it, the row of glass below them — Hint, Done and Check (R65) —, and the
-// tutor's panel of R67, open by steps and with a hint, and closed by its × till the next hint; the
-// essay being read and its feedback do not open it, as a verdict does not (T88). An essay has no verdict (R75, R87
-// spec): the panel's block "Tutor" holds the feedback of the last submission, or why it gave
-// none — no feedback this time, an essay that cannot be read, no check —, with "Report a problem"
-// for a learner of the category adult (R33). Above the row stands the reminder to write no names,
-// before each submission (R127 spec), and the card: the essay being read; "Feedback", which says
-// where the feedback is, with Done; why Check or Done does not open, once it is pressed so. Done
-// opens once the essay was sent; there is no "Show the solution". Done gives way to the result:
-// "Essay finished", the last feedback, the criteria of the rubric and the solution if the task has
-// one, the way to what the engine chose, "Try it again" and the way back. What it shows it takes
-// from its container, Essay.tsx.
+// The screen of an essay, laid out as the task screen is (R20, R53, R66), as the mockup's `essay`
+// and `essay-feedback`: the canvas with what was read under it, the row of glass below them — Hint,
+// Done and Check (R65) —, and the tutor's panel of R67, open by steps and with a hint, and closed
+// by its × till the next hint; the essay being read and its feedback do not open it, as a verdict
+// does not (R67). An essay has no verdict (R75, R87 spec): the panel's block "Tutor" holds the
+// feedback of the last submission, or why it gave none — no feedback this time, an essay that
+// cannot be read, no check —, with "Report a problem" for a learner of the category adult (R33).
+// Above the row stands the reminder to write no names, before each submission (R127 spec), and the
+// card: the essay being read; "Feedback", which says where the feedback is, with Done; why Check or
+// Done does not open, once it is pressed so. Done opens once the essay was sent; there is no "Show
+// the solution". Done gives way to the result: "Essay finished", the last feedback, the criteria of
+// the rubric and the solution if the task has one, the way to what the engine chose, "Try it again"
+// and the way back. What it shows it takes from its container, Essay.tsx.
 import type * as open from "@altnovatrail/spec/formatv0/open";
 import { useEffect, useId, useState } from "react";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
@@ -66,7 +65,7 @@ export function EssayScreen(props: EssayScreenProps) {
   const explanation = manifest?.languages.explanation;
   const lang = explanation === undefined ? {} : { lang: explanation };
   const ended = finished !== undefined;
-  // The sheet holds something: Check opens (`answer_slots_filled`; section 3.3).
+  // The sheet holds something: Check opens (`answer_slots_filled`).
   const written = !ended && filled?.[0]?.[0] === true;
   // Check or Done pressed while it does not open: the card says why, till OK or till it opens.
   const [asked, setAsked] = useState<Locked | undefined>(undefined);

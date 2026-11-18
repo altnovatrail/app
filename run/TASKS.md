@@ -15,14 +15,6 @@ Open tasks outside the current epic, each as its body, in Russian (R154 spec, R1
 - **Как проверить:** `just -f spec/justfile docs-check-repo`.
 - **Разделы:** R145 spec, R143 spec; measurements 1.9 spec; [docs/measurements.md](../docs/measurements.md), разделы 8 и 10.
 
-#### T103. Комментарии кода по R160 spec: задача и холст
-
-- **Цель:** комментарии `src/task/`, `src/canvas/`, `src/works/` и `src/essays/` говорят только то, чего не скажут код и имена (R160 spec, «Comments»).
-- **Почему:** T98 разделена по правилу 11 RUN.md, по каталогам: она переписала комментарии `scripts/`, `mockup/`, `walk/`, `.github/`, `justfile` и `.devcontainer/`; эти каталоги — эта задача.
-- **Сделать:** как в T98 ([docs/plan/E5.md](../docs/plan/E5.md)): без пересказа кода, истории, номеров задач и строк Д, разделов документов (`section 3.3 of docs/architecture.md`, `measurements 4`, `contract, section 15`) и поправок с датой — `the 2026-11-12 amendment to R16` → `R16`; `R53 in docs/decisions.md` → `R53`; номер решения сверить с записью. То же — строки с причинами в тестах, где они служат комментарием, и сообщения, что ссылаются на раздел. Имена таблиц README эталона, которые код читает («Contrast», «Where it differs»), остаются.
-- **Как проверить:** `just -f spec/justfile docs-check-repo`; проверки `.claude/rules/code.md`; `/code-review high`.
-- **Разделы:** R160 spec, «Comments»; R32 spec; RULES.md spec — The bar; [.claude/rules/code.md](../.claude/rules/code.md).
-
 #### T104. Комментарии кода по R160 spec: хранилище, учётная запись и вход
 
 - **Цель:** комментарии `src/storage/`, `src/account/`, `src/signin/` и `src/ownkey/` говорят только то, чего не скажут код и имена (R160 spec, «Comments»).

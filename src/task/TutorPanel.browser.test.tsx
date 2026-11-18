@@ -1,7 +1,7 @@
-// The tutor's panel of the task screen and of an essay (section 3.3 of docs/architecture.md; R67 in
-// docs/decisions.md): beside the canvas on a tablet, a sheet over the row and the canvas's bar of
-// tools on a phone, its grabber, its ×, the tutor's button and the step's pill that open it, its
-// head with the share of the quota, and the verdict a line in it.
+// The tutor's panel of the task screen and of an essay (R67): beside the canvas on a tablet, a
+// sheet over the row and the canvas's bar of tools on a phone, its grabber, its ×, the tutor's
+// button and the step's pill that open it, its head with the share of the quota, and the verdict a
+// line in it.
 import "@altnovatrail/canvas";
 import type * as open from "@altnovatrail/spec/formatv0/open";
 import { render, screen, within } from "@testing-library/react";
