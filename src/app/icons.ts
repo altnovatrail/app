@@ -202,6 +202,12 @@ export const ICONS = {
       "M5 21q-.825 0-1.412-.587T3 19V5q0-.825.588-1.412T5 3h6q.425 0 .713.288T12 4t-.288.713T11 5H5v14h6q.425 0 .713.288T12 20t-.288.713T11 21zm12.175-8H10q-.425 0-.712-.288T9 12t.288-.712T10 11h7.175L15.3 9.125q-.275-.275-.275-.675t.275-.7t.7-.313t.725.288L20.3 11.3q.3.3.3.7t-.3.7l-3.575 3.575q-.3.3-.712.288t-.713-.313q-.275-.3-.262-.712t.287-.688z",
     ],
   },
+  "star-rounded": {
+    viewBox: "0 0 24 24",
+    paths: [
+      "m12 17.275l-4.15 2.5q-.275.175-.575.15t-.525-.2t-.35-.437t-.05-.588l1.1-4.725L3.775 10.8q-.25-.225-.312-.513t.037-.562t.3-.45t.55-.225l4.85-.425l1.875-4.45q.125-.3.388-.45t.537-.15t.537.15t.388.45l1.875 4.45l4.85.425q.35.05.55.225t.3.45t.038.563t-.313.512l-3.675 3.175l1.1 4.725q.075.325-.05.588t-.35.437t-.525.2t-.575-.15z",
+    ],
+  },
 } as const;
 
 /** The name of an icon of the app. */
@@ -342,6 +348,7 @@ export const VALUES = {
     filled: "logout-outline-rounded",
     mirrored: true,
   },
+  "lesson-complete": { outline: "star-outline-rounded", filled: "star-rounded", mirrored: false },
 } as const satisfies Record<string, { outline: IconName; filled: IconName; mirrored: boolean }>;
 
 /** A value of the app. */

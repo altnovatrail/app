@@ -634,8 +634,10 @@ export const en = {
   "steps.exit-givens": "Mark what we know and what to find",
   /** What opens "Step done", or Check, at a step whose exit condition is answer_slots_filled. */
   "steps.exit-slots": "Write an answer in each slot",
-  /** The name of the bar of a lesson's segments. */
+  /** The name of the list of a lesson's segments, and of its pop-over. */
   "lesson.segments": "Segments of the lesson",
+  /** The name of the line under the lesson's title that opens its segments: the line's own words first. */
+  "lesson.segments-open": "{where}: segments of the lesson",
   /** The kinds of a lesson's segments, in the bar and in the line below it. */
   "lesson.explanation": "Explanation",
   "lesson.example": "Worked example",

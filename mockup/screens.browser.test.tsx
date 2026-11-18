@@ -9,6 +9,11 @@ import {
   QuotaShareSchema,
 } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import {
+  ChoiceKind,
+  EngineChoiceSchema,
+  RunEndReason,
+} from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
+import {
   LegalService,
   LegalTextSchema,
 } from "@altnovatrail/contracts/novatrail/api/v1/legal_pb.js";
@@ -26,6 +31,8 @@ import { OwnerProfileScreen } from "../src/account/OwnerProfileScreen.tsx";
 import { ApiProvider } from "../src/api/ApiContext.tsx";
 import { HomeBar } from "../src/app/App.tsx";
 import { Example } from "../src/lesson/Example.tsx";
+import { Explanation } from "../src/lesson/Explanation.tsx";
+import { LessonEnd } from "../src/lesson/Lesson.tsx";
 import { ContinueButton, LessonScreen } from "../src/lesson/LessonScreen.tsx";
 import { NextStep } from "../src/next/NextStep.tsx";
 import { SignInScreen } from "../src/signin/SignInScreen.tsx";
@@ -39,8 +46,11 @@ import { NO_VERDICTS } from "../src/task/attempt.ts";
 import { initialState } from "../src/task/steps.ts";
 import { TaskScreen } from "../src/task/TaskScreen.tsx";
 import { routedApi } from "../src/test/api.ts";
+import { memoryDevice } from "../src/test/device.ts";
 import { inLanguage } from "../src/test/language.tsx";
-import { type Device, type Difference, type Region, SIZES } from "./regions.ts";
+import { fakeSpeech, voice } from "../src/test/speech.ts";
+import { SpeechProvider, VoicingProvider } from "../src/voice/VoicingContext.tsx";
+import { DEVICES, type Device, type Difference, type Region, SIZES } from "./regions.ts";
 
 declare module "vitest/browser" {
   interface BrowserCommands {
@@ -104,34 +114,131 @@ function sheetTask() {
   );
 }
 
-/** A lesson's worked example before Next, its Continue in the canvas's row. */
-function workedExample() {
+/**
+ * What a screen says aloud by, as a learner's: a voice for English on this device, so that Read
+ * aloud is on, as the mockup's.
+ */
+function speaking(children: ReactNode) {
+  return (
+    <SpeechProvider value={fakeSpeech([voice("English", "en-GB")]).speech}>
+      <VoicingProvider
+        profile={create(ProfileSchema, { profileId: "p1" })}
+        device={memoryDevice().device}
+        place="lesson"
+        onSaved={() => {}}
+        onFailed={() => {}}
+      >
+        {children}
+      </VoicingProvider>
+    </SpeechProvider>
+  );
+}
+
+/** Read aloud is on once the device's record of voicing is read. */
+async function readAloudOn() {
+  await waitFor(() =>
+    expect(screen.getByRole("button", { name: "Read aloud" })).not.toHaveAttribute(
+      "aria-disabled",
+      "true",
+    ),
+  );
+}
+
+/** The mockup's lesson of olympiad maths, at a segment: its four segments, none ended. */
+function lesson(place: number, children: ReactNode) {
   return inLanguage(
-    <LessonScreen
-      title="Gaps and posts"
+    speaking(
+      <LessonScreen
+        title="Number patterns"
+        language="en"
+        module="Olympiad maths 1–6"
+        course={{ kinds: ["explanation", "example", "task", "task"], ended: new Set() }}
+        place={place}
+        shown={place}
+        unsaved={false}
+        pending={false}
+        {...(place === 1 ? { onContinue: () => {} } : {})}
+        onGoTo={() => {}}
+        onNote={() => {}}
+        onLeave={() => {}}
+      >
+        {children}
+      </LessonScreen>,
+    ),
+  );
+}
+
+/** The lesson's explanation, its paragraphs and its list; Continue in the row below it. */
+function explanation() {
+  return lesson(
+    1,
+    <Explanation
+      parts={[
+        {
+          text: "Some rows of numbers grow by the same amount each time: 1, 3, 5, 7, … grows by 2.",
+        },
+        { text: "To find a number far along the row, count the steps from the first number." },
+        { numbered_list: ["Find what is added each time.", "Count the steps.", "Add the amount."] },
+      ]}
       language="en"
-      course={{ kinds: ["explanation", "example", "task"], ended: new Set() }}
-      place={2}
-      shown={2}
-      unsaved={false}
-      pending={false}
-      onGoTo={() => {}}
-      onNote={() => {}}
-      onLeave={() => {}}
-    >
+      media={noMedia}
+    />,
+  );
+}
+
+/** A lesson's worked example, its parts open so far; its Continue in the canvas's row. */
+function workedExample(opened = 0) {
+  return () =>
+    lesson(
+      2,
       <Example
         example={{
-          statement: [{ text: "A path is 20 m long, with a tree every 5 m." }],
+          statement: [{ text: "One square takes 4 matches. How many do 6 squares in a row take?" }],
           canvas: { kind: "handwriting_sheet", grid: "squares" },
-          demo: [{ text: "20 ÷ 5 = 4 gaps." }, { text: "5 trees." }],
+          demo: [
+            { text: "Each new square adds 3 matches." },
+            { text: "From 1 square to 6 there are 5 steps." },
+            { text: "4 + 5 × 3 = 19." },
+            { text: "Answer: 19 matches." },
+          ],
         }}
         manifest={undefined}
         media={noMedia}
-        demo={undefined}
+        demo={opened === 0 ? undefined : { opened, hidden: false }}
         onDemo={() => {}}
         actions={<ContinueButton slot="actions" pending={false} onContinue={() => {}} />}
+      />,
+    );
+}
+
+/** The end of the lesson, done: the module's tile, its title, and the way to the next lesson. */
+function lessonEnd() {
+  return inLanguage(
+    <ApiProvider value={QUIET}>
+      <LessonEnd
+        reason={RunEndReason.PASSED}
+        title="Number patterns"
+        language="en"
+        module={{ id: "olympiad-math", title: "Olympiad maths 1–6" }}
+        next={
+          <NextStep
+            profileId="p1"
+            choice={create(EngineChoiceSchema, { choiceId: "c1", kind: ChoiceKind.LESSON })}
+          />
+        }
       />
-    </LessonScreen>,
+    </ApiProvider>,
+  );
+}
+
+/** The element's own buttons drawn, its shadow tree holding the toolbar. */
+async function canvasDrawn() {
+  await waitFor(() =>
+    expect(
+      document
+        .querySelector("novatrail-canvas")
+        ?.shadowRoot?.querySelector('[role="toolbar"] button'),
+    ).toBeTruthy(),
   );
 }
 
@@ -762,6 +869,193 @@ const MAP: readonly Region[] = [
   },
 ];
 
+/** The lesson's top bar: its pill, Back that leaves the lesson, and its heading of two lines. */
+const LESSON_BAR: readonly Region[] = [
+  {
+    name: "the top bar",
+    mockup: { css: 'div.glass:has(> button[aria-label="Leave the lesson"])' },
+    app: { css: ".nt-top-pill" },
+    followsText: "start",
+    differs: { what: ["font-size"], by: NO_TEXT },
+  },
+  {
+    name: "Leave the lesson",
+    mockup: { css: 'div.glass > button[aria-label="Leave the lesson"]' },
+    app: { css: '.nt-top-pill button[aria-label="Leave the lesson"]' },
+    differs: { what: ["font-size", "font-weight"], by: ICON_ALONE },
+  },
+  {
+    name: "the heading, which opens the segments",
+    mockup: { css: "button.ph-ttl" },
+    app: { css: ".nt-top-heading" },
+    followsText: "start",
+    differs: { what: ["font-size"], by: NO_TEXT },
+  },
+  {
+    name: "the lesson's title",
+    mockup: { css: "button.ph-ttl > span:first-child" },
+    app: { css: ".nt-top-heading .nt-top-title" },
+    followsText: "start",
+  },
+];
+
+/** The row of glass at the bottom, and its Continue. */
+const LESSON_ROW: readonly Region[] = [
+  {
+    name: "the row",
+    mockup: { css: ".ph-row" },
+    app: { css: ".nt-lesson-row" },
+    followsText: "centre",
+    differs: { what: ["font-size"], by: NO_TEXT },
+  },
+  {
+    name: "Continue",
+    mockup: { role: "button", name: "Continue" },
+    app: { role: "button", name: "Continue" },
+    followsText: "centre",
+  },
+];
+
+/** The format gives a segment no title of its own (format 21 in spec): the caption is its kind. */
+const NO_SEGMENT_TITLE = "a segment has no title in the format (format 21 in spec)";
+
+/** The explanation's card of reading, its caption and Read aloud. */
+const EXPLANATION: readonly Region[] = [
+  {
+    name: "the card",
+    mockup: { css: ".ph-read" },
+    app: { css: '.nt-segment-body[data-kind="explanation"]' },
+  },
+  {
+    name: "its caption",
+    mockup: { css: '.ph-read span:text-is("Explanation")' },
+    app: { css: ".nt-segment-body > h2" },
+    followsText: "start",
+  },
+  {
+    name: "Read aloud",
+    mockup: { css: '.ph-read button[aria-label="Read aloud"]' },
+    app: { css: '.nt-segment-body button[aria-label="Read aloud"]' },
+    differs: { what: ["y", "font-size", "font-weight"], by: `${NO_SEGMENT_TITLE}; ${ICON_ALONE}` },
+  },
+];
+
+/** Why the pop-over is shorter: the mockup's DEMO switch of the tutor's time is not the app's. */
+const NO_DEMO = 'the mockup\'s switch "DEMO Tutor time used up" (its README, the last row)';
+
+/** The segments' pop-over, its first segment and the way out of the lesson. */
+const SEGMENTS: readonly Region[] = [
+  {
+    name: "the pop-over",
+    mockup: { css: 'div.glass.nt-pop:has(nav[aria-label="Segments of the lesson"])' },
+    app: { role: "dialog", name: "Segments of the lesson" },
+    differs: { what: ["y", "height", "font-size"], by: `${NO_DEMO}; ${NO_TEXT}` },
+  },
+  {
+    name: "the first segment",
+    mockup: { css: 'nav[aria-label="Segments of the lesson"] > button:first-of-type' },
+    app: { css: ".nt-segment-list > li:first-child > button" },
+    differs: { what: ["y", "font-size", "font-weight"], by: `${NO_DEMO}; ${NO_TEXT}` },
+  },
+  {
+    name: "Leave the lesson, in the pop-over",
+    mockup: { css: 'div.nt-pop button.row:text-is("Leave the lesson")' },
+    app: { css: ".nt-segments-leave" },
+    followsText: "start",
+    differs: { what: ["y"], by: NO_DEMO },
+  },
+];
+
+/**
+ * Why the canvas's row is wider on a phone: it keeps the line between Demo and the lesson's
+ * Continue, which the mockup's phone hides; and why Next is paler with every part open: canvas pales
+ * a button that does not act by its colour, the mockup by its opacity (R84 in canvas).
+ */
+const ROW_LINE = "the canvas's row keeps its line on a phone (R84 in canvas)";
+const PALE =
+  "canvas pales a button that does not act by its colour, not its opacity (R84 in canvas)";
+
+/** The canvas's row of a worked example on a device, all its parts open or not. */
+function exampleRow(device: Device, open = false): readonly Region[] {
+  const phone = device === "phone";
+  return EXAMPLE_ROW.map((region) => {
+    const what: ("x" | "colour")[] = [];
+    const by: string[] = [];
+    if (phone && region.name !== EXAMPLE_ROW[0]?.name) {
+      what.push("x");
+      by.push(ROW_LINE);
+    }
+    if (open && region.name === "Next") {
+      what.push("colour");
+      by.push(PALE);
+    }
+    return what.length === 0 ? region : { ...region, differs: { what, by: by.join("; ") } };
+  });
+}
+
+/** The canvas's row of a worked example: Next, Demo and the lesson's Continue (R84 in canvas). */
+const EXAMPLE_ROW: readonly Region[] = [
+  {
+    name: "the row of Next, Demo and Continue",
+    mockup: { css: 'div.glass:has(> button:text-is("Next"))' },
+    app: { css: ".tools.row" },
+    followsText: "centre",
+    // Its words are its buttons', compared below.
+    differs: { what: ["font-size"], by: "no text of its own (R84 in canvas)" },
+  },
+  {
+    name: "Next",
+    mockup: { role: "button", name: "Next" },
+    app: { role: "button", name: "Next" },
+    followsText: "start",
+  },
+  {
+    name: "Continue",
+    mockup: { role: "button", name: "Continue" },
+    app: { role: "button", name: "Continue" },
+    followsText: "end",
+  },
+];
+
+/** The end of the lesson: its card, the tile, the title, the line and the two ways on. */
+const LESSON_END: readonly Region[] = [
+  {
+    name: "the card",
+    mockup: { css: ".ph-endcard" },
+    app: { css: ".nt-end > .nt-column" },
+    differs: { what: ["font-size"], by: NO_TEXT },
+  },
+  {
+    name: "the module's tile",
+    mockup: { css: ".ph-endcard > span:first-child" },
+    app: { css: ".nt-end-tile" },
+    differs: { what: ["font-size", "font-weight"], by: "the letter is drawn by CSS (R62)" },
+  },
+  {
+    name: "the lesson's title",
+    mockup: { css: ".ph-endcard h1" },
+    app: { css: ".nt-end h1" },
+    followsText: "centre",
+  },
+  {
+    name: "Lesson complete",
+    mockup: { css: '.ph-endcard span:text-is("Lesson complete")' },
+    app: { css: ".nt-end-done" },
+    followsText: "centre",
+  },
+  {
+    name: "Next lesson",
+    mockup: { role: "button", name: "Next lesson" },
+    app: { role: "button", name: "Next lesson" },
+  },
+  {
+    name: "Back to My subjects",
+    mockup: { role: "button", name: "Back to My subjects" },
+    app: { role: "button", name: "Back to My subjects" },
+    contrast: ACCENT_TEXT,
+  },
+];
+
 const SCREENS: readonly Compared[] = [
   ...WAY_IN,
   { state: "home", devices: ["ipad"], draw: home, regions: [...HOME, LEGEND] },
@@ -802,33 +1096,37 @@ const SCREENS: readonly Compared[] = [
   })),
   { state: "task", devices: ["ipad"], draw: sheetTask, settle: barDrawn, regions: BAR },
   {
-    state: "example",
-    devices: ["ipad"],
-    draw: workedExample,
-    settle: barDrawn,
-    regions: [
-      {
-        name: "the row of Next, Demo and Continue",
-        mockup: { css: 'div.glass:has(> button:text-is("Next"))' },
-        app: { css: ".tools.row" },
-        followsText: "centre",
-        // Its words are its buttons', compared below.
-        differs: { what: ["font-size"], by: "no text of its own (R84 in canvas)" },
-      },
-      {
-        name: "Next",
-        mockup: { role: "button", name: "Next" },
-        app: { role: "button", name: "Next" },
-        followsText: "start",
-      },
-      {
-        name: "Continue",
-        mockup: { role: "button", name: "Continue" },
-        app: { role: "button", name: "Continue" },
-        followsText: "end",
-      },
-    ],
+    state: "lesson",
+    draw: explanation,
+    settle: readAloudOn,
+    regions: [...LESSON_BAR, ...EXPLANATION, ...LESSON_ROW],
   },
+  {
+    state: "lesson-segments",
+    draw: explanation,
+    settle: async () => {
+      await readAloudOn();
+      await userEvent.click(
+        screen.getByRole("button", { name: "Explanation · 1 of 4: segments of the lesson" }),
+      );
+    },
+    regions: [...LESSON_BAR, ...SEGMENTS],
+  },
+  ...DEVICES.map((device) => ({
+    state: "example",
+    devices: [device],
+    draw: workedExample(),
+    settle: canvasDrawn,
+    regions: [...LESSON_BAR, ...exampleRow(device)],
+  })),
+  ...DEVICES.map((device) => ({
+    state: "example-demo",
+    devices: [device],
+    draw: workedExample(4),
+    settle: canvasDrawn,
+    regions: [...LESSON_BAR, ...exampleRow(device, true)],
+  })),
+  { state: "lesson-end", draw: lessonEnd, regions: LESSON_END },
 ];
 
 describe.each(Object.keys(SIZES) as Device[])("on %s", (device) => {

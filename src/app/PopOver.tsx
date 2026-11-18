@@ -49,6 +49,11 @@ export interface PopOverProps {
    * home's pop-overs hang 6 below its bar, as the mockup's do (R63).
    */
   readonly gap?: number;
+  /**
+   * What it hangs from in place of its button, from 600 CSS px: the closest ancestor of the button
+   * this selector finds — a lesson's segments hang from the bar's pill, as the mockup's (R64).
+   */
+  readonly anchor?: string;
   /** The pop-over's own class, beside `nt-pop`: a look of its own, as the avatars'. */
   readonly popClassName?: string;
   /** What the pop-over holds; given `close`, a choice can close it once it is made. */
@@ -65,6 +70,7 @@ export function PopOver({
   describedBy,
   centred = false,
   gap,
+  anchor,
   popClassName,
   children,
 }: PopOverProps) {
@@ -81,8 +87,9 @@ export function PopOver({
     shown.showModal();
     // Placed again when the window or what holds the button moves, not when the pop-over scrolls.
     const place = (event?: Event) => {
-      const from = button.current;
-      if (from === null || (event?.target instanceof Node && shown.contains(event.target))) return;
+      const own = button.current;
+      if (own === null || (event?.target instanceof Node && shown.contains(event.target))) return;
+      const from = (anchor === undefined ? null : own.closest(anchor)) ?? own;
       const at = hang(
         from.getBoundingClientRect(),
         shown.offsetWidth,
@@ -136,7 +143,7 @@ export function PopOver({
       // back: the button takes it, while it is still on the page.
       if (button.current?.isConnected === true) button.current.focus();
     };
-  }, [open, close, centred, gap, button]);
+  }, [open, close, centred, gap, anchor, button]);
 
   const opens = {
     className,

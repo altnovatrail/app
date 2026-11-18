@@ -40,7 +40,7 @@ describe("the theme", () => {
           Wait
         </button>
         <button type="button" className="nt-segment" aria-disabled="true">
-          2
+          <span className="nt-segment-kind">Task</span>
         </button>
       </>,
     );
@@ -65,13 +65,14 @@ describe("the theme", () => {
       "rgb(0, 102, 204)",
       "rgb(0, 113, 227)",
     ]);
-    // A segment that does not open is grey as a disabled button is, its own colours held over.
-    for (const off of [disabled, closed]) {
-      expect([off?.backgroundColor, off?.color]).toEqual([
-        "rgba(118, 118, 128, 0.16)",
-        "rgb(142, 142, 147)",
-      ]);
-    }
+    expect([disabled?.backgroundColor, disabled?.color]).toEqual([
+      "rgba(118, 118, 128, 0.16)",
+      "rgb(142, 142, 147)",
+    ]);
+    // A segment that does not open is a row of the pop-over as the mockup's, with no fill, its kind
+    // grey (R64).
+    expect(closed?.backgroundColor).toBe("rgba(0, 0, 0, 0)");
+    expect(styleOf(container.querySelector(".nt-segment-kind")).color).toBe("rgb(110, 110, 115)");
   });
 
   it("draws a field white with an edge of 1 px, and a card white and round", () => {

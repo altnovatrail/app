@@ -44,31 +44,50 @@ export const CAPTIONLESS = {
 /** A button of the closed list. */
 export type Captionless = keyof typeof CAPTIONLESS;
 
+/**
+ * The captions a button of the list takes in place of its own, each for its button alone, where they
+ * name where it goes: back in a lesson is "Leave the lesson", as the mockup's (R64).
+ */
+export const INSTEAD = { "lesson.leave": "back" } as const satisfies Partial<
+  Record<Key, Captionless>
+>;
+
+/** A caption of INSTEAD. */
+export type Instead = keyof typeof INSTEAD;
+
+/** The captions of INSTEAD that the button `V` takes. */
+export type InsteadOf<V extends Captionless> = {
+  [K in Instead]: (typeof INSTEAD)[K] extends V ? K : never;
+}[Instead];
+
 /** How long the pointer or the focus stays before the tooltip comes, as the mockup's `.tip`. */
 export const TIP_DELAY_MS = 300;
 
-export interface IconButtonProps
+export interface IconButtonProps<V extends Captionless = Captionless>
   extends Omit<ComponentProps<"button">, "children" | "type" | "ref"> {
   /** Which button of the list it is: its icon and its name. */
-  readonly value: Captionless;
+  readonly value: V;
   /** Whether what it stands for is chosen, on or open: then its icon is the fill, where it has one. */
   readonly chosen?: boolean;
   /** The button itself, for what opens from it: a pop-over that gives the focus back to it. */
   readonly ref?: Ref<HTMLButtonElement>;
+  /** Its caption in place of the list's, one of INSTEAD for this button. */
+  readonly caption?: InsteadOf<V>;
 }
 
-export function IconButton({
+export function IconButton<V extends Captionless>({
   value,
   chosen = false,
+  caption: named,
   className,
   onFocus,
   onBlur,
   ref,
   ...button
-}: IconButtonProps) {
+}: IconButtonProps<V>) {
   const { words } = useLanguage();
   const { icon, word } = CAPTIONLESS[value];
-  const caption = words.text(word);
+  const caption = words.text((named as Instead | undefined) ?? word);
   const [hover, setHover] = useState(false);
   const [focus, setFocus] = useState(false);
   const [shown, setShown] = useState(false);

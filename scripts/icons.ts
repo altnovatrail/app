@@ -94,6 +94,10 @@ export const TABLE: Readonly<Record<string, Value>> = {
   "menu-open": { base: "keyboard-arrow-down", filled: false, mirrored: false },
   "switch-learner": { base: "swap-horiz", filled: false, mirrored: false },
   "sign-out": { base: "logout", filled: false, mirrored: true },
+  // The end of a lesson (section 3.4 of docs/architecture.md; R64): a star, filled, before "Lesson
+  // complete". The chevron of the lesson's line under its title is the menu's, and the tick of a
+  // segment passed the sign-in's.
+  "lesson-complete": { base: "star", filled: true, mirrored: false },
 };
 
 /** An icon as the app draws it: its view box, and the paths it fills in the text's colour. */
