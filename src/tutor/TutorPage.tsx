@@ -6,8 +6,8 @@
 // What it says is what the platform's documents say of the tutor: that it is an AI, that a program
 // decides the verdict, what goes to the AI and what never does, and how a problem is reported. The
 // page is `#/tutor`, at any step, opened from My subjects, a sheet of the mockup's legal text that
-// closes home (R69), in the language of the learner's screens while a learner is chosen; nothing on it leads out of app
-// (privacy 7 in spec). Where it names the operator of the app, it leads to the page of who runs
+// closes home (R69), in the language of the learner's screens while a learner is chosen; nothing on
+// it leads out of app (privacy 7 in spec). Where it names the operator of the app, it leads to the page of who runs
 // this copy, the section Who we are of the privacy policy in force (R46).
 import { useEffect, useId } from "react";
 import { HOME, navigate, type Route, redirect, TUTOR } from "../app/router.ts";

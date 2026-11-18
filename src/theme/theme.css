@@ -76,6 +76,8 @@
   --nt-glass-shadow:
     0 0 0 0.5px rgba(0, 0, 0, 0.08), 0 8px 28px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
   --nt-card-shadow: 0 1px 2px rgba(0, 0, 0, 0.05), 0 8px 24px rgba(0, 0, 0, 0.05);
+  /* A card that stands alone in the window: the end of a lesson, a sheet, a failure screen. */
+  --nt-panel-shadow: 0 1px 2px rgba(0, 0, 0, 0.05), 0 16px 44px rgba(0, 0, 0, 0.08);
 
   /*
    * The radii: a round button and an icon's target 22, the top bar 24, the tool bar 26, the tutor's
@@ -2622,9 +2624,7 @@ main.nt-end {
   padding: 2rem 1.75rem 1.5rem;
   border-radius: var(--nt-radius-panel);
   background: var(--nt-card);
-  box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.05),
-    0 16px 44px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--nt-panel-shadow);
   text-align: center;
 }
 .nt-module-tile.nt-end-tile {
@@ -3882,6 +3882,63 @@ main.nt-adults .nt-top-pill > h1:first-child {
   inline-size: 100%;
 }
 /*
+ * A failure screen (R69), which the mockup does not draw, by its rules of style: a white card of 460
+ * in the window's middle, radius 28, as the end of a lesson; its heading at 22 bold, its lines in the
+ * middle, and what to do the primary button of its width, the way home below it. Below a bar, the
+ * card stands under it, not in the middle of the whole window.
+ */
+main.nt-failure {
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  min-block-size: 100dvh;
+  max-inline-size: none;
+  padding: 1rem;
+}
+* + main.nt-failure,
+* + * > main.nt-failure {
+  min-block-size: auto;
+}
+.nt-failure > .nt-column {
+  box-sizing: border-box;
+  inline-size: min(28.75rem, 100%);
+  padding: calc(2rem - 0.0625rem) calc(1.75rem - 0.0625rem) calc(1.5rem - 0.0625rem);
+  border: 0.0625rem solid transparent;
+  border-radius: var(--nt-radius-panel);
+  background: var(--nt-card);
+  box-shadow: var(--nt-panel-shadow);
+  text-align: center;
+}
+main.nt-failure .nt-column h1 {
+  margin: 0;
+  font-size: var(--nt-size-title);
+  line-height: 1.25;
+  letter-spacing: -0.3px;
+}
+main.nt-failure .nt-column > * {
+  margin-block-end: 0;
+}
+main.nt-failure .nt-column > * + * {
+  margin-block-start: 0.75rem;
+}
+main.nt-failure .nt-column > [data-operator] {
+  color: var(--nt-text-muted);
+  font-size: var(--nt-size-caption);
+}
+main.nt-failure .nt-column .nt-buttons {
+  flex-direction: column;
+  align-items: stretch;
+  margin: 1.5rem 0 0;
+}
+main.nt-failure .nt-column > button.nt-main {
+  inline-size: 100%;
+  margin-block-start: 1.5rem;
+}
+main.nt-failure .nt-column .nt-buttons > button.nt-secondary {
+  min-block-size: 3rem;
+  border-radius: var(--nt-radius-main);
+}
+/*
  * A sheet, the mockup's legal text (R69), for the legal pages, a module's license and the page on
  * the tutor, which app shows as screens of their own: from 600 a white card of 560, radius 28, its
  * top where the mockup's card of 580 in the window's middle has it, and the page's colour around it
@@ -3903,9 +3960,7 @@ main.nt-sheet {
   border: 0.0625rem solid transparent;
   border-radius: var(--nt-radius-panel);
   background: var(--nt-card);
-  box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.05),
-    0 16px 44px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--nt-panel-shadow);
   font-size: 0.9375rem;
 }
 .nt-sheet .nt-column button:not(.nt-icon-only) {
@@ -4012,59 +4067,4 @@ main.nt-sheet .nt-column .nt-sheet-note > button.nt-link {
   margin: 0 0 0 -0.5rem;
   padding: 0;
   list-style: none;
-}
-/*
- * A failure screen (R69), which the mockup does not draw, by its rules of style: a white card of 460
- * in the window's middle, radius 28, as the end of a lesson; its heading at 22 bold, its lines in the
- * middle, and what to do the primary button of its width, the way home below it. Below a bar, the
- * card stands under it, not in the middle of the whole window.
- */
-main.nt-failure {
-  display: grid;
-  place-items: center;
-  box-sizing: border-box;
-  min-block-size: 100dvh;
-  max-inline-size: none;
-  padding: 1rem;
-}
-* + main.nt-failure {
-  min-block-size: auto;
-}
-.nt-failure > .nt-column {
-  box-sizing: border-box;
-  inline-size: min(28.75rem, 100%);
-  padding: calc(2rem - 0.0625rem) calc(1.75rem - 0.0625rem) calc(1.5rem - 0.0625rem);
-  border: 0.0625rem solid transparent;
-  border-radius: var(--nt-radius-panel);
-  background: var(--nt-card);
-  box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.05),
-    0 16px 44px rgba(0, 0, 0, 0.08);
-  text-align: center;
-}
-main.nt-failure .nt-column h1 {
-  margin: 0;
-  font-size: var(--nt-size-title);
-  line-height: 1.25;
-  letter-spacing: -0.3px;
-}
-main.nt-failure .nt-column > p {
-  margin: 0.75rem 0 0;
-}
-main.nt-failure .nt-column > p[data-operator] {
-  color: var(--nt-text-muted);
-  font-size: var(--nt-size-caption);
-}
-main.nt-failure .nt-column .nt-buttons {
-  flex-direction: column;
-  align-items: stretch;
-  margin: 1.5rem 0 0;
-}
-main.nt-failure .nt-column > button.nt-main {
-  inline-size: 100%;
-  margin-block-start: 1.5rem;
-}
-main.nt-failure .nt-column .nt-buttons > button.nt-secondary {
-  min-block-size: 3rem;
-  border-radius: var(--nt-radius-main);
 }

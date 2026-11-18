@@ -30,7 +30,6 @@ import { AdultSection } from "../adults/AdultSection.tsx";
 import { useApi, useRequest } from "../api/ApiContext.tsx";
 import type { Api } from "../api/client.ts";
 import type { Failure } from "../api/failure.ts";
-import { failureText } from "../api/words.ts";
 import {
   ADULTS,
   HOME,
@@ -43,7 +42,7 @@ import {
 } from "../app/router.ts";
 import { Screen } from "../app/Screen.tsx";
 import { useDeployment, useStorage } from "../boot/Boot.tsx";
-import { Offline, StorageGone } from "../boot/Screens.tsx";
+import { Held, Offline, ReadFailed, StorageGone } from "../boot/Screens.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { LearnerLanguage } from "../i18n/LearnerLanguage.tsx";
 import { LegalPages, legalPage, OPERATOR } from "../legal/LegalPages.tsx";
@@ -114,9 +113,9 @@ export function AccountGate({ children }: { readonly children: ReactNode }) {
   }, [holder, owner]);
   const [leaving, setLeaving] = useState(false);
   const [left, setLeft] = useState(false);
-  const { language, words } = useLanguage();
+  const { language } = useLanguage();
   const route = useRoute();
-  // Where the legal pages' bar goes back to: home, unless the section opened them. Memory alone,
+  // Where the legal pages' close goes back to: home, unless the section opened them. Memory alone,
   // as the profile the section chose: after a reload, home.
   const [legalBack, setLegalBack] = useState<Route>(HOME);
   // What the owner typed and ticked on the invite code's screen, kept while the legal pages stand in
@@ -240,21 +239,9 @@ export function AccountGate({ children }: { readonly children: ReactNode }) {
     case "unreadable":
       return <StorageGone trouble="unreadable" />;
     case "held":
-      return (
-        <Screen title={words.text("account.held")}>
-          <button type="button" onClick={() => void session.load()}>
-            {words.text("boot.retry")}
-          </button>
-        </Screen>
-      );
+      return <Held onRetry={() => void session.load()} />;
     case "failed":
-      return (
-        <Screen title={failureText(state.failure, words)}>
-          <button type="button" onClick={() => void session.load()}>
-            {words.text("boot.retry")}
-          </button>
-        </Screen>
-      );
+      return <ReadFailed failure={state.failure} onRetry={() => void session.load()} />;
     case "invite":
       return <InviteStep session={session} draft={inviteDraft} onLegal={() => openLegal(HOME)} />;
     case "owner-profile":

@@ -114,4 +114,24 @@ describe("a failure screen", () => {
     expect(button.height).toBe(52);
     expect(getComputedStyle(screen.getByRole("heading", { level: 1 })).fontSize).toBe("22px");
   });
+
+  it("stands right under a bar above its screen, not in the middle of the whole window", async () => {
+    await page.viewport(1194, 834);
+    render(
+      inLanguage(
+        <>
+          <header className="nt-bar">
+            <p>Learning now</p>
+          </header>
+          <div data-screen="home">
+            <Screen title="No connection" layout="failure" />
+          </div>
+        </>,
+      ),
+    );
+    const bar = box(document.querySelector("header") as Element);
+    const card = box(column());
+    expect(card.y).toBe(bar.bottom + 16);
+    expect(document.documentElement.scrollHeight).toBeLessThanOrEqual(834);
+  });
 });

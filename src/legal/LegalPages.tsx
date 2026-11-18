@@ -9,7 +9,15 @@
 // were opened from. Nothing on them leads out of app (privacy 7 in spec): a text's own words lead
 // nowhere (R27), and the operator of the copy, whom a page names, is reached as the section Who we
 // are says.
-import { createContext, type ReactNode, useCallback, useContext, useEffect, useId } from "react";
+import {
+  createContext,
+  type ReactNode,
+  useCallback,
+  useContext,
+  useEffect,
+  useId,
+  useMemo,
+} from "react";
 import { useRequest } from "../api/ApiContext.tsx";
 import type { Api } from "../api/client.ts";
 import { ReadFailure } from "../api/ReadFailure.tsx";
@@ -271,7 +279,9 @@ export function OperatorPage() {
             <p>{words.text("legal.operator-none")}</p>
           ) : (
             <>
-              {language === "en" ? null : <p>{words.text("legal.english-in-force")}</p>}
+              {language === "en" ? null : (
+                <p className="nt-in-force">{words.text("legal.english-in-force")}</p>
+              )}
               <LegalOriginal body={section} level={1} />
             </>
           )}
@@ -364,9 +374,11 @@ export function LegalPages({ route, back }: { readonly route: Route; readonly ba
   else if (page === ACCESSIBILITY) shown = <AccessibilityPage />;
   else if (page === NOTICES) shown = <NoticesPage />;
   const known = shown !== undefined;
+  const list = page === "";
+  const place = useMemo(() => ({ first: list, back }), [list, back]);
   useEffect(() => {
     if (!known) redirect(LEGAL);
   }, [known]);
   if (!known) return null;
-  return <Place.Provider value={{ first: page === "", back }}>{shown}</Place.Provider>;
+  return <Place.Provider value={place}>{shown}</Place.Provider>;
 }

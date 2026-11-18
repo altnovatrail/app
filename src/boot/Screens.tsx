@@ -73,6 +73,16 @@ export function ReadFailed({
   );
 }
 
+/** The account held: the words of it, and Try again. */
+export function Held({ onRetry }: { readonly onRetry: () => void }) {
+  const { words } = useLanguage();
+  return (
+    <Screen title={words.text("account.held")} layout="failure">
+      <Retry onRetry={onRetry} home={false} />
+    </Screen>
+  );
+}
+
 /** No file, or not the right one: a grown-up's help, and below what whoever deployed it needs. */
 export function Unconfigured({ detail }: { readonly detail: string }) {
   const { words } = useLanguage();

@@ -176,7 +176,6 @@ export const en = {
   "legal.open": "Read the privacy policy and other texts",
   "legal.hint":
     "The privacy policy, the terms of use, the consent to keeping works, accessibility and licenses",
-  /** The bar above a legal page: back to their list. */
   /** The way back before a legal page's heading, a button that shows its icon alone (R69). */
   "legal.back": "Back to the list",
   "legal.privacy-policy": "Privacy Policy",
