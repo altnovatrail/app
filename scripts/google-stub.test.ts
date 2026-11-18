@@ -1,6 +1,5 @@
 // The stand-ins for Google in Node, with a context and routes of its own: what each host gets, and
-// an answer the closing of the context cut off, which fails no test (section 3.7 of
-// docs/architecture.md).
+// an answer the closing of the context cut off, which fails no test.
 import type { BrowserContext, Route } from "playwright";
 import { describe, expect, it } from "vitest";
 import { closedMeanwhile, GAPI, standInForGoogle } from "./google-stub.ts";

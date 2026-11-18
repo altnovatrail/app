@@ -1,20 +1,20 @@
-// The check of a deployed site against the release of app it serves (section 3.7 of
-// docs/architecture.md; R42 in docs/decisions.md). `just site-check <origin> <version>` downloads
-// the release's archive, has spec's release-verify accept it, and runs this on it. infra's rollout
-// checks its own release of the site (R06 infra); this is app's own look, the same for the
-// platform and for a self-hosted copy, and it reads only what the site serves to anyone:
+// The check of a deployed site against the release of app it serves (R42). `just site-check
+// <origin> <version>` downloads the release's archive, has spec's release-verify accept it, and
+// runs this on it. infra's rollout checks its own release of the site (R06 infra); this is app's
+// own look, the same for the platform and for a self-hosted copy, and it reads only what the site
+// serves to anyone:
 // - every file of the archive at its path, byte for byte: the build, its csp.json and schema, and
 //   NOTICE and LICENSE (R25);
 // - /deployment.json, as app's own code reads it at the start;
-// - the headers section 3.7 asks of the hosting: at the page, the CSP header that csp.json of the
-//   build gives with the file's values, frame-ancestors 'none' with it, and no-cache; nowhere
+// - the headers app asks of the hosting: at the page, the CSP header that csp.json of the build
+//   gives with the file's values, frame-ancestors 'none' with it, and no-cache; nowhere
 //   Cross-Origin-Opener-Policy: same-origin, which breaks the sign-in window;
 // - the page in Chromium, WebKit and Firefox, under the site's own header and with Google's own
-//   script: no violation of the CSP, nothing but app's origin asked before the tap of "Sign in
-//   with Google" — but in WebKit, which the SDK takes for Safari, what it loads at every start,
-//   and the refusal of gapi's ping —, after it no host section 3.7 does not name, and the window
-//   opened on the sign-in pages of authDomain, whose project lets the site's host sign in. The window is then closed: nobody
-//   signs in (R45).
+//   script: no violation of the CSP, nothing but app's origin asked before the tap of "Sign in with
+//   Google" — but in WebKit, which the SDK takes for Safari, what it loads at every start, and the
+//   refusal of gapi's ping —, after it no host but those of the sign-in, and the window opened on
+//   the sign-in pages of authDomain, whose project lets the site's host sign in. The window is then
+//   closed: nobody signs in (R45).
 import { readFileSync } from "node:fs";
 import { gunzipSync } from "node:zlib";
 import type { Deployment } from "@altnovatrail/spec/deploymentv1";
@@ -102,7 +102,7 @@ export function expectedHeader(files: ReadonlyMap<string, Buffer>, deployment: D
 
 /**
  * What the site serves against the release: each file of the archive at its path, byte for byte,
- * and at / and /index.html the headers of section 3.7.
+ * and at / and /index.html the headers app asks of the hosting.
  */
 export async function siteProblems(
   files: ReadonlyMap<string, Buffer>,
@@ -138,7 +138,7 @@ export function fetchAsk(origin: string, fetcher: typeof fetch = fetch): Ask {
   };
 }
 
-/** gapi's ping, which the header's connect-src refuses (section 3.7; sources 7.6). */
+/** gapi's ping, which the header's connect-src refuses. */
 const GAPI_PING = new URL("https://apis.google.com/js/gen_204");
 
 /** A refusal of connect-src as the event gives it, and as WebKit writes it in the console. */
@@ -151,7 +151,7 @@ const REFUSALS = [
  * Whether a line of a violation is the one refusal of the CSP the page test and the site check
  * expect: in WebKit, which the SDK takes for Safari and so loads gapi at every start, connect-src
  * refusing gapi's ping, whatever its query. Sent now and then, it is no violation there; in any
- * other engine, and any other refusal, is (section 3.7; R45).
+ * other engine, and any other refusal, is (R45).
  */
 export function expectedRefusal(engine: string | undefined, line: string): boolean {
   if (engine !== "webkit") return false;
@@ -181,9 +181,8 @@ export async function recordViolations(page: Page, engine: string | undefined): 
 }
 
 /**
- * The hosts section 3.7 lets the page ask in an engine, beside the site's own: Google's script,
- * authDomain and Firebase Auth, and in WebKit the host Google's page in the hidden iframe asks there
- * (measurements 3).
+ * The hosts the page may ask in an engine, beside the site's own: Google's script, authDomain and
+ * Firebase Auth, and in WebKit the host Google's page in the hidden iframe asks there.
  */
 export function allowedHosts(
   origin: string,
@@ -203,7 +202,7 @@ export function allowedHosts(
 /**
  * The hosts the page may ask before the tap, in an engine: none on a computer; where the SDK takes
  * the browser for Safari, as in WebKit, gapi and the hidden iframe it loads at every start, and the
- * host Google's page in it asks (section 3.7; measurements 3).
+ * host Google's page in it asks.
  */
 export function hostsAtStart(
   engine: string | undefined,
@@ -215,7 +214,7 @@ export function hostsAtStart(
 
 /**
  * Whether the project's authorized domains let a host sign in, as the SDK decides it: an IP address
- * only by an exact match, a name also by a domain it lies within, in any case (section 3.7).
+ * only by an exact match, a name also by a domain it lies within, in any case.
  */
 export function authorizes(domains: unknown, hostname: string): boolean {
   if (!Array.isArray(domains)) return false;
@@ -230,7 +229,7 @@ export function authorizes(domains: unknown, hostname: string): boolean {
 
 /**
  * Where a window is, by its origin and path; whatever else its address is, in quotes: once in
- * WebKit, under Cross-Origin-Opener-Policy: same-origin, it was no URL at all (measurements 4).
+ * WebKit, under Cross-Origin-Opener-Policy: same-origin, it was no URL at all.
  */
 export function windowAt(address: string): string {
   const where = URL.parse(address);
@@ -310,7 +309,7 @@ export async function browserProblems(
     const allowed = allowedHosts(origin, deployment, engine);
     const other = [...new Set(requests.map((url) => url.host))].filter((h) => !allowed.has(h));
     if (other.length > 0)
-      problems.push(`the page asked ${other.join(", ")}, which section 3.7 does not name`);
+      problems.push(`the page asked ${other.join(", ")}, which the sign-in does not need`);
     problems.push(...violations.map((line) => `a violation of the CSP: ${line}`));
     return problems;
   } catch (error) {
@@ -374,7 +373,7 @@ export async function check(
     `/deployment.json: app reads it; api ${deployment.api}, sign-in ${deployment.signIn.authDomain}`,
     `/ and /index.html: index.html of the release, with no-cache and the CSP header of csp.json`,
     `${files.size - 1} more files of the archive at their paths, ${assets} of them in assets/: the bytes of the release`,
-    `the page in ${engines.join(", ")}: no violation of the CSP${inWebkit ? " — in WebKit gapi's ping, if refused, is none —" : ""}, only /deployment.json and the build before the tap${inWebkit ? " — and in WebKit what the SDK loads for Safari —," : ","} the window on https://${deployment.signIn.authDomain}/__/auth/handler, and no host section 3.7 does not name`,
+    `the page in ${engines.join(", ")}: no violation of the CSP${inWebkit ? " — in WebKit gapi's ping, if refused, is none —" : ""}, only /deployment.json and the build before the tap${inWebkit ? " — and in WebKit what the SDK loads for Safari —," : ","} the window on https://${deployment.signIn.authDomain}/__/auth/handler, and no host but those of the sign-in`,
   ];
   return { lines, problems };
 }
@@ -407,7 +406,7 @@ export async function run(
       return 1;
     }
     for (const line of lines) console.log(`site-check: ${line}`);
-    console.log(`site-check: ${origin} serves the release, as section 3.7 has it`);
+    console.log(`site-check: ${origin} serves the release`);
     return 0;
   } catch (error) {
     console.error(`site-check: ${error instanceof Error ? error.message : String(error)}`);

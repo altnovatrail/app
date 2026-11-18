@@ -1,7 +1,7 @@
-// The test of the site check (scripts/site.ts; section 3.7 of docs/architecture.md; R42): each rule
-// on answers made up here, and the whole check, with no network, against a server of the test's own
-// that serves the archive of build/ — ci-test builds it first — with the headers infra's rollout
-// sets, and Google's answers as stand-ins, as the built page test has them.
+// The test of the site check (scripts/site.ts; R42): each rule on answers made up here, and the
+// whole check, with no network, against a server of the test's own that serves the archive of
+// build/ — ci-test builds it first — with the headers infra's rollout sets, and Google's answers as
+// stand-ins, as the built page test has them.
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { createServer, type Server } from "node:http";
 import { tmpdir } from "node:os";
@@ -187,7 +187,7 @@ describe("the rules of the site check", () => {
     ];
     expect([...allowedHosts("https://example.org", deployment)]).toEqual(hosts);
     expect([...allowedHosts("https://example.org", deployment, "firefox")]).toEqual(hosts);
-    // In WebKit, Google's page in the hidden iframe asks one more (measurements 3).
+    // In WebKit, Google's page in the hidden iframe asks one more.
     expect([...allowedHosts("https://example.org", deployment, "webkit")]).toEqual([
       ...hosts,
       "www.googleapis.com",
@@ -212,7 +212,7 @@ describe("the rules of the site check", () => {
   });
 
   it("expects only connect-src refusing gapi's ping, and only in WebKit", () => {
-    // The two lines WebKit gave for it in CI, the event's and the console's (measurements 5).
+    // The two lines WebKit gave for it in CI, the event's and the console's.
     const ping = "https://apis.google.com/js/gen_204?c=50%3A1";
     const event = `connect-src ${ping}`;
     const logged = `Refused to connect to ${ping} because it does not appear in the connect-src directive of the Content Security Policy.`;
@@ -305,7 +305,7 @@ describe("the whole check", () => {
     return context;
   }
 
-  it("passes a site that serves the release as section 3.7 has it", async () => {
+  it("passes a site that serves the release", async () => {
     extra = {};
     authorized = [HOST];
     const { lines, problems } = await check(ORIGIN, archive, browsers, { open });
@@ -324,9 +324,7 @@ describe("the whole check", () => {
     const log = vi.spyOn(console, "log").mockImplementation(() => {});
     try {
       expect(await run(ORIGIN, archivePath, { open })).toBe(0);
-      expect(log).toHaveBeenLastCalledWith(
-        `site-check: ${ORIGIN} serves the release, as section 3.7 has it`,
-      );
+      expect(log).toHaveBeenLastCalledWith(`site-check: ${ORIGIN} serves the release`);
     } finally {
       log.mockRestore();
     }

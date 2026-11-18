@@ -57,11 +57,16 @@ No current epic. The last done one is E5 «Интерфейс по эталон�
 | [x] | T95 | Иконки: `canvas` v0.3.30 и `skill-map` с набором 1.2.99 | Claude | — | — |
 | [x] | T96 | Тексты без истории (R160 spec) и тег spec v0.18.34 | Claude | — | — |
 | [x] | T97 | Документы без истории (R160 spec) | Claude | — | T96 |
-| [ ] | T98 | Комментарии кода по R160 spec | Claude | — | T96 |
+| [x] | T98 | Комментарии кода по R160 spec | Claude | — | T96 |
 | [ ] | T99 | Документы без истории: разделы 3.2 и 3.3 (R160 spec) | Claude | — | T97 |
 | [ ] | T100 | Документы без истории: разделы 3.4–3.6 (R160 spec) | Claude | — | T97 |
 | [ ] | T101 | Документы без истории: разделы 3.7 и 3.9 (R160 spec) | Claude | — | T97 |
 | [ ] | T102 | Документы без истории: раздел 3.8 (R160 spec) | Claude | — | T97 |
+| [ ] | T103 | Комментарии кода по R160 spec: задача и холст | Claude | — | T98 |
+| [ ] | T104 | Комментарии кода по R160 spec: хранилище, учётная запись и вход | Claude | — | T98 |
+| [ ] | T105 | Комментарии кода по R160 spec: взрослые, уроки и карта навыков | Claude | — | T98 |
+| [ ] | T106 | Комментарии кода по R160 spec: оболочка, api и голос | Claude | — | T98 |
+| [ ] | T107 | Комментарии кода по R160 spec: словари, правовые тексты, пакеты и тема | Claude | — | T98 |
 
 «Зависит от» names only tasks of this plan. What a task waits for from other repositories is its body's «Ждёт»: it is taken once the neighbour has done that, and until then the queue goes on.
 

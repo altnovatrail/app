@@ -1,9 +1,8 @@
-// The development server's route to api's development token (R44 in docs/decisions.md; section
-// 3.7 of docs/architecture.md). api's `just dev-app` writes a Firebase custom token of its
-// development account into the volume novatrail-dev-token, which app's container mounts read-only,
-// again every half hour, and removes it when it stops (R67 api). The plugin hands it to the local
-// build's sign-in, src/signin/local.ts, on the development server alone: `vite build` and
-// `vite preview` do not know the route.
+// The development server's route to api's development token (R44). api's `just dev-app` writes a
+// Firebase custom token of its development account into the volume novatrail-dev-token, which app's
+// container mounts read-only, again every half hour, and removes it when it stops (R67 api). The
+// plugin hands it to the local build's sign-in, src/signin/local.ts, on the development server
+// alone: `vite build` and `vite preview` do not know the route.
 import { readFileSync } from "node:fs";
 import type { Plugin } from "vite";
 import { LOCAL_TOKEN_PATH } from "../src/signin/token-path.ts";

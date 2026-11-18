@@ -1,9 +1,8 @@
-// app's screens against the interface mockup (R58 in docs/decisions.md): each entry draws a screen
-// as the screen tests do, synthetic and with no api, at each size of the mockup, and compares its
-// regions with the mockup's state of the same name in the same engine. An entry with `until` is a
-// screen whose task of epic E5 has not come yet: its differences are reported in mockup/out/ and
-// not held. Once that task has brought it to the mockup, `until` goes, and every difference but
-// those a region's `differs` names fails the test.
+// app's screens against the interface mockup (R58): each entry draws a screen as the screen tests
+// do, synthetic and with no api, at each size of the mockup, and compares its regions with the
+// mockup's state of the same name in the same engine. An entry with `until` is a screen not brought
+// to the mockup yet: its differences are reported in mockup/out/ and not held. Without it, every
+// difference but those a region's `differs` names fails the test.
 import {
   ProfileSchema,
   QuotaShareSchema,
@@ -74,7 +73,7 @@ interface Compared {
   readonly state: string;
   readonly draw: () => ReactNode;
   readonly regions: readonly Region[];
-  /** The task of epic E5 that brings the screen to the mockup, while it has not. */
+  /** What is to bring the screen to the mockup, while nothing has: its differences are not held. */
   readonly until?: string;
   /** What a screen that draws in an effect waits for before it is read: its last element shown. */
   readonly settle?: () => Promise<unknown>;
@@ -205,7 +204,7 @@ interface Drawn {
   readonly solution?: readonly open.StatementPart[];
   /** Check leaves the screen waiting: the work being read. */
   readonly waits?: boolean;
-  /** The tutor's panel open as the screen begins, as the mockup opens it on a task (T87). */
+  /** The tutor's panel open as the screen begins, as the mockup opens it on a task. */
   readonly open?: boolean;
   /** The tutor's words in the panel: a rung's after a wrong answer, or the same in other words. */
   readonly words?: string;
@@ -601,13 +600,12 @@ async function agreeing() {
 
 /**
  * Why the column of the way in stands elsewhere than the mockup has it: it stands in the middle of
- * the frame's height, as the mockup's, but its heading keeps the words of the terms of section 3.8
- * — one line where the mockup's has two —, the code's step has no "Back", which in the mockup signs
- * out, and the statement's texts stand in place below it (R27; R46), so the column is of another
- * height (R61).
+ * the frame's height, as the mockup's, but its heading keeps app's own words — one line where the
+ * mockup's has two —, the code's step has no "Back", which in the mockup signs out, and the
+ * statement's texts stand in place below it (R27; R46), so the column is of another height (R61).
  */
 const CENTRED =
-  "the headings' words of section 3.8, no Back from the code, the texts in place below (R27; R46; R61)";
+  "app's own words of the headings, no Back from the code, the texts in place below (R27; R46; R61)";
 
 /** The way to the legal pages: one button that names them all (R31), not the mockup's two. */
 const LEGAL_WAY: Region = {
@@ -875,7 +873,7 @@ const LEGAL_TEXTS: readonly Compared[] = [
         name: "the standard",
         mockup: { css: ".ph-gist" },
         app: { css: "h2.nt-sheet-caption:first-of-type + p" },
-        differs: { what: ["height"], by: "the words of the standard of R11 (section 3.9)" },
+        differs: { what: ["height"], by: "the words of the standard of R11" },
       },
     ],
   },
@@ -1112,14 +1110,13 @@ function home() {
 
 /**
  * Why the home screen stands lower and its cards are of other heights than the mockup's: app's
- * screen keeps the heading "My subjects" of section 3.8, where the mockup greets the learner by
- * name (R63); the card of what comes next holds
- * the engine's way, "What's next", which names no lesson before it is pressed (R24), not the
- * mockup's lesson and its picture; the modules connected are "Connected" of section 3.10, with
- * Disconnect and License beside their map, the catalog below them in place of "Add a module".
+ * screen keeps the heading "My subjects", where the mockup greets the learner by name (R63); the
+ * card of what comes next holds the engine's way, "What's next", which names no lesson before it is
+ * pressed (R24), not the mockup's lesson and its picture; the modules connected are "Connected",
+ * with Disconnect and License beside their map, the catalog below them in place of "Add a module".
  */
 const HOME_PLACED =
-  'the heading of section 3.8 (R63); "What\'s next" names no lesson (R24); Disconnect and License on a card (section 3.10)';
+  'the heading "My subjects" (R63); "What\'s next" names no lesson (R24); Disconnect and License on a card (R62)';
 
 /** A card or a bar, whose words are its own regions': the size of its own text is not drawn. */
 const NO_TEXT = "no text of its own: the body's 14 px (R11)";
@@ -1374,10 +1371,9 @@ const PILL: Region = {
 
 /**
  * Why the profile's menu is taller, and on the phone its rows higher up the rising sheet: it holds
- * "For grown-ups" and "Sign out" too, the buttons of the profile's header (section 3.6; R63).
+ * "For grown-ups" and "Sign out" too, the buttons of the profile's header (R63).
  */
-const HEADER_ROWS =
-  'the rows "For grown-ups" and "Sign out" of the profile\'s header (section 3.6; R63)';
+const HEADER_ROWS = 'the rows "For grown-ups" and "Sign out" of the profile\'s header (R63)';
 
 /** The adult's Help, open, and the bar it stands in. */
 const HELP: readonly Region[] = [
@@ -1730,7 +1726,7 @@ const CRITERIA = [
 /**
  * Why no row stands under a finished essay: the way on is the lesson's row, or the result in the
  * panel (R23; R53), which names the criteria without the marks — those are the adult's, in the
- * progress (R87 spec) —, where the mockup's panel, T87's, shows them.
+ * progress (R87 spec) —, where the mockup's panel shows them.
  */
 const DONE_ON =
   "the way on after Done: the lesson's row, or the result in the panel (R23; R53; R87 spec)";

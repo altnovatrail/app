@@ -1,10 +1,10 @@
-// A working copy of canvas on the development server, in place of the package from npm (Д3 in
-// RUN.md; R15 in docs/decisions.md): `just dev-canvas <folder>` sets NOVATRAIL_CANVAS to the
-// folder, and vite.config.ts, serving and only then, points each entry point the copy's
-// package.json exports at the copy's built files and lets the server read the folder. package.json
-// and the lock file stay as they are, so nothing of the copy can reach main, and neither the build
-// nor the tests read the variable: what ships and what CI checks is the package release-verify-npm
-// verified. The copy is built first, by `just build` in it, into its lib/.
+// A working copy of canvas on the development server, in place of the package from npm (R15): `just
+// dev-canvas <folder>` sets NOVATRAIL_CANVAS to the folder, and vite.config.ts, serving and only
+// then, points each entry point the copy's package.json exports at the copy's built files and lets
+// the server read the folder. package.json and the lock file stay as they are, so nothing of the
+// copy can reach main, and neither the build nor the tests read the variable: what ships and what
+// CI checks is the package release-verify-npm verified. The copy is built first, by `just build` in
+// it, into its lib/.
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 

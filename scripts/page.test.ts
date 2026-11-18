@@ -1,12 +1,12 @@
-// The test of the built page (section 3.7 of docs/architecture.md; Д8 and Д9 in run/DEBT.md): `vite
-// preview` serves build/ — ci-test builds it first — with app's own plugin, and Chrome Headless
-// Shell, WebKit and Firefox, from the image the toolchain stage takes them from, open it, each in
-// turn (R45). A violation of either layer of the CSP fails the test — but in WebKit the header's
-// refusal of gapi's ping, which section 3.7 expects there —, and so does any request
-// before /deployment.json. The sign-in window goes under the header too, with what Google would
-// answer stubbed, and a request to a host section 3.7 does not name fails it. So do a module's
-// license and its files from api (R32), and the skill map's element (R34). No file of the build
-// names the route to api's development token, which the local build's sign-in takes (R44).
+// The test of the built page: `vite preview` serves build/ — ci-test builds it first — with app's
+// own plugin, and Chrome Headless Shell, WebKit and Firefox, from the image the toolchain stage
+// takes them from, open it, each in turn (R45). A violation of either layer of the CSP fails the
+// test — but in WebKit the header's refusal of gapi's ping, which the site check expects there too
+// —, and so does any request before /deployment.json. The sign-in window goes under the header too,
+// with what Google would answer stubbed, and a request to a host but those of the sign-in fails it.
+// So do a module's license and its files from api (R32), and the skill map's element (R34). No file
+// of the build names the route to api's development token, which the local build's sign-in takes
+// (R44).
 import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -78,7 +78,7 @@ afterAll(async () => {
  * A page that records every violation of the CSP, every request to app's own origins by its path,
  * and the host of every other request, in their order. Apart: WebKit, whose user agent names
  * Safari, has the SDK load gapi and the hidden iframe at every start, and gapi's ping refused now
- * and then is no violation there (section 3.7).
+ * and then is no violation there.
  */
 async function open(locale = "en-US"): Promise<{
   page: Page;
@@ -125,7 +125,7 @@ const ENGINES: readonly BrowserType[] = [chromium, webkit, firefox];
 describe.each(ENGINES.map((type) => [type.name(), type] as const))(
   "the built page in %s",
   (engine, type) => {
-    /** What the page may ask before the tap, and the hosts section 3.7 names, as the site check has them. */
+    /** What the page may ask before the tap, and the hosts of the sign-in, as the site check has them. */
     const early = hostsAtStart(engine, file(ORIGIN) as Deployment);
     const named = allowedHosts(ORIGIN, file(ORIGIN) as Deployment, engine);
 
@@ -153,16 +153,16 @@ describe.each(ENGINES.map((type) => [type.name(), type] as const))(
         others.every((host) => early.has(host)),
         others.join(", "),
       ).toBe(true);
-      // The theme came with the build, under the lower layer's style-src 'self' (section 3.9).
+      // The theme came with the build, under the lower layer's style-src 'self'.
       expect(
         await page.evaluate(
           "getComputedStyle(document.documentElement).getPropertyValue('--nt-accent').trim()",
         ),
       ).toBe("#0071e3");
-      // The storage started without making a database of its own: nobody has signed in (section
-      // 3.2). The two there are Firebase's: Auth's persistence, which it opens to see that it can,
-      // and the heartbeats of @firebase/app — its versions and the day, sent in X-Firebase-Client
-      // with the requests to Firebase Auth (section 3.7).
+      // The storage started without making a database of its own: nobody has signed in. The two
+      // there are Firebase's: Auth's persistence, which it opens to see that it can, and the
+      // heartbeats of @firebase/app — its versions and the day, sent in X-Firebase-Client with the
+      // requests to Firebase Auth.
       expect(
         await page.evaluate("indexedDB.databases().then((all) => all.map((db) => db.name).sort())"),
       ).toEqual(["firebase-heartbeat-database", "firebaseLocalStorageDb"]);
@@ -170,7 +170,7 @@ describe.each(ENGINES.map((type) => [type.name(), type] as const))(
       await page.context().close();
     }, 60_000);
 
-    it("refuses gapi's ping under the header, and lets the refusal by in WebKit alone (section 3.7)", async () => {
+    it("refuses gapi's ping under the header, and lets the refusal by in WebKit alone", async () => {
       writeFileSync(local, JSON.stringify(file(ORIGIN)));
       const { page, violations } = await open();
       await page.goto(`${ORIGIN}/`);
@@ -199,7 +199,7 @@ describe.each(ENGINES.map((type) => [type.name(), type] as const))(
       await page.context().close();
     }, 60_000);
 
-    it("opens the sign-in window under the header, asking only the hosts section 3.7 names (Д8)", async () => {
+    it("opens the sign-in window under the header, asking only the hosts of the sign-in", async () => {
       writeFileSync(local, JSON.stringify(file(ORIGIN)));
       const { page, violations } = await open();
       // Every request off app's origin, page and window alike, by its host, in its order.
@@ -208,8 +208,8 @@ describe.each(ENGINES.map((type) => [type.name(), type] as const))(
       await page.goto(`${ORIGIN}/`);
       const button = page.getByRole("button", { name: "Sign in with Google" });
       await button.waitFor();
-      // On a computer the SDK asks Google nothing before the window (section 4); where it takes the
-      // browser for Safari, as in WebKit, it loads gapi and the hidden iframe at the start.
+      // On a computer the SDK asks Google nothing before the window; where it takes the browser for
+      // Safari, as in WebKit, it loads gapi and the hidden iframe at the start.
       if (early.size > 0) {
         await expect
           .poll(() => google.some((host) => host === "example-project.firebaseapp.com"))
@@ -242,13 +242,13 @@ describe.each(ENGINES.map((type) => [type.name(), type] as const))(
       await page.context().close();
     }, 60_000);
 
-    it("takes the canvas element under the header: its styles, a picture by blob: and a stroke (Д9)", async () => {
+    it("takes the canvas element under the header: its styles, a picture by blob: and a stroke", async () => {
       writeFileSync(local, JSON.stringify(file(ORIGIN)));
       const { page, violations } = await open();
       await page.goto(`${ORIGIN}/`);
       await page.getByRole("heading", { name: "Sign in" }).waitFor();
-      // The build registered the element before its first render (section 3.1); the test puts one on
-      // the page as the task screen does, with a task whose statement has a picture from media.
+      // The build registered the element before its first render; the test puts one on the page as
+      // the task screen does, with a task whose statement has a picture from media.
       await page.evaluate(`(async () => {
       const sheet = document.createElement("novatrail-canvas");
       sheet.lang = "en";
@@ -296,8 +296,8 @@ describe.each(ENGINES.map((type) => [type.name(), type] as const))(
       );
       // The page's zoom of the sheet, by the element's own button, lays the sheet out by a custom
       // property it sets through the CSSOM, which style-src leaves be: on an element narrower than
-      // the sheet's cap, twice as wide, and scrolled across in a region of its own (T36). The zoom
-      // has four steps above its fit.
+      // the sheet's cap, twice as wide, and scrolled across in a region of its own. The zoom has
+      // four steps above its fit.
       const larger = sheet.getByRole("button", { name: "Zoom in" });
       for (let i = 0; i < 8 && (await larger.getAttribute("aria-disabled")) !== "true"; i++) {
         await larger.click();
@@ -312,7 +312,7 @@ describe.each(ENGINES.map((type) => [type.name(), type] as const))(
       await page.context().close();
     }, 60_000);
 
-    it("measures the history of writing an answer by mouse (Д4)", async () => {
+    it("measures the history of writing an answer by mouse", async () => {
       writeFileSync(local, JSON.stringify(file(ORIGIN)));
       const { page, violations } = await open();
       await page.goto(`${ORIGIN}/`);
@@ -356,8 +356,7 @@ describe.each(ENGINES.map((type) => [type.name(), type] as const))(
         return JSON.stringify({ bytes: JSON.stringify(history).length, strokes: strokes.length, points });
       })()`),
       ) as { bytes: number; strokes: number; points: number };
-      // Measured 2026-11-10: 20 strokes, 360 points, 23 199 bytes of JSON — about 64 bytes a point,
-      // within the estimate of section 3.2. The bounds leave room for the hand's pace.
+      // The bounds leave room for the hand's pace.
       expect(measured.strokes).toBe(20);
       expect(measured.points).toBeGreaterThan(20 * 4);
       expect(measured.bytes / measured.points).toBeLessThan(100);
@@ -476,9 +475,8 @@ describe.each(ENGINES.map((type) => [type.name(), type] as const))(
       const { page, violations, requests } = await open();
       await page.goto(`${ORIGIN}/`);
       await page.getByRole("heading", { name: "Sign in" }).waitFor();
-      // The build registered the element before its first render (section 3.1); the test puts one on
-      // the page as the map's screen does, with the learner's view and a state, and keeps what
-      // Practise sends.
+      // The build registered the element before its first render; the test puts one on the page as
+      // the map's screen does, with the learner's view and a state, and keeps what Practise sends.
       await page.evaluate(`(() => {
       const map = document.createElement("novatrail-skill-map");
       map.setAttribute("view", "learner");
@@ -581,7 +579,7 @@ describe.each(ENGINES.map((type) => [type.name(), type] as const))(
       await answered;
       await page.waitForLoadState("load");
       // Each engine leaves its own trace of the document it refused: Chrome its error page, WebKit
-      // app's address with nothing run, Firefox no address (measurements 4). app asks for no file.
+      // app's address with nothing run, Firefox no address. app asks for no file.
       const refused: Readonly<Record<string, string>> = {
         chromium: "chrome-error://chromewebdata/",
         webkit: `${ORIGIN}/`,

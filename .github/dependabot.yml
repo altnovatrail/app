@@ -37,7 +37,7 @@ updates:
       connect:
         patterns: ["@connectrpc/*"]
       # @firebase/auth registers itself with @firebase/app, and the two move as one release of the
-      # firebase package pins them (R15 in docs/decisions.md).
+      # firebase package pins them (R15).
       firebase:
         patterns: ["@firebase/*"]
     ignore:
@@ -47,7 +47,7 @@ updates:
         update-types: ["version-update:semver-major"]
       # The version of playwright is that of the image .devcontainer/Dockerfile takes Chrome
       # Headless Shell from, and the three move together by hand, with spec's template (R79
-      # spec; R14 in docs/decisions.md).
+      # spec; R14).
       - dependency-name: "playwright"
       # The packages of spec move with the tag of the spec submodule, by a task of their own
       # (R73 and R83 spec).
@@ -55,7 +55,6 @@ updates:
       - dependency-name: "@altnovatrail/contracts"
       # The runtime of protobuf is the one @altnovatrail/contracts names, and moves with it. The set
       # of icons is the one canvas and skill-map name, raised in the three together only by a row of
-      # spec's COORDINATION.md (the 2026-11-17 amendment to R78 spec). scripts/pins.ts holds both
-      # (R15).
+      # spec's COORDINATION.md (R78 spec). scripts/pins.ts holds both (R15).
       - dependency-name: "@bufbuild/protobuf"
       - dependency-name: "@iconify-json/material-symbols"

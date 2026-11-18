@@ -1,7 +1,7 @@
-// The comparison with the interface mockup (R58 in docs/decisions.md): the colours laid over what
-// they stand on, the thresholds of a region and of the engines, and what is read in a page —
-// here in Chromium, on synthetic pages: CI's job of the tests has no spec/, whose mockup
-// `just mockup-compare` opens in the three engines.
+// The comparison with the interface mockup (R58): the colours laid over what they stand on, the
+// thresholds of a region and of the engines, and what is read in a page — here in Chromium, on
+// synthetic pages: CI's job of the tests has no spec/, whose mockup `just mockup-compare` opens in
+// the three engines.
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { createServer, type Server } from "node:http";
 import { tmpdir } from "node:os";

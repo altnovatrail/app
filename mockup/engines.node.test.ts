@@ -1,9 +1,9 @@
-// The mockup in the three engines (R58 in docs/decisions.md; Д244 spec): every state of the first
-// slice of its table «Screens and states», on the iPad and on the phone, opens in Chromium, WebKit
-// and Firefox at once, reaches data-ready="true" with no error in the console, and draws the same
-// shapes in each — the same count, boxes within 2 CSS px, the same styles. Each engine leaves a
-// snapshot of the frame in mockup/out/. A state that fails, or engines that part, is a row «В реестр
-// spec» of run/QUESTIONS.md naming the run, not an edit of app's screen.
+// The mockup in the three engines (R58): every state of the first slice of its table «Screens and
+// states», on the iPad and on the phone, opens in Chromium, WebKit and Firefox at once, reaches
+// data-ready="true" with no error in the console, and draws the same shapes in each — the same
+// count, boxes within 2 CSS px, the same styles. Each engine leaves a snapshot of the frame in
+// mockup/out/. A state that fails, or engines that part, is a row «В реестр spec» of
+// run/QUESTIONS.md naming the run, not an edit of app's screen.
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { type Browser, chromium, firefox, webkit } from "playwright";

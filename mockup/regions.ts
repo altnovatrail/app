@@ -1,7 +1,7 @@
-// What a compared state of the interface mockup is made of (R58 in docs/decisions.md): its regions,
-// each a pair of places — one in the mockup, one in app's screen —, the sizes of the mockup and
-// the differences the comparison reports. Types and constants alone, which both the screen test in
-// the browser and scripts/mockup.ts in Node take.
+// What a compared state of the interface mockup is made of (R58): its regions, each a pair of
+// places — one in the mockup, one in app's screen —, the sizes of the mockup and the differences
+// the comparison reports. Types and constants alone, which both the screen test in the browser and
+// scripts/mockup.ts in Node take.
 
 /** The two sizes of the mockup, in CSS px (its README, "How to open it"). */
 export const SIZES = { ipad: [1194, 834], phone: [390, 844] } as const;

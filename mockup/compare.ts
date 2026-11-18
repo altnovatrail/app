@@ -1,8 +1,7 @@
-// The command of the comparison (R58 in docs/decisions.md): the screen test draws app's screen in
-// its frame, and this, in Node, opens the same state of the mockup in a new context of the same
-// browser, reads each region on either side, takes a snapshot of both and writes what it found to
-// mockup/out/. The mockup is the one of the spec folder NOVATRAIL_MOCKUP_SPEC names, spec/ by
-// default.
+// The command of the comparison (R58): the screen test draws app's screen in its frame, and this,
+// in Node, opens the same state of the mockup in a new context of the same browser, reads each
+// region on either side, takes a snapshot of both and writes what it found to mockup/out/. The
+// mockup is the one of the spec folder NOVATRAIL_MOCKUP_SPEC names, spec/ by default.
 import type { BrowserCommand } from "vitest/node";
 import {
   compareRegion,

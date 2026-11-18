@@ -1,6 +1,5 @@
 // Stand-ins for Google, for the tests that open the sign-in window of the built page with no
-// network: the built page test and the site check's own test (section 3.7 of
-// docs/architecture.md).
+// network: the built page test and the site check's own test.
 import type { BrowserContext, Route } from "playwright";
 
 /**

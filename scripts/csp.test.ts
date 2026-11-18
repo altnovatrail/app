@@ -10,7 +10,7 @@ describe("csp.json", () => {
     expect(templateProblems(template)).toEqual([]);
   });
 
-  it("gives the lower layer of section 3.7: https: for a place, no frame-ancestors", () => {
+  it("gives the lower layer: https: for a place, no frame-ancestors", () => {
     expect(lowerLayer(template)).toBe(
       [
         "default-src 'none'",
