@@ -48,7 +48,7 @@ import {
   VerdictCard,
   VerdictLine,
 } from "./TaskLayout.tsx";
-import { ExplainButton, HintAct, TutorWords } from "./TutorWords.tsx";
+import { ExplainButton, TutorWords } from "./TutorWords.tsx";
 
 export interface TaskScreenProps extends TaskParts {
   readonly verdicts: Verdicts;
@@ -172,7 +172,7 @@ export function TaskScreen(props: TaskScreenProps) {
         title={words.text("task.reading")}
         line={choicesOnly(task) ? undefined : words.text("task.reading-line")}
       />
-    ) : wrong !== undefined ? (
+    ) : wrong !== undefined && !putAway ? (
       <VerdictLine kind="not-yet" title={words.text(verdictKey(wrong))} line={line} />
     ) : null
   ) : null;
@@ -238,7 +238,7 @@ export function TaskScreen(props: TaskScreenProps) {
       }
       acts={
         <>
-          <HintAct pending={pending} onHint={hint} />
+          <HintButton parts={{ pending, onHint: hint }} className="nt-act" />
           {props.onExplain === undefined || props.tutorWords === undefined ? null : (
             <ExplainButton explaining={props.explaining === true} onExplain={props.onExplain} />
           )}

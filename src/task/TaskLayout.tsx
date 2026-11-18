@@ -23,7 +23,7 @@ import type {
   Media,
 } from "@altnovatrail/spec/canvas";
 import type * as open from "@altnovatrail/spec/formatv0/open";
-import { type ReactNode, type Ref, useEffect, useMemo, useState } from "react";
+import { type ReactNode, type Ref, useEffect, useMemo, useRef, useState } from "react";
 import type { Failure } from "../api/failure.ts";
 import { failureText } from "../api/words.ts";
 import { Icon } from "../app/Icon.tsx";
@@ -178,12 +178,19 @@ export function ResultEnd({ parts }: { readonly parts: TaskParts }) {
 }
 
 /** "Hint", in the row beside Check always, a bulb before its word: it does not send the work (R22). */
-export function HintButton({ parts }: { readonly parts: TaskParts }) {
+export function HintButton({
+  parts,
+  className = "nt-row-button",
+}: {
+  readonly parts: Pick<TaskParts, "pending" | "onHint">;
+  /** Its look: a button of the row, or `nt-act` at the foot of the tutor's panel. */
+  readonly className?: string;
+}) {
   const { words } = useLanguage();
   return (
     <button
       type="button"
-      className="nt-icon-button nt-row-button"
+      className={`nt-icon-button ${className}`}
       aria-disabled={parts.pending}
       onClick={() => {
         if (!parts.pending) parts.onHint();
@@ -332,10 +339,17 @@ export function VerdictLine({
  * window's right edge in the middle of its height, and on a phone above the row; it opens the panel
  * (R60: its caption is its name and its tooltip).
  */
-export function TutorButton({ onOpen }: { readonly onOpen: () => void }) {
+export function TutorButton({
+  onOpen,
+  buttonRef,
+}: {
+  readonly onOpen: () => void;
+  readonly buttonRef?: Ref<HTMLButtonElement>;
+}) {
   return (
     <div className="nt-tutor-call">
       <IconButton
+        ref={buttonRef}
         value="tutor"
         className="nt-tutor-button"
         aria-expanded={false}
@@ -396,6 +410,19 @@ export function TaskLayout({
   const shown = over || open;
   useEffect(() => {
     if (!shown) setFull(false);
+  }, [shown]);
+  // The button pressed to open or close the panel — the tutor's, the step's pill, ×, or a button of
+  // the row the phone's sheet hides — goes with the press: the focus goes to the panel's heading, or
+  // back to the tutor's button, not to the page (2.4.3).
+  const heading = useRef<HTMLHeadingElement>(null);
+  const call = useRef<HTMLButtonElement>(null);
+  const was = useRef(shown);
+  useEffect(() => {
+    if (was.current === shown) return;
+    was.current = shown;
+    const active = document.activeElement;
+    if (active !== null && active !== document.body && active.getClientRects().length > 0) return;
+    (shown ? heading.current : call.current)?.focus();
   }, [shown]);
   // Beside the open panel the canvas, its lines and the foot end where it begins; on a phone its
   // sheet hides the row and the canvas's bar of tools (the 2026-11-17 amendment to R148 in spec).
@@ -461,7 +488,7 @@ export function TaskLayout({
           <div className="nt-task-row nt-glass">{row}</div>
         )}
       </div>
-      {shown || onOpen === undefined ? null : <TutorButton onOpen={onOpen} />}
+      {shown || onOpen === undefined ? null : <TutorButton onOpen={onOpen} buttonRef={call} />}
       {shown ? (
         <aside
           className="nt-tutor-panel nt-glass nt-glass-panel"
@@ -481,7 +508,9 @@ export function TaskLayout({
               <Icon value="tutor" />
             </span>
             <div className="nt-tutor-names">
-              <h2>{words.text("task.tutor")}</h2>
+              <h2 ref={heading} tabIndex={-1}>
+                {words.text("task.tutor")}
+              </h2>
               {quota === undefined ? null : <span className="nt-tutor-status">{quota}</span>}
             </div>
             <VoicingToggle language={explanation} />

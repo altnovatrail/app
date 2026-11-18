@@ -96,27 +96,3 @@ export function ExplainButton({
     </button>
   );
 }
-
-/** Hint at the panel's foot, the row's Hint once more: it does not send the work (R22). */
-export function HintAct({
-  pending,
-  onHint,
-}: {
-  readonly pending: boolean;
-  readonly onHint: () => void;
-}) {
-  const { words } = useLanguage();
-  return (
-    <button
-      type="button"
-      className="nt-act nt-icon-button"
-      aria-disabled={pending}
-      onClick={() => {
-        if (!pending) onHint();
-      }}
-    >
-      <Icon value="hint" />
-      {words.text("task.hint")}
-    </button>
-  );
-}

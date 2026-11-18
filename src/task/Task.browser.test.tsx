@@ -885,6 +885,7 @@ describe("the task screen", () => {
     await vi.waitFor(() => screen.getByRole("radio", { name: "5" }));
     screen.getByRole("radio", { name: "5" }).click();
     screen.getByRole("radio", { name: "Yes" }).click();
+    // Closed by the dialog itself: its ×, out of sight from 600 px, is PopOver's own test.
     screen.getByRole("dialog", { name: "Choose an answer" }).closest("dialog")?.close();
     await vi.waitFor(() => expect(check()).toHaveAttribute("aria-disabled", "false"));
     vi.advanceTimersByTime(6000);

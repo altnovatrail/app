@@ -208,3 +208,35 @@ describe.each([390, 599, 320])("a pop-over at %i px", (width) => {
     await closedToButton();
   });
 });
+
+/** A pop-over that holds while told, and tells when it closes. */
+function Held(props: { readonly holds: boolean; readonly onClosed: () => void }) {
+  return (
+    <PopOver label="Solving mode" holds={props.holds} onClosed={props.onClosed}>
+      {(close) => (
+        <button type="button" onClick={close}>
+          Step by step
+        </button>
+      )}
+    </PopOver>
+  );
+}
+
+describe("a pop-over that holds", () => {
+  it("closes by nothing while it holds, and tells when it closes once it no longer does", async () => {
+    await page.viewport(390, 844);
+    let closings = 0;
+    const closed = () => closings++;
+    const { rerender } = render(inLanguage(<Held holds onClosed={closed} />));
+    await opened();
+    await userEvent.keyboard("{Escape}");
+    await page.getByRole("button", { name: "Close" }).click();
+    await page.getByRole("button", { name: "Step by step" }).click();
+    await expect.element(page.getByRole("dialog", { name: "Solving mode" })).toBeVisible();
+    expect(closings).toBe(0);
+    rerender(inLanguage(<Held holds={false} onClosed={closed} />));
+    await page.getByRole("button", { name: "Close" }).click();
+    await closedToButton();
+    expect(closings).toBe(1);
+  });
+});

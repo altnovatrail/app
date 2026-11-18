@@ -559,9 +559,12 @@ function OpenTask({
   const isOpen = useRef(open);
   isOpen.current = open;
   const unasked = useRef<Unasked | undefined>(undefined);
-  // The learner's share of the quota in the panel's head, read anew at each opening: the checks
-  // between spend it. None from an api that has no share, nor from one that failed (R98 in spec).
+  // The learner's share of the quota in the panel's head, read anew at each opening, and while it is
+  // open at each answer to a check and each of the tutor's words, which spend it. None from an api
+  // that has no share, nor from one that failed (R98 in spec).
   const [quota, setQuota] = useState<string | undefined>(undefined);
+  const [answers, setAnswers] = useState(0);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: an answer or words read the share again.
   useEffect(() => {
     if (!open) return;
     let current = true;
@@ -574,7 +577,7 @@ function OpenTask({
     return () => {
       current = false;
     };
-  }, [open, api, profileId, words]);
+  }, [open, answers, tutorWords, api, profileId, words]);
   // The screen is left with the words after a correct answer unasked: its work goes.
   useEffect(
     () => () => {
@@ -879,6 +882,7 @@ function OpenTask({
         sent.current = undefined;
         const verdicts = verdictsOf(answer.items, task);
         setVerdicts(verdicts);
+        setAnswers((n) => n + 1);
         const read = outcomeOf(answer.outcome);
         if (of.contract !== undefined) holder.noteOutcome(profileId, read, ai);
         if (read !== undefined) setOutcome(outcomeText(read, words));

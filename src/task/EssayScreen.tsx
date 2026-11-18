@@ -24,7 +24,7 @@ import {
   type TaskParts,
   VerdictCard,
 } from "./TaskLayout.tsx";
-import { HintAct, TutorWords } from "./TutorWords.tsx";
+import { TutorWords } from "./TutorWords.tsx";
 
 /** The essay finished by Done: the rubric's criteria and the solution, as `SolvedTask` gives them. */
 export interface Finished {
@@ -49,6 +49,8 @@ export interface EssayScreenProps extends TaskParts {
   readonly finished?: Finished;
   readonly onCheck: () => void;
   readonly onFinish: () => void;
+  /** Told each time the tutor's panel opens or closes: the tutor speaks only while it is open. */
+  readonly onPanelChange?: (open: boolean) => void;
 }
 
 /** The button whose press, while it does not open, the card explains. */
@@ -84,6 +86,13 @@ export function EssayScreen(props: EssayScreenProps) {
     setChosen(undefined);
   }, [props.hint]);
   const open = chosen ?? (props.mode === "steps" || props.hint !== undefined);
+  const { onPanelChange } = props;
+  useEffect(() => onPanelChange?.(open), [open, onPanelChange]);
+  // Hint opens the panel at its press, as the task screen's does, whatever the answer brings.
+  const hint = () => {
+    setChosen(true);
+    props.onHint();
+  };
   const feedback = (
     <TutorWords
       words={props.feedback}
@@ -146,7 +155,7 @@ export function EssayScreen(props: EssayScreenProps) {
       onOpen={() => setChosen(true)}
       onClose={() => setChosen(false)}
       tutor={feedback}
-      acts={<HintAct pending={pending} onHint={props.onHint} />}
+      acts={<HintButton parts={{ pending, onHint: hint }} className="nt-act" />}
       result={
         <>
           <p className="nt-result">{words.text("task.essay-done")}</p>
@@ -195,7 +204,7 @@ export function EssayScreen(props: EssayScreenProps) {
       row={
         ended ? null : (
           <>
-            <HintButton parts={props} />
+            <HintButton parts={{ pending, onHint: hint }} />
             {/* The accent's words once it opens, the muted text's while it does not (R66). */}
             <button
               type="button"

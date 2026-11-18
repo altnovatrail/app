@@ -5,7 +5,11 @@
 // api closed meanwhile, and "Report a problem" at the feedback — with api on connect-es's router
 // and the storage on the device's memory.
 import "@altnovatrail/canvas";
-import { Mode, ProfileSchema } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
+import {
+  Mode,
+  ProfileSchema,
+  VoicingSpeed,
+} from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import {
   AttemptService,
   type DoneRequest,
@@ -49,6 +53,8 @@ import { setAccount } from "../storage/registry.ts";
 import { routedApi } from "../test/api.ts";
 import { memoryDevice } from "../test/device.ts";
 import { inLanguage } from "../test/language.tsx";
+import { fakeSpeech, voice } from "../test/speech.ts";
+import { SpeechProvider, VoicingProvider } from "../voice/VoicingContext.tsx";
 import { forgetPuts } from "../works/stored.ts";
 import { EssayScreen } from "./EssayScreen.tsx";
 import { initialState } from "./steps.ts";
@@ -133,6 +139,8 @@ interface Setup {
   lesson?: boolean;
   /** Among a learner's screens, the profile's storage of works on the server on (T62). */
   storage?: boolean;
+  /** The synthesis the screen speaks by, the profile's voicing on. */
+  speech?: ReturnType<typeof fakeSpeech>;
 }
 
 async function renderEssay(setup: Setup = {}) {
@@ -255,12 +263,31 @@ async function renderEssay(setup: Setup = {}) {
         : {})}
     />
   );
+  const voiced =
+    setup.speech === undefined ? (
+      screenOf
+    ) : (
+      <SpeechProvider value={setup.speech.speech}>
+        <VoicingProvider
+          profile={create(ProfileSchema, {
+            profileId: "p1",
+            presentationStyle: { voicing: { enabled: true, speed: VoicingSpeed.NORMAL } },
+          })}
+          device={device}
+          place="task"
+          onSaved={() => {}}
+          onFailed={() => {}}
+        >
+          {screenOf}
+        </VoicingProvider>
+      </SpeechProvider>
+    );
   render(
     inLanguage(
       <ApiProvider value={api}>
         <PackagesProvider value={packages}>
           {setup.storage === undefined ? (
-            screenOf
+            voiced
           ) : (
             <LearnerProvider
               value={{
@@ -272,7 +299,7 @@ async function renderEssay(setup: Setup = {}) {
                 onFailed: () => {},
               }}
             >
-              {screenOf}
+              {voiced}
             </LearnerProvider>
           )}
         </PackagesProvider>
@@ -585,6 +612,21 @@ describe("the screen of an essay", () => {
     await userEvent.click(screen.getByRole("button", { name: "Back to My subjects" }));
     expect(window.location.hash).toBe("#/home");
     window.location.hash = "";
+  });
+
+  it("says the feedback aloud only while the tutor's panel is open", async () => {
+    const speech = fakeSpeech([voice("Samantha", "en-US", { isDefault: true })]);
+    await renderEssay({ history: WRITTEN, speech });
+    const spoken = () => speech.said().map((each) => each.text);
+    await vi.waitFor(() => expect(check()).toHaveAttribute("aria-disabled", "false"));
+    await userEvent.click(check());
+    await vi.waitFor(() => expect(card()).toHaveAttribute("data-kind", "feedback"));
+    expect(screen.queryByRole("complementary", { name: "Tutor" })).toBeNull();
+    expect(spoken()).not.toContain("Each sentence makes a reader ask why.");
+    await userEvent.click(screen.getByRole("button", { name: "Tutor" }));
+    await vi.waitFor(() => expect(check()).toHaveAttribute("aria-disabled", "false"));
+    await userEvent.click(check());
+    await vi.waitFor(() => expect(spoken()).toContain("Each sentence makes a reader ask why."));
   });
 
   it("says the feedback was lost when a repeat brings no words", async () => {

@@ -153,11 +153,15 @@ describe("the tutor's panel on a tablet", () => {
     expect(done).not.toHaveBeenCalled();
     await userEvent.click(pill);
     expect(screen.getByRole("complementary", { name: "Tutor" })).toBeVisible();
+    // The focus goes with neither press to the page: into the panel, and back to the tutor's button.
+    expect(document.activeElement).toBe(panel().getByRole("heading", { name: "Tutor" }));
     await userEvent.click(panel().getByRole("button", { name: "Close" }));
     const tutor = screen.getByRole("button", { name: "Tutor" });
     expect(tutor).toHaveAttribute("aria-expanded", "false");
+    expect(document.activeElement).toBe(tutor);
     await userEvent.click(tutor);
     expect(screen.getByRole("complementary", { name: "Tutor" })).toBeVisible();
+    expect(document.activeElement).toBe(panel().getByRole("heading", { name: "Tutor" }));
   });
 
   it("opens the list of the steps from the step's line, and folds it again", async () => {

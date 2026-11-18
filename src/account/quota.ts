@@ -51,9 +51,7 @@ export function learnerQuotaText(
         : { cause: Cause.QUOTA, nextFamilyDay: timestampDate(share.nextFamilyDay) };
     return outcomeText(closed, words, now);
   }
-  return words.text("quota.learner", {
-    percent: percentText(words.language, share.profilePercent),
-  });
+  return shareText(share, words);
 }
 
 /**

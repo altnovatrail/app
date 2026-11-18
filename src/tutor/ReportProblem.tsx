@@ -105,6 +105,11 @@ export function ReportProblem({ profileId, attemptId, said, language: of }: Repo
       label={words.text("report.button")}
       className="nt-report-open"
       popClassName="nt-pop-report"
+      holds={pending}
+      onClosed={() => {
+        setInvalid(undefined);
+        setFailure(undefined);
+      }}
     >
       {(close) => (
         <form
@@ -178,18 +183,8 @@ export function ReportProblem({ profileId, attemptId, said, language: of }: Repo
             <button type="submit" aria-disabled={pending}>
               {words.text("report.send")}
             </button>
-            {/* Not while it is under way: the report may reach api all the same. */}
-            <button
-              type="button"
-              className="nt-secondary"
-              aria-disabled={pending}
-              onClick={() => {
-                if (pending) return;
-                setInvalid(undefined);
-                setFailure(undefined);
-                close();
-              }}
-            >
+            {/* Not while it is under way, as nothing else closes it then: the report may reach api all the same. */}
+            <button type="button" className="nt-secondary" aria-disabled={pending} onClick={close}>
               {words.text("common.cancel")}
             </button>
           </div>
