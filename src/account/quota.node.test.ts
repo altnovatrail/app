@@ -17,7 +17,7 @@ import { createApi } from "../api/client.ts";
 import { ApiError } from "../api/failure.ts";
 import { dateTimeFormat, percentText } from "../i18n/intl.ts";
 import { WORDS } from "../i18n/words.ts";
-import { adultQuotaTexts, learnerQuotaText, readQuota } from "./quota.ts";
+import { adultQuotaTexts, learnerQuotaText, readQuota, shareText } from "./quota.ts";
 
 function harness(routes: (router: ConnectRouter) => void) {
   const on = { stale: vi.fn(), accountGone: async () => {}, noAccess: async () => {} };
@@ -114,6 +114,17 @@ describe("the learner's line", () => {
   it("is no line while the tariff has no caps", () => {
     expect(learnerQuotaText(share({}), WORDS.en)).toBeUndefined();
     expect(learnerQuotaText(share({ capReached: true }), WORDS.ru)).toBeUndefined();
+  });
+});
+
+describe("the line of the tutor's panel", () => {
+  it("says the profile's share, its cap reached too, and is none without it", () => {
+    expect(shareText(share({ profilePercent: 20 }), WORDS.en)).toBe("Tutor time today: 20% used");
+    expect(shareText(share({ profilePercent: 100, capReached: true }), WORDS.en)).toBe(
+      "Tutor time today: 100% used",
+    );
+    expect(shareText(share({ accountPercent: 50 }), WORDS.en)).toBeUndefined();
+    expect(shareText(undefined, WORDS.en)).toBeUndefined();
   });
 });
 

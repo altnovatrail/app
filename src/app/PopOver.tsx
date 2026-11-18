@@ -56,6 +56,13 @@ export interface PopOverProps {
   readonly anchor?: string;
   /** The pop-over's own class, beside `nt-pop`: a look of its own, as the avatars'. */
   readonly popClassName?: string;
+  /**
+   * Nothing closes it while this holds — not Escape, ×, a tap outside nor its own content —: a
+   * report under way, whose failure the pop-over has to show.
+   */
+  readonly holds?: boolean;
+  /** Told when it closes, by whatever closed it. */
+  readonly onClosed?: () => void;
   /** What the pop-over holds; given `close`, a choice can close it once it is made. */
   readonly children: ReactNode | ((close: () => void) => ReactNode);
 }
@@ -72,6 +79,8 @@ export function PopOver({
   gap,
   anchor,
   popClassName,
+  holds = false,
+  onClosed,
   children,
 }: PopOverProps) {
   const [open, setOpen] = useState(false);
@@ -79,7 +88,15 @@ export function PopOver({
   const button = buttonRef ?? own;
   const dialog = useRef<HTMLDialogElement>(null);
   const content = useRef<HTMLDivElement>(null);
-  const close = useCallback(() => setOpen(false), []);
+  const held = useRef(holds);
+  held.current = holds;
+  const closed = useRef(onClosed);
+  closed.current = onClosed;
+  const close = useCallback(() => {
+    if (held.current) return;
+    setOpen(false);
+    closed.current?.();
+  }, []);
 
   useLayoutEffect(() => {
     const shown = dialog.current;
@@ -170,7 +187,11 @@ export function PopOver({
             event.preventDefault();
             close();
           }}
-          onClose={close}
+          onClose={() => {
+            // A browser may close a modal dialog on a second Escape whatever its cancel says.
+            if (held.current) dialog.current?.showModal();
+            else close();
+          }}
         >
           <div className="nt-pop-body">
             <IconButton value="close" className="nt-pop-close" onClick={close} />

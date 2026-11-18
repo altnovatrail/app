@@ -51,6 +51,16 @@ export function learnerQuotaText(
         : { cause: Cause.QUOTA, nextFamilyDay: timestampDate(share.nextFamilyDay) };
     return outcomeText(closed, words, now);
   }
+  return shareText(share, words);
+}
+
+/**
+ * The line of the tutor's panel's head, the mockup's: the profile's share alone, "100% used" too once
+ * its cap is reached — why the tutor says nothing then is the panel's own line (R37). None without a
+ * share of the profile.
+ */
+export function shareText(share: QuotaShare | undefined, words: Words): string | undefined {
+  if (share?.profilePercent === undefined) return undefined;
   return words.text("quota.learner", {
     percent: percentText(words.language, share.profilePercent),
   });

@@ -20,8 +20,8 @@ import type * as open from "@altnovatrail/spec/formatv0/open";
 import type { MessageInitShape } from "@bufbuild/protobuf";
 import type { ConnectRouter } from "@connectrpc/connect";
 import { cleanup, render, screen, within } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
-import { userEvent } from "vitest/browser";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { page, userEvent } from "vitest/browser";
 import { ApiProvider } from "../api/ApiContext.tsx";
 import type { PackageChecks } from "../packages/checks.ts";
 import { DeviceFiles } from "../packages/files.ts";
@@ -33,6 +33,12 @@ import { routedApi } from "../test/api.ts";
 import { memoryDevice } from "../test/device.ts";
 import { inLanguage } from "../test/language.tsx";
 import { Task } from "./Task.tsx";
+
+// The tablet's layout, where the row stands beside the open panel: on a phone its sheet hides the row
+// (R67), which the tests of the sheet show.
+beforeEach(async () => {
+  await page.viewport(1194, 834);
+});
 
 const D1 = `sha256:${"1".repeat(64)}`;
 const encode = (value: unknown) => new TextEncoder().encode(JSON.stringify(value));

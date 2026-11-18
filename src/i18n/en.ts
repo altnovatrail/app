@@ -649,6 +649,15 @@ export const en = {
   "steps.title": "Steps",
   /** Leads to the next step; it reads no work. */
   "steps.done": "Step done",
+  /** Above the step's title in the tutor's panel and in the step's pill: where the step stands. */
+  "steps.of": "Step {place} of {count}",
+  /** The name of the step's card in the tutor's panel, which scrolls on its own. */
+  "steps.card": "The step",
+  /**
+   * The name of the step's pill above the row while the tutor's panel is closed: the step, then
+   * what a press does.
+   */
+  "steps.pill": "{of}: {title}. Open the tutor",
   /** Beside a step passed, in the bar of steps. */
   "steps.passed": "done",
   /** Beside the step shown. */
@@ -1048,6 +1057,8 @@ export const en = {
    * the tutor is an AI (R123 spec). Plain, for a learner of any age.
    */
   "tutor.ai": "The tutor is an AI, not a person",
+  /** The name of the part of the tutor's panel that holds its words and the verdicts, and scrolls. */
+  "tutor.conversation": "Conversation",
   /** The heading of the section of My subjects that leads to the page on the tutor. */
   "tutor.home-title": "The tutor is an AI",
   "tutor.home-text":

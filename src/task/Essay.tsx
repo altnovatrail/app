@@ -78,6 +78,11 @@ export function OpenEssay({
   const { views, files } = usePackages();
   const { language, words } = useLanguage();
   const { auto, prime } = useOwnVoicing();
+  // The tutor's panel, as the screen last told: the feedback is said only while it is open (T88).
+  const panelOpen = useRef(false);
+  const onPanelChange = useCallback((open: boolean) => {
+    panelOpen.current = open;
+  }, []);
   const { task, profile, steps } = opened;
   const explanation = opened.manifest?.languages.explanation;
   const element = useRef<CanvasElement>(null);
@@ -227,11 +232,11 @@ export function OpenEssay({
         // Written to the device, the essay goes to the server too, while the storage is on.
         else if (profile !== undefined) void works.put(profile, attemptId);
         const note = noteOf(now, words);
-        auto(
-          now.feedback === undefined || note !== undefined
-            ? [{ text: note ?? "", language }]
-            : [{ text: now.feedback, language: explanation }],
-        );
+        // Why there is no feedback is the check's outcome, said as a verdict is; the feedback is
+        // the tutor's words, said only while the panel is open.
+        if (now.feedback === undefined || note !== undefined)
+          auto([{ text: note ?? "", language }]);
+        else if (panelOpen.current) auto([{ text: now.feedback, language: explanation }]);
         // api closed the attempt while it went: the feedback came all the same, and stays here.
         if (answer.closed !== CloseReason.UNSPECIFIED) closed(answer.closed);
       } catch (reason) {
@@ -310,6 +315,7 @@ export function OpenEssay({
 
   return (
     <EssayScreen
+      onPanelChange={onPanelChange}
       task={task}
       manifest={opened.manifest}
       steps={steps}
@@ -337,6 +343,7 @@ export function OpenEssay({
                 profileId={profileId}
                 attemptId={attemptId}
                 said={{ text: feedback, reply: TutorReply.ESSAY_FEEDBACK, rung: 0 }}
+                language={explanation}
               />
             ),
           }

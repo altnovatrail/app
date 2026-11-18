@@ -3,9 +3,11 @@
 // which api gave, from the open catalog; and its leading question, the author's question that
 // breaks the task down, in the module's explanation language. After a wrong answer the hint is the
 // words of the current rung again, which the block "Tutor" shows. Nothing of it needs the key.
-// "Read aloud" below it reads it all (R07).
+// "Read aloud" below it reads it all (R07). In the tutor's panel it is a bubble of the hint's tint,
+// its heading the bubble's label with a bulb, as the mockup's `task-hint` (R67).
 import type * as open from "@altnovatrail/spec/formatv0/open";
 import { useId } from "react";
+import { Icon } from "../app/Icon.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { ReadAloud } from "../voice/ReadAloud.tsx";
 import { hintPhrases } from "../voice/texts.ts";
@@ -36,8 +38,11 @@ export function Hint({
   // Nothing to hint is what api said, not what the catalog on the device happens to name.
   const nothing = hint.techniques.length === 0 && hint.question === undefined;
   return (
-    <section aria-labelledby={id} className="nt-tutor">
-      <h2 id={id}>{words.text("task.hint")}</h2>
+    <section aria-labelledby={id} className="nt-bubble nt-bubble-hint">
+      <h2 id={id} className="nt-bubble-label">
+        <Icon value="hint" />
+        {words.text("task.hint")}
+      </h2>
       {givens.length === 0 ? null : (
         <>
           <p className="nt-hint-label">{words.text("steps.givens")}</p>

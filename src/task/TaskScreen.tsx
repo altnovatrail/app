@@ -1,24 +1,25 @@
-// The task screen (section 3.3 of docs/architecture.md; R20, R21, R22 and R65 in
-// docs/decisions.md), as the mockup's `task-pill`, laid out by TaskLayout: the canvas over the
-// window, and at its foot the row of glass — "Choose an answer" where the task has options, which
-// opens them in a pop-over, Hint, the button "Tutor" on my own, "Show the solution" when the learner
-// may ask for it, which asks first in a pop-over of its own, and after a line Check. By steps the
-// panel stands always, its steps in it; on my own the button "Tutor" opens and closes it, and Hint
-// opens it — a verdict does not, and with it closed the tutor says nothing of the work (the second
-// 2026-11-17 amendment to R148 in spec; T88). The tutor's words stand at the top of the panel, with
-// the hint asked for. Above the row stands the verdict's card: the work being read, "Not yet" with
-// what was read, Hint and "Try again", which puts it away; why Check does not open, once it is
-// pressed so; "Correct" or "Solution shown" once the task is over. Then the panel gives way to the
-// result: the button "Tutor" on my own, the words after a correct answer while the panel is open —
-// or why none came while platform AI is closed (R37) —, the solution, the way to what the engine
-// chose (T28) and "Try it again"; the options take no tap, the row goes, and the canvas stays as it
-// was. Under a lesson's header it is no screen of its own, and its result ends with the lesson's
-// Continue in place of "Try it again" (R23). What it shows it takes from its container, Task.tsx,
-// which also gives the canvas the tutor's marks and "Report a problem" with the tutor's words, for a
-// learner of the category adult (R33). Above it all, the voicing of the profile switched on and
-// off; above the canvas, "Read aloud" of the statement with its items (R07; T45). Above the card on
-// a handwriting sheet, the reminder to write no names, whose crop goes to AI whole (R127 in spec;
-// R53).
+// The task screen (section 3.3 of docs/architecture.md; R20, R21, R22, R65 and R67 in
+// docs/decisions.md), as the mockup's `task-pill` and `task`, laid out by TaskLayout: the canvas over
+// the window, and at its foot the row of glass — "Choose an answer" where the task has options, which
+// opens them in a pop-over, Hint, "Show the solution" when the learner may ask for it, which asks
+// first in a pop-over of its own, and after a line Check. The tutor's panel opens by the tutor's
+// button, by the step's pill and by Hint, and closes by its × — a verdict does not open it, and with
+// it closed the tutor says nothing of the work (the second 2026-11-17 amendment to R148 in spec;
+// R21). In the open panel stand the line that the tutor is an AI, the verdict's line, the hint asked
+// for and the tutor's words, and at its foot Hint and "Explain differently". Above the row stands
+// the verdict's card while the panel is closed: the work being read, "Not yet" with what was read,
+// Hint and "Try again", which puts it away; why Check does not open, once it is pressed so, open or
+// closed; "Correct" or "Solution shown" once the task is over. Then the panel gives way to the
+// result: the button "Tutor" while the panel was closed, the words after a correct answer once it
+// is open — or why none came while platform AI is closed (R37) —, the solution, the way to what the
+// engine chose (T28) and "Try it again"; the options take no tap, the row goes, and the canvas stays
+// as it was. Under a lesson's header it is no screen of its own, and its result ends with the
+// lesson's Continue in place of "Try it again" (R23). What it shows it takes from its container,
+// Task.tsx, which also gives the canvas the tutor's marks and "Report a problem" with the tutor's
+// words, for a learner of the category adult (R33). Above the canvas, "Read aloud" of the statement
+// with its items, and the voicing of the profile switched on and off while the panel, whose head
+// has it then, is closed (R07; T45). Above the card on a handwriting sheet, the reminder to write no
+// names, whose crop goes to AI whole (R127 in spec; R53).
 import type * as open from "@altnovatrail/spec/formatv0/open";
 import { useEffect, useId, useState } from "react";
 import { Icon } from "../app/Icon.tsx";
@@ -45,8 +46,9 @@ import {
   TaskLayout,
   type TaskParts,
   VerdictCard,
+  VerdictLine,
 } from "./TaskLayout.tsx";
-import { TutorWords } from "./TutorWords.tsx";
+import { ExplainButton, TutorWords } from "./TutorWords.tsx";
 
 export interface TaskScreenProps extends TaskParts {
   readonly verdicts: Verdicts;
@@ -65,10 +67,12 @@ export interface TaskScreenProps extends TaskParts {
   readonly wordsCame?: boolean;
   /** The outcome of AI at the last check, in words: a failure of AI, a quota, a limit. */
   readonly outcome?: string;
-  /** The tutor's panel is open: always by steps, on my own as the learner left it. */
+  /** The tutor's panel is open, as the learner left it. */
   readonly panelOpen: boolean;
-  /** The button "Tutor", which opens the panel and closes it: on my own alone. */
+  /** The tutor's button, the step's pill and the panel's ×, which open the panel and close it. */
   readonly onPanel?: () => void;
+  /** The learner's share of the quota, the line of the panel's head (R98 in spec). */
+  readonly quota?: string;
   /** "Explain differently", while the rung has the right to it. */
   readonly onExplain?: () => void;
   readonly explaining?: boolean;
@@ -159,13 +163,26 @@ export function TaskScreen(props: TaskScreenProps) {
   const wrong = notRight(verdicts);
   const line = cardLine(verdicts, task, words);
 
+  // While the panel is open the verdict and the reading are lines in it, not a card over the row.
+  const inPanel = props.panelOpen && !solved;
+  const line_ = inPanel ? (
+    checking && pending ? (
+      <VerdictLine
+        kind="reading"
+        title={words.text("task.reading")}
+        line={choicesOnly(task) ? undefined : words.text("task.reading-line")}
+      />
+    ) : wrong !== undefined && !putAway ? (
+      <VerdictLine kind="not-yet" title={words.text(verdictKey(wrong))} line={line} />
+    ) : null
+  ) : null;
   const card = solved ? (
     props.shown === true ? (
       <VerdictCard kind="shown" title={words.text("task.solution-shown")} />
     ) : (
       <VerdictCard kind="correct" title={words.text("task.correct")} line={line} />
     )
-  ) : checking && pending ? (
+  ) : inPanel && !(asked && locked !== undefined) ? null : checking && pending ? (
     <VerdictCard
       kind="reading"
       title={words.text("task.reading")}
@@ -201,19 +218,31 @@ export function TaskScreen(props: TaskScreenProps) {
       parts={props}
       over={solved}
       underCanvas={<Items task={task} verdicts={verdicts} language={explanation} />}
-      panel={props.panelOpen}
+      open={props.panelOpen}
+      {...(props.onPanel === undefined ? {} : { onOpen: props.onPanel, onClose: props.onPanel })}
+      quota={props.quota}
       tutor={
-        <TutorWords
-          always={props.mode === "self"}
-          words={props.tutorWords}
-          language={explanation}
-          {...(props.wordsFailure === undefined ? {} : { failure: props.wordsFailure })}
-          waiting={props.wordsWaiting === true}
-          {...(props.onExplain === undefined ? {} : { onExplain: props.onExplain })}
-          explaining={props.explaining === true}
-          {...(props.explainNote === undefined ? {} : { note: props.explainNote })}
-          report={props.report}
-        />
+        <>
+          {line_}
+          <TutorWords
+            words={props.tutorWords}
+            rung={state.wrongAnswers > 0}
+            language={explanation}
+            {...(props.wordsFailure === undefined ? {} : { failure: props.wordsFailure })}
+            waiting={props.wordsWaiting === true}
+            explaining={props.explaining === true}
+            {...(props.explainNote === undefined ? {} : { note: props.explainNote })}
+            report={props.report}
+          />
+        </>
+      }
+      acts={
+        <>
+          <HintButton parts={{ pending, onHint: hint }} className="nt-act" />
+          {props.onExplain === undefined || props.tutorWords === undefined ? null : (
+            <ExplainButton explaining={props.explaining === true} onExplain={props.onExplain} />
+          )}
+        </>
       }
       result={
         <>
@@ -264,7 +293,6 @@ export function TaskScreen(props: TaskScreenProps) {
           <>
             {hasChoices(task) ? <ChooseButton {...props} /> : null}
             <HintButton parts={{ ...props, onHint: hint }} />
-            {tutorButton}
             {props.onShow === undefined ? null : (
               <ShowButton
                 pending={pending}

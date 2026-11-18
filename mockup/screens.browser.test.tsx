@@ -8,6 +8,7 @@ import {
   ProfileSchema,
   QuotaShareSchema,
 } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
+import { TutorReply } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
 import {
   ChoiceKind,
   EngineChoiceSchema,
@@ -45,12 +46,14 @@ import type { ModuleCard } from "../src/subjects/modules.ts";
 import type { SkillCounts } from "../src/subjects/states.ts";
 import { NO_VERDICTS, type Verdicts, verdictsOf } from "../src/task/attempt.ts";
 import { EssayScreen, type EssayScreenProps } from "../src/task/EssayScreen.tsx";
+import type { HintGiven } from "../src/task/Hint.tsx";
 import { initialState, slotsOf } from "../src/task/steps.ts";
 import { TaskScreen } from "../src/task/TaskScreen.tsx";
 import { routedApi } from "../src/test/api.ts";
 import { memoryDevice } from "../src/test/device.ts";
 import { inLanguage } from "../src/test/language.tsx";
 import { fakeSpeech, voice } from "../src/test/speech.ts";
+import { ReportProblem } from "../src/tutor/ReportProblem.tsx";
 import { SpeechProvider, VoicingProvider } from "../src/voice/VoicingContext.tsx";
 import { DEVICES, type Device, type Difference, type Region, SIZES } from "./regions.ts";
 
@@ -89,6 +92,8 @@ const DOTS: open.Task = {
   ],
   canvas: { kind: "handwriting_sheet", grid: "squares" },
   items: [{ answer_slots: [{ binding: "anywhere" }] }],
+  givens: ["Row 1 has 2 dots.", "Each row has 3 more dots than the row before."],
+  unknown: "How many dots there are in row 10.",
 };
 
 /** The mockup's second task, a choice: which number comes next. */
@@ -101,7 +106,12 @@ const NEXT: open.Task = {
 
 /** The solving steps of the mockup's module, which the pill of the mode stands for. */
 const STEPS: readonly open.Step[] = [
-  { title: "Understand the task", gives: ["givens"], exit_condition: "none" },
+  {
+    title: "Understand the task",
+    description: "Read the task again, and tick what is known and what you are to find.",
+    gives: ["givens"],
+    exit_condition: "givens_ticked",
+  },
   { title: "Plan", exit_condition: "none" },
   { title: "Solve", exit_condition: "none" },
   { title: "Check the answer", exit_condition: "none" },
@@ -174,6 +184,16 @@ function judged(task: open.Task, verdict: string, value?: string): Verdicts {
   );
 }
 
+/** What "Report a problem" is about: the words of the mockup's first rung. */
+function SAID(text: string) {
+  return {
+    profileId: "p1",
+    attemptId: "a1",
+    said: { text, reply: TutorReply.RUNG, rung: 1 },
+    language: "en",
+  } as const;
+}
+
 interface Drawn {
   readonly task?: open.Task;
   readonly mode?: "steps" | "self";
@@ -183,6 +203,16 @@ interface Drawn {
   readonly solution?: readonly open.StatementPart[];
   /** Check leaves the screen waiting: the work being read. */
   readonly waits?: boolean;
+  /** The tutor's panel open as the screen begins, as the mockup opens it on a task (T87). */
+  readonly open?: boolean;
+  /** The tutor's words in the panel: a rung's after a wrong answer, or the same in other words. */
+  readonly words?: string;
+  /** A hint before a wrong answer: the givens, a technique and the leading question. */
+  readonly hint?: HintGiven;
+  /** The panel's line of the quota. */
+  readonly quota?: string;
+  /** "Explain differently" at the panel's foot. */
+  readonly explain?: boolean;
 }
 
 /**
@@ -197,16 +227,23 @@ function TaskDrawn({
   filled = false,
   solution,
   waits = false,
+  open = false,
+  words,
+  hint,
+  quota,
+  explain = false,
 }: Drawn) {
   const [pending, setPending] = useState(false);
   const [shown, setShown] = useState(mode);
+  const [panel, setPanel] = useState(open);
+  const wrong = [...verdicts.slots.values()].includes("not_yet");
   return (
     <TaskScreen
       task={task}
       manifest={undefined}
       steps={STEPS}
       catalog={undefined}
-      state={{ ...initialState(shown), choices }}
+      state={{ ...initialState(shown), choices, wrongAnswers: wrong ? 1 : 0 }}
       mode={shown}
       verdicts={verdicts}
       filled={task.items.map((item) => slotsOf(item).map(() => filled))}
@@ -215,8 +252,15 @@ function TaskDrawn({
       notSaved={false}
       pending={pending}
       blink={false}
-      panelOpen={false}
+      panelOpen={panel}
+      onPanel={() => setPanel(!panel)}
       {...(solution === undefined ? {} : { solution })}
+      {...(words === undefined
+        ? {}
+        : { tutorWords: words, report: <ReportProblem {...SAID(words)} /> })}
+      {...(hint === undefined ? {} : { hint })}
+      {...(quota === undefined ? {} : { quota })}
+      {...(explain ? { onExplain: () => {} } : {})}
       onHistoryChange={() => {}}
       onMode={setShown}
       onGoTo={() => {}}
@@ -234,10 +278,36 @@ function TaskDrawn({
   );
 }
 
-/** The task screen as `TaskDrawn` draws it. */
+/** The task screen as `TaskDrawn` draws it: api asked nothing, "Report a problem" sends none. */
 function aTask(drawn: Drawn = {}) {
-  return () => inLanguage(<TaskDrawn {...drawn} />);
+  return () =>
+    inLanguage(
+      <ApiProvider value={QUIET}>
+        <TaskDrawn {...drawn} />
+      </ApiProvider>,
+    );
 }
+
+/** The mockup's hint on its first task before a wrong answer: a technique and the leading question. */
+const DOTS_HINT: HintGiven = {
+  techniques: [],
+  question: "How many steps of 3 are there from row 1 to row 10?",
+};
+
+/** The mockup's first rung on its first task, after "32", and the same in other words. */
+const DOTS_RUNG = "Count the steps again: from row 1 to row 10, how many times are 3 dots added?";
+const DOTS_ALT =
+  "Write rows 1 to 4 and their dots in a table. By row 4, how many 3s have been added?";
+
+/** The first task by steps after "32", its panel open with the rung. */
+const RUNG: Drawn = {
+  mode: "steps",
+  open: true,
+  filled: true,
+  verdicts: judged(DOTS, "not_yet", "32"),
+  words: DOTS_RUNG,
+  explain: true,
+};
 
 /** The task screen on a squared sheet, on my own, with nothing written: the canvas's bar of tools. */
 const sheetTask = aTask();
@@ -884,15 +954,12 @@ const HOME_PLACED =
 const NO_TEXT = "no text of its own: the body's 14 px (R11)";
 
 /**
- * Why the row and what hangs from it stand further right on the iPad than the mockup has them: its
- * tutor's panel is open, 344 at the right over the sheet, and the row stands in the middle of what
- * is left; app's panel is T87's, and its row stands in the window's middle.
+ * Why the row is in sight under the options on a phone: the mockup's tutor's sheet is open and hides
+ * it, where app's sheet hides the row while it is open, so that its options open with the sheet
+ * closed (R67).
  */
-const PANEL_OPEN = "the mockup's panel open at the right, T87";
-
-/** Why the row is in sight under the options on a phone: the mockup hides it under its sheet. */
 const UNDER_SHEET =
-  "the mockup hides the row under a sheet of the phone; app's sheet stands over it (R59)";
+  "the mockup's tutor's sheet open over the row of the phone; app's row, and its options, with the sheet closed (R67)";
 
 /** Why Check is grey while the work is read: it takes no press till the verdict comes (R65). */
 const READING = "Check takes no press while the work is read, and looks so (R65)";
@@ -930,31 +997,128 @@ const ROW: readonly Region[] = [
   },
 ];
 
-/** The row with "Choose an answer" at its start, the mockup's panel open beside it on the iPad. */
-function choiceRow(device: Device): readonly Region[] {
-  const beside = device === "ipad" ? { differs: { what: ["x" as const], by: PANEL_OPEN } } : {};
-  return [
-    ...ROW.map((region) =>
-      device === "ipad" && region.name !== "the row"
-        ? { ...region, differs: { what: ["x" as const], by: PANEL_OPEN } }
-        : region.name === "the row" && device === "ipad"
-          ? {
-              ...region,
-              differs: {
-                what: ["x" as const, "font-size" as const],
-                by: `${PANEL_OPEN}; ${NO_TEXT}`,
-              },
-            }
-          : region,
-    ),
-    {
-      name: "Choose an answer",
-      mockup: { css: "button.ph-rowfull" },
-      app: { css: "button.nt-choose" },
-      followsText: "start",
-      ...beside,
-    },
-  ];
+/**
+ * Why the ends of the row of a choice stand up to 5 further out than the mockup's: its four buttons
+ * are each a pixel or two wider in app, which the row's width adds up; its middle is the mockup's.
+ */
+const CHOICE_WIDER =
+  "each of the row's four buttons a pixel or two wider: the row's ends 4–5 further out";
+
+/** The row with "Choose an answer" at its start. */
+const CHOICE_ROW: readonly Region[] = [
+  ...ROW.map((region) =>
+    region.name === "Check" ? differing(region, ["x"], CHOICE_WIDER) : region,
+  ),
+  {
+    name: "Choose an answer",
+    mockup: { css: "button.ph-rowfull" },
+    app: { css: "button.nt-choose" },
+    followsText: "start",
+    differs: { what: ["x"], by: CHOICE_WIDER },
+  },
+];
+
+/** The accent as the words of a link or a row on the pop-over's glass (the README's «Contrast»). */
+const ACCENT_TEXT = [{ property: "colour", mockup: "#0071e3", app: "#0066cc" }] as const;
+
+/** The tutor's panel: 344 at the right of the iPad, a sheet over the lower half of the phone. */
+const PANEL: Region = {
+  name: "the tutor's panel",
+  mockup: { css: ".ph-tutor" },
+  app: { css: "aside.nt-tutor-panel" },
+  differs: { what: ["font-size"], by: NO_TEXT },
+};
+
+/** The panel's head: the tutor's sign and name, the quota's line, the speaker. */
+const PANEL_HEAD: Region = {
+  name: "the panel's head",
+  mockup: { css: ".ph-tuthead" },
+  app: { css: ".nt-tutor-head" },
+  differs: { what: ["font-size"], by: NO_TEXT },
+};
+
+/** The step's card at the top of the panel. */
+const STEP_CARD: Region = {
+  name: "the step's card",
+  mockup: { role: "region", name: "The step" },
+  app: { role: "region", name: "The step" },
+  differs: { what: ["font-size"], by: NO_TEXT },
+};
+
+/** The list of the steps, unfolded from the step's card. */
+const STEP_LIST: Region = {
+  name: "the list of the steps",
+  mockup: { role: "list", name: "Steps" },
+  app: { role: "list", name: "Steps" },
+  differs: { what: ["font-size"], by: NO_TEXT },
+};
+
+/** Hint at the panel's foot. */
+const HINT_ACT: Region = {
+  name: "Hint, at the panel's foot",
+  mockup: { css: '.ph-tutor button:text-is("Hint")' },
+  app: { css: '.nt-tutor-acts button:text-is("Hint")' },
+  followsText: "start",
+  contrast: ACCENT_TEXT,
+};
+
+/** "Explain differently" beside it, once a rung is said. */
+const EXPLAIN_ACT: Region = {
+  name: "Explain differently",
+  mockup: { css: '.ph-tutor button:text-is("Explain differently")' },
+  app: { css: '.nt-tutor-acts button:text-is("Explain differently")' },
+  followsText: "start",
+  contrast: ACCENT_TEXT,
+};
+
+/**
+ * Why "Explain differently" is not in sight once said: app shows it only while it takes a press,
+ * where the mockup greys it (R67).
+ */
+const EXPLAINED =
+  'app hides "Explain differently" while it takes no press, where the mockup greys it (R67)';
+
+/** "Report a problem" under the tutor's newest words. */
+const REPORT_OPEN: Region = {
+  name: "Report a problem",
+  mockup: { css: '.ph-tutor button:text-is("Report a problem") >> nth=-1' },
+  app: { css: "button.nt-report-open" },
+  followsText: "start",
+};
+
+/** The phone's grabber, at the top of the sheet. */
+const GRABBER: Region = {
+  name: "the grabber",
+  mockup: { css: ".ph-grab" },
+  app: { css: ".nt-tutor-grab" },
+  differs: {
+    what: ["colour", "radius", "font-size", "font-weight"],
+    by: "app's grabber shows the icon of what it does, Full screen or Half screen, of the closed list of buttons without a caption, where the mockup draws a bar (R60; R67)",
+  },
+};
+
+/** The round button that calls the tutor, at the right edge. */
+const TUTOR_BUTTON: Region = {
+  name: "the tutor's button",
+  mockup: { css: ".ph-tutbtn" },
+  app: { css: ".nt-tutor-button" },
+  differs: {
+    what: ["border", "colour", "font-size", "font-weight"],
+    by: `the button is its sign, the tutor's gradient in an edge of glass, where the mockup's sign is a span in it (R67); ${ICON_ALONE}`,
+  },
+};
+
+/** The step's pill above the row, the panel closed. */
+const STEP_PILL: Region = {
+  name: "the step's pill",
+  mockup: { css: ".ph-verdict" },
+  app: { css: ".nt-step-pill" },
+  differs: { what: ["font-size"], by: NO_TEXT },
+};
+
+/** The panel's regions on a device: the grabber on a phone. */
+function panelOf(device: Device, ...regions: readonly Region[]): readonly Region[] {
+  return [PANEL, ...regions, ...(device === "phone" ? [GRABBER] : [])];
 }
 
 /** The verdict's card, 460 wide above the row. */
@@ -1036,9 +1200,6 @@ const PILL: Region = {
   app: { role: "button", name: "Sam, profile menu" },
   followsText: "start",
 };
-
-/** The accent as the words of a link or a row on the pop-over's glass (the README's «Contrast»). */
-const ACCENT_TEXT = [{ property: "colour", mockup: "#0071e3", app: "#0066cc" }] as const;
 
 /**
  * Why the profile's menu is taller, and on the phone its rows higher up the rising sheet: it holds
@@ -1372,19 +1533,9 @@ function differing(
   };
 }
 
-/**
- * Why the row stands elsewhere by steps: the mockup's tutor's panel is open, at the right of the
- * iPad and as the phone's sheet over the row, and app's is T87's.
- */
-const SHEET_OPEN = "the mockup's tutor's sheet open over the row on a phone, T87";
-
-/** The regions of the row by steps, the mockup's panel open beside it or its sheet over it. */
+/** The regions by steps: the row beside the open panel on the iPad, the sheet over it on a phone. */
 function besidePanel(device: Device, regions: readonly Region[]): readonly Region[] {
-  return regions.map((region) =>
-    device === "ipad"
-      ? differing(region, ["x"], PANEL_OPEN)
-      : differing(region, ["missing"], SHEET_OPEN),
-  );
+  return device === "ipad" ? [PANEL, ...regions] : panelOf(device);
 }
 
 /**
@@ -1428,7 +1579,7 @@ const WORKBOOK_AND_ESSAY: readonly Compared[] = [
     (device): Compared => ({
       state: "workbook",
       devices: [device],
-      draw: aTask({ task: REMAINDERS, mode: "steps" }),
+      draw: aTask({ task: REMAINDERS, mode: "steps", open: true }),
       settle: barDrawn,
       regions: besidePanel(device, WORKBOOK_ROW),
     }),
@@ -1456,7 +1607,7 @@ const WORKBOOK_AND_ESSAY: readonly Compared[] = [
         solution: [{ text: "47 ÷ 6 = 7 r 5." }],
       }),
       settle: barDrawn,
-      regions: [card(WAY_ON), { ...CARD_TITLE, differs: { what: ["y"], by: WAY_ON } }],
+      regions: [card(WAY_ON), { ...CARD_TITLE, differs: { what: ["x", "y"], by: WAY_ON } }],
     }),
   ),
   ...DEVICES.map(
@@ -1547,8 +1698,115 @@ const SCREENS: readonly Compared[] = [
   },
   { state: "map", draw: skillMap("Olympiad maths 1–6"), regions: MAP },
   { state: "map-essays", draw: skillMap("Short essays"), regions: MAP },
-  { state: "task-pill", draw: sheetTask, settle: barDrawn, regions: [...BAR, ...ROW] },
-  { state: "task", devices: ["ipad"], draw: sheetTask, settle: barDrawn, regions: BAR },
+  {
+    state: "task-pill",
+    draw: aTask({ mode: "steps" }),
+    settle: barDrawn,
+    regions: [...BAR, ...ROW, STEP_PILL, TUTOR_BUTTON],
+  },
+  ...DEVICES.map(
+    (device): Compared => ({
+      state: "task",
+      devices: [device],
+      draw: aTask({ mode: "steps", open: true }),
+      settle: barDrawn,
+      // On a phone the sheet hides the row and the tool bar, on both sides.
+      regions: [
+        ...panelOf(device, PANEL_HEAD, STEP_CARD, HINT_ACT),
+        ...(device === "ipad" ? [...BAR, ...ROW] : []),
+      ],
+    }),
+  ),
+  {
+    state: "task-steps",
+    draw: aTask({ mode: "steps", open: true }),
+    settle: async () => {
+      await barDrawn();
+      await userEvent.click(screen.getByRole("button", { name: "Step 1 of 4" }));
+    },
+    regions: [STEP_CARD, STEP_LIST],
+  },
+  ...DEVICES.map(
+    (device): Compared => ({
+      state: "task-hint",
+      devices: [device],
+      draw: aTask({ mode: "steps", open: true, hint: DOTS_HINT }),
+      settle: barDrawn,
+      regions: panelOf(device, PANEL_HEAD, HINT_ACT),
+    }),
+  ),
+  ...DEVICES.map(
+    (device): Compared => ({
+      state: "task-rung",
+      devices: [device],
+      draw: aTask(RUNG),
+      settle: barDrawn,
+      regions: panelOf(device, PANEL_HEAD, HINT_ACT, EXPLAIN_ACT, REPORT_OPEN),
+    }),
+  ),
+  ...DEVICES.map(
+    (device): Compared => ({
+      state: "task-alt",
+      devices: [device],
+      draw: aTask({ ...RUNG, words: DOTS_ALT, explain: false }),
+      settle: barDrawn,
+      regions: panelOf(
+        device,
+        PANEL_HEAD,
+        HINT_ACT,
+        differing(EXPLAIN_ACT, ["missing"], EXPLAINED),
+        REPORT_OPEN,
+      ),
+    }),
+  ),
+  ...DEVICES.map(
+    (device): Compared => ({
+      state: "task-report",
+      devices: [device],
+      draw: aTask(RUNG),
+      settle: async () => {
+        await barDrawn();
+        await userEvent.click(screen.getByRole("button", { name: "Report a problem" }));
+      },
+      regions: [
+        {
+          name: "the form of the report",
+          mockup: { css: ".ph-report" },
+          app: { css: ".nt-pop-report" },
+          differs: {
+            what: ["y", "height", "font-size"],
+            by: `its options are app's radio buttons of 44 (R11), where the mockup's are rows of 44 with a circle of 20: the form is taller, and on a phone its sheet rises higher; ${NO_TEXT}`,
+          },
+        },
+      ],
+    }),
+  ),
+  {
+    state: "task-full",
+    devices: ["phone"],
+    draw: aTask(RUNG),
+    settle: async () => {
+      await barDrawn();
+      await userEvent.click(screen.getByRole("button", { name: "Full screen" }));
+    },
+    regions: panelOf("phone", PANEL_HEAD, HINT_ACT, EXPLAIN_ACT, REPORT_OPEN),
+  },
+  ...DEVICES.map(
+    (device): Compared => ({
+      state: "quota",
+      devices: [device],
+      draw: aTask({
+        task: NEXT,
+        mode: "steps",
+        open: true,
+        choices: { "1.1": "20" },
+        verdicts: judged(NEXT, "not_yet"),
+        quota: "Tutor time today: 100% used",
+      }),
+      settle: barDrawn,
+      regions: panelOf(device, PANEL_HEAD, HINT_ACT),
+    }),
+  ),
   {
     state: "task-mode",
     draw: aTask({ mode: "steps" }),
@@ -1624,20 +1882,20 @@ const SCREENS: readonly Compared[] = [
         solution: [{ text: "Row 10 has 29 dots." }],
       }),
       settle: barDrawn,
-      regions: [card(WAY_ON), { ...CARD_TITLE, differs: { what: ["y"], by: WAY_ON } }],
+      regions: [card(WAY_ON), { ...CARD_TITLE, differs: { what: ["x", "y"], by: WAY_ON } }],
     }),
   ),
   ...DEVICES.map(
     (device): Compared => ({
       state: "choice",
       devices: [device],
-      draw: aTask({ task: NEXT }),
+      draw: aTask({ task: NEXT, mode: "steps", open: device === "ipad" }),
       settle: async () => {
         await barDrawn();
         await userEvent.click(screen.getByRole("button", { name: "Choose an answer" }));
       },
       regions: [
-        ...choiceRow(device).map((region) =>
+        ...CHOICE_ROW.map((region) =>
           device === "phone"
             ? { ...region, differs: { what: ["missing" as const], by: UNDER_SHEET } }
             : region,
@@ -1646,10 +1904,7 @@ const SCREENS: readonly Compared[] = [
           name: "the options",
           mockup: { role: "radiogroup", name: "Choose an answer" },
           app: { role: "dialog", name: "Choose an answer" },
-          differs: {
-            what: device === "ipad" ? ["x", "font-size"] : ["font-size"],
-            by: device === "ipad" ? `${PANEL_OPEN}; ${NO_TEXT}` : NO_TEXT,
-          },
+          differs: { what: ["font-size"], by: NO_TEXT },
         },
       ],
     }),
@@ -1658,32 +1913,29 @@ const SCREENS: readonly Compared[] = [
     (device): Compared => ({
       state: "choice-wrong",
       devices: [device],
-      draw: aTask({ task: NEXT, choices: { "1.1": "20" }, verdicts: judged(NEXT, "not_yet") }),
+      draw: aTask({
+        task: NEXT,
+        mode: "steps",
+        open: true,
+        choices: { "1.1": "20" },
+        verdicts: judged(NEXT, "not_yet"),
+      }),
       settle: barDrawn,
-      regions: [
-        ...choiceRow(device).map((region) =>
-          device === "phone"
-            ? {
-                ...region,
-                differs: {
-                  what: ["missing" as const],
-                  by: `${PANEL_OPEN}: its sheet over the row`,
-                },
-              }
-            : region,
-        ),
-        {
-          ...card(),
-          differs: { what: ["missing"], by: `${PANEL_OPEN}: the verdict a line in it` },
-        },
-      ],
+      // The verdict is a line in the open panel, on both sides; a phone's sheet hides the row.
+      regions: [...panelOf(device, HINT_ACT), ...(device === "ipad" ? CHOICE_ROW : [])],
     }),
   ),
   ...DEVICES.map(
     (device): Compared => ({
       state: "solution-ask",
       devices: [device],
-      draw: aTask({ task: NEXT, choices: { "1.1": "20" }, verdicts: judged(NEXT, "not_yet") }),
+      draw: aTask({
+        task: NEXT,
+        mode: "steps",
+        open: device === "ipad",
+        choices: { "1.1": "20" },
+        verdicts: judged(NEXT, "not_yet"),
+      }),
       settle: async () => {
         await barDrawn();
         await userEvent.click(screen.getByRole("button", { name: "Show the solution" }));
@@ -1693,17 +1945,13 @@ const SCREENS: readonly Compared[] = [
           name: "the question",
           mockup: { role: "dialog", name: "Show the solution" },
           app: { role: "dialog", name: "Show the solution" },
-          differs: {
-            what: device === "ipad" ? ["x", "font-size"] : ["font-size"],
-            by: device === "ipad" ? `${PANEL_OPEN}; ${NO_TEXT}` : NO_TEXT,
-          },
+          differs: { what: ["font-size"], by: NO_TEXT },
         },
         {
           name: "Show it",
           mockup: { role: "button", name: "Show it" },
           app: { role: "button", name: "Show it" },
           followsText: "end",
-          ...(device === "ipad" ? { differs: { what: ["x" as const], by: PANEL_OPEN } } : {}),
         },
       ],
     }),

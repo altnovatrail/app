@@ -5,7 +5,11 @@
 // api closed meanwhile, and "Report a problem" at the feedback — with api on connect-es's router
 // and the storage on the device's memory.
 import "@altnovatrail/canvas";
-import { Mode, ProfileSchema } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
+import {
+  Mode,
+  ProfileSchema,
+  VoicingSpeed,
+} from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import {
   AttemptService,
   type DoneRequest,
@@ -35,8 +39,8 @@ import { create, type MessageInitShape } from "@bufbuild/protobuf";
 import { timestampFromDate } from "@bufbuild/protobuf/wkt";
 import { Code, ConnectError, type ConnectRouter } from "@connectrpc/connect";
 import { cleanup, render, screen, within } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
-import { userEvent } from "vitest/browser";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { page, userEvent } from "vitest/browser";
 import { LearnerProvider } from "../account/AccountGate.tsx";
 import { ApiProvider } from "../api/ApiContext.tsx";
 import type { PackageChecks } from "../packages/checks.ts";
@@ -49,10 +53,18 @@ import { setAccount } from "../storage/registry.ts";
 import { routedApi } from "../test/api.ts";
 import { memoryDevice } from "../test/device.ts";
 import { inLanguage } from "../test/language.tsx";
+import { fakeSpeech, voice } from "../test/speech.ts";
+import { SpeechProvider, VoicingProvider } from "../voice/VoicingContext.tsx";
 import { forgetPuts } from "../works/stored.ts";
 import { EssayScreen } from "./EssayScreen.tsx";
 import { initialState } from "./steps.ts";
 import { Task } from "./Task.tsx";
+
+// The tablet's layout, where the row stands beside the open panel: on a phone its sheet hides the row
+// (R67), which the tests of the sheet show.
+beforeEach(async () => {
+  await page.viewport(1194, 834);
+});
 
 const D1 = `sha256:${"1".repeat(64)}`;
 const encode = (value: unknown) => new TextEncoder().encode(JSON.stringify(value));
@@ -127,6 +139,8 @@ interface Setup {
   lesson?: boolean;
   /** Among a learner's screens, the profile's storage of works on the server on (T62). */
   storage?: boolean;
+  /** The synthesis the screen speaks by, the profile's voicing on. */
+  speech?: ReturnType<typeof fakeSpeech>;
 }
 
 async function renderEssay(setup: Setup = {}) {
@@ -249,12 +263,31 @@ async function renderEssay(setup: Setup = {}) {
         : {})}
     />
   );
+  const voiced =
+    setup.speech === undefined ? (
+      screenOf
+    ) : (
+      <SpeechProvider value={setup.speech.speech}>
+        <VoicingProvider
+          profile={create(ProfileSchema, {
+            profileId: "p1",
+            presentationStyle: { voicing: { enabled: true, speed: VoicingSpeed.NORMAL } },
+          })}
+          device={device}
+          place="task"
+          onSaved={() => {}}
+          onFailed={() => {}}
+        >
+          {screenOf}
+        </VoicingProvider>
+      </SpeechProvider>
+    );
   render(
     inLanguage(
       <ApiProvider value={api}>
         <PackagesProvider value={packages}>
           {setup.storage === undefined ? (
-            screenOf
+            voiced
           ) : (
             <LearnerProvider
               value={{
@@ -266,7 +299,7 @@ async function renderEssay(setup: Setup = {}) {
                 onFailed: () => {},
               }}
             >
-              {screenOf}
+              {voiced}
             </LearnerProvider>
           )}
         </PackagesProvider>
@@ -292,7 +325,15 @@ async function chooseMode(mode: "Step by step" | "On my own") {
   await userEvent.click(modes.getByRole("button", { name: new RegExp(`^${mode}`) }));
 }
 const panel = () => within(screen.getByRole("complementary", { name: "Tutor" }));
-const found = async () => within(await screen.findByRole("complementary", { name: "Tutor" }));
+/** The panel, shown: by steps, with a hint, or with the result. */
+const shown = async () => within(await screen.findByRole("complementary", { name: "Tutor" }));
+/** The panel, opened by the tutor's button where it is closed: feedback does not open it (T88). */
+const found = async () => {
+  if (screen.queryByRole("complementary", { name: "Tutor" }) === null) {
+    await userEvent.click(await screen.findByRole("button", { name: "Tutor" }));
+  }
+  return shown();
+};
 const essayOf = async (device: Device) => (await openProfile(device, "p1"))?.essay("a1");
 
 // Each test's p1 is another profile: what one put is no copy for the next.
@@ -565,12 +606,27 @@ describe("the screen of an essay", () => {
     });
     await vi.waitFor(() => expect(done()).toHaveAttribute("aria-disabled", "false"));
     await userEvent.click(done());
-    expect(await (await found()).findByText("Essay finished")).toBeVisible();
+    expect(await (await shown()).findByText("Essay finished")).toBeVisible();
     expect(panel().queryByRole("heading", { name: "What the feedback looked at" })).toBeNull();
     expect(panel().getByRole("button", { name: "Next task" })).toBeVisible();
     await userEvent.click(screen.getByRole("button", { name: "Back to My subjects" }));
     expect(window.location.hash).toBe("#/home");
     window.location.hash = "";
+  });
+
+  it("says the feedback aloud only while the tutor's panel is open", async () => {
+    const speech = fakeSpeech([voice("Samantha", "en-US", { isDefault: true })]);
+    await renderEssay({ history: WRITTEN, speech });
+    const spoken = () => speech.said().map((each) => each.text);
+    await vi.waitFor(() => expect(check()).toHaveAttribute("aria-disabled", "false"));
+    await userEvent.click(check());
+    await vi.waitFor(() => expect(card()).toHaveAttribute("data-kind", "feedback"));
+    expect(screen.queryByRole("complementary", { name: "Tutor" })).toBeNull();
+    expect(spoken()).not.toContain("Each sentence makes a reader ask why.");
+    await userEvent.click(screen.getByRole("button", { name: "Tutor" }));
+    await vi.waitFor(() => expect(check()).toHaveAttribute("aria-disabled", "false"));
+    await userEvent.click(check());
+    await vi.waitFor(() => expect(spoken()).toContain("Each sentence makes a reader ask why."));
   });
 
   it("says the feedback was lost when a repeat brings no words", async () => {
@@ -591,7 +647,7 @@ describe("the screen of an essay", () => {
     const { dones, device, attempts } = await renderEssay({ history: WRITTEN, submissions: 1 });
     await vi.waitFor(() => expect(done()).toHaveAttribute("aria-disabled", "false"));
     await userEvent.click(done());
-    expect(await (await found()).findByText("Essay finished")).toBeVisible();
+    expect(await (await shown()).findByText("Essay finished")).toBeVisible();
     expect(panel().getByRole("heading", { name: "What the feedback looked at" })).toBeVisible();
     expect(panel().getByText("There are three first sentences.")).toBeVisible();
     expect(panel().getByText("A model answer.")).toBeVisible();
@@ -620,7 +676,7 @@ describe("the screen of an essay", () => {
     const inCard = within(card() as HTMLElement).getByRole("button", { name: "Done" });
     await vi.waitFor(() => expect(inCard).toHaveAttribute("aria-disabled", "false"));
     await userEvent.click(inCard);
-    expect(await (await found()).findByText("Essay finished")).toBeVisible();
+    expect(await (await shown()).findByText("Essay finished")).toBeVisible();
     expect(card()).toBeNull();
     expect(dones).toHaveLength(1);
   });
@@ -694,6 +750,7 @@ describe("the screen of an essay", () => {
       await (await found()).findByRole("heading", { name: "Write it", level: 2 }),
     ).toBeVisible();
     await userEvent.click(panel().getByRole("button", { name: "Step done" }));
+    await userEvent.click(panel().getByRole("button", { name: /^Step \d+ of \d+$/ }));
     await userEvent.click(panel().getByRole("button", { name: /Plan the essay/ }));
     expect(
       await (await found()).findByRole("heading", { name: "Plan the essay", level: 2 }),

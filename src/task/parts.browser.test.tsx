@@ -5,6 +5,7 @@
 import type * as open from "@altnovatrail/spec/formatv0/open";
 import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import { userEvent } from "vitest/browser";
 import { inLanguage } from "../test/language.tsx";
 import { NO_VERDICTS, verdictsOf } from "./attempt.ts";
 import { Hint } from "./Hint.tsx";
@@ -126,9 +127,10 @@ describe("the panel of steps", () => {
     expect(screen.queryByRole("list", { name: "Techniques" })).toBeNull();
   });
 
-  it("has no Step done at the last step, which ends with Check", () => {
+  it("has no Step done at the last step, which ends with Check", async () => {
     panel({ ...initialState("steps"), place: 3, reached: 3 });
     expect(screen.queryByRole("button", { name: "Step done" })).toBeNull();
+    await userEvent.click(screen.getByRole("button", { name: "Step 3 of 3" }));
     expect(screen.getByRole("button", { name: /Plan/ })).toBeVisible();
   });
 
