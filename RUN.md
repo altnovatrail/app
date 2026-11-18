@@ -49,11 +49,12 @@ A task starts with «Выполни задачу T01 из RUN.md» in a new sess
 
 ## Table 1. Current epic — none
 
-No current epic. The last done one is E5 «Интерфейс по эталону», archive — [docs/plan/E5.md](docs/plan/E5.md). Next, by the author's word of 2026-11-16 (T52): E4 of [run/EPICS.md](run/EPICS.md), which the author splits with Claude in plan mode (Epics). T94 is a task of analysis by R145 spec, outside an epic, written down by T91 (measurements 10); its body is in [run/TASKS.md](run/TASKS.md) (R13, R50).
+No current epic. The last done one is E5 «Интерфейс по эталону», archive — [docs/plan/E5.md](docs/plan/E5.md). Next, by the author's word of 2026-11-16 (T52): E4 of [run/EPICS.md](run/EPICS.md), which the author splits with Claude in plan mode (Epics). T94 is a task of analysis by R145 spec, outside an epic, written down by T91 (measurements 10); its body is in [run/TASKS.md](run/TASKS.md) (R13, R50). T95 is a task outside an epic by row 6.41 of COORDINATION.md spec, written down and done by a run of spec's orchestrator (R156 spec); its body is in the archive of E5.
 
 | Статус | ID | Задача | Кто | План | Зависит от |
 |---|---|---|---|---|---|
 | [ ] | T94 | Анализ расхода сессий по порогу R145 spec | Claude | да | — |
+| [x] | T95 | Иконки: `canvas` v0.3.30 и `skill-map` с набором 1.2.99 | Claude | — | — |
 
 «Зависит от» names only tasks of this plan. What a task waits for from other repositories is its body's «Ждёт»: it is taken once the neighbour has done that, and until then the queue goes on.
 
