@@ -455,7 +455,7 @@ export function MySubjects({
 
   // The share of the quota, by the learner's action: the profile's alone. It holds nothing back:
   // a share that did not come is no line, nor is one from an api that has none yet (R27), and the
-  // lists stand as they are. A child's profile, which E4 brings, gets the same: never the account's.
+  // lists stand as they are. A child's profile gets the same: never the account's.
   const readShare = useCallback((of: Api) => readQuota(of, profileId, Actor.LEARNING), [profileId]);
   const share = useRequest(readShare);
   const retryShare = share.retry;

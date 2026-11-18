@@ -4,17 +4,16 @@
 // mockup's rules of style (R68). The first page holds the profiles of the account, each a page of
 // its own, and the buttons of the device's language. The profile chosen in the section lives in
 // memory, as the hash names no profile (R14): a profile's page with none chosen — after a reload —
-// and a page this build does not know go to the first page in place of themselves. In E3 the
-// section opens with no PIN: the account holds the owner's profile of the category `adult` alone;
-// the PIN comes in front of it with E4. A page of the account or the device — This device,
-// `#/adults/device`, and Own AI key, `#/adults/own-key` (R47) — takes a part of the hash and a
-// button on the first page; a page of one profile — its modules, `#/adults/modules`, and its
-// progress, `#/adults/progress` with the map of each module below it, `#/adults/progress/<module>`
-// (R35) — a part of the hash and a button on the profile's page. The license of a module's version,
-// `#/adults/license/<digest>`, is a page of the section by the digest in the hash, opened from the
-// profile's modules (R32). The legal pages are not the section's: they show before signing in too,
-// and the first page leads to them (R31), and to the page of a text's next version, of which it
-// tells (R46).
+// and a page this build does not know go to the first page in place of themselves. The section
+// opens with no PIN: the account holds the owner's profile of the category `adult` alone. A page of
+// the account or the device — This device, `#/adults/device`, and Own AI key, `#/adults/own-key`
+// (R47) — takes a part of the hash and a button on the first page; a page of one profile — its
+// modules, `#/adults/modules`, and its progress, `#/adults/progress` with the map of each module
+// below it, `#/adults/progress/<module>` (R35) — a part of the hash and a button on the profile's
+// page. The license of a module's version, `#/adults/license/<digest>`, is a page of the section by
+// the digest in the hash, opened from the profile's modules (R32). The legal pages are not the
+// section's: they show before signing in too, and the first page leads to them (R31), and to the
+// page of a text's next version, of which it tells (R46).
 import type { Profile } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import { type ReactNode, useEffect, useId, useMemo, useState } from "react";
 import { Avatar } from "../account/Avatar.tsx";

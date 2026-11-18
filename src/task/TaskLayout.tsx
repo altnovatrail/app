@@ -448,7 +448,7 @@ export function TaskLayout({
       </div>
       <div className="nt-task" {...beside}>
         <div className="nt-task-work">
-          {/* The order of the properties is the order React gives them (R03). */}
+          {/* The order of the properties is the order React gives them (R36 spec). */}
           <novatrail-canvas
             ref={parts.canvasRef}
             lang={language}
