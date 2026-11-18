@@ -323,7 +323,7 @@ export function WorkStorage({
   }
 
   return (
-    <section aria-labelledby={`${id}-title`}>
+    <section className="nt-group" aria-labelledby={`${id}-title`}>
       <h2 id={`${id}-title`}>{words.text("storage.title")}</h2>
       <p role="status">{words.text(on ? "storage.on" : "storage.off")}</p>
       {control}

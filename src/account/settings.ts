@@ -18,6 +18,8 @@ import { type Language, lookup } from "../i18n/language.ts";
 export interface ProfileForm {
   /** The pseudonym, trimmed: the page checks it before it asks (`pseudonymOf`). */
   readonly pseudonym: string;
+  /** The code of the avatar as the profile gives it, empty for none: one the build does not know too. */
+  readonly avatar: string;
   readonly defaultMode: Mode.BY_STEPS | Mode.SELF;
   /** The language of the learner's screens; none while the field is absent or unknown to the build. */
   readonly language: Language | undefined;
@@ -33,6 +35,7 @@ export function formOf(profile: Profile): ProfileForm {
   const voicing = profile.presentationStyle?.voicing;
   return {
     pseudonym: profile.pseudonym,
+    avatar: profile.avatar,
     defaultMode: profile.defaultMode === Mode.SELF ? Mode.SELF : Mode.BY_STEPS,
     language:
       profile.interfaceLanguage === undefined ? undefined : lookup(profile.interfaceLanguage),
@@ -56,6 +59,7 @@ export function changes(profile: Profile, form: ProfileForm): Settings | undefin
   };
   const settings: Settings = {
     ...(form.pseudonym === before.pseudonym ? {} : { pseudonym: form.pseudonym }),
+    ...(form.avatar === before.avatar ? {} : { avatar: form.avatar }),
     ...(form.defaultMode === before.defaultMode ? {} : { defaultMode: form.defaultMode }),
     ...(form.language === undefined || form.language === before.language
       ? {}

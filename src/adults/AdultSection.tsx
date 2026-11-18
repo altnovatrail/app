@@ -1,6 +1,7 @@
 // The section for adults (R29 in docs/decisions.md; sections 3.8 and 3.10 of docs/architecture.md):
 // its pages in the hash, `#/adults` the first and `#/adults/<page>` the others, in the language of
-// the device (R10), below a bar that names the section, leads back to its first page and closes it.
+// the device (R10), each below the top bar of SectionScreen, which leads back to its first page and
+// closes the section, and with its groups as cards, by the mockup's rules of style (R68).
 // The first page holds the profiles of the account, each a page of its own, and the buttons of the
 // device's language. The profile chosen in the section lives in memory, as the hash names no
 // profile (R14): a profile's page with none chosen — after a reload — and a page this build does
@@ -16,10 +17,10 @@
 // them (R31), and to the page of a text's next version, of which it tells (R46).
 import type { Profile } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import { type ReactNode, useEffect, useId, useMemo, useState } from "react";
+import { Avatar } from "../account/Avatar.tsx";
 import type { Failure } from "../api/failure.ts";
-import { PageBar } from "../app/PageBar.tsx";
-import { ADULTS, HOME, navigate, type Route, redirect } from "../app/router.ts";
-import { Screen } from "../app/Screen.tsx";
+import { Icon } from "../app/Icon.tsx";
+import { ADULTS, navigate, type Route, redirect } from "../app/router.ts";
 import { LanguageButtons } from "../i18n/LanguageButtons.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { NextVersions } from "../legal/NextVersions.tsx";
@@ -33,21 +34,53 @@ import { inOrder } from "./order.ts";
 import { ProfilePage } from "./ProfilePage.tsx";
 import { ProgressMap, ProgressPage } from "./ProgressPage.tsx";
 import { PROGRESS_PART } from "./progress.ts";
+import { SectionPlaceProvider, SectionScreen } from "./SectionScreen.tsx";
 
 /** A profile's page: the one chosen in the section. */
 export const PROFILE_PAGE: Route = { screen: ADULTS.screen, parts: ["profile"] };
 /** The page This device (R04; section 3.2). */
 export const DEVICE_PAGE: Route = { screen: ADULTS.screen, parts: ["device"] };
 
-/** The bar above each page of the section: its name, the way to its first page, and out of it. */
-function SectionBar({ first }: { readonly first: boolean }) {
-  const { words } = useLanguage();
+/**
+ * A group of a page as a card: its heading, the line of what it is, and what it holds — its button,
+ * which that line describes, or the content given.
+ */
+function Group({
+  id,
+  title,
+  hint,
+  action,
+  children,
+}: {
+  readonly id: string;
+  readonly title: string;
+  readonly hint?: string;
+  /** The group's one button: its words and what it does. */
+  readonly action?: { readonly text: string; readonly onPress: () => void };
+  readonly children?: ReactNode;
+}) {
+  const hintId = `${id}-hint`;
   return (
-    <PageBar
-      title={words.text("adults.title")}
-      {...(first ? {} : { back: { text: words.text("adults.back"), to: ADULTS } })}
-      close={{ text: words.text("adults.close"), to: HOME }}
-    />
+    <section className="nt-group" aria-labelledby={id}>
+      <h2 id={id}>{title}</h2>
+      {hint === undefined ? null : (
+        <p id={hintId} className="nt-hint">
+          {hint}
+        </p>
+      )}
+      {action === undefined ? null : (
+        <div className="nt-buttons">
+          <button
+            type="button"
+            aria-describedby={hint === undefined ? undefined : hintId}
+            onClick={action.onPress}
+          >
+            {action.text}
+          </button>
+        </div>
+      )}
+      {children}
+    </section>
   );
 }
 
@@ -67,52 +100,57 @@ export function SectionHome({
 }) {
   const { language, words } = useLanguage();
   const sorted = useMemo(() => inOrder(profiles, language), [profiles, language]);
-  const deviceHint = useId();
-  const keyHint = useId();
-  const legalHint = useId();
+  const id = useId();
   return (
-    <Screen title={words.text("adults.title")}>
-      <h2>{words.text("adults.profiles")}</h2>
-      <ul className="nt-buttons">
-        {sorted.map((profile) => (
-          <li key={profile.profileId}>
-            <button type="button" onClick={() => onProfile(profile)}>
-              {words.text("adults.profile", { pseudonym: profile.pseudonym })}
-            </button>
-          </li>
-        ))}
-      </ul>
-      <h2>{words.text("device.title")}</h2>
-      <p id={deviceHint}>{words.text("device.hint")}</p>
-      <div className="nt-buttons">
-        <button type="button" aria-describedby={deviceHint} onClick={() => navigate(DEVICE_PAGE)}>
-          {words.text("device.open")}
-        </button>
-      </div>
+    <SectionScreen title={words.text("adults.title")}>
+      <Group id={`${id}-profiles`} title={words.text("adults.profiles")}>
+        <ul className="nt-rows">
+          {sorted.map((profile) => (
+            <li key={profile.profileId} className="nt-row-item">
+              <button
+                type="button"
+                className="nt-row"
+                aria-label={words.text("adults.profile", { pseudonym: profile.pseudonym })}
+                onClick={() => onProfile(profile)}
+              >
+                <Avatar code={profile.avatar} size="menu" />
+                <span className="nt-row-value">{profile.pseudonym}</span>
+                <Icon value="more" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      </Group>
+      <Group
+        id={`${id}-device`}
+        title={words.text("device.title")}
+        hint={words.text("device.hint")}
+        action={{ text: words.text("device.open"), onPress: () => navigate(DEVICE_PAGE) }}
+      />
       {/* The own key is the owner's as an adult learner: an account with no such profile has none. */}
       {profiles.some(keyed) ? (
-        <>
-          <h2>{words.text("ownkey.title")}</h2>
-          <p id={keyHint}>{words.text("ownkey.hint")}</p>
-          <div className="nt-buttons">
-            <button type="button" aria-describedby={keyHint} onClick={() => navigate(OWN_KEY_PAGE)}>
-              {words.text("ownkey.open")}
-            </button>
-          </div>
-        </>
+        <Group
+          id={`${id}-key`}
+          title={words.text("ownkey.title")}
+          hint={words.text("ownkey.hint")}
+          action={{ text: words.text("ownkey.open"), onPress: () => navigate(OWN_KEY_PAGE) }}
+        />
       ) : null}
-      <h2>{words.text("adults.device-language")}</h2>
-      <p>{words.text("adults.device-language-hint")}</p>
-      <LanguageButtons />
-      <h2>{words.text("legal.title")}</h2>
-      <p id={legalHint}>{words.text("legal.hint")}</p>
-      <div className="nt-buttons">
-        <button type="button" aria-describedby={legalHint} onClick={() => onLegal()}>
-          {words.text("legal.open")}
-        </button>
-      </div>
+      <Group
+        id={`${id}-language`}
+        title={words.text("adults.device-language")}
+        hint={words.text("adults.device-language-hint")}
+      >
+        <LanguageButtons />
+      </Group>
+      <Group
+        id={`${id}-legal`}
+        title={words.text("legal.title")}
+        hint={words.text("legal.hint")}
+        action={{ text: words.text("legal.open"), onPress: () => onLegal() }}
+      />
       <NextVersions storing={profiles.some((profile) => profile.workStorage)} onRead={onLegal} />
-    </Screen>
+    </SectionScreen>
   );
 }
 
@@ -188,6 +226,7 @@ export function AdultSection({
       <ModuleLicense
         key={digest}
         digest={digest}
+        frame={SectionScreen}
         back={
           profile === undefined ? undefined : (
             <div className="nt-buttons">
@@ -206,9 +245,6 @@ export function AdultSection({
   }, [known]);
   if (!known) return null;
   return (
-    <>
-      <SectionBar first={page === ""} />
-      {shown}
-    </>
+    <SectionPlaceProvider value={page === "" ? "first" : "inner"}>{shown}</SectionPlaceProvider>
   );
 }

@@ -74,16 +74,22 @@ function Texts({
   );
 }
 
+/** The screen a license stands in: its title and what it shows. */
+export type LicenseFrame = (props: { title: string; children?: ReactNode }) => ReactNode;
+
 /**
  * The page itself, for the version of a digest, read each time it opens: through the HTTP cache,
- * which keeps the files (section 3.2). `back` is what the page leads back to below its heading.
+ * which keeps the files (section 3.2). `back` is what the page leads back to below its heading, and
+ * `frame` the screen it stands in: a page of the section for adults in the section (R68).
  */
 export function ModuleLicense({
   digest,
   back,
+  frame: Frame = Screen,
 }: {
   readonly digest: string;
   readonly back?: ReactNode;
+  readonly frame?: LicenseFrame;
 }) {
   const { words } = useLanguage();
   const { files, views } = usePackages();
@@ -111,11 +117,11 @@ export function ModuleLicense({
     shown = <Texts read={license.value} manifest={manifest} />;
   }
   return (
-    <Screen title={words.text("license.title")}>
+    <Frame title={words.text("license.title")}>
       {back}
       <p>{words.text("license.intro")}</p>
       {shown}
-    </Screen>
+    </Frame>
   );
 }
 

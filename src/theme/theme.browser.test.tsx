@@ -1,7 +1,8 @@
 // The theme as the browser computes it (section 3.9 of docs/architecture.md; the 2026-11-17
 // amendment to R17): the mockup's pill and primary button, a field with its edge, a card, the glass
-// and its panel, the page and the weights, in CSS px at the root's 16; and the canvas's bar of tools
-// in the same glass and accent, from the top of the window (R84 in canvas).
+// and its panel, the page and the weights, a group of the section for adults (R68), in CSS px at the
+// root's 16; and the canvas's bar of tools in the same glass and accent, from the top of the window
+// (R84 in canvas).
 import "@altnovatrail/canvas";
 import type { CanvasElement } from "@altnovatrail/spec/canvas";
 import type * as open from "@altnovatrail/spec/formatv0/open";
@@ -99,6 +100,48 @@ describe("the theme", () => {
       "rgb(255, 255, 255)",
       "16px",
     ]);
+  });
+
+  it("draws a group of the section for adults as a card, its heading 17 bold, its rows 52 high", () => {
+    const { container } = render(
+      <main className="nt-adults">
+        <section className="nt-group">
+          <h2>Profiles</h2>
+          <p className="nt-hint">The profiles of the account</p>
+          <ul className="nt-rows">
+            <li>
+              <button type="button" className="nt-row">
+                Ёжик
+              </button>
+            </li>
+          </ul>
+        </section>
+        <form>
+          <button type="submit" className="nt-main">
+            Save
+          </button>
+        </form>
+      </main>,
+    );
+    const group = styleOf(container.querySelector(".nt-group"));
+    expect([group.backgroundColor, group.borderTopLeftRadius, group.paddingTop]).toEqual([
+      "rgb(255, 255, 255)",
+      "16px",
+      "16px",
+    ]);
+    const heading = styleOf(container.querySelector("h2"));
+    expect([heading.fontSize, heading.fontWeight]).toEqual(["17px", "700"]);
+    expect(styleOf(container.querySelector(".nt-hint")).color).toBe("rgb(110, 110, 115)");
+    const row = container.querySelector(".nt-row") as HTMLElement;
+    expect(row.getBoundingClientRect().height).toBe(52);
+    expect(styleOf(row).backgroundColor).toBe("rgba(0, 0, 0, 0)");
+    // The rows reach the card's edges, as the owner's profile has them.
+    const card = (container.querySelector(".nt-group") as HTMLElement).getBoundingClientRect();
+    expect(row.getBoundingClientRect().width).toBeCloseTo(card.width - 2, 0);
+    const save = container.querySelector("form") as HTMLElement;
+    expect((save.firstElementChild as HTMLElement).getBoundingClientRect().width).toBe(
+      save.getBoundingClientRect().width,
+    );
   });
 
   it("draws glass translucent, the panel more opaque, with the mockup's shadow", () => {

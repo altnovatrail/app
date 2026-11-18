@@ -129,6 +129,7 @@ function LanguageVoice({
 
 export function DeviceVoices({ device }: { readonly device: Device }) {
   const { words } = useLanguage();
+  const id = useId();
   const speech = useSpeech();
   const languages = useLanguagesHere();
   const [kept, setKept] = useState<DeviceVoicing>(NO_VOICING);
@@ -161,8 +162,8 @@ export function DeviceVoices({ device }: { readonly device: Device }) {
   }
 
   return (
-    <>
-      <h2>{words.text("adults.voicing")}</h2>
+    <section className="nt-group" aria-labelledby={id}>
+      <h2 id={id}>{words.text("adults.voicing")}</h2>
       {speech.supported ? null : <p>{words.text("voice.unsupported")}</p>}
       {leave ? (
         <>
@@ -205,6 +206,6 @@ export function DeviceVoices({ device }: { readonly device: Device }) {
           {words.text("voice.not-kept")}
         </p>
       ) : null}
-    </>
+    </section>
   );
 }

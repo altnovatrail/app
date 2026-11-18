@@ -46,12 +46,16 @@ export type Captionless = keyof typeof CAPTIONLESS;
 
 /**
  * The captions a button of the list takes in place of its own, each for its button alone, where they
- * name where it goes: back in a lesson is "Leave the lesson", as the mockup's (R64), and back from a
- * task "Back to My subjects", the one way home of R57 (R65).
+ * name where it goes: back in a lesson is "Leave the lesson", as the mockup's (R64), back from a
+ * task "Back to My subjects", the one way home of R57 (R65), and the section for adults' back and
+ * close "Back to the section" and "Close the section" (R68).
  */
-export const INSTEAD = { "lesson.leave": "back", "task.home": "back" } as const satisfies Partial<
-  Record<Key, Captionless>
->;
+export const INSTEAD = {
+  "lesson.leave": "back",
+  "task.home": "back",
+  "adults.back": "back",
+  "adults.close": "close",
+} as const satisfies Partial<Record<Key, Captionless>>;
 
 /** A caption of INSTEAD. */
 export type Instead = keyof typeof INSTEAD;

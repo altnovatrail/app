@@ -27,7 +27,8 @@ export type ScreenLayout =
   | "map"
   | "lesson"
   | "task"
-  | "end";
+  | "end"
+  | "adults";
 
 const LAYOUT_CLASS: Readonly<Record<ScreenLayout, string | undefined>> = {
   column: undefined,
@@ -39,6 +40,7 @@ const LAYOUT_CLASS: Readonly<Record<ScreenLayout, string | undefined>> = {
   lesson: "nt-lesson",
   task: "nt-task-screen",
   end: "nt-end",
+  adults: "nt-adults",
 };
 
 /** The top bar of a screen: its way back, and what stands at its other end. */
@@ -62,7 +64,8 @@ export interface ScreenProps {
    * a column in the middle (R61), and `map` the whole window, a frame below the top bar (R63);
    * `lesson` the whole window, a lesson's segment between its top bar and its row, and `end` a card
    * in the window's middle, the end of a lesson (R64); `task` the whole window, the canvas between
-   * the top bar and the row of glass (R65). Below 600 each is one column.
+   * the top bar and the row of glass (R65); `adults` a column of reading under the top bar, a page
+   * of the section for adults (R68). Below 600 each is one column.
    */
   readonly layout?: ScreenLayout;
   /** What stands in the frame before the heading's column: the sign-in's art, the app's name. */

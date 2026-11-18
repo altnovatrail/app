@@ -32,9 +32,9 @@ export function QuotaSection({ profile }: { readonly profile: Profile }) {
   // Nothing while it comes, and nothing from an api that has no share to give.
   if (shown === undefined) return null;
   return (
-    <section aria-labelledby={id}>
+    <section className="nt-group" aria-labelledby={id}>
       <h2 id={id}>{words.text("quota.title")}</h2>
-      <p>{words.text("quota.hint")}</p>
+      <p className="nt-hint">{words.text("quota.hint")}</p>
       {shown}
     </section>
   );
