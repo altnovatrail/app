@@ -2,7 +2,9 @@
 // in the language of the device, before any profile or sign-in. Each is a screen of its own, with
 // its heading (section 3.9); their words are the dictionaries' (section 3.8), and the line for
 // whoever deployed the copy is English on every screen (the 2026-11-02 amendment to R09). A read of
-// a learner's screen that did not answer is one of them too: no connection, or what it came to.
+// a learner's screen that did not answer is one of them too: no connection, or what it came to. The
+// mockup draws none, so they are drawn by its rules of style (R69): a white card in the window's
+// middle, its heading at 22 bold, and what to do the primary button of its width.
 import type { Failure } from "../api/failure.ts";
 import { failureText } from "../api/words.ts";
 import { HomeButton } from "../app/HomeButton.tsx";
@@ -17,22 +19,18 @@ export function operatorLine(detail: string): string {
 /** app open in a frame of another page: nothing of the interface and no data. */
 export function Framed() {
   const { words } = useLanguage();
-  return <Screen title={words.text("boot.framed")} />;
+  return <Screen title={words.text("boot.framed")} layout="failure" />;
 }
 
 /** Try again, and on a learner's screen that is not the home the way back to it (R57). */
 function Retry({ onRetry, home }: { readonly onRetry: () => void; readonly home: boolean }) {
   const { words } = useLanguage();
-  const retry = (
-    <button type="button" onClick={onRetry}>
-      {words.text("boot.retry")}
-    </button>
-  );
-  if (!home) return retry;
   return (
     <div className="nt-buttons">
-      {retry}
-      <HomeButton />
+      <button type="button" className="nt-main" onClick={onRetry}>
+        {words.text("boot.retry")}
+      </button>
+      {home ? <HomeButton /> : null}
     </div>
   );
 }
@@ -47,7 +45,7 @@ export function Offline({
 }) {
   const { words } = useLanguage();
   return (
-    <Screen title={words.text("boot.offline")}>
+    <Screen title={words.text("boot.offline")} layout="failure">
       <Retry onRetry={onRetry} home={home} />
     </Screen>
   );
@@ -69,8 +67,18 @@ export function ReadFailed({
   const { words } = useLanguage();
   if (failure.kind === "offline") return <Offline onRetry={onRetry} home={home} />;
   return (
-    <Screen title={failureText(failure, words)}>
+    <Screen title={failureText(failure, words)} layout="failure">
       <Retry onRetry={onRetry} home={home} />
+    </Screen>
+  );
+}
+
+/** The account held: the words of it, and Try again. */
+export function Held({ onRetry }: { readonly onRetry: () => void }) {
+  const { words } = useLanguage();
+  return (
+    <Screen title={words.text("account.held")} layout="failure">
+      <Retry onRetry={onRetry} home={false} />
     </Screen>
   );
 }
@@ -79,7 +87,7 @@ export function ReadFailed({
 export function Unconfigured({ detail }: { readonly detail: string }) {
   const { words } = useLanguage();
   return (
-    <Screen title={words.text("boot.unconfigured")}>
+    <Screen title={words.text("boot.unconfigured")} layout="failure">
       <p>{words.text("boot.grown-up")}</p>
       <p lang="en" data-operator="">
         {operatorLine(detail)}
@@ -95,16 +103,24 @@ export function Unconfigured({ detail }: { readonly detail: string }) {
 export function StorageGone({ trouble }: { readonly trouble: "erased" | "unreadable" }) {
   const { words } = useLanguage();
   return (
-    <Screen title={words.text(trouble === "erased" ? "boot.erased" : "boot.unreadable")}>
-      <ReloadButton />
+    <Screen
+      title={words.text(trouble === "erased" ? "boot.erased" : "boot.unreadable")}
+      layout="failure"
+    >
+      <ReloadButton main />
     </Screen>
   );
 }
 
-function ReloadButton() {
+/** Reload, the primary button of a failure screen when `main`. */
+function ReloadButton({ main = false }: { readonly main?: boolean }) {
   const { words } = useLanguage();
   return (
-    <button type="button" onClick={() => window.location.reload()}>
+    <button
+      type="button"
+      {...(main ? { className: "nt-main" } : {})}
+      onClick={() => window.location.reload()}
+    >
       {words.text("boot.reload")}
     </button>
   );
@@ -128,8 +144,8 @@ export function ReloadOffer() {
 export function OtherTab() {
   const { words } = useLanguage();
   return (
-    <Screen title={words.text("signin.other-tab")}>
-      <ReloadButton />
+    <Screen title={words.text("signin.other-tab")} layout="failure">
+      <ReloadButton main />
     </Screen>
   );
 }

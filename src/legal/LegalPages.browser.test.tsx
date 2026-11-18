@@ -1,9 +1,9 @@
-// The legal pages in the browser (R31 and R46 in docs/decisions.md), with api on connect-es's router:
-// their list and bar, a text as a page in the language of the screen — its version, its gist, the
-// line that the English text is in force, its translation and its body —, a text with no version
-// in force, its next version and the page of it, who runs this copy, a read that failed, the page
-// Accessibility with the places R11 declares, the notices of the build as they are, a page this
-// build does not know, and no link on any of them.
+// The legal pages in the browser (R31, R46 and R69 in docs/decisions.md), with api on connect-es's
+// router: their list and the head of their sheet, a text as a page in the language of the screen —
+// its version, its gist, the line that the English text is in force, its translation and its body
+// —, a text with no version in force, its next version and the page of it, who runs this copy, a
+// read that failed, the page Accessibility with the places R11 declares, the notices of the build
+// as they are, a page this build does not know, and no link on any of them.
 import {
   LegalService,
   type LegalText,
@@ -95,7 +95,7 @@ afterEach(() => {
 });
 
 describe("the legal pages", () => {
-  it("list every page, with a bar that has no way back on the list and closes to where they came from", async () => {
+  it("list every page, with a head that has no way back on the list and closes to where they came from", async () => {
     window.location.hash = "#/legal";
     renderPages(legal());
     expect(
@@ -219,6 +219,28 @@ describe("the legal pages", () => {
     expect(read).toEqual(["ru", "ru"]);
     await userEvent.click(screen.getByRole("button", { name: "Прочитать версию в силе" }));
     expect(window.location.hash).toBe("#/legal/privacy-policy");
+  });
+
+  it("draw a page as the mockup's sheet: the way back before the heading, the version in its chip, the gist below its caption, the next version in a note after it", async () => {
+    window.location.hash = "#/legal/privacy-policy";
+    renderPages(legal("privacy-policy"), () => ({ texts: [POLICY], nextTexts: [NEXT_POLICY] }));
+    const chip = await screen.findByText("Version 2, in force since November 11, 2026");
+    const head = chip.closest(".nt-sheet-head");
+    expect(head).not.toBeNull();
+    const parts = within(head as HTMLElement);
+    const back = parts.getByRole("button", { name: "Back to the list" });
+    const heading = parts.getByRole("heading", { level: 1, name: "Privacy Policy" });
+    const close = parts.getByRole("button", { name: "Close" });
+    expect(back.textContent).toBe("");
+    expect(back.compareDocumentPosition(heading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(heading.compareDocumentPosition(close) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    const gist = screen.getByRole("region", { name: "In short" });
+    expect(within(gist).getByText("Мы храним мало.")).toBeTruthy();
+    const note = screen.getByText("Version 3 of this text applies from November 27, 2026");
+    expect(note.parentElement).toHaveClass("nt-sheet-note");
+    expect(gist.compareDocumentPosition(note) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    await userEvent.click(back);
+    expect(window.location.hash).toBe("#/legal");
   });
 
   it("say so of a next version's page when the text has none, and of a text with only a next one", async () => {

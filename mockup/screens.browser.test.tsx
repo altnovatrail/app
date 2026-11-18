@@ -32,6 +32,8 @@ import { InviteScreen, type TextsRead } from "../src/account/InviteScreen.tsx";
 import { OwnerProfileScreen } from "../src/account/OwnerProfileScreen.tsx";
 import { ApiProvider } from "../src/api/ApiContext.tsx";
 import { HomeBar } from "../src/app/App.tsx";
+import { HOME as HOME_ROUTE, type Route } from "../src/app/router.ts";
+import { LegalPages } from "../src/legal/LegalPages.tsx";
 import { Example } from "../src/lesson/Example.tsx";
 import { Explanation } from "../src/lesson/Explanation.tsx";
 import { LessonEnd } from "../src/lesson/Lesson.tsx";
@@ -709,6 +711,175 @@ const OWNER: readonly Region[] = [
 
 /** Why the avatars stand lower: 12 below their button, and the phone's sheet with its × (R59; R60). */
 const AVATARS_HUNG = "the pop-over 12 below its button, the phone's sheet with its × (R59; R60)";
+
+/** The policy and the terms in force, synthetic, and the policy's next version, as api gives them. */
+const LEGAL_API = routedApi((router) =>
+  router.service(LegalService, {
+    getLegalTexts: () => ({
+      texts: [
+        create(LegalTextSchema, {
+          id: "privacy-policy",
+          version: 2,
+          inForceSince: "2026-11-11",
+          body: "# Privacy policy\n\nIts words.\n",
+          summary: "In short, what is kept, why, and for how long.",
+          summaryLanguage: "en",
+        }),
+        create(LegalTextSchema, {
+          id: "terms-of-use",
+          version: 1,
+          inForceSince: "2026-11-10",
+          body: "# Terms of use\n\nIts words.\n",
+          summary: "In short, the agreement between the adult and the operator.",
+          summaryLanguage: "en",
+        }),
+      ],
+      nextTexts: [
+        create(LegalTextSchema, {
+          id: "privacy-policy",
+          version: 3,
+          inForceSince: "2026-11-27",
+          body: "# Privacy policy\n\nIts next words.\n",
+          summary: "In short, what changes.",
+          summaryLanguage: "en",
+        }),
+      ],
+    }),
+  }),
+);
+
+/** A legal page, opened from home, its text read. */
+function legalShown(page: string) {
+  const route: Route = { screen: "legal", parts: [page] };
+  return () =>
+    inLanguage(
+      <ApiProvider value={LEGAL_API}>
+        <LegalPages route={route} back={HOME_ROUTE} />
+      </ApiProvider>,
+    );
+}
+
+/** A text's page once its version has come. */
+const versionShown = () => screen.findByText(/^Version \d, in force since /);
+
+/**
+ * Why a legal page differs from the mockup's sheet: the way back to their list, which the mockup
+ * has no list for, before the heading; the whole text open below the gist, not behind "Read the
+ * full text"; and the texts api gives, where the mockup's are a sample (R31; R69).
+ */
+const LISTED = "the way back to the list of the legal pages before the heading (R31; R69)";
+const OPEN = 'the whole text open below its gist, not behind "Read the full text" (R31; R69)';
+const FROM_API = "the texts come from api, the mockup's are a sample (its «Where it differs»)";
+/** Why the gist stands lower on a phone: the chip's words wrap beside the way back. */
+const WRAPPED = `${LISTED}: the chip wraps on a phone`;
+
+/** The sheet, its heading, the chip under it and its close, of a legal page of that heading. */
+function sheetOf(title: string): readonly Region[] {
+  return [
+    {
+      name: "the sheet",
+      mockup: { css: ".ph-legal" },
+      app: { css: "main.nt-sheet > .nt-column" },
+      differs: { what: ["height", "font-size"], by: `${OPEN}; its text at 15, as the gist's` },
+    },
+    {
+      name: "the heading",
+      mockup: { css: ".ph-legal > div:first-child > div > span:first-child" },
+      app: { role: "heading", name: title },
+      followsText: "start",
+      differs: { what: ["x"], by: LISTED },
+    },
+    {
+      name: "the chip",
+      mockup: { css: ".ph-legal .ph-chip" },
+      app: { css: ".nt-version-chip" },
+      followsText: "start",
+      // On a phone the way back leaves the chip less room, and its words wrap.
+      differs: { what: ["x", "height"], by: LISTED },
+    },
+    {
+      name: "the close",
+      mockup: { css: ".ph-legal .ib" },
+      app: { role: "button", name: "Close" },
+      differs: { what: ["font-size", "font-weight"], by: ICON_ALONE },
+    },
+    {
+      name: "Read the full text",
+      mockup: { role: "button", name: "Read the full text" },
+      app: { role: "button", name: "Read the full text" },
+      differs: { what: ["missing"], by: OPEN },
+    },
+  ];
+}
+
+/** A text's gist below its caption, and the line that the English text is the one in force. */
+const GIST: readonly Region[] = [
+  {
+    name: "the gist's caption",
+    mockup: { css: ".ph-legal > div:nth-child(2)" },
+    app: { css: ".nt-gist > .nt-sheet-caption" },
+    followsText: "start",
+    differs: { what: ["y"], by: WRAPPED },
+  },
+  {
+    name: "the gist",
+    mockup: { css: ".ph-gist" },
+    app: { css: ".nt-gist > p:last-child" },
+    differs: { what: ["y", "height"], by: `${FROM_API}; ${WRAPPED}` },
+  },
+  {
+    name: "the English text in force",
+    mockup: { text: "The English text is the one in force" },
+    app: { css: ".nt-in-force" },
+    differs: { what: ["missing"], by: "the line is on a screen in another language alone (R27)" },
+  },
+];
+
+const LEGAL_TEXTS: readonly Compared[] = [
+  {
+    state: "legal-privacy",
+    draw: legalShown("privacy-policy"),
+    settle: versionShown,
+    regions: [
+      ...sheetOf("Privacy Policy"),
+      ...GIST,
+      {
+        name: "the next version",
+        mockup: { css: '.ph-legal > div[style*="F5F5F7"]' },
+        app: { css: ".nt-sheet-note" },
+        differs: {
+          what: ["y", "height"],
+          by: `${FROM_API}; the way to the next version's page in it (R46)`,
+        },
+      },
+    ],
+  },
+  {
+    state: "legal-terms",
+    draw: legalShown("terms-of-use"),
+    settle: versionShown,
+    regions: [...sheetOf("Terms of Use"), ...GIST],
+  },
+  {
+    state: "legal-access",
+    draw: legalShown("accessibility"),
+    regions: [
+      ...sheetOf("Accessibility").filter((region) => region.name !== "Read the full text"),
+      {
+        name: "the standard's caption",
+        mockup: { css: ".ph-legal > div:nth-child(2)" },
+        app: { css: "h2.nt-sheet-caption:first-of-type" },
+        followsText: "start",
+      },
+      {
+        name: "the standard",
+        mockup: { css: ".ph-gist" },
+        app: { css: "h2.nt-sheet-caption:first-of-type + p" },
+        differs: { what: ["height"], by: "the words of the standard of R11 (section 3.9)" },
+      },
+    ],
+  },
+];
 
 const WAY_IN: readonly Compared[] = [
   {
@@ -1668,6 +1839,7 @@ const WORKBOOK_AND_ESSAY: readonly Compared[] = [
 
 const SCREENS: readonly Compared[] = [
   ...WAY_IN,
+  ...LEGAL_TEXTS,
   { state: "home", devices: ["ipad"], draw: home, regions: [...HOME, LEGEND] },
   { state: "home", devices: ["phone"], draw: home, regions: HOME },
   { state: "home-legend", devices: ["ipad"], draw: home, regions: [LEGEND] },

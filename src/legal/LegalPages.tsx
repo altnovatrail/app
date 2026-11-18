@@ -4,17 +4,26 @@
 // and the next version of each, `#/legal/<text>/next`, before the day it applies from; who runs
 // this copy, `#/legal/operator` — the section Who we are of the privacy policy in force; the page
 // Accessibility; and the notices of third-party code, NOTICE and LICENSE of the build (R25). They
-// show before signing in as well as after, in the language of the device (R10), below a bar that
-// names them, leads back to their list and closes them back to where they were opened from.
-// Nothing on them leads out of app (privacy 7 in spec): a text's own words lead nowhere (R27), and
-// the operator of the copy, whom a page names, is reached as the section Who we are says.
-import { type ReactNode, useCallback, useEffect, useId } from "react";
+// show before signing in as well as after, in the language of the device (R10), each a sheet of the
+// mockup's legal text (R69) whose head leads back to their list and closes them back to where they
+// were opened from. Nothing on them leads out of app (privacy 7 in spec): a text's own words lead
+// nowhere (R27), and the operator of the copy, whom a page names, is reached as the section Who we
+// are says.
+import {
+  createContext,
+  type ReactNode,
+  useCallback,
+  useContext,
+  useEffect,
+  useId,
+  useMemo,
+} from "react";
 import { useRequest } from "../api/ApiContext.tsx";
 import type { Api } from "../api/client.ts";
 import { ReadFailure } from "../api/ReadFailure.tsx";
-import { PageBar } from "../app/PageBar.tsx";
+import { IconButton } from "../app/IconButton.tsx";
 import { LEGAL, navigate, type Route, redirect } from "../app/router.ts";
-import { Screen } from "../app/Screen.tsx";
+import { SheetScreen } from "../app/SheetScreen.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { OPERATOR_SECTION, sectionOf } from "./body.ts";
 import { LegalContent, LegalOriginal } from "./LegalText.tsx";
@@ -60,34 +69,62 @@ const POLICY: PageText = "privacy-policy";
 /** The places where the app does not meet its standard yet, as R11 declares them. */
 const GAPS = ["handwriting", "moving", "print", "check"] as const;
 
-/** The bar above each legal page: their name, the way to their list, and back out of them. */
-function LegalBar({ first, back }: { readonly first: boolean; readonly back: Route }) {
-  const { words } = useLanguage();
+/** Where a page stands among the legal pages: their list or another, and where they close to. */
+interface LegalPlace {
+  readonly first: boolean;
+  readonly back: Route;
+}
+
+const Place = createContext<LegalPlace | undefined>(undefined);
+
+/**
+ * A legal page's sheet: its heading, the chip under it, the way to their list on any page but the
+ * list, and the close back out of them. A page drawn alone, as its tests draw one, has neither.
+ */
+function LegalScreen({
+  title,
+  chip,
+  children,
+}: {
+  readonly title: string;
+  readonly chip?: string;
+  readonly children?: ReactNode;
+}) {
+  const place = useContext(Place);
   return (
-    <PageBar
-      title={words.text("legal.title")}
-      {...(first ? {} : { back: { text: words.text("legal.back"), to: LEGAL } })}
-      close={{ text: words.text("legal.close"), to: back }}
-    />
+    <SheetScreen
+      title={title}
+      {...(chip === undefined ? {} : { chip })}
+      {...(place === undefined
+        ? {}
+        : {
+            back: place.first ? undefined : (
+              <IconButton value="back" caption="legal.back" onClick={() => navigate(LEGAL)} />
+            ),
+            onClose: () => navigate(place.back),
+          })}
+    >
+      {children}
+    </SheetScreen>
   );
 }
 
-/** The list: a button for each page. */
+/** The list: a button for each page, as the links of the adult's Help (R69). */
 export function LegalHome() {
   const { words } = useLanguage();
   return (
-    <Screen title={words.text("legal.title")}>
+    <LegalScreen title={words.text("legal.title")}>
       <p>{words.text("legal.intro")}</p>
-      <ul className="nt-buttons">
+      <ul className="nt-sheet-list">
         {PAGES.map((page) => (
           <li key={page}>
-            <button type="button" onClick={() => navigate(legalPage(page))}>
+            <button type="button" className="nt-link" onClick={() => navigate(legalPage(page))}>
               {words.text(`legal.${page}`)}
             </button>
           </li>
         ))}
       </ul>
-    </Screen>
+    </LegalScreen>
   );
 }
 
@@ -105,51 +142,61 @@ function useVersions(id: PageText) {
 }
 
 /**
- * A legal text as a page: its version and the day it came into force; its next version, if it has
- * one, with the day it applies from and the way to its page; then what the text holds, open — the
- * gist, the line that the English text is in force, the translation and the body.
+ * A legal text as a page: its version and the day it came into force in the chip under its heading;
+ * then what the text holds, open — the gist below its caption; its next version, if it has one, with
+ * the day it applies from and the way to its page, in a note, where the mockup has it; the line that
+ * the English text is in force, the translation and the body.
  */
 export function TextPage({ id }: { readonly id: PageText }) {
   const { language, words } = useLanguage();
   const hint = useId();
   const versions = useVersions(id);
   let shown: ReactNode = null;
+  let chip: string | undefined;
   if (versions.status === "failed") {
     shown = <ReadFailure failure={versions.failure} onRetry={versions.retry} />;
   } else if (versions.status === "done") {
     const { current, next } = versions.value;
-    shown = (
-      <>
-        {current === undefined ? (
-          <p>{words.text("legal.none")}</p>
-        ) : (
-          <p>
-            {words.text("legal.version", {
-              version: String(current.version),
-              date: dayText(language, current.inForceSince),
+    if (current !== undefined) {
+      chip = words.text("legal.version", {
+        version: String(current.version),
+        date: dayText(language, current.inForceSince),
+      });
+    }
+    const note =
+      next === undefined ? null : (
+        <div className="nt-sheet-note">
+          <p id={hint}>
+            {words.text("legal.next-coming", {
+              version: String(next.version),
+              date: dayText(language, next.inForceSince),
             })}
           </p>
-        )}
-        {next === undefined ? null : (
-          <>
-            <p id={hint}>
-              {words.text("legal.next-coming", {
-                version: String(next.version),
-                date: dayText(language, next.inForceSince),
-              })}
-            </p>
-            <div className="nt-buttons">
-              <button type="button" aria-describedby={hint} onClick={() => navigate(nextPage(id))}>
-                {words.text("legal.next-read", { version: String(next.version) })}
-              </button>
-            </div>
-          </>
-        )}
-        {current === undefined ? null : <LegalContent text={current} level={2} />}
-      </>
-    );
+          <button
+            type="button"
+            className="nt-link"
+            aria-describedby={hint}
+            onClick={() => navigate(nextPage(id))}
+          >
+            {words.text("legal.next-read", { version: String(next.version) })}
+          </button>
+        </div>
+      );
+    shown =
+      current === undefined ? (
+        <>
+          <p>{words.text("legal.none")}</p>
+          {note}
+        </>
+      ) : (
+        <LegalContent text={current} level={2} captioned note={note} />
+      );
   }
-  return <Screen title={words.text(`legal.${id}`)}>{shown}</Screen>;
+  return (
+    <LegalScreen title={words.text(`legal.${id}`)} {...(chip === undefined ? {} : { chip })}>
+      {shown}
+    </LegalScreen>
+  );
 }
 
 /**
@@ -196,9 +243,9 @@ export function NextTextPage({ id }: { readonly id: PageText }) {
       );
   }
   return (
-    <Screen title={words.text("legal.next-page", { text: words.text(`legal.${id}`) })}>
+    <LegalScreen title={words.text("legal.next-page", { text: words.text(`legal.${id}`) })}>
       {shown}
-    </Screen>
+    </LegalScreen>
   );
 }
 
@@ -232,7 +279,9 @@ export function OperatorPage() {
             <p>{words.text("legal.operator-none")}</p>
           ) : (
             <>
-              {language === "en" ? null : <p>{words.text("legal.english-in-force")}</p>}
+              {language === "en" ? null : (
+                <p className="nt-in-force">{words.text("legal.english-in-force")}</p>
+              )}
               <LegalOriginal body={section} level={1} />
             </>
           )}
@@ -244,7 +293,7 @@ export function OperatorPage() {
         </>
       );
   }
-  return <Screen title={words.text("legal.operator")}>{shown}</Screen>;
+  return <LegalScreen title={words.text("legal.operator")}>{shown}</LegalScreen>;
 }
 
 /**
@@ -258,10 +307,10 @@ export function AccessibilityPage() {
   const { words } = useLanguage();
   const id = useId();
   return (
-    <Screen title={words.text("legal.accessibility")}>
-      <h2>{words.text("accessibility.standard")}</h2>
+    <LegalScreen title={words.text("legal.accessibility")} chip={words.text("accessibility.level")}>
+      <h2 className="nt-sheet-caption">{words.text("accessibility.standard")}</h2>
       <p>{words.text("accessibility.standard-text")}</p>
-      <h2>{words.text("accessibility.gaps")}</h2>
+      <h2 className="nt-sheet-caption">{words.text("accessibility.gaps")}</h2>
       <p>{words.text("accessibility.partly")}</p>
       {GAPS.map((gap) => (
         <section key={gap} aria-labelledby={`${id}-${gap}`}>
@@ -278,16 +327,16 @@ export function AccessibilityPage() {
           </dl>
         </section>
       ))}
-      <h2>{words.text("accessibility.checked")}</h2>
+      <h2 className="nt-sheet-caption">{words.text("accessibility.checked")}</h2>
       <p>{words.text("accessibility.checked-text")}</p>
-      <h2>{words.text("accessibility.contact")}</h2>
+      <h2 className="nt-sheet-caption">{words.text("accessibility.contact")}</h2>
       <p>{words.text("accessibility.contact-text")}</p>
       <div className="nt-buttons">
         <button type="button" onClick={() => navigate(legalPage(OPERATOR))}>
           {words.text("accessibility.operator")}
         </button>
       </div>
-    </Screen>
+    </LegalScreen>
   );
 }
 
@@ -295,7 +344,7 @@ export function AccessibilityPage() {
 export function NoticesPage() {
   const { words } = useLanguage();
   return (
-    <Screen title={words.text("legal.notices")}>
+    <LegalScreen title={words.text("legal.notices")}>
       <p>{words.text("legal.notices-intro")}</p>
       <h2>{words.text("legal.notice-file")}</h2>
       <pre lang="en" className="nt-notice">
@@ -305,7 +354,7 @@ export function NoticesPage() {
       <pre lang="en" className="nt-notice">
         {LICENSE}
       </pre>
-    </Screen>
+    </LegalScreen>
   );
 }
 
@@ -325,14 +374,11 @@ export function LegalPages({ route, back }: { readonly route: Route; readonly ba
   else if (page === ACCESSIBILITY) shown = <AccessibilityPage />;
   else if (page === NOTICES) shown = <NoticesPage />;
   const known = shown !== undefined;
+  const list = page === "";
+  const place = useMemo(() => ({ first: list, back }), [list, back]);
   useEffect(() => {
     if (!known) redirect(LEGAL);
   }, [known]);
   if (!known) return null;
-  return (
-    <>
-      <LegalBar first={page === ""} back={back} />
-      {shown}
-    </>
-  );
+  return <Place.Provider value={place}>{shown}</Place.Provider>;
 }

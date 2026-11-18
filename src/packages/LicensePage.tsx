@@ -3,15 +3,16 @@
 // `<pre lang="en">`, and the module by its manifest — its title in its explanation language, its
 // version and its license by name. The files come from api by the digest of the package
 // (files.ts), and nothing on the page leads out of app (privacy 7 in spec). The page shows at
-// `#/license/<digest>` at any step, as the legal pages do, opened from a card of My subjects below
-// a bar that closes it home; and in the section for adults as one of its pages (ModulesPage.tsx).
+// `#/license/<digest>` at any step, as the legal pages do, opened from a card of My subjects, a
+// sheet of the mockup's legal text that closes home (R69); and in the section for adults as one of
+// its pages (ModulesPage.tsx).
 import type * as open from "@altnovatrail/spec/formatv0/open";
 import { type ReactNode, useCallback, useEffect, useState } from "react";
 import { useRequest } from "../api/ApiContext.tsx";
 import { ReadFailure } from "../api/ReadFailure.tsx";
-import { PageBar } from "../app/PageBar.tsx";
-import { HOME, MODULE_LICENSE, type Route, redirect } from "../app/router.ts";
+import { HOME, MODULE_LICENSE, navigate, type Route, redirect } from "../app/router.ts";
 import { Screen } from "../app/Screen.tsx";
+import { SheetScreen } from "../app/SheetScreen.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { isDigest } from "./files.ts";
 import { type LicenseRead, readLicense } from "./license.ts";
@@ -125,24 +126,30 @@ export function ModuleLicense({
   );
 }
 
+/** The sheet the license stands in outside the section, whose close goes home (R69). */
+function LicenseSheet({
+  title,
+  children,
+}: {
+  readonly title: string;
+  readonly children?: ReactNode;
+}) {
+  return (
+    <SheetScreen title={title} onClose={() => navigate(HOME)}>
+      {children}
+    </SheetScreen>
+  );
+}
+
 /**
- * The license of a version at `#/license/<digest>`, below a bar that closes it home: a route that
+ * The license of a version at `#/license/<digest>`, in a sheet that closes home: a route that
  * names no digest goes home in place of itself.
  */
 export function LicensePages({ route }: { readonly route: Route }) {
-  const { words } = useLanguage();
   const digest = digestOf(route.parts);
   useEffect(() => {
     if (digest === undefined) redirect(HOME);
   }, [digest]);
   if (digest === undefined) return null;
-  return (
-    <>
-      <PageBar
-        title={words.text("license.bar")}
-        close={{ text: words.text("license.close"), to: HOME }}
-      />
-      <ModuleLicense key={digest} digest={digest} />
-    </>
-  );
+  return <ModuleLicense key={digest} digest={digest} frame={LicenseSheet} />;
 }

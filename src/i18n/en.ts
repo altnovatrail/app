@@ -176,10 +176,8 @@ export const en = {
   "legal.open": "Read the privacy policy and other texts",
   "legal.hint":
     "The privacy policy, the terms of use, the consent to keeping works, accessibility and licenses",
-  /** The bar above a legal page: back to their list. */
+  /** The way back before a legal page's heading, a button that shows its icon alone (R69). */
   "legal.back": "Back to the list",
-  /** The bar above a legal page: back to where they were opened from. */
-  "legal.close": "Close",
   "legal.privacy-policy": "Privacy Policy",
   "legal.terms-of-use": "Terms of Use",
   "legal.storage-consent": "Consent to keeping works on the server",
@@ -226,11 +224,7 @@ export const en = {
   "legal.notice-file": "Notices (NOTICE)",
   /** The heading above the file LICENSE, as it is; the name of the file stays. */
   "legal.license-file": "License (LICENSE)",
-  /** The bar above the page of a module's license (R32). */
-  "license.bar": "Licenses of modules",
   "license.title": "The module's license and notices",
-  /** The bar above the page of a module's license: back to where it was opened from. */
-  "license.close": "Close",
   "license.intro":
     "The module's author gives it under this license. Its text and the notices are below, as they come with the module",
   /** The terms of the module whose license the page shows, from its manifest. */
@@ -242,6 +236,8 @@ export const en = {
   "license.no-license": "No file LICENSE came with the module",
   /** The module has no NOTICE, which the module format allows. */
   "license.no-notice": "The module has no file NOTICE",
+  /** The chip under the page's heading: the standard and its level, as the mockup has it. */
+  "accessibility.level": "WCAG 2.2 · level AA",
   "accessibility.standard": "The standard",
   /** The names of the criteria are those of WCAG 2.2. */
   "accessibility.standard-text":
@@ -1065,9 +1061,6 @@ export const en = {
     "The tutor, which gives hints and explains, is an AI: a computer program, not a person. Whether an answer is right, a program decides by the task's key, not the AI",
   /** The button to the page on the tutor, the learning material of R123 spec. */
   "tutor.open": "How to use the tutor safely",
-  /** The bar above the page on the tutor, and its button that closes it home. */
-  "tutor.bar": "About the tutor",
-  "tutor.close": "Close",
   /** The heading of the page on the tutor. */
   "tutor.title": "How to use the AI tutor safely",
   "tutor.what": "The tutor is an AI",
