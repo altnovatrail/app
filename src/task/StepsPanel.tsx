@@ -116,9 +116,8 @@ export function StepsPanel({
   const techniques = givesTechniques(step) ? (state.techniques[state.place] ?? []) : [];
 
   return (
-    // Its own scroll, a stop of the keyboard so that a keyboard can scroll it (2.1.1).
-    // biome-ignore lint/a11y/noNoninteractiveTabindex: a region that scrolls takes the focus to scroll.
-    <section className="nt-steps nt-step-card" aria-label={words.text("steps.card")} tabIndex={0}>
+    // Its own scroll, which a keyboard scrolls by its buttons — "Step n of m" first (2.1.1).
+    <section className="nt-steps nt-step-card" aria-label={words.text("steps.card")}>
       <div className="nt-step-head">
         <div className="nt-step-names">
           <button

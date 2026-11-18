@@ -530,9 +530,7 @@ export function TaskLayout({
                 onDone={parts.onDone}
               />
             ) : null}
-            {/* Its own scroll, a stop of the keyboard so that a keyboard can scroll it (2.1.1). */}
-            {/* biome-ignore lint/a11y/noNoninteractiveTabindex: a region that scrolls takes the focus to scroll. */}
-            <section className="nt-talk" aria-label={words.text("tutor.conversation")} tabIndex={0}>
+            <section className="nt-talk" aria-label={words.text("tutor.conversation")}>
               <div className="nt-talk-lines">
                 <p className="nt-bubble">{words.text("tutor.ai")}</p>
                 {over ? (
