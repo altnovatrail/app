@@ -40,7 +40,7 @@ export interface SkillMapProps extends Partial<SkillMapData> {
   readonly ref?: Ref<NovatrailSkillMap>;
   /** The learner's view, with the choice of a skill, or the adult's, with the details. */
   readonly view: SkillMapView;
-  /** The language of the map's own words: the screen's (section 3.8). */
+  /** The language of the map's own words: the screen's. */
   readonly lang: Language;
   /** The level of the bands' headings, by the map's place on the screen (WCAG 1.3.1). */
   readonly "heading-level"?: HeadingLevel;
