@@ -15,14 +15,6 @@ Open tasks outside the current epic, each as its body, in Russian (R154 spec, R1
 - **Как проверить:** `just -f spec/justfile docs-check-repo`.
 - **Разделы:** R145 spec, R143 spec; measurements 1.9 spec; [docs/measurements.md](../docs/measurements.md), разделы 8 и 10.
 
-#### T102. Документы без истории: раздел 3.8 (R160 spec)
-
-- **Цель:** раздел 3.8 «Interface languages» [docs/architecture.md](../docs/architecture.md), с глоссарием, держит текущее устройство, а не историю (R160 spec, «One home», «A done task»).
-- **Почему:** T97 разделена по правилу 11 RUN.md, по разделам `docs/architecture.md`; раздел 3.8 — 81 КБ, самый длинный, — эта задача.
-- **Сделать:** как в T97 ([docs/plan/E5.md](../docs/plan/E5.md)): убрать «since T…», даты, версии и «until T…»; значение — файлом, где оно задано; решение — номером, без пересказа; ссылка на поправку записи, которую тег `spec` или задача переписали на месте, — на запись, а поправка, что ещё стоит в журнале, называется как есть; строки «Checked:» — что держат тесты сейчас, без хроники. Свои записи журнала — только те, что задача меняет, целиком на месте (R160 spec). Предел раздела в `docs-budgets.json` — по новому размеру с запасом 10–20 %, раздел не длиннее 24 КБ свой предел снимает.
-- **Как проверить:** `just -f spec/justfile docs-check-repo`; `/code-review high`.
-- **Разделы:** R160 spec; RULES.md spec — The bar; [docs/architecture.md](../docs/architecture.md), 3.8.
-
 #### T103. Комментарии кода по R160 spec: задача и холст
 
 - **Цель:** комментарии `src/task/`, `src/canvas/`, `src/works/` и `src/essays/` говорят только то, чего не скажут код и имена (R160 spec, «Comments»).
