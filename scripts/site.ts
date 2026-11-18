@@ -236,6 +236,17 @@ export function windowAt(address: string): string {
   return where === null ? `"${address}"` : where.origin + where.pathname;
 }
 
+/** The problem of the hosts a page asked beyond those allowed, each once; undefined when none. */
+export function askedBeyond(
+  requests: readonly URL[],
+  allowed: ReadonlySet<string>,
+): string | undefined {
+  const other = [...new Set(requests.map((url) => url.host))].filter((h) => !allowed.has(h));
+  return other.length > 0
+    ? `the page asked ${other.join(", ")}, which the sign-in does not need`
+    : undefined;
+}
+
 /** A context of the browser in English, where nothing stands in for Google. */
 export function newContext(browser: Browser): Promise<BrowserContext> {
   return browser.newContext({ locale: "en-US" });
@@ -306,10 +317,8 @@ export async function browserProblems(
       .waitFor({ state: "attached", timeout: STEP_MS });
     await window.close();
 
-    const allowed = allowedHosts(origin, deployment, engine);
-    const other = [...new Set(requests.map((url) => url.host))].filter((h) => !allowed.has(h));
-    if (other.length > 0)
-      problems.push(`the page asked ${other.join(", ")}, which the sign-in does not need`);
+    const beyond = askedBeyond(requests, allowedHosts(origin, deployment, engine));
+    if (beyond !== undefined) problems.push(beyond);
     problems.push(...violations.map((line) => `a violation of the CSP: ${line}`));
     return problems;
   } catch (error) {

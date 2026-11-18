@@ -18,6 +18,7 @@ import {
   type Answer,
   allowedHosts,
   answerProblems,
+  askedBeyond,
   authorizes,
   check,
   expectedHeader,
@@ -192,6 +193,22 @@ describe("the rules of the site check", () => {
       ...hosts,
       "www.googleapis.com",
     ]);
+  });
+
+  it("names each host the page asked beyond those allowed once, and none when it asked none", () => {
+    const allowed = allowedHosts("https://example.org", deployment);
+    const asked = ["https://example.org/", "https://apis.google.com/js/api.js"].map(
+      (u) => new URL(u),
+    );
+    expect(askedBeyond(asked, allowed)).toBeUndefined();
+    const beyond = [
+      "https://ads.example.net/a",
+      "https://ads.example.net/b",
+      "https://cdn.example.com/c",
+    ];
+    expect(askedBeyond([...asked, ...beyond.map((u) => new URL(u))], allowed)).toBe(
+      "the page asked ads.example.net, cdn.example.com, which the sign-in does not need",
+    );
   });
 
   it("names where a window is, and whatever address that is no URL", () => {
