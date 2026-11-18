@@ -200,15 +200,15 @@ describe("the rules of the site check", () => {
     const asked = ["https://example.org/", "https://apis.google.com/js/api.js"].map(
       (u) => new URL(u),
     );
-    expect(askedBeyond(asked, allowed)).toBeUndefined();
+    expect(askedBeyond(asked, allowed)).toEqual([]);
     const beyond = [
       "https://ads.example.net/a",
       "https://ads.example.net/b",
       "https://cdn.example.com/c",
     ];
-    expect(askedBeyond([...asked, ...beyond.map((u) => new URL(u))], allowed)).toBe(
+    expect(askedBeyond([...asked, ...beyond.map((u) => new URL(u))], allowed)).toEqual([
       "the page asked ads.example.net, cdn.example.com, which the sign-in does not need",
-    );
+    ]);
   });
 
   it("names where a window is, and whatever address that is no URL", () => {
