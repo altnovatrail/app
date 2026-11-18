@@ -31,7 +31,7 @@ Open tasks outside the current epic, each as its body, in Russian (R154 spec, R1
 
 - **Цель:** разделы 3.2 «Storage on the device» и 3.3 «Solving steps» [docs/architecture.md](../docs/architecture.md) держат текущее устройство, а не историю (R160 spec, «One home», «A done task»).
 - **Почему:** T97 разделена по правилу 11 RUN.md, по разделам `docs/architecture.md`: она переписала заголовок, разделы 1, 2, 3.1, 3.10 и 4, README и CLAUDE.md; этот раздел — эта задача.
-- **Сделать:** как в T97 ([docs/plan/E5.md](../docs/plan/E5.md)): убрать «since T…», даты, версии и «until T…»; значение — файлом, где оно задано; решение — номером, без пересказа и без поправки с датой — «the 2026-11-12 amendment to R04» → `R04`; строки «Checked:» — что держат тесты сейчас, без хроники. Свои записи журнала — только те, что задача меняет, целиком на месте (R160 spec). Предел раздела в `docs-budgets.json` — по новому размеру с запасом 10–20 %, раздел не длиннее 24 КБ свой предел снимает.
+- **Сделать:** как в T97 ([docs/plan/E5.md](../docs/plan/E5.md)): убрать «since T…», даты, версии и «until T…»; значение — файлом, где оно задано; решение — номером, без пересказа; ссылка на поправку записи, которую тег `spec` или задача переписали на месте, — на запись, а поправка, что ещё стоит в журнале, называется как есть; строки «Checked:» — что держат тесты сейчас, без хроники. Свои записи журнала — только те, что задача меняет, целиком на месте (R160 spec). Предел раздела в `docs-budgets.json` — по новому размеру с запасом 10–20 %, раздел не длиннее 24 КБ свой предел снимает.
 - **Как проверить:** `just -f spec/justfile docs-check-repo`; `/code-review high`.
 - **Разделы:** R160 spec; RULES.md spec — The bar; [docs/architecture.md](../docs/architecture.md), 3.2 и 3.3.
 
@@ -39,7 +39,7 @@ Open tasks outside the current epic, each as its body, in Russian (R154 spec, R1
 
 - **Цель:** разделы 3.4 «The lesson player», 3.5 «Voicing» и 3.6 «Own key» [docs/architecture.md](../docs/architecture.md) держат текущее устройство, а не историю (R160 spec, «One home», «A done task»).
 - **Почему:** T97 разделена по правилу 11 RUN.md, по разделам `docs/architecture.md`; эти разделы — эта задача.
-- **Сделать:** как в T99.
+- **Сделать:** как в T97 ([docs/plan/E5.md](../docs/plan/E5.md)): убрать «since T…», даты, версии и «until T…»; значение — файлом, где оно задано; решение — номером, без пересказа; ссылка на поправку записи, которую тег `spec` или задача переписали на месте, — на запись, а поправка, что ещё стоит в журнале, называется как есть; строки «Checked:» — что держат тесты сейчас, без хроники. Свои записи журнала — только те, что задача меняет, целиком на месте (R160 spec). Предел раздела в `docs-budgets.json` — по новому размеру с запасом 10–20 %, раздел не длиннее 24 КБ свой предел снимает.
 - **Как проверить:** `just -f spec/justfile docs-check-repo`; `/code-review high`.
 - **Разделы:** R160 spec; RULES.md spec — The bar; [docs/architecture.md](../docs/architecture.md), 3.4–3.6.
 
@@ -47,7 +47,7 @@ Open tasks outside the current epic, each as its body, in Russian (R154 spec, R1
 
 - **Цель:** разделы 3.7 «Deployment configuration» и 3.9 «Accessibility» [docs/architecture.md](../docs/architecture.md) держат текущее устройство, а не историю (R160 spec, «One home», «A done task»).
 - **Почему:** T97 разделена по правилу 11 RUN.md, по разделам `docs/architecture.md`; эти разделы — эта задача.
-- **Сделать:** как в T99.
+- **Сделать:** как в T97 ([docs/plan/E5.md](../docs/plan/E5.md)): убрать «since T…», даты, версии и «until T…»; значение — файлом, где оно задано; решение — номером, без пересказа; ссылка на поправку записи, которую тег `spec` или задача переписали на месте, — на запись, а поправка, что ещё стоит в журнале, называется как есть; строки «Checked:» — что держат тесты сейчас, без хроники. Свои записи журнала — только те, что задача меняет, целиком на месте (R160 spec). Предел раздела в `docs-budgets.json` — по новому размеру с запасом 10–20 %, раздел не длиннее 24 КБ свой предел снимает.
 - **Как проверить:** `just -f spec/justfile docs-check-repo`; `/code-review high`.
 - **Разделы:** R160 spec; RULES.md spec — The bar; [docs/architecture.md](../docs/architecture.md), 3.7 и 3.9.
 
@@ -55,6 +55,6 @@ Open tasks outside the current epic, each as its body, in Russian (R154 spec, R1
 
 - **Цель:** раздел 3.8 «Interface languages» [docs/architecture.md](../docs/architecture.md), с глоссарием, держит текущее устройство, а не историю (R160 spec, «One home», «A done task»).
 - **Почему:** T97 разделена по правилу 11 RUN.md, по разделам `docs/architecture.md`; раздел 3.8 — 81 КБ, самый длинный, — эта задача.
-- **Сделать:** как в T99.
+- **Сделать:** как в T97 ([docs/plan/E5.md](../docs/plan/E5.md)): убрать «since T…», даты, версии и «until T…»; значение — файлом, где оно задано; решение — номером, без пересказа; ссылка на поправку записи, которую тег `spec` или задача переписали на месте, — на запись, а поправка, что ещё стоит в журнале, называется как есть; строки «Checked:» — что держат тесты сейчас, без хроники. Свои записи журнала — только те, что задача меняет, целиком на месте (R160 spec). Предел раздела в `docs-budgets.json` — по новому размеру с запасом 10–20 %, раздел не длиннее 24 КБ свой предел снимает.
 - **Как проверить:** `just -f spec/justfile docs-check-repo`; `/code-review high`.
 - **Разделы:** R160 spec; RULES.md spec — The bar; [docs/architecture.md](../docs/architecture.md), 3.8.
