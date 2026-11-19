@@ -36,12 +36,15 @@ const OPEN = new Set([
 /**
  * The methods whose absence is no build older than api: an api on an older tag of spec has no
  * legal texts in force and answers them `unimplemented` (R27), nor a share of the quota to give;
- * and an api with no `WorkService` keeps no work, which then stays on the device alone (R30).
+ * an api with no `WorkService` keeps no work, which then stays on the device alone (R30); and an
+ * api without its debug flag has no debug mode, which a build of the development server asks of it
+ * (R72).
  */
 const MAY_BE_ABSENT = new Set([
   "novatrail.api.v1.LegalService/GetLegalTexts",
   "novatrail.api.v1.AccountService/GetQuota",
   "novatrail.api.v1.WorkService/PutWork",
+  ...(import.meta.env.DEV ? ["novatrail.api.v1.DebugService/GetDebug"] : []),
 ]);
 
 /** The pauses before each repeat, ms: 7.5 s in all, "for a short while". */

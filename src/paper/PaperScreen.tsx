@@ -14,6 +14,8 @@ import { idempotencyKey } from "../api/keys.ts";
 import { closesAI, outcomeOf } from "../api/outcome.ts";
 import { failureText, outcomeText } from "../api/words.ts";
 import { HOME, navigate } from "../app/router.ts";
+import { DebugSlot } from "../debug/slot.tsx";
+import { watched } from "../debug/watched.ts";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { useKeyHolder } from "../ownkey/OwnKeyContext.tsx";
 import { Camera } from "./Camera.tsx";
@@ -59,30 +61,35 @@ export function PaperScreen({ profileId }: { readonly profileId: string }) {
       const failed = (failure: Failure) =>
         change(photo, (page) => ({ ...page, finding: { status: "failed", failure } }));
       change(photo, (page) => ({ ...page, finding: { status: "finding" } }));
-      api.paper
-        .findTasks({ profileId, idempotencyKey: idempotencyKey(), photo: photo.bytes, ...ai })
-        .then(
-          (answer) => {
-            const read = outcomeOf(answer.outcome);
-            holder.noteOutcome(profileId, read, ai);
-            // A repeat holds no frames: api keeps none, and a new try asks again.
-            if (answer.repeated) {
-              failed({ kind: "offline" });
-              return;
-            }
-            const found = foundTasks(answer);
-            change(photo, (page) => ({
-              ...page,
-              finding:
-                read !== undefined && found.length === 0
-                  ? { status: "outcome", outcome: read }
-                  : { status: "found" },
-              // The frames drawn while it was under way stay.
-              tasks: [...found, ...page.tasks.filter((task) => task.drawn)],
-            }));
-          },
-          (reason: unknown) => failed(parseFailure(reason)),
-        );
+      watched(api, () =>
+        api.paper.findTasks({
+          profileId,
+          idempotencyKey: idempotencyKey(),
+          photo: photo.bytes,
+          ...ai,
+        }),
+      ).then(
+        (answer) => {
+          const read = outcomeOf(answer.outcome);
+          holder.noteOutcome(profileId, read, ai);
+          // A repeat holds no frames: api keeps none, and a new try asks again.
+          if (answer.repeated) {
+            failed({ kind: "offline" });
+            return;
+          }
+          const found = foundTasks(answer);
+          change(photo, (page) => ({
+            ...page,
+            finding:
+              read !== undefined && found.length === 0
+                ? { status: "outcome", outcome: read }
+                : { status: "found" },
+            // The frames drawn while it was under way stay.
+            tasks: [...found, ...page.tasks.filter((task) => task.drawn)],
+          }));
+        },
+        (reason: unknown) => failed(parseFailure(reason)),
+      );
     },
     [api, change, holder, profileId],
   );
@@ -93,14 +100,17 @@ export function PaperScreen({ profileId }: { readonly profileId: string }) {
 
   if (paper.begun !== undefined && paper.solving && page !== undefined) {
     return (
-      <Solve
-        profileId={profileId}
-        tasks={page.tasks}
-        begun={paper.begun}
-        onKeep={paper.keep}
-        onAdd={paper.add}
-        onHome={home}
-      />
+      <>
+        <Solve
+          profileId={profileId}
+          tasks={page.tasks}
+          begun={paper.begun}
+          onKeep={paper.keep}
+          onAdd={paper.add}
+          onHome={home}
+        />
+        <DebugSlot above />
+      </>
     );
   }
   if (page === undefined) {
@@ -203,23 +213,26 @@ export function PaperScreen({ profileId }: { readonly profileId: string }) {
   );
 
   return (
-    <Pick
-      photo={page.photo}
-      tasks={page.tasks}
-      onTasks={(update) =>
-        paper.change(page.photo, (now: PaperPage) => ({ ...now, tasks: update(now.tasks) }))
-      }
-      lines={lines}
-      finding={finding.status === "finding"}
-      closed={closed}
-      starting={starting}
-      onStart={start}
-      onRetake={paper.clear}
-      onHome={() => {
-        // Back from the page "Add" opened keeps the tasks begun, and their work, for the way back.
-        if (paper.begun === undefined) paper.clear();
-        home();
-      }}
-    />
+    <>
+      <Pick
+        photo={page.photo}
+        tasks={page.tasks}
+        onTasks={(update) =>
+          paper.change(page.photo, (now: PaperPage) => ({ ...now, tasks: update(now.tasks) }))
+        }
+        lines={lines}
+        finding={finding.status === "finding"}
+        closed={closed}
+        starting={starting}
+        onStart={start}
+        onRetake={paper.clear}
+        onHome={() => {
+          // Back from the page "Add" opened keeps the tasks begun, and their work, for the way back.
+          if (paper.begun === undefined) paper.clear();
+          home();
+        }}
+      />
+      <DebugSlot />
+    </>
   );
 }

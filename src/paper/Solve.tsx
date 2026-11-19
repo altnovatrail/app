@@ -26,6 +26,7 @@ import { IconButton } from "../app/IconButton.tsx";
 import { useNarrow } from "../app/narrow.ts";
 import { PopOver } from "../app/PopOver.tsx";
 import { Screen } from "../app/Screen.tsx";
+import { watched } from "../debug/watched.ts";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { useKeyHolder } from "../ownkey/OwnKeyContext.tsx";
 import { workOf } from "../task/attempt.ts";
@@ -184,13 +185,29 @@ export function Solve({
         }
         if (sent.current?.of !== of) sent.current = { of, key: idempotencyKey() };
         const ai = holder.aiFields(profileId);
-        const answer = await api.attempt.submitWork({
-          profileId,
-          attemptId,
-          idempotencyKey: sent.current.key,
-          work: await workOf(work),
-          ...ai,
-        });
+        const key = sent.current.key;
+        const paperWork = await workOf(work);
+        const surface = paperWork.surface;
+        const sentWork = surface?.case === "paper" ? surface.value : undefined;
+        const answer = await watched(
+          api,
+          () =>
+            api.attempt.submitWork({
+              profileId,
+              attemptId,
+              idempotencyKey: key,
+              work: paperWork,
+              ...ai,
+            }),
+          sentWork?.statement instanceof Uint8Array && sentWork.crop instanceof Uint8Array
+            ? {
+                attemptId,
+                statement: sentWork.statement,
+                crop: sentWork.crop,
+                verdict: (a) => a.items[0]?.answerSlots[0]?.verdict,
+              }
+            : undefined,
+        );
         const read = outcomeOf(answer.outcome);
         holder.noteOutcome(profileId, read, ai);
         const verdict = paperVerdictOf(answer.items, read);
