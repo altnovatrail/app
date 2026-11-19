@@ -54,6 +54,7 @@ import {
   snapshot,
   statsOf,
   subscribe,
+  type TaskTruth,
   type Truth,
   thinkingFixed,
   took,
@@ -344,15 +345,26 @@ function Export({
   const [truth, setTruth] = useState(begin);
   const [error, setError] = useState<string | undefined>(undefined);
   const id = useId();
-  const field = (name: "formula" | "key" | "read" | "note", label: string, hint: string) => (
+  const task = (n: number, change: Partial<TaskTruth>) =>
+    setTruth({
+      ...truth,
+      tasks: truth.tasks.map((t, at) => (at === n ? { ...t, ...change } : t)),
+    });
+  const field = (
+    name: string,
+    label: string,
+    hint: string,
+    value: string,
+    onChange: (value: string) => void,
+  ) => (
     <label className="nt-debug-field" htmlFor={`${id}-${name}`}>
       <span className="nt-debug-sub">{label}</span>
       <input
         id={`${id}-${name}`}
-        value={truth[name]}
+        value={value}
         placeholder={hint}
         spellCheck={false}
-        onChange={(e) => setTruth({ ...truth, [name]: e.target.value })}
+        onChange={(e) => onChange(e.target.value)}
       />
     </label>
   );
@@ -361,29 +373,49 @@ function Export({
       <p className="nt-debug-sub">
         What the models should have given, from the calls: correct what they got wrong.
       </p>
-      {field("formula", "Formula", "none: a word problem, a choice")}
-      {field("key", "Key · JSON of paper.v1.Answer", '{"number":{"value":"85"}}')}
-      {field("read", "Read · the answer the work holds", "none: no answer")}
-      <div className="nt-debug-field">
-        <span className="nt-debug-sub" id={`${id}-verdict`}>
-          Verdict
-        </span>
-        <fieldset aria-labelledby={`${id}-verdict`} className="nt-debug-plain">
-          <div className="nt-debug-segments">
-            {OUTCOMES.map((o) => (
-              <button
-                key={o.outcome}
-                type="button"
-                aria-pressed={truth.outcome === o.outcome}
-                onClick={() => setTruth({ ...truth, outcome: o.outcome })}
-              >
-                {o.name}
-              </button>
-            ))}
+      {truth.tasks.map((t, n) => (
+        // The tasks of a frame stay in their order: the place is the task's number.
+        // biome-ignore lint/suspicious/noArrayIndexKey: the number of a task in its frame
+        <fieldset key={n} className="nt-debug-plain nt-debug-task">
+          <legend className="nt-debug-sub">Task {n + 1}</legend>
+          {field(`statement-${n}`, "Statement", "as printed: 37 + 48 =", t.statement, (v) =>
+            task(n, { statement: v }),
+          )}
+          {field(`formula-${n}`, "Formula", "none: a word problem, a choice", t.formula, (v) =>
+            task(n, { formula: v }),
+          )}
+          {field(
+            `key-${n}`,
+            "Key · JSON of paper.v1.Answer",
+            '{"number":{"value":"85"}}',
+            t.key,
+            (v) => task(n, { key: v }),
+          )}
+          {field(`read-${n}`, "Read · the answer the work holds", "none: no answer", t.read, (v) =>
+            task(n, { read: v }),
+          )}
+          <div className="nt-debug-field">
+            <span className="nt-debug-sub" id={`${id}-verdict-${n}`}>
+              Verdict
+            </span>
+            <fieldset aria-labelledby={`${id}-verdict-${n}`} className="nt-debug-plain">
+              <div className="nt-debug-segments">
+                {OUTCOMES.map((o) => (
+                  <button
+                    key={o.outcome}
+                    type="button"
+                    aria-pressed={t.outcome === o.outcome}
+                    onClick={() => task(n, { outcome: o.outcome })}
+                  >
+                    {o.name}
+                  </button>
+                ))}
+              </div>
+            </fieldset>
           </div>
         </fieldset>
-      </div>
-      {field("note", "Note", "what went wrong")}
+      ))}
+      {field("note", "Note", "what went wrong", truth.note, (v) => setTruth({ ...truth, note: v }))}
       {error === undefined ? null : (
         <p role="alert" className="nt-debug-failed">
           {error}

@@ -1,11 +1,23 @@
 // The tasks begun on a photographed page as the screen of solving holds them (R71): each its own
 // sheet under its crop, the tracing paper, in the order of the page; those the learner left out on
 // the page again are not on the list, and come back with their work when picked once more. "Add"
-// goes back to the page, and Start then begins only the tasks not begun yet. A Check gives the verdict
-// of the task's one answer slot by its key, or none when it has no key (R162 spec). No DOM.
-import type { ItemVerdict } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
+// goes back to the page, and Start then begins only the tasks not begun yet. A frame may hold several
+// tasks, up to 20, each with an answer of its own: a Check gives the verdict of each task's answer
+// slot by its key, and a tick or a cross by each answer on the crop of the work; none when no task
+// has a key (R162 spec). No DOM.
+import type {
+  AnswerSlotVerdict,
+  ItemVerdict,
+} from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
 import { Cause } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
-import type { HistoryChange, HistoryEvent, TracingState } from "@altnovatrail/spec/canvas";
+import type {
+  HistoryChange,
+  HistoryEvent,
+  Marks,
+  PaperSubmission,
+  TracingState,
+  VerdictMark,
+} from "@altnovatrail/spec/canvas";
 import type { ReadOutcome } from "../api/outcome.ts";
 import { outcomeText } from "../api/words.ts";
 import type { Words } from "../i18n/words.ts";
@@ -28,6 +40,8 @@ export interface BegunTask {
   readonly tracing?: TracingState;
   /** What its last Check came to, in the tab's memory: the card shown when the task is again. */
   readonly verdict?: PaperVerdict;
+  /** The context of the work of that Check, which the element gave: its ticks and crosses stand on it. */
+  readonly checked?: PaperSubmission;
 }
 
 /**
@@ -118,32 +132,69 @@ export function changed(
 }
 
 /**
- * What a Check of a task from paper came to, as its card shows it (R162 spec): its one answer slot
- * correct or not yet, with what was read; not read, with why; not checked, with the outcome of the
- * call that left it so; or no key, when the task has no one answer a program can compare.
+ * One task of a frame as a Check judged it (R162 spec): the verdict of its answer slot, and where
+ * its answer was read on the crop of the work, [ymin, xmin, ymax, xmax] in thousandths, when the
+ * reading gave a value.
+ */
+export interface PaperPart {
+  readonly verdict: "correct" | "not-yet" | "unreadable" | "unchecked";
+  readonly box?: readonly [number, number, number, number];
+}
+
+/**
+ * What a Check of a task from paper came to, as its card shows it (R162 spec): correct when every
+ * task of the frame that has a key is, or not yet, with what was read of a frame of one task and
+ * each task's part; not read, with why, when no answer was; not checked, with the outcome of the
+ * call that left it so; or no key, when no task has one answer a program can compare.
  */
 export type PaperVerdict =
-  | { readonly kind: "correct" | "not-yet"; readonly read: string | undefined }
+  | {
+      readonly kind: "correct" | "not-yet";
+      readonly read: string | undefined;
+      readonly parts: readonly PaperPart[];
+    }
   | { readonly kind: "unreadable"; readonly reason: string }
   | { readonly kind: "unchecked"; readonly outcome: ReadOutcome | undefined }
   | { readonly kind: "nokey" };
 
-/** The verdict of an answer to a Check of a task from paper; a verdict the build knows not is none. */
+/**
+ * The verdict of an answer to a Check of a task from paper, by each task's item, in the order of the
+ * frame; a verdict the build knows not is none. A task with no key is unchecked and counts for
+ * neither. Correct is whether api closed the attempt solved: a task with a key whose answer it could
+ * not judge keeps it open, though no other is wrong.
+ */
 export function paperVerdictOf(
   items: readonly ItemVerdict[],
   outcome: ReadOutcome | undefined,
+  solved: boolean,
 ): PaperVerdict {
   if (outcome?.cause === Cause.NO_KEY) return { kind: "nokey" };
-  const slot = items[0]?.answerSlots[0];
-  switch (slot?.verdict) {
-    case "correct":
-      return { kind: "correct", read: slot.value };
-    case "not_yet":
-      return { kind: "not-yet", read: slot.value };
-    case "unreadable":
-      return { kind: "unreadable", reason: slot.reason };
+  const slots = items.map((item) => item.answerSlots[0]);
+  const parts = slots.map(partOf);
+  if (parts.some(({ verdict }) => verdict === "correct" || verdict === "not-yet")) {
+    return {
+      kind: solved ? "correct" : "not-yet",
+      read: slots.length === 1 ? slots[0]?.value : undefined,
+      parts,
+    };
   }
+  const unread = slots.find((slot) => slot?.verdict === "unreadable");
+  if (unread !== undefined) return { kind: "unreadable", reason: unread.reason };
   return { kind: "unchecked", outcome };
+}
+
+function partOf(slot: AnswerSlotVerdict | undefined): PaperPart {
+  const verdict =
+    slot?.verdict === "correct"
+      ? "correct"
+      : slot?.verdict === "not_yet"
+        ? "not-yet"
+        : slot?.verdict === "unreadable"
+          ? "unreadable"
+          : "unchecked";
+  const box = slot?.cropBox;
+  if (box === undefined || (verdict !== "correct" && verdict !== "not-yet")) return { verdict };
+  return { verdict, box: [box.ymin, box.xmin, box.ymax, box.xmax] };
 }
 
 /**
@@ -151,7 +202,29 @@ export function paperVerdictOf(
  * Check again would not find.
  */
 export function checkOver(task: BegunTask): boolean {
-  return task.verdict?.kind === "correct" || task.verdict?.kind === "nokey";
+  const kind = task.verdict?.kind;
+  return kind === "correct" || kind === "nokey";
+}
+
+/**
+ * The ticks and crosses of a task's last Check on the crop of its work (R162 spec): one by each
+ * answer that was correct or not yet and whose place the reading gave, named for a screen reader
+ * by its task's number in the frame. None without a Check that judged one, or its context.
+ */
+export function verdictMarks(
+  task: Pick<BegunTask, "verdict" | "checked">,
+  words: Words,
+): Marks | undefined {
+  const { verdict, checked } = task;
+  if (checked === undefined || (verdict?.kind !== "correct" && verdict?.kind !== "not-yet"))
+    return undefined;
+  const marks = verdict.parts.flatMap(({ verdict: part, box }, n): VerdictMark[] => {
+    if (box === undefined) return [];
+    const correct = part === "correct";
+    const name = words.text(correct ? "paper.mark-correct" : "paper.mark-not-yet", { n: n + 1 });
+    return [{ kind: "verdict", at: { box }, correct, name }];
+  });
+  return marks.length === 0 ? undefined : { submission: checked, marks };
 }
 
 /** The words of each reason a work on paper was not read for that are its own (R162 spec). */
@@ -161,9 +234,10 @@ const PAPER_REASONS: Readonly<Record<string, "paper.no-answer" | "paper.several"
 };
 
 /**
- * A verdict's card: its kind, title and line. "Read: …" under a value read; under a work not read,
- * why, in the words of paper for no final answer and more than one; under one not checked, the
- * outcome's words.
+ * A verdict's card: its kind, title and line. Of a frame of several tasks, the count of those
+ * correct of those with a key, and under it the tasks whose answer was not read; of one task,
+ * "Read: …" under a value read. Under a work not read, why, in the words of paper for no final
+ * answer and more than one; under one not checked, the outcome's words.
  */
 export function paperCard(
   verdict: PaperVerdict,
@@ -171,13 +245,15 @@ export function paperCard(
 ): { kind: "correct" | "not-yet" | "write" | "nokey"; title: string; line: string | undefined } {
   switch (verdict.kind) {
     case "correct":
-    case "not-yet":
+    case "not-yet": {
+      if (verdict.parts.length > 1) return partsCard(verdict.kind, verdict.parts, words);
       return {
         kind: verdict.kind,
         title: words.text(verdict.kind === "correct" ? "task.correct" : "task.not-yet"),
         line:
           verdict.read === undefined ? undefined : words.text("task.read", { text: verdict.read }),
       };
+    }
     case "unreadable": {
       const own = PAPER_REASONS[verdict.reason];
       if (own !== undefined)
@@ -199,5 +275,27 @@ export function paperCard(
     kind: "write",
     title: words.text(verdictKey("unchecked")),
     line: verdict.outcome === undefined ? undefined : outcomeText(verdict.outcome, words),
+  };
+}
+
+/** The card of a frame of several tasks: how many of those with a key are correct, and which went unread. */
+function partsCard(
+  kind: "correct" | "not-yet",
+  parts: readonly PaperPart[],
+  words: Words,
+): { kind: "correct" | "not-yet"; title: string; line: string | undefined } {
+  const keyed = parts.filter(({ verdict }) => verdict !== "unchecked").length;
+  const correct = parts.filter(({ verdict }) => verdict === "correct").length;
+  const unread = parts.flatMap(({ verdict }, n) => (verdict === "unreadable" ? [n + 1] : []));
+  return {
+    kind,
+    title: words.text(kind === "correct" ? "paper.parts-correct" : "paper.parts-not-yet", {
+      n: correct,
+      of: keyed,
+    }),
+    line:
+      unread.length === 0
+        ? undefined
+        : words.text("paper.parts-unread", { tasks: unread.join(", ") }),
   };
 }

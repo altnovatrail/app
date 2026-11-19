@@ -204,6 +204,13 @@ button.nt-debug-close {
   border: 0;
   padding: 0;
 }
+/* Each task of a frame, its fields under its number, apart from the next by a line. */
+.nt-debug-task {
+  display: grid;
+  gap: 0.5rem;
+  padding-block-end: 0.75rem;
+  border-block-end: 1px solid rgba(118, 118, 128, 0.2);
+}
 .nt-debug-segments {
   display: flex;
   box-sizing: border-box;

@@ -2,7 +2,8 @@
 // task's frame over it a button that is picked or left out, every one picked at first, and its
 // cross removes it; a task the AI missed the learner frames by hand, by a loop drawn round it with a
 // finger or a pen or by two taps, a corner and then the one opposite, and its corner resizes it.
-// The top bar says how many tasks were found and framed by hand, and holds Retake; at the foot,
+// The top bar says how many tasks were found and framed by hand, and holds "Remove all frames",
+// which clears the photo for frames of the learner's own, and Retake; at the foot,
 // the note that the photo stays on the device, and the bar of "Select all", the count and Start.
 // Drawing a frame takes a pointer: a learner on the keyboard picks among the AI's frames alone.
 import { type CSSProperties, type PointerEvent, type ReactNode, useRef, useState } from "react";
@@ -167,6 +168,16 @@ export function Pick({
         under: <p className="nt-top-sub nt-page-sub">{under}</p>,
         end: (
           <div className="nt-top-end">
+            {count.all === 0 || finding ? null : (
+              <button
+                type="button"
+                className="nt-glass nt-retake"
+                onClick={() => onTasks(() => [])}
+              >
+                <Icon value="close" />
+                {words.text("paper.remove-all")}
+              </button>
+            )}
             <button type="button" className="nt-glass nt-retake" onClick={onRetake}>
               <Icon value="camera" />
               {words.text("paper.retake")}

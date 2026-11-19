@@ -1171,11 +1171,17 @@ export const en = {
   "paper.tap": "tap one to leave it out",
   /** The top bar's button that throws the page away and opens the camera again. */
   "paper.retake": "Retake",
+  "paper.remove-all": "Remove all frames",
   /** While FindTasks is under way. */
   "paper.finding": "Finding the tasks on the page…",
   /** FindTasks gave no frames: the learner draws them. */
   "paper.none-found": "No tasks were found. Draw round each task you want to solve",
   "paper.find-again": "Find the tasks again",
+  /** FindTasks gave the most tasks one page begins, {max}; the page may hold more. */
+  "paper.at-most":
+    "{max} tasks is the most at once. To take another, remove one of these with its cross and draw round the one you want",
+  /** More than {max} tasks are picked, and "Start" is shut. */
+  "paper.too-many": "At most {max} tasks start at once: leave some out",
   /** A task's frame, a button; {n} is its place on the page, from the top. */
   "paper.select": "Select task {n}",
   "paper.deselect": "Deselect task {n}",
@@ -1212,6 +1218,16 @@ export const en = {
   /** The card of a task from paper whose solution gave no one answer a program can compare. */
   "paper.no-key": "Couldn't check this one",
   "paper.no-key-line": "This task has no answer that can be checked. Hints still work.",
+  /**
+   * The card of a frame of several tasks: {n} of the {of} tasks with a key are correct; {tasks} are
+   * the numbers of those whose answer was not read, in the frame's order.
+   */
+  "paper.parts-correct": "Correct · {n} of {of}",
+  "paper.parts-not-yet": "Not yet · {n} of {of} correct",
+  "paper.parts-unread": "No answer was read in tasks {tasks}",
+  /** The tick and the cross by an answer on the crop, for a screen reader; {n} is the task's number in the frame. */
+  "paper.mark-correct": "Task {n}: correct",
+  "paper.mark-not-yet": "Task {n}: not yet",
   /** The cards of a work with no final answer, or more than one: written, or one option circled. */
   "paper.no-answer": "No answer found",
   "paper.no-answer-line": "Write your answer, or circle one option, then Check.",

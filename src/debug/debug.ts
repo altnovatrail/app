@@ -11,7 +11,6 @@ import {
   type DebugAdmitted,
   type DebugCall,
   DebugCallKind,
-  type DebugCase,
   DebugCaseSchema,
   type DebugChoice,
   DebugChoiceSchema,
@@ -21,6 +20,8 @@ import {
   DebugModelChoiceSchema,
   DebugOutcome,
   type DebugService,
+  type DebugTask,
+  DebugTaskSchema,
 } from "@altnovatrail/contracts/novatrail/api/v1/debug_pb.js";
 import { create, fromJsonString, toJsonString } from "@bufbuild/protobuf";
 import { timestampDate } from "@bufbuild/protobuf/wkt";
@@ -36,12 +37,15 @@ export interface Pick {
   readonly thinking: boolean;
 }
 
-/** What a Check sent, and the verdict api gave it, which the export of its action holds. */
+/**
+ * What a Check sent, and the verdict api gave each task of its frame, in the frame's order, which
+ * the export of its action holds.
+ */
 export interface Sent {
   readonly attemptId: string;
   readonly statement: Uint8Array;
   readonly crop: Uint8Array;
-  readonly outcome: DebugOutcome;
+  readonly outcomes: readonly DebugOutcome[];
 }
 
 export interface DebugState {
@@ -446,12 +450,21 @@ export const OUTCOMES: readonly { readonly outcome: DebugOutcome; readonly name:
   { outcome: DebugOutcome.UNCHECKED, name: "unchecked" },
 ];
 
-/** The truth of an exported Check, as the developer edits it: the key as the JSON of its Answer. */
-export interface Truth {
+/**
+ * The truth of one task of an exported Check, as the developer edits it: the key as the JSON of its
+ * Answer.
+ */
+export interface TaskTruth {
+  readonly statement: string;
   readonly formula: string;
   readonly key: string;
   readonly read: string;
   readonly outcome: DebugOutcome;
+}
+
+/** The truth of an exported Check: each task of its frame, in the frame's order, and a note. */
+export interface Truth {
+  readonly tasks: readonly TaskTruth[];
   readonly note: string;
 }
 
@@ -463,11 +476,28 @@ function parsed(json: string): unknown {
   }
 }
 
+/** A list a value of a call's answer holds under a name, of objects alone; none when it holds none. */
+function listOf(value: unknown, name: string): Record<string, unknown>[] {
+  const list =
+    typeof value === "object" && value !== null
+      ? (value as Record<string, unknown>)[name]
+      : undefined;
+  if (!Array.isArray(list)) return [];
+  return list.filter(
+    (each): each is Record<string, unknown> => typeof each === "object" && each !== null,
+  );
+}
+
+function text(value: unknown): string {
+  return typeof value === "string" ? value : "";
+}
+
 /**
- * The truth an export begins from, what the calls gave: the formula the statement was read into and
- * the solver's key, of this Check or of an earlier one of the attempt, since a later Check keeps the
- * key; the value the first reader read; and the verdict api gave. Of a call's attempts, the last that
- * answered is what the call gave (R73).
+ * The truth an export begins from, what the calls gave (R162 spec): the tasks the statement was read
+ * into, each with its formula, and the solver's key, of this Check or of an earlier one of the
+ * attempt, since a later Check keeps the key; the value the first reader read for each task; and the
+ * verdict api gave each. Of a call's attempts, the last that answered is what the call gave (R73).
+ * A frame whose statement no call read has as many tasks as api gave verdicts, one at least.
  */
 export function truthOf(
   actions: readonly DebugAction[],
@@ -481,20 +511,31 @@ export function truthOf(
   const gave = (c: DebugCall) => c.answer !== "" && c.failure === Cause.UNSPECIFIED;
   const last = (kind: DebugCallKind) =>
     ofAttempt.flatMap((a) => [...a.calls].reverse()).find((c) => c.kind === kind && gave(c));
-  const statement = parsed(last(DebugCallKind.STATEMENT_READING)?.answer ?? "") as
-    | { formula?: unknown }
-    | undefined;
-  const reading = parsed(
-    [...action.calls]
-      .reverse()
-      .find((c) => c.kind === DebugCallKind.WORK_READING && c.reader <= 1 && gave(c))?.answer ?? "",
-  ) as { results?: { value?: unknown }[] } | undefined;
-  const value = reading?.results?.[0]?.value;
+  const read = listOf(parsed(last(DebugCallKind.STATEMENT_READING)?.answer ?? ""), "tasks");
+  // The solver's call answers with the key, a paper.v1.Key: a task it solved has its answer.
+  const keys = listOf(parsed(last(DebugCallKind.SOLVER)?.answer ?? ""), "tasks");
+  const results = listOf(
+    parsed(
+      [...action.calls]
+        .reverse()
+        .find((c) => c.kind === DebugCallKind.WORK_READING && c.reader <= 1 && gave(c))?.answer ??
+        "",
+    ),
+    "results",
+  );
+  const outcomes = sent?.outcomes ?? [];
+  const count = Math.max(read.length, outcomes.length, 1);
   return {
-    formula: typeof statement?.formula === "string" ? statement.formula : "",
-    key: last(DebugCallKind.SOLVER)?.answer ?? "",
-    read: typeof value === "string" ? value : "",
-    outcome: sent?.outcome ?? DebugOutcome.UNSPECIFIED,
+    tasks: Array.from({ length: count }, (_, n) => {
+      const answer = keys[n]?.answer;
+      return {
+        statement: text(read[n]?.statement ?? keys[n]?.statement),
+        formula: text(read[n]?.formula),
+        key: typeof answer === "object" && answer !== null ? JSON.stringify(answer) : "",
+        read: text(results.find((r) => r.task === n + 1)?.value),
+        outcome: outcomes[n] ?? DebugOutcome.UNSPECIFIED,
+      };
+    }),
     note: "",
   };
 }
@@ -508,24 +549,36 @@ export function exportOf(
   sent: Sent,
   truth: Truth,
 ): { readonly name: string; readonly json: string } | { readonly error: string } {
-  if (truth.outcome === DebugOutcome.UNSPECIFIED)
-    return { error: "Choose the verdict it should get." };
-  let key: DebugCase["key"];
-  if (truth.key.trim() !== "") {
-    try {
-      key = fromJsonString(DebugCaseSchema, `{"key":${truth.key}}`).key;
-    } catch (reason) {
-      return {
-        error: `The key is no paper.v1.Answer: ${reason instanceof Error ? reason.message : String(reason)}`,
-      };
+  if (truth.tasks.length === 0) return { error: "A case has one task at least." };
+  if (truth.tasks.some((t) => t.outcome === DebugOutcome.UNSPECIFIED))
+    return { error: "Choose the verdict each task should get." };
+  if (truth.tasks.some((t) => t.statement.trim() === ""))
+    return { error: "Give each task its statement as printed." };
+  const tasks: DebugTask[] = [];
+  for (const [n, t] of truth.tasks.entries()) {
+    let key: DebugTask["key"];
+    if (t.key.trim() !== "") {
+      try {
+        key = fromJsonString(DebugTaskSchema, `{"key":${t.key}}`).key;
+      } catch (reason) {
+        return {
+          error: `The key of task ${n + 1} is no paper.v1.Answer: ${reason instanceof Error ? reason.message : String(reason)}`,
+        };
+      }
     }
+    tasks.push(
+      create(DebugTaskSchema, {
+        statement: t.statement.trim(),
+        formula: t.formula.trim(),
+        key,
+        read: t.read.trim(),
+        outcome: t.outcome,
+      }),
+    );
   }
   const c = create(DebugCaseSchema, {
     work: { statement: sent.statement, crop: sent.crop },
-    formula: truth.formula.trim(),
-    key,
-    read: truth.read.trim(),
-    outcome: truth.outcome,
+    tasks,
     note: truth.note.trim(),
     action,
   });

@@ -3,12 +3,15 @@
 // branch and the module it loads drop out of it.
 import type { Api } from "../api/client.ts";
 
-/** A Check as the debug mode keeps it for its export: what it sent, and the verdict of its answer. */
+/**
+ * A Check as the debug mode keeps it for its export: what it sent, and the verdict of each task of
+ * its answer, in the frame's order.
+ */
 export interface Check<T> {
   readonly attemptId: string;
   readonly statement: Uint8Array;
   readonly crop: Uint8Array;
-  readonly verdict: (answer: T) => string | undefined;
+  readonly verdicts: (answer: T) => readonly (string | undefined)[];
 }
 
 /**
@@ -34,8 +37,8 @@ export async function watched<T>(api: Api, call: () => Promise<T>, check?: Check
             attemptId: check.attemptId,
             statement: check.statement,
             crop: check.crop,
-            outcome: debug.outcomeOf(
-              answer === undefined ? undefined : check.verdict(answer.value),
+            outcomes: (answer === undefined ? [] : check.verdicts(answer.value)).map(
+              debug.outcomeOf,
             ),
           };
     void debug.take(api.debug, sent);

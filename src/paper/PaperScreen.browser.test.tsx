@@ -199,6 +199,17 @@ it("removes a task the AI found by its cross", async () => {
   expect(screen.getByText("1 of 1 selected")).toBeVisible();
 });
 
+it("removes every frame at once, for frames of the learner's own", async () => {
+  await renderPaper();
+  await screen.findByRole("button", { name: "Deselect task 1" });
+  await userEvent.click(screen.getByRole("button", { name: "Remove all frames" }));
+  await waitFor(() =>
+    expect(screen.queryByRole("button", { name: "Remove the frame" })).toBeNull(),
+  );
+  expect(screen.getByText("0 of 0 selected")).toBeVisible();
+  expect(screen.queryByRole("button", { name: "Remove all frames" })).toBeNull();
+});
+
 it("begins the tasks picked, each a sheet under its crop", async () => {
   const { begins } = await renderPaper();
   await userEvent.click(await screen.findByRole("button", { name: "Deselect task 1" }));
@@ -288,6 +299,35 @@ it("shows the verdict by the key: Not yet, then Correct, which takes no Check ag
   expect(submits).toHaveLength(2);
   await userEvent.click(screen.getByRole("button", { name: "Tasks, 1 of 2" }));
   expect(await screen.findByRole("button", { name: /Task 1.*Correct/ })).toBeVisible();
+});
+
+it("checks a frame of several tasks each, with the count and a tick or a cross by each answer", async () => {
+  const slot = (item: number, verdict: string) => ({
+    verdict,
+    answerSlots: [
+      {
+        answerSlot: { item, slot: 1 },
+        verdict,
+        value: "85",
+        cropBox: { ymin: (item - 1) * 300, xmin: 600, ymax: (item - 1) * 300 + 250, xmax: 900 },
+      },
+    ],
+  });
+  await solving({
+    checked: () => ({ items: [slot(1, "correct"), slot(2, "not_yet"), slot(3, "correct")] }),
+  });
+  writeOn(sheet());
+  await userEvent.click(screen.getByRole("button", { name: "Check" }));
+  expect(await screen.findByText("Not yet · 2 of 3 correct")).toBeVisible();
+  const marks = sheet().shadowRoot?.querySelectorAll(".marks g[role=img]") ?? [];
+  expect([...marks].map((mark) => mark.getAttribute("aria-label"))).toEqual([
+    "Task 1: correct",
+    "Task 2: not yet",
+    "Task 3: correct",
+  ]);
+  // Try again puts the card away, and the marks with it.
+  await userEvent.click(screen.getByRole("button", { name: "Try again" }));
+  expect(sheet().shadowRoot?.querySelectorAll(".marks g[role=img]")).toHaveLength(0);
 });
 
 it("says a task with no key could not be checked, with Hint and Next task", async () => {

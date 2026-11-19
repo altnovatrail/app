@@ -61,7 +61,7 @@ describe("the debug mode through the client", () => {
       attemptId: "a1",
       statement: new Uint8Array([1]),
       crop: new Uint8Array([2]),
-      verdict: (answer: string) => (answer === "found" ? "correct" : undefined),
+      verdicts: (answer: string) => (answer === "found" ? ["correct", "not_yet"] : []),
     };
     await expect(watched(api, async () => "found", check)).resolves.toBe("found");
     await expect(
@@ -73,9 +73,9 @@ describe("the debug mode through the client", () => {
       expect(snapshot().actions.map((a) => a.attemptId)).toEqual(["a1", "a2"]),
     );
     expect(snapshot().busy).toBe(0);
-    // The Check kept what it sent, with its answer's verdict.
-    expect([...snapshot().sent.values()].map((x) => [x.attemptId, x.outcome])).toEqual([
-      ["a1", DebugOutcome.CORRECT],
+    // The Check kept what it sent, with the verdict of each task of its answer.
+    expect([...snapshot().sent.values()].map((x) => [x.attemptId, x.outcomes])).toEqual([
+      ["a1", [DebugOutcome.CORRECT, DebugOutcome.NOT_YET]],
     ]);
   });
 });

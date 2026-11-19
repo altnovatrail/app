@@ -21,6 +21,7 @@ import {
   paperCard,
   paperVerdictOf,
   shownTask,
+  verdictMarks,
   withBegun,
   withChange,
 } from "./solve.ts";
@@ -134,17 +135,105 @@ describe("what a Check of a task from paper came to", () => {
   const en = WORDS.en;
 
   it("is the verdict of the one answer slot, with what was read", () => {
-    const right = paperVerdictOf(slot("correct", { value: "85" }), undefined);
-    expect(right).toEqual({ kind: "correct", read: "85" });
+    const right = paperVerdictOf(slot("correct", { value: "85" }), undefined, true);
+    expect(right).toEqual({ kind: "correct", read: "85", parts: [{ verdict: "correct" }] });
     expect(paperCard(right, en)).toEqual({ kind: "correct", title: "Correct", line: "Read: 85" });
-    const wrong = paperVerdictOf(slot("not_yet", { value: "84" }), undefined);
+    const wrong = paperVerdictOf(slot("not_yet", { value: "84" }), undefined, false);
     expect(paperCard(wrong, en)).toEqual({ kind: "not-yet", title: "Not yet", line: "Read: 84" });
-    expect(paperCard({ kind: "not-yet", read: undefined }, en).line).toBeUndefined();
+    expect(paperCard({ kind: "not-yet", read: undefined, parts: [] }, en).line).toBeUndefined();
+  });
+
+  /** The items of a frame of several tasks: each verdict, with its value and its box. */
+  const items = (...verdicts: string[]): ItemVerdict[] =>
+    verdicts.map((verdict, n) =>
+      create(ItemVerdictSchema, {
+        verdict,
+        answerSlots: [
+          {
+            answerSlot: { item: n + 1, slot: 1 },
+            verdict,
+            ...(verdict === "correct" || verdict === "not_yet"
+              ? {
+                  value: "85",
+                  cropBox: { ymin: n * 250, xmin: 600, ymax: n * 250 + 200, xmax: 900 },
+                }
+              : {}),
+          },
+        ],
+      }),
+    );
+
+  it("of several tasks is each task's, correct when each with a key is, with the count", () => {
+    const all = paperVerdictOf(items("correct", "correct", "unchecked"), undefined, true);
+    expect(all.kind).toBe("correct");
+    expect(paperCard(all, en)).toEqual({
+      kind: "correct",
+      title: "Correct · 2 of 2",
+      line: undefined,
+    });
+    const some = paperVerdictOf(
+      items("correct", "not_yet", "unreadable", "correct"),
+      undefined,
+      false,
+    );
+    expect(some).toEqual({
+      kind: "not-yet",
+      read: undefined,
+      parts: [
+        { verdict: "correct", box: [0, 600, 200, 900] },
+        { verdict: "not-yet", box: [250, 600, 450, 900] },
+        { verdict: "unreadable" },
+        { verdict: "correct", box: [750, 600, 950, 900] },
+      ],
+    });
+    expect(paperCard(some, en)).toEqual({
+      kind: "not-yet",
+      title: "Not yet · 2 of 4 correct",
+      line: "No answer was read in tasks 3",
+    });
+    expect(paperCard(some, WORDS.ru).title).toBe("Пока нет · верно 2 из 4");
+    // A task with a key that api could not judge keeps the attempt open, though none is wrong.
+    expect(paperVerdictOf(items("correct", "unchecked"), undefined, false).kind).toBe("not-yet");
+    // No answer read of any task: why, as of one task.
+    expect(paperVerdictOf(items("unreadable", "unchecked"), undefined, false).kind).toBe(
+      "unreadable",
+    );
+  });
+
+  it("puts a tick or a cross by each answer whose place was read, on the context of its Check", () => {
+    const checked = {
+      crop: {},
+      groups: [],
+      tracing: { at: [0, 0], hidden: false },
+      digest: "0",
+    } as never;
+    const verdict = paperVerdictOf(items("correct", "not_yet", "unreadable"), undefined, false);
+    expect(verdictMarks({ verdict, checked }, en)).toEqual({
+      submission: checked,
+      marks: [
+        {
+          kind: "verdict",
+          at: { box: [0, 600, 200, 900] },
+          correct: true,
+          name: "Task 1: correct",
+        },
+        {
+          kind: "verdict",
+          at: { box: [250, 600, 450, 900] },
+          correct: false,
+          name: "Task 2: not yet",
+        },
+      ],
+    });
+    expect(verdictMarks({ verdict }, en)).toBeUndefined();
+    expect(verdictMarks({ verdict: { kind: "nokey" }, checked }, en)).toBeUndefined();
+    const none = paperVerdictOf(slot("correct", { value: "85" }), undefined, true);
+    expect(verdictMarks({ verdict: none, checked }, en)).toBeUndefined();
   });
 
   it("says why a work was not read, in the words of paper for no final answer and several", () => {
     const card = (reason: string) =>
-      paperCard(paperVerdictOf(slot("unreadable", { reason }), undefined), en);
+      paperCard(paperVerdictOf(slot("unreadable", { reason }), undefined, false), en);
     expect(card("no_final_answer")).toEqual({
       kind: "write",
       title: "No answer found",
@@ -159,27 +248,33 @@ describe("what a Check of a task from paper came to", () => {
   });
 
   it("is no key with CAUSE_NO_KEY, and not checked with any other outcome or none", () => {
-    const noKey = paperVerdictOf(slot("unchecked"), { cause: Cause.NO_KEY });
+    const noKey = paperVerdictOf(slot("unchecked"), { cause: Cause.NO_KEY }, false);
     expect(paperCard(noKey, en)).toEqual({
       kind: "nokey",
       title: "Couldn't check this one",
       line: "This task has no answer that can be checked. Hints still work.",
     });
-    const failed = paperVerdictOf(slot("unchecked"), { cause: Cause.AI_FAILURE });
+    const failed = paperVerdictOf(slot("unchecked"), { cause: Cause.AI_FAILURE }, false);
     expect(paperCard(failed, en).title).toBe("Not checked");
     expect(paperCard(failed, en).line).not.toBeUndefined();
-    expect(paperCard(paperVerdictOf([], undefined), en)).toEqual({
+    expect(paperCard(paperVerdictOf([], undefined, false), en)).toEqual({
       kind: "write",
       title: "Not checked",
       line: undefined,
     });
-    expect(paperVerdictOf(slot("a verdict the build knows not"), undefined).kind).toBe("unchecked");
+    expect(paperVerdictOf(slot("a verdict the build knows not"), undefined, false).kind).toBe(
+      "unchecked",
+    );
   });
 
   it("is over once the task is solved or has no key", () => {
     expect(checkOver(begun(1))).toBe(false);
-    expect(checkOver({ ...begun(1), verdict: { kind: "correct", read: "85" } })).toBe(true);
+    expect(checkOver({ ...begun(1), verdict: { kind: "correct", read: "85", parts: [] } })).toBe(
+      true,
+    );
     expect(checkOver({ ...begun(1), verdict: { kind: "nokey" } })).toBe(true);
-    expect(checkOver({ ...begun(1), verdict: { kind: "not-yet", read: "84" } })).toBe(false);
+    expect(checkOver({ ...begun(1), verdict: { kind: "not-yet", read: "84", parts: [] } })).toBe(
+      false,
+    );
   });
 });

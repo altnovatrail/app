@@ -5,17 +5,18 @@
 // draws and the learner moves and hides (R87 canvas); its history and the paper's place stay in the
 // tab's memory, so that a task left and come back to is as it was. At the foot the row of glass:
 // Hint · Check. Check sends the task's crop with the crop of the work (R162 spec), and keeps nothing
-// on the device: its card is the verdict of the task's one answer slot by the key api derived —
-// Correct with Next task, Not yet with Hint, the work not read with why, not checked with the
-// outcome —, or "Couldn't check this one" for a task with no key, with Hint and Next task; a task
-// solved or with no key takes no Check again, and the list marks the one solved.
+// on the device: its card is the verdict of each task of the frame by the key api derived — Correct
+// with Next task, Not yet with Hint, of several tasks with how many are correct, the work not read
+// with why, not checked with the outcome —, with a tick or a cross by each answer on the sheet; or
+// "Couldn't check this one" when no task has a key, with Hint and Next task. A frame solved or with
+// no key takes no Check again, and the list marks the one solved.
 import type {
   CanvasElement,
   HistoryChangeEvent,
   PaperTask,
   TracingChangeEvent,
 } from "@altnovatrail/spec/canvas";
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { useApi } from "../api/ApiContext.tsx";
 import { type Failure, parseFailure } from "../api/failure.ts";
 import { PAPER_TIMEOUT_MS } from "../api/interceptors.ts";
@@ -41,6 +42,7 @@ import {
   paperCard,
   paperVerdictOf,
   shownTask,
+  verdictMarks,
   withChange,
 } from "./solve.ts";
 
@@ -116,8 +118,11 @@ export function Solve({
       setUnwritten(false);
       setSaid(undefined);
       setTold("");
-      // Other work puts a verdict away, but that of a Check that is over.
-      onKeep(attemptId, (was) => (checkOver(was) ? was : withoutVerdict(was)));
+      // Other work puts a verdict away, but that of a Check that is over, whose marks go all the
+      // same: the canvas drops them, and their context holds strokes the work may no longer have.
+      onKeep(attemptId, (was) =>
+        checkOver(was) ? { ...was, checked: undefined } : withoutVerdict(was),
+      );
     },
     [attemptId, onKeep],
   );
@@ -125,10 +130,17 @@ export function Solve({
     (event: TracingChangeEvent) => {
       if (attemptId === undefined) return;
       const tracing = event.detail;
-      onKeep(attemptId, (was) => ({ ...was, tracing }));
+      // The canvas puts its marks away with the paper moved, and a mount again would give them
+      // the context of a Check the tracing is no longer at.
+      onKeep(attemptId, (was) => ({ ...was, tracing, checked: undefined }));
     },
     [attemptId, onKeep],
   );
+
+  const verdict = task?.verdict;
+  const checked = task?.checked;
+  // One object while the Check is the same, so that a render gives the element no new marks.
+  const marks = useMemo(() => verdictMarks({ verdict, checked }, words), [verdict, checked, words]);
 
   if (task === undefined || attemptId === undefined) return null;
   const order = numbers(tasks);
@@ -208,14 +220,20 @@ export function Solve({
                 attemptId,
                 statement: sentWork.statement,
                 crop: sentWork.crop,
-                verdict: (a) => a.items[0]?.answerSlots[0]?.verdict,
+                verdicts: (a) => a.items.map((item) => item.answerSlots[0]?.verdict),
               }
             : undefined,
         );
         const read = outcomeOf(answer.outcome);
         holder.noteOutcome(profileId, read, ai);
-        const verdict = paperVerdictOf(answer.items, read);
-        onKeep(attemptId, (was) => ({ ...was, verdict }));
+        const verdict = paperVerdictOf(answer.items, read, answer.solved !== undefined);
+        const context =
+          "cells" in work || work.statement === undefined ? undefined : work.submission;
+        onKeep(attemptId, (was) => ({
+          ...was,
+          verdict,
+          ...(context === undefined ? {} : { checked: context }),
+        }));
         const card = paperCard(verdict, words);
         setTold(card.line === undefined ? card.title : `${card.title}. ${card.line}`);
       } catch (reason) {
@@ -320,6 +338,7 @@ export function Solve({
             paper={paperOf(task.crop)}
             history={task.history}
             {...(task.tracing === undefined ? {} : { tracing: task.tracing })}
+            marks={marks}
             onhistorychange={onHistoryChange}
             ontracingchange={onTracingChange}
           />
@@ -405,8 +424,8 @@ export function Solve({
   );
 }
 
-/** A task without its verdict: its card put away. */
+/** A task without its verdict: its card put away, and its ticks and crosses. */
 function withoutVerdict(task: BegunTask): BegunTask {
-  const { verdict: _, ...rest } = task;
+  const { verdict: _, checked: __, ...rest } = task;
   return rest;
 }

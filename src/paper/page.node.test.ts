@@ -8,6 +8,7 @@ import {
   canStart,
   counts,
   foundTasks,
+  limit,
   MAX_TASKS,
   numbers,
   picked,
@@ -113,5 +114,17 @@ describe("the pick", () => {
     }
     expect(canStart(tasks)).toBe(false);
     expect(canStart(toggled(tasks, tasks[0]?.id ?? ""))).toBe(true);
+  });
+
+  it("says the limit when as many are found, or more are picked", () => {
+    const frames = (n: number) =>
+      Array.from({ length: n }, (_, i) => box(i * 40, 0, i * 40 + 30, 100));
+    expect(limit(foundTasks(answer(frames(MAX_TASKS - 1))))).toBeUndefined();
+    const full = foundTasks(answer(frames(MAX_TASKS + 3)));
+    expect(full).toHaveLength(MAX_TASKS);
+    expect(limit(full)).toBe("at-most");
+    const more = withDrawn(full, { ymin: 900, xmin: 500, ymax: 950, xmax: 600 });
+    expect(limit(more)).toBe("too-many");
+    expect(limit(toggled(more, more[0]?.id ?? ""))).toBe("at-most");
   });
 });

@@ -106,6 +106,16 @@ export function canStart(tasks: readonly PageTask[]): boolean {
 }
 
 /**
+ * What the screen says of MAX_TASKS: "too-many" with more of them picked, which "Start" cannot
+ * begin, "at-most" with as many found, for the page may hold more than the AI gave.
+ */
+export function limit(tasks: readonly PageTask[]): "too-many" | "at-most" | undefined {
+  const count = counts(tasks);
+  if (count.picked > MAX_TASKS) return "too-many";
+  return count.found >= MAX_TASKS ? "at-most" : undefined;
+}
+
+/**
  * The number of a task on the screen, its place in the order of the page among every task,
  * picked or not, from 1: the name "Select task 3" says.
  */

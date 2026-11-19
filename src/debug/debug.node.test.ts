@@ -317,7 +317,7 @@ describe("the export of a Check", () => {
     attemptId: "0a1b2c3d-attempt",
     statement: new Uint8Array([1, 2]),
     crop: new Uint8Array([3, 4]),
-    outcome: outcomeOf("unreadable"),
+    outcomes: [outcomeOf("unreadable")],
   };
   const call = (kind: DebugCallKind, answer: string, reader = 0) =>
     create(DebugCallSchema, { kind, answer, reader });
@@ -325,48 +325,89 @@ describe("the export of a Check", () => {
     kind: DebugActionKind.CHECK,
     attemptId: sent.attemptId,
     calls: [
-      call(DebugCallKind.STATEMENT_READING, '{"formula":"37+48"}'),
-      call(DebugCallKind.SOLVER, '{"number":{"value":"85"}}'),
-      call(DebugCallKind.WORK_READING, '{"results":[{"part":1,"value":"35"}]}', 1),
+      call(
+        DebugCallKind.STATEMENT_READING,
+        '{"tasks":[{"statement":"37 + 48 =","formula":"37+48"}]}',
+      ),
+      call(
+        DebugCallKind.SOLVER,
+        '{"tasks":[{"statement":"37 + 48 =","provenance":"PROVENANCE_SOLVER","answer":{"number":{"value":"85"}}}]}',
+      ),
+      call(DebugCallKind.WORK_READING, '{"results":[{"task":1,"part":1,"value":"35"}]}', 1),
     ],
   });
   const second = create(DebugActionSchema, {
     kind: DebugActionKind.CHECK,
     attemptId: sent.attemptId,
     at: timestampFromDate(new Date("2026-11-19T15:04:05.250Z")),
-    calls: [call(DebugCallKind.WORK_READING, '{"results":[{"part":1,"value":"36"}]}', 1)],
+    calls: [call(DebugCallKind.WORK_READING, '{"results":[{"task":1,"part":1,"value":"36"}]}', 1)],
   });
+  const task = {
+    statement: "37 + 48 =",
+    formula: "37+48",
+    key: '{"number":{"value":"85"}}',
+    read: "36",
+    outcome: DebugOutcome.UNREADABLE,
+  };
 
   it("begins from what the calls gave, the key of an earlier Check of the attempt among them", () => {
-    expect(truthOf([first, second], second, sent)).toEqual({
-      formula: "37+48",
-      key: '{"number":{"value":"85"}}',
-      read: "36",
-      outcome: DebugOutcome.UNREADABLE,
-      note: "",
-    });
-    expect(truthOf([first], first, undefined).outcome).toBe(DebugOutcome.UNSPECIFIED);
+    expect(truthOf([first, second], second, sent)).toEqual({ tasks: [task], note: "" });
+    expect(truthOf([first], first, undefined).tasks[0]?.outcome).toBe(DebugOutcome.UNSPECIFIED);
     // Of the attempts of a call, the last that answered is what it gave.
     const tried = create(DebugActionSchema, {
       kind: DebugActionKind.CHECK,
       attemptId: sent.attemptId,
       calls: [
-        call(DebugCallKind.STATEMENT_READING, '{"formula":"37+47"}'),
-        call(DebugCallKind.STATEMENT_READING, '{"formula":"37+48"}'),
-        call(DebugCallKind.WORK_READING, '{"results":[{"part":1,"value":"35"}]}', 1),
-        call(DebugCallKind.WORK_READING, '{"results":[{"part":1,"value":"85"}]}', 1),
+        call(
+          DebugCallKind.STATEMENT_READING,
+          '{"tasks":[{"statement":"37 + 47 =","formula":"37+47"}]}',
+        ),
+        call(
+          DebugCallKind.STATEMENT_READING,
+          '{"tasks":[{"statement":"37 + 48 =","formula":"37+48"}]}',
+        ),
+        call(DebugCallKind.WORK_READING, '{"results":[{"task":1,"part":1,"value":"35"}]}', 1),
+        call(DebugCallKind.WORK_READING, '{"results":[{"task":1,"part":1,"value":"85"}]}', 1),
         { ...call(DebugCallKind.WORK_READING, "{}", 1), failure: Cause.AI_FAILURE },
       ],
     });
-    expect(truthOf([tried], tried, sent)).toMatchObject({ formula: "37+48", read: "85" });
+    expect(truthOf([tried], tried, sent).tasks).toMatchObject([{ formula: "37+48", read: "85" }]);
     expect(outcomeOf("no such")).toBe(DebugOutcome.UNSPECIFIED);
+  });
+
+  it("begins a frame of several tasks with each, its key, what was read of it and its verdict", () => {
+    const several = create(DebugActionSchema, {
+      kind: DebugActionKind.CHECK,
+      attemptId: "another",
+      calls: [
+        call(
+          DebugCallKind.STATEMENT_READING,
+          '{"tasks":[{"statement":"37 + 48 =","formula":"37+48"},{"statement":"A boat…","formula":""}]}',
+        ),
+        call(
+          DebugCallKind.SOLVER,
+          '{"tasks":[{"statement":"37 + 48 =","provenance":"PROVENANCE_SOLVER","answer":{"number":{"value":"85"}}},{"statement":"A boat…"}]}',
+        ),
+        call(
+          DebugCallKind.WORK_READING,
+          '{"results":[{"task":2,"part":1,"value":"7"},{"task":1,"part":1,"value":"85"}]}',
+          1,
+        ),
+      ],
+    });
+    const outcomes = [DebugOutcome.CORRECT, DebugOutcome.UNCHECKED];
+    expect(truthOf([several], several, { ...sent, outcomes }).tasks).toEqual([
+      { ...task, read: "85", outcome: DebugOutcome.CORRECT },
+      { statement: "A boat…", formula: "", key: "", read: "7", outcome: DebugOutcome.UNCHECKED },
+    ]);
+    // With no statement read, as many tasks as api gave verdicts.
+    expect(truthOf([second], second, { ...sent, outcomes }).tasks).toHaveLength(2);
+    expect(truthOf([second], second, undefined).tasks).toHaveLength(1);
   });
 
   it("writes a case of tutor-eval with the work sent and the truth corrected, or says why not", () => {
     const truth = {
-      ...truthOf([first, second], second, sent),
-      read: " 85 ",
-      outcome: DebugOutcome.CORRECT,
+      tasks: [{ ...task, read: " 85 ", outcome: DebugOutcome.CORRECT }],
       note: "misread 85",
     };
     const file = exportOf(second, sent, truth);
@@ -375,18 +416,35 @@ describe("the export of a Check", () => {
     const back = fromJsonString(DebugCaseSchema, file.json);
     expect(back.work?.statement).toEqual(sent.statement);
     expect(back.work?.crop).toEqual(sent.crop);
-    expect(back.formula).toBe("37+48");
-    expect(back.key?.kind.case).toBe("number");
-    expect(back.read).toBe("85");
-    expect(back.outcome).toBe(DebugOutcome.CORRECT);
+    const [one] = back.tasks;
+    expect(one?.statement).toBe("37 + 48 =");
+    expect(one?.formula).toBe("37+48");
+    expect(one?.key?.kind.case).toBe("number");
+    expect(one?.read).toBe("85");
+    expect(one?.outcome).toBe(DebugOutcome.CORRECT);
     expect(back.note).toBe("misread 85");
     expect(back.action?.calls).toHaveLength(1);
 
-    expect(exportOf(second, sent, { ...truth, key: "" })).not.toHaveProperty("error");
-    expect(exportOf(second, sent, { ...truth, key: "{oops" })).toHaveProperty("error");
-    expect(exportOf(second, sent, { ...truth, outcome: DebugOutcome.UNSPECIFIED })).toEqual({
-      error: "Choose the verdict it should get.",
+    const with_ = (change: Partial<typeof task>) =>
+      ({ ...truth, tasks: [{ ...truth.tasks[0], ...change }] }) as typeof truth;
+    expect(exportOf(second, sent, with_({ key: "" }))).not.toHaveProperty("error");
+    expect(exportOf(second, sent, with_({ key: "{oops" }))).toHaveProperty("error");
+    expect(exportOf(second, sent, with_({ outcome: DebugOutcome.UNSPECIFIED }))).toEqual({
+      error: "Choose the verdict each task should get.",
     });
+    expect(exportOf(second, sent, with_({ statement: " " }))).toEqual({
+      error: "Give each task its statement as printed.",
+    });
+    expect(exportOf(second, sent, { ...truth, tasks: [] })).toHaveProperty("error");
+    const two = exportOf(second, sent, {
+      ...truth,
+      tasks: [truth.tasks[0], { ...task, outcome: DebugOutcome.NOT_YET }],
+    } as typeof truth);
+    if ("error" in two) throw new Error(two.error);
+    expect(fromJsonString(DebugCaseSchema, two.json).tasks.map((t) => t.outcome)).toEqual([
+      DebugOutcome.CORRECT,
+      DebugOutcome.NOT_YET,
+    ]);
   });
 
   it("keeps what a Check sent by its action, and forgets it with the log", async () => {

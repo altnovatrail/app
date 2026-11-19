@@ -23,7 +23,7 @@ import { Camera } from "./Camera.tsx";
 import { cropsOf, type Photo } from "./capture.ts";
 import { type BegunTask, type PaperPage, usePaper } from "./PaperContext.tsx";
 import { Pick } from "./Pick.tsx";
-import { foundTasks, picked } from "./page.ts";
+import { foundTasks, limit, MAX_TASKS, picked } from "./page.ts";
 import { Solve } from "./Solve.tsx";
 import { notBegun } from "./solve.ts";
 
@@ -183,6 +183,9 @@ export function PaperScreen({ profileId }: { readonly profileId: string }) {
       .finally(() => setStarting(false));
   };
 
+  const over = limit(page.tasks);
+  const limitLine =
+    over === "too-many" ? "paper.too-many" : over === "at-most" ? "paper.at-most" : undefined;
   const lines = (
     <>
       {finding.status === "finding" ? (
@@ -213,6 +216,11 @@ export function PaperScreen({ profileId }: { readonly profileId: string }) {
         </p>
       )}
       {closed ? <p className="nt-hint">{words.text("paper.no-ai")}</p> : null}
+      {limitLine === undefined ? null : (
+        <p role="status" className="nt-hint">
+          {words.text(limitLine, { max: MAX_TASKS })}
+        </p>
+      )}
     </>
   );
 
