@@ -439,12 +439,13 @@ export default function DebugButton({ above = false }: { readonly above?: boolea
   const count = modelCalls(actions);
   const choose_ = (first: Pick | undefined, second: Pick, secondOn: boolean) =>
     void choose(api.debug, first, second, secondOn);
-  const admitted = debug.admitted.map((a) => ({
-    call: callName(a.kind),
-    model:
-      a.model === undefined
-        ? ""
-        : `${modelName(models, a.model.model)} · ${effortName(a.model.effort)}`,
+  // A call of a task from paper has its models in the order of its attempts (R73).
+  const admitted = [...new Set(debug.admitted.map((a) => a.kind))].map((kind) => ({
+    call: callName(kind),
+    model: debug.admitted
+      .flatMap((a) => (a.kind === kind && a.model !== undefined ? [a.model] : []))
+      .map((m) => `${modelName(models, m.model)} · ${effortName(m.effort)}`)
+      .join(" → "),
   }));
   const onKey = (event: KeyboardEvent) => {
     if (event.key === "Escape") setOpen(false);
@@ -585,7 +586,11 @@ export default function DebugButton({ above = false }: { readonly above?: boolea
                         </div>
                         <div className="nt-debug-card">
                           {action.calls.map((call) => (
-                            <Call key={`${call.kind}-${call.reader}`} call={call} models={models} />
+                            <Call
+                              key={`${call.kind}-${call.reader}-${call.attempt}`}
+                              call={call}
+                              models={models}
+                            />
                           ))}
                         </div>
                         {joinOf(action) === "" ? null : (

@@ -18,6 +18,7 @@ import type {
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { useApi } from "../api/ApiContext.tsx";
 import { type Failure, parseFailure } from "../api/failure.ts";
+import { PAPER_TIMEOUT_MS } from "../api/interceptors.ts";
 import { idempotencyKey } from "../api/keys.ts";
 import { outcomeOf } from "../api/outcome.ts";
 import { failureText } from "../api/words.ts";
@@ -192,13 +193,16 @@ export function Solve({
         const answer = await watched(
           api,
           () =>
-            api.attempt.submitWork({
-              profileId,
-              attemptId,
-              idempotencyKey: key,
-              work: paperWork,
-              ...ai,
-            }),
+            api.attempt.submitWork(
+              {
+                profileId,
+                attemptId,
+                idempotencyKey: key,
+                work: paperWork,
+                ...ai,
+              },
+              { timeoutMs: PAPER_TIMEOUT_MS },
+            ),
           sentWork?.statement instanceof Uint8Array && sentWork.crop instanceof Uint8Array
             ? {
                 attemptId,

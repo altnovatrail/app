@@ -56,6 +56,23 @@ export const PAUSES = [500, 1000, 2000, 4000] as const;
  */
 export const STILL_GOING_MS = 30_000;
 
+/**
+ * api's limit of FindTasks and SubmitWork, whose calls of a task from paper ask up to three models
+ * in turn (R98 api): a call of either names it as its deadline, since a shorter Connect-Timeout-Ms
+ * would cut api short, and a repeat waits for a first one still going as long (R73).
+ */
+export const PAPER_TIMEOUT_MS = 90_000;
+
+const PAPER_METHODS = new Set([
+  "novatrail.api.v1.PaperService/FindTasks",
+  "novatrail.api.v1.AttemptService/SubmitWork",
+]);
+
+/** How long a repeat waits for a first request of the method still going, ms. */
+export function stillGoingMs(service: string, method: string): number {
+  return PAPER_METHODS.has(`${service}/${method}`) ? PAPER_TIMEOUT_MS : STILL_GOING_MS;
+}
+
 /** The pause `Retry-After` asks for, ms, from the seconds api sends; none when it names none. */
 export function retryAfter(headers: Pick<Headers, "get">): number | undefined {
   const seconds = Number(headers.get("Retry-After"));
@@ -126,7 +143,8 @@ export function repeat(sleep: (ms: number) => Promise<void>): Interceptor {
         const going = refusalOf(error)?.cause === Cause.STILL_GOING;
         const last = PAUSES[PAUSES.length - 1] as number;
         const pause = going ? (retryAfter(error.metadata) ?? PAUSES[tried] ?? last) : PAUSES[tried];
-        if (pause === undefined || (going && waited + pause > STILL_GOING_MS)) throw error;
+        const limit = stillGoingMs(request.service.typeName, request.method.name);
+        if (pause === undefined || (going && waited + pause > limit)) throw error;
         waited += pause;
         await sleep(pause);
       }

@@ -324,9 +324,11 @@ export function callName(kind: DebugCallKind): string {
   }
 }
 
-/** The title of a call in the log: what it did, and its reader beside a second. */
+/** A call's title: what it did, its reader beside two, and its attempt after the first (R73). */
 export function callTitle(call: DebugCall): string {
-  return call.reader > 0 ? `${callName(call.kind)} · reader ${call.reader}` : callName(call.kind);
+  const reader = call.reader > 0 ? ` · reader ${call.reader}` : "";
+  const attempt = call.attempt > 1 ? ` · attempt ${call.attempt}` : "";
+  return `${callName(call.kind)}${reader}${attempt}`;
 }
 
 /** The name of a model by the catalog, or its ID as the provider gave it back. */
@@ -412,7 +414,9 @@ export function failureOf(call: DebugCall): string {
 
 /** How the two readers of an action came out, beside a second reader. */
 export function joinOf(action: DebugAction): string {
-  const readers = action.calls.filter((c) => c.kind === DebugCallKind.WORK_READING).length;
+  const readers = new Set(
+    action.calls.filter((c) => c.kind === DebugCallKind.WORK_READING).map((c) => c.reader),
+  ).size;
   if (readers < 2) return "";
   return action.readersDiffer
     ? "The readers read a place differently: it is unreadable (R68)."
@@ -462,7 +466,8 @@ function parsed(json: string): unknown {
 /**
  * The truth an export begins from, what the calls gave: the formula the statement was read into and
  * the solver's key, of this Check or of an earlier one of the attempt, since a later Check keeps the
- * key; the value the first reader read; and the verdict api gave.
+ * key; the value the first reader read; and the verdict api gave. Of a call's attempts, the last that
+ * answered is what the call gave (R73).
  */
 export function truthOf(
   actions: readonly DebugAction[],
@@ -473,13 +478,16 @@ export function truthOf(
   const ofAttempt = (upTo < 0 ? [action] : actions.slice(0, upTo + 1))
     .filter((a) => a.kind === DebugActionKind.CHECK && a.attemptId === action.attemptId)
     .reverse();
+  const gave = (c: DebugCall) => c.answer !== "" && c.failure === Cause.UNSPECIFIED;
   const last = (kind: DebugCallKind) =>
-    ofAttempt.flatMap((a) => a.calls).find((c) => c.kind === kind && c.answer !== "");
+    ofAttempt.flatMap((a) => [...a.calls].reverse()).find((c) => c.kind === kind && gave(c));
   const statement = parsed(last(DebugCallKind.STATEMENT_READING)?.answer ?? "") as
     | { formula?: unknown }
     | undefined;
   const reading = parsed(
-    action.calls.find((c) => c.kind === DebugCallKind.WORK_READING && c.reader <= 1)?.answer ?? "",
+    [...action.calls]
+      .reverse()
+      .find((c) => c.kind === DebugCallKind.WORK_READING && c.reader <= 1 && gave(c))?.answer ?? "",
   ) as { results?: { value?: unknown }[] } | undefined;
   const value = reading?.results?.[0]?.value;
   return {

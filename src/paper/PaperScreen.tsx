@@ -10,6 +10,7 @@ import { Cause } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import { useCallback, useRef, useState } from "react";
 import { useApi } from "../api/ApiContext.tsx";
 import { type Failure, parseFailure } from "../api/failure.ts";
+import { PAPER_TIMEOUT_MS } from "../api/interceptors.ts";
 import { idempotencyKey } from "../api/keys.ts";
 import { closesAI, outcomeOf } from "../api/outcome.ts";
 import { failureText, outcomeText } from "../api/words.ts";
@@ -62,12 +63,15 @@ export function PaperScreen({ profileId }: { readonly profileId: string }) {
         change(photo, (page) => ({ ...page, finding: { status: "failed", failure } }));
       change(photo, (page) => ({ ...page, finding: { status: "finding" } }));
       watched(api, () =>
-        api.paper.findTasks({
-          profileId,
-          idempotencyKey: idempotencyKey(),
-          photo: photo.bytes,
-          ...ai,
-        }),
+        api.paper.findTasks(
+          {
+            profileId,
+            idempotencyKey: idempotencyKey(),
+            photo: photo.bytes,
+            ...ai,
+          },
+          { timeoutMs: PAPER_TIMEOUT_MS },
+        ),
       ).then(
         (answer) => {
           const read = outcomeOf(answer.outcome);

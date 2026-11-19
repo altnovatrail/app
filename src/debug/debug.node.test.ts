@@ -109,6 +109,8 @@ describe("the figures", () => {
       inputTokens: 1200n,
     });
     expect(callTitle(read)).toBe("Read the work · reader 2");
+    expect(callTitle({ ...read, reader: 1, attempt: 1 })).toBe("Read the work · reader 1");
+    expect(callTitle({ ...read, reader: 0, attempt: 3 })).toBe("Read the work · attempt 3");
     expect(callLine(models, read)).toBe("Haiku 5.5 · low · no thinking");
     expect(answerOf(read)).toBe('{\n  "a": 1\n}');
     expect(statsOf(read)[0]).toEqual({ k: "Input", v: "1,200" });
@@ -129,6 +131,8 @@ describe("the figures", () => {
     expect(joinOf(two)).toMatch(/unreadable/);
     expect(joinOf({ ...two, readersDiffer: false })).toBe("Both readers agree.");
     expect(joinOf(create(DebugActionSchema, { calls: [reading(0)] }))).toBe("");
+    // The attempts of one reader are one reader.
+    expect(joinOf(create(DebugActionSchema, { calls: [reading(1), reading(1)] }))).toBe("");
   });
 });
 
@@ -342,6 +346,19 @@ describe("the export of a Check", () => {
       note: "",
     });
     expect(truthOf([first], first, undefined).outcome).toBe(DebugOutcome.UNSPECIFIED);
+    // Of the attempts of a call, the last that answered is what it gave.
+    const tried = create(DebugActionSchema, {
+      kind: DebugActionKind.CHECK,
+      attemptId: sent.attemptId,
+      calls: [
+        call(DebugCallKind.STATEMENT_READING, '{"formula":"37+47"}'),
+        call(DebugCallKind.STATEMENT_READING, '{"formula":"37+48"}'),
+        call(DebugCallKind.WORK_READING, '{"results":[{"part":1,"value":"35"}]}', 1),
+        call(DebugCallKind.WORK_READING, '{"results":[{"part":1,"value":"85"}]}', 1),
+        { ...call(DebugCallKind.WORK_READING, "{}", 1), failure: Cause.AI_FAILURE },
+      ],
+    });
+    expect(truthOf([tried], tried, sent)).toMatchObject({ formula: "37+48", read: "85" });
     expect(outcomeOf("no such")).toBe(DebugOutcome.UNSPECIFIED);
   });
 

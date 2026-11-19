@@ -7,11 +7,12 @@ import {
 } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import { GetLegalTextsResponseSchema } from "@altnovatrail/contracts/novatrail/api/v1/legal_pb.js";
 import { GetManifestResponseSchema } from "@altnovatrail/contracts/novatrail/api/v1/package_pb.js";
+import { FindTasksResponseSchema } from "@altnovatrail/contracts/novatrail/api/v1/paper_pb.js";
 import { create, fromBinary, toBinary } from "@bufbuild/protobuf";
 import { describe, expect, it, vi } from "vitest";
 import { createApi, TIMEOUT_MS } from "./client.ts";
 import { ApiError } from "./failure.ts";
-import { PAUSES } from "./interceptors.ts";
+import { PAPER_TIMEOUT_MS, PAUSES } from "./interceptors.ts";
 
 const on = { stale: () => {}, accountGone: async () => {}, noAccess: async () => {} };
 const tokens = { token: async () => "t1", signOut: async () => {} };
@@ -40,6 +41,19 @@ describe("the browser's transport", () => {
       await new Response(init.body as ConstructorParameters<typeof Response>[0]).arrayBuffer(),
     );
     expect(fromBinary(GetAccountRequestSchema, sent)).toBeDefined();
+  });
+
+  it("gives a call the limit it names, as a call of a task from paper names api's of paper", async () => {
+    const fetcher = vi.fn<typeof fetch>(async () => {
+      const body = toBinary(FindTasksResponseSchema, create(FindTasksResponseSchema, {}));
+      return new Response(body, { status: 200, headers: { "content-type": "application/proto" } });
+    });
+    const api = createApi({ baseUrl: "https://api.example.org", tokens, on, fetch: fetcher });
+    await api.paper.findTasks({}, { timeoutMs: PAPER_TIMEOUT_MS });
+    const [, init] = fetcher.mock.calls[0] as [string, RequestInit];
+    const limit = Number(new Headers(init.headers).get("connect-timeout-ms"));
+    expect(limit).toBeGreaterThan(TIMEOUT_MS);
+    expect(limit).toBeLessThanOrEqual(PAPER_TIMEOUT_MS);
   });
 
   it("asks an open view by Connect GET with no header at all, the digest in the address", async () => {

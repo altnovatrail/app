@@ -22,7 +22,7 @@ import { Code, ConnectError, type ConnectRouter, createRouterTransport } from "@
 import { describe, expect, it, vi } from "vitest";
 import { createApi } from "./client.ts";
 import { ApiError, type Failure, parseFailure } from "./failure.ts";
-import { PAUSES, STILL_GOING_MS } from "./interceptors.ts";
+import { PAPER_TIMEOUT_MS, PAUSES, STILL_GOING_MS } from "./interceptors.ts";
 import { idempotencyKey } from "./keys.ts";
 import type { Tokens } from "./tokens.ts";
 
@@ -244,7 +244,19 @@ describe("the repeat", () => {
     expect(await failureOf(api.attempt.submitWork({ idempotencyKey: "k" }))).toEqual({
       kind: "offline",
     });
-    expect(sleeps).toEqual(Array(10).fill(3000));
+    // SubmitWork may ask up to three models in turn, and api lets it go 90 s.
+    expect(sleeps).toEqual(Array(PAPER_TIMEOUT_MS / 3000).fill(3000));
+    const other = harness(({ service }) =>
+      service(AttemptService, {
+        submitEssay() {
+          const error = refused(Code.Unavailable, { cause: Cause.STILL_GOING });
+          error.metadata.set("Retry-After", "3");
+          throw error;
+        },
+      }),
+    );
+    await failureOf(other.api.attempt.submitEssay({ idempotencyKey: "k" }));
+    expect(other.sleeps).toEqual(Array(STILL_GOING_MS / 3000).fill(3000));
     const plain = harness(({ service }) =>
       service(AttemptService, {
         submitWork() {
@@ -253,7 +265,7 @@ describe("the repeat", () => {
       }),
     );
     await failureOf(plain.api.attempt.submitWork({ idempotencyKey: "k" }));
-    expect(plain.sleeps.reduce((a, b) => a + b, 0)).toBeLessThanOrEqual(STILL_GOING_MS);
+    expect(plain.sleeps.reduce((a, b) => a + b, 0)).toBeLessThanOrEqual(PAPER_TIMEOUT_MS);
     expect(plain.sleeps.slice(0, 5)).toEqual([500, 1000, 2000, 4000, 4000]);
   });
 
