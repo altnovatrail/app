@@ -3402,7 +3402,8 @@ p.nt-mode-note {
   background: rgba(0, 113, 227, 0.12);
   color: var(--nt-accent);
 }
-.nt-card-verdict[data-kind="shown"] > .nt-card-sign {
+.nt-card-verdict[data-kind="shown"] > .nt-card-sign,
+.nt-card-verdict[data-kind="nokey"] > .nt-card-sign {
   background: rgba(118, 118, 128, 0.14);
   color: var(--nt-segmented);
 }

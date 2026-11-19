@@ -2,11 +2,13 @@
 // the photo goes to FindTasks once, a JPEG encoded anew; its frames come picked, a tap leaves one
 // out, and Start begins the picked ones with BeginPaperAttempts; two taps frame a task the AI
 // missed; a refusal that shuts AI shuts Start; each task begun is a sheet under its crop, the list
-// goes from one to another and back to the page, and Check sends the two crops — with api on
-// connect-es's router.
+// goes from one to another and back to the page, and Check sends the two crops and shows the
+// verdict by the task's key, or "Couldn't check this one" with none — with api on connect-es's
+// router.
 import {
   AttemptService,
   type SubmitWorkRequest,
+  type SubmitWorkResponseSchema,
 } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
 import { Cause, RefusalSchema } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import {
@@ -29,6 +31,8 @@ import { PaperScreen } from "./PaperScreen.tsx";
 
 interface Setup {
   readonly found?: () => MessageInitShape<typeof FindTasksResponseSchema>;
+  /** The answer to each Check, by how many came before it; none refuses it. */
+  readonly checked?: (n: number) => MessageInitShape<typeof SubmitWorkResponseSchema>;
 }
 
 /** A synthetic photo of a page: a white PNG of 600 × 800 px with two grey stripes. */
@@ -54,8 +58,9 @@ async function renderPaper(setup: Setup = {}) {
     router.service(AttemptService, {
       submitWork(request) {
         submits.push(request);
-        // api answers no work of a task from paper yet.
-        throw new ConnectError("an attempt of a task from paper", Code.InvalidArgument);
+        const answer = setup.checked?.(submits.length - 1);
+        if (answer === undefined) throw new ConnectError("a refusal", Code.InvalidArgument);
+        return answer;
       },
     });
     router.service(PaperService, {
@@ -126,8 +131,8 @@ function writeOn(element: CanvasElement) {
 }
 
 /** The page's two tasks begun, the first shown. */
-async function solving() {
-  const setup = await renderPaper();
+async function solving(given: Setup = {}) {
+  const setup = await renderPaper(given);
   await screen.findByRole("button", { name: "Deselect task 1" });
   await userEvent.click(screen.getByRole("button", { name: "Start" }));
   await screen.findByRole("heading", { name: "Task 1" });
@@ -243,6 +248,57 @@ it("asks for a solution before Check, then sends the task's crop and the work's"
   if (work?.case !== "paper") throw new Error("no work of a task from paper");
   expect([work.value.statement[1], work.value.crop[1]]).toEqual([0x50, 0x50]);
   expect(submits[0]?.attemptId).toBe("a1");
+});
+
+it("shows the verdict by the key: Not yet, then Correct, which takes no Check again", async () => {
+  const verdict = (v: string, value: string) => ({
+    items: [{ verdict: v, answerSlots: [{ answerSlot: { item: 1, slot: 1 }, verdict: v, value }] }],
+  });
+  const { submits } = await solving({
+    checked: (n) =>
+      n === 0
+        ? { ...verdict("not_yet", "84"), wrongAnswers: 1 }
+        : { ...verdict("correct", "85"), solved: {} },
+  });
+  writeOn(sheet());
+  await userEvent.click(screen.getByRole("button", { name: "Check" }));
+  expect(await screen.findByText("Not yet")).toBeVisible();
+  expect(screen.getByText("Read: 84")).toBeVisible();
+  await userEvent.click(screen.getByRole("button", { name: "Try again" }));
+  expect(screen.queryByText("Not yet")).toBeNull();
+  await userEvent.click(screen.getByRole("button", { name: "Check" }));
+  expect(await screen.findByText("Read: 85")).toBeVisible();
+  // Told to a screen reader alone: the card shows it.
+  const told = screen
+    .getAllByRole("status")
+    .find((each) => each.textContent === "Correct. Read: 85");
+  expect(told).toHaveClass("nt-hidden-label");
+  await userEvent.click(screen.getByRole("button", { name: "Check" }));
+  expect(submits).toHaveLength(2);
+  await userEvent.click(screen.getByRole("button", { name: "Tasks, 1 of 2" }));
+  expect(await screen.findByRole("button", { name: /Task 1.*Correct/ })).toBeVisible();
+});
+
+it("says a task with no key could not be checked, with Hint and Next task", async () => {
+  await solving({
+    checked: () => ({
+      items: [
+        {
+          verdict: "unchecked",
+          answerSlots: [{ answerSlot: { item: 1, slot: 1 }, verdict: "unchecked" }],
+        },
+      ],
+      outcome: { cause: Cause.NO_KEY },
+    }),
+  });
+  writeOn(sheet());
+  await userEvent.click(screen.getByRole("button", { name: "Check" }));
+  expect(await screen.findByText("Couldn't check this one")).toBeVisible();
+  // The card's Hint, beside the row's.
+  expect(screen.getAllByRole("button", { name: "Hint" })).toHaveLength(2);
+  const next = screen.getAllByRole("button", { name: "Next task" });
+  await userEvent.click(next[next.length - 1] as HTMLElement);
+  expect(await screen.findByRole("heading", { name: "Task 2" })).toBeVisible();
 });
 
 it("frames a task the AI missed by two taps, and removes it by its cross", async () => {

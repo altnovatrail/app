@@ -5,8 +5,10 @@
 // draws and the learner moves and hides (R87 canvas); its history and the paper's place stay in the
 // tab's memory, so that a task left and come back to is as it was. At the foot the row of glass:
 // Hint · Check. Check sends the task's crop with the crop of the work (R162 spec), and keeps nothing
-// on the device: the verdict and the hint of a task from paper are not answered yet, and what api
-// says is shown as it is.
+// on the device: its card is the verdict of the task's one answer slot by the key api derived —
+// Correct with Next task, Not yet with Hint, the work not read with why, not checked with the
+// outcome —, or "Couldn't check this one" for a task with no key, with Hint and Next task; a task
+// solved or with no key takes no Check again, and the list marks the one solved.
 import type {
   CanvasElement,
   HistoryChangeEvent,
@@ -18,7 +20,8 @@ import { useApi } from "../api/ApiContext.tsx";
 import { type Failure, parseFailure } from "../api/failure.ts";
 import { idempotencyKey } from "../api/keys.ts";
 import { outcomeOf } from "../api/outcome.ts";
-import { failureText, outcomeText } from "../api/words.ts";
+import { failureText } from "../api/words.ts";
+import { Icon } from "../app/Icon.tsx";
 import { IconButton } from "../app/IconButton.tsx";
 import { useNarrow } from "../app/narrow.ts";
 import { PopOver } from "../app/PopOver.tsx";
@@ -28,7 +31,16 @@ import { useKeyHolder } from "../ownkey/OwnKeyContext.tsx";
 import { workOf } from "../task/attempt.ts";
 import { HintButton, RowLine, VerdictCard } from "../task/TaskLayout.tsx";
 import { numbers, type PageTask } from "./page.ts";
-import { type BegunTask, besideTask, onList, shownTask, withChange } from "./solve.ts";
+import {
+  type BegunTask,
+  besideTask,
+  checkOver,
+  onList,
+  paperCard,
+  paperVerdictOf,
+  shownTask,
+  withChange,
+} from "./solve.ts";
 
 /** Each crop's task for the element, one object a crop, so that a render gives it no new one. */
 const papers = new WeakMap<Blob, PaperTask>();
@@ -66,8 +78,11 @@ export function Solve({
   const element = useRef<CanvasElement>(null);
   const [asked, setAsked] = useState<string | undefined>(undefined);
   const [pending, setPending] = useState(false);
+  const [checking, setChecking] = useState(false);
   const [failure, setFailure] = useState<Failure | undefined>(undefined);
   const [said, setSaid] = useState<string | undefined>(undefined);
+  // The verdict told to a screen reader: the card shows it, so it is not shown twice.
+  const [told, setTold] = useState("");
   const [unwritten, setUnwritten] = useState(false);
   const [written, setWritten] = useState(false);
   // The key of a check, kept while the work it sent is the same, so that a press again repeats it.
@@ -82,6 +97,7 @@ export function Solve({
   useEffect(() => {
     setFailure(undefined);
     setSaid(undefined);
+    setTold("");
     setUnwritten(false);
     setWritten(element.current?.filled?.[0]?.[0] === true);
   }, [attemptId]);
@@ -97,6 +113,9 @@ export function Solve({
       setWritten(sheet.filled?.[0]?.[0] === true);
       setUnwritten(false);
       setSaid(undefined);
+      setTold("");
+      // Other work puts a verdict away, but that of a Check that is over.
+      onKeep(attemptId, (was) => (checkOver(was) ? was : withoutVerdict(was)));
     },
     [attemptId, onKeep],
   );
@@ -126,6 +145,7 @@ export function Solve({
     setPending(true);
     setFailure(undefined);
     setSaid(undefined);
+    setTold("");
     void api.attempt
       .getHint({ profileId, attemptId })
       .then(
@@ -139,7 +159,7 @@ export function Solve({
   };
 
   const check = () => {
-    if (pending) return;
+    if (pending || checkOver(task)) return;
     if (!written) {
       setUnwritten(true);
       return;
@@ -147,8 +167,11 @@ export function Solve({
     const sheet = element.current;
     if (sheet === null) return;
     setPending(true);
+    setChecking(true);
     setFailure(undefined);
     setSaid(undefined);
+    setTold("");
+    onKeep(attemptId, withoutVerdict);
     // Other work is another action, with a key of its own: the history, and where the paper lay,
     // as they are at the press, before the work is read.
     const of = JSON.stringify([attemptId, sheet.history.length, sheet.tracing]);
@@ -170,11 +193,15 @@ export function Solve({
         });
         const read = outcomeOf(answer.outcome);
         holder.noteOutcome(profileId, read, ai);
-        if (read !== undefined) setSaid(outcomeText(read, words));
+        const verdict = paperVerdictOf(answer.items, read);
+        onKeep(attemptId, (was) => ({ ...was, verdict }));
+        const card = paperCard(verdict, words);
+        setTold(card.line === undefined ? card.title : `${card.title}. ${card.line}`);
       } catch (reason) {
         setFailure(parseFailure(reason));
       } finally {
         setPending(false);
+        setChecking(false);
       }
     })();
   };
@@ -220,6 +247,12 @@ export function Solve({
                     {order.get(each.taskId)}
                   </span>
                   {nameOf(each)}
+                  {each.verdict?.kind === "correct" ? (
+                    <>
+                      <Icon value="ticked" />
+                      <span className="nt-hidden-label">{words.text("task.correct")}</span>
+                    </>
+                  ) : null}
                 </button>
               </li>
             ))}
@@ -288,6 +321,39 @@ export function Solve({
         <p role="status" className="nt-hint">
           {said ?? ""}
         </p>
+        <p role="status" className="nt-hidden-label">
+          {told}
+        </p>
+        {checking ? (
+          <VerdictCard
+            kind="reading"
+            title={words.text("task.reading")}
+            line={words.text("task.reading-line")}
+          />
+        ) : task.verdict === undefined || unwritten ? null : (
+          <VerdictCard {...paperCard(task.verdict, words)}>
+            {task.verdict.kind === "not-yet" || task.verdict.kind === "nokey" ? (
+              <button type="button" className="nt-card-link" aria-disabled={pending} onClick={hint}>
+                {words.text("task.hint")}
+              </button>
+            ) : null}
+            {task.verdict.kind === "correct" || task.verdict.kind === "nokey" ? (
+              after === undefined ? null : (
+                <button type="button" className="nt-card-button" onClick={() => go(after)}>
+                  {words.text("next.task")}
+                </button>
+              )
+            ) : (
+              <button
+                type="button"
+                className="nt-card-button"
+                onClick={() => onKeep(attemptId, withoutVerdict)}
+              >
+                {words.text(task.verdict.kind === "not-yet" ? "task.try-again" : "common.ok")}
+              </button>
+            )}
+          </VerdictCard>
+        )}
         {unwritten ? (
           <VerdictCard
             kind="write"
@@ -306,7 +372,7 @@ export function Solve({
           <button
             type="button"
             className="nt-check-button"
-            aria-disabled={!written || pending}
+            aria-disabled={!written || pending || checkOver(task)}
             aria-describedby={described}
             onClick={check}
           >
@@ -316,4 +382,10 @@ export function Solve({
       </div>
     </Screen>
   );
+}
+
+/** A task without its verdict: its card put away. */
+function withoutVerdict(task: BegunTask): BegunTask {
+  const { verdict: _, ...rest } = task;
+  return rest;
 }

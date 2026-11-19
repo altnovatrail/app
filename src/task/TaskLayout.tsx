@@ -265,8 +265,8 @@ export function ModePill({
   );
 }
 
-/** What the verdict's card tells: its sign, which `IconValue` draws, or the turning of a reading; an essay's feedback has a card of the same kind (R66). */
-export type CardKind = "correct" | "not-yet" | "write" | "reading" | "shown" | "feedback";
+/** What the verdict's card tells: its sign, which `IconValue` draws, or the turning of a reading; an essay's feedback has a card of the same kind (R66), and a task from paper with no key one of its own. */
+export type CardKind = "correct" | "not-yet" | "write" | "reading" | "shown" | "feedback" | "nokey";
 
 const CARD_SIGNS: Readonly<Record<Exclude<CardKind, "reading">, IconValue>> = {
   correct: "ticked",
@@ -274,6 +274,8 @@ const CARD_SIGNS: Readonly<Record<Exclude<CardKind, "reading">, IconValue>> = {
   write: "write",
   shown: "shown",
   feedback: "feedback",
+  // A task from paper with no key: a question of its own, as the mockup draws it.
+  nokey: "help",
 };
 
 /**

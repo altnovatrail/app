@@ -1,15 +1,25 @@
 // The tasks begun on a page on the screen of solving (R71): what Start begins once more, the list in
-// the order of the page and its tasks left out, ‹ and ›, and the work each keeps.
+// the order of the page and its tasks left out, ‹ and ›, the work each keeps, and what a Check came to.
+import {
+  type ItemVerdict,
+  ItemVerdictSchema,
+} from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
+import { Cause } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import type { HistoryEvent } from "@altnovatrail/spec/canvas";
+import { create } from "@bufbuild/protobuf";
 import { describe, expect, it } from "vitest";
+import { WORDS } from "../i18n/words.ts";
 import type { Frame } from "./frame.ts";
 import type { PageTask } from "./page.ts";
 import {
   type BegunTask,
   besideTask,
   changed,
+  checkOver,
   notBegun,
   onList,
+  paperCard,
+  paperVerdictOf,
   shownTask,
   withBegun,
   withChange,
@@ -111,5 +121,65 @@ describe("the work of each task", () => {
     const after = changed([begun(1), begun(2)], "a2", (task) => ({ ...task, tracing }));
     expect(after[0]?.tracing).toBeUndefined();
     expect(after[1]?.tracing).toBe(tracing);
+  });
+});
+
+describe("what a Check of a task from paper came to", () => {
+  const slot = (verdict: string, read: { value?: string; reason?: string } = {}): ItemVerdict[] => [
+    create(ItemVerdictSchema, {
+      verdict,
+      answerSlots: [{ answerSlot: { item: 1, slot: 1 }, verdict, ...read }],
+    }),
+  ];
+  const en = WORDS.en;
+
+  it("is the verdict of the one answer slot, with what was read", () => {
+    const right = paperVerdictOf(slot("correct", { value: "85" }), undefined);
+    expect(right).toEqual({ kind: "correct", read: "85" });
+    expect(paperCard(right, en)).toEqual({ kind: "correct", title: "Correct", line: "Read: 85" });
+    const wrong = paperVerdictOf(slot("not_yet", { value: "84" }), undefined);
+    expect(paperCard(wrong, en)).toEqual({ kind: "not-yet", title: "Not yet", line: "Read: 84" });
+    expect(paperCard({ kind: "not-yet", read: undefined }, en).line).toBeUndefined();
+  });
+
+  it("says why a work was not read, in the words of paper for no final answer and several", () => {
+    const card = (reason: string) =>
+      paperCard(paperVerdictOf(slot("unreadable", { reason }), undefined), en);
+    expect(card("no_final_answer")).toEqual({
+      kind: "write",
+      title: "No answer found",
+      line: "Write your answer, or circle one option, then Check.",
+    });
+    expect(card("several_final_answers").title).toBe("More than one answer");
+    expect(card("illegible")).toEqual({
+      kind: "write",
+      title: "Can't read this",
+      line: "It can't be made out",
+    });
+  });
+
+  it("is no key with CAUSE_NO_KEY, and not checked with any other outcome or none", () => {
+    const noKey = paperVerdictOf(slot("unchecked"), { cause: Cause.NO_KEY });
+    expect(paperCard(noKey, en)).toEqual({
+      kind: "nokey",
+      title: "Couldn't check this one",
+      line: "This task has no answer that can be checked. Hints still work.",
+    });
+    const failed = paperVerdictOf(slot("unchecked"), { cause: Cause.AI_FAILURE });
+    expect(paperCard(failed, en).title).toBe("Not checked");
+    expect(paperCard(failed, en).line).not.toBeUndefined();
+    expect(paperCard(paperVerdictOf([], undefined), en)).toEqual({
+      kind: "write",
+      title: "Not checked",
+      line: undefined,
+    });
+    expect(paperVerdictOf(slot("a verdict the build knows not"), undefined).kind).toBe("unchecked");
+  });
+
+  it("is over once the task is solved or has no key", () => {
+    expect(checkOver(begun(1))).toBe(false);
+    expect(checkOver({ ...begun(1), verdict: { kind: "correct", read: "85" } })).toBe(true);
+    expect(checkOver({ ...begun(1), verdict: { kind: "nokey" } })).toBe(true);
+    expect(checkOver({ ...begun(1), verdict: { kind: "not-yet", read: "84" } })).toBe(false);
   });
 });

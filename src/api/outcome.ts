@@ -17,6 +17,7 @@ const OUTCOMES: ReadonlySet<Cause> = new Set([
   Cause.LIMIT_REACHED,
   Cause.KEY_REFUSED,
   Cause.NO_OTHER_WORDS,
+  Cause.NO_KEY,
 ]);
 
 export interface ReadOutcome {

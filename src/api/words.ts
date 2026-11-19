@@ -32,6 +32,8 @@ export const CAUSE_KEYS = {
   [Cause.ATTEMPT_CLOSED]: "api.attempt-closed",
   // The causes of the hint and the solution (R22): the same words wherever they come.
   [Cause.NO_OTHER_WORDS]: "task.no-other-words",
+  // A task from paper with no key (R162 spec).
+  [Cause.NO_KEY]: "paper.no-key-line",
   [Cause.ADULT_NEEDED]: "boot.grown-up",
   [Cause.LADDER_NOT_PASSED]: "task.ladder-not-passed",
   [Cause.NO_SHOWING]: "task.no-showing",

@@ -1209,6 +1209,14 @@ export const en = {
   /** Check pressed with nothing written, on the sheet or on the task. */
   "paper.write-first": "Write your solution first",
   "paper.write-first-line": "Write it with the pen on the sheet or on the task, then Check.",
+  /** The card of a task from paper whose solution gave no one answer a program can compare. */
+  "paper.no-key": "Couldn't check this one",
+  "paper.no-key-line": "This task has no answer that can be checked. Hints still work.",
+  /** The cards of a work with no final answer, or more than one: written, or one option circled. */
+  "paper.no-answer": "No answer found",
+  "paper.no-answer-line": "Write your answer, or circle one option, then Check.",
+  "paper.several": "More than one answer",
+  "paper.several-line": "Leave one answer or one circled option, then Check.",
   /** In place of the words of a code from api this build does not know: a newer api sent it. */
   "common.unknown": "This version of the app doesn't know this yet",
 } as const satisfies Dictionary;
