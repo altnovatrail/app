@@ -410,7 +410,7 @@ export const en = {
   /** The camera's way to a picture the device keeps, in place of the camera. */
   "icon.choose-photos": "Choose from photos",
   /** The cross and the corner of a frame the learner drew round a task the AI missed. */
-  "icon.remove-frame": "Remove your frame",
+  "icon.remove-frame": "Remove the frame",
   "icon.resize-frame": "Resize your frame",
   /** The heading of the learner's home: the modules connected to the profile (R62). */
   "subjects.title": "My subjects",

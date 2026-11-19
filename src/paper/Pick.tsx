@@ -1,7 +1,7 @@
 // The page photographed, its tasks to pick (R71), as the mockup's pick screen: the photo, each
-// task's frame over it a button that is picked or left out, every one picked at first; a task the
-// AI missed the learner frames by hand, by a loop drawn round it with a finger or a pen or by two
-// taps, a corner and then the one opposite, and its cross removes it and its corner resizes it.
+// task's frame over it a button that is picked or left out, every one picked at first, and its
+// cross removes it; a task the AI missed the learner frames by hand, by a loop drawn round it with a
+// finger or a pen or by two taps, a corner and then the one opposite, and its corner resizes it.
 // The top bar says how many tasks were found and framed by hand, and holds Retake; at the foot,
 // the note that the photo stays on the device, and the bar of "Select all", the count and Start.
 // Drawing a frame takes a pointer: a learner on the keyboard picks among the AI's frames alone.
@@ -220,16 +220,15 @@ export function Pick({
               </button>
             );
           })}
-          {tasks
-            .filter((task) => task.drawn)
-            .map((task) => (
-              <span key={`${task.id}-controls`}>
-                <span className="nt-frame-control" style={at(task.frame.xmax, task.frame.ymin)}>
-                  <IconButton
-                    value="remove-frame"
-                    onClick={() => onTasks((was) => without(was, task.id))}
-                  />
-                </span>
+          {tasks.map((task) => (
+            <span key={`${task.id}-controls`}>
+              <span className="nt-frame-control" style={at(task.frame.xmax, task.frame.ymin)}>
+                <IconButton
+                  value="remove-frame"
+                  onClick={() => onTasks((was) => without(was, task.id))}
+                />
+              </span>
+              {task.drawn ? (
                 <span className="nt-frame-control" style={at(task.frame.xmax, task.frame.ymax)}>
                   <IconButton
                     value="resize-frame"
@@ -257,8 +256,9 @@ export function Pick({
                     }}
                   />
                 </span>
-              </span>
-            ))}
+              ) : null}
+            </span>
+          ))}
           {corner === undefined ? null : (
             <span className="nt-page-corner" style={at(corner.x, corner.y)} aria-hidden="true" />
           )}

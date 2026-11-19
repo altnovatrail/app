@@ -73,9 +73,9 @@ export function withFrame(
   return tasks.map((task) => (task.id === id && task.drawn ? { ...task, frame } : task));
 }
 
-/** A frame the learner drew, removed. The AI's frames stay, to be left out by a tap. */
+/** A frame removed by its cross, the AI's or the learner's. */
 export function without(tasks: readonly PageTask[], id: string): readonly PageTask[] {
-  return tasks.filter((task) => !(task.id === id && task.drawn));
+  return tasks.filter((task) => task.id !== id);
 }
 
 /** The tasks picked, in the order of the page: those whose attempts "Start" begins. */

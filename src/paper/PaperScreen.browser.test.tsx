@@ -188,6 +188,17 @@ it("sends the photo once, a JPEG encoded anew, and picks the tasks found in the 
   expect(finds[0]?.clockOffsetMinutes).toBeTypeOf("number");
 });
 
+it("removes a task the AI found by its cross", async () => {
+  await renderPaper();
+  await screen.findByRole("button", { name: "Deselect task 1" });
+  const crosses = screen.getAllByRole("button", { name: "Remove the frame" });
+  expect(crosses).toHaveLength(2);
+  await userEvent.click(crosses[0] as HTMLElement);
+  await waitFor(() => expect(screen.queryByRole("button", { name: "Deselect task 2" })).toBeNull());
+  expect(screen.getByText("1 task found · tap one to leave it out")).toBeVisible();
+  expect(screen.getByText("1 of 1 selected")).toBeVisible();
+});
+
 it("begins the tasks picked, each a sheet under its crop", async () => {
   const { begins } = await renderPaper();
   await userEvent.click(await screen.findByRole("button", { name: "Deselect task 1" }));
@@ -316,7 +327,7 @@ it("frames a task the AI missed by two taps, and removes it by its cross", async
     screen.getByText("0 tasks found · 1 framed by you · tap one to leave it out"),
   ).toBeVisible();
   expect(screen.getByRole("button", { name: "Start" })).toBeEnabled();
-  await userEvent.click(screen.getByRole("button", { name: "Remove your frame" }));
+  await userEvent.click(screen.getByRole("button", { name: "Remove the frame" }));
   await waitFor(() => expect(screen.queryByRole("button", { name: /your frame/ })).toBeNull());
 });
 

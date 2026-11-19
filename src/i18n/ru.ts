@@ -277,7 +277,7 @@ export const ru = {
   "icon.half-screen": "На пол-экрана",
   "icon.take-photo": "Сделать снимок",
   "icon.choose-photos": "Выбрать из фото",
-  "icon.remove-frame": "Убрать свою рамку",
+  "icon.remove-frame": "Убрать рамку",
   "icon.resize-frame": "Изменить размер рамки",
   "subjects.title": "Мои предметы",
   "subjects.connected": "Подключённые",
