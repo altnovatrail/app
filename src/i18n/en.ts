@@ -286,6 +286,15 @@ export const en = {
     "A wrong answer does not end the task: after Not yet, the learner can change the work and check it again. Work that can't be read comes back with Can't read this",
   "accessibility.check-when":
     "Once the second way to answer lets an answer be changed before it is checked",
+  /** A frame drawn round a task the AI missed on the photo of a page (R71). */
+  "accessibility.framing": "Framing a task on a photo by hand",
+  "accessibility.framing-criteria": "2.1.1 Keyboard, level A",
+  "accessibility.framing-why":
+    "A task the AI missed on the photo of a page is framed by drawing round it, or by tapping two of its corners: with a finger, a stylus or a mouse. A frame can't be drawn from the keyboard",
+  "accessibility.framing-instead":
+    "The tasks the AI found are picked and left out from the keyboard, and Retake takes a new photo",
+  "accessibility.framing-when":
+    "There is no date: a frame from the keyboard would need a way to point at a place on the photo",
   "accessibility.checked": "How it is checked",
   "accessibility.checked-text":
     "Automated checks run on every change to the app's code: the rules of WCAG 2.2 that a program can find, the size of buttons, a screen 320 pixels wide, forced colors and reduced motion. Checks by people, with the screen readers VoiceOver, TalkBack and NVDA on tablets and computers, have not been done yet",
@@ -388,6 +397,13 @@ export const en = {
   "icon.tutor": "Tutor",
   "icon.full-screen": "Full screen",
   "icon.half-screen": "Half screen",
+  /** The camera's shutter, a white ring (R71). */
+  "icon.take-photo": "Take photo",
+  /** The camera's way to a picture the device keeps, in place of the camera. */
+  "icon.choose-photos": "Choose from photos",
+  /** The cross and the corner of a frame the learner drew round a task the AI missed. */
+  "icon.remove-frame": "Remove your frame",
+  "icon.resize-frame": "Resize your frame",
   /** The heading of the learner's home: the modules connected to the profile (R62). */
   "subjects.title": "My subjects",
   /** The heading of the modules connected to the profile. */
@@ -412,10 +428,9 @@ export const en = {
   "subjects.sub": "Pick up where you left off",
   /** The heading of the card of what comes next: the task in progress, the engine's way, the tutor time. */
   "subjects.next-up": "Next up",
-  /** The second card at the top: "A task from my paper", shown and not open yet (R148 spec). */
+  /** The second card at the top: "A task from my paper", the tasks of a page of the learner's book (R71). */
   "subjects.paper": "A task from my paper",
-  "subjects.paper-why": "Comes later: solving the tasks of a page from your book is not open yet",
-  /** The button of "A task from my paper", disabled: the camera comes with the tasks from paper. */
+  /** The button of "A task from my paper": it opens the camera. */
   "subjects.paper-open": "Open camera",
   /** On a module's card under its bar: of its skills with a verdict, how many are mastered. */
   "subjects.mastered": "{mastered} of {count} mastered",
@@ -1124,6 +1139,62 @@ export const en = {
   /** The answer of api; {date} is the day the operator reviews it by. */
   "report.sent": "Thank you: the report is sent. It will be reviewed by {date}",
   "report.sent-undated": "Thank you: the report is sent",
+  /**
+   * Under "Open camera" on the card of a task from paper and on the camera's screen: a name on the
+   * page would go to the AI with its photo (privacy 6 spec; R71).
+   */
+  "paper.names": "Keep names out of the photo",
+  /** The heading of the camera's screen. */
+  "paper.camera": "Photo of a page",
+  /** The device has no camera, or the browser was not let use it: the photos are the way in. */
+  "paper.no-camera": "The camera isn't available here. Choose a photo of the page instead",
+  "paper.unreadable": "This picture can't be read. Take another photo, or choose one",
+  /** The heading of the screen where the learner picks the tasks of the page. */
+  "paper.title": "Your page",
+  /** Under it, three phrases between dots: the tasks found, those framed by hand, and what a tap does. */
+  "paper.found": plural({
+    one: "{count} task found",
+    other: "{count} tasks found",
+  }),
+  "paper.drawn": plural({
+    one: "{count} framed by you",
+    other: "{count} framed by you",
+  }),
+  "paper.tap": "tap one to leave it out",
+  /** The top bar's button that throws the page away and opens the camera again. */
+  "paper.retake": "Retake",
+  /** While FindTasks is under way. */
+  "paper.finding": "Finding the tasks on the page…",
+  /** FindTasks gave no frames: the learner draws them. */
+  "paper.none-found": "No tasks were found. Draw round each task you want to solve",
+  "paper.find-again": "Find the tasks again",
+  /** A task's frame, a button; {n} is its place on the page, from the top. */
+  "paper.select": "Select task {n}",
+  "paper.deselect": "Deselect task {n}",
+  /** A frame drawn by hand; {n} is its place on the page, from the top. */
+  "paper.select-drawn": "Select your frame, task {n}",
+  "paper.deselect-drawn": "Deselect your frame, task {n}",
+  /** The first of two taps is down: the second one makes the frame. */
+  "paper.corner": "Now tap the opposite corner of the task",
+  /** The note above the bar, beside a lock. */
+  "paper.note":
+    "The AI looked at the whole page to find the tasks. The photo stays on this device. Draw round a task it missed.",
+  "paper.select-all": "Select all",
+  "paper.select-none": "Select none",
+  "paper.picked": "{count} of {total} selected",
+  "paper.start": "Start",
+  /** Start is shut: without AI a task from paper can't be checked. */
+  "paper.no-ai": "Without the AI a task from paper can't be checked",
+  /** The heading of the tasks begun, before the sheet to solve them on. */
+  "paper.begun": plural({
+    one: "{count} task begun",
+    other: "{count} tasks begun",
+  }),
+  /** A task's crop; {n} is its place among the tasks begun. */
+  "paper.crop": "Task {n}",
+  /** The sheet to solve the tasks on does not come in this version. */
+  "paper.sheet-later": "Solving them on a sheet comes in the next version of the app",
+  "paper.another": "Take another page",
   /** In place of the words of a code from api this build does not know: a newer api sent it. */
   "common.unknown": "This version of the app doesn't know this yet",
 } as const satisfies Dictionary;

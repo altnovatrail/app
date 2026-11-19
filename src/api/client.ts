@@ -10,6 +10,7 @@ import { LearningService } from "@altnovatrail/contracts/novatrail/api/v1/learni
 import { LegalService } from "@altnovatrail/contracts/novatrail/api/v1/legal_pb.js";
 import { ModuleService } from "@altnovatrail/contracts/novatrail/api/v1/module_pb.js";
 import { PackageService } from "@altnovatrail/contracts/novatrail/api/v1/package_pb.js";
+import { PaperService } from "@altnovatrail/contracts/novatrail/api/v1/paper_pb.js";
 import { ProgressService } from "@altnovatrail/contracts/novatrail/api/v1/progress_pb.js";
 import { WorkService } from "@altnovatrail/contracts/novatrail/api/v1/work_pb.js";
 import type { DescService } from "@bufbuild/protobuf";
@@ -50,6 +51,8 @@ export interface Api {
   /** The four open views, by Connect GET with no token: `GetManifest` and the others. */
   readonly views: Client<typeof PackageService>;
   readonly progress: Client<typeof ProgressService>;
+  /** A task from paper: `FindTasks` and `BeginPaperAttempts` (R71). */
+  readonly paper: Client<typeof PaperService>;
   /** `GetLegalTexts`, by Connect GET with no token, as the open views, but past the HTTP cache. */
   readonly legal: Client<typeof LegalService>;
   /** The works kept on the server: `PutWork` (R30). */
@@ -142,6 +145,7 @@ export function createApi(options: ApiOptions): Api {
     package: client(PackageService),
     views: guarded(createClient(PackageService, viewsTransport)),
     progress: client(ProgressService),
+    paper: client(PaperService),
     legal: guarded(createClient(LegalService, legalTransport)),
     work: client(WorkService),
   };

@@ -38,6 +38,12 @@ export const CAPTIONLESS = {
   // The grabber of the tutor's sheet on a phone, 88 × 44, named by what it does next.
   "full-screen": { icon: undefined, word: "icon.full-screen" },
   "half-screen": { icon: undefined, word: "icon.half-screen" },
+  // The buttons of a task from paper (R71): the camera's shutter and its way to the photos, and the
+  // cross and the corner of a frame drawn by hand.
+  "take-photo": { icon: "camera", word: "icon.take-photo" },
+  "choose-photos": { icon: "photos", word: "icon.choose-photos" },
+  "remove-frame": { icon: "close", word: "icon.remove-frame" },
+  "resize-frame": { icon: "resize", word: "icon.resize-frame" },
 } as const satisfies Record<string, { icon: IconValue | undefined; word: Key }>;
 
 /** A button of the closed list. */

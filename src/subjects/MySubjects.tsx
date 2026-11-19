@@ -13,7 +13,7 @@
 // where the learner begins their work, the screen says how much of today's tutor time the profile
 // has used, or, once it is used up, when it comes back (the contract's quota; R37). It is drawn as
 // the mockup's `home` (R148 spec; R62): what comes next and the tutor time on a card at the top, "A
-// task from my paper" beside it, shown and not open; each card of a module connected with the
+// task from my paper" beside it, which opens the camera of a new page (R71); each card of a module connected with the
 // states of its skills, counted by the rule of skill-map's map, and a way to its map; the legend of
 // the marks below the cards, and on a phone behind a button.
 import type { QuotaShare } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
@@ -27,7 +27,7 @@ import type { Api } from "../api/client.ts";
 import { type Failure, parseFailure } from "../api/failure.ts";
 import { failureText } from "../api/words.ts";
 import { Icon } from "../app/Icon.tsx";
-import { ESSAYS, LESSON, navigate, SKILL_MAP, TASK, TUTOR } from "../app/router.ts";
+import { ESSAYS, LESSON, navigate, PAPER, SKILL_MAP, TASK, TUTOR } from "../app/router.ts";
 import { Screen } from "../app/Screen.tsx";
 import { ReadFailed } from "../boot/Screens.tsx";
 import { collator } from "../i18n/intl.ts";
@@ -38,6 +38,7 @@ import { NextStep } from "../next/NextStep.tsx";
 import { licenseRoute } from "../packages/LicensePage.tsx";
 import { usePackages } from "../packages/PackagesContext.tsx";
 import type { OpenViews } from "../packages/views.ts";
+import { usePaper } from "../paper/PaperContext.tsx";
 import { moduleMapRoute } from "../skills/SkillMapScreen.tsx";
 import type { Device } from "../storage/device.ts";
 import { openProfile, type Profile } from "../storage/profile.ts";
@@ -196,6 +197,7 @@ export function SubjectsScreen({
   quota,
 }: SubjectsScreenProps) {
   const { language, words } = useLanguage();
+  const paper = usePaper();
   // Once for each share that comes, not for each render: its formats of Intl are made anew.
   const spent = useMemo(
     () => (quota === undefined ? undefined : learnerQuotaText(quota, words)),
@@ -252,19 +254,26 @@ export function SubjectsScreen({
             </p>
           )}
         </section>
-        {/* Shown, not open: tasks from paper come later (R148 spec). */}
+        {/* A new page each time: the camera, and before it the line to keep names out (R71). */}
         <section aria-labelledby={paperId} className="nt-paper">
           <span className="nt-paper-icon" aria-hidden="true">
             <Icon value="camera" />
           </span>
           <h2 id={paperId}>{words.text("subjects.paper")}</h2>
-          <p id={`${paperId}-why`} className="nt-hint">
-            {words.text("subjects.paper-why")}
-          </p>
-          <button type="button" disabled aria-describedby={`${paperId}-why`}>
+          <button
+            type="button"
+            aria-describedby={`${paperId}-names`}
+            onClick={() => {
+              paper?.clear();
+              navigate(PAPER);
+            }}
+          >
             <Icon value="camera" />
             {words.text("subjects.paper-open")}
           </button>
+          <p id={`${paperId}-names`} className="nt-hint">
+            {words.text("paper.names")}
+          </p>
         </section>
       </div>
       {runs.length === 0 ? null : (

@@ -1,0 +1,149 @@
+// The geometry of a frame the learner draws (R71): a loop's box with its margin, a tap that is no
+// loop, two taps, the corner that resizes it, the photo's edge, and the crop's rectangle in pixels.
+import { describe, expect, it } from "vitest";
+import {
+  cropRect,
+  isTap,
+  loopFrame,
+  MARGIN,
+  MIN_HEIGHT,
+  MIN_WIDTH,
+  pageOrder,
+  resizedFrame,
+  type Scale,
+  tapsFrame,
+} from "./frame.ts";
+
+// A photo drawn 500 × 700 CSS px: a thousandth is 0.5 px across and 0.7 px down.
+const scale: Scale = { x: 0.5, y: 0.7 };
+
+describe("a loop", () => {
+  it("is its box with the margin", () => {
+    const loop = [
+      { x: 200, y: 300 },
+      { x: 600, y: 310 },
+      { x: 590, y: 500 },
+      { x: 210, y: 490 },
+    ];
+    expect(loopFrame(loop, scale)).toEqual({
+      xmin: 200 - MARGIN / scale.x,
+      ymin: Math.floor(300 - MARGIN / scale.y),
+      xmax: 600 + MARGIN / scale.x,
+      ymax: Math.ceil(500 + MARGIN / scale.y),
+    });
+  });
+
+  it("stays in the photo", () => {
+    const loop = [
+      { x: 1, y: 2 },
+      { x: 999, y: 998 },
+    ];
+    expect(loopFrame(loop, scale)).toEqual({ xmin: 0, ymin: 0, xmax: 1000, ymax: 1000 });
+  });
+
+  it("smaller than the least frame is a tap", () => {
+    const narrow = [
+      { x: 100, y: 100 },
+      { x: 100 + MIN_WIDTH / scale.x - 1, y: 400 },
+    ];
+    const low = [
+      { x: 100, y: 100 },
+      { x: 400, y: 100 + MIN_HEIGHT / scale.y - 1 },
+    ];
+    expect(isTap(narrow, scale)).toBe(true);
+    expect(isTap(low, scale)).toBe(true);
+    expect(isTap([], scale)).toBe(true);
+    expect(loopFrame(narrow, scale)).toBeUndefined();
+    expect(loopFrame(low, scale)).toBeUndefined();
+    expect(
+      isTap(
+        [
+          { x: 100, y: 100 },
+          { x: 300, y: 300 },
+        ],
+        scale,
+      ),
+    ).toBe(false);
+  });
+});
+
+describe("two taps", () => {
+  it("are two opposite corners, in either order", () => {
+    const frame = { xmin: 100, ymin: 200, xmax: 400, ymax: 600 };
+    expect(tapsFrame({ x: 100, y: 200 }, { x: 400, y: 600 }, scale)).toEqual(frame);
+    expect(tapsFrame({ x: 400, y: 600 }, { x: 100, y: 200 }, scale)).toEqual(frame);
+    expect(tapsFrame({ x: 400, y: 200 }, { x: 100, y: 600 }, scale)).toEqual(frame);
+  });
+
+  it("close together give the least frame, from the first towards the second", () => {
+    const w = MIN_WIDTH / scale.x;
+    const h = Math.ceil(MIN_HEIGHT / scale.y);
+    expect(tapsFrame({ x: 500, y: 500 }, { x: 510, y: 505 }, scale)).toEqual({
+      xmin: 500,
+      ymin: 500,
+      xmax: 500 + w,
+      ymax: 500 + h,
+    });
+    const back = tapsFrame({ x: 500, y: 500 }, { x: 490, y: 495 }, scale);
+    expect(back.xmax).toBe(500);
+    expect(back.ymax).toBe(500);
+    expect(back.xmax - back.xmin).toBe(w);
+  });
+
+  it("at the photo's edge stay in it", () => {
+    const frame = tapsFrame({ x: 995, y: 998 }, { x: 999, y: 999 }, scale);
+    expect(frame.xmax).toBe(1000);
+    expect(frame.ymax).toBe(1000);
+    expect(frame.xmax - frame.xmin).toBe(MIN_WIDTH / scale.x);
+  });
+});
+
+describe("the corner", () => {
+  const frame = { xmin: 100, ymin: 100, xmax: 300, ymax: 300 };
+
+  it("moves the bottom-right corner", () => {
+    expect(resizedFrame(frame, { x: 450.4, y: 520.6 }, scale)).toEqual({
+      ...frame,
+      xmax: 450,
+      ymax: 521,
+    });
+  });
+
+  it("keeps the least frame and the photo's edge", () => {
+    const small = resizedFrame(frame, { x: 0, y: 0 }, scale);
+    expect(small.xmax).toBe(100 + MIN_WIDTH / scale.x);
+    expect(small.ymax).toBe(Math.ceil(100 + MIN_HEIGHT / scale.y));
+    expect(resizedFrame(frame, { x: 2000, y: 1500 }, scale)).toEqual({
+      ...frame,
+      xmax: 1000,
+      ymax: 1000,
+    });
+  });
+});
+
+it("orders the page top to bottom, the left first", () => {
+  const a = { xmin: 500, ymin: 100, xmax: 600, ymax: 200 };
+  const b = { xmin: 100, ymin: 100, xmax: 200, ymax: 200 };
+  const c = { xmin: 0, ymin: 50, xmax: 100, ymax: 80 };
+  expect([a, b, c].sort(pageOrder)).toEqual([c, b, a]);
+});
+
+describe("the crop's rectangle", () => {
+  it("is the frame in pixels, rounded out", () => {
+    expect(cropRect({ xmin: 100, ymin: 250, xmax: 333, ymax: 500 }, 1200, 1600)).toEqual({
+      sx: 120,
+      sy: 400,
+      sw: 400 - 120,
+      sh: 800 - 400,
+    });
+  });
+
+  it("is at least a pixel, inside the photo", () => {
+    expect(cropRect({ xmin: 999, ymin: 999, xmax: 1000, ymax: 1000 }, 10, 10)).toEqual({
+      sx: 9,
+      sy: 9,
+      sw: 1,
+      sh: 1,
+    });
+  });
+});

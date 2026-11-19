@@ -64,6 +64,8 @@ import { ContinueButton, LessonScreen, type LessonScreenProps } from "../lesson/
 import { NextStep } from "../next/NextStep.tsx";
 import { LicensePages, licenseRoute } from "../packages/LicensePage.tsx";
 import { type Packages, PackagesProvider } from "../packages/PackagesContext.tsx";
+import { Camera } from "../paper/Camera.tsx";
+import { Pick } from "../paper/Pick.tsx";
 import { SignInScreen } from "../signin/SignInScreen.tsx";
 import { moduleMapRoute, SkillMapRoute } from "../skills/SkillMapScreen.tsx";
 import { addProfile } from "../storage/profile.ts";
@@ -589,6 +591,9 @@ const PROGRESS_API = {
   },
 } as unknown as Api;
 
+/** The photo of a page on the pick screen: a white picture, synthetic. */
+const PAGE_PHOTO = `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="600" height="800"><rect width="600" height="800" fill="#fff"/></svg>')}`;
+
 const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
   ["framed", () => <Framed />],
   ["offline", () => <Offline onRetry={() => {}} />],
@@ -769,6 +774,36 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
         onConnect={() => {}}
         onDisconnect={() => {}}
         onContinue={() => {}}
+      />
+    ),
+  ],
+  ["the camera of a task from paper", () => <Camera onPhoto={() => {}} onClose={() => {}} />],
+  [
+    "the pick of a task from paper, a frame found and one drawn",
+    () => (
+      <Pick
+        photo={{ bytes: new Uint8Array(), width: 600, height: 800, url: PAGE_PHOTO }}
+        tasks={[
+          {
+            id: "found-1",
+            frame: { ymin: 75, xmin: 50, ymax: 225, xmax: 950 },
+            drawn: false,
+            picked: true,
+          },
+          {
+            id: "drawn-1",
+            frame: { ymin: 500, xmin: 50, ymax: 650, xmax: 950 },
+            drawn: true,
+            picked: false,
+          },
+        ]}
+        onTasks={() => {}}
+        finding={false}
+        closed={false}
+        starting={false}
+        onStart={() => {}}
+        onRetake={() => {}}
+        onHome={() => {}}
       />
     ),
   ],
