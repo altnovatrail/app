@@ -2214,21 +2214,76 @@ p.nt-page-note {
   gap: 0.375rem;
   padding-inline: 1.375rem 1.125rem;
 }
-/* The tasks begun, each its crop, in a column. */
-ol.nt-begun {
+/*
+ * The screen of solving: at the top bar's end ‹, the counter and › in a pill of glass; the counter
+ * opens the list of the tasks begun, each its number in a circle of 26 and its name, the one shown
+ * in the accent, and "Add" at its head.
+ */
+.nt-solve-nav {
+  display: inline-flex;
+  align-items: center;
+  border-radius: var(--nt-radius-top-bar);
+}
+.nt-solve-nav > button.nt-solve-count {
+  min-inline-size: 3.5rem;
+  min-block-size: 2.75rem;
+  background: transparent;
+  color: var(--nt-segmented);
+  font-size: var(--nt-size-caption);
+  font-variant-numeric: tabular-nums;
+}
+.nt-tasks-head {
   display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  margin: 1rem 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.25rem 0.25rem 0.375rem 0.5rem;
+}
+.nt-tasks-head > h2 {
+  margin: 0;
+  font-size: var(--nt-size-caption);
+}
+.nt-tasks-head > button.nt-tasks-add {
+  min-block-size: 2.75rem;
+  background: transparent;
+  color: var(--nt-accent-text);
+  font-weight: var(--nt-weight-medium);
+}
+ol.nt-tasks {
+  margin: 0;
   padding: 0;
-  overflow: auto;
   list-style: none;
 }
-ol.nt-begun > li > img.nt-crop {
-  display: block;
-  max-inline-size: 100%;
-  border-radius: var(--nt-radius-field);
-  box-shadow: var(--nt-card-shadow);
+button.nt-tasks-row {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  inline-size: 100%;
+  min-block-size: 3.25rem;
+  padding: 0.4375rem 0.5rem;
+  border-radius: 0.75rem;
+  background: transparent;
+  color: inherit;
+  text-align: start;
+}
+button.nt-tasks-row[aria-current="true"] {
+  background: rgb(0 113 227 / 0.1);
+}
+.nt-tasks-n {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  inline-size: 1.625rem;
+  block-size: 1.625rem;
+  border-radius: 50%;
+  background: rgb(118 118 128 / 0.14);
+  font-size: var(--nt-size-caption);
+  font-weight: 700;
+}
+button.nt-tasks-row[aria-current="true"] > .nt-tasks-n {
+  background: var(--nt-accent);
+  color: #ffffff;
 }
 /*
  * A disabled button: grey on a grey fill, as an inactive control may be (1.4.3); last, so that it

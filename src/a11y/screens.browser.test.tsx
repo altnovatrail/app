@@ -66,6 +66,7 @@ import { LicensePages, licenseRoute } from "../packages/LicensePage.tsx";
 import { type Packages, PackagesProvider } from "../packages/PackagesContext.tsx";
 import { Camera } from "../paper/Camera.tsx";
 import { Pick } from "../paper/Pick.tsx";
+import { Solve } from "../paper/Solve.tsx";
 import { SignInScreen } from "../signin/SignInScreen.tsx";
 import { moduleMapRoute, SkillMapRoute } from "../skills/SkillMapScreen.tsx";
 import { addProfile } from "../storage/profile.ts";
@@ -805,6 +806,51 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
         onRetake={() => {}}
         onHome={() => {}}
       />
+    ),
+  ],
+  [
+    "the solving of a task from paper, its sheet under the crop",
+    () => (
+      <ApiProvider value={{} as Api}>
+        <Solve
+          profileId="p1"
+          tasks={[
+            {
+              id: "found-1",
+              frame: { ymin: 75, xmin: 50, ymax: 225, xmax: 950 },
+              drawn: false,
+              picked: true,
+            },
+            {
+              id: "drawn-1",
+              frame: { ymin: 500, xmin: 50, ymax: 650, xmax: 950 },
+              drawn: true,
+              picked: true,
+            },
+          ]}
+          begun={[
+            {
+              attemptId: "a1",
+              taskId: "found-1",
+              frame: { ymin: 75, xmin: 50, ymax: 225, xmax: 950 },
+              drawn: false,
+              crop: new Blob([], { type: "image/png" }),
+              history: [],
+            },
+            {
+              attemptId: "a2",
+              taskId: "drawn-1",
+              frame: { ymin: 500, xmin: 50, ymax: 650, xmax: 950 },
+              drawn: true,
+              crop: new Blob([], { type: "image/png" }),
+              history: [],
+            },
+          ]}
+          onKeep={() => {}}
+          onAdd={() => {}}
+          onHome={() => {}}
+        />
+      </ApiProvider>
     ),
   ],
   ["task screen by steps, with its chips", () => taskScreen()],

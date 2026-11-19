@@ -11,7 +11,8 @@ import type {
   CellPlace,
   DemoState,
   ExportedCell,
-  ExportedWork,
+  ExportedSheet,
+  ExportedWorkbook,
   HistoryChange,
   HistoryEvent,
   Submission,
@@ -168,7 +169,7 @@ async function bytesOf(picture: Blob): Promise<Bytes> {
 }
 
 /** The work as the database keeps it; its bytes are read before the transaction, not in it. */
-async function keptWork(work: ExportedWork): Promise<KeptWork> {
+async function keptWork(work: ExportedSheet | ExportedWorkbook): Promise<KeptWork> {
   if ("png" in work) return { png: await bytesOf(work.png) };
   return {
     cells: await Promise.all(
@@ -522,10 +523,11 @@ export class Profile {
   /**
    * A submission, with its context and work from `exportWork()` and the history's length: its
    * number among the attempt's submissions, from 0, which `attemptEnded` takes for the correct one.
+   * A task from paper's work is none of an attempt's here: the device keeps it apart (R71).
    */
   async addSubmission(
     attemptId: string,
-    work: ExportedWork,
+    work: ExportedSheet | ExportedWorkbook,
     historyLength: number,
   ): Promise<number | "unsaved"> {
     try {

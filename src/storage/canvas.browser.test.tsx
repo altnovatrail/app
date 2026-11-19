@@ -77,7 +77,8 @@ describe("the history and the context through IndexedDB", () => {
     expect(await profile?.replaceHistory("a1", first.history.slice(0, 2))).toBe("saved");
     expect(await profile?.appendHistory("a1", changes[0] as HistoryChange)).toBe("saved");
     const work = await first.exportWork();
-    if (work === null || !("png" in work)) throw new Error("no work of a sheet");
+    if (work === null || !("png" in work) || work.statement !== undefined)
+      throw new Error("no work of a sheet");
     expect(await profile?.addSubmission("a1", work, first.history.length)).toBe(0);
 
     const stored = await profile?.readAttempt("a1");
@@ -102,7 +103,8 @@ describe("the history and the context through IndexedDB", () => {
     const sheet = element();
     sheet.history = [stroke(1, 100, 0)];
     const work = await sheet.exportWork();
-    if (work === null || !("png" in work)) throw new Error("no work of a sheet");
+    if (work === null || !("png" in work) || work.statement !== undefined)
+      throw new Error("no work of a sheet");
     const [ymin, xmin, ymax, xmax] = work.submission.crop.sheetBox;
     const rounded: SheetSubmission = {
       ...work.submission,

@@ -262,10 +262,10 @@ export const en = {
   "accessibility.moving": "Moving the sheet",
   "accessibility.moving-criteria": "2.5.7 Dragging Movements, level AA",
   "accessibility.moving-why":
-    "With a single finger, the sheet moves only by dragging it, and two fingers drag it too. The sheet has no buttons that move it",
+    "With a single finger, the sheet moves only by dragging it, and two fingers drag it too. The sheet has no buttons that move it. A task from paper over its sheet is moved by dragging its grip",
   /** Zoom in and Zoom out are the canvas's own buttons, in its words. */
   "accessibility.moving-instead":
-    "A mouse wheel, a trackpad and the arrow keys move the sheet once it has the focus. Where the sheet is taller than the screen, the page scrolls as any page does. Zoom in and Zoom out work with a tap",
+    "A mouse wheel, a trackpad and the arrow keys move the sheet once it has the focus, and the arrow keys move a task from paper by its grip. Where the sheet is taller than the screen, the page scrolls as any page does. Zoom in and Zoom out work with a tap",
   "accessibility.moving-when":
     "There is no date: buttons that move the sheet come back only if the platform decides so",
   "accessibility.print": "Print in the lines of a workbook",
@@ -295,6 +295,14 @@ export const en = {
     "The tasks the AI found are picked and left out from the keyboard, and Retake takes a new photo",
   "accessibility.framing-when":
     "There is no date: a frame from the keyboard would need a way to point at a place on the photo",
+  "accessibility.paper": "Solving a task from paper",
+  "accessibility.paper-criteria": "2.1.1 Keyboard, level A",
+  "accessibility.paper-why":
+    "A task from a photo of a page is solved in handwriting, on the sheet or on the task over it: with a finger, a stylus or a mouse. Its solution cannot be typed on a keyboard",
+  "accessibility.paper-instead":
+    "Moving the task and hiding it, the list of the tasks, Hint and Check work from the keyboard. The tasks of a subject have options to choose among",
+  "accessibility.paper-when":
+    "There is no date: a task from paper has no answers to choose among, and the platform has not chosen a second way to write a solution",
   "accessibility.checked": "How it is checked",
   "accessibility.checked-text":
     "Automated checks run on every change to the app's code: the rules of WCAG 2.2 that a program can find, the size of buttons, a screen 320 pixels wide, forced colors and reduced motion. Checks by people, with the screen readers VoiceOver, TalkBack and NVDA on tablets and computers, have not been done yet",
@@ -1185,16 +1193,22 @@ export const en = {
   "paper.start": "Start",
   /** Start is shut: without AI a task from paper can't be checked. */
   "paper.no-ai": "Without the AI a task from paper can't be checked",
-  /** The heading of the tasks begun, before the sheet to solve them on. */
-  "paper.begun": plural({
-    one: "{count} task begun",
-    other: "{count} tasks begun",
-  }),
-  /** A task's crop; {n} is its place among the tasks begun. */
-  "paper.crop": "Task {n}",
-  /** The sheet to solve the tasks on does not come in this version. */
-  "paper.sheet-later": "Solving them on a sheet comes in the next version of the app",
-  "paper.another": "Take another page",
+  /** The heading of the screen of solving: a task the AI found; {n} is its place on the page. */
+  "paper.task": "Task {n}",
+  /** A frame drawn by hand; {n} is its place on the page, from the top. */
+  "paper.your-frame": "Your frame, task {n}",
+  /** Under the heading: the task's place among those begun. */
+  "paper.of": "{n} of {total} · from your page",
+  /** The button between ‹ and ›, which opens the list of the tasks begun. */
+  "paper.counter": "{n} / {total}",
+  /** Its name, and the list's heading. */
+  "paper.tasks": "Tasks",
+  "paper.tasks-open": "Tasks, {n} of {total}",
+  /** At the list's head: back to the page, to pick more of its tasks. */
+  "paper.add": "Add",
+  /** Check pressed with nothing written, on the sheet or on the task. */
+  "paper.write-first": "Write your solution first",
+  "paper.write-first-line": "Write it with the pen on the sheet or on the task, then Check.",
   /** In place of the words of a code from api this build does not know: a newer api sent it. */
   "common.unknown": "This version of the app doesn't know this yet",
 } as const satisfies Dictionary;

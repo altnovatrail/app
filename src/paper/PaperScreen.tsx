@@ -1,20 +1,19 @@
 // The screen `#/paper`, a task from the learner's paper (R71): the camera; once a photo is taken,
-// `FindTasks` on it and the tasks to pick; and once Start has begun them, the tasks begun. The photo
+// `FindTasks` on it and the tasks to pick; and once Start has begun them, the screen of solving,
+// from which "Add" goes back to the page, and Start begins only the tasks not begun yet. The photo
 // goes to api once, to find the tasks, and stays in the tab's memory with the crops cut from it on
 // the device; each try of finding is an action of its own, with a key of its own, as api keeps no
 // frames for a repeat. A refusal that shuts AI to the learner — the quota, the platform's limit,
 // no model admitted, or the own key's limit or refusal — shuts Start: without AI a task from paper
-// can't be checked. Retake throws the page away; the tasks begun stay until a new page.
+// can't be checked. Retake throws the page away, and the tasks begun with it.
 import { Cause } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useApi } from "../api/ApiContext.tsx";
 import { type Failure, parseFailure } from "../api/failure.ts";
 import { idempotencyKey } from "../api/keys.ts";
 import { closesAI, outcomeOf } from "../api/outcome.ts";
 import { failureText, outcomeText } from "../api/words.ts";
-import { IconButton } from "../app/IconButton.tsx";
 import { HOME, navigate } from "../app/router.ts";
-import { Screen } from "../app/Screen.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { useKeyHolder } from "../ownkey/OwnKeyContext.tsx";
 import { Camera } from "./Camera.tsx";
@@ -22,6 +21,8 @@ import { cropsOf, type Photo } from "./capture.ts";
 import { type BegunTask, type PaperPage, usePaper } from "./PaperContext.tsx";
 import { Pick } from "./Pick.tsx";
 import { foundTasks, picked } from "./page.ts";
+import { Solve } from "./Solve.tsx";
+import { notBegun } from "./solve.ts";
 
 /** The refusals that shut AI to the learner beyond the call, as the outcomes of `closesAI`. */
 const SHUTTING: ReadonlySet<Cause> = new Set([
@@ -90,8 +91,17 @@ export function PaperScreen({ profileId }: { readonly profileId: string }) {
   if (paper === undefined) return null;
   const home = () => navigate(HOME);
 
-  if (paper.begun !== undefined) {
-    return <Begun tasks={paper.begun} onHome={home} onAnother={paper.clear} />;
+  if (paper.begun !== undefined && paper.solving && page !== undefined) {
+    return (
+      <Solve
+        profileId={profileId}
+        tasks={page.tasks}
+        begun={paper.begun}
+        onKeep={paper.keep}
+        onAdd={paper.add}
+        onHome={home}
+      />
+    );
   }
   if (page === undefined) {
     return (
@@ -113,7 +123,12 @@ export function PaperScreen({ profileId }: { readonly profileId: string }) {
     shuts(startFailure);
 
   const start = () => {
-    const chosen = picked(page.tasks);
+    const chosen = notBegun(page.tasks, paper.begun);
+    // Each task picked is begun already: solving goes on.
+    if (chosen.length === 0 && picked(page.tasks).length > 0) {
+      paper.begin(page.photo, []);
+      return;
+    }
     const of = JSON.stringify([page.photo.url, ...chosen.map((task) => task.frame)]);
     if (startKey.current?.of !== of) startKey.current = { of, key: idempotencyKey() };
     const key = startKey.current.key;
@@ -136,7 +151,16 @@ export function PaperScreen({ profileId }: { readonly profileId: string }) {
           const crop = crops[i];
           return attemptId === undefined || crop === undefined
             ? []
-            : [{ attemptId, frame: task.frame, crop }];
+            : [
+                {
+                  attemptId,
+                  taskId: task.id,
+                  frame: task.frame,
+                  drawn: task.drawn,
+                  crop,
+                  history: [],
+                },
+              ];
         });
         if (begun.length !== chosen.length) throw new Error("api began another number of tasks");
         paper.begin(photo, begun);
@@ -192,57 +216,10 @@ export function PaperScreen({ profileId }: { readonly profileId: string }) {
       onStart={start}
       onRetake={paper.clear}
       onHome={() => {
-        paper.clear();
+        // Back from the page "Add" opened keeps the tasks begun, and their work, for the way back.
+        if (paper.begun === undefined) paper.clear();
         home();
       }}
     />
-  );
-}
-
-/** A task's crop, shown from its own URL while it is on the screen. */
-function Crop({ crop, label }: { readonly crop: Blob; readonly label: string }) {
-  const [url, setUrl] = useState<string | undefined>(undefined);
-  useEffect(() => {
-    const made = URL.createObjectURL(crop);
-    setUrl(made);
-    return () => URL.revokeObjectURL(made);
-  }, [crop]);
-  return url === undefined ? null : <img className="nt-crop" src={url} alt={label} />;
-}
-
-/**
- * The tasks begun, each its crop, in place of the sheet to solve them on, which this build does not
- * have yet: "Take another page" is a new page.
- */
-function Begun({
-  tasks,
-  onHome,
-  onAnother,
-}: {
-  readonly tasks: readonly BegunTask[];
-  readonly onHome: () => void;
-  readonly onAnother: () => void;
-}) {
-  const { words } = useLanguage();
-  return (
-    <Screen
-      title={words.text("paper.begun", { count: tasks.length })}
-      layout="task"
-      bar={{ back: <IconButton value="back" caption="task.home" onClick={onHome} /> }}
-    >
-      <p className="nt-hint">{words.text("paper.sheet-later")}</p>
-      <ol className="nt-begun">
-        {tasks.map((task, i) => (
-          <li key={task.attemptId}>
-            <Crop crop={task.crop} label={words.text("paper.crop", { n: i + 1 })} />
-          </li>
-        ))}
-      </ol>
-      <div className="nt-buttons">
-        <button type="button" onClick={onAnother}>
-          {words.text("paper.another")}
-        </button>
-      </div>
-    </Screen>
   );
 }

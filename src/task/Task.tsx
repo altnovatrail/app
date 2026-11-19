@@ -833,7 +833,8 @@ function OpenTask({
     const at = drawn.current;
     const historyLength = element.current?.history.length ?? 0;
     const work = (await element.current?.exportWork()) ?? null;
-    if (work === null) return undefined;
+    // A module's task is never a task from paper, whose work holds its statement too.
+    if (work === null || ("png" in work && work.statement !== undefined)) return undefined;
     let number: number | undefined;
     const saved = (await profile?.addSubmission(attemptId, work, historyLength)) ?? "unsaved";
     if (saved === "unsaved") unsavedNow();

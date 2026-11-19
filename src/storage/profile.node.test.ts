@@ -1,6 +1,7 @@
 import type {
   DemoState,
-  ExportedWork,
+  ExportedSheet,
+  ExportedWorkbook,
   HistoryEvent,
   SheetSubmission,
 } from "@altnovatrail/spec/canvas";
@@ -50,7 +51,10 @@ const CONTEXT: SheetSubmission = {
   digest: "0123456789abcdef",
 };
 
-const work = (text: string): ExportedWork => ({ png: new Blob([text]), submission: CONTEXT });
+const work = (text: string): ExportedSheet | ExportedWorkbook => ({
+  png: new Blob([text]),
+  submission: CONTEXT,
+});
 
 async function setUp() {
   const setup = memoryDevice();
@@ -131,7 +135,7 @@ describe("the profile's database", () => {
   it("keeps each submission's context unrounded, the history's length then, and its work", async () => {
     const { profile } = await setUp();
     expect(await profile.addSubmission("a1", work("first"), 3)).toBe(0);
-    const cells: ExportedWork = {
+    const cells: ExportedSheet | ExportedWorkbook = {
       cells: [{ item: 1, slot: 1, png: new Blob(["box"]) }],
       submission: { boxes: [{ item: 1, slot: 1, ids: [1] }], digest: "fedcba9876543210" },
     };
@@ -198,7 +202,7 @@ describe("the work in bytes", () => {
   it("keeps each picture as bytes with its type, and gives it back as a Blob", async () => {
     const { profile, backend } = await setUp();
     await profile.addSubmission("a1", { png: png("crop"), submission: CONTEXT }, 1);
-    const cells: ExportedWork = {
+    const cells: ExportedSheet | ExportedWorkbook = {
       cells: [{ item: 1, slot: 2, png: png("box") }],
       submission: { boxes: [{ item: 1, slot: 2, ids: [1] }], digest: "fedcba9876543210" },
     };
