@@ -22,7 +22,7 @@ import type {
   Media,
 } from "@altnovatrail/spec/canvas";
 import type * as open from "@altnovatrail/spec/formatv0/open";
-import { type ReactNode, type Ref, useEffect, useMemo, useRef, useState } from "react";
+import { type ReactNode, type Ref, useEffect, useMemo, useRef } from "react";
 import type { Failure } from "../api/failure.ts";
 import { failureText } from "../api/words.ts";
 import { Icon } from "../app/Icon.tsx";
@@ -40,6 +40,7 @@ import { VoicingToggle } from "../voice/VoicingToggle.tsx";
 import { Hint, type HintGiven } from "./Hint.tsx";
 import { StepPill, StepsPanel } from "./StepsPanel.tsx";
 import type { Mode, StepsState } from "./steps.ts";
+import { TutorButton, TutorPanel } from "./TutorPanel.tsx";
 
 /**
  * The screen of the task — the top bar's pill with Back to My subjects (R57) and the heading, the
@@ -335,31 +336,6 @@ export function VerdictLine({
   );
 }
 
-/**
- * The tutor's button, the mockup's: 56 round, of glass, its sign in the tutor's gradient, at the
- * window's right edge in the middle of its height, and on a phone above the row; it opens the panel
- * (R60: its caption is its name and its tooltip).
- */
-export function TutorButton({
-  onOpen,
-  buttonRef,
-}: {
-  readonly onOpen: () => void;
-  readonly buttonRef?: Ref<HTMLButtonElement>;
-}) {
-  return (
-    <div className="nt-tutor-call">
-      <IconButton
-        ref={buttonRef}
-        value="tutor"
-        className="nt-tutor-button"
-        aria-expanded={false}
-        onClick={onOpen}
-      />
-    </div>
-  );
-}
-
 export function TaskLayout({
   parts,
   over,
@@ -404,14 +380,9 @@ export function TaskLayout({
   const { task, manifest, steps, mode } = parts;
   const { language, words } = useLanguage();
   const narrow = useNarrow();
-  // The phone's sheet at half the height, or by its grabber over the whole screen.
-  const [full, setFull] = useState(false);
   const explanation = manifest?.languages.explanation;
   const statement = useMemo(() => taskPhrases(task, explanation), [task, explanation]);
   const shown = over || open;
-  useEffect(() => {
-    if (!shown) setFull(false);
-  }, [shown]);
   // The button pressed to open or close the panel — the tutor's, the step's pill, ×, or a button of
   // the row the phone's sheet hides — goes with the press: the focus goes to the panel's heading, or
   // back to the tutor's button, not to the page (2.4.3).
@@ -491,34 +462,13 @@ export function TaskLayout({
       </div>
       {shown || onOpen === undefined ? null : <TutorButton onOpen={onOpen} buttonRef={call} />}
       {shown ? (
-        <aside
-          className="nt-tutor-panel nt-glass nt-glass-panel"
-          data-size={full ? "full" : "half"}
-          aria-label={words.text("task.tutor")}
-        >
-          {narrow ? (
-            <IconButton
-              value={full ? "half-screen" : "full-screen"}
-              className="nt-tutor-grab"
-              aria-expanded={full}
-              onClick={() => setFull((was) => !was)}
-            />
-          ) : null}
-          <div className="nt-tutor-head">
-            <span className="nt-tutor-sign" aria-hidden="true">
-              <Icon value="tutor" />
-            </span>
-            <div className="nt-tutor-names">
-              <h2 ref={heading} tabIndex={-1}>
-                {words.text("task.tutor")}
-              </h2>
-              {quota === undefined ? null : <span className="nt-tutor-status">{quota}</span>}
-            </div>
-            <VoicingToggle language={explanation} />
-            {over || onClose === undefined ? null : <IconButton value="close" onClick={onClose} />}
-          </div>
-          <div className="nt-tutor-body">
-            {stepsShown ? (
+        <TutorPanel
+          headingRef={heading}
+          status={quota}
+          voicing={<VoicingToggle language={explanation} />}
+          onClose={over ? undefined : onClose}
+          above={
+            stepsShown ? (
               <StepsPanel
                 task={task}
                 steps={steps}
@@ -530,36 +480,27 @@ export function TaskLayout({
                 onTick={parts.onTick}
                 onDone={parts.onDone}
               />
-            ) : null}
-            {/*
-              It scrolls with the buttons at its foot inside, which a keyboard reaches, as the steps'
-              card holds its own (2.1.1), and is held at its foot, where the newest words stand.
-            */}
-            <section className="nt-talk" aria-label={words.text("tutor.conversation")}>
-              <div className="nt-talk-end">
-                <div className="nt-talk-lines">
-                  <p className="nt-bubble">{words.text("tutor.ai")}</p>
-                  {over ? (
-                    result
-                  ) : (
-                    <>
-                      {parts.hint === undefined ? null : (
-                        <Hint
-                          hint={parts.hint}
-                          task={task}
-                          catalog={parts.catalog}
-                          language={explanation}
-                        />
-                      )}
-                      {tutor}
-                    </>
-                  )}
-                </div>
-                {over || acts === undefined ? null : <div className="nt-tutor-acts">{acts}</div>}
-              </div>
-            </section>
-          </div>
-        </aside>
+            ) : null
+          }
+          talk={
+            over ? (
+              result
+            ) : (
+              <>
+                {parts.hint === undefined ? null : (
+                  <Hint
+                    hint={parts.hint}
+                    task={task}
+                    catalog={parts.catalog}
+                    language={explanation}
+                  />
+                )}
+                {tutor}
+              </>
+            )
+          }
+          acts={over ? undefined : acts}
+        />
       ) : null}
     </Frame>
   );

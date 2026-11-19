@@ -250,6 +250,18 @@ export const ICONS = {
       "M4 21q-.425 0-.712-.288T3 20v-6q0-.425.288-.712T4 13t.713.288T5 14v3.6L17.6 5H14q-.425 0-.712-.288T13 4t.288-.712T14 3h6q.425 0 .713.288T21 4v6q0 .425-.288.713T20 11t-.712-.288T19 10V6.4L6.4 19H10q.425 0 .713.288T11 20t-.288.713T10 21z",
     ],
   },
+  "send-outline-rounded": {
+    viewBox: "0 0 24 24",
+    paths: [
+      "m19.8 12.925l-15.4 6.5q-.5.2-.95-.088T3 18.5v-13q0-.55.45-.837t.95-.088l15.4 6.5q.625.275.625.925t-.625.925M5 17l11.85-5L5 7v3.5l6 1.5l-6 1.5zm0 0V7z",
+    ],
+  },
+  "mic-outline-rounded": {
+    viewBox: "0 0 24 24",
+    paths: [
+      "M9.875 13.125Q9 12.25 9 11V5q0-1.25.875-2.125T12 2t2.125.875T15 5v6q0 1.25-.875 2.125T12 14t-2.125-.875M11 20v-2.075q-2.3-.325-3.937-1.95t-1.988-3.95q-.05-.425.225-.725T6 11t.713.288T7.1 12q.35 1.75 1.738 2.875T12 16q1.8 0 3.175-1.137T16.9 12q.1-.425.388-.712T18 11t.7.3t.225.725q-.35 2.275-1.975 3.925T13 17.925V20q0 .425-.288.713T12 21t-.712-.288T11 20m1.713-8.287Q13 11.425 13 11V5q0-.425-.288-.712T12 4t-.712.288T11 5v6q0 .425.288.713T12 12t.713-.288",
+    ],
+  },
 } as const;
 
 /** The name of an icon of the app. */
@@ -422,6 +434,8 @@ export const VALUES = {
     filled: "open-in-full-outline-rounded",
     mirrored: false,
   },
+  send: { outline: "send-outline-rounded", filled: "send-outline-rounded", mirrored: false },
+  microphone: { outline: "mic-outline-rounded", filled: "mic-outline-rounded", mirrored: false },
 } as const satisfies Record<string, { outline: IconName; filled: IconName; mirrored: boolean }>;
 
 /** A value of the app. */

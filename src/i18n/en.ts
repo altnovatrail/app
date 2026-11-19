@@ -1197,6 +1197,26 @@ export const en = {
   "paper.select-none": "Select none",
   "paper.picked": "{count} of {total} selected",
   "paper.start": "Start",
+  /**
+   * The tutor's chat on the page to pick from (R74): its line of what it takes, the field of a
+   * request and its buttons, and the program's line of what the request came to.
+   */
+  "paper.ask-hello":
+    "Tell me which tasks to take from this page and how to split them: a column, a row, each example on its own. I only change the frames.",
+  "paper.ask-label": "Your request about the page",
+  "paper.ask-placeholder": "Say which tasks to take…",
+  "paper.ask-send": "Send",
+  /** The microphone, off: voice comes with a task of its own. */
+  "paper.ask-voice": "Voice comes later",
+  "paper.asked-found": plural({
+    one: "Found {count} task",
+    other: "Found {count} tasks",
+  }),
+  "paper.asked-found-line": "Your own frames stay. Undo brings back the frames before.",
+  "paper.asked-none": "No tasks found for that",
+  "paper.asked-none-line": "The frames stay as they were.",
+  "paper.undo": "Undo",
+  "paper.undone": "The frames are back as they were",
   /** Start is shut: without AI a task from paper can't be checked. */
   "paper.no-ai": "Without the AI a task from paper can't be checked",
   /** The heading of the screen of solving: a task the AI found; {n} is its place on the page. */

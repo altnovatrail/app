@@ -455,4 +455,14 @@ describe("the export of a Check", () => {
     clear();
     expect(snapshot().sent.size).toBe(0);
   });
+
+  it("keeps the learner's request by its finding, and forgets it with the log", async () => {
+    await load(client({ get: async () => create(GetDebugResponseSchema, { models }) }).client);
+    const finding = create(DebugActionSchema, { kind: DebugActionKind.FIND_TASKS });
+    const taken = create(TakeDebugCallsResponseSchema, { actions: [finding] });
+    await take(client({ take: async () => taken }).client, undefined, "only the first column");
+    expect(snapshot().asked.get(actionKey(finding))).toBe("only the first column");
+    clear();
+    expect(snapshot().asked.size).toBe(0);
+  });
 });

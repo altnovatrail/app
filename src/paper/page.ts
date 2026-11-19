@@ -1,12 +1,19 @@
 // The tasks of a photographed page as the pick screen holds them (R71): the frames `FindTasks` gave,
 // each picked at first, and those the learner draws, each picked as it comes; a tap on one leaves
 // it out or takes it back, and "Start" begins an attempt for each picked, in the order of the page.
-// No DOM.
+// The learner may ask in words to find them anew (R165 spec): the request goes with the frames on
+// the page, and the frames it gave take the place of those found, the learner's own staying. No DOM.
 import type { FindTasksResponse } from "@altnovatrail/contracts/novatrail/api/v1/paper_pb.js";
 import { type Frame, pageOrder } from "./frame.ts";
 
 /** The most tasks one page begins: those of `BeginPaperAttempts` (the contract). */
 export const MAX_TASKS = 20;
+
+/** The longest request about the page, in code points (the contract's `FindTasksRequest.request`). */
+export const MAX_REQUEST = 200;
+
+/** The most frames drawn a request carries (the contract). */
+const MAX_DRAWN = 40;
 
 /** A task on the page: its frame, whether the learner drew it, and whether it is picked. */
 export interface PageTask {
@@ -45,6 +52,59 @@ export function foundTasks(answer: FindTasksResponse): readonly PageTask[] {
     .sort(pageOrder)
     .slice(0, MAX_TASKS)
     .map((frame, i) => ({ id: `found-${i + 1}`, frame, drawn: false, picked: true }));
+}
+
+/**
+ * A request as it goes: trimmed, its control characters spaces, cut to MAX_REQUEST code points; none
+ * when nothing is left of it.
+ */
+export function requestOf(text: string): string | undefined {
+  // The contract refuses a control character: C0, DEL and C1.
+  const plain = [...text].map((c) => {
+    const n = c.codePointAt(0) ?? 0;
+    return n < 0x20 || (n >= 0x7f && n <= 0x9f) ? " " : c;
+  });
+  const kept = plain.join("").trim();
+  const cut = [...kept].slice(0, MAX_REQUEST).join("").trim();
+  return cut === "" ? undefined : cut;
+}
+
+/**
+ * The frames a request carries, each in the order of the page as the screen numbers them: those the
+ * AI found and those the learner drew, at most as many as the contract takes.
+ */
+export function framesOf(tasks: readonly PageTask[]): {
+  readonly found: readonly Frame[];
+  readonly drawn: readonly Frame[];
+} {
+  const ordered = [...tasks].sort((a, b) => pageOrder(a.frame, b.frame));
+  return {
+    found: ordered
+      .filter((task) => !task.drawn)
+      .map((task) => task.frame)
+      .slice(0, MAX_TASKS),
+    drawn: ordered
+      .filter((task) => task.drawn)
+      .map((task) => task.frame)
+      .slice(0, MAX_DRAWN),
+  };
+}
+
+/**
+ * The tasks once a request gave frames: those found take the place of the AI's before, each its key
+ * of this request's own, `stamp`, so that none takes the key of a task begun before; the learner's
+ * own stay, as they are. None found, the tasks as they were.
+ */
+export function asked(
+  tasks: readonly PageTask[],
+  found: readonly PageTask[],
+  stamp: string,
+): readonly PageTask[] {
+  if (found.length === 0) return tasks;
+  return [
+    ...found.map((task, i) => ({ ...task, id: `asked-${stamp}-${i + 1}` })),
+    ...tasks.filter((task) => task.drawn),
+  ];
 }
 
 /** A tap on a task: picked, it is left out; left out, picked again. */

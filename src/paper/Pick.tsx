@@ -6,6 +6,8 @@
 // which clears the photo for frames of the learner's own, and Retake; at the foot,
 // the note that the photo stays on the device, and the bar of "Select all", the count and Start.
 // Drawing a frame takes a pointer: a learner on the keyboard picks among the AI's frames alone.
+// Beside the tutor's open panel the page ends where the panel begins, and on a phone its sheet
+// hides the bar (R74).
 import { type CSSProperties, type PointerEvent, type ReactNode, useRef, useState } from "react";
 import { Icon } from "../app/Icon.tsx";
 import { IconButton } from "../app/IconButton.tsx";
@@ -66,6 +68,8 @@ export interface PickProps {
   readonly onStart: () => void;
   readonly onRetake: () => void;
   readonly onHome: () => void;
+  /** The tutor's panel is open. */
+  readonly beside?: boolean;
 }
 
 export function Pick({
@@ -79,6 +83,7 @@ export function Pick({
   onStart,
   onRetake,
   onHome,
+  beside = false,
 }: PickProps) {
   const { words } = useLanguage();
   const surface = useRef<HTMLDivElement>(null);
@@ -150,6 +155,7 @@ export function Pick({
     setLive(undefined);
   };
 
+  const besideIt = beside ? { "data-beside": "panel" } : {};
   const order = numbers(tasks);
   const count = counts(tasks);
   const all = count.picked === count.all && count.all > 0;
@@ -186,11 +192,11 @@ export function Pick({
         ),
       }}
     >
-      <div className="nt-page-lines">
+      <div className="nt-page-lines" {...besideIt}>
         {lines}
         {corner === undefined ? null : <p role="status">{words.text("paper.corner")}</p>}
       </div>
-      <div className="nt-page-stage">
+      <div className="nt-page-stage" {...besideIt}>
         <div
           ref={surface}
           className="nt-page-photo"
@@ -285,11 +291,11 @@ export function Pick({
           )}
         </div>
       </div>
-      <p className="nt-page-note">
+      <p className="nt-page-note" {...besideIt}>
         <Icon value="state-locked" />
         {words.text("paper.note")}
       </p>
-      <div className="nt-page-bar nt-glass">
+      <div className="nt-page-bar nt-glass" {...besideIt}>
         <button
           type="button"
           className="nt-plain"

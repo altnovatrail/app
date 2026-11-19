@@ -5,9 +5,12 @@
 // the device; each try of finding is an action of its own, with a key of its own, as api keeps no
 // frames for a repeat. A refusal that shuts AI to the learner — the quota, the platform's limit,
 // no model admitted, or the own key's limit or refusal — shuts Start: without AI a task from paper
-// can't be checked. Retake throws the page away, and the tasks begun with it.
+// can't be checked. Retake throws the page away, and the tasks begun with it. The tutor's panel on
+// the page takes the learner's request about it, which finds the tasks anew with the frames on the
+// page now (R74; R165 spec): the frames it gave take the place of those found, the learner's own
+// staying, and Undo puts back the frames before until the learner changes any.
 import { Cause } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useApi } from "../api/ApiContext.tsx";
 import { type Failure, parseFailure } from "../api/failure.ts";
 import { PAPER_TIMEOUT_MS } from "../api/interceptors.ts";
@@ -19,11 +22,13 @@ import { DebugSlot } from "../debug/slot.tsx";
 import { watched } from "../debug/watched.ts";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { useKeyHolder } from "../ownkey/OwnKeyContext.tsx";
+import { TutorButton } from "../task/TutorPanel.tsx";
 import { Camera } from "./Camera.tsx";
 import { cropsOf, type Photo } from "./capture.ts";
+import { PageTutor } from "./PageTutor.tsx";
 import { type BegunTask, type PaperPage, usePaper } from "./PaperContext.tsx";
 import { Pick } from "./Pick.tsx";
-import { foundTasks, limit, MAX_TASKS, picked } from "./page.ts";
+import { asked, foundTasks, framesOf, limit, MAX_TASKS, type PageTask, picked } from "./page.ts";
 import { Solve } from "./Solve.tsx";
 import { notBegun } from "./solve.ts";
 
@@ -54,24 +59,48 @@ export function PaperScreen({ profileId }: { readonly profileId: string }) {
   // again repeats it.
   const startKey = useRef<{ readonly of: string; readonly key: string } | undefined>(undefined);
   const change = paper?.change;
+  // The tutor's panel on the page is open; the focus goes to its heading, and back to its button.
+  const [talking, setTalking] = useState(false);
+  const heading = useRef<HTMLHeadingElement>(null);
+  const call = useRef<HTMLButtonElement>(null);
+  const wasTalking = useRef(talking);
+  useEffect(() => {
+    if (wasTalking.current === talking) return;
+    wasTalking.current = talking;
+    (talking ? heading.current : call.current)?.focus();
+  }, [talking]);
 
+  /** FindTasks on the photo; with the learner's request, with the frames of these tasks too. */
   const find = useCallback(
-    (photo: Photo) => {
+    (photo: Photo, request?: string, tasks: readonly PageTask[] = []) => {
       if (change === undefined) return;
       const ai = holder.aiFields(profileId);
       const failed = (failure: Failure) =>
-        change(photo, (page) => ({ ...page, finding: { status: "failed", failure } }));
+        change(photo, (page) => ({ ...page, finding: { status: "failed", failure, request } }));
       change(photo, (page) => ({ ...page, finding: { status: "finding" } }));
-      watched(api, () =>
-        api.paper.findTasks(
-          {
-            profileId,
-            idempotencyKey: idempotencyKey(),
-            photo: photo.bytes,
-            ...ai,
-          },
-          { timeoutMs: PAPER_TIMEOUT_MS },
-        ),
+      const frames = request === undefined ? undefined : framesOf(tasks);
+      const key = idempotencyKey();
+      watched(
+        api,
+        () =>
+          api.paper.findTasks(
+            {
+              profileId,
+              idempotencyKey: key,
+              photo: photo.bytes,
+              ...(frames === undefined
+                ? {}
+                : {
+                    request,
+                    found: frames.found.map((box) => ({ box })),
+                    drawn: frames.drawn.map((box) => ({ box })),
+                  }),
+              ...ai,
+            },
+            { timeoutMs: PAPER_TIMEOUT_MS },
+          ),
+        undefined,
+        request,
       ).then(
         (answer) => {
           const read = outcomeOf(answer.outcome);
@@ -82,12 +111,27 @@ export function PaperScreen({ profileId }: { readonly profileId: string }) {
             return;
           }
           const found = foundTasks(answer);
+          const finding =
+            read !== undefined && found.length === 0
+              ? ({ status: "outcome", outcome: read } as const)
+              : ({ status: "found" } as const);
+          if (request !== undefined) {
+            // None found leaves the page, and Undo, as they were.
+            change(photo, (page) => ({
+              ...page,
+              finding,
+              tasks: asked(page.tasks, found, key),
+              before: found.length === 0 ? page.before : page.tasks,
+              talk: [
+                ...page.talk,
+                found.length === 0 ? { kind: "none" } : { kind: "found", count: found.length },
+              ],
+            }));
+            return;
+          }
           change(photo, (page) => ({
             ...page,
-            finding:
-              read !== undefined && found.length === 0
-                ? { status: "outcome", outcome: read }
-                : { status: "found" },
+            finding,
             // The frames drawn while it was under way stay.
             tasks: [...found, ...page.tasks.filter((task) => task.drawn)],
           }));
@@ -195,7 +239,9 @@ export function PaperScreen({ profileId }: { readonly profileId: string }) {
       ) : finding.status === "outcome" ? (
         <p role="status">
           {outcomeText(finding.outcome, words)}
-          {closesAI(finding.outcome) ? null : ` ${words.text("paper.none-found")}`}
+          {closesAI(finding.outcome) || page.tasks.length > 0
+            ? null
+            : ` ${words.text("paper.none-found")}`}
         </p>
       ) : finding.status === "failed" ? (
         <p role="alert" className="nt-error">
@@ -203,7 +249,11 @@ export function PaperScreen({ profileId }: { readonly profileId: string }) {
           {shuts(finding.failure) ? null : (
             <>
               {" "}
-              <button type="button" className="nt-secondary" onClick={() => find(page.photo)}>
+              <button
+                type="button"
+                className="nt-secondary"
+                onClick={() => find(page.photo, finding.request, page.tasks)}
+              >
                 {words.text("paper.find-again")}
               </button>
             </>
@@ -224,13 +274,32 @@ export function PaperScreen({ profileId }: { readonly profileId: string }) {
     </>
   );
 
+  const ask = (request: string) => {
+    paper.change(page.photo, (now) => ({
+      ...now,
+      talk: [...now.talk, { kind: "request", text: request }],
+    }));
+    find(page.photo, request, page.tasks);
+  };
+  const undo = () =>
+    paper.change(page.photo, (now) =>
+      now.before === undefined
+        ? now
+        : { ...now, tasks: now.before, before: undefined, talk: [...now.talk, { kind: "undone" }] },
+    );
+
   return (
     <>
       <Pick
         photo={page.photo}
         tasks={page.tasks}
+        // Any change of the learner's to the tasks takes Undo away.
         onTasks={(update) =>
-          paper.change(page.photo, (now: PaperPage) => ({ ...now, tasks: update(now.tasks) }))
+          paper.change(page.photo, (now: PaperPage) => ({
+            ...now,
+            tasks: update(now.tasks),
+            before: undefined,
+          }))
         }
         lines={lines}
         finding={finding.status === "finding"}
@@ -243,8 +312,22 @@ export function PaperScreen({ profileId }: { readonly profileId: string }) {
           if (paper.begun === undefined) paper.clear();
           home();
         }}
+        beside={talking}
       />
-      <DebugSlot />
+      {talking ? (
+        <PageTutor
+          talk={page.talk}
+          busy={finding.status === "finding"}
+          closed={closed}
+          onAsk={ask}
+          onUndo={page.before === undefined ? undefined : undo}
+          onClose={() => setTalking(false)}
+          headingRef={heading}
+        />
+      ) : (
+        <TutorButton onOpen={() => setTalking(true)} buttonRef={call} />
+      )}
+      <DebugSlot above />
     </>
   );
 }

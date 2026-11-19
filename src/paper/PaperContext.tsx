@@ -2,7 +2,8 @@
 // it and those drawn, what finding them came to, and once Start has begun them the attempts, the
 // crops and the work on each, and whether the screen of solving is shown or the page, by "Add". The
 // address names none of them (R14): `#/paper` takes them from here, and they go with the learner
-// chosen, on a new photo, or at a reload. Each photo replaced has its URLs revoked.
+// chosen, on a new photo, or at a reload. So does the conversation with the tutor about the page, the
+// learner's requests among it (R74). Each photo replaced has its URLs revoked.
 import { createContext, type ReactNode, useCallback, useContext, useMemo, useState } from "react";
 import type { Failure } from "../api/failure.ts";
 import type { ReadOutcome } from "../api/outcome.ts";
@@ -20,13 +21,27 @@ export type Finding =
   | { readonly status: "found" }
   /** A call of AI gave no frames: its outcome. */
   | { readonly status: "outcome"; readonly outcome: ReadOutcome }
-  /** It did not answer: a refusal or no connection. */
-  | { readonly status: "failed"; readonly failure: Failure };
+  /** It did not answer: a refusal or no connection; a try again asks the same request. */
+  | { readonly status: "failed"; readonly failure: Failure; readonly request?: string | undefined };
+
+/** A line of the conversation about the page: the learner's request, or what came of it. */
+export type Said =
+  | { readonly kind: "request"; readonly text: string }
+  /** The request gave this many frames, which took the place of those found. */
+  | { readonly kind: "found"; readonly count: number }
+  /** It gave none: the frames stay. */
+  | { readonly kind: "none" }
+  /** Undo put the frames before it back. */
+  | { readonly kind: "undone" };
 
 export interface PaperPage {
   readonly photo: Photo;
   readonly finding: Finding;
   readonly tasks: readonly PageTask[];
+  /** The conversation with the tutor about the page, oldest first. */
+  readonly talk: readonly Said[];
+  /** The tasks before the last request gave frames: Undo puts them back, until the learner changes any. */
+  readonly before?: readonly PageTask[] | undefined;
 }
 
 export interface Paper {
@@ -63,7 +78,7 @@ export function PaperProvider({ children }: { readonly children: ReactNode }) {
     setHeld((now) => {
       if (now.page?.photo !== photo) release(now.page?.photo);
       return {
-        page: { photo, finding: { status: "finding" }, tasks: [] },
+        page: { photo, finding: { status: "finding" }, tasks: [], talk: [] },
         begun: undefined,
         solving: false,
       };

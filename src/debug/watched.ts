@@ -16,10 +16,15 @@ export interface Check<T> {
 
 /**
  * A call of a task from paper: the debug mode shows it under way, and takes what its calls of AI
- * returned once it ends, however it ends, and for a Check what it sent. A release's build makes the
- * call alone.
+ * returned once it ends, however it ends, for a Check what it sent, and for a finding the learner's
+ * request, which api keeps nowhere. A release's build makes the call alone.
  */
-export async function watched<T>(api: Api, call: () => Promise<T>, check?: Check<T>): Promise<T> {
+export async function watched<T>(
+  api: Api,
+  call: () => Promise<T>,
+  check?: Check<T>,
+  request?: string,
+): Promise<T> {
   if (!import.meta.env.DEV || api.debug === undefined) return call();
   const debug = await import("./debug.ts");
   // The first call may come before the window asked api, or after its asking failed.
@@ -41,6 +46,6 @@ export async function watched<T>(api: Api, call: () => Promise<T>, check?: Check
               debug.outcomeOf,
             ),
           };
-    void debug.take(api.debug, sent);
+    void debug.take(api.debug, sent, request);
   }
 }

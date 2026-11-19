@@ -599,6 +599,7 @@ export default function DebugButton({ above = false }: { readonly above?: boolea
                   [...actions].reverse().map((action) => {
                     const key = actionKey(action);
                     const sent = debug.sent.get(key);
+                    const request = debug.asked.get(key);
                     return (
                       <div key={key} className="nt-debug-group">
                         <div className="nt-debug-group-head">
@@ -625,6 +626,9 @@ export default function DebugButton({ above = false }: { readonly above?: boolea
                             />
                           ))}
                         </div>
+                        {request === undefined ? null : (
+                          <span className="nt-debug-foot">Request: “{request}”</span>
+                        )}
                         {joinOf(action) === "" ? null : (
                           <span className="nt-debug-foot">{joinOf(action)}</span>
                         )}

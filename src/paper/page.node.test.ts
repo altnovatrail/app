@@ -1,17 +1,22 @@
 // The tasks of a page on the pick screen (R71): the frames FindTasks gave, picked and in the order of
-// the page; a tap, "Select all" and "Select none"; the frames the learner draws; what Start begins.
+// the page; a tap, "Select all" and "Select none"; the frames the learner draws; what Start begins;
+// and a request about the page, its frames and what its answer leaves on the page (R74).
 import { FindTasksResponseSchema } from "@altnovatrail/contracts/novatrail/api/v1/paper_pb.js";
 import { create } from "@bufbuild/protobuf";
 import { describe, expect, it } from "vitest";
 import {
   allOrNone,
+  asked,
   canStart,
   counts,
   foundTasks,
+  framesOf,
   limit,
+  MAX_REQUEST,
   MAX_TASKS,
   numbers,
   picked,
+  requestOf,
   toggled,
   withDrawn,
   withFrame,
@@ -126,5 +131,42 @@ describe("the pick", () => {
     const more = withDrawn(full, { ymin: 900, xmin: 500, ymax: 950, xmax: 600 });
     expect(limit(more)).toBe("too-many");
     expect(limit(toggled(more, more[0]?.id ?? ""))).toBe("at-most");
+  });
+});
+
+describe("a request about the page", () => {
+  it("goes trimmed, its control characters spaces, at most MAX_REQUEST code points", () => {
+    expect(requestOf("  only the\nfirst column\u0085 ")).toBe("only the first column");
+    expect(requestOf(" \t\n")).toBeUndefined();
+    const long = requestOf(`${"я".repeat(MAX_REQUEST - 1)}😀😀`);
+    expect([...(long ?? "")]).toHaveLength(MAX_REQUEST);
+  });
+
+  it("carries the frames found and drawn, each in the order of the page", () => {
+    const found = foundTasks(answer([box(500, 0, 600, 400), box(100, 0, 200, 400)]));
+    const tasks = withDrawn(withDrawn(found, { ymin: 700, xmin: 0, ymax: 800, xmax: 400 }), {
+      ymin: 0,
+      xmin: 500,
+      ymax: 90,
+      xmax: 900,
+    });
+    const frames = framesOf(tasks);
+    expect(frames.found.map((f) => f.ymin)).toEqual([100, 500]);
+    expect(frames.drawn.map((f) => f.ymin)).toEqual([0, 700]);
+  });
+
+  it("puts its frames in the place of those found, each a key of its own, the learner's own staying", () => {
+    const before = withDrawn(foundTasks(answer([box(0, 0, 1000, 1000)])), {
+      ymin: 10,
+      xmin: 10,
+      ymax: 90,
+      xmax: 90,
+    });
+    const found = foundTasks(answer([box(100, 0, 200, 250), box(300, 0, 400, 250)]));
+    const after = asked(before, found, "k");
+    expect(after.filter((t) => !t.drawn).map((t) => t.frame.ymin)).toEqual([100, 300]);
+    expect(after.filter((t) => t.drawn)).toEqual(before.filter((t) => t.drawn));
+    expect(new Set([...before, ...after].map((t) => t.id)).size).toBe(4);
+    expect(asked(before, [], "k")).toBe(before);
   });
 });

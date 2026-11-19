@@ -3,8 +3,9 @@
 // out, and Start begins the picked ones with BeginPaperAttempts; two taps frame a task the AI
 // missed; a refusal that shuts AI shuts Start; each task begun is a sheet under its crop, the list
 // goes from one to another and back to the page, and Check sends the two crops and shows the
-// verdict by the task's key, or "Couldn't check this one" with none — with api on connect-es's
-// router.
+// verdict by the task's key, or "Couldn't check this one" with none; the tutor's panel on the page
+// finds it anew by the learner's request, and Undo brings the frames back — with api on
+// connect-es's router.
 import {
   AttemptService,
   type SubmitWorkRequest,
@@ -30,7 +31,7 @@ import { PaperProvider } from "./PaperContext.tsx";
 import { PaperScreen } from "./PaperScreen.tsx";
 
 interface Setup {
-  readonly found?: () => MessageInitShape<typeof FindTasksResponseSchema>;
+  readonly found?: (request: FindTasksRequest) => MessageInitShape<typeof FindTasksResponseSchema>;
   /** The answer to each Check, by how many came before it; none refuses it. */
   readonly checked?: (n: number) => MessageInitShape<typeof SubmitWorkResponseSchema>;
 }
@@ -67,7 +68,7 @@ async function renderPaper(setup: Setup = {}) {
       findTasks(request) {
         finds.push(request);
         return (
-          setup.found?.() ?? {
+          setup.found?.(request) ?? {
             frames: [
               { box: { ymin: 500, xmin: 50, ymax: 650, xmax: 950 } },
               { box: { ymin: 75, xmin: 50, ymax: 225, xmax: 950 } },
@@ -369,6 +370,41 @@ it("frames a task the AI missed by two taps, and removes it by its cross", async
   expect(screen.getByRole("button", { name: "Start" })).toBeEnabled();
   await userEvent.click(screen.getByRole("button", { name: "Remove the frame" }));
   await waitFor(() => expect(screen.queryByRole("button", { name: /your frame/ })).toBeNull());
+});
+
+it("finds the page anew by the learner's request, its own frame staying, and Undo brings the frames back", async () => {
+  const column = (n: number) => ({
+    box: { ymin: 20 + n * 300, xmin: 20, ymax: 290 + n * 300, xmax: 240 },
+  });
+  const { finds } = await renderPaper({
+    found: (request) =>
+      request.request === ""
+        ? { frames: [{ box: { ymin: 0, xmin: 0, ymax: 1000, xmax: 1000 } }] }
+        : { frames: [column(0), column(1), column(2)] },
+  });
+  await screen.findByRole("button", { name: "Deselect task 1" });
+  tap(500, 100);
+  tap(900, 300);
+  await screen.findByRole("button", { name: /your frame/ });
+  await userEvent.click(screen.getByRole("button", { name: "Tutor" }));
+  const field = await screen.findByRole("textbox", { name: "Your request about the page" });
+  expect(field).toHaveAccessibleDescription(
+    "Don't write your name or the real names of people you know",
+  );
+  expect(screen.getByRole("button", { name: "Voice comes later" })).toBeDisabled();
+  await userEvent.type(field, "only the first column, each task apart{Enter}");
+  expect(await screen.findByText("Found 3 tasks")).toBeVisible();
+  expect(screen.getByText("only the first column, each task apart")).toBeVisible();
+  const asked = finds[1];
+  expect(asked?.request).toBe("only the first column, each task apart");
+  expect(asked?.found.map((f) => f.box?.ymax)).toEqual([1000]);
+  expect(asked?.drawn).toHaveLength(1);
+  expect(screen.getAllByRole("button", { name: /^Deselect task/ })).toHaveLength(3);
+  expect(screen.getByRole("button", { name: /your frame/ })).toBeVisible();
+  await userEvent.click(screen.getByRole("button", { name: "Undo" }));
+  expect(await screen.findByText("The frames are back as they were")).toBeVisible();
+  expect(screen.getAllByRole("button", { name: /^Deselect task/ })).toHaveLength(1);
+  expect(screen.queryByRole("button", { name: "Undo" })).toBeNull();
 });
 
 it("shuts Start when the quota is spent", async () => {

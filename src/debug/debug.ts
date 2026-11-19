@@ -62,6 +62,8 @@ export interface DebugState {
   readonly actions: readonly DebugAction[];
   /** What each Check of the log sent, by the key of its action. */
   readonly sent: ReadonlyMap<string, Sent>;
+  /** The learner's request of each finding that had one, by the key of its action, from the tab. */
+  readonly asked: ReadonlyMap<string, string>;
   /** A call of a task from paper is under way. */
   readonly busy: number;
   /** What the last change of the choice came to, when api refused it. */
@@ -103,6 +105,7 @@ const initial: DebugState = {
   secondOn: false,
   actions: [],
   sent: new Map(),
+  asked: new Map(),
   busy: 0,
   refused: undefined,
 };
@@ -253,9 +256,13 @@ export function began(): void {
 
 /**
  * After a call of a task from paper: the actions since the last take join the session's, and a
- * Check's action holds what it sent.
+ * Check's action holds what it sent, and a finding's the learner's request.
  */
-export async function take(client: DebugClient | undefined, sent?: Sent): Promise<void> {
+export async function take(
+  client: DebugClient | undefined,
+  sent?: Sent,
+  request?: string,
+): Promise<void> {
   if (client === undefined) return;
   if (loading !== undefined) await loading;
   if (state.status !== "on") {
@@ -268,6 +275,9 @@ export async function take(client: DebugClient | undefined, sent?: Sent): Promis
     const check = [...answer.actions]
       .reverse()
       .find((a) => a.kind === DebugActionKind.CHECK && a.attemptId === sent?.attemptId);
+    const finding = [...answer.actions]
+      .reverse()
+      .find((a) => a.kind === DebugActionKind.FIND_TASKS);
     set((now) => ({
       ...now,
       actions: [...now.actions, ...answer.actions],
@@ -275,6 +285,10 @@ export async function take(client: DebugClient | undefined, sent?: Sent): Promis
         check === undefined || sent === undefined
           ? now.sent
           : new Map([...now.sent, [actionKey(check), sent]]),
+      asked:
+        finding === undefined || request === undefined
+          ? now.asked
+          : new Map([...now.asked, [actionKey(finding), request]]),
       busy: Math.max(0, now.busy - 1),
     }));
   } catch {
@@ -284,7 +298,7 @@ export async function take(client: DebugClient | undefined, sent?: Sent): Promis
 
 /** The log forgotten; the choice stays. */
 export function clear(): void {
-  set((now) => ({ ...now, actions: [], sent: new Map() }));
+  set((now) => ({ ...now, actions: [], sent: new Map(), asked: new Map() }));
 }
 
 /** Micro-dollars as the window writes them: five places below a cent, four from it. */

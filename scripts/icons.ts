@@ -110,6 +110,10 @@ export const TABLE: Readonly<Record<string, Value>> = {
   // home screen's card, a frame's cross the close.
   photos: { base: "photo-library", filled: false, mirrored: false },
   resize: { base: "open-in-full", filled: false, mirrored: false },
+  // The field of a request on the page to pick from (R74): Send, a paper plane, and the microphone,
+  // off until voice comes; each beside its caption.
+  send: { base: "send", filled: false, mirrored: false },
+  microphone: { base: "mic", filled: false, mirrored: false },
 };
 
 /** An icon as the app draws it: its view box, and the paths it fills in the text's colour. */
