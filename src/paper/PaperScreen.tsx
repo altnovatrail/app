@@ -188,7 +188,7 @@ export function PaperScreen({
       paper.begin(page.photo, []);
       return;
     }
-    const of = JSON.stringify([page.photo.url, ...chosen.map((task) => task.frame)]);
+    const of = JSON.stringify([page.pageId, ...chosen.map((task) => task.frame)]);
     if (startKey.current?.of !== of) startKey.current = { of, key: idempotencyKey() };
     const key = startKey.current.key;
     setStarting(true);
@@ -202,6 +202,8 @@ export function PaperScreen({
         const answer = await api.paper.beginPaperAttempts({
           profileId,
           idempotencyKey: key,
+          // The same page after "Add": api closes none of its tasks begun before (R77).
+          pageId: page.pageId,
           tasks: chosen.length,
           ...holder.routeFields(profileId),
         });
