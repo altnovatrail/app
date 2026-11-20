@@ -45,7 +45,14 @@ function shuts(failure: Failure | undefined): boolean {
   return failure?.kind === "refused" && SHUTTING.has(failure.cause);
 }
 
-export function PaperScreen({ profileId }: { readonly profileId: string }) {
+export function PaperScreen({
+  profileId,
+  adult,
+}: {
+  readonly profileId: string;
+  /** The learner is of the category adult: the tutor's words of a task offer a report (R33). */
+  readonly adult: boolean;
+}) {
   const paper = usePaper();
   const api = useApi();
   const holder = useKeyHolder();
@@ -144,6 +151,7 @@ export function PaperScreen({ profileId }: { readonly profileId: string }) {
       <>
         <Solve
           profileId={profileId}
+          adult={adult}
           tasks={page.tasks}
           begun={paper.begun}
           onKeep={paper.keep}

@@ -13,8 +13,16 @@
 // edge opens its panel, and so does Hint; a verdict does not (R75; R148 spec). While the panel is
 // open the verdict is a line in it, the hint a bubble there, said by itself while the voicing is
 // on, and on a phone its sheet hides the row and the canvas's bar of tools; while it is closed the
-// verdict is a card above the row, with the panel's buttons. The hint stands till another task,
-// Check or Hint, and what is said of it stops with another task or the panel closed.
+// verdict is a card above the row, with the panel's buttons. The tutor's words are of AI (R82
+// spec): Hint before the first wrong answer asks the opening question from the task's crop as
+// printed, once on the attempt; after Not yet, with the panel open — or once it opens — the words
+// of the rung come with the work of the Check, and in the mode "Show where" with the wavy line
+// under the first mistake, which goes with other work or the paper moved; "Explain differently"
+// words the rung anew, once on it; and an adult may report a problem with the words. The words
+// stand till another task or Check, and what is said of them stops with another task or the panel
+// closed.
+import { TutorReply, type Work } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
+import { Cause } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import type {
   CanvasElement,
   HistoryChangeEvent,
@@ -26,8 +34,8 @@ import { useApi } from "../api/ApiContext.tsx";
 import { type Failure, parseFailure } from "../api/failure.ts";
 import { PAPER_TIMEOUT_MS } from "../api/interceptors.ts";
 import { idempotencyKey } from "../api/keys.ts";
-import { outcomeOf } from "../api/outcome.ts";
-import { failureText } from "../api/words.ts";
+import { closesAI, outcomeOf } from "../api/outcome.ts";
+import { failureText, outcomeText } from "../api/words.ts";
 import { Icon } from "../app/Icon.tsx";
 import { IconButton } from "../app/IconButton.tsx";
 import { useNarrow } from "../app/narrow.ts";
@@ -40,10 +48,12 @@ import { workOf } from "../task/attempt.ts";
 import { useOwnVoicing } from "../task/shared.ts";
 import { HintButton, RowLine, VerdictCard } from "../task/TaskLayout.tsx";
 import { TutorButton, usePanelFocus, useQuotaLine } from "../task/TutorPanel.tsx";
+import type { Said } from "../tutor/report.ts";
 import { numbers, type PageTask } from "./page.ts";
 import { SolveTutor } from "./SolveTutor.tsx";
 import {
   type BegunTask,
+  type Box,
   besideTask,
   checkOver,
   onList,
@@ -52,6 +62,7 @@ import {
   shownTask,
   tutorActs,
   verdictMarks,
+  wavyOf,
   withChange,
 } from "./solve.ts";
 
@@ -66,8 +77,23 @@ function paperOf(crop: Blob): PaperTask {
   return paper;
 }
 
+/**
+ * A wrong answer whose rung's words are to be asked, with the work its Check sent and the key of
+ * the request, the same when it goes again after a failure.
+ */
+interface RungAsk {
+  readonly attemptId: string;
+  readonly wrongAnswers: number;
+  readonly work: Work;
+  readonly key: string;
+}
+
+/** Causes of a refusal of the words of a rung that say there are none to show for this answer. */
+const QUIET = new Set([Cause.NOT_CURRENT, Cause.NO_RUNG, Cause.NO_MORE_WORDS]);
+
 export function Solve({
   profileId,
+  adult,
   tasks,
   begun,
   onKeep,
@@ -75,6 +101,8 @@ export function Solve({
   onHome,
 }: {
   readonly profileId: string;
+  /** The learner is of the category adult: "Report a problem" stands below the tutor's words (R33). */
+  readonly adult: boolean;
   /** The page's tasks, by which the tasks begun are named and listed. */
   readonly tasks: readonly PageTask[];
   readonly begun: readonly BegunTask[];
@@ -93,14 +121,30 @@ export function Solve({
   const [pending, setPending] = useState(false);
   const [checking, setChecking] = useState(false);
   const [failure, setFailure] = useState<Failure | undefined>(undefined);
-  // The hint asked for, in the tutor's panel.
-  const [said, setSaid] = useState<string | undefined>(undefined);
+  // The tutor's words in its panel, with the reply that brought them (R123 spec).
+  const [said, setSaid] = useState<Said | undefined>(undefined);
+  const [wordsWaiting, setWordsWaiting] = useState(false);
+  // What a request of words came to when it gave none, or why platform AI gave none of its own.
+  const [wordsNote, setWordsNote] = useState<string | undefined>(undefined);
+  const [explaining, setExplaining] = useState(false);
+  // "Explain differently" was asked on the current rung, whatever it gave.
+  const [explained, setExplained] = useState(false);
+  // The box of the wavy line under the first mistake, of the words of the rung shown.
+  const [wavy, setWavy] = useState<Box | undefined>(undefined);
+  // The keys of the opening question and of "Explain differently", kept till an answer, so that a
+  // press again after a failure repeats the action.
+  const openingKey = useRef<{ readonly of: string; readonly key: string } | undefined>(undefined);
+  const explainKey = useRef<string | undefined>(undefined);
+  // The wrong answer of the last Check whose rung's words the closed panel left unasked.
+  const unasked = useRef<RungAsk | undefined>(undefined);
+  // Another task or Check: an answer asked before it shows nothing.
+  const epoch = useRef(0);
   // The tutor's panel, as the learner leaves it from task to task; it is closed at first.
   const [open, setOpen] = useState(false);
   const isOpen = useRef(open);
   isOpen.current = open;
   const { heading, call } = usePanelFocus(open);
-  // Each answer to a Check reads the share of the quota again; a Hint takes no AI.
+  // Each answer to a call of AI reads the share of the quota again.
   const [spent, setSpent] = useState(0);
   const quota = useQuotaLine(profileId, open, spent);
   const { auto, prime, hush } = useOwnVoicing();
@@ -119,8 +163,16 @@ export function Solve({
   // biome-ignore lint/correctness/useExhaustiveDependencies: it runs on the task's change alone.
   useEffect(() => {
     hush();
+    epoch.current += 1;
+    unasked.current = undefined;
+    explainKey.current = undefined;
+    setWordsWaiting(false);
+    setExplaining(false);
     setFailure(undefined);
     setSaid(undefined);
+    setWordsNote(undefined);
+    setExplained(false);
+    setWavy(undefined);
     setTold("");
     setUnwritten(false);
     setWritten(element.current?.filled?.[0]?.[0] === true);
@@ -137,6 +189,8 @@ export function Solve({
       setWritten(sheet.filled?.[0]?.[0] === true);
       setUnwritten(false);
       setTold("");
+      // The wavy line stood under the work as it was (R82 spec).
+      setWavy(undefined);
       // Other work puts a verdict away, but that of a Check that is over, whose marks go all the
       // same: the canvas drops them, and their context holds strokes the work may no longer have.
       onKeep(attemptId, (was) =>
@@ -152,6 +206,7 @@ export function Solve({
       // The canvas puts its marks away with the paper moved, and a mount again would give them
       // the context of a Check the tracing is no longer at.
       onKeep(attemptId, (was) => ({ ...was, tracing, checked: undefined }));
+      setWavy(undefined);
     },
     [attemptId, onKeep],
   );
@@ -159,7 +214,12 @@ export function Solve({
   const verdict = task?.verdict;
   const checked = task?.checked;
   // One object while the Check is the same, so that a render gives the element no new marks.
-  const marks = useMemo(() => verdictMarks({ verdict, checked }, words), [verdict, checked, words]);
+  // The wavy line stands beside the words it underlines, in the open panel.
+  const line = open ? wavy : undefined;
+  const marks = useMemo(
+    () => verdictMarks({ verdict, checked }, words, line),
+    [verdict, checked, words, line],
+  );
 
   if (task === undefined || attemptId === undefined) return null;
   const order = numbers(tasks);
@@ -173,29 +233,166 @@ export function Solve({
     if (to !== undefined && !pending) setAsked(to.attemptId);
   };
 
+  /** The tutor's words shown: said by the voicing in the open panel, else told to a screen reader. */
+  const show = (next: Said) => {
+    setSaid((before) =>
+      // The words shown again stay the reply they came by, and a report begun on them stays open.
+      before?.text === next.text ? before : next,
+    );
+    if (isOpen.current) auto([{ text: next.text, language }]);
+    else setTold(next.text);
+  };
+
+  /** The words of the rung of a wrong answer, by AI with the work of its Check (R82 spec). */
+  const rungWords = (ask: RungAsk) => {
+    unasked.current = undefined;
+    const asked = epoch.current;
+    setWordsWaiting(true);
+    setWordsNote(undefined);
+    const ai = holder.aiFields(profileId);
+    void watched(api, () =>
+      api.attempt.getRungWords({
+        profileId,
+        attemptId: ask.attemptId,
+        idempotencyKey: ask.key,
+        wrongAnswers: ask.wrongAnswers,
+        work: ask.work,
+        ...ai,
+      }),
+    )
+      .then(
+        (answer) => {
+          const read = outcomeOf(answer.outcome);
+          holder.noteOutcome(profileId, read, ai);
+          if (asked !== epoch.current) return;
+          if (answer.words !== "") {
+            show({ text: answer.words, reply: TutorReply.RUNG, rung: answer.rung });
+            setWavy(wavyOf(answer.marks));
+          }
+          // The fallback text comes with an outcome: beside it stands why, when platform AI is
+          // closed beyond this call (R37).
+          if (answer.words === "" ? read !== undefined : closesAI(read))
+            setWordsNote(outcomeText(read, words));
+        },
+        (reason: unknown) => {
+          if (asked !== epoch.current) return;
+          const found = parseFailure(reason);
+          // What may not have reached api goes again with its key, by Hint or the panel opened.
+          if (found.kind !== "refused") unasked.current = ask;
+          if (found.kind !== "refused" || !QUIET.has(found.cause))
+            setWordsNote(failureText(found, words));
+        },
+      )
+      .finally(() => {
+        // Another task or Check put the waiting away, and may be waiting for its own.
+        if (asked === epoch.current) setWordsWaiting(false);
+        setSpent((n) => n + 1);
+      });
+  };
+
+  /** The opening question of a task with no wrong answer, by AI from its crop as printed. */
+  const openingWords = async (asked: number) => {
+    if (openingKey.current?.of !== attemptId)
+      openingKey.current = { of: attemptId, key: idempotencyKey() };
+    const key = openingKey.current.key;
+    const statement = new Uint8Array(await task.crop.arrayBuffer());
+    const ai = holder.aiFields(profileId);
+    const answer = await watched(api, () =>
+      api.attempt.getOpeningWords({ profileId, attemptId, idempotencyKey: key, statement, ...ai }),
+    );
+    openingKey.current = undefined;
+    const read = outcomeOf(answer.outcome);
+    holder.noteOutcome(profileId, read, ai);
+    setSpent((n) => n + 1);
+    if (asked !== epoch.current) return;
+    show({ text: answer.words, reply: TutorReply.OPENING, rung: 0 });
+    if (closesAI(read)) setWordsNote(outcomeText(read, words));
+  };
+
   const hint = () => {
-    if (pending) return;
+    // The rung's words on their way are the hint: a Hint meanwhile would show the fallback text.
+    if (pending || wordsWaiting) return;
     // Within the press: the words that come may be said (WebKit; R07).
     prime();
     setOpen(true);
-    setPending(true);
     setFailure(undefined);
-    setSaid(undefined);
     setTold("");
-    void api.attempt
-      .getHint({ profileId, attemptId })
+    // The rung's words of a wrong answer the closed panel left unasked are the hint (R82 spec).
+    const ask = unasked.current;
+    if (ask?.attemptId === attemptId) return rungWords(ask);
+    const asked = epoch.current;
+    setPending(true);
+    setWordsNote(undefined);
+    void (async () => {
+      try {
+        const answer = await api.attempt.getHint({ profileId, attemptId });
+        if (asked !== epoch.current) return;
+        // Before the first wrong answer a task from paper has no techniques: the opening question.
+        if (answer.hint.case === "rung") {
+          const { words: text, rung } = answer.hint.value;
+          show({ text, reply: TutorReply.RUNG, rung });
+        } else await openingWords(asked);
+      } catch (reason) {
+        if (asked === epoch.current) setFailure(parseFailure(reason));
+      } finally {
+        setPending(false);
+      }
+    })();
+  };
+
+  /** "Explain differently": the same rung in other words, one call of AI on a rung, with no work. */
+  const explain = () => {
+    const wrongAnswers = task.wrongAnswers;
+    if (explaining || wrongAnswers === undefined) return;
+    prime();
+    explainKey.current ??= idempotencyKey();
+    const key = explainKey.current;
+    const asked = epoch.current;
+    setExplaining(true);
+    setWordsNote(undefined);
+    const ai = holder.aiFields(profileId);
+    void watched(api, () =>
+      api.attempt.explainDifferently({
+        profileId,
+        attemptId,
+        idempotencyKey: key,
+        wrongAnswers,
+        ...ai,
+      }),
+    )
       .then(
         (answer) => {
-          const text =
-            answer.leadingQuestion === "" ? words.text("task.hint-none") : answer.leadingQuestion;
-          setSaid(text);
-          // The panel closed meanwhile: a screen reader is told that the hint came, unsaid.
-          if (isOpen.current) auto([{ text, language }]);
-          else setTold(text);
+          explainKey.current = undefined;
+          const read = outcomeOf(answer.outcome);
+          holder.noteOutcome(profileId, read, ai);
+          if (asked !== epoch.current) return;
+          // The right to it on this rung is spent, whatever the words.
+          setExplained(true);
+          if (read !== undefined) setWordsNote(outcomeText(read, words));
+          if (answer.words !== "" && read?.cause !== Cause.NO_OTHER_WORDS) {
+            const rung = said?.rung ?? Math.min(Math.max(wrongAnswers, 1), 3);
+            show({ text: answer.words, reply: TutorReply.EXPLAINED_DIFFERENTLY, rung });
+          }
         },
-        (reason: unknown) => setFailure(parseFailure(reason)),
+        (reason: unknown) => {
+          if (asked !== epoch.current) return;
+          const found = parseFailure(reason);
+          // A refusal is the end of the action; anything else may have reached api, and goes
+          // again with its key, which gets what was done.
+          if (found.kind !== "refused") return setWordsNote(failureText(found, words));
+          explainKey.current = undefined;
+          const spent =
+            found.cause === Cause.ALREADY_ASKED ||
+            found.cause === Cause.NOT_CURRENT ||
+            found.cause === Cause.NO_RUNG;
+          if (spent) setExplained(true);
+          else setWordsNote(failureText(found, words));
+        },
       )
-      .finally(() => setPending(false));
+      .finally(() => {
+        if (asked === epoch.current) setExplaining(false);
+        setSpent((n) => n + 1);
+      });
   };
 
   const check = () => {
@@ -210,7 +407,13 @@ export function Solve({
     setChecking(true);
     setFailure(undefined);
     setSaid(undefined);
+    setWordsNote(undefined);
+    setWavy(undefined);
+    setWordsWaiting(false);
+    setExplaining(false);
     setTold("");
+    epoch.current += 1;
+    unasked.current = undefined;
     onKeep(attemptId, withoutVerdict);
     // Other work is another action, with a key of its own: the history, and where the paper lay,
     // as they are at the press, before the work is read.
@@ -258,10 +461,24 @@ export function Solve({
         onKeep(attemptId, (was) => ({
           ...was,
           verdict,
+          wrongAnswers: answer.wrongAnswers,
           ...(context === undefined ? {} : { checked: context }),
         }));
         const card = paperCard(verdict, words);
         setTold(card.line === undefined ? card.title : `${card.title}. ${card.line}`);
+        if (verdict.kind === "not-yet" && answer.wrongAnswers > 0) {
+          setExplained(false);
+          // The words of the rung are asked at once while the panel is open, else once it opens
+          // (R148 spec).
+          const ask = {
+            attemptId,
+            wrongAnswers: answer.wrongAnswers,
+            work: paperWork,
+            key: idempotencyKey(),
+          };
+          if (isOpen.current) rungWords(ask);
+          else unasked.current = ask;
+        }
       } catch (reason) {
         setFailure(parseFailure(reason));
       } finally {
@@ -329,6 +546,8 @@ export function Solve({
   );
 
   const described = [namesId, written ? "" : writeId].join(" ").trim();
+  // Hint waits while the rung's words are on their way, as for any request of its own.
+  const busy = pending || wordsWaiting;
   const acts = tutorActs(task.verdict);
   const close = () => {
     hush();
@@ -408,7 +627,7 @@ export function Solve({
           <VerdictCard {...paperCard(task.verdict, words)}>
             {/* The panel's buttons, and the card's own way to put it away. */}
             {acts.hint ? (
-              <button type="button" className="nt-card-link" aria-disabled={pending} onClick={hint}>
+              <button type="button" className="nt-card-link" aria-disabled={busy} onClick={hint}>
                 {words.text("task.hint")}
               </button>
             ) : null}
@@ -443,7 +662,7 @@ export function Solve({
         <div className="nt-task-row nt-glass">
           {acts.hint ? (
             <>
-              <HintButton parts={{ pending, onHint: hint }} />
+              <HintButton parts={{ pending: busy, onHint: hint }} />
               <RowLine />
             </>
           ) : null}
@@ -464,16 +683,35 @@ export function Solve({
           quota={quota}
           checking={checking}
           verdict={unwritten ? undefined : task.verdict}
-          hint={said}
+          profileId={profileId}
+          attemptId={attemptId}
+          said={said}
+          adult={adult}
+          wordsWaiting={wordsWaiting}
+          wordsNote={wordsNote}
+          explaining={explaining}
+          {...(said !== undefined && said.reply === TutorReply.RUNG && !explained
+            ? { onExplain: explain }
+            : {})}
           failure={failure}
-          pending={pending}
+          pending={busy}
           onHint={hint}
           onNext={after === undefined ? undefined : () => go(after)}
           onClose={close}
           headingRef={heading}
         />
       ) : (
-        <TutorButton onOpen={() => setOpen(true)} buttonRef={call} />
+        <TutorButton
+          onOpen={() => {
+            setOpen(true);
+            const ask = unasked.current;
+            if (ask?.attemptId !== attemptId) return;
+            // Within the press: the words that come may be said (WebKit; R07).
+            prime();
+            rungWords(ask);
+          }}
+          buttonRef={call}
+        />
       )}
     </Screen>
   );

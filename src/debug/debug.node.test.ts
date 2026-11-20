@@ -111,6 +111,9 @@ describe("the figures", () => {
     expect(callTitle(read)).toBe("Read the work · reader 2");
     expect(callTitle({ ...read, reader: 1, attempt: 1 })).toBe("Read the work · reader 1");
     expect(callTitle({ ...read, reader: 0, attempt: 3 })).toBe("Read the work · attempt 3");
+    expect(callTitle({ ...read, kind: DebugCallKind.TUTOR_WORDS, reader: 0 })).toBe(
+      "Tutor's words",
+    );
     expect(callLine(models, read)).toBe("Haiku 5.5 · low · no thinking");
     expect(answerOf(read)).toBe('{\n  "a": 1\n}');
     expect(statsOf(read)[0]).toEqual({ k: "Input", v: "1,200" });

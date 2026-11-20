@@ -39,5 +39,7 @@ describe("a report of a problem", () => {
     expect(reportRequest({ ...fields, said: correct, text: "" })).not.toHaveProperty("rung");
     const essay = { text: "A clear plan.", reply: TutorReply.ESSAY_FEEDBACK, rung: 0 };
     expect(reportRequest({ ...fields, said: essay, text: "" })).not.toHaveProperty("rung");
+    const opening = { text: "What is known here?", reply: TutorReply.OPENING, rung: 0 };
+    expect(reportRequest({ ...fields, said: opening, text: "" })).not.toHaveProperty("rung");
   });
 });

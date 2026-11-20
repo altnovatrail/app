@@ -138,7 +138,7 @@ function LearnerRoutes({
           ) : route.screen === ESSAYS.screen ? (
             <EssaysScreen profileId={learner.profileId} device={device} />
           ) : route.screen === PAPER.screen ? (
-            <PaperScreen profileId={learner.profileId} />
+            <PaperScreen profileId={learner.profileId} adult={adult} />
           ) : (
             <MySubjects profileId={learner.profileId} device={device} />
           )}

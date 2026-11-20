@@ -1,9 +1,11 @@
 // The tasks begun on a page on the screen of solving (R71): what Start begins once more, the list in
 // the order of the page and its tasks left out, ‹ and ›, the work each keeps, what a Check came to,
-// and the buttons of the tutor's panel (R75).
+// the buttons of the tutor's panel (R75), and the tutor's wavy line (R82 spec).
 import {
   type ItemVerdict,
   ItemVerdictSchema,
+  MarkKind,
+  MarkSchema,
 } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
 import { Cause } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import type { HistoryEvent } from "@altnovatrail/spec/canvas";
@@ -24,6 +26,7 @@ import {
   shownTask,
   tutorActs,
   verdictMarks,
+  wavyOf,
   withBegun,
   withChange,
 } from "./solve.ts";
@@ -231,6 +234,39 @@ describe("what a Check of a task from paper came to", () => {
     expect(verdictMarks({ verdict: { kind: "nokey" }, checked }, en)).toBeUndefined();
     const none = paperVerdictOf(slot("correct", { value: "85" }), undefined, true);
     expect(verdictMarks({ verdict: none, checked }, en)).toBeUndefined();
+  });
+
+  it("draws the tutor's wavy line beside the ticks and crosses of a Check that is not yet", () => {
+    const checked = {
+      crop: {},
+      groups: [],
+      tracing: { at: [0, 0], hidden: false },
+      digest: "0",
+    } as never;
+    const box = { ymin: 600, xmin: 0, ymax: 700, xmax: 400 };
+    const wavy = wavyOf([
+      create(MarkSchema, { kind: MarkKind.FRAME, place: { case: "cropBox", value: box } }),
+      create(MarkSchema, { kind: MarkKind.WAVY_LINE, place: { case: "cropBox", value: box } }),
+    ]);
+    expect(wavy).toEqual([600, 0, 700, 400]);
+    expect(wavyOf([create(MarkSchema, { kind: MarkKind.FRAME })])).toBeUndefined();
+    const notYet = paperVerdictOf(items("not_yet"), undefined, false);
+    expect(verdictMarks({ verdict: notYet, checked }, en, wavy)?.marks.at(-1)).toEqual({
+      kind: "wavy_line",
+      at: { box: [600, 0, 700, 400] },
+      name: "Tutor's mark: where the mistake is",
+    });
+    // A Check that was correct has no mistake to underline, and one with no place no tick either.
+    const correct = paperVerdictOf(items("correct"), undefined, true);
+    expect(verdictMarks({ verdict: correct, checked }, en, wavy)?.marks).toHaveLength(1);
+    const unplaced = paperVerdictOf(slot("not_yet", { value: "85" }), undefined, false);
+    expect(verdictMarks({ verdict: unplaced, checked }, en, wavy)?.marks).toEqual([
+      {
+        kind: "wavy_line",
+        at: { box: [600, 0, 700, 400] },
+        name: "Tutor's mark: where the mistake is",
+      },
+    ]);
   });
 
   it("says why a work was not read, in the words of paper for no final answer and several", () => {

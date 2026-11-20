@@ -2,6 +2,7 @@
 // only what changed for UpdateProfile — never a value the build does not know written back —, a
 // profile with another's settings, and the message the tabs tell each other by.
 import {
+  HintMode,
   Mode,
   ProfileSchema,
   VoicingSpeed,
@@ -41,6 +42,7 @@ describe("formOf", () => {
           defaultMode: Mode.SELF,
           interfaceLanguage: "ru",
           presentationStyle: { voicing: { enabled: true, speed: VoicingSpeed.SLOW } },
+          hintMode: HintMode.QUESTIONS_ONLY,
         }),
       ),
     ).toEqual({
@@ -50,6 +52,7 @@ describe("formOf", () => {
       language: "ru",
       voicing: true,
       speed: VoicingSpeed.SLOW,
+      hintMode: HintMode.QUESTIONS_ONLY,
     });
   });
 
@@ -62,6 +65,7 @@ describe("formOf", () => {
       language: "ru",
       voicing: false,
       speed: VoicingSpeed.NORMAL,
+      hintMode: HintMode.SHOW_WHERE,
     });
     expect(formOf(profile({ interfaceLanguage: "de" })).language).toBeUndefined();
     expect(formOf(profile()).language).toBeUndefined();
@@ -99,6 +103,14 @@ describe("changes", () => {
     expect(changes(profile(), { ...same(), speed: VoicingSpeed.SLOW })).toEqual({
       voicing: { speed: VoicingSpeed.SLOW },
     });
+  });
+
+  it("names the hint mode chosen, and never writes back the one a profile names none of", () => {
+    expect(changes(profile(), { ...same(), hintMode: HintMode.QUESTIONS_ONLY })).toEqual({
+      hintMode: HintMode.QUESTIONS_ONLY,
+    });
+    const none = profile({ hintMode: HintMode.UNSPECIFIED });
+    expect(changes(none, same(none))).toBeUndefined();
   });
 
   it("never writes back a value the build reads its own way, unless the adult changed it", () => {

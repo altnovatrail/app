@@ -337,6 +337,8 @@ export function callName(kind: DebugCallKind): string {
       return "Solution";
     case DebugCallKind.WORK_READING:
       return "Read the work";
+    case DebugCallKind.TUTOR_WORDS:
+      return "Tutor's words";
     default:
       return "Call";
   }
@@ -362,7 +364,14 @@ export function callLine(models: readonly DebugModel[], call: DebugCall): string
 }
 
 export function actionTitle(action: DebugAction): string {
-  return action.kind === DebugActionKind.FIND_TASKS ? "Find tasks" : "Check";
+  switch (action.kind) {
+    case DebugActionKind.FIND_TASKS:
+      return "Find tasks";
+    case DebugActionKind.WORDS:
+      return "Tutor's words";
+    default:
+      return "Check";
+  }
 }
 
 /** An action's key in the log: one request, at the instant api took it. */

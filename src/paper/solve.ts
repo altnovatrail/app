@@ -4,10 +4,13 @@
 // goes back to the page, and Start then begins only the tasks not begun yet. A frame may hold several
 // tasks, up to 20, each with an answer of its own: a Check gives the verdict of each task's answer
 // slot by its key, and a tick or a cross by each answer on the crop of the work; none when no task
-// has a key (R162 spec). No DOM.
-import type {
-  AnswerSlotVerdict,
-  ItemVerdict,
+// has a key (R162 spec); after Not yet, in the mode "Show where", the tutor's wavy line under the
+// first mistake (R82 spec). No DOM.
+import {
+  type AnswerSlotVerdict,
+  type Mark as ContractMark,
+  type ItemVerdict,
+  MarkKind,
 } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
 import { Cause } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import type {
@@ -17,6 +20,7 @@ import type {
   PaperSubmission,
   TracingState,
   VerdictMark,
+  WavyLineMark,
 } from "@altnovatrail/spec/canvas";
 import type { ReadOutcome } from "../api/outcome.ts";
 import { outcomeText } from "../api/words.ts";
@@ -42,6 +46,8 @@ export interface BegunTask {
   readonly verdict?: PaperVerdict;
   /** The context of the work of that Check, which the element gave: its ticks and crosses stand on it. */
   readonly checked?: PaperSubmission;
+  /** The wrong answers of the attempt by the answer to its last Check: "Explain differently" names them. */
+  readonly wrongAnswers?: number;
 }
 
 /**
@@ -219,14 +225,34 @@ export function tutorActs(verdict: PaperVerdict | undefined): {
   return { hint: kind !== "correct", next: kind === "correct" || kind === "nokey" };
 }
 
+/** A box of the crop of the work, [ymin, xmin, ymax, xmax] in thousandths. */
+export type Box = readonly [number, number, number, number];
+
+/**
+ * The box of the tutor's wavy line among the marks of a rung's words: none when api sent none —
+ * in the mode "Questions only", and with a fallback text — or only marks of a place the build
+ * knows not.
+ */
+export function wavyOf(marks: readonly ContractMark[]): Box | undefined {
+  for (const mark of marks) {
+    if (mark.kind === MarkKind.WAVY_LINE && mark.place.case === "cropBox") {
+      const { ymin, xmin, ymax, xmax } = mark.place.value;
+      return [ymin, xmin, ymax, xmax];
+    }
+  }
+  return undefined;
+}
+
 /**
  * The ticks and crosses of a task's last Check on the crop of its work (R162 spec): one by each
  * answer that was correct or not yet and whose place the reading gave, named for a screen reader
- * by its task's number in the frame. None without a Check that judged one, or its context.
+ * by its task's number in the frame; and the tutor's wavy line under the first mistake, `wavy`,
+ * which stands on the same work (R82 spec). None without a Check that judged one, or its context.
  */
 export function verdictMarks(
   task: Pick<BegunTask, "verdict" | "checked">,
   words: Words,
+  wavy?: Box,
 ): Marks | undefined {
   const { verdict, checked } = task;
   if (checked === undefined || (verdict?.kind !== "correct" && verdict?.kind !== "not-yet"))
@@ -237,7 +263,12 @@ export function verdictMarks(
     const name = words.text(correct ? "paper.mark-correct" : "paper.mark-not-yet", { n: n + 1 });
     return [{ kind: "verdict", at: { box }, correct, name }];
   });
-  return marks.length === 0 ? undefined : { submission: checked, marks };
+  const line: WavyLineMark[] =
+    wavy === undefined || verdict.kind !== "not-yet"
+      ? []
+      : [{ kind: "wavy_line", at: { box: wavy }, name: words.text("paper.mark-wavy") }];
+  const all = [...marks, ...line];
+  return all.length === 0 ? undefined : { submission: checked, marks: all };
 }
 
 /** The words of each reason a work on paper was not read for that are its own (R162 spec). */

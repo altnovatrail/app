@@ -1,6 +1,6 @@
 // A profile's page in the section for adults (R29; R05, R07 and R10): what an adult sets of the
 // profile — its avatar (R68), its pseudonym, its default mode, the language of its learner's
-// screens and its voicing — in one form, saved by its button with `UpdateProfile` and only the
+// screens, its voicing and its hint mode — in one form, saved by its button with `UpdateProfile` and only the
 // fields that changed. The choices are radio buttons, and the avatar a choice in a pop-over, that
 // change nothing until Save (WCAG 3.2.2). What another tab changed meanwhile shows in the fields
 // not edited here; what is edited here stays until it is saved — an edit made while the request was
@@ -9,6 +9,7 @@
 // to the profile's modules and their licenses (R32) and to its progress (R35), and the share of
 // today's tutor time the profile and the account have used (the contract's quota).
 import {
+  HintMode,
   Mode,
   type Profile,
   VoicingSpeed,
@@ -98,6 +99,7 @@ export function ProfilePage({
     language: edits.language ?? saved.language,
     voicing: edits.voicing ?? saved.voicing,
     speed: edits.speed ?? saved.speed,
+    hintMode: edits.hintMode ?? saved.hintMode,
   };
 
   function edit(change: Edits) {
@@ -259,6 +261,26 @@ export function ProfilePage({
               <p className="nt-hint">{words.text("adults.voicing-device")}</p>
               <p className="nt-hint">{words.text("adults.voicing-reader")}</p>
             </div>
+          </fieldset>
+        </div>
+        <div className="nt-group">
+          <fieldset className="nt-choices">
+            <legend>{words.text("hints.title")}</legend>
+            <Option
+              name={`${id}-hints`}
+              checked={form.hintMode === HintMode.QUESTIONS_ONLY}
+              onChange={() => edit({ hintMode: HintMode.QUESTIONS_ONLY })}
+            >
+              {words.text("hints.questions")}
+            </Option>
+            <Option
+              name={`${id}-hints`}
+              checked={form.hintMode === HintMode.SHOW_WHERE}
+              onChange={() => edit({ hintMode: HintMode.SHOW_WHERE })}
+            >
+              {words.text("hints.where")}
+            </Option>
+            <p className="nt-hint">{words.text("hints.where-line")}</p>
           </fieldset>
         </div>
         <button type="submit" className="nt-main" disabled={pending}>

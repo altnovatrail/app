@@ -106,7 +106,7 @@ async function renderPaper(setup: Setup = {}) {
     inLanguage(
       <ApiProvider value={api}>
         <PaperProvider>
-          <PaperScreen profileId="p1" />
+          <PaperScreen profileId="p1" adult />
         </PaperProvider>
       </ApiProvider>,
     ),

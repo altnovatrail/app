@@ -814,6 +814,7 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
       <ApiProvider value={{} as Api}>
         <Solve
           profileId="p1"
+          adult={false}
           tasks={[
             {
               id: "found-1",

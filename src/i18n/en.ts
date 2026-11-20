@@ -362,6 +362,17 @@ export const en = {
   "learner.menu": "Profile menu",
   "learner.menu-button": "{pseudonym}, profile menu",
   "learner.now": "Learning now",
+  /**
+   * The hint mode in the profile's menu (concepts 10 spec): its group, and for a child's that a
+   * grown-up sets it; each mode's title and line, as the mockup's.
+   */
+  "hints.title": "Hints",
+  "hints.by-adult": "set by a grown-up",
+  "hints.questions": "Questions only",
+  "hints.questions-line": "The tutor asks about a step of the work",
+  "hints.where": "Show where",
+  "hints.where-line":
+    "After “Not yet” the tutor also underlines where the mistake is — and corrects nothing",
   /** The adult's Help on the home screen (R148 spec; R63): three things, and three pages. */
   "help.ai": "The tutor is an AI",
   "help.ai-text":
@@ -1251,6 +1262,7 @@ export const en = {
   /** The tick and the cross by an answer on the crop, for a screen reader; {n} is the task's number in the frame. */
   "paper.mark-correct": "Task {n}: correct",
   "paper.mark-not-yet": "Task {n}: not yet",
+  "paper.mark-wavy": "Tutor's mark: where the mistake is",
   /** The cards of a work with no final answer, or more than one: written, or one option circled. */
   "paper.no-answer": "No answer found",
   "paper.no-answer-line": "Write your answer, or circle one option, then Check.",
