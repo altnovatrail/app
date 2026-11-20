@@ -1238,9 +1238,9 @@ export const en = {
   "paper.of": "{n} of {total} · from your page",
   /** The button between ‹ and ›, which opens the list of the tasks begun. */
   "paper.counter": "{n} / {total}",
-  /** Its name, and the list's heading. */
+  /** The list's heading, and the button's name, which holds its caption as said (WCAG 2.5.3). */
   "paper.tasks": "Tasks",
-  "paper.tasks-open": "Tasks, {n} of {total}",
+  "paper.tasks-open": "Tasks, {n} / {total}",
   /** At the list's head: back to the page, to pick more of its tasks. */
   "paper.add": "Add",
   /** The button on the card "A task from my paper" that opens the profile's pages from paper kept on the device (R77). */

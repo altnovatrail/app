@@ -268,6 +268,7 @@ export function SubjectsScreen({
           <div className="nt-paper-acts">
             <button
               type="button"
+              className="nt-paper-open"
               aria-describedby={`${paperId}-names`}
               onClick={() => {
                 paper?.clear();

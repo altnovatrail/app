@@ -844,7 +844,7 @@ export const ru = {
   "paper.of": "{n} из {total} · со своей страницы",
   "paper.counter": "{n} / {total}",
   "paper.tasks": "Задачи",
-  "paper.tasks-open": "Задачи, {n} из {total}",
+  "paper.tasks-open": "Задачи, {n} / {total}",
   "paper.pages": "Ваши страницы",
   "paper.pages-title": "Ваши страницы · на этом устройстве",
   "paper.page": "{when} · {tasks}",

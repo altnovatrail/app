@@ -107,10 +107,17 @@ const CHOSEN = {
 function homeWith(button: string): [() => ReactNode, () => Promise<void>] {
   return [
     () => (
-      <LearnerProvider value={CHOSEN}>
-        <LearnerBar />
-        <SubjectsScreen connected={[]} catalog={[]} onConnect={() => {}} onDisconnect={() => {}} />
-      </LearnerProvider>
+      <ApiProvider value={{} as Api}>
+        <LearnerProvider value={CHOSEN}>
+          <LearnerBar />
+          <SubjectsScreen
+            connected={[]}
+            catalog={[]}
+            onConnect={() => {}}
+            onDisconnect={() => {}}
+          />
+        </LearnerProvider>
+      </ApiProvider>
     ),
     async () => {
       await userEvent.click(document.querySelector(button) as HTMLElement);

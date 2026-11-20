@@ -301,7 +301,11 @@ function Call({
                 <button
                   type="button"
                   onClick={() => {
-                    void navigator.clipboard?.writeText(answer).then(() => setCopied(true));
+                    // A browser that does not let the page write the clipboard leaves Copy as it is.
+                    void navigator.clipboard?.writeText(answer).then(
+                      () => setCopied(true),
+                      () => {},
+                    );
                   }}
                 >
                   {copied ? "Copied" : "Copy"}

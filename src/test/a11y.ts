@@ -52,6 +52,14 @@ const TARGETS = "button, a[href], input, select, textarea, [role='button'], [tab
 /** The least a target is across and down, CSS px (2.5.5 Target Size (Enhanced)). */
 export const TARGET_PX = 44;
 
+/**
+ * Whether a target is a frame over the photo of a page: its place and size are those of the task it
+ * frames, and the task is what it shows (2.5.5's exception Essential; R71).
+ */
+function aFrame(target: Element): boolean {
+  return target.matches("button.nt-page-frame");
+}
+
 /** Whether a target is inline in a sentence: laid out as text, with more text of its block beside it. */
 function inSentence(target: HTMLElement): boolean {
   const block = target.parentElement?.textContent?.trim() ?? "";
@@ -61,13 +69,13 @@ function inSentence(target: HTMLElement): boolean {
 /**
  * The targets smaller than 44 × 44 CSS px, by their text and size. A target not drawn, as a pop-over's
  * × above the phone, is none; nor is one inline in a sentence, as a text's name in a checkbox's line
- * (2.5.5's exception Inline).
+ * (2.5.5's exception Inline), nor a frame over the photo of a page.
  */
 export function smallTargets(root: ParentNode = document): string[] {
   return [...root.querySelectorAll<HTMLElement>(TARGETS)]
     .filter(ours)
     .filter((target) => target.getClientRects().length > 0)
-    .filter((target) => !inSentence(target))
+    .filter((target) => !inSentence(target) && !aFrame(target))
     .map((target) => ({ target, box: target.getBoundingClientRect() }))
     .filter(({ box }) => box.width < TARGET_PX || box.height < TARGET_PX)
     .map(({ target, box }) => `${target.textContent ?? ""} ${box.width}×${box.height}`);
@@ -99,7 +107,7 @@ export function overflows(root: Element = document.body): string[] {
 /**
  * The buttons that show no text but are not of the closed list (R60), by their names: a button of
  * the list is an IconButton, named by its caption in the screen's words, and every other button
- * shows its caption.
+ * shows its caption, but for a frame over the photo of a page, which shows the task it frames.
  */
 export function captionlessOffList(words: Words, root: ParentNode = document): string[] {
   const listed = new Set(Object.values(CAPTIONLESS).map(({ word }) => words.text(word)));
@@ -118,7 +126,7 @@ export function captionlessOffList(words: Words, root: ParentNode = document): s
   };
   return [...root.querySelectorAll("button")]
     .filter(ours)
-    .filter((button) => (button.textContent ?? "").trim() === "")
+    .filter((button) => (button.textContent ?? "").trim() === "" && !aFrame(button))
     .filter((button) => !button.classList.contains("nt-icon-only") || !named(button))
     .map((button) => button.getAttribute("aria-label") ?? "");
 }

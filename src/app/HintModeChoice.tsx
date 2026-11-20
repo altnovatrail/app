@@ -65,7 +65,7 @@ export function HintModeChoice({
           <input
             type="radio"
             name={id}
-            className="nt-hidden-label"
+            className="nt-hint-mode-input"
             checked={mode === value}
             aria-disabled={byAdult || pending}
             onChange={() => void choose(value)}

@@ -36,7 +36,8 @@ export function YourPages({
       current = false;
     };
   }, [device, profileId]);
-  if (paper === undefined || pages.length === 0) return null;
+  // The last page gone keeps the pop-over open on why, until it closes.
+  if (paper === undefined || (pages.length === 0 && !gone)) return null;
   const when = dateTimeFormat(language, { dateStyle: "medium", timeStyle: "short" });
   const label = words.text("paper.pages");
   return (

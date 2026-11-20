@@ -44,6 +44,13 @@
   --nt-tutor-words: #23308c;
   /* A skill with a rubric, and the sign of an essay's feedback: 6.76:1 on its tint #f7f0fc. */
   --nt-rubric: #7a2ea8;
+  /*
+   * The card of a task from paper: the mockup's gradient #ff9f0a → #ff5e3a → #ff375f, darker by the
+   * same hues, since white on it misses 4.5:1 — 2.06 at its start; white holds 5.02 at the least.
+   */
+  --nt-paper-from: #b85000;
+  --nt-paper-mid: #c8331a;
+  --nt-paper-to: #c81e46;
 
   /* The grey fills of fields, chips and disabled buttons; what is disabled; the edge of a field. */
   --nt-grey-08: rgba(118, 118, 128, 0.08);
@@ -1696,6 +1703,20 @@ button.nt-row > svg {
   display: flex;
   flex-direction: column;
 }
+/* The card of a task from paper, the mockup's: white on its gradient, and "Open camera" white. */
+.nt-paper {
+  background: linear-gradient(
+    135deg,
+    var(--nt-paper-from) 0%,
+    var(--nt-paper-mid) 55%,
+    var(--nt-paper-to) 100%
+  );
+  box-shadow: 0 12px 32px rgba(255, 94, 58, 0.28);
+  color: var(--nt-on-fill);
+}
+.nt-paper :focus-visible {
+  outline-color: var(--nt-on-fill);
+}
 @media (width < 600px) {
   .nt-next-up {
     min-block-size: 16.5rem;
@@ -1758,8 +1779,9 @@ button.nt-row > svg {
   block-size: 2.75rem;
   margin-block-end: 0.875rem;
   border-radius: var(--nt-radius-round);
-  background: var(--nt-page);
-  color: var(--nt-text-muted);
+  background: rgba(255, 255, 255, 0.22);
+  box-shadow: inset 0 0 0 0.0625rem rgba(255, 255, 255, 0.35);
+  color: var(--nt-on-fill);
   font-size: 1.375rem;
 }
 .nt-paper > h2 {
@@ -1784,6 +1806,13 @@ main .nt-paper > p {
   align-items: center;
   gap: 0.5rem;
   font-size: 0.9375rem;
+}
+.nt-paper-acts > button.nt-paper-open {
+  background: var(--nt-card);
+  color: var(--nt-text);
+}
+.nt-paper > p.nt-hint {
+  color: var(--nt-on-fill);
 }
 /* A module's card: its tile, its title, its skills at the foot, and its buttons below them. */
 .nt-reference .nt-card.nt-module {
@@ -1973,6 +2002,12 @@ dialog.nt-pop-legend .nt-legend-items {
 main.nt-task-screen:has(> .nt-camera) {
   background: #0b0908;
   color: #ffffff;
+}
+/* The top bar over the camera is the mockup's dark glass, white on it: on the light one, white fails 1.4.3. */
+main.nt-task-screen:has(> .nt-camera) .nt-top-pill.nt-glass {
+  --nt-text: var(--nt-on-fill);
+  background: rgba(44, 44, 46, 0.58);
+  box-shadow: 0 0 0 0.5px rgba(255, 255, 255, 0.14);
 }
 .nt-camera {
   display: flex;
@@ -4504,6 +4539,16 @@ main.nt-sheet .nt-column .nt-sheet-note > button.nt-link {
   background: transparent;
   color: var(--nt-text);
   text-align: start;
+  cursor: pointer;
+}
+/* The radio covers its row, unseen: the whole row is its target of 44. */
+.nt-hint-mode-input {
+  position: absolute;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  margin: 0;
+  opacity: 0;
   cursor: pointer;
 }
 .nt-hint-mode:has(:checked) {

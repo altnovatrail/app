@@ -48,9 +48,19 @@ function placed(frame: Frame): CSSProperties {
   };
 }
 
-/** A point of the photo in percent, where a frame's control stands. */
+/** A point of the photo in percent, where the tap of a frame's first corner stands. */
 function at(x: number, y: number): CSSProperties {
   return { left: `${x / 10}%`, top: `${y / 10}%` };
+}
+
+/**
+ * Where a frame's control stands: on the frame's corner, kept inside the photo by half of the
+ * target, so that a frame at the photo's edge never puts its cross or corner past the screen's.
+ */
+function control(x: number, y: number): CSSProperties {
+  const kept = (percent: number) =>
+    `clamp(calc(var(--nt-target) / 2), ${percent}%, calc(100% - var(--nt-target) / 2))`;
+  return { left: kept(x / 10), top: kept(y / 10) };
 }
 
 export interface PickProps {
@@ -242,14 +252,17 @@ export function Pick({
           })}
           {tasks.map((task) => (
             <span key={`${task.id}-controls`}>
-              <span className="nt-frame-control" style={at(task.frame.xmax, task.frame.ymin)}>
+              <span className="nt-frame-control" style={control(task.frame.xmax, task.frame.ymin)}>
                 <IconButton
                   value="remove-frame"
                   onClick={() => onTasks((was) => without(was, task.id))}
                 />
               </span>
               {task.drawn ? (
-                <span className="nt-frame-control" style={at(task.frame.xmax, task.frame.ymax)}>
+                <span
+                  className="nt-frame-control"
+                  style={control(task.frame.xmax, task.frame.ymax)}
+                >
                   <IconButton
                     value="resize-frame"
                     className="nt-frame-corner"
