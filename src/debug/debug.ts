@@ -606,7 +606,7 @@ export function exportOf(
     action,
   });
   const at = action.at === undefined ? new Date(0) : timestampDate(action.at);
-  const stamp = at.toISOString().replace(/[-:]/g, "").replace(/\..*$/, "");
+  const stamp = at.toISOString().replace(/[-:]/g, "").split(".")[0];
   return {
     name: `case-${stamp}-${action.attemptId.slice(0, 8)}.json`,
     json: toJsonString(DebugCaseSchema, c, { prettySpaces: 2 }),
