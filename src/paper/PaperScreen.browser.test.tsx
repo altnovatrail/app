@@ -4,8 +4,10 @@
 // missed; a refusal that shuts AI shuts Start; each task begun is a sheet under its crop, the list
 // goes from one to another and back to the page, and Check sends the two crops and shows the
 // verdict by the task's key, or "Couldn't check this one" with none; the tutor's panel on the page
-// finds it anew by the learner's request, and Undo brings the frames back — with api on
-// connect-es's router.
+// finds it anew by the learner's request, and Undo brings the frames back; on the screen of solving
+// the tutor's panel opens by its button and by Hint, with the verdict and the hint in it, and on a
+// phone hides the canvas's bar of tools — with api on connect-es's router.
+import { AccountService } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import {
   AttemptService,
   type SubmitWorkRequest,
@@ -21,9 +23,9 @@ import {
 import type { CanvasElement, HistoryEvent } from "@altnovatrail/spec/canvas";
 import { create, type MessageInitShape } from "@bufbuild/protobuf";
 import { Code, ConnectError } from "@connectrpc/connect";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { userEvent } from "vitest/browser";
+import { page, userEvent } from "vitest/browser";
 import { ApiProvider } from "../api/ApiContext.tsx";
 import { routedApi } from "../test/api.ts";
 import { inLanguage } from "../test/language.tsx";
@@ -34,6 +36,10 @@ interface Setup {
   readonly found?: (request: FindTasksRequest) => MessageInitShape<typeof FindTasksResponseSchema>;
   /** The answer to each Check, by how many came before it; none refuses it. */
   readonly checked?: (n: number) => MessageInitShape<typeof SubmitWorkResponseSchema>;
+  /** The leading question of each Hint. */
+  readonly hinted?: string;
+  /** The learner's share of the quota, in percent; none, and api has no `GetQuota`. */
+  readonly quota?: number;
 }
 
 /** A synthetic photo of a page: a white PNG of 600 × 800 px with two grey stripes. */
@@ -63,7 +69,16 @@ async function renderPaper(setup: Setup = {}) {
         if (answer === undefined) throw new ConnectError("a refusal", Code.InvalidArgument);
         return answer;
       },
+      getHint() {
+        return { leadingQuestion: setup.hinted ?? "" };
+      },
     });
+    const quota = setup.quota;
+    if (quota !== undefined) {
+      router.service(AccountService, {
+        getQuota: () => ({ share: { profilePercent: quota } }),
+      });
+    }
     router.service(PaperService, {
       findTasks(request) {
         finds.push(request);
@@ -162,10 +177,16 @@ beforeEach(() => {
   );
 });
 
-afterEach(() => {
+afterEach(async () => {
   cleanup();
   vi.restoreAllMocks();
+  await page.viewport(1024, 768);
 });
+
+/** The tutor's panel, open. */
+function tutorPanel() {
+  return within(screen.getByRole("complementary", { name: "Tutor" }));
+}
 
 it("reminds to keep names out of the photo", async () => {
   await renderPaper();
@@ -351,6 +372,89 @@ it("says a task with no key could not be checked, with Hint and Next task", asyn
   const next = screen.getAllByRole("button", { name: "Next task" });
   await userEvent.click(next[next.length - 1] as HTMLElement);
   expect(await screen.findByRole("heading", { name: "Task 2" })).toBeVisible();
+});
+
+it("opens the tutor's panel by its button: the verdict a line in it, and a card again once it closes", async () => {
+  await solving({
+    checked: () => ({
+      items: [
+        {
+          verdict: "not_yet",
+          answerSlots: [{ answerSlot: { item: 1, slot: 1 }, verdict: "not_yet", value: "84" }],
+        },
+      ],
+      wrongAnswers: 1,
+    }),
+  });
+  writeOn(sheet());
+  await userEvent.click(screen.getByRole("button", { name: "Check" }));
+  // A verdict does not open the panel: it is the card.
+  expect(await screen.findByText("Read: 84")).toBeVisible();
+  expect(screen.queryByRole("complementary", { name: "Tutor" })).toBeNull();
+  expect(document.querySelector(".nt-card-verdict")).not.toBeNull();
+  await userEvent.click(screen.getByRole("button", { name: "Tutor" }));
+  expect(document.activeElement).toBe(tutorPanel().getByRole("heading", { name: "Tutor" }));
+  expect(tutorPanel().getByText("The tutor is an AI, not a person")).toBeVisible();
+  expect(tutorPanel().getByText("Read: 84")).toBeVisible();
+  expect(document.querySelector(".nt-card-verdict")).toBeNull();
+  // Not yet: Hint at the panel's foot, and no way on yet.
+  expect(tutorPanel().getByRole("button", { name: "Hint" })).toBeVisible();
+  expect(tutorPanel().queryByRole("button", { name: "Next task" })).toBeNull();
+  await userEvent.click(tutorPanel().getByRole("button", { name: "Close" }));
+  const tutor = screen.getByRole("button", { name: "Tutor" });
+  expect(document.activeElement).toBe(tutor);
+  expect(document.querySelector(".nt-card-verdict")).not.toBeNull();
+});
+
+it("opens the panel by the row's Hint, its words a bubble there that strokes do not take away", async () => {
+  await solving({ hinted: "What is left to find?" });
+  await userEvent.click(screen.getByRole("button", { name: "Hint" }));
+  expect(await tutorPanel().findByText("What is left to find?")).toBeVisible();
+  expect(tutorPanel().getByRole("heading", { name: "Hint" })).toBeVisible();
+  writeOn(sheet());
+  // Once the stroke is drawn again, Check opens, and the hint stands.
+  await waitFor(() =>
+    expect(screen.getByRole("button", { name: "Check" })).toHaveAttribute("aria-disabled", "false"),
+  );
+  expect(tutorPanel().getByText("What is left to find?")).toBeVisible();
+  // Another task, by the top bar's ›, is another conversation; the panel stays open.
+  await userEvent.click(screen.getByRole("button", { name: "Next task" }));
+  await screen.findByRole("heading", { name: "Task 2" });
+  expect(tutorPanel().queryByText("What is left to find?")).toBeNull();
+});
+
+it("shows the share of the quota in the panel's head, and the next task at its foot once solved", async () => {
+  await solving({
+    quota: 20,
+    checked: () => ({
+      items: [
+        {
+          verdict: "correct",
+          answerSlots: [{ answerSlot: { item: 1, slot: 1 }, verdict: "correct", value: "85" }],
+        },
+      ],
+      solved: {},
+    }),
+  });
+  await userEvent.click(screen.getByRole("button", { name: "Tutor" }));
+  expect(await tutorPanel().findByText("Tutor time today: 20% used")).toBeVisible();
+  writeOn(sheet());
+  await userEvent.click(screen.getByRole("button", { name: "Check" }));
+  expect(await tutorPanel().findByText("Read: 85")).toBeVisible();
+  // Solved: no Hint, in the panel or in the row, and the way on in the panel.
+  expect(screen.queryByRole("button", { name: "Hint" })).toBeNull();
+  await userEvent.click(tutorPanel().getByRole("button", { name: "Next task" }));
+  expect(await screen.findByRole("heading", { name: "Task 2" })).toBeVisible();
+});
+
+it("hides the canvas's bar of tools on a phone while the panel is open", async () => {
+  await page.viewport(390, 844);
+  await solving();
+  expect(sheet().hasAttribute("tools-hidden")).toBe(false);
+  await userEvent.click(screen.getByRole("button", { name: "Tutor" }));
+  await waitFor(() => expect(sheet().hasAttribute("tools-hidden")).toBe(true));
+  await userEvent.click(tutorPanel().getByRole("button", { name: "Close" }));
+  await waitFor(() => expect(sheet().hasAttribute("tools-hidden")).toBe(false));
 });
 
 it("frames a task the AI missed by two taps, and removes it by its cross", async () => {

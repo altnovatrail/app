@@ -5,9 +5,13 @@
 // its grabber over the whole screen. Its head — the tutor's sign, its name, a line under it, the
 // switch of voicing and × —; what stands above the conversation, the step's card by steps; the
 // conversation, which scrolls, its first line that the tutor is an AI; the buttons at its foot; and
-// under them what the screen puts there, the field of a request.
+// under them what the screen puts there, the field of a request. The screen of solving a task from
+// paper has them too (R75).
+import { Action } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
 import type { ReactNode, Ref } from "react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { readQuota, shareText } from "../account/quota.ts";
+import { useApi } from "../api/ApiContext.tsx";
 import { Icon } from "../app/Icon.tsx";
 import { IconButton } from "../app/IconButton.tsx";
 import { useNarrow } from "../app/narrow.ts";
@@ -36,6 +40,53 @@ export function TutorButton({
       />
     </div>
   );
+}
+
+/**
+ * Where the focus goes as the panel opens and closes: the button pressed — the tutor's, ×, or a
+ * button of the row the phone's sheet hides — goes with the press, so the focus goes to the panel's
+ * heading, or back to the tutor's button, not to the page (2.4.3). A press that leaves the focus on
+ * something still in sight keeps it there. `heading` goes to the panel, `call` to the button.
+ */
+export function usePanelFocus(shown: boolean) {
+  const heading = useRef<HTMLHeadingElement>(null);
+  const call = useRef<HTMLButtonElement>(null);
+  const was = useRef(shown);
+  useEffect(() => {
+    if (was.current === shown) return;
+    was.current = shown;
+    const active = document.activeElement;
+    if (active !== null && active !== document.body && active.getClientRects().length > 0) return;
+    (shown ? heading.current : call.current)?.focus();
+  }, [shown]);
+  return { heading, call };
+}
+
+/**
+ * The line of the panel's head: the learner's share of the quota, read anew at each opening and,
+ * while it is open, at each change of `spent` — a token the screen makes anew with each answer that
+ * spends the quota. None while closed, from an api that has no share, nor from one that failed
+ * (R98 spec).
+ */
+export function useQuotaLine(profileId: string, open: boolean, spent: unknown): string | undefined {
+  const api = useApi();
+  const { words } = useLanguage();
+  const [quota, setQuota] = useState<string | undefined>(undefined);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: what was spent reads the share again.
+  useEffect(() => {
+    if (!open) return;
+    let current = true;
+    readQuota(api, profileId, Action.LEARNING).then(
+      (share) => {
+        if (current) setQuota(shareText(share, words));
+      },
+      () => {},
+    );
+    return () => {
+      current = false;
+    };
+  }, [open, spent, api, profileId, words]);
+  return quota;
 }
 
 export function TutorPanel({

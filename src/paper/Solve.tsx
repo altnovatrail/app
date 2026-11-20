@@ -4,12 +4,17 @@
 // and ›. Each task is a sheet in dots of its own under its crop, the tracing paper, which canvas
 // draws and the learner moves and hides (R87 canvas); its history and the paper's place stay in the
 // tab's memory, so that a task left and come back to is as it was. At the foot the row of glass:
-// Hint · Check. Check sends the task's crop with the crop of the work (R162 spec), and keeps nothing
-// on the device: its card is the verdict of each task of the frame by the key api derived — Correct
+// Hint · Check, Hint till the task is solved. Check sends the task's crop with the crop of the work (R162 spec), and keeps nothing
+// on the device: its verdict is that of each task of the frame by the key api derived — Correct
 // with Next task, Not yet with Hint, of several tasks with how many are correct, the work not read
 // with why, not checked with the outcome —, with a tick or a cross by each answer on the sheet; or
 // "Couldn't check this one" when no task has a key, with Hint and Next task. A frame solved or with
-// no key takes no Check again, and the list marks the one solved.
+// no key takes no Check again, and the list marks the one solved. The tutor's button at the right
+// edge opens its panel, and so does Hint; a verdict does not (R75; R148 spec). While the panel is
+// open the verdict is a line in it, the hint a bubble there, said by itself while the voicing is
+// on, and on a phone its sheet hides the row and the canvas's bar of tools; while it is closed the
+// verdict is a card above the row, with the panel's buttons. The hint stands till another task,
+// Check or Hint, and what is said of it stops with another task or the panel closed.
 import type {
   CanvasElement,
   HistoryChangeEvent,
@@ -32,8 +37,11 @@ import { watched } from "../debug/watched.ts";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { useKeyHolder } from "../ownkey/OwnKeyContext.tsx";
 import { workOf } from "../task/attempt.ts";
+import { useOwnVoicing } from "../task/shared.ts";
 import { HintButton, RowLine, VerdictCard } from "../task/TaskLayout.tsx";
+import { TutorButton, usePanelFocus, useQuotaLine } from "../task/TutorPanel.tsx";
 import { numbers, type PageTask } from "./page.ts";
+import { SolveTutor } from "./SolveTutor.tsx";
 import {
   type BegunTask,
   besideTask,
@@ -42,6 +50,7 @@ import {
   paperCard,
   paperVerdictOf,
   shownTask,
+  tutorActs,
   verdictMarks,
   withChange,
 } from "./solve.ts";
@@ -84,7 +93,17 @@ export function Solve({
   const [pending, setPending] = useState(false);
   const [checking, setChecking] = useState(false);
   const [failure, setFailure] = useState<Failure | undefined>(undefined);
+  // The hint asked for, in the tutor's panel.
   const [said, setSaid] = useState<string | undefined>(undefined);
+  // The tutor's panel, as the learner leaves it from task to task; it is closed at first.
+  const [open, setOpen] = useState(false);
+  const isOpen = useRef(open);
+  isOpen.current = open;
+  const { heading, call } = usePanelFocus(open);
+  // Each answer to a Check reads the share of the quota again; a Hint takes no AI.
+  const [spent, setSpent] = useState(0);
+  const quota = useQuotaLine(profileId, open, spent);
+  const { auto, prime, hush } = useOwnVoicing();
   // The verdict told to a screen reader: the card shows it, so it is not shown twice.
   const [told, setTold] = useState("");
   const [unwritten, setUnwritten] = useState(false);
@@ -99,6 +118,7 @@ export function Solve({
   // Another task: what the one before came to is none of its.
   // biome-ignore lint/correctness/useExhaustiveDependencies: it runs on the task's change alone.
   useEffect(() => {
+    hush();
     setFailure(undefined);
     setSaid(undefined);
     setTold("");
@@ -116,7 +136,6 @@ export function Solve({
       }));
       setWritten(sheet.filled?.[0]?.[0] === true);
       setUnwritten(false);
-      setSaid(undefined);
       setTold("");
       // Other work puts a verdict away, but that of a Check that is over, whose marks go all the
       // same: the canvas drops them, and their context holds strokes the work may no longer have.
@@ -156,6 +175,9 @@ export function Solve({
 
   const hint = () => {
     if (pending) return;
+    // Within the press: the words that come may be said (WebKit; R07).
+    prime();
+    setOpen(true);
     setPending(true);
     setFailure(undefined);
     setSaid(undefined);
@@ -163,10 +185,14 @@ export function Solve({
     void api.attempt
       .getHint({ profileId, attemptId })
       .then(
-        (answer) =>
-          setSaid(
-            answer.leadingQuestion === "" ? words.text("task.hint-none") : answer.leadingQuestion,
-          ),
+        (answer) => {
+          const text =
+            answer.leadingQuestion === "" ? words.text("task.hint-none") : answer.leadingQuestion;
+          setSaid(text);
+          // The panel closed meanwhile: a screen reader is told that the hint came, unsaid.
+          if (isOpen.current) auto([{ text, language }]);
+          else setTold(text);
+        },
         (reason: unknown) => setFailure(parseFailure(reason)),
       )
       .finally(() => setPending(false));
@@ -241,6 +267,7 @@ export function Solve({
       } finally {
         setPending(false);
         setChecking(false);
+        setSpent((n) => n + 1);
       }
     })();
   };
@@ -302,6 +329,13 @@ export function Solve({
   );
 
   const described = [namesId, written ? "" : writeId].join(" ").trim();
+  const acts = tutorActs(task.verdict);
+  const close = () => {
+    hush();
+    setOpen(false);
+  };
+  // Beside the open panel the sheet and the foot end where it begins (R148 spec).
+  const beside = open ? { "data-beside": "panel" } : {};
   return (
     <Screen
       title={nameOf(task)}
@@ -328,13 +362,14 @@ export function Solve({
         ),
       }}
     >
-      <div className="nt-task">
+      <div className="nt-task" {...beside}>
         <div className="nt-task-work">
           {/* The order of the properties is the order React gives them: the paper first (R74 spec). */}
           <novatrail-canvas
             key={attemptId}
             ref={element}
             lang={language}
+            {...(narrow && open ? { "tools-hidden": "" } : {})}
             paper={paperOf(task.crop)}
             history={task.history}
             {...(task.tracing === undefined ? {} : { tracing: task.tracing })}
@@ -344,8 +379,9 @@ export function Solve({
           />
         </div>
       </div>
-      <div className="nt-task-foot">
-        {failure === undefined ? null : (
+      <div className="nt-task-foot" {...beside}>
+        {/* While the panel is open it says the failure, where the phone's sheet does not hide it. */}
+        {failure === undefined || open ? null : (
           <p role="alert" className="nt-error">
             {failureText(failure, words)}
           </p>
@@ -358,13 +394,11 @@ export function Solve({
             {words.text("paper.write-first")}
           </span>
         )}
-        <p role="status" className="nt-hint">
-          {said ?? ""}
-        </p>
         <p role="status" className="nt-hidden-label">
           {told}
         </p>
-        {checking ? (
+        {/* While the panel is open the reading and the verdict are lines in it. */}
+        {open ? null : checking ? (
           <VerdictCard
             kind="reading"
             title={words.text("task.reading")}
@@ -372,12 +406,13 @@ export function Solve({
           />
         ) : task.verdict === undefined || unwritten ? null : (
           <VerdictCard {...paperCard(task.verdict, words)}>
-            {task.verdict.kind === "not-yet" || task.verdict.kind === "nokey" ? (
+            {/* The panel's buttons, and the card's own way to put it away. */}
+            {acts.hint ? (
               <button type="button" className="nt-card-link" aria-disabled={pending} onClick={hint}>
                 {words.text("task.hint")}
               </button>
             ) : null}
-            {task.verdict.kind === "correct" || task.verdict.kind === "nokey" ? (
+            {acts.next ? (
               after === undefined ? null : (
                 <button type="button" className="nt-card-button" onClick={() => go(after)}>
                   {words.text("next.task")}
@@ -406,8 +441,12 @@ export function Solve({
           </VerdictCard>
         ) : null}
         <div className="nt-task-row nt-glass">
-          <HintButton parts={{ pending, onHint: hint }} />
-          <RowLine />
+          {acts.hint ? (
+            <>
+              <HintButton parts={{ pending, onHint: hint }} />
+              <RowLine />
+            </>
+          ) : null}
           {/* Not disabled while nothing is written: a disabled button would drop the focus. */}
           <button
             type="button"
@@ -420,6 +459,22 @@ export function Solve({
           </button>
         </div>
       </div>
+      {open ? (
+        <SolveTutor
+          quota={quota}
+          checking={checking}
+          verdict={unwritten ? undefined : task.verdict}
+          hint={said}
+          failure={failure}
+          pending={pending}
+          onHint={hint}
+          onNext={after === undefined ? undefined : () => go(after)}
+          onClose={close}
+          headingRef={heading}
+        />
+      ) : (
+        <TutorButton onOpen={() => setOpen(true)} buttonRef={call} />
+      )}
     </Screen>
   );
 }

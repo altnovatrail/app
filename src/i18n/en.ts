@@ -1238,6 +1238,9 @@ export const en = {
   /** The card of a task from paper whose solution gave no one answer a program can compare. */
   "paper.no-key": "Couldn't check this one",
   "paper.no-key-line": "This task has no answer that can be checked. Hints still work.",
+  /** The tutor's line on the screen of solving, after the one that the tutor is an AI (R75). */
+  "paper.solve-hello":
+    "Hints for this task come here, a question at a time. A program checks every answer.",
   /**
    * The card of a frame of several tasks: {n} of the {of} tasks with a key are correct; {tasks} are
    * the numbers of those whose answer was not read, in the frame's order.

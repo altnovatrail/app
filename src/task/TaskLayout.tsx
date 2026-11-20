@@ -22,7 +22,7 @@ import type {
   Media,
 } from "@altnovatrail/spec/canvas";
 import type * as open from "@altnovatrail/spec/formatv0/open";
-import { type ReactNode, type Ref, useEffect, useMemo, useRef } from "react";
+import { type ReactNode, type Ref, useMemo } from "react";
 import type { Failure } from "../api/failure.ts";
 import { failureText } from "../api/words.ts";
 import { Icon } from "../app/Icon.tsx";
@@ -40,7 +40,7 @@ import { VoicingToggle } from "../voice/VoicingToggle.tsx";
 import { Hint, type HintGiven } from "./Hint.tsx";
 import { StepPill, StepsPanel } from "./StepsPanel.tsx";
 import type { Mode, StepsState } from "./steps.ts";
-import { TutorButton, TutorPanel } from "./TutorPanel.tsx";
+import { TutorButton, TutorPanel, usePanelFocus } from "./TutorPanel.tsx";
 
 /**
  * The screen of the task — the top bar's pill with Back to My subjects (R57) and the heading, the
@@ -383,19 +383,8 @@ export function TaskLayout({
   const explanation = manifest?.languages.explanation;
   const statement = useMemo(() => taskPhrases(task, explanation), [task, explanation]);
   const shown = over || open;
-  // The button pressed to open or close the panel — the tutor's, the step's pill, ×, or a button of
-  // the row the phone's sheet hides — goes with the press: the focus goes to the panel's heading, or
-  // back to the tutor's button, not to the page (2.4.3).
-  const heading = useRef<HTMLHeadingElement>(null);
-  const call = useRef<HTMLButtonElement>(null);
-  const was = useRef(shown);
-  useEffect(() => {
-    if (was.current === shown) return;
-    was.current = shown;
-    const active = document.activeElement;
-    if (active !== null && active !== document.body && active.getClientRects().length > 0) return;
-    (shown ? heading.current : call.current)?.focus();
-  }, [shown]);
+  // The step's pill goes with its press too (2.4.3).
+  const { heading, call } = usePanelFocus(shown);
   // Beside the open panel the canvas, its lines and the foot end where it begins; on a phone its
   // sheet hides the row and the canvas's bar of tools (R148 spec).
   const beside = shown ? { "data-beside": "panel" } : {};

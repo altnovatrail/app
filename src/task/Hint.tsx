@@ -6,7 +6,7 @@
 // In the tutor's panel it is a bubble of the hint's tint, its heading the bubble's label with a
 // bulb, as the mockup's `task-hint` (R67).
 import type * as open from "@altnovatrail/spec/formatv0/open";
-import { useId } from "react";
+import { type ReactNode, useId } from "react";
 import { Icon } from "../app/Icon.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { ReadAloud } from "../voice/ReadAloud.tsx";
@@ -17,6 +17,21 @@ import { TechniqueCards } from "./TechniqueCards.tsx";
 export interface HintGiven {
   readonly techniques: readonly string[];
   readonly question?: string;
+}
+
+/** The bubble of a hint in the tutor's panel: its label, a bulb and "Hint", and what it gives. */
+export function HintBubble({ children }: { readonly children: ReactNode }) {
+  const { words } = useLanguage();
+  const id = useId();
+  return (
+    <section aria-labelledby={id} className="nt-bubble nt-bubble-hint">
+      <h2 id={id} className="nt-bubble-label">
+        <Icon value="hint" />
+        {words.text("task.hint")}
+      </h2>
+      {children}
+    </section>
+  );
 }
 
 export function Hint({
@@ -32,17 +47,12 @@ export function Hint({
   readonly language: string | undefined;
 }) {
   const { words } = useLanguage();
-  const id = useId();
   const lang = language === undefined ? {} : { lang: language };
   const givens = task.givens ?? [];
   // Nothing to hint is what api said, not what the catalog on the device happens to name.
   const nothing = hint.techniques.length === 0 && hint.question === undefined;
   return (
-    <section aria-labelledby={id} className="nt-bubble nt-bubble-hint">
-      <h2 id={id} className="nt-bubble-label">
-        <Icon value="hint" />
-        {words.text("task.hint")}
-      </h2>
+    <HintBubble>
       {givens.length === 0 ? null : (
         <>
           <p className="nt-hint-label">{words.text("steps.givens")}</p>
@@ -69,6 +79,6 @@ export function Hint({
         phrases={hintPhrases(task, hint.techniques, hint.question, catalog, language)}
         language={language}
       />
-    </section>
+    </HintBubble>
   );
 }

@@ -10,7 +10,7 @@
 // page now (R74; R165 spec): the frames it gave take the place of those found, the learner's own
 // staying, and Undo puts back the frames before until the learner changes any.
 import { Cause } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useApi } from "../api/ApiContext.tsx";
 import { type Failure, parseFailure } from "../api/failure.ts";
 import { PAPER_TIMEOUT_MS } from "../api/interceptors.ts";
@@ -22,7 +22,7 @@ import { DebugSlot } from "../debug/slot.tsx";
 import { watched } from "../debug/watched.ts";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { useKeyHolder } from "../ownkey/OwnKeyContext.tsx";
-import { TutorButton } from "../task/TutorPanel.tsx";
+import { TutorButton, usePanelFocus } from "../task/TutorPanel.tsx";
 import { Camera } from "./Camera.tsx";
 import { cropsOf, type Photo } from "./capture.ts";
 import { PageTutor } from "./PageTutor.tsx";
@@ -59,16 +59,9 @@ export function PaperScreen({ profileId }: { readonly profileId: string }) {
   // again repeats it.
   const startKey = useRef<{ readonly of: string; readonly key: string } | undefined>(undefined);
   const change = paper?.change;
-  // The tutor's panel on the page is open; the focus goes to its heading, and back to its button.
+  // The tutor's panel on the page is open.
   const [talking, setTalking] = useState(false);
-  const heading = useRef<HTMLHeadingElement>(null);
-  const call = useRef<HTMLButtonElement>(null);
-  const wasTalking = useRef(talking);
-  useEffect(() => {
-    if (wasTalking.current === talking) return;
-    wasTalking.current = talking;
-    (talking ? heading.current : call.current)?.focus();
-  }, [talking]);
+  const { heading, call } = usePanelFocus(talking);
 
   /** FindTasks on the photo; with the learner's request, with the frames of these tasks too. */
   const find = useCallback(

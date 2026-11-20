@@ -207,6 +207,19 @@ export function checkOver(task: BegunTask): boolean {
 }
 
 /**
+ * The buttons at the foot of the tutor's panel on the screen of solving, by the task's last Check
+ * (R75): Hint while the task is not solved, a task with no key too, whose hints still work; and the
+ * way to the next task once its Check is over.
+ */
+export function tutorActs(verdict: PaperVerdict | undefined): {
+  readonly hint: boolean;
+  readonly next: boolean;
+} {
+  const kind = verdict?.kind;
+  return { hint: kind !== "correct", next: kind === "correct" || kind === "nokey" };
+}
+
+/**
  * The ticks and crosses of a task's last Check on the crop of its work (R162 spec): one by each
  * answer that was correct or not yet and whose place the reading gave, named for a screen reader
  * by its task's number in the frame. None without a Check that judged one, or its context.
