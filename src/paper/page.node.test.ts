@@ -11,6 +11,7 @@ import {
   counts,
   foundTasks,
   framesOf,
+  keptTasks,
   limit,
   MAX_REQUEST,
   MAX_TASKS,
@@ -111,6 +112,17 @@ describe("the pick", () => {
     expect(new Set(c.map((t) => t.id)).size).toBe(2);
   });
 
+  it("never gives a frame drawn the key of a task begun, its frame removed", () => {
+    const a = withDrawn([], { ymin: 0, xmin: 0, ymax: 100, xmax: 100 });
+    const begun = a.map((t) => t.id);
+    const b = withDrawn(
+      without(a, a[0]?.id ?? ""),
+      { ymin: 200, xmin: 0, ymax: 300, xmax: 100 },
+      begun,
+    );
+    expect(b.map((t) => t.id)).not.toContain(a[0]?.id);
+  });
+
   it("starts from one task to twenty", () => {
     let tasks = foundTasks(answer([]));
     expect(canStart(tasks)).toBe(false);
@@ -168,5 +180,25 @@ describe("a request about the page", () => {
     expect(after.filter((t) => t.drawn)).toEqual(before.filter((t) => t.drawn));
     expect(new Set([...before, ...after].map((t) => t.id)).size).toBe(4);
     expect(asked(before, [], "k")).toBe(before);
+  });
+});
+
+describe("a page of the history", () => {
+  const frame = (ymin: number) => ({ ymin, xmin: 0, ymax: ymin + 50, xmax: 400 });
+
+  it("picks the frames whose tasks were begun, and lists a task whose frame was removed", () => {
+    const frames = [
+      { id: "found-1", frame: frame(100), drawn: false },
+      { id: "found-2", frame: frame(200), drawn: false },
+    ];
+    const begun = [
+      { taskId: "found-1", frame: frame(100), drawn: false },
+      { taskId: "drawn-1", frame: frame(300), drawn: true },
+    ];
+    expect(keptTasks(frames, begun)).toEqual([
+      { id: "found-1", frame: frame(100), drawn: false, picked: true },
+      { id: "found-2", frame: frame(200), drawn: false, picked: false },
+      { id: "drawn-1", frame: frame(300), drawn: true, picked: true },
+    ]);
   });
 });

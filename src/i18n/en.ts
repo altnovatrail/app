@@ -363,7 +363,7 @@ export const en = {
   "learner.menu-button": "{pseudonym}, profile menu",
   "learner.now": "Learning now",
   /**
-   * The hint mode in the profile's menu (concepts 10 spec): its group, and for a child's that a
+   * The hint mode in the profile's menu (R76): its group, and for a child's that a
    * grown-up sets it; each mode's title and line, as the mockup's.
    */
   "hints.title": "Hints",
@@ -1160,7 +1160,7 @@ export const en = {
   "report.sent-undated": "Thank you: the report is sent",
   /**
    * Under "Open camera" on the card of a task from paper and on the camera's screen: a name on the
-   * page would go to the AI with its photo (privacy 6 spec; R71).
+   * page would go to the AI with its photo (R71).
    */
   "paper.names": "Keep names out of the photo",
   /** The heading of the camera's screen. */
@@ -1255,7 +1255,7 @@ export const en = {
   }),
   /** A page that would not open: the device keeps it no more. */
   "paper.page-gone": "This page isn't on this device any more",
-  /** Under the list: where the pages live and until when (privacy 4.1 spec). */
+  /** Under the list: where the pages live and until when (R77). */
   "paper.pages-kept": "Kept on this device until the profile is deleted, and in its export.",
   /** Check pressed with nothing written, on the sheet or on the task. */
   "paper.write-first": "Write your solution first",

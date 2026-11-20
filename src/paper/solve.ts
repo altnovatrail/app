@@ -27,7 +27,7 @@ import { outcomeText } from "../api/words.ts";
 import type { Words } from "../i18n/words.ts";
 import type { PaperSent } from "../storage/profile.ts";
 import { reasonKey, verdictKey } from "../task/attempt.ts";
-import { type Frame, pageOrder } from "./frame.ts";
+import { type Frame, pageOrder, sameFrame } from "./frame.ts";
 import { type PageTask, picked } from "./page.ts";
 
 /** A task begun: its attempt, the page's task it began from, its crop, and its work so far. */
@@ -65,16 +65,6 @@ export function notBegun(
 ): readonly PageTask[] {
   const held = new Map(begun?.map((task) => [task.taskId, task.frame]));
   return picked(tasks).filter((task) => !sameFrame(held.get(task.id), task.frame));
-}
-
-function sameFrame(a: Frame | undefined, b: Frame): boolean {
-  return (
-    a !== undefined &&
-    a.ymin === b.ymin &&
-    a.xmin === b.xmin &&
-    a.ymax === b.ymax &&
-    a.xmax === b.xmax
-  );
 }
 
 /**
@@ -223,20 +213,21 @@ export function checkOver(task: BegunTask): boolean {
  * Whether a task is only to be looked at: its attempt is over, and no verdict of this tab's shows
  * it solved — a task of a page of the history, or one api closed.
  */
-export function viewOnly(task: BegunTask): boolean {
+export function viewOnly(task: Pick<BegunTask, "verdict" | "over">): boolean {
   return task.over === true && task.verdict === undefined;
 }
 
 /**
- * The buttons at the foot of the tutor's panel on the screen of solving, by the task's last Check
- * (R75): Hint while the task is not solved, a task with no key too, whose hints still work; and the
- * way to the next task once its Check is over.
+ * The buttons of the screen of solving and at the foot of the tutor's panel, by the task's last
+ * Check (R75): Hint while the task is not solved, a task with no key too, whose hints still work;
+ * and the way to the next task once its Check is over. A task only to be looked at has neither.
  */
-export function tutorActs(verdict: PaperVerdict | undefined): {
+export function tutorActs(task: Pick<BegunTask, "verdict" | "over">): {
   readonly hint: boolean;
   readonly next: boolean;
 } {
-  const kind = verdict?.kind;
+  if (viewOnly(task)) return { hint: false, next: false };
+  const kind = task.verdict?.kind;
   return { hint: kind !== "correct", next: kind === "correct" || kind === "nokey" };
 }
 

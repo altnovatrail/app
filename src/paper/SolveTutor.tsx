@@ -18,12 +18,13 @@ import { ExplainButton, TutorWords } from "../task/TutorWords.tsx";
 import { ReportProblem } from "../tutor/ReportProblem.tsx";
 import type { Said } from "../tutor/report.ts";
 import { VoicingToggle } from "../voice/VoicingToggle.tsx";
-import { type PaperVerdict, paperCard, tutorActs } from "./solve.ts";
+import { type PaperVerdict, paperCard } from "./solve.ts";
 
 export function SolveTutor({
   quota,
   checking,
   verdict,
+  acts,
   profileId,
   attemptId,
   said,
@@ -45,6 +46,8 @@ export function SolveTutor({
   readonly checking: boolean;
   /** What the last Check came to, while its verdict stands. */
   readonly verdict: PaperVerdict | undefined;
+  /** The buttons at its foot, those of the screen: none on a task only to be looked at. */
+  readonly acts: { readonly hint: boolean; readonly next: boolean };
   readonly profileId: string;
   readonly attemptId: string;
   /** The tutor's words, while they stand, with the reply that brought them. */
@@ -68,7 +71,6 @@ export function SolveTutor({
   readonly headingRef?: Ref<HTMLHeadingElement>;
 }) {
   const { language, words } = useLanguage();
-  const acts = tutorActs(verdict);
   return (
     <TutorPanel
       headingRef={headingRef}

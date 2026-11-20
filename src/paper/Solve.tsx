@@ -24,7 +24,10 @@
 // paper moved; "Explain differently" words the rung anew, once on it; and an adult may report a
 // problem with the words. The words stand till another task or Check, and what is said of them
 // stops with another task or the panel closed.
-import { TutorReply, type Work } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
+import {
+  TutorReply,
+  type WorkSchema,
+} from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
 import { Cause } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import type {
   CanvasElement,
@@ -32,6 +35,7 @@ import type {
   PaperTask,
   TracingChangeEvent,
 } from "@altnovatrail/spec/canvas";
+import type { MessageInitShape } from "@bufbuild/protobuf";
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { useApi } from "../api/ApiContext.tsx";
 import { type Failure, parseFailure } from "../api/failure.ts";
@@ -88,7 +92,7 @@ function paperOf(crop: Blob): PaperTask {
 interface RungAsk {
   readonly attemptId: string;
   readonly wrongAnswers: number;
-  readonly work: Work;
+  readonly work: MessageInitShape<typeof WorkSchema>;
   readonly key: string;
 }
 
@@ -191,20 +195,19 @@ export function Solve({
     (event: HistoryChangeEvent) => {
       if (attemptId === undefined) return;
       const sheet = event.currentTarget as CanvasElement;
-      onKeep(attemptId, (was) => ({
-        ...was,
-        history: withChange(was.history, event.detail, () => sheet.history),
-      }));
+      // Other work puts a verdict away, but that of a Check that is over, whose marks go all the
+      // same: the canvas drops them, and their context holds strokes the work may no longer have.
+      onKeep(attemptId, (was) => {
+        const history = withChange(was.history, event.detail, () => sheet.history);
+        return checkOver(was)
+          ? { ...was, history, checked: undefined }
+          : withoutVerdict({ ...was, history });
+      });
       setWritten(sheet.filled?.[0]?.[0] === true);
       setUnwritten(false);
       setTold("");
       // The wavy line stood under the work as it was (R82 spec).
       setWavy(undefined);
-      // Other work puts a verdict away, but that of a Check that is over, whose marks go all the
-      // same: the canvas drops them, and their context holds strokes the work may no longer have.
-      onKeep(attemptId, (was) =>
-        checkOver(was) ? { ...was, checked: undefined } : withoutVerdict(was),
-      );
     },
     [attemptId, onKeep],
   );
@@ -280,7 +283,7 @@ export function Solve({
           }
           // The fallback text comes with an outcome: beside it stands why, when platform AI is
           // closed beyond this call (R37).
-          if (answer.words === "" ? read !== undefined : closesAI(read))
+          if (read !== undefined && (answer.words === "" || closesAI(read)))
             setWordsNote(outcomeText(read, words));
         },
         (reason: unknown) => {
@@ -497,7 +500,9 @@ export function Solve({
         const card = paperCard(verdict, words);
         setTold(card.line === undefined ? card.title : `${card.title}. ${card.line}`);
         if (verdict.kind === "not-yet" && answer.wrongAnswers > 0) {
+          // A new rung: "Explain differently" is its own once more, with a key of its own.
           setExplained(false);
+          explainKey.current = undefined;
           // The words of the rung are asked at once while the panel is open, else once it opens
           // (R148 spec).
           const ask = {
@@ -581,7 +586,7 @@ export function Solve({
   // Hint waits while the rung's words are on their way, as for any request of its own.
   const busy = pending || wordsWaiting;
   const only = viewOnly(task);
-  const acts = only ? { hint: false, next: false } : tutorActs(task.verdict);
+  const acts = tutorActs(task);
   const close = () => {
     hush();
     setOpen(false);
@@ -721,6 +726,7 @@ export function Solve({
           quota={quota}
           checking={checking}
           verdict={unwritten ? undefined : task.verdict}
+          acts={acts}
           profileId={profileId}
           attemptId={attemptId}
           said={said}

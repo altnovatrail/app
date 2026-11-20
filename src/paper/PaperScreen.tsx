@@ -296,6 +296,7 @@ export function PaperScreen({
       <Pick
         photo={page.photo}
         tasks={page.tasks}
+        begun={paper.begun?.map((task) => task.taskId)}
         // Any change of the learner's to the tasks takes Undo away.
         onTasks={(update) =>
           paper.change(page.photo, (now: PaperPage) => ({

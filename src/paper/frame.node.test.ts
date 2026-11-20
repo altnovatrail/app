@@ -3,6 +3,7 @@
 import { describe, expect, it } from "vitest";
 import {
   cropRect,
+  isFrame,
   isTap,
   loopFrame,
   MARGIN,
@@ -11,6 +12,7 @@ import {
   pageOrder,
   resizedFrame,
   type Scale,
+  sameFrame,
   tapsFrame,
 } from "./frame.ts";
 
@@ -126,6 +128,24 @@ it("orders the page top to bottom, the left first", () => {
   const b = { xmin: 100, ymin: 100, xmax: 200, ymax: 200 };
   const c = { xmin: 0, ymin: 50, xmax: 100, ymax: 80 };
   expect([a, b, c].sort(pageOrder)).toEqual([c, b, a]);
+});
+
+describe("a frame", () => {
+  it("is four numbers, its edges in order and within the photo", () => {
+    expect(isFrame({ ymin: 0, xmin: 0, ymax: 1000, xmax: 1000 })).toBe(true);
+    expect(isFrame({ ymin: 100, xmin: 0, ymax: 100, xmax: 400 })).toBe(false);
+    expect(isFrame({ ymin: 0, xmin: -1, ymax: 100, xmax: 400 })).toBe(false);
+    expect(isFrame({ ymin: 0, xmin: 0, ymax: 100, xmax: 1001 })).toBe(false);
+    expect(isFrame({ ymin: "0", xmin: 0, ymax: 100, xmax: 400 })).toBe(false);
+    expect(isFrame(undefined)).toBe(false);
+  });
+
+  it("is the same as another of its edges, and never as none", () => {
+    const a = { ymin: 0, xmin: 0, ymax: 100, xmax: 400 };
+    expect(sameFrame({ ...a }, a)).toBe(true);
+    expect(sameFrame({ ...a, xmax: 401 }, a)).toBe(false);
+    expect(sameFrame(undefined, a)).toBe(false);
+  });
 });
 
 describe("the crop's rectangle", () => {

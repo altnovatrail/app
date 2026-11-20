@@ -4,7 +4,7 @@
 // The learner may ask in words to find them anew (R165 spec): the request goes with the frames on
 // the page, and the frames it gave take the place of those found, the learner's own staying. No DOM.
 import type { FindTasksResponse } from "@altnovatrail/contracts/novatrail/api/v1/paper_pb.js";
-import { type Frame, pageOrder } from "./frame.ts";
+import { type Frame, isFrame, pageOrder } from "./frame.ts";
 
 /** The most tasks one page begins: those of `BeginPaperAttempts` (the contract). */
 export const MAX_TASKS = 20;
@@ -23,18 +23,6 @@ export interface PageTask {
   /** The learner drew it round a task the AI missed. */
   readonly drawn: boolean;
   readonly picked: boolean;
-}
-
-/** A frame that is a rectangle in the photo: its edges in order and within it. */
-function isFrame(frame: Frame): boolean {
-  return (
-    frame.xmin >= 0 &&
-    frame.ymin >= 0 &&
-    frame.xmax <= 1000 &&
-    frame.ymax <= 1000 &&
-    frame.xmin < frame.xmax &&
-    frame.ymin < frame.ymax
-  );
 }
 
 /**
@@ -107,6 +95,25 @@ export function asked(
   ];
 }
 
+/**
+ * The tasks of a page of the history: its frames as its last Start left them, each picked whose task
+ * was begun, and the frame of each task begun whose frame the learner removed before that Start, so
+ * that every task the history keeps is on the list again (R77).
+ */
+export function keptTasks(
+  frames: readonly Pick<PageTask, "id" | "frame" | "drawn">[],
+  begun: readonly { readonly taskId: string; readonly frame: Frame; readonly drawn: boolean }[],
+): readonly PageTask[] {
+  const ids = new Set(begun.map((task) => task.taskId));
+  const onPage = new Set(frames.map((each) => each.id));
+  return [
+    ...frames.map(({ id, frame, drawn }) => ({ id, frame, drawn, picked: ids.has(id) })),
+    ...begun
+      .filter((task) => !onPage.has(task.taskId))
+      .map(({ taskId, frame, drawn }) => ({ id: taskId, frame, drawn, picked: true })),
+  ];
+}
+
 /** A tap on a task: picked, it is left out; left out, picked again. */
 export function toggled(tasks: readonly PageTask[], id: string): readonly PageTask[] {
   return tasks.map((task) => (task.id === id ? { ...task, picked: !task.picked } : task));
@@ -118,9 +125,18 @@ export function allOrNone(tasks: readonly PageTask[]): readonly PageTask[] {
   return tasks.map((task) => ({ ...task, picked: !all }));
 }
 
-/** A frame the learner drew, picked: its key the next one free. */
-export function withDrawn(tasks: readonly PageTask[], frame: Frame): readonly PageTask[] {
-  const last = Math.max(0, ...tasks.map((task) => Number(/^drawn-(\d+)$/.exec(task.id)?.[1] ?? 0)));
+/**
+ * A frame the learner drew, picked: its key the next one free of those of the page's frames and of
+ * its tasks begun, `begun`, whose frames may be gone. A begun task's key taken again would begin the
+ * new frame in that task's place, and its work would go.
+ */
+export function withDrawn(
+  tasks: readonly PageTask[],
+  frame: Frame,
+  begun: readonly string[] = [],
+): readonly PageTask[] {
+  const ids = [...tasks.map((task) => task.id), ...begun];
+  const last = Math.max(0, ...ids.map((id) => Number(/^drawn-(\d+)$/.exec(id)?.[1] ?? 0)));
   return [...tasks, { id: `drawn-${last + 1}`, frame, drawn: true, picked: true }];
 }
 

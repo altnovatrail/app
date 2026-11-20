@@ -1,6 +1,6 @@
 // The photo of a page on the device (R71): a frame of the camera's video, or a picture the learner
 // picked, drawn upright on a canvas and encoded anew as a JPEG of at most 4 MiB — the metadata of
-// its file, its place and its time among them, stay behind (privacy 6 spec) —, and the crops of the
+// its file, its place and its time among them, stay behind —, and the crops of the
 // tasks picked cut from that same photo as PNGs. The photo and its crops stay in the tab's memory.
 import { cropRect, type Frame } from "./frame.ts";
 import { MAX_PHOTO, QUALITY, tries } from "./photo.ts";

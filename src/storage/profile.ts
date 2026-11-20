@@ -22,7 +22,7 @@ import type {
   TracingState,
 } from "@altnovatrail/spec/canvas";
 import type * as open from "@altnovatrail/spec/formatv0/open";
-import type { Frame } from "../paper/frame.ts";
+import { type Frame, isFrame } from "../paper/frame.ts";
 import { type Connection, type Key, type Transaction, within } from "./backend.ts";
 import type { Device } from "./device.ts";
 import { addDatabase, readRegistry } from "./registry.ts";
@@ -232,11 +232,6 @@ export interface PageSummary {
 const PAGES = "pages";
 const PHOTOS = "photos";
 const PAPER_TASKS = "paperTasks";
-
-function isFrame(value: unknown): value is Frame {
-  const frame = value as Partial<Frame> | null | undefined;
-  return [frame?.ymin, frame?.xmin, frame?.ymax, frame?.xmax].every((n) => typeof n === "number");
-}
 
 /** A page's record as this build writes it; anything else is none. */
 function pageOf(kept: unknown): KeptPage | undefined {

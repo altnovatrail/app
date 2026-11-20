@@ -29,6 +29,15 @@ export interface ProfileForm {
   readonly hintMode: HintMode.QUESTIONS_ONLY | HintMode.SHOW_WHERE;
 }
 
+/** The hint mode a profile has: "Show where" for one that names none, as a new profile's (R162 spec). */
+export function hintModeOf(
+  profile: Pick<Profile, "hintMode">,
+): HintMode.QUESTIONS_ONLY | HintMode.SHOW_WHERE {
+  return profile.hintMode === HintMode.QUESTIONS_ONLY
+    ? HintMode.QUESTIONS_ONLY
+    : HintMode.SHOW_WHERE;
+}
+
 /**
  * The form as the profile gives it: a mode or a speed the build does not know is "by steps" or
  * normal, as the contract's enums say, a hint mode "Show where", a new profile's (R162 spec), and
@@ -44,8 +53,7 @@ export function formOf(profile: Profile): ProfileForm {
       profile.interfaceLanguage === undefined ? undefined : lookup(profile.interfaceLanguage),
     voicing: voicing?.enabled === true,
     speed: voicing?.speed === VoicingSpeed.SLOW ? VoicingSpeed.SLOW : VoicingSpeed.NORMAL,
-    hintMode:
-      profile.hintMode === HintMode.QUESTIONS_ONLY ? HintMode.QUESTIONS_ONLY : HintMode.SHOW_WHERE,
+    hintMode: hintModeOf(profile),
   };
 }
 

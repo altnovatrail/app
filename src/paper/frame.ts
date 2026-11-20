@@ -1,5 +1,5 @@
 // The geometry of a task frame on the photo of a page (R71): a rectangle in whole thousandths of
-// the photo's width and height, as a crop box is written (concepts 8 spec). A frame the learner
+// the photo's width and height, as a crop box is written. A frame the learner
 // draws comes of a loop round a task — its box, with a margin — or of two taps, a corner and then
 // the one opposite; its corner resizes it. Each is at least the size of a target on the screen and
 // never past the photo's edge. The sizes on the screen come in CSS px, by the scale the screen
@@ -113,6 +113,35 @@ export function resizedFrame(frame: Frame, to: Point, scale: Scale): Frame {
     xmax: clamp(Math.round(to.x), Math.min(1000, Math.ceil(frame.xmin + w)), 1000),
     ymax: clamp(Math.round(to.y), Math.min(1000, Math.ceil(frame.ymin + h)), 1000),
   };
+}
+
+/** Whether a value is a frame: four numbers, its edges in order and within the photo. */
+export function isFrame(value: unknown): value is Frame {
+  const frame = value as Partial<Frame> | null | undefined;
+  const { ymin, xmin, ymax, xmax } = frame ?? {};
+  return (
+    typeof ymin === "number" &&
+    typeof xmin === "number" &&
+    typeof ymax === "number" &&
+    typeof xmax === "number" &&
+    xmin >= 0 &&
+    ymin >= 0 &&
+    xmax <= 1000 &&
+    ymax <= 1000 &&
+    xmin < xmax &&
+    ymin < ymax
+  );
+}
+
+/** Whether two frames are one: the same edges, and none is no frame. */
+export function sameFrame(a: Frame | undefined, b: Frame): boolean {
+  return (
+    a !== undefined &&
+    a.ymin === b.ymin &&
+    a.xmin === b.xmin &&
+    a.ymax === b.ymax &&
+    a.xmax === b.xmax
+  );
 }
 
 /** The order of the page: top to bottom, and of two at one height the left first, as tutor's. */

@@ -24,7 +24,7 @@ import type { ReadOutcome } from "../api/outcome.ts";
 import type { Device } from "../storage/device.ts";
 import { openProfile, type PaperWork, type Profile } from "../storage/profile.ts";
 import { type Photo, release } from "./capture.ts";
-import type { PageTask } from "./page.ts";
+import { keptTasks, type PageTask } from "./page.ts";
 import { type BegunTask, changed, withBegun } from "./solve.ts";
 
 export type { BegunTask } from "./solve.ts";
@@ -93,7 +93,6 @@ export interface Paper {
 /** How long the work of a task waits after a change before it is written, ms. */
 const SETTLE_MS = 500;
 
-/** A task's work as the history keeps it. */
 /** Whether two states of a task hold the same work: its verdict is none of the history's. */
 function sameWork(a: BegunTask | undefined, b: BegunTask): boolean {
   return (
@@ -105,6 +104,7 @@ function sameWork(a: BegunTask | undefined, b: BegunTask): boolean {
   );
 }
 
+/** A task's work as the history keeps it. */
 function workOf(task: BegunTask): PaperWork {
   return {
     history: task.history,
@@ -293,7 +293,6 @@ export function PaperProvider({
       // Another page, a new photo or Close came meanwhile: theirs is the screen.
       if (asked !== era.current) return true;
       const { page, photo, tasks } = kept;
-      const begunIds = new Set(tasks.map((task) => task.taskId));
       const begun: BegunTask[] = tasks.map((task) => ({
         attemptId: task.attemptId,
         taskId: task.taskId,
@@ -315,12 +314,7 @@ export function PaperProvider({
             takenAt: page.takenAt,
             photo: { ...photo, url },
             finding: { status: "found" },
-            tasks: page.frames.map(({ id, frame, drawn }) => ({
-              id,
-              frame,
-              drawn,
-              picked: begunIds.has(id),
-            })),
+            tasks: keptTasks(page.frames, tasks),
             talk: [],
           },
           begun: withBegun(undefined, begun),

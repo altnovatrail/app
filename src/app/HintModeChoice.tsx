@@ -1,4 +1,4 @@
-// The hint mode in the profile's menu (concepts 10 spec; R162 spec), as the mockup's `home-switch`:
+// The hint mode in the profile's menu (R76; R162 spec), as the mockup's `home-switch`:
 // a group of two radio buttons under "Hints" — "Questions only", and "Show where", whose wavy line after
 // "Not yet" underlines the place of the mistake on a task from paper. A learner of the category
 // adult sets their own by `SetHintMode`, a learning request, and the session takes the profile it
@@ -7,6 +7,7 @@
 import type { Profile } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import { HintMode } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import { useId, useState } from "react";
+import { hintModeOf } from "../account/settings.ts";
 import { useApi } from "../api/ApiContext.tsx";
 import { ApiError, type Failure, parseFailure } from "../api/failure.ts";
 import { failureText } from "../api/words.ts";
@@ -17,13 +18,6 @@ const MODES = [
   [HintMode.QUESTIONS_ONLY, "hints.questions", "hints.questions-line"],
   [HintMode.SHOW_WHERE, "hints.where", "hints.where-line"],
 ] as const;
-
-/** The mode a profile has: "Show where" for one that names none, as a new profile's (R162 spec). */
-export function hintModeOf(profile: Pick<Profile, "hintMode">): HintMode {
-  return profile.hintMode === HintMode.QUESTIONS_ONLY
-    ? HintMode.QUESTIONS_ONLY
-    : HintMode.SHOW_WHERE;
-}
 
 export function HintModeChoice({
   learner,

@@ -57,6 +57,8 @@ export interface PickProps {
   readonly photo: Photo;
   readonly tasks: readonly PageTask[];
   readonly onTasks: (update: (tasks: readonly PageTask[]) => readonly PageTask[]) => void;
+  /** The keys of the tasks begun on the page, their frames on it or gone: a frame drawn takes none. */
+  readonly begun?: readonly string[] | undefined;
   /** The line under the top bar's: finding, none found, or what finding or Start came to. */
   readonly lines?: ReactNode;
   /** The tasks are being found: the frames wait. */
@@ -76,6 +78,7 @@ export function Pick({
   photo,
   tasks,
   onTasks,
+  begun,
   lines,
   finding,
   closed,
@@ -142,13 +145,13 @@ export function Pick({
       else {
         const frame = tapsFrame(corner, tap, scale);
         setCorner(undefined);
-        onTasks((was) => withDrawn(was, frame));
+        onTasks((was) => withDrawn(was, frame, begun));
       }
       return;
     }
     setCorner(undefined);
     const frame = loopFrame(now.points, scale);
-    if (frame !== undefined) onTasks((was) => withDrawn(was, frame));
+    if (frame !== undefined) onTasks((was) => withDrawn(was, frame, begun));
   };
   const cancel = () => {
     stroke.current = undefined;

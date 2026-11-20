@@ -338,20 +338,24 @@ describe("what a Check of a task from paper came to", () => {
 
 describe("the buttons of the tutor's panel", () => {
   it("gives Hint till the task is solved, and the next task once its Check is over", () => {
-    expect(tutorActs(undefined)).toEqual({ hint: true, next: false });
-    expect(tutorActs({ kind: "not-yet", read: "84", parts: [] })).toEqual({
+    expect(tutorActs({})).toEqual({ hint: true, next: false });
+    expect(tutorActs({ verdict: { kind: "not-yet", read: "84", parts: [] } })).toEqual({
       hint: true,
       next: false,
     });
-    expect(tutorActs({ kind: "unreadable", reason: "illegible" })).toEqual({
+    expect(tutorActs({ verdict: { kind: "unreadable", reason: "illegible" } })).toEqual({
       hint: true,
       next: false,
     });
-    expect(tutorActs({ kind: "correct", read: "85", parts: [] })).toEqual({
-      hint: false,
-      next: true,
-    });
+    const solved = { verdict: { kind: "correct", read: "85", parts: [] } } as const;
+    expect(tutorActs(solved)).toEqual({ hint: false, next: true });
+    // Solved in this tab, it stays so once its attempt is over.
+    expect(tutorActs({ ...solved, over: true })).toEqual({ hint: false, next: true });
     // A task with no key keeps its hints (R162 spec).
-    expect(tutorActs({ kind: "nokey" })).toEqual({ hint: true, next: true });
+    expect(tutorActs({ verdict: { kind: "nokey" } })).toEqual({ hint: true, next: true });
+  });
+
+  it("gives neither on a task only to be looked at, whose attempt is over", () => {
+    expect(tutorActs({ over: true })).toEqual({ hint: false, next: false });
   });
 });

@@ -1,11 +1,11 @@
-// The file of a page from paper in the profile's export, `paper/<profile>/<page>.json` (R77; the
-// part export/ spec, section 4): the page of the history as the device keeps it — its photo, its
-// frames in the order of the page, and each task begun on it with its crop, its history, where its
-// tracing paper lay and the context of each Check answered —, by `@altnovatrail/spec/exportv4`. The
-// whole export, its manifest and the files of the device, waits for epic E4 of app. No DOM.
+// The file of a page from paper in the profile's export, `paper/<profile>/<page>.json` (R77): the
+// page of the history as the device keeps it — its photo, its frames in the order of the page, and
+// each task begun on it with its crop, its history, where its tracing paper lay and the context of
+// each Check answered —, by `@altnovatrail/spec/exportv4`. Of the export, only this file is written
+// here: not its manifest or the device's other files. No DOM.
 import type { Paper, Task, TaskFrame } from "@altnovatrail/spec/exportv4";
 import type { KeptFrame, KeptPage, KeptPaperTask, KeptPhoto } from "../storage/profile.ts";
-import { type Frame, pageOrder } from "./frame.ts";
+import { pageOrder, sameFrame } from "./frame.ts";
 
 /** The version of the part export/ this file is of. */
 export const PAPER_FORMAT = 4;
@@ -13,17 +13,13 @@ export const PAPER_FORMAT = 4;
 /** Where canvas starts the tracing paper, shown, when the learner has not moved it (R87 canvas). */
 const TRACING_START = { at: [180, 60], hidden: false } as const;
 
-/** Bytes in base64 (RFC 4648, section 4), a chunk at a time, so that no call takes too many arguments. */
+/** Bytes in base64 (RFC 4648), a chunk at a time, so that no call takes too many arguments. */
 export function base64(bytes: Uint8Array): string {
   let text = "";
   for (let i = 0; i < bytes.length; i += 0x8000) {
     text += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
   }
   return btoa(text);
-}
-
-function sameFrame(a: Frame, b: Frame): boolean {
-  return a.ymin === b.ymin && a.xmin === b.xmin && a.ymax === b.ymax && a.xmax === b.xmax;
 }
 
 function frameOf({ frame, drawn }: Pick<KeptFrame, "frame" | "drawn">): TaskFrame {
