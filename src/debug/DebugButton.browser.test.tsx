@@ -275,6 +275,7 @@ describe("the debug button", () => {
 
   it("logs each action with its calls, opens a call, and exports a Check as a case", async () => {
     const save = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+    const made = vi.spyOn(URL, "createObjectURL");
     const { api } = renderDebug({ actions: [FOUND, CHECK] });
     await logged(api);
     const window_ = await opened();
@@ -291,12 +292,18 @@ describe("the debug button", () => {
     await userEvent.click(log.getByRole("button", { name: /^Statement/ }));
     expect(log.getByText("1,200")).toBeVisible();
     expect(log.getByText(/"formula": "37\+48"/)).toBeVisible();
+    const copy = vi.spyOn(navigator.clipboard, "writeText").mockResolvedValue();
     await userEvent.click(log.getByRole("button", { name: "Copy" }));
+    expect(await log.findByRole("button", { name: "Copied" })).toBeVisible();
+    expect(copy).toHaveBeenCalledWith(expect.stringMatching(/"formula": "37\+48"/));
     await userEvent.click(log.getByRole("button", { name: /^Solver/ }));
     expect(log.getByText("The key")).toBeVisible();
     await userEvent.click(log.getByRole("button", { name: /^Find tasks/ }));
     expect(log.getByText("not JSON")).toBeVisible();
     expect(log.getByText("The own key's limit (CAUSE_LIMIT_REACHED).")).toBeVisible();
+    // A call that returned nothing opens to its figures and why.
+    await userEvent.click(log.getByRole("button", { name: /^Read the work · reader 2/ }));
+    expect(log.getByText("The call failed (CAUSE_AI_FAILURE).")).toBeVisible();
 
     // The export begins from what the calls gave, and saves the case once it makes one.
     await userEvent.click(log.getByRole("button", { name: "Export" }));
@@ -311,8 +318,10 @@ describe("the debug button", () => {
       /^The key of task 1 is no paper\.v1\.Answer: /,
     );
     await userEvent.fill(log.getByLabelText("Key · JSON of paper.v1.Answer"), "");
-    await userEvent.fill(log.getByLabelText("Formula"), "37+48");
-    await userEvent.fill(log.getByLabelText("Read · the answer the work holds"), "85");
+    // Each field as the developer corrects it, trimmed in the case.
+    await userEvent.fill(log.getByLabelText("Statement"), "37 + 48 = ");
+    await userEvent.fill(log.getByLabelText("Formula"), "37 + 48");
+    await userEvent.fill(log.getByLabelText("Read · the answer the work holds"), " 86");
     await userEvent.fill(log.getByLabelText("Note"), "the second reader failed");
     await userEvent.click(log.getByRole("button", { name: "not yet" }));
     await userEvent.click(log.getByRole("button", { name: "Save case" }));
@@ -321,8 +330,20 @@ describe("the debug button", () => {
       "case-20261119T150405-attempt-.json",
     );
     expect(log.queryByRole("button", { name: "Save case" })).toBeNull();
+    const [file] = made.mock.calls[0] ?? [];
+    if (!(file instanceof Blob)) throw new Error("no file saved");
+    const saved = JSON.parse(await file.text());
+    expect(saved.tasks[0]).toMatchObject({
+      statement: "37 + 48 =",
+      formula: "37 + 48",
+      read: "86",
+    });
     await userEvent.click(log.getByRole("button", { name: "Export" }));
     await userEvent.click(log.getByRole("button", { name: "Cancel" }));
+    expect(log.queryByRole("button", { name: "Cancel" })).toBeNull();
+    // Export again puts the export it opened away.
+    await userEvent.click(log.getByRole("button", { name: "Export" }));
+    await userEvent.click(log.getByRole("button", { name: "Export" }));
     expect(log.queryByRole("button", { name: "Cancel" })).toBeNull();
 
     await userEvent.click(window_.getByRole("button", { name: "Clear log" }));
@@ -333,5 +354,16 @@ describe("the debug button", () => {
       "aria-disabled",
       "true",
     );
+    // Marked disabled, and pressed all the same.
+    await userEvent.click(window_.getByRole("button", { name: "Clear log" }), { force: true });
+    await userEvent.click(window_.getByRole("tab", { name: "Models" }));
+    expect(window_.getByRole("region", { name: "Models" })).toBeVisible();
+  });
+
+  it("counts one call of the session as one", async () => {
+    const { api } = renderDebug({ actions: [FOUND] });
+    await logged(api);
+    const window_ = await opened();
+    expect(window_.getByText(/· 1 call this session$/)).toBeVisible();
   });
 });

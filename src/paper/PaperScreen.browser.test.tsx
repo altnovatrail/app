@@ -5,18 +5,27 @@
 // goes from one to another and back to the page, and Check sends the two crops and shows the
 // verdict by the task's key, or "Couldn't check this one" with none; the tutor's panel on the page
 // finds it anew by the learner's request, and Undo brings the frames back; on the screen of solving
-// the tutor's panel opens by its button and by Hint, with the verdict and the hint in it, and on a
-// phone hides the canvas's bar of tools; with the device, the page and its work are the profile's
-// history, which "Your pages" opens again — with api on connect-es's router.
+// the tutor's panel opens by its button and by Hint, with the verdict and the hint in it, the
+// rung's words after Not yet, with the wavy line, and "Explain differently" once on a rung, and on a
+// phone hides the canvas's bar of tools; a task api closed is only to be looked at; a repeat of
+// FindTasks finds again, and a Start that failed says why; a camera that answers too late is
+// stopped; with the device, the page and its work are the profile's history, which "Your pages"
+// opens again — with api on connect-es's router.
 import { AccountService } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import {
   AttemptService,
+  type ExplainDifferentlyResponseSchema,
+  type GetHintResponseSchema,
+  type GetRungWordsRequest,
+  type GetRungWordsResponseSchema,
+  MarkKind,
   type SubmitWorkRequest,
   type SubmitWorkResponseSchema,
 } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
 import { Cause, RefusalSchema } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import {
   type BeginPaperAttemptsRequest,
+  type BeginPaperAttemptsResponseSchema,
   type FindTasksRequest,
   type FindTasksResponseSchema,
   PaperService,
@@ -35,6 +44,7 @@ import { memoryDevice } from "../test/device.ts";
 import { inLanguage } from "../test/language.tsx";
 import { PaperProvider } from "./PaperContext.tsx";
 import { PaperScreen } from "./PaperScreen.tsx";
+import { MAX_TASKS } from "./page.ts";
 import { YourPages } from "./YourPages.tsx";
 
 interface Setup {
@@ -43,12 +53,20 @@ interface Setup {
   readonly checked?: (n: number) => MessageInitShape<typeof SubmitWorkResponseSchema>;
   /** The opening question of a Hint before the first wrong answer, by GetOpeningWords. */
   readonly hinted?: string;
+  /** The answer to Hint; none, and a task from paper has no techniques yet. */
+  readonly hint?: () => MessageInitShape<typeof GetHintResponseSchema>;
+  /** The words of each rung asked, by how many came before; none, and api has no GetRungWords. */
+  readonly rung?: (n: number) => MessageInitShape<typeof GetRungWordsResponseSchema>;
+  /** Each "Explain differently", by how many came before; none, and api has no ExplainDifferently. */
+  readonly explained?: (n: number) => MessageInitShape<typeof ExplainDifferentlyResponseSchema>;
+  /** The answer to Start; none, an attempt for each task. */
+  readonly began?: (tasks: number) => MessageInitShape<typeof BeginPaperAttemptsResponseSchema>;
   /** The learner's share of the quota, in percent; none, and api has no `GetQuota`. */
   readonly quota?: number;
   /** The device that keeps the profile's history, and "Your pages" beside the screen; none keeps nothing. */
   readonly device?: Device;
-  /** The camera's stream; none, and there is no camera. */
-  readonly camera?: MediaStream;
+  /** The camera's stream, or what it comes by; none, and there is no camera. */
+  readonly camera?: MediaStream | Promise<MediaStream>;
 }
 
 /** A synthetic photo of a page: a white PNG of 600 × 800 px with two grey stripes. */
@@ -73,11 +91,16 @@ const SLOW = { timeout: 15_000 };
 
 /** The screen on its camera; with none, the photos are the way in. */
 async function renderCamera(setup: Setup = {}) {
-  if (setup.camera !== undefined)
-    vi.mocked(navigator.mediaDevices.getUserMedia).mockResolvedValue(setup.camera);
+  const camera = setup.camera;
+  if (camera !== undefined)
+    vi.mocked(navigator.mediaDevices.getUserMedia).mockImplementation(() =>
+      Promise.resolve(camera),
+    );
   const finds: FindTasksRequest[] = [];
   const begins: BeginPaperAttemptsRequest[] = [];
   const submits: SubmitWorkRequest[] = [];
+  const rungs: GetRungWordsRequest[] = [];
+  let explains = 0;
   let attempts = 0;
   const api = routedApi((router) => {
     router.service(AttemptService, {
@@ -89,11 +112,27 @@ async function renderCamera(setup: Setup = {}) {
       },
       // Before the first wrong answer a task from paper has no techniques: the opening question.
       getHint() {
-        return { hint: { case: "techniques", value: {} } };
+        return setup.hint?.() ?? { hint: { case: "techniques", value: {} } };
       },
       getOpeningWords() {
         return { words: setup.hinted ?? "" };
       },
+      ...(setup.rung === undefined
+        ? {}
+        : {
+            getRungWords(request: GetRungWordsRequest) {
+              rungs.push(request);
+              return setup.rung?.(rungs.length - 1) ?? {};
+            },
+          }),
+      ...(setup.explained === undefined
+        ? {}
+        : {
+            explainDifferently() {
+              explains += 1;
+              return setup.explained?.(explains - 1) ?? {};
+            },
+          }),
     });
     const quota = setup.quota;
     if (quota !== undefined) {
@@ -115,6 +154,8 @@ async function renderCamera(setup: Setup = {}) {
       },
       beginPaperAttempts(request) {
         begins.push(request);
+        const began = setup.began?.(request.tasks);
+        if (began !== undefined) return began;
         return {
           attemptIds: Array.from({ length: request.tasks }, () => {
             attempts += 1;
@@ -142,7 +183,27 @@ async function renderCamera(setup: Setup = {}) {
   );
   if (setup.camera === undefined)
     await screen.findByText("The camera isn't available here. Choose a photo of the page instead");
-  return { finds, begins, submits };
+  return { finds, begins, submits, rungs };
+}
+
+/** A refusal of api for a cause. */
+function refusal(cause: Cause, code = Code.FailedPrecondition): ConnectError {
+  return new ConnectError("a refusal", code, undefined, [
+    { desc: RefusalSchema, value: create(RefusalSchema, { cause }) },
+  ]);
+}
+
+/** A Check of one task answered Not yet, its wrong answers so many. */
+function notYet(wrongAnswers = 1): MessageInitShape<typeof SubmitWorkResponseSchema> {
+  return {
+    items: [
+      {
+        verdict: "not_yet",
+        answerSlots: [{ answerSlot: { item: 1, slot: 1 }, verdict: "not_yet", value: "84" }],
+      },
+    ],
+    wrongAnswers,
+  };
 }
 
 /** A synthetic camera: the stream of a white canvas of 600 × 800 px. */
@@ -274,6 +335,43 @@ it.skipIf(server.browser === "webkit")(
   },
 );
 
+it("takes photos alone where the browser has no camera to give", async () => {
+  vi.spyOn(navigator, "mediaDevices", "get").mockReturnValue(undefined as unknown as MediaDevices);
+  await renderCamera();
+  expect(screen.queryByRole("button", { name: "Take photo" })).toBeNull();
+});
+
+it("stops a camera that answers once the screen is gone, and minds no refusal then", async () => {
+  let give: (stream: MediaStream) => void = () => {};
+  await renderCamera({ camera: new Promise((done) => (give = done)) });
+  cleanup();
+  const camera = cameraStream();
+  give(camera);
+  await waitFor(() =>
+    expect(camera.getTracks().map((track) => track.readyState)).toEqual(["ended"]),
+  );
+  let refuse: (reason: unknown) => void = () => {};
+  await renderCamera({ camera: new Promise((_, no) => (refuse = no)) });
+  cleanup();
+  refuse(new DOMException("no camera", "NotAllowedError"));
+});
+
+it("opens the device's photos by its button, and says a picture it cannot read can't be read", async () => {
+  const { finds } = await renderCamera();
+  const picked = vi.spyOn(HTMLInputElement.prototype, "click").mockImplementation(() => {});
+  await userEvent.click(screen.getByRole("button", { name: "Choose from photos" }));
+  expect(picked).toHaveBeenCalledOnce();
+  const input = document.querySelector<HTMLInputElement>('input[type="file"]');
+  if (input === null) throw new Error("no picker");
+  // A change with no file picked is none.
+  input.dispatchEvent(new Event("change", { bubbles: true }));
+  await userEvent.upload(input, new File(["not a picture"], "page.png", { type: "image/png" }));
+  expect(await screen.findByRole("alert")).toHaveTextContent(
+    "This picture can't be read. Take another photo, or choose one",
+  );
+  expect(finds).toHaveLength(0);
+});
+
 it("sends the photo once, a JPEG encoded anew, and picks the tasks found in the order of the page", async () => {
   const { finds } = await renderPaper();
   const first = await screen.findByRole("button", { name: "Deselect task 1" });
@@ -344,6 +442,10 @@ it("goes from task to task by ‹, › and the list, each with its own work", as
   await userEvent.click(screen.getByRole("button", { name: "Next task" }));
   expect(await screen.findByRole("heading", { name: "Task 2" })).toBeVisible();
   expect(sheet().history).toEqual([]);
+  await userEvent.click(screen.getByRole("button", { name: "Previous task" }));
+  expect(await screen.findByRole("heading", { name: "Task 1" })).toBeVisible();
+  await userEvent.click(screen.getByRole("button", { name: "Next task" }));
+  await screen.findByRole("heading", { name: "Task 2" });
   await userEvent.click(screen.getByRole("button", { name: "Tasks, 2 / 2" }));
   await userEvent.click(await screen.findByRole("button", { name: /Task 1/ }));
   expect(await screen.findByRole("heading", { name: "Task 1" })).toBeVisible();
@@ -516,6 +618,182 @@ it("opens the panel by the row's Hint, its words a bubble there that strokes do 
   expect(tutorPanel().queryByText("What is left to find?")).toBeNull();
 });
 
+it("brings the rung's words with the wavy line in the open panel, which the paper moved takes away", async () => {
+  const { rungs } = await solving({
+    checked: () => notYet(),
+    rung: () => ({
+      rung: 1,
+      words: "Look at the tens.",
+      marks: [
+        {
+          kind: MarkKind.WAVY_LINE,
+          place: { case: "cropBox", value: { ymin: 100, xmin: 100, ymax: 300, xmax: 600 } },
+        },
+      ],
+    }),
+  });
+  await userEvent.click(screen.getByRole("button", { name: "Tutor" }));
+  writeOn(sheet());
+  await userEvent.click(screen.getByRole("button", { name: "Check" }));
+  expect(await tutorPanel().findByText("Look at the tens.")).toBeVisible();
+  expect(rungs).toHaveLength(1);
+  expect(rungs[0]?.wrongAnswers).toBe(1);
+  expect(rungs[0]?.work?.surface.case).toBe("paper");
+  const kinds = () => sheet().marks?.marks.map((mark) => mark.kind);
+  await waitFor(() => expect(kinds()).toContain("wavy_line"));
+  sheet().dispatchEvent(
+    new CustomEvent("tracingchange", { detail: { at: [200, 90], hidden: false }, bubbles: true }),
+  );
+  // The canvas puts its marks away with the paper moved: the verdict's context is gone with them.
+  await waitFor(() => expect(sheet().marks).toBeUndefined());
+  expect(sheet().tracing).toEqual({ at: [200, 90], hidden: false });
+});
+
+it("words the rung anew once by Explain differently, and says when there are no other words", async () => {
+  await solving({
+    checked: (n) => notYet(n + 1),
+    rung: (n) => ({ rung: n + 1, words: `Rung ${n + 1}.` }),
+    explained: (n) =>
+      n === 0 ? { words: "Count the tens again." } : { outcome: { cause: Cause.NO_OTHER_WORDS } },
+  });
+  await userEvent.click(screen.getByRole("button", { name: "Tutor" }));
+  writeOn(sheet());
+  await userEvent.click(screen.getByRole("button", { name: "Check" }));
+  await tutorPanel().findByText("Rung 1.");
+  await userEvent.click(tutorPanel().getByRole("button", { name: "Explain differently" }));
+  expect(await tutorPanel().findByText("Count the tens again.")).toBeVisible();
+  // Once on a rung.
+  expect(tutorPanel().queryByRole("button", { name: "Explain differently" })).toBeNull();
+  writeOn(sheet());
+  await userEvent.click(screen.getByRole("button", { name: "Check" }));
+  await tutorPanel().findByText("Rung 2.");
+  await userEvent.click(tutorPanel().getByRole("button", { name: "Explain differently" }));
+  expect(await tutorPanel().findByText("The tutor has no other words for this")).toBeVisible();
+  expect(tutorPanel().getByText("Rung 2.")).toBeVisible();
+});
+
+it("asks Explain differently again after a failure, and spends it on a refusal that says it was asked", async () => {
+  await solving({
+    checked: () => notYet(),
+    rung: () => ({ rung: 1, words: "Look at the tens." }),
+    explained: (n) => {
+      if (n === 0) throw new ConnectError("down", Code.Internal);
+      if (n === 1) throw refusal(Cause.QUOTA, Code.ResourceExhausted);
+      throw refusal(Cause.ALREADY_ASKED);
+    },
+  });
+  await userEvent.click(screen.getByRole("button", { name: "Tutor" }));
+  writeOn(sheet());
+  await userEvent.click(screen.getByRole("button", { name: "Check" }));
+  await tutorPanel().findByText("Look at the tens.");
+  const explain = () => tutorPanel().getByRole("button", { name: "Explain differently" });
+  await userEvent.click(explain());
+  expect(
+    await tutorPanel().findByText("This version of the app doesn't know this yet"),
+  ).toBeVisible();
+  await userEvent.click(explain());
+  expect(await tutorPanel().findByText("The tutor can't answer right now")).toBeVisible();
+  await userEvent.click(explain());
+  await waitFor(() =>
+    expect(tutorPanel().queryByRole("button", { name: "Explain differently" })).toBeNull(),
+  );
+  expect(tutorPanel().getByText("Look at the tens.")).toBeVisible();
+});
+
+it("asks the rung's words the closed panel left by Hint, and says nothing of a rung with none", async () => {
+  const { rungs } = await solving({
+    checked: (n) => notYet(n + 1),
+    rung: (n) => {
+      if (n === 0) return { rung: 1, words: "Look at the tens.", outcome: { cause: Cause.QUOTA } };
+      throw refusal(Cause.NO_RUNG);
+    },
+  });
+  writeOn(sheet());
+  await userEvent.click(screen.getByRole("button", { name: "Check" }));
+  await screen.findByText("Not yet");
+  expect(rungs).toHaveLength(0);
+  const [hint] = screen.getAllByRole("button", { name: "Hint" });
+  await userEvent.click(hint as HTMLElement);
+  expect(await tutorPanel().findByText("Look at the tens.")).toBeVisible();
+  // The words came by platform AI's fallback, its quota spent: why stands beside them.
+  expect(tutorPanel().getByText("The tutor can't answer right now")).toBeVisible();
+  expect(rungs).toHaveLength(1);
+  writeOn(sheet());
+  await userEvent.click(screen.getByRole("button", { name: "Check" }));
+  await waitFor(() => expect(rungs).toHaveLength(2));
+  await waitFor(() =>
+    expect(tutorPanel().getByRole("button", { name: "Hint" })).toHaveAttribute(
+      "aria-disabled",
+      "false",
+    ),
+  );
+  expect(tutorPanel().queryByText("Look at the tens.")).toBeNull();
+  expect(tutorPanel().queryByRole("alert")).toBeNull();
+});
+
+it("gives a rung's words again by Hint, and makes a task api closed one only to be looked at", async () => {
+  let closed = false;
+  await solving({
+    hint: () => {
+      if (closed) throw refusal(Cause.ATTEMPT_CLOSED);
+      return { hint: { case: "rung", value: { rung: 2, words: "Again: the tens." } } };
+    },
+  });
+  await userEvent.click(screen.getByRole("button", { name: "Hint" }));
+  expect(await tutorPanel().findByText("Again: the tens.")).toBeVisible();
+  closed = true;
+  await userEvent.click(tutorPanel().getByRole("button", { name: "Hint" }));
+  expect(await tutorPanel().findByText("This task is already over")).toBeVisible();
+  await waitFor(() => expect(tutorPanel().queryByRole("button", { name: "Hint" })).toBeNull());
+  await userEvent.click(tutorPanel().getByRole("button", { name: "Close" }));
+  // The failure of Hint at the foot, and Check's own line beside it.
+  expect(screen.getAllByRole("alert")).toHaveLength(1);
+  await userEvent.click(screen.getByRole("button", { name: "Check" }), { force: true });
+  await waitFor(() => expect(screen.getAllByRole("alert")).toHaveLength(2));
+  for (const alert of screen.getAllByRole("alert"))
+    expect(alert).toHaveTextContent("This task is already over");
+});
+
+it("asks for a solution again when the sheet gives no work at the press", async () => {
+  const { submits } = await solving();
+  writeOn(sheet());
+  vi.spyOn(sheet(), "exportWork").mockResolvedValue(null);
+  await userEvent.click(screen.getByRole("button", { name: "Tutor" }));
+  await userEvent.click(screen.getByRole("button", { name: "Check" }));
+  expect(
+    await screen.findByText("Write it with the pen on the sheet or on the task, then Check."),
+  ).toBeVisible();
+  expect(submits).toHaveLength(0);
+  await userEvent.click(screen.getByRole("button", { name: "OK" }));
+  expect(
+    screen.queryByText("Write it with the pen on the sheet or on the task, then Check."),
+  ).toBeNull();
+});
+
+it("puts away by OK the card of a work that could not be read", async () => {
+  await solving({
+    checked: () => ({
+      items: [
+        {
+          verdict: "unreadable",
+          answerSlots: [{ answerSlot: { item: 1, slot: 1 }, verdict: "unreadable" }],
+        },
+      ],
+    }),
+  });
+  writeOn(sheet());
+  await userEvent.click(screen.getByRole("button", { name: "Check" }));
+  const card = await waitFor(() => {
+    const found = document.querySelector<HTMLElement>(
+      '.nt-card-verdict:not([data-kind="reading"])',
+    );
+    if (found === null) throw new Error("no card");
+    return found;
+  });
+  await userEvent.click(within(card).getByRole("button", { name: "OK" }));
+  await waitFor(() => expect(document.querySelector(".nt-card-verdict")).toBeNull());
+});
+
 it("shows the share of the quota in the panel's head, and the next task at its foot once solved", async () => {
   await solving({
     quota: 20,
@@ -633,6 +911,140 @@ it("finds the page anew by the learner's request, its own frame staying, and Und
   expect(screen.queryByRole("button", { name: "Undo" })).toBeNull();
 });
 
+it("finds the page again after a repeat that held no frames, a frame drawn meanwhile staying", async () => {
+  let n = 0;
+  const { finds } = await renderPaper({
+    found: () => {
+      n += 1;
+      return n === 1
+        ? { repeated: true }
+        : { frames: [{ box: { ymin: 500, xmin: 50, ymax: 650, xmax: 950 } }] };
+    },
+  });
+  await screen.findByRole("button", { name: "Find the tasks again" });
+  expect(screen.getByRole("alert").textContent).toMatch(/^No connection/);
+  tap(100, 100);
+  await screen.findByText("Now tap the opposite corner of the task");
+  tap(800, 300);
+  await screen.findByRole("button", { name: /^Deselect your frame/ });
+  await userEvent.click(screen.getByRole("button", { name: "Find the tasks again" }));
+  expect(await screen.findByRole("button", { name: /^Deselect task/ })).toBeVisible();
+  expect(screen.getByRole("button", { name: /^Deselect your frame/ })).toBeVisible();
+  // Each try is an action of its own.
+  expect(finds.map((find) => find.idempotencyKey)).toHaveLength(2);
+  expect(finds[0]?.idempotencyKey).not.toBe(finds[1]?.idempotencyKey);
+});
+
+it("says what AI came to when it found nothing, and that no tasks were found", async () => {
+  await renderPaper({ found: () => ({ outcome: { cause: Cause.AI_FAILURE } }) });
+  expect(
+    await screen.findByText(
+      "The tutor can't answer right now No tasks were found. Draw round each task you want to solve",
+    ),
+  ).toBeVisible();
+  expect(screen.queryByText("Without the AI a task from paper can't be checked")).toBeNull();
+});
+
+it("leaves the frames, and no Undo, when the learner's request finds nothing; the panel closes", async () => {
+  const { finds } = await renderPaper({
+    found: (request) =>
+      request.request === ""
+        ? { frames: [{ box: { ymin: 0, xmin: 0, ymax: 1000, xmax: 1000 } }] }
+        : { frames: [] },
+  });
+  await screen.findByRole("button", { name: "Deselect task 1" });
+  await userEvent.click(screen.getByRole("button", { name: "Tutor" }));
+  const field = await screen.findByRole("textbox", { name: "Your request about the page" });
+  // An empty request is none.
+  await userEvent.type(field, "{Enter}");
+  expect(finds).toHaveLength(1);
+  await userEvent.type(field, "the second column{Enter}");
+  expect(await screen.findByText("No tasks found for that")).toBeVisible();
+  expect(screen.getByText("The frames stay as they were.")).toBeVisible();
+  expect(screen.getAllByRole("button", { name: /^Deselect task/ })).toHaveLength(1);
+  expect(screen.queryByRole("button", { name: "Undo" })).toBeNull();
+  await userEvent.click(tutorPanel().getByRole("button", { name: "Close" }));
+  expect(screen.queryByRole("complementary", { name: "Tutor" })).toBeNull();
+});
+
+it("says why Start failed, repeats it with its key, and shuts it on a refusal that shuts AI", async () => {
+  let n = 0;
+  const { begins } = await renderPaper({
+    began: () => {
+      n += 1;
+      if (n === 1) return { attemptIds: ["a1"] };
+      throw refusal(Cause.QUOTA, Code.ResourceExhausted);
+    },
+  });
+  await screen.findByRole("button", { name: "Deselect task 1" });
+  await userEvent.click(screen.getByRole("button", { name: "Start" }));
+  // api began one attempt of the two tasks picked.
+  expect(await screen.findByRole("alert", {}, SLOW)).toHaveTextContent(
+    "This version of the app doesn't know this yet",
+  );
+  await userEvent.click(screen.getByRole("button", { name: "Start" }));
+  expect(
+    await screen.findByText("Without the AI a task from paper can't be checked", {}, SLOW),
+  ).toBeVisible();
+  expect(screen.getByRole("button", { name: "Start" })).toBeDisabled();
+  expect(begins.map((begin) => begin.idempotencyKey)).toEqual([
+    begins[0]?.idempotencyKey,
+    begins[0]?.idempotencyKey,
+  ]);
+});
+
+it("says a page found as many tasks as start at once may hold more, and when too many are picked", async () => {
+  const frames = Array.from({ length: MAX_TASKS }, (_, n) => ({
+    box: { ymin: n * 45, xmin: 50, ymax: n * 45 + 40, xmax: 500 },
+  }));
+  await renderPaper({ found: () => ({ frames }) });
+  const most = new RegExp(`^${MAX_TASKS} tasks is the most at once`);
+  expect(await screen.findByText(most)).toBeVisible();
+  tap(600, 100);
+  await screen.findByText("Now tap the opposite corner of the task");
+  tap(900, 300);
+  expect(
+    await screen.findByText(`At most ${MAX_TASKS} tasks start at once: leave some out`),
+  ).toBeVisible();
+  expect(screen.getByRole("button", { name: "Start" })).toBeDisabled();
+  await userEvent.click(screen.getByRole("button", { name: "Select none" }));
+  expect(screen.getByText(`0 of ${MAX_TASKS + 1} selected`)).toBeVisible();
+  expect(screen.getByText(most)).toBeVisible();
+  await userEvent.click(screen.getByRole("button", { name: "Select all" }));
+  expect(screen.getByText(`${MAX_TASKS + 1} of ${MAX_TASKS + 1} selected`)).toBeVisible();
+});
+
+it("draws the loop as it goes, and drops it when the pointer is cancelled", async () => {
+  await renderPaper({ found: () => ({ frames: [] }) });
+  await screen.findByText("No tasks were found. Draw round each task you want to solve");
+  const surface = drawing();
+  surface.setPointerCapture = () => {};
+  const box = surface.getBoundingClientRect();
+  const at = (x: number, y: number) => ({
+    bubbles: true,
+    pointerId: 1,
+    button: 0,
+    clientX: box.left + (box.width * x) / 1000,
+    clientY: box.top + (box.height * y) / 1000,
+  });
+  surface.dispatchEvent(new PointerEvent("pointerdown", at(200, 200)));
+  surface.dispatchEvent(new PointerEvent("pointermove", at(600, 200)));
+  await waitFor(() => expect(document.querySelector(".nt-page-live polyline")).not.toBeNull());
+  surface.dispatchEvent(new PointerEvent("pointercancel", at(600, 200)));
+  await waitFor(() => expect(document.querySelector(".nt-page-live")).toBeNull());
+  // A lift after the cancel makes no frame.
+  surface.dispatchEvent(new PointerEvent("pointerup", at(600, 500)));
+  expect(screen.queryByRole("button", { name: /your frame/ })).toBeNull();
+});
+
+it("goes back to My subjects from the page, and the page goes with it", async () => {
+  await renderPaper();
+  await screen.findByRole("button", { name: "Deselect task 1" });
+  await userEvent.click(screen.getByRole("button", { name: "Back to My subjects" }));
+  expect(await screen.findByRole("heading", { name: "Photo of a page" })).toBeVisible();
+  history.replaceState(null, "", location.pathname);
+});
+
 it("shuts Start when the quota is spent", async () => {
   await renderPaper({
     found: () => {
@@ -653,13 +1065,22 @@ it("keeps the page and its work in the profile's history, and opens it again fro
   await addProfile(device, "p1");
   await solving({ device });
   writeOn(sheet());
-  // The work is written a moment after it changes.
+  sheet().dispatchEvent(
+    new CustomEvent("tracingchange", { detail: { at: [200, 90], hidden: true }, bubbles: true }),
+  );
+  // The work is written a moment after it changes, and at once when the tab is hidden.
   const profile = await openProfile(device, "p1");
   await waitFor(async () => {
     const [kept] = (await profile?.pages()) ?? [];
     expect(kept?.tasks).toBe(2);
+  });
+  vi.spyOn(document, "visibilityState", "get").mockReturnValue("hidden");
+  document.dispatchEvent(new Event("visibilitychange"));
+  await waitFor(async () => {
+    const [kept] = (await profile?.pages()) ?? [];
     const tasks = (await profile?.page(kept?.pageId ?? ""))?.tasks ?? [];
     expect(tasks.map((task) => task.history.length)).toEqual([1, 0]);
+    expect(tasks[0]?.tracing).toEqual({ at: [200, 90], hidden: true });
   });
   cleanup();
 
@@ -668,6 +1089,7 @@ it("keeps the page and its work in the profile's history, and opens it again fro
   await userEvent.click(screen.getByRole("button", { name: /· 2 tasks$/ }));
   await screen.findByRole("heading", { name: "Task 1" }, SLOW);
   await waitFor(() => expect(sheet().history).toHaveLength(1));
+  expect(sheet().tracing).toEqual({ at: [200, 90], hidden: true });
   expect(screen.queryByRole("dialog")).toBeNull();
   history.replaceState(null, "", location.pathname);
 });

@@ -24,6 +24,8 @@ import { afterEach, describe, expect, it } from "vitest";
 import { ApiError } from "../api/failure.ts";
 import {
   actionKey,
+  actionTime,
+  actionTitle,
   answerOf,
   began,
   callLine,
@@ -127,6 +129,28 @@ describe("the figures", () => {
     expect(failureOf(solver)).toBe("");
   });
 
+  it("names every call and action, a model not in the catalog by its ID, and when api took it", () => {
+    const named = (kind: DebugCallKind) => callTitle(create(DebugCallSchema, { kind }));
+    expect(named(DebugCallKind.TASK_FINDING)).toBe("Find tasks");
+    expect(named(DebugCallKind.STATEMENT_READING)).toBe("Statement");
+    expect(named(DebugCallKind.SOLVER)).toBe("Solver");
+    expect(named(DebugCallKind.TASK_SOLVING)).toBe("Solution");
+    expect(named(DebugCallKind.UNSPECIFIED)).toBe("Call");
+    const call = create(DebugCallSchema, { kind: DebugCallKind.TUTOR_WORDS, model: "other-1" });
+    expect(callLine(models, { ...call, thinking: true })).toMatch(/^other-1 · .* · thinking$/);
+    const action = (kind: DebugActionKind) => actionTitle(create(DebugActionSchema, { kind }));
+    expect(action(DebugActionKind.FIND_TASKS)).toBe("Find tasks");
+    expect(action(DebugActionKind.WORDS)).toBe("Tutor's words");
+    expect(action(DebugActionKind.CHECK)).toBe("Check");
+    const at = new Date(2026, 10, 19, 15, 4, 5);
+    expect(actionTime(create(DebugActionSchema, { at: timestampFromDate(at) }))).toBe("15:04:05");
+    expect(actionTime(create(DebugActionSchema))).toBe("");
+    const failed = (failure: Cause) => failureOf(create(DebugCallSchema, { failure }));
+    expect(failed(Cause.LIMIT_REACHED)).toMatch(/CAUSE_LIMIT_REACHED/);
+    expect(failed(Cause.PLATFORM_LIMIT)).toMatch(/CAUSE_PLATFORM_LIMIT/);
+    expect(failed(Cause.AI_FAILURE)).toMatch(/CAUSE_AI_FAILURE/);
+  });
+
   it("says how two readers came out, and nothing of one", () => {
     const reading = (reader: number) =>
       create(DebugCallSchema, { kind: DebugCallKind.WORK_READING, reader });
@@ -176,6 +200,30 @@ describe("the tab's memory", () => {
     expect(now.second).toEqual({ model: haiku.id, effort: DebugEffort.HIGH, thinking: true });
     await load(undefined);
     expect(snapshot().status).toBe("on");
+  });
+
+  it("forgets an asking under way once the tab's memory is reset", async () => {
+    let answered: () => void = () => {};
+    const asked = new Promise<void>((done) => (answered = done));
+    const c = client({
+      get: async () => {
+        await asked;
+        return create(GetDebugResponseSchema, { models });
+      },
+    }).client;
+    const loaded = load(c);
+    reset();
+    answered();
+    await loaded;
+    // A new asking is not the one before.
+    expect(load(c)).not.toBe(loaded);
+  });
+
+  it("does nothing with no client", async () => {
+    await choose(undefined, undefined, SECOND_PICK, true);
+    await take(undefined);
+    expect(snapshot().secondOn).toBe(false);
+    expect(snapshot().actions).toEqual([]);
   });
 
   it("sends a choice held to what its model takes, and shows what api holds or why it refused", async () => {
@@ -241,6 +289,21 @@ describe("the tab's memory", () => {
     await Promise.all([one, two]);
     expect(sent).toEqual([opus.id, haiku.id]);
     expect(snapshot().first?.model).toBe(haiku.id);
+  });
+
+  it("shows no refusal of a change that a later one followed, and a refusal that is no Error", async () => {
+    await load(client({ get: async () => create(GetDebugResponseSchema, { models }) }).client);
+    const refusing = client({
+      set: async () => {
+        throw "refused";
+      },
+    }).client;
+    const one = choose(refusing, undefined, SECOND_PICK, false);
+    const two = choose(refusing, undefined, SECOND_PICK, true);
+    await one;
+    expect(snapshot().refused).toBeUndefined();
+    await two;
+    expect(snapshot().refused).toBe("refused");
   });
 
   it("joins the actions taken after each request, counts the session's calls and cost, and clears", async () => {
@@ -406,6 +469,10 @@ describe("the export of a Check", () => {
     // With no statement read, as many tasks as api gave verdicts.
     expect(truthOf([second], second, { ...sent, outcomes }).tasks).toHaveLength(2);
     expect(truthOf([second], second, undefined).tasks).toHaveLength(1);
+    // An action the log no longer holds is its own attempt alone; one with no reading reads nothing.
+    expect(truthOf([], first, sent).tasks).toEqual([{ ...task, read: "35" }]);
+    const unread = create(DebugActionSchema, { kind: DebugActionKind.CHECK, attemptId: "u" });
+    expect(truthOf([unread], unread, undefined).tasks).toMatchObject([{ read: "", statement: "" }]);
   });
 
   it("writes a case of tutor-eval with the work sent and the truth corrected, or says why not", () => {
@@ -439,6 +506,9 @@ describe("the export of a Check", () => {
       error: "Give each task its statement as printed.",
     });
     expect(exportOf(second, sent, { ...truth, tasks: [] })).toHaveProperty("error");
+    // An action with no instant is named by the clock's start.
+    const undated = exportOf(first, sent, truth);
+    expect("name" in undated && undated.name).toBe("case-19700101T000000-0a1b2c3d.json");
     const two = exportOf(second, sent, {
       ...truth,
       tasks: [truth.tasks[0], { ...task, outcome: DebugOutcome.NOT_YET }],

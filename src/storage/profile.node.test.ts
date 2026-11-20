@@ -684,6 +684,56 @@ describe("the pages from paper", () => {
     ]);
   });
 
+  it("reads a page, a photo or a task of another form as none, and leaves the task out", async () => {
+    const { profile, device } = await setUp();
+    await profile.keepPage(page("g1", 1000, [1, 2]), photo, [task(1)]);
+    const crop = { bytes: new ArrayBuffer(2), type: "image/png" };
+    const kept = {
+      pageId: "g1",
+      taskId: "found-2",
+      frame: frame(200),
+      history: [],
+      sent: [],
+      crop,
+    };
+    const connection = await device.connect(profileDatabase("p1"), PROFILE_SCHEMA, false);
+    await connection?.write(["pages", "photos", "paperTasks"], async (tx) => {
+      await tx.put("pages", "bad", { pageId: "bad", takenAt: 2000, frames: "none" });
+      await tx.put("pages", "g2", { pageId: "g2", takenAt: 3000, frames: [] });
+      await tx.put("photos", "g2", { bytes: new ArrayBuffer(2), type: "image/jpeg", width: "300" });
+      // A task of an earlier form, with no place among those Start began.
+      await tx.put("paperTasks", "pb", { ...kept, attemptId: "pb" });
+      await tx.put("paperTasks", "x1", { ...kept, attemptId: "x1", crop: "not a picture" });
+      await tx.put("paperTasks", "x2", { ...kept, attemptId: "x2", taskId: 2 });
+      await tx.put("paperTasks", "x3", { ...kept, attemptId: "x3", frame: "none" });
+      await tx.put("paperTasks", "x4", { ...kept, attemptId: "x4", history: {} });
+      await tx.put("paperTasks", "x5", { ...kept, attemptId: "x5", sent: {} });
+      await tx.put("paperTasks", "x6", { pageId: "g1", attemptId: "x6", n: "first" });
+    });
+    expect(await profile.pages()).toEqual([
+      { pageId: "g2", takenAt: 3000, tasks: 0 },
+      { pageId: "g1", takenAt: 1000, tasks: 8 },
+    ]);
+    expect(await profile.page("bad")).toBeUndefined();
+    expect(await profile.page("g2")).toBeUndefined();
+    const read = (await profile.page("g1"))?.tasks ?? [];
+    expect(read.map(({ attemptId, n, drawn }) => ({ attemptId, n, drawn }))).toEqual([
+      { attemptId: "pa1", n: 0, drawn: false },
+      { attemptId: "pb", n: 0, drawn: false },
+    ]);
+    expect(read[1]).not.toHaveProperty("tracing");
+    // Start again after them: the place of a task of an earlier form counts as none.
+    await profile.keepPage(page("g1", 1000, [1, 2, 3]), photo, [task(3)]);
+    expect((await profile.page("g1"))?.tasks.at(-1)).toMatchObject({ attemptId: "pa3", n: 1 });
+  });
+
+  it("says a page is not saved when a crop's bytes cannot be read", async () => {
+    const { profile } = await setUp();
+    const unread = { ...task(1), crop: { arrayBuffer: () => Promise.reject(new Error("gone")) } };
+    expect(await profile.keepPage(page("g1", 1000, [1]), photo, [unread as never])).toBe("unsaved");
+    expect(await profile.pages()).toEqual([]);
+  });
+
   it("outlives the 30 days and the end of an attempt, and is erased with the profile", async () => {
     const { profile, state, device } = await setUp();
     await profile.keepPage(page("g1", 1000, [1]), photo, [task(1)]);
