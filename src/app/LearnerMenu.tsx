@@ -1,11 +1,12 @@
 // The profile's menu (R148 spec; R63): the pill of the learner chosen — the avatar, the pseudonym
 // and a chevron — at the top of the home screen and of the skill map, and behind it, as a pop-over,
-// who is learning now, "Switch learner", "For grown-ups" and "Sign out", the buttons of the
-// profile's header. The pill stands on each of those screens, so that an adult who hands the tablet
+// who is learning now, the hint mode (HintModeChoice), "Switch learner", "For grown-ups" and "Sign
+// out", the buttons of the profile's header. The pill stands on each of those screens, so that an adult who hands the tablet
 // over finds the switch on it.
 import { useLearner } from "../account/AccountGate.tsx";
 import { Avatar } from "../account/Avatar.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
+import { HintModeChoice } from "./HintModeChoice.tsx";
 import { BELOW_BAR } from "./hang.ts";
 import { Icon } from "./Icon.tsx";
 import type { IconValue } from "./icons.ts";
@@ -66,6 +67,8 @@ export function LearnerMenu() {
               <Icon value="ticked" />
             </span>
           </p>
+          <hr />
+          <HintModeChoice learner={learner} onSaved={chosen.onSaved} onFailed={chosen.onFailed} />
           <hr />
           {/* Each closes the menu first: what it opens takes the screen's place. */}
           <Row

@@ -6,6 +6,7 @@
 // (R46), with api on connect-es's router.
 import {
   AccountService,
+  HintMode,
   Mode,
   type Profile,
   ProfileSchema,
@@ -334,6 +335,23 @@ describe("a profile's page", () => {
     expect(asked[0]?.settings?.interfaceLanguage).toBeUndefined();
     expect(asked[0]?.settings?.avatar).toBeUndefined();
     expect(saved.map((each) => each.pseudonym)).toEqual(["Ёж"]);
+  });
+
+  it("sends the hint mode chosen, Show where at first, a choice taken back no change", async () => {
+    const { asked } = renderPage(profile(), (request) =>
+      profile({ hintMode: request.settings?.hintMode ?? HintMode.UNSPECIFIED }),
+    );
+    const hints = within(screen.getByRole("group", { name: "Hints" }));
+    expect(hints.getByRole("radio", { name: "Show where" })).toBeChecked();
+    await userEvent.click(hints.getByRole("radio", { name: "Questions only" }));
+    await userEvent.click(hints.getByRole("radio", { name: "Show where" }));
+    await userEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(saving().textContent).toBe("Nothing has changed");
+    await userEvent.click(hints.getByRole("radio", { name: "Questions only" }));
+    await userEvent.click(screen.getByRole("button", { name: "Save" }));
+    await vi.waitFor(() => expect(saving().textContent).toBe("Saved"));
+    expect(asked.map((each) => each.settings?.hintMode)).toEqual([HintMode.QUESTIONS_ONLY]);
+    expect(asked[0]?.settings?.pseudonym).toBeUndefined();
   });
 
   it("changes the avatar by its pop-over, and sends it alone on Save", async () => {

@@ -6,10 +6,12 @@
 // what it came to. No DOM beyond fetch.
 import { AccountService } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import { AttemptService } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
+import { DebugService } from "@altnovatrail/contracts/novatrail/api/v1/debug_pb.js";
 import { LearningService } from "@altnovatrail/contracts/novatrail/api/v1/learning_pb.js";
 import { LegalService } from "@altnovatrail/contracts/novatrail/api/v1/legal_pb.js";
 import { ModuleService } from "@altnovatrail/contracts/novatrail/api/v1/module_pb.js";
 import { PackageService } from "@altnovatrail/contracts/novatrail/api/v1/package_pb.js";
+import { PaperService } from "@altnovatrail/contracts/novatrail/api/v1/paper_pb.js";
 import { ProgressService } from "@altnovatrail/contracts/novatrail/api/v1/progress_pb.js";
 import { WorkService } from "@altnovatrail/contracts/novatrail/api/v1/work_pb.js";
 import type { DescService } from "@bufbuild/protobuf";
@@ -50,10 +52,17 @@ export interface Api {
   /** The four open views, by Connect GET with no token: `GetManifest` and the others. */
   readonly views: Client<typeof PackageService>;
   readonly progress: Client<typeof ProgressService>;
+  /** A task from paper: `FindTasks` and `BeginPaperAttempts` (R71). */
+  readonly paper: Client<typeof PaperService>;
   /** `GetLegalTexts`, by Connect GET with no token, as the open views, but past the HTTP cache. */
   readonly legal: Client<typeof LegalService>;
   /** The works kept on the server: `PutWork` (R30). */
   readonly work: Client<typeof WorkService>;
+  /**
+   * The debug mode of a local run, in a build of the development server alone: a release's build
+   * replaces import.meta.env.DEV with false, and the service drops out of it (R72).
+   */
+  readonly debug?: Client<typeof DebugService>;
 }
 
 /** fetch whose failure is the network's: `unavailable`, which the client repeats. */
@@ -142,7 +151,9 @@ export function createApi(options: ApiOptions): Api {
     package: client(PackageService),
     views: guarded(createClient(PackageService, viewsTransport)),
     progress: client(ProgressService),
+    paper: client(PaperService),
     legal: guarded(createClient(LegalService, legalTransport)),
     work: client(WorkService),
+    ...(import.meta.env.DEV ? { debug: client(DebugService) } : {}),
   };
 }

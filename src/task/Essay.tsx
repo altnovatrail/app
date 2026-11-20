@@ -178,7 +178,7 @@ export function OpenEssay({
     const at = drawn.current;
     const historyLength = element.current?.history.length ?? 0;
     const work = (await element.current?.exportWork()) ?? null;
-    if (work === null || !("png" in work)) return undefined;
+    if (work === null || !("png" in work) || work.statement !== undefined) return undefined;
     const made = {
       key: idempotencyKey(),
       png: work.png,

@@ -32,6 +32,8 @@ const GROUPS: readonly [number, string, string][] = [
   // The accent as text, #0066cc, where #0071e3 misses on the page and on its own tint.
   [TEXT, "accent-text", "card page page-owner accent-tint/card glass/page"],
   [TEXT, "on-fill", "accent correct not-yet tooltip"],
+  // The card of a task from paper: white on each stop of its gradient.
+  [TEXT, "on-fill", "paper-from paper-mid paper-to"],
   [TEXT, "correct not-yet error", "card page"],
   [TEXT, "hint-text", "hint/card"],
   // The accent on the skill map's paper, as text too; the focus ring, a primary button's fill and

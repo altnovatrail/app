@@ -82,7 +82,8 @@ export function unlessClosed(
 /**
  * What a screen says by itself is its own: words that come once the learner has left are not said
  * over the next screen, and leaving the screen stops what it was saying — a segment of a lesson
- * goes with no change of the route.
+ * goes with no change of the route. `hush` stops it while the screen stays: another task on it, or
+ * the tutor's panel closed.
  */
 export function useOwnVoicing() {
   const { auto: say, prime, speech } = useVoicing();
@@ -97,14 +98,17 @@ export function useOwnVoicing() {
     },
     [say],
   );
+  const hush = useCallback(() => {
+    if (spoken.current !== undefined && speech.speaking() === spoken.current) speech.stop();
+  }, [speech]);
   useEffect(() => {
     mounted.current = true;
     return () => {
       mounted.current = false;
-      if (spoken.current !== undefined && speech.speaking() === spoken.current) speech.stop();
+      hush();
     };
-  }, [speech]);
-  return { auto, prime };
+  }, [hush]);
+  return { auto, prime, hush };
 }
 
 /**

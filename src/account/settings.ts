@@ -5,6 +5,7 @@
 // which stays the profile GetAccount gave for that; and the message the other tabs hear of a change
 // by. No DOM.
 import {
+  HintMode,
   Mode,
   type Profile,
   ProfileSchema,
@@ -25,11 +26,22 @@ export interface ProfileForm {
   readonly language: Language | undefined;
   readonly voicing: boolean;
   readonly speed: VoicingSpeed.NORMAL | VoicingSpeed.SLOW;
+  readonly hintMode: HintMode.QUESTIONS_ONLY | HintMode.SHOW_WHERE;
+}
+
+/** The hint mode a profile has: "Show where" for one that names none, as a new profile's (R162 spec). */
+export function hintModeOf(
+  profile: Pick<Profile, "hintMode">,
+): HintMode.QUESTIONS_ONLY | HintMode.SHOW_WHERE {
+  return profile.hintMode === HintMode.QUESTIONS_ONLY
+    ? HintMode.QUESTIONS_ONLY
+    : HintMode.SHOW_WHERE;
 }
 
 /**
  * The form as the profile gives it: a mode or a speed the build does not know is "by steps" or
- * normal, as the contract's enums say, and voicing not said is off.
+ * normal, as the contract's enums say, a hint mode "Show where", a new profile's (R162 spec), and
+ * voicing not said is off.
  */
 export function formOf(profile: Profile): ProfileForm {
   const voicing = profile.presentationStyle?.voicing;
@@ -41,6 +53,7 @@ export function formOf(profile: Profile): ProfileForm {
       profile.interfaceLanguage === undefined ? undefined : lookup(profile.interfaceLanguage),
     voicing: voicing?.enabled === true,
     speed: voicing?.speed === VoicingSpeed.SLOW ? VoicingSpeed.SLOW : VoicingSpeed.NORMAL,
+    hintMode: hintModeOf(profile),
   };
 }
 
@@ -65,6 +78,7 @@ export function changes(profile: Profile, form: ProfileForm): Settings | undefin
       ? {}
       : { interfaceLanguage: form.language }),
     ...(Object.keys(voicing).length === 0 ? {} : { voicing }),
+    ...(form.hintMode === before.hintMode ? {} : { hintMode: form.hintMode }),
   };
   return Object.keys(settings).length === 0 ? undefined : settings;
 }

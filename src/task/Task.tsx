@@ -53,7 +53,6 @@ import type {
 import type * as open from "@altnovatrail/spec/formatv0/open";
 import type { MessageInitShape } from "@bufbuild/protobuf";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { readQuota, shareText } from "../account/quota.ts";
 import { useApi } from "../api/ApiContext.tsx";
 import { type Failure, parseFailure } from "../api/failure.ts";
 import { idempotencyKey } from "../api/keys.ts";
@@ -121,6 +120,7 @@ import {
   tick,
 } from "./steps.ts";
 import { TaskScreen } from "./TaskScreen.tsx";
+import { useQuotaLine } from "./TutorPanel.tsx";
 
 /** What the screen has read of the attempt. */
 export interface Opened {
@@ -557,25 +557,11 @@ function OpenTask({
   const isOpen = useRef(open);
   isOpen.current = open;
   const unasked = useRef<Unasked | undefined>(undefined);
-  // The learner's share of the quota in the panel's head, read anew at each opening, and while it is
-  // open at each answer to a check and each of the tutor's words, which spend it. None from an api
-  // that has no share, nor from one that failed (R98 spec).
-  const [quota, setQuota] = useState<string | undefined>(undefined);
+  // The learner's share of the quota in the panel's head: each answer to a check and each of the
+  // tutor's words spend it.
   const [answers, setAnswers] = useState(0);
-  // biome-ignore lint/correctness/useExhaustiveDependencies: an answer or words read the share again.
-  useEffect(() => {
-    if (!open) return;
-    let current = true;
-    readQuota(api, profileId, Action.LEARNING).then(
-      (share) => {
-        if (current) setQuota(shareText(share, words));
-      },
-      () => {},
-    );
-    return () => {
-      current = false;
-    };
-  }, [open, answers, tutorWords, api, profileId, words]);
+  const spent = useMemo(() => ({ answers, tutorWords }), [answers, tutorWords]);
+  const quota = useQuotaLine(profileId, open, spent);
   // The screen is left with the words after a correct answer unasked: its work goes.
   useEffect(
     () => () => {
@@ -833,7 +819,8 @@ function OpenTask({
     const at = drawn.current;
     const historyLength = element.current?.history.length ?? 0;
     const work = (await element.current?.exportWork()) ?? null;
-    if (work === null) return undefined;
+    // A module's task is never a task from paper, whose work holds its statement too.
+    if (work === null || ("png" in work && work.statement !== undefined)) return undefined;
     let number: number | undefined;
     const saved = (await profile?.addSubmission(attemptId, work, historyLength)) ?? "unsaved";
     if (saved === "unsaved") unsavedNow();

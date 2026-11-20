@@ -8,7 +8,11 @@ import {
   MarkSchema,
   SolvedTaskSchema,
 } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
-import type { SheetSubmission, WorkbookSubmission } from "@altnovatrail/spec/canvas";
+import type {
+  PaperSubmission,
+  SheetSubmission,
+  WorkbookSubmission,
+} from "@altnovatrail/spec/canvas";
 import type * as open from "@altnovatrail/spec/formatv0/open";
 import { create, type MessageInitShape } from "@bufbuild/protobuf";
 import { describe, expect, it } from "vitest";
@@ -238,6 +242,12 @@ describe("an attempt on the screen", () => {
       { item: 3, slot: 1 },
     ]);
     expect(boxes[1]?.crop?.at(-1)).toBe(3);
+    const paper = (
+      await workOf({ statement: png(4), png: png(5), submission: {} as PaperSubmission })
+    ).surface;
+    if (paper?.case !== "paper") throw new Error("no work of a task from paper");
+    expect(paper.value.statement?.at(-1)).toBe(4);
+    expect(paper.value.crop?.at(-1)).toBe(5);
   });
 
   it("puts the tutor's marks where the canvas takes them, named by their number among those placed", () => {

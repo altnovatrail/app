@@ -813,13 +813,14 @@ describe("the legend and the task from paper", () => {
     expect(screen.queryByRole("region", { name: "What the marks mean" })).toBeNull();
   });
 
-  it("shows A task from my paper, disabled, with the line why", async () => {
+  it("opens the camera from A task from my paper, with the line to keep names out", async () => {
     await renderSubjects({}, "ru");
     const paper = within(await screen.findByRole("region", { name: "Задача с моей бумаги" }));
     const button = paper.getByRole("button", { name: "Открыть камеру" });
-    expect(button).toBeDisabled();
-    expect(button).toHaveAccessibleDescription(
-      "Будет позже: решать задачи со страницы своей книги пока нельзя",
-    );
+    expect(button).toBeEnabled();
+    expect(button).toHaveAccessibleDescription("Имён на снимке быть не должно");
+    await userEvent.click(button);
+    expect(window.location.hash).toBe("#/paper");
+    window.location.hash = "";
   });
 });

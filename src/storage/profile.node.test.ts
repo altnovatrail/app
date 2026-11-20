@@ -1,6 +1,7 @@
 import type {
   DemoState,
-  ExportedWork,
+  ExportedSheet,
+  ExportedWorkbook,
   HistoryEvent,
   SheetSubmission,
 } from "@altnovatrail/spec/canvas";
@@ -9,6 +10,7 @@ import { describe, expect, it } from "vitest";
 import { DAY, memoryDevice } from "../test/device.ts";
 import {
   addProfile,
+  type KeptPaperTask,
   openProfile,
   openProfileDatabase,
   type Profile,
@@ -50,7 +52,10 @@ const CONTEXT: SheetSubmission = {
   digest: "0123456789abcdef",
 };
 
-const work = (text: string): ExportedWork => ({ png: new Blob([text]), submission: CONTEXT });
+const work = (text: string): ExportedSheet | ExportedWorkbook => ({
+  png: new Blob([text]),
+  submission: CONTEXT,
+});
 
 async function setUp() {
   const setup = memoryDevice();
@@ -131,7 +136,7 @@ describe("the profile's database", () => {
   it("keeps each submission's context unrounded, the history's length then, and its work", async () => {
     const { profile } = await setUp();
     expect(await profile.addSubmission("a1", work("first"), 3)).toBe(0);
-    const cells: ExportedWork = {
+    const cells: ExportedSheet | ExportedWorkbook = {
       cells: [{ item: 1, slot: 1, png: new Blob(["box"]) }],
       submission: { boxes: [{ item: 1, slot: 1, ids: [1] }], digest: "fedcba9876543210" },
     };
@@ -198,7 +203,7 @@ describe("the work in bytes", () => {
   it("keeps each picture as bytes with its type, and gives it back as a Blob", async () => {
     const { profile, backend } = await setUp();
     await profile.addSubmission("a1", { png: png("crop"), submission: CONTEXT }, 1);
-    const cells: ExportedWork = {
+    const cells: ExportedSheet | ExportedWorkbook = {
       cells: [{ item: 1, slot: 2, png: png("box") }],
       submission: { boxes: [{ item: 1, slot: 2, ids: [1] }], digest: "fedcba9876543210" },
     };
@@ -595,5 +600,148 @@ describe("an essay", () => {
     expect((await profile.essays()).map((essay) => essay.attemptId)).toEqual(["e1", "x2"]);
     // Counted are the essays that can be listed, and so erased.
     expect(await profile.essayCount()).toBe(2);
+  });
+});
+
+describe("the pages from paper", () => {
+  const frame = (ymin: number) => ({ ymin, xmin: 0, ymax: ymin + 100, xmax: 900 });
+  const photo = { bytes: new Uint8Array([0xff, 0xd8, 1, 2]), width: 300, height: 400 };
+  const context = {
+    crop: {},
+    groups: [],
+    tracing: { at: [180, 60], hidden: false },
+    digest: "0",
+  } as never;
+  const task = (n: number, taskId = `found-${n}`): Omit<KeptPaperTask, "pageId" | "n"> => ({
+    attemptId: `pa${n}`,
+    taskId,
+    frame: frame(100 * n),
+    drawn: false,
+    crop: new Blob([`crop ${n}`], { type: "image/png" }),
+    history: [],
+    sent: [],
+    over: false,
+  });
+  const page = (pageId: string, takenAt: number, ids: readonly number[]) => ({
+    pageId,
+    takenAt,
+    frames: ids.map((n) => ({ id: `found-${n}`, frame: frame(100 * n), drawn: n === 3 })),
+  });
+
+  it("keeps a page with its photo and its tasks, and their work as it changes", async () => {
+    const { profile } = await setUp();
+    expect(await profile.keepPage(page("g1", 1000, [1, 2, 3]), photo, [task(1), task(2)])).toBe(
+      "saved",
+    );
+    const work = {
+      history: [write(1, 0)],
+      tracing: { at: [200, 80], hidden: true },
+      sent: [{ context, historyLength: 1 }],
+      over: true,
+    } as const;
+    expect(await profile.keepPaperWork("pa2", work)).toBe("saved");
+    // The work of a task the page does not keep is none.
+    expect(await profile.keepPaperWork("nobody", work)).toBe("unsaved");
+    const kept = await profile.page("g1");
+    expect(kept?.page).toEqual(page("g1", 1000, [1, 2, 3]));
+    expect(kept?.photo).toEqual(photo);
+    expect(kept?.tasks.map(({ attemptId, n, over }) => ({ attemptId, n, over }))).toEqual([
+      { attemptId: "pa1", n: 0, over: false },
+      { attemptId: "pa2", n: 1, over: true },
+    ]);
+    const second = kept?.tasks[1];
+    expect(second?.history).toEqual([write(1, 0)]);
+    expect(second?.tracing).toEqual({ at: [200, 80], hidden: true });
+    expect(second?.sent).toEqual([{ context, historyLength: 1 }]);
+    expect(await second?.crop.text()).toBe("crop 2");
+    expect(second?.crop.type).toBe("image/png");
+    expect(await profile.page("none")).toBeUndefined();
+  });
+
+  it("puts the tasks Start begins again after those before, a task begun anew in its earlier one's place", async () => {
+    const { profile } = await setUp();
+    await profile.keepPage(page("g1", 1000, [1, 2]), photo, [task(1), task(2)]);
+    await profile.keepPage(page("g1", 1000, [1, 2, 3]), photo, [
+      task(3),
+      { ...task(4), taskId: "found-1" },
+    ]);
+    const kept = await profile.page("g1");
+    expect(kept?.tasks.map(({ attemptId, n }) => [attemptId, n])).toEqual([
+      ["pa2", 1],
+      ["pa3", 2],
+      ["pa4", 3],
+    ]);
+    expect(kept?.page.frames).toHaveLength(3);
+  });
+
+  it("lists the pages, the newest first, with how many tasks each began", async () => {
+    const { profile } = await setUp();
+    await profile.keepPage(page("old", 1000, [1]), photo, [task(1)]);
+    await profile.keepPage(page("new", 5000, [2, 3]), photo, [task(2), task(3)]);
+    expect(await profile.pages()).toEqual([
+      { pageId: "new", takenAt: 5000, tasks: 2 },
+      { pageId: "old", takenAt: 1000, tasks: 1 },
+    ]);
+  });
+
+  it("reads a page, a photo or a task of another form as none, and leaves the task out", async () => {
+    const { profile, device } = await setUp();
+    await profile.keepPage(page("g1", 1000, [1, 2]), photo, [task(1)]);
+    const crop = { bytes: new ArrayBuffer(2), type: "image/png" };
+    const kept = {
+      pageId: "g1",
+      taskId: "found-2",
+      frame: frame(200),
+      history: [],
+      sent: [],
+      crop,
+    };
+    const connection = await device.connect(profileDatabase("p1"), PROFILE_SCHEMA, false);
+    await connection?.write(["pages", "photos", "paperTasks"], async (tx) => {
+      await tx.put("pages", "bad", { pageId: "bad", takenAt: 2000, frames: "none" });
+      await tx.put("pages", "g2", { pageId: "g2", takenAt: 3000, frames: [] });
+      await tx.put("photos", "g2", { bytes: new ArrayBuffer(2), type: "image/jpeg", width: "300" });
+      // A task of an earlier form, with no place among those Start began.
+      await tx.put("paperTasks", "pb", { ...kept, attemptId: "pb" });
+      await tx.put("paperTasks", "x1", { ...kept, attemptId: "x1", crop: "not a picture" });
+      await tx.put("paperTasks", "x2", { ...kept, attemptId: "x2", taskId: 2 });
+      await tx.put("paperTasks", "x3", { ...kept, attemptId: "x3", frame: "none" });
+      await tx.put("paperTasks", "x4", { ...kept, attemptId: "x4", history: {} });
+      await tx.put("paperTasks", "x5", { ...kept, attemptId: "x5", sent: {} });
+      await tx.put("paperTasks", "x6", { pageId: "g1", attemptId: "x6", n: "first" });
+    });
+    expect(await profile.pages()).toEqual([
+      { pageId: "g2", takenAt: 3000, tasks: 0 },
+      { pageId: "g1", takenAt: 1000, tasks: 8 },
+    ]);
+    expect(await profile.page("bad")).toBeUndefined();
+    expect(await profile.page("g2")).toBeUndefined();
+    const read = (await profile.page("g1"))?.tasks ?? [];
+    expect(read.map(({ attemptId, n, drawn }) => ({ attemptId, n, drawn }))).toEqual([
+      { attemptId: "pa1", n: 0, drawn: false },
+      { attemptId: "pb", n: 0, drawn: false },
+    ]);
+    expect(read[1]).not.toHaveProperty("tracing");
+    // Start again after them: the place of a task of an earlier form counts as none.
+    await profile.keepPage(page("g1", 1000, [1, 2, 3]), photo, [task(3)]);
+    expect((await profile.page("g1"))?.tasks.at(-1)).toMatchObject({ attemptId: "pa3", n: 1 });
+  });
+
+  it("says a page is not saved when a crop's bytes cannot be read", async () => {
+    const { profile } = await setUp();
+    const unread = { ...task(1), crop: { arrayBuffer: () => Promise.reject(new Error("gone")) } };
+    expect(await profile.keepPage(page("g1", 1000, [1]), photo, [unread as never])).toBe("unsaved");
+    expect(await profile.pages()).toEqual([]);
+  });
+
+  it("outlives the 30 days and the end of an attempt, and is erased with the profile", async () => {
+    const { profile, state, device } = await setUp();
+    await profile.keepPage(page("g1", 1000, [1]), photo, [task(1)]);
+    state.time += KEEP_MS + DAY;
+    await profile.expire(state.time - KEEP_MS);
+    await profile.attemptEnded("pa1");
+    expect((await profile.page("g1"))?.tasks).toHaveLength(1);
+    await eraseDatabases(device, [profileDatabase("p1")]);
+    expect(await openProfile(device, "p1")).toBeUndefined();
   });
 });

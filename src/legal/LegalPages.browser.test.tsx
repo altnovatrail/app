@@ -352,7 +352,7 @@ describe("the legal pages", () => {
       "If something is hard to use",
     ]);
     const places = screen.getAllByRole("region");
-    expect(places.map((place) => place.getAttribute("aria-labelledby"))).toHaveLength(4);
+    expect(places.map((place) => place.getAttribute("aria-labelledby"))).toHaveLength(6);
     expect(
       places.map((place) => within(place).getByRole("heading", { level: 3 }).textContent),
     ).toEqual([
@@ -360,6 +360,8 @@ describe("the legal pages", () => {
       "Moving the sheet",
       "Print in the lines of a workbook",
       "Sending an answer with Check",
+      "Framing a task on a photo by hand",
+      "Solving a task from paper",
     ]);
     const criteria = places.map((place) => place.querySelector("dd")?.textContent ?? "");
     expect(criteria[0]).toContain("2.1.1");
@@ -369,6 +371,10 @@ describe("the legal pages", () => {
     expect(criteria[1]).toBe("2.5.7 Dragging Movements, level AA");
     expect(criteria[2]).toContain("1.4.12");
     expect(criteria[3]).toContain("3.3.4");
+    // A frame drawn by hand: two taps meet 2.5.1 and 2.5.7, the keyboard none (R71).
+    expect(criteria[4]).toBe("2.1.1 Keyboard, level A");
+    // A task from paper is solved in handwriting alone, with no options to choose among (R71).
+    expect(criteria[5]).toBe("2.1.1 Keyboard, level A");
     // The app meets 1.4.4 and 3.1.2, so no place declares them (R11).
     expect(document.body.textContent).not.toContain("1.4.4");
     expect(document.body.textContent).not.toContain("3.1.2");

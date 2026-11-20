@@ -1,0 +1,622 @@
+/*
+ * The debug mode of a local run (R72), as the mockup's `ph-dbgbtn` and `ph-dbg`: the button, 56
+ * round, glass round a graphite disc of 44 with an orange bug, at the tutor's place — 16 from the
+ * window's right in the middle of its height —, or 72 above it on the page and the screen of
+ * solving, and none while the tutor's panel is open; on a phone 172 above the foot, or 240. The window, glass of 0.94, 400 wide at the right from 74 below the top
+ * to 16 above the foot, radius 28; on a phone a sheet of the whole width from 300 below the top, or
+ * by its grabber from 70. Only a build of the development server loads this file.
+ */
+.nt-debug-call {
+  position: fixed;
+  inset-block-start: calc(50% - 1.75rem);
+  inset-inline-end: 1rem;
+  z-index: 6;
+}
+.nt-debug-call[data-above="true"] {
+  inset-block-start: calc(50% - 6.25rem);
+}
+body:has(.nt-tutor-panel) .nt-debug-call {
+  display: none;
+}
+@media (width < 600px) {
+  .nt-debug-call {
+    inset-block: auto 10.75rem;
+  }
+  .nt-debug-call[data-above="true"] {
+    inset-block: auto 15rem;
+  }
+}
+button.nt-debug-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  inline-size: 3.5rem;
+  block-size: 3.5rem;
+  padding: 0;
+  border: 0.375rem solid var(--nt-glass);
+  border-radius: 50%;
+  background: linear-gradient(135deg, #48484a 0%, #1c1c1e 100%) padding-box;
+  box-shadow: var(--nt-glass-shadow);
+  color: #ff9f0a;
+  cursor: pointer;
+}
+@media (prefers-reduced-motion: no-preference) {
+  button.nt-debug-button[data-busy="true"] {
+    animation: nt-debug-ring 1.3s ease-out infinite;
+  }
+}
+@keyframes nt-debug-ring {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 159, 10, 0.55);
+  }
+  100% {
+    box-shadow: 0 0 0 0.5625rem rgba(255, 159, 10, 0);
+  }
+}
+.nt-debug-panel {
+  position: fixed;
+  inset-block: 4.625rem 1rem;
+  inset-inline-end: 1rem;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  inline-size: 25rem;
+  overflow: hidden;
+  border-radius: var(--nt-radius-panel);
+  background: rgba(255, 255, 255, 0.94);
+  color: var(--nt-text);
+}
+@media (width < 600px) {
+  .nt-debug-panel {
+    inset: auto 0 0;
+    inline-size: auto;
+    block-size: calc(100dvh - 18.75rem);
+    border-radius: var(--nt-radius-panel) var(--nt-radius-panel) 0 0;
+    background: rgba(255, 255, 255, 0.97);
+    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.14);
+  }
+  .nt-debug-panel[data-size="full"] {
+    block-size: calc(100dvh - 4.375rem);
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .nt-debug-panel {
+    animation: nt-panel-in var(--nt-slow) var(--nt-ease);
+  }
+}
+@media (width < 600px) and (prefers-reduced-motion: no-preference) {
+  .nt-debug-panel {
+    animation-name: nt-sheet-in;
+  }
+}
+/* The grabber, 88 × 44 at the sheet's top, on a phone alone. */
+button.nt-debug-grab {
+  display: none;
+}
+@media (width < 600px) {
+  button.nt-debug-grab {
+    display: block;
+    flex: none;
+    align-self: center;
+    inline-size: 5.5rem;
+    block-size: 1.5rem;
+    min-block-size: 0;
+    padding: 0;
+    border: 0;
+    background: none;
+    cursor: pointer;
+  }
+  button.nt-debug-grab::before {
+    content: "";
+    display: block;
+    inline-size: 2.25rem;
+    block-size: 0.3125rem;
+    margin: auto;
+    border-radius: 0.25rem;
+    background: rgba(60, 60, 67, 0.3);
+  }
+}
+.nt-debug-head {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.625rem 0.375rem 0.5rem 0.875rem;
+}
+.nt-debug-disc {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  inline-size: 2.375rem;
+  block-size: 2.375rem;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #48484a 0%, #1c1c1e 100%);
+  color: #ff9f0a;
+}
+.nt-debug-two {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 0.0625rem;
+  min-inline-size: 0;
+  line-height: 1.25;
+}
+/* The parts of a row: its words and the line under them, what grows, a figure, and the switch's knob. */
+.nt-debug-main {
+  font-size: 0.875rem;
+  font-weight: var(--nt-weight-bold);
+}
+.nt-debug-sub {
+  overflow: hidden;
+  color: var(--nt-text-muted);
+  font-size: 0.75rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.nt-debug-grow {
+  flex: 1 1 auto;
+  text-align: start;
+}
+.nt-debug-strong {
+  font-weight: var(--nt-weight-bold);
+}
+.nt-debug-disc-in {
+  display: flex;
+  border-radius: 50%;
+}
+.nt-debug-knob {
+  position: absolute;
+  inset-block-start: 0.125rem;
+  inset-inline-start: 0.125rem;
+  inline-size: 1.5rem;
+  block-size: 1.5rem;
+  border-radius: 50%;
+  background: var(--nt-card);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  transition: inset-inline-start var(--nt-quick);
+}
+.nt-debug-switch[data-on="true"] .nt-debug-knob {
+  inset-inline-start: 1.25rem;
+}
+.nt-debug-head .nt-debug-main {
+  font-size: 0.9375rem;
+}
+button.nt-debug-close {
+  flex: none;
+  inline-size: 2.75rem;
+  block-size: 2.75rem;
+  border: 0;
+  background: none;
+  color: var(--nt-text-muted);
+  font-size: 1.375rem;
+  cursor: pointer;
+}
+/* A segmented control: the tabs, and the efforts. */
+/*
+ * The segments, 36 high, are the mockup's: app's button of 44 at least and its padding would push
+ * them out of their track and break a word. The pressed one is told by its card and, where forced
+ * colours take that away, by app's underline (1.4.1). A group of them is a fieldset with no frame of
+ * its own round the track, a div: a fieldset lays out a flex box of its own height unreliably.
+ */
+.nt-debug-plain {
+  min-inline-size: 0;
+  margin: 0;
+  border: 0;
+  padding: 0;
+}
+/* Each task of a frame, its fields under its number, apart from the next by a line. */
+.nt-debug-task {
+  display: grid;
+  gap: 0.5rem;
+  padding-block-end: 0.75rem;
+  border-block-end: 1px solid rgba(118, 118, 128, 0.2);
+}
+.nt-debug-segments {
+  display: flex;
+  box-sizing: border-box;
+  block-size: 2.25rem;
+  padding: 0.125rem;
+  border-radius: 0.625rem;
+  background: rgba(118, 118, 128, 0.12);
+}
+.nt-debug-segments > button {
+  display: flex;
+  flex: 1 1 0;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  min-block-size: 0;
+  min-inline-size: 0;
+  padding: 0 0.25rem;
+  border: 0;
+  border-radius: 0.5rem;
+  white-space: nowrap;
+  text-decoration: none;
+  background: transparent;
+  color: var(--nt-text);
+  font-size: 0.8125rem;
+  font-weight: var(--nt-weight-bold);
+  cursor: pointer;
+}
+.nt-debug-segments > button[aria-selected="true"],
+.nt-debug-segments > button[aria-pressed="true"] {
+  background: var(--nt-card);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+@media (forced-colors: active) {
+  .nt-debug-segments > button[aria-selected="true"],
+  .nt-debug-segments > button[aria-pressed="true"] {
+    text-decoration: underline;
+  }
+}
+.nt-debug-tabs {
+  flex: none;
+  margin: 0.125rem 0.875rem 0.625rem;
+}
+.nt-debug-count {
+  min-inline-size: 1.125rem;
+  padding: 0 0.3125rem;
+  box-sizing: border-box;
+  border-radius: 0.5625rem;
+  background: var(--nt-text);
+  color: var(--nt-on-fill);
+  font-size: 0.6875rem;
+  line-height: 1.125rem;
+}
+.nt-debug-body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-block-size: 0;
+  padding: 0 0.875rem 1rem;
+  overflow-y: auto;
+}
+.nt-debug-slot-head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.0625rem;
+  padding: 0.5rem 0.25rem 0;
+}
+.nt-debug-slot-head .nt-debug-main {
+  font-size: 0.8125rem;
+}
+.nt-debug-slot-head .nt-debug-sub {
+  white-space: normal;
+}
+.nt-debug-foot {
+  padding-inline: 0.25rem;
+  color: var(--nt-text-muted);
+  font-size: 0.75rem;
+}
+.nt-debug-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: visible;
+  border-radius: 1rem;
+  background: var(--nt-card);
+  box-shadow:
+    0 0 0 0.5px rgba(0, 0, 0, 0.08),
+    0 1px 3px rgba(0, 0, 0, 0.05);
+}
+.nt-debug-card > * + * {
+  border-block-start: 0.5px solid rgba(0, 0, 0, 0.08);
+}
+button.nt-debug-row {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  min-block-size: 3rem;
+  padding: 0.375rem 0.75rem 0.375rem 0.875rem;
+  border: 0;
+  background: none;
+  color: var(--nt-text);
+  font-size: 0.875rem;
+  text-align: start;
+  cursor: pointer;
+}
+button.nt-debug-row[aria-disabled="true"] {
+  cursor: default;
+}
+.nt-debug-value {
+  color: var(--nt-accent-text);
+  font-weight: var(--nt-weight-bold);
+}
+.nt-debug-switch {
+  position: relative;
+  flex: none;
+  inline-size: 2.875rem;
+  block-size: 1.75rem;
+  border-radius: 0.875rem;
+  background: rgba(120, 120, 128, 0.24);
+  transition: background var(--nt-quick);
+}
+.nt-debug-switch[data-on="true"] {
+  background: #248a3d;
+}
+.nt-debug-switch[data-dim="true"] {
+  opacity: 0.45;
+}
+.nt-debug-menu {
+  position: absolute;
+  inset-block-start: 3rem;
+  inset-inline-end: 0.5rem;
+  z-index: 3;
+  box-sizing: border-box;
+  inline-size: 17.875rem;
+  padding: 0.375rem;
+  border-radius: 1.125rem;
+  background: rgba(255, 255, 255, 0.97);
+  box-shadow: var(--nt-glass-shadow);
+}
+.nt-debug-menu > button {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  inline-size: 100%;
+  min-block-size: 3.125rem;
+  padding: 0.375rem 0.625rem;
+  border: 0;
+  border-radius: 0.75rem;
+  background: none;
+  color: var(--nt-text);
+  text-align: start;
+  cursor: pointer;
+}
+.nt-debug-menu > button[aria-checked="true"] {
+  background: var(--nt-accent-tint);
+}
+.nt-debug-admitted {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  padding: 0.5rem 0.875rem 0.625rem;
+}
+.nt-debug-admitted > div {
+  display: flex;
+  gap: 0.625rem;
+  font-size: 0.8125rem;
+}
+.nt-debug-admitted .nt-debug-main {
+  flex: 1 1 auto;
+  color: var(--nt-segmented);
+  font-size: 0.8125rem;
+  font-weight: normal;
+}
+.nt-debug-effort {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.625rem 0.875rem 0.75rem;
+  font-size: 0.875rem;
+}
+.nt-debug-warning {
+  margin: 0.375rem 0 0;
+  padding: 0.625rem 0.75rem;
+  border-radius: 0.875rem;
+  background: rgba(255, 159, 10, 0.12);
+  color: var(--nt-segmented);
+  font-size: 0.75rem;
+  line-height: 1.35;
+}
+.nt-debug-failed {
+  margin: 0;
+  color: #c93400;
+  font-size: 0.75rem;
+  line-height: 1.35;
+}
+.nt-debug-empty {
+  margin: 2.5rem 1.25rem;
+  color: var(--nt-text-muted);
+  font-size: 0.8125rem;
+  text-align: center;
+}
+.nt-debug-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+.nt-debug-group-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  padding: 0.625rem 0.25rem 0.125rem;
+  font-size: 0.75rem;
+}
+.nt-debug-group-head .nt-debug-main {
+  font-size: 0.8125rem;
+}
+.nt-debug-group-head .nt-debug-sub {
+  flex: 1 1 auto;
+}
+.nt-debug-figure,
+.nt-debug-end {
+  font-variant-numeric: tabular-nums;
+}
+button.nt-debug-call-row {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  min-block-size: 3.25rem;
+  padding: 0.4375rem 0.75rem 0.4375rem 0.875rem;
+  border: 0;
+  background: none;
+  color: var(--nt-text);
+  text-align: start;
+  cursor: pointer;
+}
+.nt-debug-end {
+  flex: none;
+  align-items: flex-end;
+}
+.nt-debug-dot {
+  flex: none;
+  inline-size: 0.5rem;
+  block-size: 0.5rem;
+  border-radius: 50%;
+  background: #248a3d;
+}
+.nt-debug-dot[data-of="solver"] {
+  background: #8e8e93;
+}
+.nt-debug-dot[data-of="failed"] {
+  background: #ff9f0a;
+}
+.nt-debug-open {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0 0.875rem 0.75rem 2rem;
+}
+.nt-debug-card > .nt-debug-open {
+  border-block-start: 0;
+}
+.nt-debug-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.375rem 0.625rem;
+}
+.nt-debug-stats > div {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+.nt-debug-stats .nt-debug-sub {
+  font-size: 0.6875rem;
+  font-weight: var(--nt-weight-bold);
+}
+.nt-debug-stats .nt-debug-figure {
+  font-size: 0.8125rem;
+}
+.nt-debug-json-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--nt-text-muted);
+  font-size: 0.6875rem;
+  font-weight: var(--nt-weight-bold);
+}
+.nt-debug-json-head > button {
+  flex: none;
+  block-size: 2rem;
+  min-block-size: 0;
+  padding: 0 0.625rem;
+  border: 0;
+  border-radius: 1rem;
+  background: var(--nt-accent-tint);
+  color: var(--nt-accent-text);
+  font-size: 0.78125rem;
+  font-weight: var(--nt-weight-bold);
+  cursor: pointer;
+}
+pre.nt-debug-json {
+  max-block-size: 13.75rem;
+  margin: 0;
+  padding: 0.625rem 0.75rem;
+  overflow: auto;
+  border-radius: 0.625rem;
+  background: var(--nt-page);
+  color: var(--nt-text);
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.71875rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+  user-select: text;
+}
+.nt-debug-total {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.625rem 0.875rem 0.875rem;
+  border-block-start: 0.5px solid rgba(0, 0, 0, 0.08);
+}
+.nt-debug-total > button {
+  flex: none;
+  block-size: 2.75rem;
+  padding: 0 0.875rem;
+  border: 0;
+  border-radius: 1.375rem;
+  background: rgba(118, 118, 128, 0.12);
+  color: var(--nt-text);
+  font-size: 0.8125rem;
+  font-weight: var(--nt-weight-bold);
+  cursor: pointer;
+}
+.nt-debug-total > button[aria-disabled="true"] {
+  color: var(--nt-text-muted);
+  cursor: default;
+}
+fieldset.nt-debug-segments {
+  min-inline-size: 0;
+  margin: 0;
+  border: 0;
+}
+button.nt-debug-link {
+  flex: none;
+  min-block-size: 0;
+  min-inline-size: 0;
+  padding: 0.125rem 0.25rem;
+  border: 0;
+  background: none;
+  color: var(--nt-accent-text);
+  font-size: 0.75rem;
+  font-weight: var(--nt-weight-bold);
+  cursor: pointer;
+}
+.nt-debug-export {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-block-start: 0.5rem;
+  padding: 0.75rem 0.875rem;
+  border-radius: 0.75rem;
+  background: var(--nt-card);
+  font-size: 0.8125rem;
+}
+.nt-debug-export > p {
+  margin: 0;
+}
+.nt-debug-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.nt-debug-field > input {
+  box-sizing: border-box;
+  inline-size: 100%;
+  block-size: 2.25rem;
+  padding: 0 0.625rem;
+  border: 0;
+  border-radius: 0.5rem;
+  background: var(--nt-page);
+  color: var(--nt-text);
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.78125rem;
+}
+.nt-debug-export-end {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+.nt-debug-export-end > button {
+  block-size: 2.25rem;
+  min-block-size: 0;
+  padding: 0 0.875rem;
+  border: 0;
+  border-radius: 1.125rem;
+  background: var(--nt-accent-tint);
+  color: var(--nt-accent-text);
+  font-size: 0.8125rem;
+  font-weight: var(--nt-weight-bold);
+  cursor: pointer;
+}
+.nt-debug-export-end > button.nt-debug-primary {
+  background: var(--nt-accent);
+  color: var(--nt-on-fill);
+}

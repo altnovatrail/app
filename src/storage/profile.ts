@@ -6,17 +6,23 @@
 // version 1 kept before is read as it is. Every write says whether it was saved, so that the task
 // screen can tell the learner the work is not saved on this device. Each attempt and essay holds
 // the mark of its work on the server: how long a history and how many submissions the last
-// `PutWork` that went through carried (R16, R30).
+// `PutWork` that went through carried (R16, R30). The pages from paper are the profile's history,
+// apart from its attempts: neither an attempt's end nor the 30 days take them, the profile's erasure
+// does (R77).
 import type {
   CellPlace,
   DemoState,
   ExportedCell,
-  ExportedWork,
+  ExportedSheet,
+  ExportedWorkbook,
   HistoryChange,
   HistoryEvent,
+  PaperSubmission,
   Submission,
+  TracingState,
 } from "@altnovatrail/spec/canvas";
 import type * as open from "@altnovatrail/spec/formatv0/open";
+import { type Frame, isFrame } from "../paper/frame.ts";
 import { type Connection, type Key, type Transaction, within } from "./backend.ts";
 import type { Device } from "./device.ts";
 import { addDatabase, readRegistry } from "./registry.ts";
@@ -163,12 +169,113 @@ export interface Usage {
   readonly stored: boolean;
 }
 
+/** A task frame of a page from paper: its task's key on the screen, the frame, and who drew it. */
+export interface KeptFrame {
+  readonly id: string;
+  readonly frame: Frame;
+  /** The learner drew it round a task the AI missed. */
+  readonly drawn: boolean;
+}
+
+/**
+ * A page from paper of the profile's history (R77): when the photo was taken, and the frames on it
+ * in the order of the page. Its photo is a record of its own, so that the list of pages reads none.
+ */
+export interface KeptPage {
+  readonly pageId: string;
+  readonly takenAt: number;
+  readonly frames: readonly KeptFrame[];
+}
+
+/** The photo of a page: its JPEG and its size in px. */
+export interface KeptPhoto {
+  readonly bytes: Uint8Array;
+  readonly width: number;
+  readonly height: number;
+}
+
+/** A submission of a task from paper: its context, as the canvas gave it, and the history's length then. */
+export interface PaperSent {
+  readonly context: PaperSubmission;
+  readonly historyLength: number;
+}
+
+/** The work on a task from paper, which changes as the learner writes. */
+export interface PaperWork {
+  readonly history: readonly HistoryEvent[];
+  /** Where its tracing paper lies; none till the screen knows it. */
+  readonly tracing?: TracingState | undefined;
+  readonly sent: readonly PaperSent[];
+  /** Its attempt is over: solved, or closed by api, so that the page shows it and takes no work. */
+  readonly over: boolean;
+}
+
+/** A task begun on a page: its attempt, the page's task it began from, its frame, crop and work. */
+export interface KeptPaperTask extends PaperWork {
+  readonly pageId: string;
+  readonly attemptId: string;
+  readonly taskId: string;
+  readonly frame: Frame;
+  readonly drawn: boolean;
+  readonly crop: Blob;
+  /** Its place among the page's attempts, in the order Start began them. */
+  readonly n: number;
+}
+
+/** A page of the history as its list names it: when it was taken, and how many tasks it began. */
+export interface PageSummary {
+  readonly pageId: string;
+  readonly takenAt: number;
+  readonly tasks: number;
+}
+
+const PAGES = "pages";
+const PHOTOS = "photos";
+const PAPER_TASKS = "paperTasks";
+
+/** A page's record as this build writes it; anything else is none. */
+function pageOf(kept: unknown): KeptPage | undefined {
+  const page = kept as Partial<KeptPage> | null | undefined;
+  if (typeof page?.pageId !== "string" || typeof page.takenAt !== "number") return undefined;
+  if (!Array.isArray(page.frames)) return undefined;
+  const frames = page.frames.filter(
+    (each: Partial<KeptFrame> | null | undefined): each is KeptFrame =>
+      typeof each?.id === "string" && isFrame(each.frame) && typeof each.drawn === "boolean",
+  );
+  return { pageId: page.pageId, takenAt: page.takenAt, frames };
+}
+
+/** A task's record with its crop again as a Blob; one this build cannot read is none. */
+function paperTaskOf(kept: unknown): KeptPaperTask | undefined {
+  const { crop, ...task } = (kept ?? {}) as Partial<Omit<KeptPaperTask, "crop">> & {
+    readonly crop?: unknown;
+  };
+  const picture = pictureOf(crop);
+  if (picture === undefined || typeof task.attemptId !== "string") return undefined;
+  if (typeof task.pageId !== "string" || typeof task.taskId !== "string") return undefined;
+  if (!isFrame(task.frame) || !Array.isArray(task.history) || !Array.isArray(task.sent))
+    return undefined;
+  return {
+    pageId: task.pageId,
+    attemptId: task.attemptId,
+    taskId: task.taskId,
+    frame: task.frame,
+    drawn: task.drawn === true,
+    crop: picture,
+    n: typeof task.n === "number" ? task.n : 0,
+    history: task.history,
+    ...(task.tracing === undefined ? {} : { tracing: task.tracing }),
+    sent: task.sent,
+    over: task.over === true,
+  };
+}
+
 async function bytesOf(picture: Blob): Promise<Bytes> {
   return { bytes: await picture.arrayBuffer(), type: picture.type };
 }
 
 /** The work as the database keeps it; its bytes are read before the transaction, not in it. */
-async function keptWork(work: ExportedWork): Promise<KeptWork> {
+async function keptWork(work: ExportedSheet | ExportedWorkbook): Promise<KeptWork> {
   if ("png" in work) return { png: await bytesOf(work.png) };
   return {
     cells: await Promise.all(
@@ -522,10 +629,11 @@ export class Profile {
   /**
    * A submission, with its context and work from `exportWork()` and the history's length: its
    * number among the attempt's submissions, from 0, which `attemptEnded` takes for the correct one.
+   * A task from paper's work is none of an attempt's here: the device keeps it apart (R71).
    */
   async addSubmission(
     attemptId: string,
-    work: ExportedWork,
+    work: ExportedSheet | ExportedWorkbook,
     historyLength: number,
   ): Promise<number | "unsaved"> {
     try {
@@ -822,6 +930,120 @@ export class Profile {
       for (const { key } of await tx.entries("lessons", { index: "changedAt", range })) {
         await tx.delete("lessons", key as Key);
       }
+    });
+  }
+
+  /**
+   * A page from paper and the tasks Start began on it now (R77): the page with its frames as they
+   * are, its photo the first time, and each task with its crop, after those begun on it before. A
+   * task begun anew, its frame resized, takes the place of its earlier attempt.
+   */
+  async keepPage(
+    page: KeptPage,
+    photo: KeptPhoto,
+    begun: readonly Omit<KeptPaperTask, "pageId" | "n">[],
+  ): Promise<Saved> {
+    try {
+      // Read before the transaction, which awaits nothing else.
+      const crops = await Promise.all(begun.map((task) => bytesOf(task.crop)));
+      const bytes = photo.bytes.slice().buffer;
+      return await this.connection.write(
+        [PAGES, PHOTOS, PAPER_TASKS],
+        async (tx): Promise<Saved> => {
+          const { pageId } = page;
+          await tx.put(PAGES, pageId, { pageId, takenAt: page.takenAt, frames: page.frames });
+          if ((await tx.get(PHOTOS, pageId)) === undefined) {
+            const { width, height } = photo;
+            await tx.put(PHOTOS, pageId, { bytes, type: "image/jpeg", width, height });
+          }
+          const range = { lower: pageId, upper: pageId };
+          const before = await tx.entries(PAPER_TASKS, { index: "page", range });
+          const anew = new Set(begun.map((task) => task.taskId));
+          for (const { key, value } of before) {
+            if (anew.has((value as Partial<KeptPaperTask>).taskId ?? ""))
+              await tx.delete(PAPER_TASKS, key);
+          }
+          const n = before.reduce((most, { value }) => {
+            const at = (value as Partial<KeptPaperTask>).n;
+            return typeof at === "number" ? Math.max(most, at + 1) : most;
+          }, 0);
+          for (const [i, task] of begun.entries()) {
+            await tx.put(PAPER_TASKS, task.attemptId, {
+              ...task,
+              pageId,
+              n: n + i,
+              crop: crops[i],
+            });
+          }
+          return "saved";
+        },
+      );
+    } catch {
+      return "unsaved";
+    }
+  }
+
+  /** The work on a task from paper as it is now, in place of what is kept; none for a task not kept. */
+  keepPaperWork(attemptId: string, work: PaperWork): Promise<Saved> {
+    return this.save([PAPER_TASKS], async (tx) => {
+      const kept = (await tx.get(PAPER_TASKS, attemptId)) as object | undefined;
+      if (kept === undefined) return "unsaved";
+      const { history, tracing, sent, over } = work;
+      await tx.put(PAPER_TASKS, attemptId, {
+        ...kept,
+        history,
+        ...(tracing === undefined ? {} : { tracing }),
+        sent,
+        over,
+      });
+      return "saved";
+    });
+  }
+
+  /** The pages of the history, the newest first, with how many tasks each began: no photo is read. */
+  async pages(): Promise<PageSummary[]> {
+    return this.connection.read([PAGES, PAPER_TASKS], async (tx) => {
+      const found: PageSummary[] = [];
+      for (const { value } of await tx.entries(PAGES, { index: "takenAt" })) {
+        const page = pageOf(value);
+        if (page === undefined) continue;
+        const range = { lower: page.pageId, upper: page.pageId };
+        const tasks = await tx.count(PAPER_TASKS, { index: "page", range });
+        found.push({ pageId: page.pageId, takenAt: page.takenAt, tasks });
+      }
+      return found.reverse();
+    });
+  }
+
+  /**
+   * A page of the history with its photo and its tasks, in the order Start began them; none when it
+   * is not kept, or its photo is in a form this build does not read. A task that cannot be read is
+   * left out.
+   */
+  async page(pageId: string): Promise<
+    | {
+        readonly page: KeptPage;
+        readonly photo: KeptPhoto;
+        readonly tasks: readonly KeptPaperTask[];
+      }
+    | undefined
+  > {
+    return this.connection.read([PAGES, PHOTOS, PAPER_TASKS], async (tx) => {
+      const page = pageOf(await tx.get(PAGES, pageId));
+      const kept = (await tx.get(PHOTOS, pageId)) as
+        | (Partial<Bytes> & { readonly width?: unknown; readonly height?: unknown })
+        | undefined;
+      if (page === undefined || !(kept?.bytes instanceof ArrayBuffer)) return undefined;
+      if (typeof kept.width !== "number" || typeof kept.height !== "number") return undefined;
+      const range = { lower: pageId, upper: pageId };
+      const tasks = (await tx.entries(PAPER_TASKS, { index: "page", range }))
+        .flatMap(({ value }) => {
+          const task = paperTaskOf(value);
+          return task === undefined ? [] : [task];
+        })
+        .sort((a, b) => a.n - b.n);
+      const photo = { bytes: new Uint8Array(kept.bytes), width: kept.width, height: kept.height };
+      return { page, photo, tasks };
     });
   }
 }

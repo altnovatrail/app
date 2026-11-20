@@ -14,6 +14,7 @@ import type {
   DemoChangeEvent,
   HistoryChangeEvent,
   ToolChangeEvent,
+  TracingChangeEvent,
 } from "@altnovatrail/spec/canvas";
 import type { Key, ReactNode, Ref } from "react";
 import type { Language } from "../i18n/language.ts";
@@ -35,7 +36,16 @@ export interface CanvasProps
   extends Partial<
     Pick<
       CanvasElement,
-      "tool" | "task" | "workedExample" | "demoState" | "manifest" | "media" | "history" | "marks"
+      | "tool"
+      | "task"
+      | "workedExample"
+      | "demoState"
+      | "manifest"
+      | "media"
+      | "paper"
+      | "tracing"
+      | "history"
+      | "marks"
     >
   > {
   readonly key?: Key;
@@ -48,6 +58,7 @@ export interface CanvasProps
   readonly onhistorychange?: (event: HistoryChangeEvent) => void;
   readonly ontoolchange?: (event: ToolChangeEvent) => void;
   readonly ondemochange?: (event: DemoChangeEvent) => void;
+  readonly ontracingchange?: (event: TracingChangeEvent) => void;
 }
 
 declare module "react" {

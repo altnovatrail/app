@@ -36,12 +36,15 @@ const OPEN = new Set([
 /**
  * The methods whose absence is no build older than api: an api on an older tag of spec has no
  * legal texts in force and answers them `unimplemented` (R27), nor a share of the quota to give;
- * and an api with no `WorkService` keeps no work, which then stays on the device alone (R30).
+ * an api with no `WorkService` keeps no work, which then stays on the device alone (R30); and an
+ * api without its debug flag has no debug mode, which a build of the development server asks of it
+ * (R72).
  */
 const MAY_BE_ABSENT = new Set([
   "novatrail.api.v1.LegalService/GetLegalTexts",
   "novatrail.api.v1.AccountService/GetQuota",
   "novatrail.api.v1.WorkService/PutWork",
+  ...(import.meta.env.DEV ? ["novatrail.api.v1.DebugService/GetDebug"] : []),
 ]);
 
 /** The pauses before each repeat, ms: 7.5 s in all, "for a short while". */
@@ -52,6 +55,23 @@ export const PAUSES = [500, 1000, 2000, 4000] as const;
  * (R33 api), at the pause `Retry-After` asks, else at the last of PAUSES.
  */
 export const STILL_GOING_MS = 30_000;
+
+/**
+ * api's limit of FindTasks and SubmitWork, whose calls of a task from paper ask up to three models
+ * in turn (R98 api): a call of either names it as its deadline, since a shorter Connect-Timeout-Ms
+ * would cut api short, and a repeat waits for a first one still going as long (R73).
+ */
+export const PAPER_TIMEOUT_MS = 90_000;
+
+const PAPER_METHODS = new Set([
+  "novatrail.api.v1.PaperService/FindTasks",
+  "novatrail.api.v1.AttemptService/SubmitWork",
+]);
+
+/** How long a repeat waits for a first request of the method still going, ms. */
+export function stillGoingMs(service: string, method: string): number {
+  return PAPER_METHODS.has(`${service}/${method}`) ? PAPER_TIMEOUT_MS : STILL_GOING_MS;
+}
 
 /** The pause `Retry-After` asks for, ms, from the seconds api sends; none when it names none. */
 export function retryAfter(headers: Pick<Headers, "get">): number | undefined {
@@ -123,7 +143,8 @@ export function repeat(sleep: (ms: number) => Promise<void>): Interceptor {
         const going = refusalOf(error)?.cause === Cause.STILL_GOING;
         const last = PAUSES[PAUSES.length - 1] as number;
         const pause = going ? (retryAfter(error.metadata) ?? PAUSES[tried] ?? last) : PAUSES[tried];
-        if (pause === undefined || (going && waited + pause > STILL_GOING_MS)) throw error;
+        const limit = stillGoingMs(request.service.typeName, request.method.name);
+        if (pause === undefined || (going && waited + pause > limit)) throw error;
         waited += pause;
         await sleep(pause);
       }

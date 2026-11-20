@@ -105,6 +105,15 @@ export const TABLE: Readonly<Record<string, Value>> = {
   shown: { base: "description", filled: false, mirrored: false },
   // The card of an essay's feedback (R66): a speech bubble, as the mockup's `essay-feedback`.
   feedback: { base: "chat-bubble", filled: false, mirrored: false },
+  // A task from paper (R71): the camera's way to the device's photos, a stack of pictures; the
+  // corner that resizes a frame drawn by hand, two arrows apart. The shutter is the camera of the
+  // home screen's card, a frame's cross the close.
+  photos: { base: "photo-library", filled: false, mirrored: false },
+  resize: { base: "open-in-full", filled: false, mirrored: false },
+  // The field of a request on the page to pick from (R74): Send, a paper plane, and the microphone,
+  // off until voice comes; each beside its caption.
+  send: { base: "send", filled: false, mirrored: false },
+  microphone: { base: "mic", filled: false, mirrored: false },
 };
 
 /** An icon as the app draws it: its view box, and the paths it fills in the text's colour. */

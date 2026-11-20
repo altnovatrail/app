@@ -10,6 +10,7 @@ export {
   LEGAL,
   LESSON,
   MODULE_LICENSE,
+  PAPER,
   type Route,
   SKILL_MAP,
   TASK,

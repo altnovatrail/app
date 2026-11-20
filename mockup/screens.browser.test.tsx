@@ -1375,6 +1375,13 @@ const PILL: Region = {
  */
 const HEADER_ROWS = 'the rows "For grown-ups" and "Sign out" of the profile\'s header (R63)';
 
+/**
+ * Why a colour of Help's pop-over is read lighter: it is a modal dialog, which makes what it stands
+ * on inert, out of the reading's reach, so its glass is read over white; the mockup's stands over
+ * the gradient of the card of a task from paper, which the reading passes through to the page.
+ */
+const OVER_INERT = "a modal dialog, over nothing the reading takes (R59)";
+
 /** The adult's Help, open, and the bar it stands in. */
 const HELP: readonly Region[] = [
   PILL,
@@ -1394,7 +1401,7 @@ const HELP: readonly Region[] = [
     name: "the pop-over of Help",
     mockup: { css: 'div.glass.nt-pop:has(> div:text-is("Help"))' },
     app: { role: "dialog", name: "Help" },
-    differs: { what: ["font-size"], by: NO_TEXT },
+    differs: { what: ["background", "border", "font-size"], by: `${OVER_INERT}; ${NO_TEXT}` },
   },
   {
     name: "The tutor is an AI",
@@ -1408,6 +1415,7 @@ const HELP: readonly Region[] = [
     app: { role: "button", name: "Privacy Policy" },
     followsText: "start",
     contrast: ACCENT_TEXT,
+    differs: { what: ["background"], by: OVER_INERT },
   },
   {
     name: "Accessibility",
@@ -1430,7 +1438,8 @@ const MENU: readonly Region[] = [
   {
     name: "Learning now",
     mockup: { text: "Learning now" },
-    app: { css: ".nt-menu-caption" },
+    // The caption of its own line, not the legend of the hint mode below it.
+    app: { css: "p.nt-menu-caption" },
     differs: { what: ["y"], by: HEADER_ROWS },
   },
   {

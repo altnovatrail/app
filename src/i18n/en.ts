@@ -262,10 +262,10 @@ export const en = {
   "accessibility.moving": "Moving the sheet",
   "accessibility.moving-criteria": "2.5.7 Dragging Movements, level AA",
   "accessibility.moving-why":
-    "With a single finger, the sheet moves only by dragging it, and two fingers drag it too. The sheet has no buttons that move it",
+    "With a single finger, the sheet moves only by dragging it, and two fingers drag it too. The sheet has no buttons that move it. A task from paper over its sheet is moved by dragging its grip",
   /** Zoom in and Zoom out are the canvas's own buttons, in its words. */
   "accessibility.moving-instead":
-    "A mouse wheel, a trackpad and the arrow keys move the sheet once it has the focus. Where the sheet is taller than the screen, the page scrolls as any page does. Zoom in and Zoom out work with a tap",
+    "A mouse wheel, a trackpad and the arrow keys move the sheet once it has the focus, and the arrow keys move a task from paper by its grip. Where the sheet is taller than the screen, the page scrolls as any page does. Zoom in and Zoom out work with a tap",
   "accessibility.moving-when":
     "There is no date: buttons that move the sheet come back only if the platform decides so",
   "accessibility.print": "Print in the lines of a workbook",
@@ -286,6 +286,23 @@ export const en = {
     "A wrong answer does not end the task: after Not yet, the learner can change the work and check it again. Work that can't be read comes back with Can't read this",
   "accessibility.check-when":
     "Once the second way to answer lets an answer be changed before it is checked",
+  /** A frame drawn round a task the AI missed on the photo of a page (R71). */
+  "accessibility.framing": "Framing a task on a photo by hand",
+  "accessibility.framing-criteria": "2.1.1 Keyboard, level A",
+  "accessibility.framing-why":
+    "A task the AI missed on the photo of a page is framed by drawing round it, or by tapping two of its corners: with a finger, a stylus or a mouse. A frame can't be drawn from the keyboard",
+  "accessibility.framing-instead":
+    "The tasks the AI found are picked and left out from the keyboard, and Retake takes a new photo",
+  "accessibility.framing-when":
+    "There is no date: a frame from the keyboard would need a way to point at a place on the photo",
+  "accessibility.paper": "Solving a task from paper",
+  "accessibility.paper-criteria": "2.1.1 Keyboard, level A",
+  "accessibility.paper-why":
+    "A task from a photo of a page is solved in handwriting, on the sheet or on the task over it: with a finger, a stylus or a mouse. Its solution cannot be typed on a keyboard",
+  "accessibility.paper-instead":
+    "Moving the task and hiding it, the list of the tasks, Hint and Check work from the keyboard. The tasks of a subject have options to choose among",
+  "accessibility.paper-when":
+    "There is no date: a task from paper has no answers to choose among, and the platform has not chosen a second way to write a solution",
   "accessibility.checked": "How it is checked",
   "accessibility.checked-text":
     "Automated checks run on every change to the app's code: the rules of WCAG 2.2 that a program can find, the size of buttons, a screen 320 pixels wide, forced colors and reduced motion. Checks by people, with the screen readers VoiceOver, TalkBack and NVDA on tablets and computers, have not been done yet",
@@ -345,6 +362,17 @@ export const en = {
   "learner.menu": "Profile menu",
   "learner.menu-button": "{pseudonym}, profile menu",
   "learner.now": "Learning now",
+  /**
+   * The hint mode in the profile's menu (R76): its group, and for a child's that a
+   * grown-up sets it; each mode's title and line, as the mockup's.
+   */
+  "hints.title": "Hints",
+  "hints.by-adult": "set by a grown-up",
+  "hints.questions": "Questions only",
+  "hints.questions-line": "The tutor asks about a step of the work",
+  "hints.where": "Show where",
+  "hints.where-line":
+    "After “Not yet” the tutor also underlines where the mistake is — and corrects nothing",
   /** The adult's Help on the home screen (R148 spec; R63): three things, and three pages. */
   "help.ai": "The tutor is an AI",
   "help.ai-text":
@@ -388,6 +416,13 @@ export const en = {
   "icon.tutor": "Tutor",
   "icon.full-screen": "Full screen",
   "icon.half-screen": "Half screen",
+  /** The camera's shutter, a white ring (R71). */
+  "icon.take-photo": "Take photo",
+  /** The camera's way to a picture the device keeps, in place of the camera. */
+  "icon.choose-photos": "Choose from photos",
+  /** The cross and the corner of a frame the learner drew round a task the AI missed. */
+  "icon.remove-frame": "Remove the frame",
+  "icon.resize-frame": "Resize your frame",
   /** The heading of the learner's home: the modules connected to the profile (R62). */
   "subjects.title": "My subjects",
   /** The heading of the modules connected to the profile. */
@@ -412,10 +447,9 @@ export const en = {
   "subjects.sub": "Pick up where you left off",
   /** The heading of the card of what comes next: the task in progress, the engine's way, the tutor time. */
   "subjects.next-up": "Next up",
-  /** The second card at the top: "A task from my paper", shown and not open yet (R148 spec). */
+  /** The second card at the top: "A task from my paper", the tasks of a page of the learner's book (R71). */
   "subjects.paper": "A task from my paper",
-  "subjects.paper-why": "Comes later: solving the tasks of a page from your book is not open yet",
-  /** The button of "A task from my paper", disabled: the camera comes with the tasks from paper. */
+  /** The button of "A task from my paper": it opens the camera. */
   "subjects.paper-open": "Open camera",
   /** On a module's card under its bar: of its skills with a verdict, how many are mastered. */
   "subjects.mastered": "{mastered} of {count} mastered",
@@ -1124,6 +1158,130 @@ export const en = {
   /** The answer of api; {date} is the day the operator reviews it by. */
   "report.sent": "Thank you: the report is sent. It will be reviewed by {date}",
   "report.sent-undated": "Thank you: the report is sent",
+  /**
+   * Under "Open camera" on the card of a task from paper and on the camera's screen: a name on the
+   * page would go to the AI with its photo (R71).
+   */
+  "paper.names": "Keep names out of the photo",
+  /** The heading of the camera's screen. */
+  "paper.camera": "Photo of a page",
+  /** The device has no camera, or the browser was not let use it: the photos are the way in. */
+  "paper.no-camera": "The camera isn't available here. Choose a photo of the page instead",
+  "paper.unreadable": "This picture can't be read. Take another photo, or choose one",
+  /** The heading of the screen where the learner picks the tasks of the page. */
+  "paper.title": "Your page",
+  /** Under it, three phrases between dots: the tasks found, those framed by hand, and what a tap does. */
+  "paper.found": plural({
+    one: "{count} task found",
+    other: "{count} tasks found",
+  }),
+  "paper.drawn": plural({
+    one: "{count} framed by you",
+    other: "{count} framed by you",
+  }),
+  "paper.tap": "tap one to leave it out",
+  /** The top bar's button that throws the page away and opens the camera again. */
+  "paper.retake": "Retake",
+  "paper.remove-all": "Remove all frames",
+  /** While FindTasks is under way. */
+  "paper.finding": "Finding the tasks on the page…",
+  /** FindTasks gave no frames: the learner draws them. */
+  "paper.none-found": "No tasks were found. Draw round each task you want to solve",
+  "paper.find-again": "Find the tasks again",
+  /** FindTasks gave the most tasks one page begins, {max}; the page may hold more. */
+  "paper.at-most":
+    "{max} tasks is the most at once. To take another, remove one of these with its cross and draw round the one you want",
+  /** More than {max} tasks are picked, and "Start" is shut. */
+  "paper.too-many": "At most {max} tasks start at once: leave some out",
+  /** A task's frame, a button; {n} is its place on the page, from the top. */
+  "paper.select": "Select task {n}",
+  "paper.deselect": "Deselect task {n}",
+  /** A frame drawn by hand; {n} is its place on the page, from the top. */
+  "paper.select-drawn": "Select your frame, task {n}",
+  "paper.deselect-drawn": "Deselect your frame, task {n}",
+  /** The first of two taps is down: the second one makes the frame. */
+  "paper.corner": "Now tap the opposite corner of the task",
+  /** The note above the bar, beside a lock. */
+  "paper.note":
+    "The AI looked at the whole page to find the tasks. The photo stays on this device. Draw round a task it missed.",
+  "paper.select-all": "Select all",
+  "paper.select-none": "Select none",
+  "paper.picked": "{count} of {total} selected",
+  "paper.start": "Start",
+  /**
+   * The tutor's chat on the page to pick from (R74): its line of what it takes, the field of a
+   * request and its buttons, and the program's line of what the request came to.
+   */
+  "paper.ask-hello":
+    "Tell me which tasks to take from this page and how to split them: a column, a row, each example on its own. I only change the frames.",
+  "paper.ask-label": "Your request about the page",
+  "paper.ask-placeholder": "Say which tasks to take…",
+  "paper.ask-send": "Send",
+  /** The microphone, off: voice comes with a task of its own. */
+  "paper.ask-voice": "Voice comes later",
+  "paper.asked-found": plural({
+    one: "Found {count} task",
+    other: "Found {count} tasks",
+  }),
+  "paper.asked-found-line": "Your own frames stay. Undo brings back the frames before.",
+  "paper.asked-none": "No tasks found for that",
+  "paper.asked-none-line": "The frames stay as they were.",
+  "paper.undo": "Undo",
+  "paper.undone": "The frames are back as they were",
+  /** Start is shut: without AI a task from paper can't be checked. */
+  "paper.no-ai": "Without the AI a task from paper can't be checked",
+  /** The heading of the screen of solving: a task the AI found; {n} is its place on the page. */
+  "paper.task": "Task {n}",
+  /** A frame drawn by hand; {n} is its place on the page, from the top. */
+  "paper.your-frame": "Your frame, task {n}",
+  /** Under the heading: the task's place among those begun. */
+  "paper.of": "{n} of {total} · from your page",
+  /** The button between ‹ and ›, which opens the list of the tasks begun. */
+  "paper.counter": "{n} / {total}",
+  /** The list's heading, and the button's name, which holds its caption as said (WCAG 2.5.3). */
+  "paper.tasks": "Tasks",
+  "paper.tasks-open": "Tasks, {n} / {total}",
+  /** At the list's head: back to the page, to pick more of its tasks. */
+  "paper.add": "Add",
+  /** The button on the card "A task from my paper" that opens the profile's pages from paper kept on the device (R77). */
+  "paper.pages": "Your pages",
+  /** The heading of its pop-over. */
+  "paper.pages-title": "Your pages · on this device",
+  /** A page in it: when it was photographed, and how many tasks were begun on it. */
+  "paper.page": "{when} · {tasks}",
+  "paper.page-tasks": plural({
+    one: "{count} task",
+    other: "{count} tasks",
+  }),
+  /** A page that would not open: the device keeps it no more. */
+  "paper.page-gone": "This page isn't on this device any more",
+  /** Under the list: where the pages live and until when (R77). */
+  "paper.pages-kept": "Kept on this device until the profile is deleted, and in its export.",
+  /** Check pressed with nothing written, on the sheet or on the task. */
+  "paper.write-first": "Write your solution first",
+  "paper.write-first-line": "Write it with the pen on the sheet or on the task, then Check.",
+  /** The card of a task from paper whose solution gave no one answer a program can compare. */
+  "paper.no-key": "Couldn't check this one",
+  "paper.no-key-line": "This task has no answer that can be checked. Hints still work.",
+  /** The tutor's line on the screen of solving, after the one that the tutor is an AI (R75). */
+  "paper.solve-hello":
+    "Hints for this task come here, a question at a time. A program checks every answer.",
+  /**
+   * The card of a frame of several tasks: {n} of the {of} tasks with a key are correct; {tasks} are
+   * the numbers of those whose answer was not read, in the frame's order.
+   */
+  "paper.parts-correct": "Correct · {n} of {of}",
+  "paper.parts-not-yet": "Not yet · {n} of {of} correct",
+  "paper.parts-unread": "No answer was read in tasks {tasks}",
+  /** The tick and the cross by an answer on the crop, for a screen reader; {n} is the task's number in the frame. */
+  "paper.mark-correct": "Task {n}: correct",
+  "paper.mark-not-yet": "Task {n}: not yet",
+  "paper.mark-wavy": "Tutor's mark: where the mistake is",
+  /** The cards of a work with no final answer, or more than one: written, or one option circled. */
+  "paper.no-answer": "No answer found",
+  "paper.no-answer-line": "Write your answer, or circle one option, then Check.",
+  "paper.several": "More than one answer",
+  "paper.several-line": "Leave one answer or one circled option, then Check.",
   /** In place of the words of a code from api this build does not know: a newer api sent it. */
   "common.unknown": "This version of the app doesn't know this yet",
 } as const satisfies Dictionary;

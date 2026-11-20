@@ -57,6 +57,12 @@ export const SKILL_MAP: Route = { screen: "skill-map", parts: [] };
  */
 export const ESSAYS: Route = { screen: "essays", parts: [] };
 
+/**
+ * A task from the learner's paper (R71): `#/paper`, the camera, the tasks found on the page
+ * photographed, and the tasks begun, from memory, as the hash names no page and no attempt.
+ */
+export const PAPER: Route = { screen: "paper", parts: [] };
+
 /** The screens this build knows. A hash that names another one shows the home screen. */
 export const SCREENS: ReadonlySet<string> = new Set([
   HOME.screen,
@@ -68,6 +74,7 @@ export const SCREENS: ReadonlySet<string> = new Set([
   TUTOR.screen,
   SKILL_MAP.screen,
   ESSAYS.screen,
+  PAPER.screen,
 ]);
 
 /** The route a hash names: `#/screen/part`, each segment percent-encoded. */
