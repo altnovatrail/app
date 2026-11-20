@@ -10,6 +10,7 @@ import { describe, expect, it } from "vitest";
 import { DAY, memoryDevice } from "../test/device.ts";
 import {
   addProfile,
+  type KeptPaperTask,
   openProfile,
   openProfileDatabase,
   type Profile,
@@ -599,5 +600,98 @@ describe("an essay", () => {
     expect((await profile.essays()).map((essay) => essay.attemptId)).toEqual(["e1", "x2"]);
     // Counted are the essays that can be listed, and so erased.
     expect(await profile.essayCount()).toBe(2);
+  });
+});
+
+describe("the pages from paper", () => {
+  const frame = (ymin: number) => ({ ymin, xmin: 0, ymax: ymin + 100, xmax: 900 });
+  const photo = { bytes: new Uint8Array([0xff, 0xd8, 1, 2]), width: 300, height: 400 };
+  const context = {
+    crop: {},
+    groups: [],
+    tracing: { at: [180, 60], hidden: false },
+    digest: "0",
+  } as never;
+  const task = (n: number, taskId = `found-${n}`): Omit<KeptPaperTask, "pageId" | "n"> => ({
+    attemptId: `pa${n}`,
+    taskId,
+    frame: frame(100 * n),
+    drawn: false,
+    crop: new Blob([`crop ${n}`], { type: "image/png" }),
+    history: [],
+    sent: [],
+    over: false,
+  });
+  const page = (pageId: string, takenAt: number, ids: readonly number[]) => ({
+    pageId,
+    takenAt,
+    frames: ids.map((n) => ({ id: `found-${n}`, frame: frame(100 * n), drawn: n === 3 })),
+  });
+
+  it("keeps a page with its photo and its tasks, and their work as it changes", async () => {
+    const { profile } = await setUp();
+    expect(await profile.keepPage(page("g1", 1000, [1, 2, 3]), photo, [task(1), task(2)])).toBe(
+      "saved",
+    );
+    const work = {
+      history: [write(1, 0)],
+      tracing: { at: [200, 80], hidden: true },
+      sent: [{ context, historyLength: 1 }],
+      over: true,
+    } as const;
+    expect(await profile.keepPaperWork("pa2", work)).toBe("saved");
+    // The work of a task the page does not keep is none.
+    expect(await profile.keepPaperWork("nobody", work)).toBe("unsaved");
+    const kept = await profile.page("g1");
+    expect(kept?.page).toEqual(page("g1", 1000, [1, 2, 3]));
+    expect(kept?.photo).toEqual(photo);
+    expect(kept?.tasks.map(({ attemptId, n, over }) => ({ attemptId, n, over }))).toEqual([
+      { attemptId: "pa1", n: 0, over: false },
+      { attemptId: "pa2", n: 1, over: true },
+    ]);
+    const second = kept?.tasks[1];
+    expect(second?.history).toEqual([write(1, 0)]);
+    expect(second?.tracing).toEqual({ at: [200, 80], hidden: true });
+    expect(second?.sent).toEqual([{ context, historyLength: 1 }]);
+    expect(await second?.crop.text()).toBe("crop 2");
+    expect(second?.crop.type).toBe("image/png");
+    expect(await profile.page("none")).toBeUndefined();
+  });
+
+  it("puts the tasks Start begins again after those before, a task begun anew in its earlier one's place", async () => {
+    const { profile } = await setUp();
+    await profile.keepPage(page("g1", 1000, [1, 2]), photo, [task(1), task(2)]);
+    await profile.keepPage(page("g1", 1000, [1, 2, 3]), photo, [
+      task(3),
+      { ...task(4), taskId: "found-1" },
+    ]);
+    const kept = await profile.page("g1");
+    expect(kept?.tasks.map(({ attemptId, n }) => [attemptId, n])).toEqual([
+      ["pa2", 1],
+      ["pa3", 2],
+      ["pa4", 3],
+    ]);
+    expect(kept?.page.frames).toHaveLength(3);
+  });
+
+  it("lists the pages, the newest first, with how many tasks each began", async () => {
+    const { profile } = await setUp();
+    await profile.keepPage(page("old", 1000, [1]), photo, [task(1)]);
+    await profile.keepPage(page("new", 5000, [2, 3]), photo, [task(2), task(3)]);
+    expect(await profile.pages()).toEqual([
+      { pageId: "new", takenAt: 5000, tasks: 2 },
+      { pageId: "old", takenAt: 1000, tasks: 1 },
+    ]);
+  });
+
+  it("outlives the 30 days and the end of an attempt, and is erased with the profile", async () => {
+    const { profile, state, device } = await setUp();
+    await profile.keepPage(page("g1", 1000, [1]), photo, [task(1)]);
+    state.time += KEEP_MS + DAY;
+    await profile.expire(state.time - KEEP_MS);
+    await profile.attemptEnded("pa1");
+    expect((await profile.page("g1"))?.tasks).toHaveLength(1);
+    await eraseDatabases(device, [profileDatabase("p1")]);
+    expect(await openProfile(device, "p1")).toBeUndefined();
   });
 });

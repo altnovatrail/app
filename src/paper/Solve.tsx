@@ -2,25 +2,28 @@
 // bar's pill — Back to My subjects and the task's name, "n of N · from your page" under it but on a
 // phone —, and at its other end ‹, the counter that opens the list of the tasks begun with "Add",
 // and ›. Each task is a sheet in dots of its own under its crop, the tracing paper, which canvas
-// draws and the learner moves and hides (R87 canvas); its history and the paper's place stay in the
-// tab's memory, so that a task left and come back to is as it was. At the foot the row of glass:
-// Hint · Check, Hint till the task is solved. Check sends the task's crop with the crop of the work (R162 spec), and keeps nothing
-// on the device: its verdict is that of each task of the frame by the key api derived — Correct
-// with Next task, Not yet with Hint, of several tasks with how many are correct, the work not read
-// with why, not checked with the outcome —, with a tick or a cross by each answer on the sheet; or
-// "Couldn't check this one" when no task has a key, with Hint and Next task. A frame solved or with
-// no key takes no Check again, and the list marks the one solved. The tutor's button at the right
-// edge opens its panel, and so does Hint; a verdict does not (R75; R148 spec). While the panel is
-// open the verdict is a line in it, the hint a bubble there, said by itself while the voicing is
-// on, and on a phone its sheet hides the row and the canvas's bar of tools; while it is closed the
-// verdict is a card above the row, with the panel's buttons. The tutor's words are of AI (R82
-// spec): Hint before the first wrong answer asks the opening question from the task's crop as
-// printed, once on the attempt; after Not yet, with the panel open — or once it opens — the words
-// of the rung come with the work of the Check, and in the mode "Show where" with the wavy line
-// under the first mistake, which goes with other work or the paper moved; "Explain differently"
-// words the rung anew, once on it; and an adult may report a problem with the words. The words
-// stand till another task or Check, and what is said of them stops with another task or the panel
-// closed.
+// draws and the learner moves and hides (R87 canvas); its history and the paper's place stay with
+// the page, so that a task left and come back to is as it was, and the page's history keeps them
+// (R77). At the foot the row of glass: Hint · Check, Hint till the task is solved. Check sends the
+// task's crop with the crop of the work (R162 spec), and the page keeps the context of the work of
+// each Check answered, but no verdict: its verdict is that of each task of the frame by the key api
+// derived — Correct with Next task, Not yet with Hint, of several tasks with how many are correct,
+// the work not read with why, not checked with the outcome —, with a tick or a cross by each answer
+// on the sheet; or "Couldn't check this one" when no task has a key, with Hint and Next task. A
+// frame solved or with no key takes no Check again, and the list marks the one solved. A task whose
+// attempt is over — solved, or closed by api, as a page of the history opened again may hold — is
+// only to be looked at: its sheet takes no writing, no Hint stands, and its Check says "This task
+// is already over". The tutor's button at the right edge opens its panel, and so does Hint; a
+// verdict does not (R75; R148 spec). While the panel is open the verdict is a line in it, the hint
+// a bubble there, said by itself while the voicing is on, and on a phone its sheet hides the row and
+// the canvas's bar of tools; while it is closed the verdict is a card above the row, with the
+// panel's buttons. The tutor's words are of AI (R82 spec): Hint before the first wrong answer asks
+// the opening question from the task's crop as printed, once on the attempt; after Not yet, with the
+// panel open — or once it opens — the words of the rung come with the work of the Check, and in the
+// mode "Show where" with the wavy line under the first mistake, which goes with other work or the
+// paper moved; "Explain differently" words the rung anew, once on it; and an adult may report a
+// problem with the words. The words stand till another task or Check, and what is said of them
+// stops with another task or the panel closed.
 import { TutorReply, type Work } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
 import { Cause } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import type {
@@ -45,7 +48,7 @@ import { watched } from "../debug/watched.ts";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { useKeyHolder } from "../ownkey/OwnKeyContext.tsx";
 import { workOf } from "../task/attempt.ts";
-import { useOwnVoicing } from "../task/shared.ts";
+import { closedBy, useOwnVoicing } from "../task/shared.ts";
 import { HintButton, RowLine, VerdictCard } from "../task/TaskLayout.tsx";
 import { TutorButton, usePanelFocus, useQuotaLine } from "../task/TutorPanel.tsx";
 import type { Said } from "../tutor/report.ts";
@@ -62,6 +65,7 @@ import {
   shownTask,
   tutorActs,
   verdictMarks,
+  viewOnly,
   wavyOf,
   withChange,
 } from "./solve.ts";
@@ -152,6 +156,10 @@ export function Solve({
   const [told, setTold] = useState("");
   const [unwritten, setUnwritten] = useState(false);
   const [written, setWritten] = useState(false);
+  // Check pressed on a task that is over: "This task is already over".
+  const [overTold, setOverTold] = useState(false);
+  // The keys of the Checks whose work the page keeps: a repeat's answer is none of a new one.
+  const kept = useRef(new Set<string>());
   // The key of a check, kept while the work it sent is the same, so that a press again repeats it.
   const sent = useRef<{ readonly of: string; readonly key: string } | undefined>(undefined);
 
@@ -175,6 +183,7 @@ export function Solve({
     setWavy(undefined);
     setTold("");
     setUnwritten(false);
+    setOverTold(false);
     setWritten(element.current?.filled?.[0]?.[0] === true);
   }, [attemptId]);
 
@@ -333,7 +342,9 @@ export function Solve({
           show({ text, reply: TutorReply.RUNG, rung });
         } else await openingWords(asked);
       } catch (reason) {
-        if (asked === epoch.current) setFailure(parseFailure(reason));
+        const found = parseFailure(reason);
+        if (asked === epoch.current) setFailure(found);
+        closed(found);
       } finally {
         setPending(false);
       }
@@ -395,7 +406,19 @@ export function Solve({
       });
   };
 
+  /** The attempt api closed: the task is over, and only to be looked at. */
+  const closed = (found: Failure) => {
+    // A verdict still shown is put away, so that the task is only to be looked at, as it is when
+    // its page is opened again.
+    if (closedBy(found) !== undefined)
+      onKeep(attemptId, (was) => withoutVerdict({ ...was, over: true }));
+  };
+
   const check = () => {
+    if (viewOnly(task)) {
+      setOverTold(true);
+      return;
+    }
     if (pending || checkOver(task)) return;
     if (!written) {
       setUnwritten(true);
@@ -417,7 +440,8 @@ export function Solve({
     onKeep(attemptId, withoutVerdict);
     // Other work is another action, with a key of its own: the history, and where the paper lay,
     // as they are at the press, before the work is read.
-    const of = JSON.stringify([attemptId, sheet.history.length, sheet.tracing]);
+    const length = sheet.history.length;
+    const of = JSON.stringify([attemptId, length, sheet.tracing]);
     void (async () => {
       try {
         const work = await sheet.exportWork();
@@ -458,11 +482,17 @@ export function Solve({
         const verdict = paperVerdictOf(answer.items, read, answer.solved !== undefined);
         const context =
           "cells" in work || work.statement === undefined ? undefined : work.submission;
+        const first = !kept.current.has(key);
+        kept.current.add(key);
         onKeep(attemptId, (was) => ({
           ...was,
           verdict,
           wrongAnswers: answer.wrongAnswers,
           ...(context === undefined ? {} : { checked: context }),
+          ...(context === undefined || !first
+            ? {}
+            : { sent: [...(was.sent ?? []), { context, historyLength: length }] }),
+          ...(verdict.kind === "correct" ? { over: true } : {}),
         }));
         const card = paperCard(verdict, words);
         setTold(card.line === undefined ? card.title : `${card.title}. ${card.line}`);
@@ -480,7 +510,9 @@ export function Solve({
           else unasked.current = ask;
         }
       } catch (reason) {
-        setFailure(parseFailure(reason));
+        const found = parseFailure(reason);
+        setFailure(found);
+        closed(found);
       } finally {
         setPending(false);
         setChecking(false);
@@ -548,7 +580,8 @@ export function Solve({
   const described = [namesId, written ? "" : writeId].join(" ").trim();
   // Hint waits while the rung's words are on their way, as for any request of its own.
   const busy = pending || wordsWaiting;
-  const acts = tutorActs(task.verdict);
+  const only = viewOnly(task);
+  const acts = only ? { hint: false, next: false } : tutorActs(task.verdict);
   const close = () => {
     hush();
     setOpen(false);
@@ -582,7 +615,7 @@ export function Solve({
       }}
     >
       <div className="nt-task" {...beside}>
-        <div className="nt-task-work">
+        <div className="nt-task-work" inert={only}>
           {/* The order of the properties is the order React gives them: the paper first (R74 spec). */}
           <novatrail-canvas
             key={attemptId}
@@ -616,6 +649,11 @@ export function Solve({
         <p role="status" className="nt-hidden-label">
           {told}
         </p>
+        {overTold ? (
+          <p role="alert" className="nt-error">
+            {words.text("api.attempt-closed")}
+          </p>
+        ) : null}
         {/* While the panel is open the reading and the verdict are lines in it. */}
         {open ? null : checking ? (
           <VerdictCard

@@ -845,6 +845,18 @@ export const ru = {
   "paper.counter": "{n} / {total}",
   "paper.tasks": "Задачи",
   "paper.tasks-open": "Задачи, {n} из {total}",
+  "paper.pages": "Ваши страницы",
+  "paper.pages-title": "Ваши страницы · на этом устройстве",
+  "paper.page": "{when} · {tasks}",
+  "paper.page-tasks": plural({
+    one: "{count} задача",
+    few: "{count} задачи",
+    many: "{count} задач",
+    other: "{count} задачи",
+  }),
+  "paper.page-gone": "Этой страницы на устройстве больше нет",
+  "paper.pages-kept":
+    "Хранятся на этом устройстве, пока профиль не удалён, и входят в его экспорт.",
   "paper.add": "Добавить",
   "paper.write-first": "Сначала нужно написать решение",
   "paper.write-first-line": "Ручкой на листе или на задаче, потом «Проверить».",

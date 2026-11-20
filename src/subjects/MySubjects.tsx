@@ -39,6 +39,7 @@ import { licenseRoute } from "../packages/LicensePage.tsx";
 import { usePackages } from "../packages/PackagesContext.tsx";
 import type { OpenViews } from "../packages/views.ts";
 import { usePaper } from "../paper/PaperContext.tsx";
+import { YourPages } from "../paper/YourPages.tsx";
 import { moduleMapRoute } from "../skills/SkillMapScreen.tsx";
 import type { Device } from "../storage/device.ts";
 import { openProfile, type Profile } from "../storage/profile.ts";
@@ -178,6 +179,8 @@ export interface SubjectsScreenProps {
   readonly onLicense?: (digest: string) => void;
   /** The share of today's quota of platform AI the profile has used; none while it is not known. */
   readonly quota?: QuotaShare;
+  /** "Your pages", the history of pages from paper, beside "Open camera". */
+  readonly pages?: ReactNode;
 }
 
 /** The screen itself, from what its container has read. */
@@ -195,6 +198,7 @@ export function SubjectsScreen({
   onLicense,
   next,
   quota,
+  pages,
 }: SubjectsScreenProps) {
   const { language, words } = useLanguage();
   const paper = usePaper();
@@ -254,23 +258,27 @@ export function SubjectsScreen({
             </p>
           )}
         </section>
-        {/* A new page each time: the camera, and before it the line to keep names out (R71). */}
+        {/* A new page each time: the camera, and before it the line to keep names out (R71); and
+            beside it the pages of the history (R77). */}
         <section aria-labelledby={paperId} className="nt-paper">
           <span className="nt-paper-icon" aria-hidden="true">
             <Icon value="camera" />
           </span>
           <h2 id={paperId}>{words.text("subjects.paper")}</h2>
-          <button
-            type="button"
-            aria-describedby={`${paperId}-names`}
-            onClick={() => {
-              paper?.clear();
-              navigate(PAPER);
-            }}
-          >
-            <Icon value="camera" />
-            {words.text("subjects.paper-open")}
-          </button>
+          <div className="nt-paper-acts">
+            <button
+              type="button"
+              aria-describedby={`${paperId}-names`}
+              onClick={() => {
+                paper?.clear();
+                navigate(PAPER);
+              }}
+            >
+              <Icon value="camera" />
+              {words.text("subjects.paper-open")}
+            </button>
+            {pages}
+          </div>
           <p id={`${paperId}-names`} className="nt-hint">
             {words.text("paper.names")}
           </p>
@@ -523,6 +531,9 @@ export function MySubjects({
       onRetry={retry}
       {...(open === undefined ? {} : { onContinue: () => navigate(TASK) })}
       next={<NextStep profileId={profileId} {...(device === undefined ? {} : { device })} />}
+      {...(device === undefined
+        ? {}
+        : { pages: <YourPages profileId={profileId} device={device} /> })}
       runs={runs}
       onLesson={(lessonRunId) => {
         const run = refs?.find((each) => each.lessonRunId === lessonRunId);

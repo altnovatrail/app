@@ -1773,7 +1773,13 @@ main .nt-paper > p {
   font-size: var(--nt-size-body);
   line-height: 1.4;
 }
-.nt-paper > button {
+.nt-paper-acts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+.nt-paper-acts > button {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;

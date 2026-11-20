@@ -26,6 +26,7 @@ import {
   shownTask,
   tutorActs,
   verdictMarks,
+  viewOnly,
   wavyOf,
   withBegun,
   withChange,
@@ -203,6 +204,24 @@ describe("what a Check of a task from paper came to", () => {
     expect(paperVerdictOf(items("unreadable", "unchecked"), undefined, false).kind).toBe(
       "unreadable",
     );
+    // The repeat of the Check that solved it: api erased its verdicts with the close (R101 api).
+    expect(paperVerdictOf([], undefined, true)).toEqual({
+      kind: "correct",
+      read: undefined,
+      parts: [],
+    });
+    expect(paperVerdictOf([], undefined, false).kind).toBe("unchecked");
+  });
+
+  it("takes a task that is over, as a page of the history keeps it, only to be looked at", () => {
+    const over = { ...begun(1), over: true };
+    expect(checkOver(over)).toBe(true);
+    expect(viewOnly(over)).toBe(true);
+    // Solved in this tab: its card stands, and so does the work under it.
+    const solved = { ...over, verdict: { kind: "correct", read: undefined, parts: [] } } as const;
+    expect(viewOnly(solved)).toBe(false);
+    expect(checkOver(begun(1))).toBe(false);
+    expect(viewOnly(begun(1))).toBe(false);
   });
 
   it("puts a tick or a cross by each answer whose place was read, on the context of its Check", () => {

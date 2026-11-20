@@ -25,6 +25,7 @@ import type {
 import type { ReadOutcome } from "../api/outcome.ts";
 import { outcomeText } from "../api/words.ts";
 import type { Words } from "../i18n/words.ts";
+import type { PaperSent } from "../storage/profile.ts";
 import { reasonKey, verdictKey } from "../task/attempt.ts";
 import { type Frame, pageOrder } from "./frame.ts";
 import { type PageTask, picked } from "./page.ts";
@@ -38,7 +39,7 @@ export interface BegunTask {
   /** The learner drew its frame. */
   readonly drawn: boolean;
   readonly crop: Blob;
-  /** The history of writing on its sheet and on its tracing paper, in the tab's memory. */
+  /** The history of writing on its sheet and on its tracing paper. */
   readonly history: readonly HistoryEvent[];
   /** Where its tracing paper lies and whether it is hidden; none till the learner moves it. */
   readonly tracing?: TracingState;
@@ -48,6 +49,10 @@ export interface BegunTask {
   readonly checked?: PaperSubmission;
   /** The wrong answers of the attempt by the answer to its last Check: "Explain differently" names them. */
   readonly wrongAnswers?: number;
+  /** Each Check that was answered: the context of its work and the history's length at its press. */
+  readonly sent?: readonly PaperSent[];
+  /** Its attempt is over — solved, or closed by api —, which a page of the history keeps. */
+  readonly over?: boolean;
 }
 
 /**
@@ -167,7 +172,8 @@ export type PaperVerdict =
  * The verdict of an answer to a Check of a task from paper, by each task's item, in the order of the
  * frame; a verdict the build knows not is none. A task with no key is unchecked and counts for
  * neither. Correct is whether api closed the attempt solved: a task with a key whose answer it could
- * not judge keeps it open, though no other is wrong.
+ * not judge keeps it open, though no other is wrong. A repeat of the Check that solved it holds no
+ * verdict of a task, which api erased with the close (R101 api): it is correct all the same.
  */
 export function paperVerdictOf(
   items: readonly ItemVerdict[],
@@ -175,6 +181,7 @@ export function paperVerdictOf(
   solved: boolean,
 ): PaperVerdict {
   if (outcome?.cause === Cause.NO_KEY) return { kind: "nokey" };
+  if (solved && items.length === 0) return { kind: "correct", read: undefined, parts: [] };
   const slots = items.map((item) => item.answerSlots[0]);
   const parts = slots.map(partOf);
   if (parts.some(({ verdict }) => verdict === "correct" || verdict === "not-yet")) {
@@ -205,11 +212,19 @@ function partOf(slot: AnswerSlotVerdict | undefined): PaperPart {
 
 /**
  * Whether a task's Check is over: it is solved, and its attempt closed, or it has no key, which a
- * Check again would not find.
+ * Check again would not find; or its attempt is over, as a page of the history may say.
  */
 export function checkOver(task: BegunTask): boolean {
   const kind = task.verdict?.kind;
-  return kind === "correct" || kind === "nokey";
+  return kind === "correct" || kind === "nokey" || task.over === true;
+}
+
+/**
+ * Whether a task is only to be looked at: its attempt is over, and no verdict of this tab's shows
+ * it solved — a task of a page of the history, or one api closed.
+ */
+export function viewOnly(task: BegunTask): boolean {
+  return task.over === true && task.verdict === undefined;
 }
 
 /**

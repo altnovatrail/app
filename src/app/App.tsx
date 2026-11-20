@@ -120,7 +120,7 @@ function LearnerRoutes({
   return (
     <AttemptProvider learner={learner}>
       <LessonProvider learner={learner}>
-        <PaperProvider>
+        <PaperProvider profileId={learner.profileId} device={device}>
           {route.screen === "task" ? (
             <TaskRoute
               profileId={learner.profileId}

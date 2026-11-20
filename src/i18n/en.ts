@@ -1243,6 +1243,20 @@ export const en = {
   "paper.tasks-open": "Tasks, {n} of {total}",
   /** At the list's head: back to the page, to pick more of its tasks. */
   "paper.add": "Add",
+  /** The button on the card "A task from my paper" that opens the profile's pages from paper kept on the device (R77). */
+  "paper.pages": "Your pages",
+  /** The heading of its pop-over. */
+  "paper.pages-title": "Your pages · on this device",
+  /** A page in it: when it was photographed, and how many tasks were begun on it. */
+  "paper.page": "{when} · {tasks}",
+  "paper.page-tasks": plural({
+    one: "{count} task",
+    other: "{count} tasks",
+  }),
+  /** A page that would not open: the device keeps it no more. */
+  "paper.page-gone": "This page isn't on this device any more",
+  /** Under the list: where the pages live and until when (privacy 4.1 spec). */
+  "paper.pages-kept": "Kept on this device until the profile is deleted, and in its export.",
   /** Check pressed with nothing written, on the sheet or on the task. */
   "paper.write-first": "Write your solution first",
   "paper.write-first-line": "Write it with the pen on the sheet or on the task, then Check.",
