@@ -130,7 +130,7 @@ export function LegalHome() {
  * The versions of a text, read in the language of the screen each time its page opens, past the
  * HTTP cache (R27); a failure is its words and Try again.
  */
-function useVersions(id: PageText) {
+export function useVersions(id: PageText) {
   const { language } = useLanguage();
   const read = useCallback(
     async (api: Api): Promise<Versions> => versionsOf(await readLegal(api, language), id),

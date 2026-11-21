@@ -142,8 +142,10 @@ export interface WelcomeScreenProps {
   readonly lead?: ReactNode;
   /** What stands in the top right corner: the language of the sign-in. */
   readonly corner?: ReactNode;
-  /** Opens the legal pages. */
+  /** Opens the legal pages, or a legal text's sheet. */
   readonly onLegal: () => void;
+  /** What stands over the screen: a legal text's sheet. */
+  readonly over?: ReactNode;
   readonly children: ReactNode;
 }
 
@@ -153,6 +155,7 @@ export function WelcomeScreen({
   lead,
   corner,
   onLegal,
+  over,
   children,
 }: WelcomeScreenProps) {
   const { words } = useLanguage();
@@ -175,6 +178,7 @@ export function WelcomeScreen({
           {words.text("legal.title")}
         </button>
       </div>
+      {over}
     </Screen>
   );
 }

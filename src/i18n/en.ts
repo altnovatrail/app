@@ -156,6 +156,8 @@ export const en = {
   "account.texts-note": "Each text is in English, the one in force, with its gist in your language",
   /** The gist of a legal text, in the language of the screen, above the text. */
   "legal.gist": "In short",
+  /** At the foot of a legal text's sheet: its page, with the whole text (R31). */
+  "legal.full": "Read the full text",
   /** On a screen in another language than English: the legal text in force is the English one. */
   "legal.english-in-force": "The text is in English, and the English text is the one in force",
   /** Above a translation of a legal text, which has no force of its own (R141 spec). */

@@ -1,12 +1,17 @@
 // The adult's Help (R148 spec; R63): behind its button at the top right of the home screen, a
 // pop-over that says three things — the tutor is an AI and a program checks every answer, and what
 // to do when the AI read the work wrongly; the name is made up, so no real names go into the work —
-// and leads to three pages of the app itself: Privacy Policy, Terms of Use and Accessibility. No
+// and leads to three texts of the app itself: Privacy Policy and Terms of Use, each a sheet over the
+// screen whose foot leads to its page (R69), and the page Accessibility. No
 // external link and no helpline: to an adult R127 spec gives Report a problem. A learner under 18,
 // whom the build has no profile for, would need a Help of their own.
+
+import { useState } from "react";
 import { useLearner } from "../account/AccountGate.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { ACCESSIBILITY, type LegalPage, legalPage } from "../legal/LegalPages.tsx";
+import { ReadLegalSheet } from "../legal/LegalSheet.tsx";
+import { isPageText, type PageText } from "../legal/texts.ts";
 import { BELOW_BAR } from "./hang.ts";
 import { PopOver } from "./PopOver.tsx";
 
@@ -21,6 +26,8 @@ const PAGES = [
 export function AdultHelp() {
   const chosen = useLearner();
   const { words } = useLanguage();
+  // The text whose sheet stands over the screen, once the pop-over has closed.
+  const [sheet, setSheet] = useState<PageText | undefined>(undefined);
   if (chosen?.learner.ageCategory !== "adult") return null;
   const title = words.text("icon.help");
   return (
@@ -46,7 +53,8 @@ export function AdultHelp() {
                   className="nt-link"
                   onClick={() => {
                     close();
-                    chosen.openLegal(legalPage(page));
+                    if (isPageText(page)) setSheet(page);
+                    else chosen.openLegal(legalPage(page));
                   }}
                 >
                   {words.text(key)}
@@ -56,6 +64,9 @@ export function AdultHelp() {
           </>
         )}
       </PopOver>
+      {sheet === undefined ? null : (
+        <ReadLegalSheet id={sheet} onClose={() => setSheet(undefined)} onPage={chosen.openLegal} />
+      )}
     </span>
   );
 }

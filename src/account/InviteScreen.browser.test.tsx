@@ -1,6 +1,6 @@
 // The invite code's screen with its texts in the browser (R27; R46; R61): the code in its four
 // boxes, whole before it goes on, and "Back" signing out; then the statement and the texts, each
-// name a link to its legal page; an acceptance holds for the versions it was given for and names
+// name a link that opens its sheet over the step, whose foot leads to its page; an acceptance holds for the versions it was given for and names
 // the current ones, never a next version, which this screen does not show; a refusal of a version
 // no longer current is said even with no text shown, and a code api did not take brings its step
 // back.
@@ -9,7 +9,7 @@ import {
   LegalTextSchema,
 } from "@altnovatrail/contracts/novatrail/api/v1/legal_pb.js";
 import { create } from "@bufbuild/protobuf";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 import { inLanguage } from "../test/language.tsx";
@@ -211,27 +211,49 @@ describe("the invite code's screen", () => {
     );
   });
 
-  it("leads from a text's name in the tick's line to its legal page, and shows no text itself", async () => {
+  it("opens a text's sheet from its name in the tick's line, whose foot leads to its page", async () => {
     const onLegal = vi.fn();
-    render(invite(read(2), async () => "done", { onLegal }));
+    render(invite(read(2, [policy(3, "2026-11-27")]), async () => "done", { onLegal }));
     await toAgree();
     const terms = screen.getByRole("link", { name: "Terms of Use" });
     const privacy = screen.getByRole("link", { name: "Privacy Policy" });
     expect(terms).toHaveAttribute("href", "#/legal/terms-of-use");
     expect(privacy).toHaveAttribute("href", "#/legal/privacy-policy");
-    await userEvent.click(terms);
-    expect(onLegal).toHaveBeenLastCalledWith("terms-of-use");
-    await userEvent.click(privacy);
-    expect(onLegal).toHaveBeenLastCalledWith("privacy-policy");
-    // The link does not tick the box whose line holds it.
-    expect(screen.getByRole("checkbox", ACCEPT)).not.toBeChecked();
-    // No text in place: its page shows it.
-    expect(screen.queryByRole("heading", { level: 2 })).toBeNull();
-    expect(document.querySelector("details, summary")).toBeNull();
+    // No text in place: its sheet shows its gist.
     expect(screen.queryByText("In short, version 2.")).toBeNull();
-    // The way at the card's foot opens the list of the legal pages.
+    await userEvent.click(privacy);
+    const sheet = within(await screen.findByRole("dialog", { name: "Privacy Policy" }));
+    expect(sheet.getByRole("heading", { level: 2, name: "Privacy Policy" })).toBeVisible();
+    expect(sheet.getByText("Version 2, in force since November 11, 2026")).toBeVisible();
+    expect(sheet.getByRole("region", { name: "In short" })).toHaveTextContent(
+      "In short, version 2.",
+    );
+    expect(sheet.getByText("Version 3 of this text applies from November 27, 2026")).toBeVisible();
+    expect(onLegal).not.toHaveBeenCalled();
+    await userEvent.click(sheet.getByRole("button", { name: "Read version 3" }));
+    expect(onLegal).toHaveBeenLastCalledWith({
+      screen: "legal",
+      parts: ["privacy-policy", "next"],
+    });
+    await userEvent.click(sheet.getByRole("button", { name: "Read the full text" }));
+    expect(onLegal).toHaveBeenLastCalledWith({ screen: "legal", parts: ["privacy-policy"] });
+    // Closed, the focus is back on the link, and the link has not ticked the box whose line holds it.
+    await userEvent.click(sheet.getByRole("button", { name: "Close" }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(privacy).toHaveFocus();
+    expect(screen.getByRole("checkbox", ACCEPT)).not.toBeChecked();
+    // A text with no version in force says so.
+    await userEvent.click(terms);
+    expect(
+      within(await screen.findByRole("dialog", { name: "Terms of Use" })).getByText(
+        "This copy of the app has no version of this text in force",
+      ),
+    ).toBeVisible();
+    await userEvent.keyboard("{Escape}");
+    expect(screen.queryByRole("dialog")).toBeNull();
+    // The way at the card's foot opens the policy's sheet, as the mockup's.
     await userEvent.click(screen.getByRole("button", { name: "Privacy and legal information" }));
-    expect(onLegal).toHaveBeenLastCalledWith();
+    expect(await screen.findByRole("dialog", { name: "Privacy Policy" })).toBeVisible();
   });
 
   it("takes the acceptance back when other versions are shown", async () => {

@@ -411,7 +411,7 @@ describe("the way in", () => {
     // Some twenty steps of the way in: under the load of the whole suite they outlast 15 s.
   }, 30_000);
 
-  it("leads from a Russian screen to the texts' pages with their translation, and reads them anew when api has newer ones", async () => {
+  it("leads from a Russian screen through the texts' sheets to their pages with their translation, and reads them anew when api has newer ones", async () => {
     const service = fakeSignIn("uid-1");
     let policy = 2;
     let down = true;
@@ -459,9 +459,16 @@ describe("the way in", () => {
       screen.getByText("Каждый текст — на английском, в силе именно он, а суть — на вашем языке"),
     ).toBeVisible();
     await userEvent.click(screen.getByRole("checkbox", { name: "Мне 18 лет или больше" }));
-    // A text's name opens its legal page: the gist in Russian, the line that the English text is in
-    // force, the translation and the text.
+    // A text's name opens its sheet over the step: the gist in Russian and the line that the English
+    // text is in force; its foot, the text's page: the translation and the text.
     await userEvent.click(screen.getByRole("link", { name: "политику конфиденциальности" }));
+    const sheet = within(
+      await screen.findByRole("dialog", { name: "Политика конфиденциальности" }),
+    );
+    expect(sheet.getByText("Мы храним мало.")).toHaveAttribute("lang", "ru");
+    expect(sheet.getByText("Текст — на английском, и в силе английский текст")).toBeVisible();
+    expect(window.location.hash).not.toBe("#/legal/privacy-policy");
+    await userEvent.click(sheet.getByRole("button", { name: "Читать полностью" }));
     expect(
       await screen.findByRole("heading", { level: 1, name: "Политика конфиденциальности" }),
     ).toBeTruthy();
@@ -484,6 +491,12 @@ describe("the way in", () => {
     expect(screen.getByRole("checkbox", { name: "Мне 18 лет или больше" })).toBeChecked();
     // The terms' page, with its table and its header, once the step has read the texts again.
     await userEvent.click(await screen.findByRole("link", { name: "условия использования" }));
+    await userEvent.click(
+      within(await screen.findByRole("dialog", { name: "Условия использования" })).getByRole(
+        "button",
+        { name: "Читать полностью" },
+      ),
+    );
     expect(window.location.hash).toBe("#/legal/terms-of-use");
     expect(await screen.findByRole("columnheader", { name: "Who" })).toBeTruthy();
     expect(screen.getByRole("cell", { name: "Learn" })).toBeTruthy();
@@ -934,7 +947,7 @@ describe("the legal pages", () => {
     window.location.hash = "";
   });
 
-  it("open from the sign-in screen before signing in, read the policy with no token, and close home", async () => {
+  it("open from the policy's sheet on the sign-in screen before signing in, read the policy with no token, and close home", async () => {
     const service = fakeSignIn(null);
     const read: string[] = [];
     const { asked } = renderApp(
@@ -946,19 +959,19 @@ describe("the legal pages", () => {
       },
       service,
     );
+    // The card's foot opens the policy's sheet over the screen, as the mockup's.
     await userEvent.click(
       await screen.findByRole("button", { name: "Privacy and legal information" }),
     );
-    expect(
-      await screen.findByRole("heading", { level: 1, name: "Privacy and legal information" }),
-    ).toBeTruthy();
-    expect(window.location.hash).toBe("#/legal");
-    await userEvent.click(screen.getByRole("button", { name: "Privacy Policy" }));
+    const sheet = within(await screen.findByRole("dialog", { name: "Privacy Policy" }));
+    expect(sheet.getByText("We keep little.")).toBeVisible();
+    expect(window.location.hash).not.toBe("#/legal");
+    await userEvent.click(sheet.getByRole("button", { name: "Read the full text" }));
     expect(await screen.findByRole("heading", { level: 1, name: "Privacy Policy" })).toBeTruthy();
     expect(await screen.findByText("We keep little.")).toBeTruthy();
     expect(window.location.hash).toBe("#/legal/privacy-policy");
-    expect(read).toEqual(["en"]);
-    expect(asked).toEqual(["GetLegalTexts"]);
+    expect(read).toEqual(["en", "en"]);
+    expect(asked).toEqual(["GetLegalTexts", "GetLegalTexts"]);
     await userEvent.click(screen.getByRole("button", { name: "Back to the list" }));
     expect(window.location.hash).toBe("#/legal");
     await userEvent.click(await screen.findByRole("button", { name: "Close" }));

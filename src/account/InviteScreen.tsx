@@ -1,8 +1,9 @@
 // The invite code of a user with no account, in two steps, as the mockup's `invite` and `agree`
 // (R27, R61): the code in four boxes of four characters, and "Back" signing out; then the owner's
 // statement of being 18 or older (R118 spec) and their acceptance of the privacy policy and the terms
-// of use in force (R131 spec), each name a link to its legal page, which shows its next version too
-// (R46). Nothing goes to api before "Create account", which sends the code with the statement and
+// of use in force (R131 spec), each name a link that opens the text's sheet over the step, whose foot
+// leads to its page, and which shows its next version too (R46); the card's foot opens the privacy
+// policy's sheet, as the mockup's does. Nothing goes to api before "Create account", which sends the code with the statement and
 // the versions in force: a code api does not take brings the first step back with its line. While no
 // text is in force there is nothing to accept; while the texts are not read, nothing is sent. The
 // acceptance holds for the versions it was given for: other versions read take it back. A step's
@@ -25,10 +26,12 @@ import { ReadFailure } from "../api/ReadFailure.tsx";
 import { described } from "../app/described.ts";
 import { formatHash } from "../app/hash.ts";
 import { Icon } from "../app/Icon.tsx";
+import type { Route } from "../app/router.ts";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { Phrase } from "../i18n/Phrase.tsx";
 import { legalPage } from "../legal/LegalPages.tsx";
-import { type Legal, type PageText, refsOf } from "../legal/texts.ts";
+import { LegalSheet } from "../legal/LegalSheet.tsx";
+import { type Legal, type PageText, refsOf, versionsOf } from "../legal/texts.ts";
 import { WelcomeScreen } from "../signin/Welcome.tsx";
 import { FormFailure } from "./FormFailure.tsx";
 
@@ -54,8 +57,8 @@ export interface InviteScreenProps {
     code: string,
     accepted: readonly Pick<LegalTextRef, "id" | "version">[],
   ) => Promise<"done" | "code-not-accepted" | "text-not-current" | Failure>;
-  /** Opens the legal pages: their list, or a text's page. */
-  readonly onLegal: (page?: PageText) => void;
+  /** Opens a text's page, from its sheet. */
+  readonly onLegal: (page: Route) => void;
   /** "Back" from the code: the sign-in comes again. */
   readonly onSignOut: () => void;
 }
@@ -111,6 +114,8 @@ export function InviteScreen({ texts, draft, onCreate, onLegal, onSignOut }: Inv
   );
   const [failure, setFailure] = useState<Failure | undefined>(undefined);
   const [pending, setPending] = useState(false);
+  // The text whose sheet stands over the step: the texts the step has read are its.
+  const [sheet, setSheet] = useState<PageText | undefined>(undefined);
   const given = adult && (shown.length === 0 || accepted);
   useEffect(() => {
     if (draft !== undefined) draft.current = { step, code, adult, acceptedFor };
@@ -158,6 +163,21 @@ export function InviteScreen({ texts, draft, onCreate, onLegal, onSignOut }: Inv
     }
   }
 
+  const sheetShown =
+    sheet === undefined ? null : (
+      <LegalSheet
+        id={sheet}
+        versions={
+          texts.status === "done"
+            ? { status: "done", value: versionsOf(texts.value, sheet), retry: texts.retry }
+            : texts
+        }
+        onClose={() => setSheet(undefined)}
+        onPage={onLegal}
+      />
+    );
+  const policy = () => setSheet("privacy-policy");
+
   if (step === "code") {
     const groups = codeGroups(code);
     const filled = groups.join("").length;
@@ -166,9 +186,10 @@ export function InviteScreen({ texts, draft, onCreate, onLegal, onSignOut }: Inv
     return (
       <WelcomeScreen
         key="code"
+        over={sheetShown}
         title={words.text("account.invite-title")}
         lead={<BackLink onBack={onSignOut} />}
-        onLegal={() => onLegal()}
+        onLegal={policy}
       >
         <p className="nt-lead">{words.text("account.invite-intro")}</p>
         <form noValidate onSubmit={next}>
@@ -246,9 +267,10 @@ export function InviteScreen({ texts, draft, onCreate, onLegal, onSignOut }: Inv
   return (
     <WelcomeScreen
       key="agree"
+      over={sheetShown}
       title={words.text("account.agree-title")}
       lead={<BackLink onBack={() => setStep("code")} />}
-      onLegal={() => onLegal()}
+      onLegal={policy}
     >
       <p className="nt-lead">{words.text("account.agree-intro")}</p>
       <form noValidate onSubmit={(event) => void submit(event)}>
@@ -304,12 +326,12 @@ export function InviteScreen({ texts, draft, onCreate, onLegal, onSignOut }: Inv
                   id="account.texts"
                   values={{
                     terms: (
-                      <TextLink text="terms-of-use" onLegal={onLegal}>
+                      <TextLink text="terms-of-use" onOpen={setSheet}>
                         {words.text("account.texts-terms")}
                       </TextLink>
                     ),
                     policy: (
-                      <TextLink text="privacy-policy" onLegal={onLegal}>
+                      <TextLink text="privacy-policy" onOpen={setSheet}>
                         {words.text("account.texts-policy")}
                       </TextLink>
                     ),
@@ -374,14 +396,17 @@ function Tick({ children }: { readonly children: ReactNode }) {
   );
 }
 
-/** A text's name in the checkbox's line, inline in it: a link to its legal page (R31). */
+/**
+ * A text's name in the checkbox's line, inline in it: a link to its legal page (R31), which opens
+ * the text's sheet over the step.
+ */
 function TextLink({
   text,
-  onLegal,
+  onOpen,
   children,
 }: {
   readonly text: PageText;
-  readonly onLegal: (page: PageText) => void;
+  readonly onOpen: (page: PageText) => void;
   readonly children: string;
 }) {
   return (
@@ -390,7 +415,7 @@ function TextLink({
       className="nt-inline"
       onClick={(event) => {
         event.preventDefault();
-        onLegal(text);
+        onOpen(text);
       }}
     >
       {children}

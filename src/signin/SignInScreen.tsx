@@ -3,14 +3,17 @@
 // Google's own — its light theme and its "G", as Google's rules ask (R12 spec) — saying so while
 // the window is open. What came of the last window is a line below its button; a project that does
 // not take this copy has the line for whoever deployed it. Below, the line that accounts are for
-// grown-ups alone, and at the card's foot the way to the legal pages, by a button that holds the
-// word "privacy" (R31).
+// grown-ups alone, and at the card's foot the way to the legal texts, by a button that holds the
+// word "privacy" (R31): the privacy policy's sheet over the screen, as the mockup's, whose foot leads
+// to its page and from there to the rest.
 import { useState } from "react";
 import { Spark } from "../app/Brand.tsx";
+import type { Route } from "../app/router.ts";
 import { operatorLine } from "../boot/Screens.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { LanguagePill } from "../i18n/LanguagePill.tsx";
 import type { Words } from "../i18n/words.ts";
+import { ReadLegalSheet } from "../legal/LegalSheet.tsx";
 import googleG from "./google-g.svg";
 import type { SignInResult } from "./service.ts";
 import { WelcomeScreen } from "./Welcome.tsx";
@@ -22,8 +25,8 @@ export interface SignInScreenProps {
   readonly result?: SignInResult;
   /** The last sign-out did not erase all of the account. */
   readonly left?: boolean;
-  /** Opens the legal pages. */
-  readonly onLegal: () => void;
+  /** Opens a legal page, from the privacy policy's sheet. */
+  readonly onLegal: (page: Route) => void;
 }
 
 function resultText(result: SignInResult, words: Words): string | undefined {
@@ -44,6 +47,7 @@ function resultText(result: SignInResult, words: Words): string | undefined {
 export function SignInScreen({ onSignIn, result, left = false, onLegal }: SignInScreenProps) {
   const { words } = useLanguage();
   const [pending, setPending] = useState(false);
+  const [sheet, setSheet] = useState(false);
   const line = result === undefined ? undefined : resultText(result, words);
   return (
     <WelcomeScreen
@@ -55,7 +59,12 @@ export function SignInScreen({ onSignIn, result, left = false, onLegal }: SignIn
         </span>
       }
       corner={<LanguagePill />}
-      onLegal={onLegal}
+      onLegal={() => setSheet(true)}
+      over={
+        sheet ? (
+          <ReadLegalSheet id="privacy-policy" onClose={() => setSheet(false)} onPage={onLegal} />
+        ) : null
+      }
     >
       <p className="nt-lead">{words.text("signin.intro")}</p>
       {left ? <p role="status">{words.text("signout.left")}</p> : null}

@@ -44,7 +44,7 @@ import { Held, Offline, ReadFailed, StorageGone } from "../boot/Screens.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { LearnerLanguage } from "../i18n/LearnerLanguage.tsx";
 import { LegalPages, legalPage, OPERATOR } from "../legal/LegalPages.tsx";
-import { accountTexts, type Legal, type PageText, readLegal } from "../legal/texts.ts";
+import { accountTexts, type Legal, readLegal } from "../legal/texts.ts";
 import { KeyHolderProvider, keyed, useTabHolder } from "../ownkey/OwnKeyContext.tsx";
 import { LicensePages } from "../packages/LicensePage.tsx";
 import { usePackages } from "../packages/PackagesContext.tsx";
@@ -205,7 +205,7 @@ export function AccountGate({ children }: { readonly children: ReactNode }) {
           }}
           {...(state.result === undefined ? {} : { result: state.result })}
           left={left}
-          onLegal={() => openLegal(HOME)}
+          onLegal={(page) => openLegal(HOME, page)}
         />
       );
     case "offline":
@@ -221,7 +221,7 @@ export function AccountGate({ children }: { readonly children: ReactNode }) {
         <InviteStep
           session={session}
           draft={inviteDraft}
-          onLegal={(page) => openLegal(HOME, page === undefined ? undefined : legalPage(page))}
+          onLegal={(page) => openLegal(HOME, page)}
         />
       );
     case "owner-profile":
@@ -275,7 +275,7 @@ function InviteStep({
 }: {
   readonly session: Session;
   readonly draft: RefObject<InviteDraft | undefined>;
-  readonly onLegal: (page?: PageText) => void;
+  readonly onLegal: (page: Route) => void;
 }) {
   const { language } = useLanguage();
   const read = useCallback(

@@ -557,7 +557,17 @@ const ACCOUNT_TEXTS: TextsRead = {
         summaryLanguage: "en",
       }),
     ),
-    next: [],
+    // The policy's next version, as the mockup's, which its sheet names.
+    next: [
+      create(LegalTextSchema, {
+        id: "privacy-policy",
+        version: 2,
+        inForceSince: "2026-11-27",
+        body: "# A text\n\nIts new words.\n",
+        summary: "In short, its new words.",
+        summaryLanguage: "en",
+      }),
+    ],
   },
   retry: () => {},
 };
@@ -865,19 +875,23 @@ function legalShown(page: string) {
     );
 }
 
-/** A text's page once its version has come. */
-const versionShown = () => screen.findByText(/^Version \d, in force since /);
+/** A text's sheet over the statement, opened by its name's link, as the mockup's. */
+function sheetOver(link: string) {
+  return async () => {
+    await agreeing();
+    await userEvent.click(screen.getByRole("link", { name: link }));
+    await screen.findByRole("dialog", { name: link });
+  };
+}
 
 /**
- * Why a legal page differs from the mockup's sheet: the way back to their list, which the mockup
- * has no list for, before the heading; the whole text open below the gist, not behind "Read the
- * full text"; and the texts api gives, where the mockup's are a sample (R31; R69).
+ * Why the page Accessibility differs from the mockup's sheet: the way back to the list of the legal
+ * pages, which the mockup has no list for, before the heading; the whole page open, as it is one of
+ * its own (R31; R69). The texts' sheets give the texts api gives, where the mockup's are a sample.
  */
 const LISTED = "the way back to the list of the legal pages before the heading (R31; R69)";
-const OPEN = 'the whole text open below its gist, not behind "Read the full text" (R31; R69)';
+const OPEN = 'the whole page open, not behind "Read the full text" (R31; R69)';
 const FROM_API = "the texts come from api, the mockup's are a sample (its «Where it differs»)";
-/** Why the gist stands lower on a phone: the chip's words wrap beside the way back. */
-const WRAPPED = `${LISTED}: the chip wraps on a phone`;
 
 /** The sheet, its heading, the chip under it and its close, of a legal page of that heading. */
 function sheetOf(title: string): readonly Region[] {
@@ -918,41 +932,73 @@ function sheetOf(title: string): readonly Region[] {
   ];
 }
 
-/** A text's gist below its caption, and the line that the English text is the one in force. */
-const GIST: readonly Region[] = [
-  {
-    name: "the gist's caption",
-    mockup: { css: ".ph-legal > div:nth-child(2)" },
-    app: { css: ".nt-gist > .nt-sheet-caption" },
-    followsText: "start",
-    differs: { what: ["y"], by: WRAPPED },
-  },
-  {
-    name: "the gist",
-    mockup: { css: ".ph-gist" },
-    app: { css: ".nt-gist > p:last-child" },
-    differs: { what: ["y", "height"], by: `${FROM_API}; ${WRAPPED}` },
-  },
-  {
-    name: "the English text in force",
-    mockup: { text: "The English text is the one in force" },
-    app: { css: ".nt-in-force" },
-    differs: { what: ["missing"], by: "the line is on a screen in another language alone (R27)" },
-  },
-];
+/** A text's sheet over the screen: its card, head, gist, and its foot. */
+function textSheet(title: string): readonly Region[] {
+  return [
+    {
+      name: "the sheet",
+      mockup: { css: ".ph-legal" },
+      app: { css: "dialog.nt-legal-sheet" },
+      differs: { what: ["y", "height"], by: FROM_API },
+    },
+    {
+      name: "the heading",
+      mockup: { css: ".ph-legal > div:first-child > div > span:first-child" },
+      app: { role: "heading", name: title },
+      followsText: "start",
+    },
+    {
+      name: "the chip",
+      mockup: { css: ".ph-legal .ph-chip" },
+      app: { css: ".nt-legal-sheet .nt-version-chip" },
+      followsText: "start",
+    },
+    {
+      name: "the close",
+      mockup: { css: ".ph-legal .ib" },
+      app: { role: "button", name: "Close" },
+      differs: { what: ["font-size", "font-weight"], by: ICON_ALONE },
+    },
+    {
+      name: "the gist's caption",
+      mockup: { css: ".ph-legal > div:nth-child(2)" },
+      app: { css: ".nt-legal-sheet .nt-sheet-caption" },
+      followsText: "start",
+    },
+    {
+      name: "the gist",
+      mockup: { css: ".ph-gist" },
+      app: { css: ".nt-legal-gist" },
+      differs: { what: ["y", "height"], by: FROM_API },
+    },
+    {
+      name: "the English text in force",
+      mockup: { text: "The English text is the one in force" },
+      app: { css: ".nt-in-force" },
+      differs: { what: ["missing"], by: "the line is on a screen in another language alone (R27)" },
+    },
+    {
+      name: "Read the full text",
+      mockup: { role: "button", name: "Read the full text" },
+      app: { role: "button", name: "Read the full text" },
+      differs: { what: ["y"], by: FROM_API },
+      // The link's blue of app, ACCENT_TEXT below, which is defined after this list is drawn.
+      contrast: [{ property: "colour", mockup: "#0071e3", app: "#0066cc" }],
+    },
+  ];
+}
 
 const LEGAL_TEXTS: readonly Compared[] = [
   {
     state: "legal-privacy",
-    draw: legalShown("privacy-policy"),
-    settle: versionShown,
+    draw: invite,
+    settle: sheetOver("Privacy Policy"),
     regions: [
-      ...sheetOf("Privacy Policy"),
-      ...GIST,
+      ...textSheet("Privacy Policy"),
       {
         name: "the next version",
         mockup: { css: '.ph-legal > div[style*="F5F5F7"]' },
-        app: { css: ".nt-sheet-note" },
+        app: { css: ".nt-legal-sheet .nt-sheet-note" },
         differs: {
           what: ["y", "height"],
           by: `${FROM_API}; the way to the next version's page in it (R46)`,
@@ -962,9 +1008,9 @@ const LEGAL_TEXTS: readonly Compared[] = [
   },
   {
     state: "legal-terms",
-    draw: legalShown("terms-of-use"),
-    settle: versionShown,
-    regions: [...sheetOf("Terms of Use"), ...GIST],
+    draw: invite,
+    settle: sheetOver("Terms of Use"),
+    regions: textSheet("Terms of Use"),
   },
   {
     state: "legal-access",
