@@ -196,11 +196,10 @@ describe("the learner's bar", () => {
       expect(screen.queryByRole("banner")).toBeNull();
       cleanup();
     }
-    for (const shown of ["essays"]) {
-      renderBar(shown);
-      expect(screen.getByRole("button", { name: "Switch learner" })).toBeVisible();
-      expect(screen.queryByRole("button", { name: "Help" })).toBeNull();
-      cleanup();
-    }
+    // Any other screen, as one yet to come, keeps a way to switch (R63).
+    renderBar("adults");
+    expect(screen.getByRole("button", { name: "Switch learner" })).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Help" })).toBeNull();
+    cleanup();
   });
 });

@@ -7,20 +7,18 @@
 // (R113 spec; R30). After the profiles, the voices of the device and on Android and Linux the leave
 // for voicing (R07; ../voice/DeviceVoices.tsx). At the owner profile, its own key when it is kept
 // here, by its provider and last four, and "Remove key" — the action of the page Own AI key (R47).
-// Erasing a profile's data takes its key from memory too. Each essay a profile keeps here, by when
-// it was begun and the first paragraph of its task, with its own Erase (R04, R53).
+// Erasing a profile's data takes its key from memory too.
 import type { Profile } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { Avatar } from "../account/Avatar.tsx";
-import { firstParagraph } from "../essays/EssaysScreen.tsx";
-import { dateTimeFormat, sizeText } from "../i18n/intl.ts";
+import { sizeText } from "../i18n/intl.ts";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { keyed, useHeldKey, useKeyHolder } from "../ownkey/OwnKeyContext.tsx";
 import { type SiteStorage, siteStorage } from "../storage/browser.ts";
 import type { Device } from "../storage/device.ts";
 import { eraseProfile } from "../storage/erase.ts";
 import { keptKey } from "../storage/ownkey.ts";
-import { type Essay, openProfile, profileUsage, type Usage } from "../storage/profile.ts";
+import { profileUsage, type Usage } from "../storage/profile.ts";
 import { DeviceVoices } from "../voice/DeviceVoices.tsx";
 import { inOrder } from "./order.ts";
 import { SectionScreen } from "./SectionScreen.tsx";
@@ -196,85 +194,6 @@ function KeptKeyLine({
   );
 }
 
-/** The essays a profile keeps on this device, each with its Erase; nothing while there are none. */
-function EssaysOnDevice({
-  device,
-  profileId,
-  read,
-  onErased,
-}: {
-  readonly device: Device;
-  readonly profileId: string;
-  /** What the page read of the profile: the essays are read again with it. */
-  readonly read: OnDevice | undefined;
-  readonly onErased: () => void;
-}) {
-  const { language, words } = useLanguage();
-  const [essays, setEssays] = useState<readonly Essay[]>([]);
-  const [said, setSaid] = useState<Said | undefined>(undefined);
-  const count = read?.kind === "kept" ? read.usage.essays : 0;
-  useEffect(() => {
-    let current = true;
-    // What the page could not read leaves the essays listed as they were, to erase still.
-    if (read?.kind !== "kept") return;
-    if (read.usage.essays === 0) {
-      setEssays([]);
-      return;
-    }
-    void (async () => (await openProfile(device, profileId))?.essays() ?? [])().then(
-      (found) => {
-        if (current) setEssays(found);
-      },
-      () => {},
-    );
-    return () => {
-      current = false;
-    };
-  }, [device, profileId, read]);
-  const when = dateTimeFormat(language, { dateStyle: "medium", timeStyle: "short" });
-  return (
-    <>
-      {count === 0 ? null : <p>{words.text("device.essays", { count })}</p>}
-      {essays.length === 0 ? null : (
-        <ul className="nt-cards">
-          {essays.map((essay) => {
-            const date = when.format(essay.startedAt);
-            const first = firstParagraph(essay.task);
-            return (
-              <li key={essay.attemptId} className="nt-card">
-                <p>{words.text("device.essay", { date })}</p>
-                {first === undefined ? null : (
-                  <p
-                    className="nt-essay-first"
-                    {...(essay.language === undefined ? {} : { lang: essay.language })}
-                  >
-                    {first}
-                  </p>
-                )}
-                <Erase
-                  label={words.text("device.erase-essay")}
-                  question={words.text("device.erase-essay-confirm", { date })}
-                  onErase={async () => {
-                    setSaid(undefined);
-                    try {
-                      await (await openProfile(device, profileId))?.eraseEssay(essay.attemptId);
-                      setSaid({ status: words.text("device.erased") });
-                      onErased();
-                    } catch {
-                      setSaid({ alert: words.text("device.erase-failed") });
-                    }
-                  }}
-                />
-              </li>
-            );
-          })}
-        </ul>
-      )}
-      {count === 0 && said === undefined ? null : <Saying said={said} />}
-    </>
-  );
-}
-
 /** A profile on this device: what it keeps here, and its erasure. */
 function ProfileOnDevice({
   device,
@@ -317,12 +236,6 @@ function ProfileOnDevice({
       {kept?.kind === "unreadable" || (kept?.kind === "kept" && kept.usage.bytes === undefined) ? (
         <p>{words.text("device.unreadable")}</p>
       ) : null}
-      <EssaysOnDevice
-        device={device}
-        profileId={profile.profileId}
-        read={kept}
-        onErased={onErased}
-      />
       {keyed(profile) ? (
         <KeptKeyLine device={device} profileId={profile.profileId} read={kept} />
       ) : null}

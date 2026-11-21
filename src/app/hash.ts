@@ -52,12 +52,6 @@ export const TUTOR: Route = { screen: "tutor", parts: [] };
 export const SKILL_MAP: Route = { screen: "skill-map", parts: [] };
 
 /**
- * "My essays", where the learner reads again the essays this device keeps (R53): `#/essays`, the
- * essay opened in memory, as the hash names no attempt.
- */
-export const ESSAYS: Route = { screen: "essays", parts: [] };
-
-/**
  * A task from the learner's paper (R71): `#/paper`, the camera, the tasks found on the page
  * photographed, and the tasks begun, from memory, as the hash names no page and no attempt.
  */
@@ -73,7 +67,6 @@ export const SCREENS: ReadonlySet<string> = new Set([
   MODULE_LICENSE.screen,
   TUTOR.screen,
   SKILL_MAP.screen,
-  ESSAYS.screen,
   PAPER.screen,
 ]);
 

@@ -1,8 +1,9 @@
 // The screen of an essay in the browser, with the canvas element itself (R53): the reminder to
 // write no names before each submission, SubmitEssay with the crop and one key for a check and its
-// repeat, each way a submission ends, the essay kept on the device with its crop, what was read and
-// the feedback, Done once it was sent, an attempt api closed meanwhile, and "Report a problem" at
-// the feedback — with api on connect-es's router and the storage on the device's memory.
+// repeat, each way a submission ends, what was read and the feedback while the attempt is open, the
+// context of each submission kept with the attempt and put on the server, Done once it was sent,
+// the work off the device at the end, an attempt api closed meanwhile, and "Report a problem" at the
+// feedback — with api on connect-es's router and the storage on the device's memory.
 import "@altnovatrail/canvas";
 import {
   Mode,
@@ -117,8 +118,6 @@ interface Setup {
   task?: open.Task;
   /** The history this device keeps; none, and the sheet is blank. */
   history?: readonly HistoryEvent[];
-  /** What the device keeps of the essay's submissions before the screen opens. */
-  kept?: boolean;
   /** How many submissions api counts. */
   submissions?: number;
   /** The answer to a submission, or a throw in place of it. */
@@ -149,15 +148,7 @@ async function renderEssay(setup: Setup = {}) {
   if (setup.history !== undefined) {
     const profile = await addProfile(device, "p1");
     await profile?.beginAttempt({ attemptId: "a1", digest: D1, task });
-    await profile?.beginEssay({ attemptId: "a1", digest: D1, task }, "en");
     await profile?.replaceHistory("a1", setup.history);
-    if (setup.kept === true) {
-      await profile?.addEssaySubmission("a1", new Blob([new Uint8Array(PNG)]), {
-        end: "feedback",
-        text: "The umbrella sighed.",
-        feedback: "Kept from before.",
-      });
-    }
   }
   const submitted: SubmitEssayRequest[] = [];
   const dones: DoneRequest[] = [];
@@ -333,13 +324,14 @@ const found = async () => {
   }
   return shown();
 };
-const essayOf = async (device: Device) => (await openProfile(device, "p1"))?.essay("a1");
+/** What the device keeps of the attempt of the essay; none once it is over. */
+const keptOf = async (device: Device) => (await openProfile(device, "p1"))?.readAttempt("a1");
 
 // Each test's p1 is another profile: what one put is no copy for the next.
 afterEach(() => forgetPuts("p1"));
 
 describe("the screen of an essay", () => {
-  it("reminds to write no names, sends the crop and shows the feedback, which the device keeps", async () => {
+  it("reminds to write no names, sends the crop and shows the feedback, and keeps the submission's context alone", async () => {
     const { submitted, device } = await renderEssay({ history: WRITTEN });
     await vi.waitFor(() => expect(check()).toHaveAttribute("aria-disabled", "false"));
     const reminder = "Don't write your name or the real names of people you know";
@@ -369,15 +361,16 @@ describe("the screen of an essay", () => {
     await vi.waitFor(() => expect(done()).toHaveAttribute("aria-disabled", "false"));
     // No report for a learner who is not of the category adult.
     expect(panel().queryByRole("button", { name: "Report a problem" })).toBeNull();
-    await vi.waitFor(async () => expect((await essayOf(device))?.sent).toHaveLength(1));
-    const kept = (await essayOf(device))?.sent[0];
-    expect(kept).toMatchObject({
-      end: "feedback",
-      text: "The umbrella spoke.",
-      feedback: "Each sentence makes a reader ask why.",
+    // The device keeps the context of the submission and the history's length, for the work on the
+    // server, and neither the crop nor the words: the screen holds those (R53).
+    await vi.waitFor(async () => expect((await keptOf(device))?.submissions).toHaveLength(1));
+    const [kept] = (await keptOf(device))?.submissions ?? [];
+    expect(kept).toEqual({
+      context: expect.objectContaining({ crop: expect.any(Object) }),
+      historyLength: WRITTEN.length,
+      work: undefined,
     });
-    const bytes = new Uint8Array((await kept?.crop?.arrayBuffer()) ?? new ArrayBuffer(0));
-    expect([...bytes.slice(0, 4)]).toEqual(PNG);
+    expect(JSON.stringify(kept)).not.toContain("Each sentence makes a reader ask why.");
   });
 
   it("puts the essay on the server at each submission, with its context, and at Done only what changed, while storage is on", async () => {
@@ -390,16 +383,17 @@ describe("the screen of an essay", () => {
     expect(JSON.parse(decoder.decode(first?.work?.history))).toEqual(WRITTEN);
     expect(first?.work?.submissions.map((one) => one.historyLength)).toEqual([WRITTEN.length]);
     const context = JSON.parse(decoder.decode(first?.work?.submissions[0]?.context));
-    expect(context).toEqual((await essayOf(device))?.sent[0]?.context);
+    expect(context).toEqual((await keptOf(device))?.submissions?.[0]?.context);
+    await vi.waitFor(async () =>
+      expect((await keptOf(device))?.attempt.stored).toEqual({
+        history: WRITTEN.length,
+        submissions: 1,
+      }),
+    );
     await vi.waitFor(() => expect(done()).toHaveAttribute("aria-disabled", "false"));
     await userEvent.click(done());
-    // The essay outlives its attempt on the device, and its mark says the server keeps all of it:
-    // Done read the work the server keeps already.
-    await vi.waitFor(async () => {
-      const essay = await essayOf(device);
-      expect(essay?.ended).toBe(true);
-      expect(essay?.stored).toEqual({ history: WRITTEN.length, submissions: 1 });
-    });
+    // Done read the work the server keeps already, and the attempt's work leaves the device.
+    await vi.waitFor(async () => expect(await keptOf(device)).toBeUndefined());
     expect(puts).toHaveLength(1);
   });
 
@@ -459,13 +453,8 @@ describe("the screen of an essay", () => {
     expect(screen.queryByRole("heading", { name: "What was read" })).toBeNull();
     await userEvent.click(check());
     expect(await (await found()).findByText("The tutor can't answer right now")).toBeVisible();
-    await vi.waitFor(async () =>
-      expect((await essayOf(device))?.sent.map((one) => one.end)).toEqual([
-        "feedback",
-        "unreadable",
-        "unchecked",
-      ]),
-    );
+    // Each submission is the attempt's, however it ended.
+    await vi.waitFor(async () => expect((await keptOf(device))?.submissions).toHaveLength(3));
   });
 
   it("sends the same work again with the same key", async () => {
@@ -642,7 +631,7 @@ describe("the screen of an essay", () => {
     ).toBeVisible();
   });
 
-  it("finishes by Done: the criteria and the solution, and the essay stays, ended", async () => {
+  it("finishes by Done: the criteria and the solution, and the work leaves the device", async () => {
     const { dones, device, attempts } = await renderEssay({ history: WRITTEN, submissions: 1 });
     await vi.waitFor(() => expect(done()).toHaveAttribute("aria-disabled", "false"));
     await userEvent.click(done());
@@ -653,7 +642,7 @@ describe("the screen of an essay", () => {
     expect(screen.queryByRole("button", { name: "Check" })).toBeNull();
     expect(dones).toHaveLength(1);
     expect(attempts).toEqual([undefined]);
-    await vi.waitFor(async () => expect((await essayOf(device))?.ended).toBe(true));
+    await vi.waitFor(async () => expect(await keptOf(device)).toBeUndefined());
   });
 
   it("finishes by the Done of the card of the feedback, and shows the essay read meanwhile", async () => {
@@ -697,14 +686,14 @@ describe("the screen of an essay", () => {
     expect(await screen.findByText("Nothing was done on it for 7 days")).toBeVisible();
   });
 
-  it("goes on with what this device kept: the last feedback, and Done open", async () => {
-    await renderEssay({ history: WRITTEN, kept: true });
-    expect(await (await found()).findByText("Kept from before.")).toBeVisible();
-    expect(screen.getByText("The umbrella sighed.")).toBeVisible();
-    expect(done()).toHaveAttribute("aria-disabled", "false");
+  it("opens again with Done open by api's count, and no feedback, which the server keeps none of", async () => {
+    await renderEssay({ history: WRITTEN, submissions: 1 });
+    await vi.waitFor(() => expect(done()).toHaveAttribute("aria-disabled", "false"));
+    expect(card()).toBeNull();
+    expect(screen.queryByRole("heading", { name: "What was read" })).toBeNull();
   });
 
-  it("keeps the feedback of a submission api closed the attempt with, and says it is over", async () => {
+  it("says it is over when api closed the attempt with a submission, and the work leaves the device", async () => {
     const { device } = await renderEssay({
       history: WRITTEN,
       answer: () => ({
@@ -716,9 +705,7 @@ describe("the screen of an essay", () => {
     await vi.waitFor(() => expect(check()).toHaveAttribute("aria-disabled", "false"));
     await userEvent.click(check());
     expect(await screen.findByText("Nothing was done on it for 7 days")).toBeVisible();
-    const kept = await essayOf(device);
-    expect(kept?.sent[0]?.feedback).toBe("Late but here.");
-    expect(kept?.ended).toBe(true);
+    await vi.waitFor(async () => expect(await keptOf(device)).toBeUndefined());
   });
 
   it("offers an adult to report a problem with the feedback", async () => {

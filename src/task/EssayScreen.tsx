@@ -145,7 +145,7 @@ export function EssayScreen(props: EssayScreenProps) {
       underCanvas={
         props.text === undefined ? null : (
           <section className="nt-essay-text">
-            <h2>{words.text("essays.text")}</h2>
+            <h2>{words.text("task.essay-text")}</h2>
             <p {...lang}>{props.text}</p>
           </section>
         )

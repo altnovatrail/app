@@ -328,26 +328,27 @@ describe("PutWork", () => {
 });
 
 describe("switching the storage on", () => {
-  it("sends every work the profile keeps: the attempts and the essays", async () => {
+  it("sends every work the profile keeps, an essay's with the contexts of its submissions", async () => {
     const profile = await profileWithWork();
     await profile.beginAttempt({ attemptId: "e1", digest: "d1" });
-    await profile.beginEssay({ attemptId: "e1", digest: "d1" }, "en");
-    await profile.replaceHistory("e1", [stroke(1)]);
-    await profile.addEssaySubmission("e1", await draw(), {
-      end: "feedback",
-      context: CONTEXT,
-      historyLength: 1,
-    });
-    // An essay an older build kept has no context: that submission does not go.
-    await profile.addEssaySubmission("e1", await draw(), { end: "unchecked" });
-    await profile.attemptEnded("e1");
+    await profile.replaceHistory("e1", [stroke(1), stroke(2)]);
+    await profile.addEssaySubmission("e1", CONTEXT, 1);
+    await profile.addEssaySubmission("e1", CONTEXT, 2);
+    // An essay ended is off the device, as any attempt is: nothing of it goes.
+    await profile.beginAttempt({ attemptId: "e2", digest: "d1" });
+    await profile.replaceHistory("e2", [stroke(1)]);
+    await profile.addEssaySubmission("e2", CONTEXT, 1);
+    await profile.attemptEnded("e2");
     // An attempt just opened, with neither strokes nor submissions, needs no copy.
     await profile.beginAttempt({ attemptId: "x1", digest: "d1" });
     const { works, asked } = sender(() => {});
     await works.putAll(profile);
     expect(asked.map((one) => one.work?.attemptId).sort()).toEqual(["a1", "e1"]);
     const essay = asked.find((one) => one.work?.attemptId === "e1")?.work;
-    expect(essay?.submissions.map((one) => one.historyLength)).toEqual([1]);
+    expect(essay?.submissions.map((one) => one.historyLength)).toEqual([1, 2]);
+    expect(JSON.parse(decoder.decode(essay?.submissions[1]?.context as Uint8Array))).toEqual(
+      CONTEXT,
+    );
     expect((await profile.usage()).stored).toBe(true);
     // Switched off: the server erased its copies, and no mark holds.
     await profile.clearStored();
@@ -356,7 +357,7 @@ describe("switching the storage on", () => {
 });
 
 describe("an attempt that closes", () => {
-  it("goes to the server as it was at the end, then off the device; an essay keeps its mark", async () => {
+  it("goes to the server as it was at the end, then off the device, an essay as any other", async () => {
     const { device } = memoryDevice();
     await setAccount(device, "account-1");
     const profile = await addProfile(device, "p1");
@@ -364,8 +365,8 @@ describe("an attempt that closes", () => {
     await profile.beginAttempt({ attemptId: "a1", digest: "d1" });
     await profile.replaceHistory("a1", [stroke(1), stroke(2), stroke(3)]);
     await profile.beginAttempt({ attemptId: "e1", digest: "d1" });
-    await profile.beginEssay({ attemptId: "e1", digest: "d1" }, "en");
     await profile.replaceHistory("e1", [stroke(1)]);
+    await profile.addEssaySubmission("e1", CONTEXT, 1);
     const { works, asked } = sender(() => {});
     let sent: Promise<unknown> = Promise.resolve();
     const watched = {
@@ -383,7 +384,8 @@ describe("an attempt that closes", () => {
     await attemptOver(device, "p1", "e1", { held: profile, works: watched });
     await sent;
     expect(asked.map((one) => one.work?.attemptId)).toEqual(["a1", "e1"]);
-    expect((await profile.essay("e1"))?.stored).toEqual({ history: 1, submissions: 0 });
+    expect(asked[1]?.work?.submissions.map((one) => one.historyLength)).toEqual([1]);
+    expect(await profile.readAttempt("e1")).toBeUndefined();
     expect((await profile.usage()).stored).toBe(true);
   });
 });

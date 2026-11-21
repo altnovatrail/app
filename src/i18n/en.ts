@@ -495,25 +495,6 @@ export const en = {
   "level.harder": "Harder: {band}",
   /** The band pressed was no longer next to the level: the map was read again. */
   "level.moved": "The level had changed meanwhile. It shows here as it stands now",
-  /** The learner's essays kept on this device, read again here (R04; R53). */
-  "essays.title": "My essays",
-  "essays.none": "No essays are kept on this device yet",
-  /** The button that opens one essay: {date} is when it was begun. */
-  "essays.open": "Open the essay of {date}",
-  "essays.finished": "Finished",
-  "essays.not-finished": "Not finished yet",
-  /** The essay's module version was withdrawn: its task's statement is not kept (R53). */
-  "essays.withdrawn": "The version of its module was withdrawn, so its task isn't kept",
-  /** The heading of one submission of the essay: when it was sent. */
-  "essays.sent": "Sent {date}",
-  "essays.not-sent": "It hasn't been sent yet",
-  /** The `alt` of the crop of the sheet that a submission sent. */
-  "essays.sheet": "The sheet as it was sent",
-  /** The heading of what was read of the essay. */
-  "essays.text": "What was read",
-  /** The heading of the feedback of a submission. */
-  "essays.feedback": "Feedback",
-  "essays.all": "All essays",
   /** The heading of the task screen: a task has no title of its own. */
   "task.title": "Task",
   /** The name of the group of the two buttons of the mode. */
@@ -640,6 +621,8 @@ export const en = {
   "task.feedback-line": "The feedback is in the tutor's panel. Write again, or press Done.",
   /** The result of an essay finished by Done. */
   "task.essay-done": "Essay finished",
+  /** The heading of what was read of the essay at its last submission. */
+  "task.essay-text": "What was read",
   /** The feedback whose words did not pass the checks of api (R53). */
   "task.feedback-none": "No feedback this time",
   /** A repeat of a submission whose answer was lost: the words are nowhere on the server. */
@@ -988,16 +971,6 @@ export const en = {
    */
   "device.only-here":
     "Its work is on this device alone: if the site's data is erased, the work is lost",
-  /** The essays a profile keeps on this device. */
-  "device.essays": plural({
-    one: "{count} essay",
-    other: "{count} essays",
-  }),
-  /** One essay of the profile: {date} is when it was begun. */
-  "device.essay": "Essay of {date}",
-  "device.erase-essay": "Erase the essay",
-  "device.erase-essay-confirm":
-    "The essay of {date} and its feedback are lost: the server doesn't keep them",
   /** The owner's own key kept on this device: {provider} is the provider's name. */
   "device.own-key": "Its own AI key is kept on this device: a key of {provider} ending in {last4}",
   "device.erase-profile": "Erase the profile's data on this device",

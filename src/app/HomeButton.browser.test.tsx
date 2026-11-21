@@ -14,7 +14,7 @@ afterEach(() => {
 
 describe("the way back to My subjects", () => {
   it("goes home", async () => {
-    window.location.hash = "#/essays";
+    window.location.hash = "#/skill-map";
     render(inLanguage(<HomeWay />));
     expect(home().parentElement).toHaveClass("nt-buttons");
     expect(home()).toHaveClass("nt-secondary");

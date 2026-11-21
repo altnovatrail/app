@@ -418,14 +418,13 @@ describe("My subjects", () => {
     expect((await card("Физика")).queryByText("По порядку")).toBeNull();
   });
 
-  it("leads to the skill map and the essays beside the engine's way", async () => {
+  it("leads to the skill map beside the engine's way, and to no list of essays", async () => {
     await renderSubjects({ connected: [], catalog: [] });
     await screen.findByRole("heading", { name: "Connected" });
     await userEvent.click(screen.getByRole("button", { name: "Skill map" }));
     expect(window.location.hash).toBe("#/skill-map");
-    // Beside it, the essays this device keeps (R53).
-    await userEvent.click(screen.getByRole("button", { name: "My essays" }));
-    expect(window.location.hash).toBe("#/essays");
+    // The device keeps an essay only till its attempt ends, and so has none to list (R53).
+    expect(screen.queryByRole("button", { name: "My essays" })).toBeNull();
     window.location.hash = "";
   });
 

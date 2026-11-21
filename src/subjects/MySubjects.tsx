@@ -7,8 +7,8 @@
 // device keeps it, or else its module's name (R23); and "What's next" asks the engine, or
 // "Something else" beside an attempt open, which it closes (R24). A card of a version has the page
 // of its license beside its button (R32). Beside the engine's way the screen leads to
-// the skill map, the second way in, where the learner chooses a skill (R34), and to "My essays"
-// (R53); a card marks a module whose skill graph is a chain "in order" (R06). Under its heading,
+// the skill map, the second way in, where the learner chooses a skill (R34); a card marks a
+// module whose skill graph is a chain "in order" (R06). Under its heading,
 // where the learner begins their work, the screen says how much of today's tutor time the profile
 // has used, or, once it is used up, when it comes back (the contract's quota; R37). It is drawn as
 // the mockup's `home` (R148 spec; R62): what comes next and the tutor time on a card at the top, "A
@@ -26,7 +26,7 @@ import type { Api } from "../api/client.ts";
 import { type Failure, parseFailure } from "../api/failure.ts";
 import { failureText } from "../api/words.ts";
 import { Icon } from "../app/Icon.tsx";
-import { ESSAYS, LESSON, navigate, PAPER, SKILL_MAP, TASK } from "../app/router.ts";
+import { LESSON, navigate, PAPER, SKILL_MAP, TASK } from "../app/router.ts";
 import { Screen } from "../app/Screen.tsx";
 import { ReadFailed } from "../boot/Screens.tsx";
 import { collator } from "../i18n/intl.ts";
@@ -337,9 +337,6 @@ export function SubjectsScreen({
       <div className="nt-buttons">
         <button type="button" className="nt-secondary" onClick={() => navigate(SKILL_MAP)}>
           {words.text("skillmap.title")}
-        </button>
-        <button type="button" className="nt-secondary" onClick={() => navigate(ESSAYS)}>
-          {words.text("essays.title")}
         </button>
       </div>
       <section aria-labelledby={catalogId}>

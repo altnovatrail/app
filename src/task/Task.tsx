@@ -70,13 +70,7 @@ import { NextStep } from "../next/NextStep.tsx";
 import { useKeyHolder } from "../ownkey/OwnKeyContext.tsx";
 import { usePackages } from "../packages/PackagesContext.tsx";
 import type { Device } from "../storage/device.ts";
-import {
-  addProfile,
-  attemptOver,
-  type Essay,
-  openProfile,
-  type Profile,
-} from "../storage/profile.ts";
+import { addProfile, attemptOver, openProfile, type Profile } from "../storage/profile.ts";
 import { ReportProblem } from "../tutor/ReportProblem.tsx";
 import type { Said } from "../tutor/report.ts";
 import { hintPhrases } from "../voice/texts.ts";
@@ -142,8 +136,8 @@ export interface Opened {
   readonly hint?: HintGiven;
   /** "Explain differently" was asked for on the current rung. */
   readonly explained: boolean;
-  /** Of an essay: what the device keeps of it, and how many submissions api counts (R53). */
-  readonly essay?: { readonly kept: Essay | undefined; readonly submissions: number };
+  /** Of an essay: how many submissions api counts (R53). */
+  readonly essay?: { readonly submissions: number };
 }
 
 type Read =
@@ -253,11 +247,6 @@ export function Task({
       if (profile !== undefined && kept === undefined) {
         unsaved = (await profile.beginAttempt({ attemptId, digest, task })) === "unsaved";
       }
-      if (profile !== undefined && essay) {
-        const language = manifest?.view.languages.explanation;
-        const begun = await profile.beginEssay({ attemptId, digest, task }, language);
-        unsaved ||= begun === "unsaved";
-      }
       const { state, verdicts } = resumed(
         task,
         stepList,
@@ -294,14 +283,7 @@ export function Task({
             }
           : {}),
         explained: answer.explainedDifferently,
-        ...(essay
-          ? {
-              essay: {
-                kept: await profile?.essay(attemptId).catch(() => undefined),
-                submissions: answer.essaySubmissions.length,
-              },
-            }
-          : {}),
+        ...(essay ? { essay: { submissions: answer.essaySubmissions.length } } : {}),
       };
     }
   }, [api, views, device, profileId, attemptId, attempt]);

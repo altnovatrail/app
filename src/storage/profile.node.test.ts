@@ -320,7 +320,6 @@ describe("what a profile keeps on this device", () => {
     backend.unreadable.add("submissions");
     expect(await profileUsage(device, "p1")).toEqual({
       unfinished: 1,
-      essays: 0,
       bytes: undefined,
       // Whether the server keeps it all is not known either: the warning stands.
       stored: false,
@@ -438,168 +437,112 @@ describe("an essay", () => {
   async function withEssay() {
     const setup = await setUp();
     const { profile } = setup;
-    const attempt = { attemptId: "e1", digest: "d1", task: ESSAY_TASK };
-    expect(await profile.beginAttempt(attempt)).toBe("saved");
-    expect(await profile.beginEssay(attempt, "en")).toBe("saved");
+    expect(await profile.beginAttempt({ attemptId: "e1", digest: "d1", task: ESSAY_TASK })).toBe(
+      "saved",
+    );
     await profile.appendHistory("e1", { from: 0, events: [write(1, 0)] });
     return setup;
   }
 
-  it("begins with its attempt, and keeps each submission with its crop and how it ended", async () => {
-    const { profile, state } = await withEssay();
-    const started = state.time;
-    expect(await profile.essay("e1")).toEqual({
-      attemptId: "e1",
-      digest: "d1",
-      task: ESSAY_TASK,
-      language: "en",
-      startedAt: started,
-      ended: false,
-      sent: [],
-    });
-    state.time += 1000;
-    expect(
-      await profile.addEssaySubmission("e1", new Blob(["png"], { type: "image/png" }), {
-        end: "feedback",
-        text: "It rained.",
-        feedback: "A good start.",
-      }),
-    ).toBe("saved");
-    const kept = await profile.essay("e1");
-    expect(kept?.sent).toHaveLength(1);
-    expect(kept?.sent[0]).toMatchObject({
-      at: started + 1000,
-      end: "feedback",
-      text: "It rained.",
-      feedback: "A good start.",
-    });
-    expect(await kept?.sent[0]?.crop?.text()).toBe("png");
-    expect(kept?.sent[0]?.crop?.type).toBe("image/png");
-    // A second begin of the same essay leaves it as it is.
-    await profile.beginEssay({ attemptId: "e1", digest: "d1", task: ESSAY_TASK }, "en");
-    expect((await profile.essay("e1"))?.sent).toHaveLength(1);
-    expect(await profile.essayCount()).toBe(1);
-    // The list reads no crop: the essay opened does.
-    expect((await profile.essays())[0]?.sent[0]?.crop).toBeUndefined();
-  });
-
-  it("is made for an attempt an earlier build began, and moves with it to another package", async () => {
-    const { profile, state, backend } = await setUp();
-    await profile.beginAttempt({ attemptId: "e1", digest: "d1", task: ESSAY_TASK });
-    await profile.appendHistory("e1", { from: 0, events: [write(1, 0)] });
-    expect(await profile.essay("e1")).toBeUndefined();
-    const begun = state.time;
-    await profile.beginEssay({ attemptId: "e1", digest: "d1", task: ESSAY_TASK }, "en");
-    expect(await profile.addEssaySubmission("e1", new Blob(["png"]), { end: "unchecked" })).toBe(
-      "saved",
-    );
-    expect((await profile.readAttempt("e1"))?.history).toEqual([write(1, 0)]);
-    // The attempt begun again on another package: the canvas starts from an empty sheet, and the
-    // essay keeps when it was begun and what it sent.
-    state.time += 1000;
-    await profile.beginAttempt({ attemptId: "e1", digest: "d2", task: ESSAY_TASK });
-    expect(backend.records(profileDatabase("p1"), "history")).toEqual([]);
-    await profile.beginEssay({ attemptId: "e1", digest: "d2", task: ESSAY_TASK }, undefined);
-    const moved = await profile.essay("e1");
-    expect(moved).toMatchObject({ digest: "d2", startedAt: begun, ended: false });
-    expect(moved?.language).toBeUndefined();
-    expect(moved?.sent).toHaveLength(1);
-    // d1 is still the attempt a1's, which setUp began.
-    expect(await profile.digests()).toEqual(["d1", "d2"]);
-    await profile.withdraw(["d2"]);
-    expect((await profile.essay("e1"))?.task).toBeUndefined();
-  });
-
-  it("is not begun for a task that is no essay, and takes no submission of one", async () => {
-    const { profile } = await setUp();
-    expect(await profile.essay("a1")).toBeUndefined();
-    expect(await profile.addEssaySubmission("a1", new Blob(["x"]), { end: "unchecked" })).toBe(
-      "unsaved",
-    );
-    expect(await profile.essays()).toEqual([]);
-  });
-
-  it("says unsaved when the crop's bytes cannot be read", async () => {
+  it("keeps each submission's context and the history's length, without its crop, for the server", async () => {
     const { profile } = await withEssay();
-    const broken = new Blob(["x"]);
-    broken.arrayBuffer = () => Promise.reject(new DOMException("gone", "NotReadableError"));
-    expect(await profile.addEssaySubmission("e1", broken, { end: "unchecked" })).toBe("unsaved");
+    expect(await profile.addEssaySubmission("e1", CONTEXT, 1)).toBe("saved");
+    expect(await profile.addEssaySubmission("e1", CONTEXT, 1)).toBe("saved");
+    expect((await profile.readAttempt("e1"))?.submissions).toEqual([
+      { context: CONTEXT, historyLength: 1, work: undefined },
+      { context: CONTEXT, historyLength: 1, work: undefined },
+    ]);
+    expect(await profile.work("e1")).toEqual({
+      attemptId: "e1",
+      history: [write(1, 0)],
+      submissions: [
+        { context: CONTEXT, historyLength: 1 },
+        { context: CONTEXT, historyLength: 1 },
+      ],
+    });
   });
 
-  it("outlives the end of its attempt with its history, ended, while the work of others goes", async () => {
+  it("takes no submission of an attempt not there, and says a refused one is not saved", async () => {
     const { profile, backend } = await withEssay();
-    await profile.addSubmission("e1", work("x"), 1);
-    await profile.attemptEnded("e1");
-    await profile.attemptEnded("a1");
-    expect(await profile.readAttempt("e1")).toBeUndefined();
-    expect((await profile.essay("e1"))?.ended).toBe(true);
-    const name = profileDatabase("p1");
-    expect(backend.records(name, "history").map((entry) => entry.value)).toEqual([write(1, 0)]);
-    expect(backend.records(name, "submissions")).toEqual([]);
-    expect(await profile.unfinished()).toBe(0);
+    expect(await profile.addEssaySubmission("none", CONTEXT, 0)).toBe("unsaved");
+    backend.refuseWrites = true;
+    expect(await profile.addEssaySubmission("e1", CONTEXT, 1)).toBe("unsaved");
+    backend.refuseWrites = false;
+    expect(backend.records(profileDatabase("p1"), "submissions")).toEqual([]);
   });
 
-  it("outlives the term, its attempt too, and loses its task with a withdrawn version", async () => {
-    const { profile, state } = await withEssay();
+  it("goes whole at the end of its attempt, as the work of any task", async () => {
+    const { profile, backend } = await withEssay();
+    await profile.addEssaySubmission("e1", CONTEXT, 1);
+    await profile.attemptEnded("e1", 0);
+    const name = profileDatabase("p1");
+    expect(await profile.readAttempt("e1")).toBeUndefined();
+    expect(backend.records(name, "history")).toEqual([]);
+    expect(backend.records(name, "submissions")).toEqual([]);
+    // A submission of an essay keeps no work: none waits for the words after it.
+    expect(backend.records(name, "correctWork")).toEqual([]);
+  });
+
+  it("goes whole with the term, and loses its task with a withdrawn version", async () => {
+    const { profile, state, backend } = await withEssay();
+    await profile.addEssaySubmission("e1", CONTEXT, 1);
+    await profile.withdraw(["d1"]);
+    expect((await profile.readAttempt("e1"))?.attempt.task).toBeUndefined();
     const old = state.time;
     state.time += DAY;
     await profile.expire(old);
-    expect(await profile.readAttempt("a1")).toBeUndefined();
-    expect((await profile.readAttempt("e1"))?.history).toEqual([write(1, 0)]);
-    expect(await profile.digests()).toEqual(["d1"]);
-    await profile.withdraw(["d1"]);
-    const kept = await profile.essay("e1");
-    expect(kept?.task).toBeUndefined();
-    expect(kept?.digest).toBe("d1");
-    expect(await profile.digests()).toEqual([]);
-  });
-
-  it("is listed newest first, and erased by an adult with its history and its attempt", async () => {
-    const { profile, state, backend } = await withEssay();
-    state.time += 1000;
-    await profile.beginAttempt({ attemptId: "e2", digest: "d2", task: ESSAY_TASK });
-    await profile.beginEssay({ attemptId: "e2", digest: "d2", task: ESSAY_TASK }, undefined);
-    expect((await profile.essays()).map((essay) => essay.attemptId)).toEqual(["e2", "e1"]);
-    expect((await profile.essay("e2"))?.language).toBeUndefined();
-    await profile.eraseEssay("e1");
-    expect(await profile.essay("e1")).toBeUndefined();
     expect(await profile.readAttempt("e1")).toBeUndefined();
     expect(backend.records(profileDatabase("p1"), "history")).toEqual([]);
-    expect((await profile.essays()).map((essay) => essay.attemptId)).toEqual(["e2"]);
+    expect(backend.records(profileDatabase("p1"), "submissions")).toEqual([]);
   });
 
-  it("reads a record of another form as none, and a crop it cannot read as none", async () => {
-    const { profile, device } = await withEssay();
+  it("leaves no history whose attempt is gone, as an essay ended under schema versions 3 and 4 did", async () => {
+    const { profile, device, backend } = await withEssay();
     const connection = await device.connect(profileDatabase("p1"), PROFILE_SCHEMA, false);
-    await connection?.write(["essays"], async (tx) => {
-      await tx.put("essays", "x1", { attemptId: "x1" });
-      await tx.put("essays", "x3", { attemptId: "x3", digest: "d1", startedAt: 1, sent: {} });
-      await tx.put("essays", "x4", { attemptId: "x4", digest: "d1", sent: [] });
-      await tx.put("essays", "x5", "not a record");
-      await tx.put("essays", "x2", {
-        attemptId: "x2",
-        digest: "d1",
-        startedAt: 1,
-        sent: [
-          { at: 2, end: "unchecked", crop: "not a picture", text: 3 },
-          null,
-          { end: "feedback" },
-          { at: 3, end: "praise" },
-          { at: 4, end: "feedback", feedback: "Good.", repeated: true },
-        ],
-      });
+    await connection?.write(["history"], async (tx) => {
+      for (const attemptId of ["0", "b1", "z9"]) {
+        await tx.put("history", [attemptId, 0], write(2, 0));
+        await tx.put("history", [attemptId, 1], write(3, 0));
+      }
     });
-    expect(await profile.essay("x1")).toBeUndefined();
-    const read = await profile.essay("x2");
-    expect(read?.ended).toBe(false);
-    // Submissions of another form are left out, and a field of another form too.
-    expect(read?.sent).toEqual([
-      { at: 2, end: "unchecked", crop: undefined },
-      { at: 4, end: "feedback", feedback: "Good.", repeated: true, crop: undefined },
+    // Nothing kept is old enough to go: only the histories of no attempt do.
+    await profile.expire(0);
+    expect(backend.records(profileDatabase("p1"), "history").map((entry) => entry.key)).toEqual([
+      ["e1", 0],
     ]);
-    expect((await profile.essays()).map((essay) => essay.attemptId)).toEqual(["e1", "x2"]);
-    // Counted are the essays that can be listed, and so erased.
-    expect(await profile.essayCount()).toBe(2);
+    expect(await historyOf(profile, "e1")).toEqual([write(1, 0)]);
+  });
+});
+
+describe("the schema's version 5", () => {
+  const V4 = {
+    version: 4,
+    stores: { ...PROFILE_SCHEMA.stores, essays: { digest: "digest" } },
+  };
+
+  it("takes off the store `essays` with every essay in it, and keeps the rest", async () => {
+    const { device, backend } = memoryDevice();
+    const name = profileDatabase("p1");
+    await addDatabase(device, name, { kind: "profile", profileId: "p1" });
+    // Written as a build of version 4 left it, by the backend itself: the device opens it at 5.
+    const old = await backend.open(name, V4, { create: true, onLost: () => {} });
+    await old?.write(["attempts", "history", "submissions", "lessons", "essays"], async (tx) => {
+      await tx.put("attempts", "a1", { attemptId: "a1", digest: "d1", task: TASK, changedAt: 1 });
+      await tx.put("history", ["a1", 0], write(1, 0));
+      await tx.put("submissions", ["a1", 0], { context: CONTEXT, historyLength: 1 });
+      await tx.put("lessons", "gaps", { lessonId: "gaps", digest: "d1", changedAt: 1 });
+      await tx.put("essays", "e1", { attemptId: "e1", digest: "d1", startedAt: 1, sent: [] });
+    });
+    old?.close();
+    const profile = await openProfile(device, "p1");
+    expect(backend.databases.get(name)?.version).toBe(5);
+    expect(backend.databases.get(name)?.stores.has("essays")).toBe(false);
+    const kept = await profile?.readAttempt("a1");
+    expect(kept?.attempt.task).toEqual(TASK);
+    expect(kept?.history).toEqual([write(1, 0)]);
+    expect(kept?.submissions).toEqual([{ context: CONTEXT, historyLength: 1, work: undefined }]);
+    expect(backend.records(name, "lessons")).toHaveLength(1);
+    expect(await profile?.works()).toEqual(["a1"]);
   });
 });
 
