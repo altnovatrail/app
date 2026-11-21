@@ -584,7 +584,6 @@ function owner() {
 }
 
 /** api by the routing transport: no legal text has a next version. */
-const NO_NEXT = routedApi((router) => router.service(LegalService, { getLegalTexts: () => ({}) }));
 
 /** A synthetic code, typed. */
 async function codeTyped() {
@@ -998,22 +997,19 @@ const WAY_IN: readonly Compared[] = [
     state: "who",
     draw: () =>
       inLanguage(
-        <ApiProvider value={NO_NEXT}>
-          <ChooseScreen
-            profiles={[
-              create(ProfileSchema, {
-                profileId: "p1",
-                owner: true,
-                pseudonym: "Sam",
-                avatar: "wave",
-              }),
-            ]}
-            first={false}
-            onChoose={() => {}}
-            onSignOut={() => {}}
-            onLegal={() => {}}
-          />
-        </ApiProvider>,
+        <ChooseScreen
+          profiles={[
+            create(ProfileSchema, {
+              profileId: "p1",
+              owner: true,
+              pseudonym: "Sam",
+              avatar: "wave",
+            }),
+          ]}
+          first={false}
+          onChoose={() => {}}
+          onSignOut={() => {}}
+        />,
       ),
     regions: [
       {

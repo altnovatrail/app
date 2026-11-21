@@ -7,8 +7,8 @@
 // place of either, while the account is open (R29); a profile it changes, the other tabs hear of by
 // BroadcastChannel, and a change they tell of comes here. The legal pages show at any step, before
 // signing in too, from the sign-in screen and from the section's first page, and their bar goes
-// back to where they were opened from (R31); the choice of the learner and the section's first page
-// tell of a text's next version and open its page (R46). So does the license of a module's version,
+// back to where they were opened from (R31); the section's first page tells of a text's next version
+// and opens its page (R46). So does the license of a module's version,
 // opened from a card of My subjects, in the language of the learner's screens while a learner is
 // chosen, and closed home (R32); and so does the page on the AI tutor, opened from My subjects too
 // (R33), which opens the page of who runs this copy, whose bar comes back to it (R46).
@@ -233,7 +233,6 @@ export function AccountGate({ children }: { readonly children: ReactNode }) {
           first={state.first}
           onChoose={() => session.choose()}
           onSignOut={() => void session.signOut()}
-          onLegal={(page) => openLegal(HOME, page)}
         />
       );
     case "learning":

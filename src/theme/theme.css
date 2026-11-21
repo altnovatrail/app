@@ -1661,9 +1661,6 @@ button.nt-row > svg {
   inline-size: 2.5rem;
   block-size: 2.5rem;
 }
-.nt-persist {
-  margin-block-start: 2rem;
-}
 .nt-profiles-foot {
   margin: auto 0 0;
   padding: 0 1.75rem;

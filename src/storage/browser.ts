@@ -30,7 +30,7 @@ export interface SiteStorage {
   estimate(): Promise<{ readonly usage: number; readonly quota: number } | undefined>;
   /** Whether the browser keeps the site's data until the user erases it; none when it can't say. */
   persisted(): Promise<boolean | undefined>;
-  /** Asks the browser to keep it, on an adult's press: whether it said yes. */
+  /** Asks the browser to keep it, on an adult's press or their first sign-in: whether it said yes. */
   persist(): Promise<boolean>;
 }
 

@@ -6,18 +6,13 @@ import {
   type Profile,
   ProfileSchema,
 } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
-import { LegalService } from "@altnovatrail/contracts/novatrail/api/v1/legal_pb.js";
 import { create } from "@bufbuild/protobuf";
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
-import { ApiProvider } from "../api/ApiContext.tsx";
-import { routedApi } from "../test/api.ts";
 import { inLanguage } from "../test/language.tsx";
 import "../theme/theme.css";
 import { ChooseScreen } from "./ChooseScreen.tsx";
-
-const NO_NEXT = routedApi((router) => router.service(LegalService, { getLegalTexts: () => ({}) }));
 
 const PROFILES: readonly Profile[] = [
   create(ProfileSchema, { profileId: "p1", owner: true, pseudonym: "Sam", avatar: "moon" }),
@@ -30,15 +25,7 @@ describe("the choice of the learner", () => {
     const onChoose = vi.fn();
     render(
       inLanguage(
-        <ApiProvider value={NO_NEXT}>
-          <ChooseScreen
-            profiles={PROFILES}
-            first={false}
-            onChoose={onChoose}
-            onSignOut={() => {}}
-            onLegal={() => {}}
-          />
-        </ApiProvider>,
+        <ChooseScreen profiles={PROFILES} first={false} onChoose={onChoose} onSignOut={() => {}} />,
       ),
     );
     const shown = [...document.querySelectorAll(".nt-learners .nt-avatar")].map((avatar) =>

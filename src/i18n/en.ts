@@ -346,12 +346,6 @@ export const en = {
   "choose.add-why": "Comes later: a child's profile waits for a parent's consent",
   /** At the foot of the choice. */
   "choose.foot": "Each learner has a made-up name and an avatar, never a real name or a photo",
-  /** On the first sign-in of an account on this device (R04). */
-  "persist.line": "Learners' work is kept on this device",
-  /** Asks the browser to keep the site's data: navigator.storage.persist(). */
-  "persist.ask": "Ask the browser to keep it",
-  "persist.granted": "The browser will keep it",
-  "persist.refused": "The browser may still erase it when space runs low",
   /** Switches to the choice of the learner. */
   "learner.switch": "Switch learner",
   /** The profile's menu (R63): its dialog, its pill by the pseudonym it shows, the learner in it. */

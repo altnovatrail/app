@@ -469,10 +469,11 @@ describe.each(NAMED)("the path in %s", (name) => {
     const { page } = walk;
     await page.goto(`${ORIGIN}/`);
     await page.getByRole("heading", { name: "Sign in" }).waitFor();
-    // The choice of the learner reads the legal texts: what api gives, the screen tells of (R46).
-    const legal = page.waitForResponse((response) => response.url().includes("/GetLegalTexts"));
     await page.getByRole("button", { name: "Sign in with Google" }).click();
     await page.getByRole("heading", { name: "Who is learning?" }).waitFor();
+    // The section's first page reads the legal texts: what api gives, the page tells of (R46).
+    const legal = page.waitForResponse((response) => response.url().includes("/GetLegalTexts"));
+    await page.getByRole("button", { name: "For grown-ups" }).click();
     const given = fromBinary(GetLegalTextsResponseSchema, await (await legal).body());
     // The notice tells of the texts that are legal pages; a family's waits for its screens, E4.
     const pages = given.nextTexts.filter((text) => isPageText(text.id));
@@ -499,6 +500,7 @@ describe.each(NAMED)("the path in %s", (name) => {
       await page.getByText(new RegExp(`^Version ${version}, applies from `)).waitFor();
       await page.getByRole("button", { name: "Close", exact: true }).click();
     }
+    await page.getByRole("button", { name: "Close the section" }).click();
     await chooseDev(page);
     await home(page);
     // The platform AI quota share of the profile today (R40).

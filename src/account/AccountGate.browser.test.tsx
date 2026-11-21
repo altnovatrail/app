@@ -1,6 +1,6 @@
 // The way in, through Boot, in the browser (R16, R19, R61): the sign-in, the invite code, the
-// owner's profile, the choice of the learner with the next versions of the legal texts (R46), the
-// bar above the learner's screens and the sign-out, each screen by its role and name, with api
+// owner's profile, the choice of the learner, which asks the browser to keep the site's data on the
+// first sign-in (R04), the bar above the learner's screens and the sign-out, each screen by its role and name, with api
 // answering by the test's fetch and the sign-in service the test's own.
 import {
   CheckOwnKeyRequestSchema,
@@ -230,6 +230,8 @@ afterEach(() => {
 
 describe("the way in", () => {
   it("goes from the sign-in by the invite code and the owner's profile to the learner's screens", async () => {
+    const persist = vi.fn(async () => true);
+    vi.spyOn(navigator.storage, "persist").mockImplementation(persist);
     const service = fakeSignIn(null);
     let profiles: MessageInitShape<typeof GetAccountResponseSchema>["account"] | undefined;
     const codes: string[] = [];
@@ -366,14 +368,11 @@ describe("the way in", () => {
       { country: "US", pseudonym: "Ёжик", avatar: "moon" },
     ]);
 
-    // The choice of the learner, with the line of the first sign-in.
+    // The choice of the learner: the first sign-in asks the browser to keep the site's data, with
+    // no line or button of its own.
     expect(await screen.findByRole("heading", { level: 1, name: "Who is learning?" })).toBeTruthy();
-    const persist = vi.fn(async () => true);
-    vi.spyOn(navigator.storage, "persist").mockImplementation(persist);
-    expect(screen.getByText("Learners' work is kept on this device")).toBeTruthy();
-    await userEvent.click(screen.getByRole("button", { name: "Ask the browser to keep it" }));
-    expect(await screen.findByText("The browser will keep it")).toBeTruthy();
     expect(persist).toHaveBeenCalledOnce();
+    expect(screen.queryByRole("heading", { level: 2 })).toBeNull();
     await userEvent.click(screen.getByRole("button", { name: "Ёжик" }));
 
     // The learner's screens, below the bar.
@@ -381,10 +380,11 @@ describe("the way in", () => {
     expect(screen.getByRole("banner").textContent).toContain("Ёжик");
     await userEvent.click(await inMenu("Switch learner"));
     expect(await screen.findByRole("heading", { level: 1, name: "Who is learning?" })).toBeTruthy();
-    expect(screen.queryByText("Learners' work is kept on this device")).toBeNull();
-    // Each request of the way in — the choice of the learner reads the texts' next versions each
-    // time it shows (R46) —, then the learner's home — its lists and the share of the quota —, and
-    // no other: CheckPackages has no package to ask about.
+    // Shown again, it asks the browser no more.
+    expect(persist).toHaveBeenCalledOnce();
+    // Each request of the way in, then the learner's home — its lists and the share of the quota —,
+    // and no other: the choice of the learner reads no text (R46), and CheckPackages has no package
+    // to ask about.
     expect(asked).toEqual([
       "GetAccount",
       "GetLegalTexts",
@@ -393,11 +393,9 @@ describe("the way in", () => {
       "CreateOwnerProfile",
       "CreateOwnerProfile",
       "GetAccount",
-      "GetLegalTexts",
       "ListConnectedModules",
       "ListCatalog",
       "GetQuota",
-      "GetLegalTexts",
     ]);
     // Some twenty steps of the way in: under the load of the whole suite they outlast 15 s.
   }, 30_000);
@@ -983,14 +981,17 @@ describe("the legal pages", () => {
     expect(await screen.findByRole("heading", { level: 1, name: "My subjects" })).toBeTruthy();
   });
 
-  it("tell of a next version on the choice of the learner, and close its page back to the choice", async () => {
+  it("tell of a next version on the section's first page, not on the choice of the learner, and close its page back to the section", async () => {
     const service = fakeSignIn("uid-1");
     const account = { accountId: "account-1", profiles: [{ ...OWNER, workStorage: true }] };
-    renderApp(
+    const { asked } = renderApp(
       { getAccount: () => message(GetAccountResponseSchema, { account }), getLegalTexts: withNext },
       service,
     );
     expect(await screen.findByRole("heading", { level: 1, name: "Who is learning?" })).toBeTruthy();
+    expect(screen.queryByRole("heading", { level: 2 })).toBeNull();
+    expect(asked).toEqual(["GetAccount"]);
+    await userEvent.click(screen.getByRole("button", { name: "For grown-ups" }));
     expect(
       await screen.findByRole("heading", { level: 2, name: "New versions of the texts" }),
     ).toBeTruthy();
@@ -1002,8 +1003,8 @@ describe("the legal pages", () => {
     ).toBeTruthy();
     expect(await screen.findByText("Version 3 in short.")).toBeTruthy();
     await userEvent.click(screen.getByRole("button", { name: "Close" }));
-    expect(await screen.findByRole("heading", { level: 1, name: "Who is learning?" })).toBeTruthy();
-    expect(window.location.hash).toBe("#/home");
+    expect(await screen.findByRole("heading", { level: 1, name: "For grown-ups" })).toBeTruthy();
+    expect(window.location.hash).toBe("#/adults");
   });
 
   it("close home, not to the section, once the account that opened them has gone", async () => {

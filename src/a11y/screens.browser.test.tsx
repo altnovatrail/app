@@ -694,21 +694,10 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
     },
   ],
   [
-    "choice of the learner on the first sign-in, with the next version of a text",
+    "choice of the learner",
     () => (
-      <ApiProvider value={POLICY_API}>
-        <ChooseScreen
-          profiles={[{ ...OWNER, workStorage: true }]}
-          first
-          onChoose={() => {}}
-          onSignOut={() => {}}
-          onLegal={() => {}}
-        />
-      </ApiProvider>
+      <ChooseScreen profiles={[OWNER]} first={false} onChoose={() => {}} onSignOut={() => {}} />
     ),
-    async () => {
-      await vi.waitFor(() => expect(document.querySelectorAll("h2")).toHaveLength(1));
-    },
   ],
   [
     "My subjects, below the bar, with a card of each kind",
