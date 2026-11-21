@@ -255,7 +255,8 @@ h2 {
   font-size: var(--nt-size-title);
   line-height: 1.25;
 }
-h1:focus:not(:focus-visible) {
+/* A screen's heading takes the focus to be read, not pressed: no ring, whatever the browser decides. */
+h1[tabindex="-1"]:focus {
   outline: none;
 }
 
