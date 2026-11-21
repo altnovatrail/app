@@ -1,5 +1,6 @@
-// The sheet of a legal text in the browser (R69): its gist is a stop of Tab only while it scrolls,
-// which in Safari takes the focus (О-24), and no stop when the whole of it shows.
+// The sheet of a legal text in the browser (R69): a long gist makes the whole card scroll, which
+// holds what takes the focus, so that Safari scrolls it from the keyboard (О-24); the gist is no box
+// that scrolls and no stop of Tab.
 import {
   type LegalText,
   LegalTextSchema,
@@ -36,16 +37,20 @@ function sheet(summary: string) {
 }
 
 describe("the gist of a legal text's sheet", () => {
-  it("takes the focus while it scrolls", async () => {
+  it("makes the whole card scroll when it is long, the focus in the card", async () => {
     sheet(Array.from({ length: 200 }, (_, i) => `Sentence ${i + 1} of the gist.`).join(" "));
+    const card = screen.getByRole("dialog", { name: "Privacy Policy" });
     const gist = screen.getByRole("region", { name: "In short" });
-    await expect.poll(() => gist.getAttribute("tabindex")).toBe("0");
+    await expect.poll(() => card.scrollHeight > card.clientHeight).toBe(true);
+    expect(gist.scrollHeight).toBe(gist.clientHeight);
+    expect(gist).not.toHaveAttribute("tabindex");
+    expect(card.contains(document.activeElement)).toBe(true);
   });
 
-  it("is no stop of Tab when the whole of it shows", async () => {
+  it("is the card's whole height when it is short", async () => {
     sheet("In short, version 2.");
-    const gist = screen.getByRole("region", { name: "In short" });
+    const card = screen.getByRole("dialog", { name: "Privacy Policy" });
     await new Promise((resolve) => requestAnimationFrame(resolve));
-    expect(gist).not.toHaveAttribute("tabindex");
+    expect(card.scrollHeight).toBe(card.clientHeight);
   });
 });

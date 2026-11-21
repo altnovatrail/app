@@ -1319,7 +1319,7 @@ Help stands on "My subjects" and Back on the skill map's top bar (R63). `INSTEAD
 **UI packages.** The standard of R11 is the standard of all UI packages, `app`, `canvas` and `skill-map`: by R90 spec (О-24). What a package does not meet yet, it declares itself, and `app` names it on the page "Accessibility". In every package the caption beside an icon is visible (the second 2026-11-02 amendment to R78 spec). What follows from the standard for each (R90 spec):
 - `canvas` — zoom of the sheet up to 200% with scrolling in two directions, which 1.4.10 allows the sheet; the lines and boxes of the workbook in the accessibility tree; the keyboard into the sheet and out of it; the bar of buttons sticks in its rail and scrolls inside its glass when the window is low; the frames of `exportWork()` do not change with the theme and forced colors; its own axe-core;
 - `skill-map` — a text alternative to the graph, `lang` on the name of each skill, mastery not by color alone, the keyboard and moving without dragging;
-- WebKit bug 277290: in Safari a scroll container without focusable content cannot be scrolled from the keyboard (О-24). `app` scrolls with the page, and gives a scroll container of its own only with the role `region`, a name, and `tabindex="0"` while it scrolls.
+- WebKit bug 277290: in Safari a scroll container without focusable content cannot be scrolled from the keyboard (О-24). `app` scrolls with the page, and gives a scroll container of its own only with `tabindex="0"`, the role `region` and a name.
 
 **What CI checks** — the recipes `ci-lint`, `ci-test` and `ci-engines` (section 3.1):
 - Biome — the rules of the group `a11y`, by default: of 38, 37 are on (sources 8.1);

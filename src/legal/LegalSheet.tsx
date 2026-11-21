@@ -6,7 +6,7 @@
 // <dialog>: the screen under it is inert, Escape, × and a tap outside close it, and the focus comes
 // back to what opened it. The way in opens it from its steps, the adult's Help from its pop-over; it
 // stands in the page's body, not in the screen, whose own colours, as the sky's, are not its.
-import { type ReactNode, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
+import { type ReactNode, useEffect, useId, useLayoutEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import type { RequestState } from "../api/ApiContext.tsx";
 import { ReadFailure } from "../api/ReadFailure.tsx";
@@ -25,24 +25,6 @@ export interface LegalSheetProps {
   readonly onPage: (page: Route) => void;
 }
 
-// Whether a box scrolls, as its size and its text change: one that does takes the focus, for the
-// keyboard's arrows, which Safari gives no scroll container without it (О-24); one that does
-// not is no stop of Tab.
-function useScrolls(): [(box: HTMLElement | null) => void, boolean] {
-  const [box, setBox] = useState<HTMLElement | null>(null);
-  const [scrolls, setScrolls] = useState(false);
-  useLayoutEffect(() => {
-    if (box === null) return;
-    const measure = () => setScrolls(box.scrollHeight > box.clientHeight);
-    measure();
-    const resized = new ResizeObserver(measure);
-    resized.observe(box);
-    for (const child of box.children) resized.observe(child);
-    return () => resized.disconnect();
-  }, [box]);
-  return [setBox, scrolls];
-}
-
 export function LegalSheet({ id, versions, onClose, onPage }: LegalSheetProps) {
   const { language, words } = useLanguage();
   const dialog = useRef<HTMLDialogElement>(null);
@@ -51,7 +33,6 @@ export function LegalSheet({ id, versions, onClose, onPage }: LegalSheetProps) {
   const closed = useRef(onClose);
   closed.current = onClose;
   const ready = versions.status !== "loading";
-  const [gist, scrolls] = useScrolls();
   // What opened the sheet, which the focus goes back to: the link pressed, or the button of the
   // pop-over it was opened from, which has the focus back once the pop-over is gone.
   const opener = useRef<Element | null>(null);
@@ -121,12 +102,7 @@ export function LegalSheet({ id, versions, onClose, onPage }: LegalSheetProps) {
             <p id={caption} className="nt-sheet-caption">
               {words.text("legal.gist")}
             </p>
-            <section
-              ref={gist}
-              className="nt-legal-gist"
-              aria-labelledby={caption}
-              tabIndex={scrolls ? 0 : undefined}
-            >
+            <section className="nt-legal-gist" aria-labelledby={caption}>
               <p lang={current.summaryLanguage === "" ? "en" : current.summaryLanguage}>
                 {current.summary}
               </p>

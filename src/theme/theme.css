@@ -5145,15 +5145,17 @@ main.nt-profiles.nt-own form > button.nt-main:not(:disabled, [aria-disabled="tru
 /*
  * A legal text's sheet over the screen, `LegalSheet` (the mockup's `.ph-legal`; R69): from 600 a
  * white card of 560, radius 28, its top where the mockup's card of 580 in the window's middle has
- * it, over the window dimmed by 0.28, the gist scrolling inside 300 and the foot's line and "Read
- * the full text" at either end; below 600 the whole screen, its text 52 from the top, the gist
- * filling what is left. Its head, caption, chip and note are the legal pages' own.
+ * it, over the window dimmed by 0.28, as tall as its text down to 16 above the window's foot, and
+ * the whole card scrolling beyond — the gist no box of its own, which would take the focus (О-24) —;
+ * the foot's line and "Read the full text" at either end; below 600 the whole screen that scrolls,
+ * its text 52 from the top, the gist filling what is left. Its head, caption, chip and note are the
+ * legal pages' own.
  */
 dialog.nt-legal-sheet {
   box-sizing: border-box;
   inline-size: min(35rem, calc(100vw - 2rem));
   max-inline-size: none;
-  max-block-size: calc(100dvh - 2rem);
+  max-block-size: calc(100dvh - max(1rem, calc(50dvh - 18.125rem)) - 1rem);
   margin: max(1rem, calc(50dvh - 18.125rem)) auto auto;
   padding: calc(1.625rem - 0.0625rem) calc(1.75rem - 0.0625rem) calc(1.375rem - 0.0625rem);
   border: 0.0625rem solid transparent;
@@ -5178,8 +5180,6 @@ dialog.nt-legal-sheet .nt-legal-body .nt-sheet-caption {
   margin: 1.125rem 0 0.375rem;
 }
 .nt-legal-gist {
-  max-block-size: 18.75rem;
-  overflow-y: auto;
   font-size: 0.9375rem;
   line-height: 1.5;
 }
@@ -5225,12 +5225,10 @@ dialog.nt-legal-sheet .nt-legal-body .nt-legal-foot > button.nt-link {
   .nt-legal-body {
     display: flex;
     flex-direction: column;
-    block-size: 100%;
+    min-block-size: 100%;
   }
   .nt-legal-gist {
-    flex: 1 1 auto;
-    min-block-size: 0;
-    max-block-size: none;
+    flex: 1 0 auto;
   }
 }
 @media (prefers-reduced-motion: no-preference) and (width >= 600px) {
