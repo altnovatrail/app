@@ -6,8 +6,9 @@
 // the card of a later step right under the name. At the card's foot, the way to the legal pages
 // (R31).
 import type { ReactNode } from "react";
-import { Brand, SPARK } from "../app/Brand.tsx";
+import { Brand } from "../app/Brand.tsx";
 import { Screen } from "../app/Screen.tsx";
+import { SPARK } from "../app/spark.ts";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 
 /** The stops of the trail, each the centre of its circle in the sky's box of 600 × 834. */
