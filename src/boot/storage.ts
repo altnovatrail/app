@@ -3,8 +3,8 @@
 //   where this tab had one, is data erased; a registry there is data that could not be read, and
 //   nothing is erased.
 // - Another tab deleted a database or opened it at a newer version (versionchange): the database is
-//   opened again, without making it. One deleted on purpose — a sign-out, a profile gone — is
-//   nobody's trouble here; one at a newer version the device tells of by itself, as "newer".
+//   opened again, without making it. One deleted on purpose — everything erased, a profile gone —
+//   is nobody's trouble here; one at a newer version the device tells of by itself, as "newer".
 import { NewerSchemaError } from "../storage/backend.ts";
 import type { Device, DeviceEvent } from "../storage/device.ts";
 import { readRegistry } from "../storage/registry.ts";

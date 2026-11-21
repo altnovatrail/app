@@ -32,6 +32,7 @@ import { OwnerProfileScreen } from "../src/account/OwnerProfileScreen.tsx";
 import { ApiProvider } from "../src/api/ApiContext.tsx";
 import { HomeBar } from "../src/app/App.tsx";
 import { HOME as HOME_ROUTE, type Route } from "../src/app/router.ts";
+import { Waiting } from "../src/app/Waiting.tsx";
 import { LegalPages } from "../src/legal/LegalPages.tsx";
 import { Example } from "../src/lesson/Example.tsx";
 import { Explanation } from "../src/lesson/Explanation.tsx";
@@ -557,7 +558,17 @@ const ACCOUNT_TEXTS: TextsRead = {
         summaryLanguage: "en",
       }),
     ),
-    next: [],
+    // The policy's next version, as the mockup's, which its sheet names.
+    next: [
+      create(LegalTextSchema, {
+        id: "privacy-policy",
+        version: 2,
+        inForceSince: "2026-11-27",
+        body: "# A text\n\nIts new words.\n",
+        summary: "In short, its new words.",
+        summaryLanguage: "en",
+      }),
+    ],
   },
   retry: () => {},
 };
@@ -574,6 +585,7 @@ function invite() {
       texts={ACCOUNT_TEXTS}
       onCreate={() => new Promise(() => {})}
       onLegal={() => {}}
+      onSignOut={() => {}}
     />,
   );
 }
@@ -584,11 +596,10 @@ function owner() {
 }
 
 /** api by the routing transport: no legal text has a next version. */
-const NO_NEXT = routedApi((router) => router.service(LegalService, { getLegalTexts: () => ({}) }));
 
-/** A synthetic code, typed. */
+/** The mockup's code, synthetic, of api's form (R34 api), pasted as its boxes take it. */
 async function codeTyped() {
-  await userEvent.type(screen.getByRole("textbox", { name: "Invite code" }), "NOVA2026");
+  await userEvent.fill(screen.getByRole("textbox", { name: "Invite code" }), "N7VA-K2QM-9XB4-ZD3H");
 }
 
 /** The code typed and taken on to the statement and the texts. */
@@ -599,93 +610,201 @@ async function agreeing() {
 }
 
 /**
- * Why the column of the way in stands elsewhere than the mockup has it: it stands in the middle of
- * the frame's height, as the mockup's, but its heading keeps app's own words — one line where the
- * mockup's has two —, the code's step has no "Back", which in the mockup signs out, and the
- * statement's texts stand in place below it (R27; R46), so the column is of another height (R61).
+ * Why a part of a step's card stands lower or higher than the mockup's: the card stands where the
+ * mockup's does, but its words are app's own, without the mockup's full stops, so what follows
+ * them moves (R61).
  */
-const CENTRED =
-  "app's own words of the headings, no Back from the code, the texts in place below (R27; R46; R61)";
+const SHIFTED = "app's own words, without the mockup's full stops (R61)";
 
-/** The way to the legal pages: one button that names them all (R31), not the mockup's two. */
+/** The way to the legal pages, at the card's foot: one button that names them all (R31). */
 const LEGAL_WAY: Region = {
   name: "the way to the legal texts",
-  mockup: { css: '.ph-signfoot button:text-is("Privacy Policy")' },
+  mockup: { role: "button", name: "Privacy and legal information" },
   app: { role: "button", name: "Privacy and legal information" },
   followsText: "centre",
-  differs: { what: ["x", "font-weight"], by: "one button to the legal pages (R31)" },
+  differs: { what: ["y"], by: SHIFTED },
 };
 
-/** The art of the way in, at the left from 600 and a band on the phone's first step. */
+/** The sky's trail to the spark: at the left from 600, and small above the phone's first step. */
 const ART: Region = {
-  name: "the art",
-  mockup: { css: ".ph-art" },
-  app: { css: ".nt-art" },
+  name: "the trail",
+  mockup: { css: ".ph-sky" },
+  app: { css: ".nt-sky" },
 };
 
-/** The art on the steps after the sign-in: at the left from 600, and none on the phone. */
+/** The trail on the steps after the sign-in: at the left from 600, and none on the phone. */
 const ART_LATER: Region = {
   ...ART,
-  differs: { what: ["missing"], by: "the art is a band above the sign-in alone on a phone" },
+  differs: { what: ["missing"], by: "the trail stands above the sign-in alone on a phone" },
 };
 
-/** The disabled or enabled primary button of a step, and what stands above it in the column. */
+/** The card of a step on the sky. */
+const CARD: Region = {
+  name: "the card",
+  mockup: { css: ".ph-card" },
+  app: { css: ".nt-welcome .nt-column" },
+  differs: { what: ["height"], by: SHIFTED },
+};
+
+/** The primary button of a step, and what stands above it in the card. */
 function primary(mockup: string, app: string): Region {
   return {
     name: `the primary button, ${app}`,
     mockup: { role: "button", name: mockup },
     app: { role: "button", name: app },
-    differs: { what: ["y"], by: CENTRED },
+    differs: { what: ["y"], by: SHIFTED },
   };
 }
 
 const SIGN_IN: readonly Region[] = [
   ART,
+  CARD,
   {
     name: "the heading",
-    mockup: { text: "Learn anything" },
+    mockup: { css: '.ph-card > div:text-is("Sign in")' },
     app: { role: "heading", name: "Sign in" },
     followsText: "start",
-    differs: { what: ["y", "height"], by: CENTRED },
   },
   {
     name: "the line for grown-ups",
     mockup: { css: 'div:has(> span:text("Accounts are for grown-ups"))' },
     app: { css: ".nt-note" },
-    differs: { what: ["y"], by: CENTRED },
+    differs: { what: ["y"], by: SHIFTED },
   },
   LEGAL_WAY,
 ];
 
-const CODE: Region = {
-  name: "the code",
-  mockup: { role: "button", name: "Invite code" },
-  app: { role: "textbox", name: "Invite code" },
-  // Eight boxes in the mockup, one field here, whose edge is the one «Contrast» asks of a field.
+/** "Back" at the top of a step's card: from the code it signs out, from the statement to the code. */
+const BACK: Region = {
+  name: "Back",
+  mockup: { css: '.ph-card button:text-is("Back")' },
+  app: { role: "button", name: "Back" },
+  followsText: "start",
+};
+
+/** A step's heading, as each side words it, and the line below it, given as app words it. */
+function heading(mockup: string, app: string, lead: string): Region[] {
+  return [
+    {
+      name: "the heading",
+      mockup: { css: `.ph-card > div:text-is("${mockup}")` },
+      app: { role: "heading", name: app },
+      followsText: "start",
+    },
+    {
+      name: "the line below the heading",
+      mockup: { css: `.ph-card > div:text-is("${lead}.")` },
+      app: { css: ".nt-welcome .nt-lead" },
+      followsText: "start",
+    },
+  ];
+}
+
+/** Why a box is ringed in one and not the other: app rings it while its field has the focus. */
+const FOCUSED =
+  "app rings the box the next character goes to while the field has the focus, the last once the code is whole";
+
+/**
+ * The code's four boxes of four characters, the row and its first and last box: empty, the
+ * mockup rings the first, and filled, none, where app rings the box of the field's caret.
+ */
+function code(filled: boolean): Region[] {
+  const ring: Pick<Region, "differs"> = { differs: { what: ["border"], by: FOCUSED } };
+  return [
+    BACK,
+    ...heading(
+      "You’re invited",
+      "You're invited",
+      "NovaTrail is in a closed preview. Enter the code from your invitation",
+    ),
+    {
+      name: "the code",
+      mockup: { css: ".ph-codes" },
+      app: { css: ".nt-code-shown" },
+    },
+    {
+      name: "the code's first box",
+      mockup: { css: ".ph-codes > .ph-code >> nth=0" },
+      app: { css: ".nt-code-shown > .nt-code-box >> nth=0" },
+      ...(filled ? {} : ring),
+    },
+    {
+      name: "the code's last box",
+      mockup: { css: ".ph-codes > .ph-code >> nth=-1" },
+      app: { css: ".nt-code-shown > .nt-code-box >> nth=-1" },
+      ...(filled ? ring : {}),
+    },
+  ];
+}
+
+/** The line below the boxes: how to give the code. */
+const CODE_HINT: Region = {
+  name: "the code's hint",
+  mockup: { text: "Tap the boxes to paste the code from your invitation" },
+  app: { text: "Tap the boxes to paste the code from your invitation" },
+  followsText: "start",
+};
+
+/** The mockup's line once the code is filled, which app never says before api has answered. */
+const CODE_ACCEPTED: Region = {
+  name: "the code's line once filled",
+  mockup: { text: "Code accepted" },
+  app: { text: "Code accepted" },
   differs: {
-    what: ["y", "width", "border", "radius", "font-size"],
-    by: `${CENTRED}; one field, its edge by «Contrast»`,
+    what: ["missing"],
+    by: "api alone takes a code, on Create account: app keeps its hint until then (R27)",
   },
 };
 
-const AGREE: readonly Region[] = [
-  ART_LATER,
-  {
-    name: "Back",
-    mockup: { css: '.ph-signcol button:text-is("Back")' },
-    app: { role: "button", name: "Back" },
-    followsText: "start",
-    contrast: [{ property: "colour", mockup: "#0071e3", app: "#0066cc" }],
-    differs: { what: ["y"], by: CENTRED },
-  },
-  {
-    name: "the ticks",
-    mockup: { css: 'div:has(> button[role="checkbox"]):has(> div > button[role="checkbox"])' },
-    app: { css: ".nt-ticks" },
-    differs: { what: ["y", "height"], by: `${CENTRED}; the browser's own checkbox, 44 high (R61)` },
-  },
-  LEGAL_WAY,
-];
+/**
+ * Why a tick's mark differs: it holds no words, so its font size draws nothing; and unticked, app
+ * draws the ring alone, where the mockup draws its tick in white too.
+ */
+const NO_WORDS = "the mark holds no words";
+const RING_ALONE = "unticked, app draws the ring alone, with no tick in it";
+
+/** The statement's step: its ticks, round, each mark of 24 in a target of 44, and the note below. */
+function agree(ticked: boolean): Region[] {
+  const mark: Pick<Region, "differs"> = {
+    differs: ticked
+      ? { what: ["font-size"], by: NO_WORDS }
+      : { what: ["font-size", "colour"], by: `${NO_WORDS}; ${RING_ALONE}` },
+  };
+  return [
+    ART_LATER,
+    CARD,
+    BACK,
+    ...heading(
+      "Create your account",
+      "Create your account",
+      "One account holds your own profile and your children’s. Only you sign in",
+    ),
+    {
+      name: "the ticks",
+      mockup: { css: 'div:has(> button[role="checkbox"]):has(> div > button[role="checkbox"])' },
+      app: { css: ".nt-ticks" },
+    },
+    {
+      name: "the statement's tick",
+      mockup: { css: 'button[role="checkbox"] > span:first-child >> nth=0' },
+      app: { css: ".nt-tick-mark >> nth=0" },
+      ...mark,
+    },
+    {
+      name: "the texts' tick",
+      mockup: { css: 'button[role="checkbox"] > span:first-child >> nth=1' },
+      app: { css: ".nt-tick-mark >> nth=1" },
+      ...mark,
+    },
+    {
+      name: "the note on the texts' language",
+      mockup: { text: "Each text is in English, the one in force" },
+      app: { text: "Each text is in English, the one in force" },
+      followsText: "start",
+    },
+    LEGAL_WAY,
+  ];
+}
 
 /** The owner's column: its heading, the avatar, its button, the card of the fields. */
 const OWNER: readonly Region[] = [
@@ -697,7 +816,7 @@ const OWNER: readonly Region[] = [
   },
   {
     name: "the avatar",
-    mockup: { css: 'span:has(> svg[width="50"])' },
+    mockup: { css: 'span:has(> svg[width="54"])' },
     app: { css: ".nt-avatar-profile" },
   },
   {
@@ -757,19 +876,23 @@ function legalShown(page: string) {
     );
 }
 
-/** A text's page once its version has come. */
-const versionShown = () => screen.findByText(/^Version \d, in force since /);
+/** A text's sheet over the statement, opened by its name's link, as the mockup's. */
+function sheetOver(link: string) {
+  return async () => {
+    await agreeing();
+    await userEvent.click(screen.getByRole("link", { name: link }));
+    await screen.findByRole("dialog", { name: link });
+  };
+}
 
 /**
- * Why a legal page differs from the mockup's sheet: the way back to their list, which the mockup
- * has no list for, before the heading; the whole text open below the gist, not behind "Read the
- * full text"; and the texts api gives, where the mockup's are a sample (R31; R69).
+ * Why the page Accessibility differs from the mockup's sheet: the way back to the list of the legal
+ * pages, which the mockup has no list for, before the heading; the whole page open, as it is one of
+ * its own (R31; R69). The texts' sheets give the texts api gives, where the mockup's are a sample.
  */
 const LISTED = "the way back to the list of the legal pages before the heading (R31; R69)";
-const OPEN = 'the whole text open below its gist, not behind "Read the full text" (R31; R69)';
+const OPEN = 'the whole page open, not behind "Read the full text" (R31; R69)';
 const FROM_API = "the texts come from api, the mockup's are a sample (its «Where it differs»)";
-/** Why the gist stands lower on a phone: the chip's words wrap beside the way back. */
-const WRAPPED = `${LISTED}: the chip wraps on a phone`;
 
 /** The sheet, its heading, the chip under it and its close, of a legal page of that heading. */
 function sheetOf(title: string): readonly Region[] {
@@ -810,41 +933,73 @@ function sheetOf(title: string): readonly Region[] {
   ];
 }
 
-/** A text's gist below its caption, and the line that the English text is the one in force. */
-const GIST: readonly Region[] = [
-  {
-    name: "the gist's caption",
-    mockup: { css: ".ph-legal > div:nth-child(2)" },
-    app: { css: ".nt-gist > .nt-sheet-caption" },
-    followsText: "start",
-    differs: { what: ["y"], by: WRAPPED },
-  },
-  {
-    name: "the gist",
-    mockup: { css: ".ph-gist" },
-    app: { css: ".nt-gist > p:last-child" },
-    differs: { what: ["y", "height"], by: `${FROM_API}; ${WRAPPED}` },
-  },
-  {
-    name: "the English text in force",
-    mockup: { text: "The English text is the one in force" },
-    app: { css: ".nt-in-force" },
-    differs: { what: ["missing"], by: "the line is on a screen in another language alone (R27)" },
-  },
-];
+/** A text's sheet over the screen: its card, head, gist, and its foot. */
+function textSheet(title: string): readonly Region[] {
+  return [
+    {
+      name: "the sheet",
+      mockup: { css: ".ph-legal" },
+      app: { css: "dialog.nt-legal-sheet" },
+      differs: { what: ["y", "height"], by: FROM_API },
+    },
+    {
+      name: "the heading",
+      mockup: { css: ".ph-legal > div:first-child > div > span:first-child" },
+      app: { role: "heading", name: title },
+      followsText: "start",
+    },
+    {
+      name: "the chip",
+      mockup: { css: ".ph-legal .ph-chip" },
+      app: { css: ".nt-legal-sheet .nt-version-chip" },
+      followsText: "start",
+    },
+    {
+      name: "the close",
+      mockup: { css: ".ph-legal .ib" },
+      app: { role: "button", name: "Close" },
+      differs: { what: ["font-size", "font-weight"], by: ICON_ALONE },
+    },
+    {
+      name: "the gist's caption",
+      mockup: { css: ".ph-legal > div:nth-child(2)" },
+      app: { css: ".nt-legal-sheet .nt-sheet-caption" },
+      followsText: "start",
+    },
+    {
+      name: "the gist",
+      mockup: { css: ".ph-gist" },
+      app: { css: ".nt-legal-gist" },
+      differs: { what: ["y", "height"], by: FROM_API },
+    },
+    {
+      name: "the English text in force",
+      mockup: { text: "The English text is the one in force" },
+      app: { css: ".nt-in-force" },
+      differs: { what: ["missing"], by: "the line is on a screen in another language alone (R27)" },
+    },
+    {
+      name: "Read the full text",
+      mockup: { role: "button", name: "Read the full text" },
+      app: { role: "button", name: "Read the full text" },
+      differs: { what: ["y"], by: FROM_API },
+      // The link's blue of app, ACCENT_TEXT below, which is defined after this list is drawn.
+      contrast: [{ property: "colour", mockup: "#0071e3", app: "#0066cc" }],
+    },
+  ];
+}
 
 const LEGAL_TEXTS: readonly Compared[] = [
   {
     state: "legal-privacy",
-    draw: legalShown("privacy-policy"),
-    settle: versionShown,
+    draw: invite,
+    settle: sheetOver("Privacy Policy"),
     regions: [
-      ...sheetOf("Privacy Policy"),
-      ...GIST,
+      ...textSheet("Privacy Policy"),
       {
         name: "the next version",
         mockup: { css: '.ph-legal > div[style*="F5F5F7"]' },
-        app: { css: ".nt-sheet-note" },
+        app: { css: ".nt-legal-sheet .nt-sheet-note" },
         differs: {
           what: ["y", "height"],
           by: `${FROM_API}; the way to the next version's page in it (R46)`,
@@ -854,9 +1009,9 @@ const LEGAL_TEXTS: readonly Compared[] = [
   },
   {
     state: "legal-terms",
-    draw: legalShown("terms-of-use"),
-    settle: versionShown,
-    regions: [...sheetOf("Terms of Use"), ...GIST],
+    draw: invite,
+    settle: sheetOver("Terms of Use"),
+    regions: textSheet("Terms of Use"),
   },
   {
     state: "legal-access",
@@ -879,11 +1034,43 @@ const LEGAL_TEXTS: readonly Compared[] = [
   },
 ];
 
+/**
+ * Why the spark differs in its colour and size of text: app draws the name's mark, `Spark`, in the
+ * text's colour at 1em, where the mockup gives its SVG a fill and a size of its own — the same fill
+ * and 36 either way.
+ */
+const MARK = "the name's mark, Spark, drawn in the text's colour at 1em: the mockup's fill and 36";
+
+/** The wait on a ground, once its spark has come. */
+function waiting(ground: "sky" | "page"): Compared {
+  return {
+    state: ground === "sky" ? "wait" : "wait-home",
+    draw: () => inLanguage(<Waiting ground={ground} />),
+    settle: () => screen.findByText("Loading"),
+    regions: [
+      {
+        name: "the spark's halo",
+        mockup: { css: ".ph-waitspark" },
+        app: { css: ".nt-wait-spark" },
+        differs: { what: ["colour", "font-size"], by: MARK },
+      },
+      {
+        name: "the spark",
+        mockup: { css: ".ph-waitspark > svg" },
+        app: { css: ".nt-wait-spark svg" },
+        differs: { what: ["colour", "font-size"], by: MARK },
+      },
+    ],
+  };
+}
+
 const WAY_IN: readonly Compared[] = [
+  waiting("sky"),
+  waiting("page"),
   {
     state: "signin",
     draw: signIn,
-    regions: [...SIGN_IN, primary("Continue with Google", "Sign in with Google")],
+    regions: [...SIGN_IN, primary("Sign in with Google", "Sign in with Google")],
   },
   {
     state: "signin-signing",
@@ -894,19 +1081,33 @@ const WAY_IN: readonly Compared[] = [
   {
     state: "invite",
     draw: invite,
-    regions: [ART_LATER, CODE, primary("Continue", "Continue"), LEGAL_WAY],
+    regions: [
+      ART_LATER,
+      CARD,
+      ...code(false),
+      CODE_HINT,
+      primary("Continue", "Continue"),
+      LEGAL_WAY,
+    ],
   },
   {
     state: "invite-filled",
     draw: invite,
     settle: codeTyped,
-    regions: [ART_LATER, CODE, primary("Continue", "Continue"), LEGAL_WAY],
+    regions: [
+      ART_LATER,
+      CARD,
+      ...code(true),
+      CODE_ACCEPTED,
+      primary("Continue", "Continue"),
+      LEGAL_WAY,
+    ],
   },
   {
     state: "agree",
     draw: invite,
     settle: agreeing,
-    regions: [...AGREE, primary("Create account", "Create account")],
+    regions: [...agree(false), primary("Create account", "Create account")],
   },
   {
     state: "agree-ticked",
@@ -915,10 +1116,12 @@ const WAY_IN: readonly Compared[] = [
       await agreeing();
       await userEvent.click(screen.getByRole("checkbox", { name: "I am 18 or older" }));
       await userEvent.click(
-        screen.getByRole("checkbox", { name: "I accept the Privacy Policy and the Terms of Use" }),
+        screen.getByRole("checkbox", {
+          name: "I agree to the Terms of Use and the Privacy Policy",
+        }),
       );
     },
-    regions: [...AGREE, primary("Create account", "Create account")],
+    regions: [...agree(true), primary("Create account", "Create account")],
   },
   {
     state: "owner",
@@ -992,22 +1195,19 @@ const WAY_IN: readonly Compared[] = [
     state: "who",
     draw: () =>
       inLanguage(
-        <ApiProvider value={NO_NEXT}>
-          <ChooseScreen
-            profiles={[
-              create(ProfileSchema, {
-                profileId: "p1",
-                owner: true,
-                pseudonym: "Sam",
-                avatar: "wave",
-              }),
-            ]}
-            first={false}
-            onChoose={() => {}}
-            onSignOut={() => {}}
-            onLegal={() => {}}
-          />
-        </ApiProvider>,
+        <ChooseScreen
+          profiles={[
+            create(ProfileSchema, {
+              profileId: "p1",
+              owner: true,
+              pseudonym: "Sam",
+              avatar: "wave",
+            }),
+          ]}
+          first={false}
+          onChoose={() => {}}
+          onSignOut={() => {}}
+        />,
       ),
     regions: [
       {
@@ -1023,6 +1223,11 @@ const WAY_IN: readonly Compared[] = [
         followsText: "end",
       },
       {
+        name: "Start, on the owner's card",
+        mockup: { css: "button.pf:not(.ph-addp) .ph-pstart" },
+        app: { css: ".nt-learners > li:first-child .nt-learner-start" },
+      },
+      {
         name: "the owner's profile",
         mockup: { css: "button.pf:not(.ph-addp)" },
         app: { css: ".nt-learners > li:first-child" },
@@ -1031,11 +1236,6 @@ const WAY_IN: readonly Compared[] = [
         name: "Add a learner",
         mockup: { css: "button.ph-addp" },
         app: { css: ".nt-learner-add" },
-      },
-      {
-        name: "the line at the foot",
-        mockup: { text: "Each learner has a made-up name" },
-        app: { text: "Each learner has a made-up name" },
       },
     ],
   },

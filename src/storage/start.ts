@@ -39,7 +39,7 @@ export async function startStorage(device: Device, signIn: SignIn): Promise<Sign
   await step(async () => {
     const left = [...registry.databases].filter(([, entry]) => entry.erase).map(([name]) => name);
     const erased = await eraseDatabases(device, left);
-    // A sign-out cut short: once all of it is gone, its registry goes too.
+    // An erasure of the account cut short: once all of it is gone, its registry goes too.
     if (erased && registry.ending && registry.databases.size === left.length) {
       await device.remove(REGISTRY);
     }

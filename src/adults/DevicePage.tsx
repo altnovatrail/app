@@ -400,7 +400,7 @@ export function DevicePage({
   readonly device: Device;
   /** The profiles of the account, as the session has them now. */
   readonly profiles: readonly Profile[];
-  /** "Erase everything on this device": the sign-out with the device's own data. */
+  /** "Erase everything on this device": the account's data, the device's own, the sign-out. */
   readonly onEraseAll: () => Promise<"erased" | "left" | "failed">;
   /** What the browser tells of the site's storage: its own when left out. */
   readonly site?: SiteStorage;

@@ -1,7 +1,7 @@
 // The owner's own key on this device (R08, R47): in the store `ownKey` of the owner profile's
 // database, and only while the adult keeps it there. Every erasure of that database takes it with
-// it — the profile's data erased, everything on this device, the sign-out, another account, the
-// profile deleted (erase.ts). No DOM.
+// it — the profile's data erased, everything on this device, another account, the account gone,
+// the profile deleted (erase.ts); the sign-out leaves it. No DOM.
 import type { Device } from "./device.ts";
 import { addProfile, type KeptKey, openProfile, type Saved } from "./profile.ts";
 

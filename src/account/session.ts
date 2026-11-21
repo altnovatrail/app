@@ -3,8 +3,8 @@
 // each. An account in the registry other than the one api names goes before anything of the app
 // opens; a profile the list does not hold goes; a failure of the network erases nothing. A user
 // with no account gets the invite code, an account with no owner's profile gets that profile, and
-// the learner chosen lives in memory alone. The sign-out signs out of the sign-in service first,
-// then erases everything of the account.
+// the learner chosen lives in memory alone. The sign-out leaves the sign-in service and erases
+// nothing; "Erase everything on this device" signs out first, then erases.
 import type { Account, Profile } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import { Cause } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import type { LegalTextRef } from "@altnovatrail/contracts/novatrail/api/v1/legal_pb.js";
@@ -61,15 +61,6 @@ export function pseudonymOf(text: string): string | undefined {
   return length >= 1 && length <= 30 ? trimmed : undefined;
 }
 
-/** The unfinished work of a profile on this device, as the sign-out names it. */
-export interface Unfinished {
-  readonly profileId: string;
-  readonly pseudonym: string;
-  readonly count: number;
-  /** The essays it keeps here, which the server does not (R53). */
-  readonly essays: number;
-}
-
 /**
  * The marks of the works on the server go from each profile whose storage of works is off, as
  * `GetAccount` names it: switched off on another device or in a closed tab, it erased the copies
@@ -85,33 +76,6 @@ export async function marksFollow(device: Device, profiles: readonly Profile[]):
     const kept = await openProfileDatabase(device, name).catch(() => undefined);
     await kept?.clearStored().catch(() => {});
   }
-}
-
-/**
- * The attempts each profile of the account keeps unfinished on this device, and its essays the
- * server does not keep — all of them while the profile's storage of works is off, and those whose
- * last `PutWork` did not go through while it is on: the work the sign-out would take (R30, R53). A
- * profile with neither, or with no database here, is not named.
- */
-export async function unfinishedWork(
-  device: Device,
-  profiles: readonly Profile[],
-): Promise<Unfinished[]> {
-  const registry = await readRegistry(device);
-  const found: Unfinished[] = [];
-  for (const profile of profiles) {
-    const name = profileDatabase(profile.profileId);
-    const entry = registry?.databases.get(name);
-    if (entry === undefined || entry.erase) continue;
-    const kept = await openProfileDatabase(device, name);
-    if (kept === undefined) continue;
-    const count = await kept.unfinished();
-    const essays = profile.workStorage ? await kept.essaysOnlyHere() : await kept.essayCount();
-    if (count > 0 || essays > 0) {
-      found.push({ profileId: profile.profileId, pseudonym: profile.pseudonym, count, essays });
-    }
-  }
-  return found;
 }
 
 export interface SessionOptions {
@@ -133,7 +97,7 @@ export class Session {
   /** Each load is a run: the answer of one that another has replaced is dropped. */
   private run = 0;
   private stopService: (() => void) | undefined;
-  /** A sign-out under way: no user it signs out starts anything until its erasure is done. */
+  /** "Erase everything" under way: no user it signs out starts anything until it has erased. */
   private leaving = false;
   /**
    * The account whose first sign-in on this device this is: the registry did not name it. It stays
@@ -413,14 +377,28 @@ export class Session {
   }
 
   /**
-   * The sign-out: the sign-in service's first, then everything of the account on this device
-   * (R04), and with `everything` — "Erase everything on this device" — the device's settings and
-   * the heartbeats of @firebase/app too. `"erased"` when all of it is gone, `"left"` when some
-   * is, which the next start erases of the account, and `"failed"` when the service did not sign
-   * out: then nothing is erased, since the same user would open the account again over its data
-   * gone.
+   * The sign-out: of the sign-in service alone. Everything of the account stays on this device, for
+   * its next sign-in, until another account signs in here (R04). `false` when the service did not
+   * sign out: the session stays where it was.
    */
-  async signOut(everything = false): Promise<"erased" | "left" | "failed"> {
+  async signOut(): Promise<boolean> {
+    try {
+      await this.options.service.signOut();
+    } catch {
+      return false;
+    }
+    this.userChanged();
+    return true;
+  }
+
+  /**
+   * "Erase everything on this device": the sign-out, then everything of the account on this device,
+   * the device's settings and the heartbeats of @firebase/app (R04). `"erased"` when all of it is
+   * gone, `"left"` when some is, which the next start erases of the account, and `"failed"` when
+   * the service did not sign out: then nothing is erased, since the same user would open the
+   * account again over its data gone.
+   */
+  async eraseEverything(): Promise<"erased" | "left" | "failed"> {
     try {
       await this.options.service.signOut();
     } catch {
@@ -430,7 +408,7 @@ export class Session {
     this.leaving = true;
     this.set({ step: "loading" });
     const account = await eraseAccount(this.options.device).catch(() => false);
-    const device = everything ? await eraseDevice(this.options.device).catch(() => false) : true;
+    const device = await eraseDevice(this.options.device).catch(() => false);
     const erased = account && device;
     this.leaving = false;
     // Whoever the service names now — nobody, once it has signed out — the session starts from.

@@ -1,63 +1,57 @@
-// The choice of the learner, as the mockup's `who` (R08, R46, R61; R148 spec): each profile by its
-// avatar and pseudonym, the owner's with no PIN while the account has no child; "Add a learner"
-// shown but not open, with the line why, until a child's profile comes with a parent's consent.
-// Above, the way into the section for adults and the sign-out; below, on the first sign-in, the
-// line that learners' work is kept here, and the next versions of the legal texts, which the adult
-// sees here at each start.
+// The choice of the learner, as the mockup's `who` (R08, R61; R148 spec): on the sign-in's sky with
+// stars of its own, each profile a dark card — its avatar and pseudonym, whose profile it is, and
+// "Start" — the owner's with no PIN while the account has no child; "Add a learner" a card of
+// glass, shown but not open, with the line why, until a child's profile comes with a parent's
+// consent. Above, the name, and the sign-out a pill of glass; the section for adults opens from the
+// profile's menu once a learner is chosen (R29). On the first sign-in it asks the browser to keep
+// the site's data, with no line of its own: the adult who just signed in is the one who sees
+// Firefox's prompt (R04).
 import type { Profile } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
-import { useId, useState } from "react";
+import { useEffect, useId } from "react";
 import { Brand } from "../app/Brand.tsx";
 import { Icon } from "../app/Icon.tsx";
-import { ADULTS, navigate, type Route } from "../app/router.ts";
 import { Screen } from "../app/Screen.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
-import { NextVersions } from "../legal/NextVersions.tsx";
 import { siteStorage } from "../storage/browser.ts";
 import { Avatar } from "./Avatar.tsx";
-
-/** What the browser said of keeping the site's data. */
-type Kept = "granted" | "refused";
-
-/** Asks the browser to keep the site's data: no browser that cannot is asked. */
-async function persist(): Promise<Kept> {
-  return (await siteStorage.persist()) ? "granted" : "refused";
-}
+import { Stars } from "./Stars.tsx";
 
 export interface ChooseScreenProps {
   readonly profiles: readonly Profile[];
   readonly first: boolean;
   readonly onChoose: (profile: Profile) => void;
   readonly onSignOut: () => void;
-  /** Opens a legal page, whose bar comes back here. */
-  readonly onLegal: (page: Route) => void;
 }
 
-export function ChooseScreen({ profiles, first, onChoose, onSignOut, onLegal }: ChooseScreenProps) {
+export function ChooseScreen({ profiles, first, onChoose, onSignOut }: ChooseScreenProps) {
   const { words } = useLanguage();
   const id = useId();
-  const [kept, setKept] = useState<Kept | undefined>(undefined);
+  useEffect(() => {
+    if (first) void siteStorage.persist();
+  }, [first]);
   return (
     <Screen
       title={words.text("choose.title")}
-      layout="profiles"
+      layout="who"
       before={
-        <div className="nt-profiles-top">
-          <button type="button" className="nt-link" onClick={() => navigate(ADULTS)}>
-            {words.text("adults.title")}
-          </button>
-          <Brand className="nt-brand" />
-          <button type="button" className="nt-link" onClick={onSignOut}>
-            {words.text("signout.button")}
-          </button>
-        </div>
+        <>
+          <Stars />
+          <div className="nt-profiles-top">
+            <Brand className="nt-brand" />
+            <button type="button" className="nt-who-out" onClick={onSignOut}>
+              <Icon value="sign-out" />
+              {words.text("signout.button")}
+            </button>
+          </div>
+        </>
       }
-      after={<p className="nt-profiles-foot">{words.text("choose.foot")}</p>}
     >
       <p className="nt-lead">{words.text("choose.intro")}</p>
       <ul className="nt-learners">
         {profiles.map((profile) => (
           <li key={profile.profileId}>
-            {/* Named by the pseudonym alone; whose profile it is, its description. */}
+            {/* Named by the pseudonym alone, whose profile it is its description; the button covers
+                the whole card, and "Start" is the card's look, not a second button. */}
             <button
               type="button"
               className="nt-learner"
@@ -70,6 +64,9 @@ export function ChooseScreen({ profiles, first, onChoose, onSignOut, onLegal }: 
             <p id={`${id}-${profile.profileId}`} className="nt-learner-line">
               {words.text(profile.owner ? "choose.owner" : "choose.learner")}
             </p>
+            <span className="nt-learner-start" aria-hidden="true">
+              {words.text("choose.start")}
+            </span>
           </li>
         ))}
         <li className="nt-learner-add">
@@ -84,22 +81,6 @@ export function ChooseScreen({ profiles, first, onChoose, onSignOut, onLegal }: 
           </p>
         </li>
       </ul>
-      {first ? (
-        <section className="nt-persist">
-          <p>{words.text("persist.line")}</p>
-          {kept === undefined ? (
-            <button
-              type="button"
-              className="nt-secondary"
-              onClick={() => void persist().then(setKept)}
-            >
-              {words.text("persist.ask")}
-            </button>
-          ) : null}
-          <p role="status">{kept === undefined ? null : words.text(`persist.${kept}`)}</p>
-        </section>
-      ) : null}
-      <NextVersions storing={profiles.some((profile) => profile.workStorage)} onRead={onLegal} />
     </Screen>
   );
 }

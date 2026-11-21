@@ -55,10 +55,11 @@ export const TABLE: Readonly<Record<string, Value>> = {
   // Help, filled while its pop-over is open; the tutor's button, a bubble of words.
   help: { base: "help", filled: true, mirrored: false },
   tutor: { base: "sms", filled: false, mirrored: false },
-  // The way into the app (R61): the line for grown-ups on the sign-in, a group; "Signed in with
-  // Google" and the country chosen, a tick; the row that opens the countries, a chevron that points
-  // on; "Add a learner", a plus.
+  // The way into the app (R61): the group of "For grown-ups" in the profile's menu; "Signed in
+  // with Google" and the country chosen, a tick; the row that opens the countries, a chevron that
+  // points on; "Add a learner", a plus; the pill of the sign-in's language, a globe.
   grown: { base: "group", filled: false, mirrored: false },
+  language: { base: "language", filled: false, mirrored: false },
   ticked: { base: "check", filled: false, mirrored: false },
   more: { base: "chevron-right", filled: false, mirrored: true },
   add: { base: "add", filled: false, mirrored: false },
@@ -87,8 +88,7 @@ export const TABLE: Readonly<Record<string, Value>> = {
   camera: { base: "photo-camera", filled: false, mirrored: false },
   legend: { base: "info", filled: false, mirrored: false },
   // The profile's menu (R63): the chevron down of its pill; "Switch learner", two arrows that swap;
-  // "Sign out", a door with an arrow out. "For grown-ups" is the group of the sign-in's line for
-  // grown-ups.
+  // "Sign out", a door with an arrow out. "For grown-ups" is the group of the way in.
   "menu-open": { base: "keyboard-arrow-down", filled: false, mirrored: false },
   "switch-learner": { base: "swap-horiz", filled: false, mirrored: false },
   "sign-out": { base: "logout", filled: false, mirrored: true },

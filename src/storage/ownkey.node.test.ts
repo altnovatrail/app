@@ -74,10 +74,10 @@ describe("the own key on the device", () => {
     expect(await profile?.ownKey()).toEqual(KEY);
   });
 
-  it("goes with the profile's data, everything on the device, and the sign-out", async () => {
+  it("goes with the profile's data, everything on the device, and the account's erasure", async () => {
     for (const erase of [
       (device: Parameters<typeof eraseProfile>[0]) => eraseProfile(device, "p1"),
-      // Everything on this device is the sign-out's erasure, then the device's own data.
+      // Everything on this device is the account's erasure, then the device's own data.
       async (device: Parameters<typeof eraseProfile>[0]) =>
         (await eraseAccount(device)) && (await eraseDevice(device)),
       eraseAccount,

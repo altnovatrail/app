@@ -12,7 +12,7 @@ import {
 } from "./backend.ts";
 import { REGISTRY } from "./schema.ts";
 
-/** The origin's localStorage and sessionStorage, which sign-out clears whole (R04). */
+/** The origin's localStorage and sessionStorage, which the account's erasure clears whole (R04). */
 export interface WebStorage {
   clear(): void;
 }

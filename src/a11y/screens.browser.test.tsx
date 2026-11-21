@@ -32,7 +32,7 @@ import {
 } from "@altnovatrail/contracts/novatrail/api/v1/progress_pb.js";
 import { create } from "@bufbuild/protobuf";
 import { userEvent } from "vitest/browser";
-import { LearnerProvider, SignOutScreen } from "../account/AccountGate.tsx";
+import { LearnerProvider } from "../account/AccountGate.tsx";
 import { ChooseScreen } from "../account/ChooseScreen.tsx";
 import { InviteScreen, type TextsRead } from "../account/InviteScreen.tsx";
 import { OwnerProfileScreen } from "../account/OwnerProfileScreen.tsx";
@@ -329,15 +329,13 @@ const TEXTS: TextsRead = {
   retry: () => {},
 };
 
-/** Every legal text of the screen, opened. */
-/** The invite code typed, and its step left for the statement and the texts. */
+/**
+ * A whole invite code of api's form, synthetic, typed, and its step left for the statement and the
+ * texts (R34 api).
+ */
 async function agreeStep(): Promise<void> {
-  await userEvent.type(document.querySelector("input") as HTMLElement, "NOVA2026");
+  await userEvent.type(document.querySelector("input") as HTMLElement, "N7VA-K2QM-9XB4-ZD3H");
   await submit();
-}
-
-async function openTexts(): Promise<void> {
-  for (const summary of document.querySelectorAll("summary")) await userEvent.click(summary);
 }
 
 /** Presses a form's button, so that every field shows its error. */
@@ -639,20 +637,36 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
   ],
   [
     "invite code",
-    () => <InviteScreen texts={TEXTS} onCreate={async () => "done"} onLegal={() => {}} />,
+    () => (
+      <InviteScreen
+        texts={TEXTS}
+        onCreate={async () => "done"}
+        onLegal={() => {}}
+        onSignOut={() => {}}
+      />
+    ),
   ],
   [
-    "invite code's statement with its texts open",
-    () => <InviteScreen texts={TEXTS} onCreate={async () => "done"} onLegal={() => {}} />,
-    async () => {
-      await agreeStep();
-      await openTexts();
-    },
+    "invite code's statement",
+    () => (
+      <InviteScreen
+        texts={TEXTS}
+        onCreate={async () => "done"}
+        onLegal={() => {}}
+        onSignOut={() => {}}
+      />
+    ),
+    agreeStep,
   ],
   [
     "invite code that api did not take",
     () => (
-      <InviteScreen texts={TEXTS} onCreate={async () => "code-not-accepted"} onLegal={() => {}} />
+      <InviteScreen
+        texts={TEXTS}
+        onCreate={async () => "code-not-accepted"}
+        onLegal={() => {}}
+        onSignOut={() => {}}
+      />
     ),
     async () => {
       await agreeStep();
@@ -669,6 +683,7 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
         texts={{ status: "failed", failure: { kind: "offline" }, retry: () => {} }}
         onCreate={async () => "done"}
         onLegal={() => {}}
+        onSignOut={() => {}}
       />
     ),
     agreeStep,
@@ -694,31 +709,9 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
     },
   ],
   [
-    "choice of the learner on the first sign-in, with the next version of a text",
+    "choice of the learner",
     () => (
-      <ApiProvider value={POLICY_API}>
-        <ChooseScreen
-          profiles={[{ ...OWNER, workStorage: true }]}
-          first
-          onChoose={() => {}}
-          onSignOut={() => {}}
-          onLegal={() => {}}
-        />
-      </ApiProvider>
-    ),
-    async () => {
-      await vi.waitFor(() => expect(document.querySelectorAll("h2")).toHaveLength(1));
-    },
-  ],
-  [
-    "sign-out",
-    () => (
-      <SignOutScreen
-        device={memoryDevice().device}
-        profiles={[OWNER]}
-        onConfirm={async () => "erased" as const}
-        onCancel={() => {}}
-      />
+      <ChooseScreen profiles={[OWNER]} first={false} onChoose={() => {}} onSignOut={() => {}} />
     ),
   ],
   [

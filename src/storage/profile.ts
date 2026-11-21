@@ -757,7 +757,7 @@ export class Profile {
 
   /**
    * How many attempts the profile keeps unfinished: each one ended is erased, so every attempt kept
-   * is one the sign-out would take. They are counted, not read.
+   * is unfinished. They are counted, not read.
    */
   async unfinished(): Promise<number> {
     return this.connection.read(["attempts"], (tx) => tx.count("attempts"));
@@ -882,18 +882,6 @@ export class Profile {
     return this.covered().then(
       ({ essays, attempts }) => [...essays, ...attempts].every(Boolean),
       () => false,
-    );
-  }
-
-  /**
-   * How many essays the device keeps that the server does not, as far as the device holds them:
-   * the sign-out's loss, while the profile's storage is on (R53). All of them, when the marks
-   * cannot be read.
-   */
-  async essaysOnlyHere(): Promise<number> {
-    return this.covered().then(
-      ({ essays }) => essays.filter((stored) => !stored).length,
-      () => this.essayCount(),
     );
   }
 

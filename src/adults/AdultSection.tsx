@@ -171,7 +171,7 @@ export function AdultSection({
   readonly onSaved: (profile: Profile) => void;
   /** A request of a page of the section did not go through. */
   readonly onFailed: (failure: Failure) => void;
-  /** "Erase everything on this device", on the page This device: the sign-out, and more. */
+  /** "Erase everything on this device", on the page This device: it signs out too. */
   readonly onEraseAll: () => Promise<"erased" | "left" | "failed">;
   /** Opens the legal pages — their list, or the page given —, whose bar comes back here. */
   readonly onLegal: (page?: Route) => void;

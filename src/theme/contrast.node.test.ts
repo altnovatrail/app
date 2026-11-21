@@ -49,6 +49,33 @@ const GROUPS: readonly [number, string, string][] = [
   // The close of a sheet, on the page's grey, under the pointer's wash (R69).
   [EDGE, "text-muted", "grey-16/card"],
   [EDGE, "accent", "accent-tint/card accent-tint/glass-panel/page"],
+  // The way in (R61): the card of a step on the sky — its text, a field and the note on it —, the
+  // name and the language's pill over the brightest glow, the accent and a field's edge, the tick;
+  // Google's button, white on the card, its words and its edge.
+  [
+    TEXT,
+    "on-fill sky-muted sky-note-text sky-caption sky-quiet sky-link sky-error",
+    "sky-card sky-fill sky-note",
+  ],
+  [TEXT, "on-fill", "sky sky-glow sky-pill/sky-glow"],
+  [EDGE, "accent sky-edge sky-correct on-fill", "sky-card"],
+  [EDGE, "sky-edge sky-ring", "sky-fill"],
+  // "Who is learning?" (R61): "Sign out" on its glass and the line under the heading where the sky
+  // is brightest under them, a profile's card and "Start", the line of "Add a learner" on its
+  // glass, and the white focus ring, each over the brightest sky it meets.
+  [TEXT, "on-fill", "who-glass/who-under-bar"],
+  [TEXT, "who-lead", "who-under-lead"],
+  [TEXT, "who-line", "sky-card"],
+  [TEXT, "on-fill", "who-start"],
+  [TEXT, "who-why", "who-glass/who-under-glass"],
+  [EDGE, "on-fill", "who-under-ring"],
+  // The owner's profile (R61): the labels, a value, "Choose" and an error on its rows, the avatar's
+  // button and the hint on its card, and the field's edge and the chevron on the rows.
+  [TEXT, "on-fill own-value own-link sky-error", "own-rows/sky-card"],
+  [TEXT, "own-link own-hint", "sky-card"],
+  [EDGE, "own-edge own-more", "own-rows/sky-card"],
+  [TEXT, "google-text", "on-fill"],
+  [EDGE, "google-edge", "on-fill"],
 ];
 
 /** Each pair: the foreground, the layers it stands on, and the least ratio. */
@@ -63,18 +90,20 @@ const PAIRS: readonly [string, readonly string[], number][] = GROUPS.flatMap(
 
 /**
  * The tokens no pair has to hold, and why: grey on a grey fill is a disabled button, which 1.4.3
- * exempts as an inactive control.
+ * exempts as an inactive control, and so are the way in's on its card and "Add a learner" while
+ * it is closed; the ring of the owner's rows is no field's edge, as the field has one of its own.
  */
-const EXEMPT = ["disabled"];
+const EXEMPT = ["disabled", "sky-off", "sky-off-fill", "who-off", "own-ring"];
 
-/** The pair as its test names it: the foreground on its layers. */
+/** The pair as its test names it: the foreground, translucent too, on its layers. */
 function ratio(foreground: string, layers: readonly string[]): number {
   const colour = (name: string) => {
     const value = THEME.get(name);
     if (value === undefined) throw new Error(`no token --nt-${name}`);
     return value;
   };
-  return contrast(colour(foreground), over(...layers.map(colour)));
+  const grounds = layers.map(colour);
+  return contrast(over(colour(foreground), ...grounds), over(...grounds));
 }
 
 describe("the theme", () => {

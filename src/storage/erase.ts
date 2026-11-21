@@ -23,10 +23,10 @@ function accountDatabases(registry: Registry): string[] {
 }
 
 /**
- * Sign-out of the account's owner, and an account that is no more: every profile's database, the
- * cache, the origin's localStorage and sessionStorage, and last the registry. Firebase Auth's own
- * `signOut()` comes first, from the sign-in (R19). Gives whether all of it is gone; what is not,
- * the next start erases.
+ * "Erase everything on this device", and an account that is no more: every profile's database, the
+ * cache, the origin's localStorage and sessionStorage, and last the registry. The sign-out alone
+ * erases none of it (R04). Firebase Auth's own `signOut()` comes first, from the sign-in (R19).
+ * Gives whether all of it is gone; what is not, the next start erases.
  */
 export async function eraseAccount(device: Device): Promise<boolean> {
   const registry = await readRegistry(device);
@@ -49,11 +49,11 @@ export function eraseProfile(device: Device, profileId: string): Promise<boolean
 }
 
 /**
- * What "Erase everything on this device" erases past the sign-out (R04): the device's settings, and
- * the heartbeats of @firebase/app. The SDK holds its own connection to those and does not close it
- * on versionchange, so their removal is "blocked" while the tab is open: IndexedDB does not cancel
- * it for that, and it goes once that connection closes (R16). Gives whether the settings are gone
- * and the heartbeats' removal did not fail.
+ * What "Erase everything on this device" erases past the account's data (R04): the device's
+ * settings, and the heartbeats of @firebase/app. The SDK holds its own connection to those and does
+ * not close it on versionchange, so their removal is "blocked" while the tab is open: IndexedDB
+ * does not cancel it for that, and it goes once that connection closes (R16). Gives whether the
+ * settings are gone and the heartbeats' removal did not fail.
  */
 export async function eraseDevice(device: Device): Promise<boolean> {
   const settings = await eraseSettings(device);

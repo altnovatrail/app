@@ -101,14 +101,10 @@ export const en = {
   "signin.signing": "Signing in with Google…",
   /** Below the heading of the sign-in: what NovaTrail is. */
   "signin.intro":
-    "Lessons from teachers and authors, a canvas to think on, and an AI tutor that helps you find the answer yourself",
+    "Learn from the best teachers, think on a canvas, find the answers yourself — and the AI tutor will guide you",
   /** Below the button: an account is a grown-up's alone (R118 spec). */
   "signin.grown-ups":
     "Accounts are for grown-ups, 18 and over. A child learns in a profile their grown-up adds, and never signs in",
-  /** The line of the sign-in's art, and what it says of NovaTrail. */
-  "signin.tagline": "Any subject, one trail",
-  "signin.tagline-line":
-    "Maths, writing and more, on a canvas to think on, with a tutor that helps you find the answer yourself",
   /** The browser did not open the sign-in window. */
   "signin.blocked":
     "The browser didn't open the sign-in window. Allow pop-ups for this site and try again",
@@ -118,8 +114,10 @@ export const en = {
   "signin.other-tab":
     "The app is open in another tab with the previous sign-in. Close that tab and try again",
   /** The heading of the screen that asks for the invite code. */
-  "account.invite-title": "Invite code",
-  "account.invite-intro": "NovaTrail is open by invitation for now",
+  "account.invite-title": "You're invited",
+  "account.invite-intro": "NovaTrail is in a closed preview. Enter the code from your invitation",
+  /** The name of the code's field, drawn as four boxes of four characters. */
+  "account.code-label": "Invite code",
   /** The owner's statement, a checkbox: kept by api with its date (R118 spec). */
   "account.adult": "I am 18 or older",
   /** Below the statement: why it is asked. */
@@ -132,8 +130,8 @@ export const en = {
     "Another account's data on this device can't be erased yet. Close the app's other tabs and try again",
   /** api did not take the invite code. */
   "account.code-not-accepted": "This code isn't valid or has been used",
-  /** Below the field of the code. */
-  "account.code-hint": "The code from your invitation",
+  /** Below the boxes of the code. */
+  "account.code-hint": "Tap the boxes to paste the code from your invitation",
   /** Below the field when "Continue" is pressed with it empty. */
   "account.code-needed": "Enter the invite code",
   /** From the code to the statement and the texts. */
@@ -142,23 +140,26 @@ export const en = {
   "account.signed-in": "Signed in with Google",
   /** The heading of the step of the statement and the texts. */
   "account.agree-title": "Create your account",
-  "account.agree-intro":
-    "One account holds the profiles of those who learn in it. Only you sign in",
+  "account.agree-intro": "One account holds your own profile and your children's. Only you sign in",
   /**
-   * The owner accepts both legal texts, a checkbox: api keeps the versions shown (R131 spec). Each
-   * name is a link down to its text.
+   * The owner accepts both legal texts, a checkbox: api keeps the versions in force (R131 spec).
+   * Each name is a link to its legal page.
    */
-  "account.texts": "I accept the {policy} and the {terms}",
+  "account.texts": "I agree to the {terms} and the {policy}",
   "account.texts-policy": "Privacy Policy",
   "account.texts-terms": "Terms of Use",
   /** Below the checkbox when "Create account" is pressed with it unticked. */
   "account.texts-needed": "To create an account, accept the Privacy Policy and the Terms of Use",
   /** api has newer versions of the texts than the screen showed: they are shown anew, unticked. */
   "account.texts-changed": "The texts have changed. Read them again and accept them",
-  /** The heading above the legal texts of the account, each opened in place. */
-  "account.texts-title": "Privacy Policy and Terms of Use",
+  /** Below the checkboxes: each text is in English and in force, its gist in the screen's language. */
+  "account.texts-note": "Each text is in English, the one in force, with its gist in your language",
+  /** What a screen reader hears while the next screen is read, after 0.3 s. */
+  "wait.label": "Loading",
   /** The gist of a legal text, in the language of the screen, above the text. */
   "legal.gist": "In short",
+  /** At the foot of a legal text's sheet: its page, with the whole text (R31). */
+  "legal.full": "Read the full text",
   /** On a screen in another language than English: the legal text in force is the English one. */
   "legal.english-in-force": "The text is in English, and the English text is the one in force",
   /** Above a translation of a legal text, which has no force of its own (R141 spec). */
@@ -313,7 +314,6 @@ export const en = {
   "accessibility.operator": "Who runs this copy and how to reach them",
   /** The heading of the screen that makes the owner's own profile as a learner. */
   "profile.title": "Your learner profile",
-  "profile.intro": "This is how you learn here. Use a made-up name, never your real one",
   /** The button of the avatars, before one is chosen and after. */
   "profile.avatar-choose": "Choose an avatar",
   "profile.avatar-change": "Change the avatar",
@@ -345,17 +345,11 @@ export const en = {
   /** Below a profile's name: whose it is. */
   "choose.owner": "You · grown-up",
   "choose.learner": "Learner",
+  /** On a profile's card: the look of the card's one button, not a button of its own. */
+  "choose.start": "Start",
   /** Shown but not open until a child's profile comes with a parent's consent (R148 spec). */
   "choose.add": "Add a learner",
   "choose.add-why": "Comes later: a child's profile waits for a parent's consent",
-  /** At the foot of the choice. */
-  "choose.foot": "Each learner has a made-up name and an avatar, never a real name or a photo",
-  /** On the first sign-in of an account on this device (R04). */
-  "persist.line": "Learners' work is kept on this device",
-  /** Asks the browser to keep the site's data: navigator.storage.persist(). */
-  "persist.ask": "Ask the browser to keep it",
-  "persist.granted": "The browser will keep it",
-  "persist.refused": "The browser may still erase it when space runs low",
   /** Switches to the choice of the learner. */
   "learner.switch": "Switch learner",
   /** The profile's menu (R63): its dialog, its pill by the pseudonym it shows, the learner in it. */
@@ -380,24 +374,7 @@ export const en = {
   "help.name": "Your name is made up",
   "help.name-text": "Write no real names in the work — in an essay either",
   "signout.button": "Sign out",
-  /** The heading of the screen before the sign-out. */
-  "signout.title": "Sign out?",
-  "signout.erases": "Signing out erases everything of this account on this device",
-  /** One line for each profile with unfinished tasks on this device. */
-  "signout.unfinished": plural({
-    one: "{pseudonym}: {count} unfinished task",
-    other: "{pseudonym}: {count} unfinished tasks",
-  }),
-  /** One line for each profile with essays on this device, which the server does not keep. */
-  "signout.essays": plural({
-    one: "{pseudonym}: {count} essay, which isn't on the server",
-    other: "{pseudonym}: {count} essays, which aren't on the server",
-  }),
-  "signout.nothing": "No unfinished work is on this device",
-  "signout.confirm": "Sign out and erase",
-  /** The sign-in service did not sign out: nothing was erased. */
-  "signout.failed": "The sign-out didn't go through. Nothing was erased. Try again",
-  /** After a sign-out whose erasure the browser did not finish. */
+  /** After "Erase everything on this device", whose erasure the browser did not finish. */
   "signout.left": "Not all of it was erased. The app finishes at the next start",
   "common.cancel": "Cancel",
   /** A button that shows its icon alone, ×, and its tooltip: closes a pop-over or a panel (R60). */

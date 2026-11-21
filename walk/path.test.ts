@@ -11,7 +11,7 @@
 // on that key and continued after a reload, the section for adults with the key removed on This
 // device, a key the stub refuses at the ceiling of its tier, with when access comes back on the
 // task and beside the key, the storage of works on the server switched on, its PutWork kept and
-// This device with no warning of loss, and off again, the sign-out that erases the account's data,
+// This device with no warning of loss, and off again, the sign-out that keeps the account's data,
 // and the erasure of everything. The key goes with no request but those that call AI and its check,
 // and the provider alone with those that may give a choice (R47). It asks no host but the origin
 // and those of the sign-in, and nothing on the way logs an error. A response of 4xx of the origin
@@ -68,7 +68,7 @@ const SIGN_IN_HOSTS = new Set([
 /** The questions api's stub of tutor words a step with, in English (R66 api). */
 const STUB_WORDS =
   /Which step of your work would you check first\?|What does the task ask you to find\?|What is given in the task, in your own words\?/;
-/** The databases of the account that the sign-out erases. */
+/** The databases of the account that Erase everything erases and the sign-out keeps. */
 const ACCOUNT_DATABASES = /^novatrail-(profile-.+|registry|cache)$/;
 /** The line Chromium and WebKit log for a response of 4xx, at the resource's address; Firefox none. */
 const FAILED_LOAD = /^Failed to load resource: the server responded with a status of 4\d\d\b/;
@@ -469,10 +469,13 @@ describe.each(NAMED)("the path in %s", (name) => {
     const { page } = walk;
     await page.goto(`${ORIGIN}/`);
     await page.getByRole("heading", { name: "Sign in" }).waitFor();
-    // The choice of the learner reads the legal texts: what api gives, the screen tells of (R46).
-    const legal = page.waitForResponse((response) => response.url().includes("/GetLegalTexts"));
     await page.getByRole("button", { name: "Sign in with Google" }).click();
-    await page.getByRole("heading", { name: "Who is learning?" }).waitFor();
+    await chooseDev(page);
+    await home(page);
+    // The section's first page, from the profile's menu, reads the legal texts: what api gives, the
+    // page tells of (R46).
+    const legal = page.waitForResponse((response) => response.url().includes("/GetLegalTexts"));
+    await fromMenu(page, "For grown-ups");
     const given = fromBinary(GetLegalTextsResponseSchema, await (await legal).body());
     // The notice tells of the texts that are legal pages; a family's waits for its screens, E4.
     const pages = given.nextTexts.filter((text) => isPageText(text.id));
@@ -499,7 +502,7 @@ describe.each(NAMED)("the path in %s", (name) => {
       await page.getByText(new RegExp(`^Version ${version}, applies from `)).waitFor();
       await page.getByRole("button", { name: "Close", exact: true }).click();
     }
-    await chooseDev(page);
+    await page.getByRole("button", { name: "Close the section" }).click();
     await home(page);
     // The platform AI quota share of the profile today (R40).
     const share = page.getByText(/Tutor time today: \d+\s?% used|Today's tutor time is used up/);
@@ -824,17 +827,16 @@ describe.each(NAMED)("the path in %s", (name) => {
     await home(page);
   });
 
-  it("signs out with the list of unfinished work, and erases the account's data", async () => {
+  it("signs out at once, and keeps the account's data", async () => {
     shoot();
     const { page, context } = walk;
-    expect((await databases(context)).filter((db) => ACCOUNT_DATABASES.test(db))).not.toEqual([]);
+    const account = async () =>
+      (await databases(context)).filter((db) => ACCOUNT_DATABASES.test(db)).sort();
+    const kept = await account();
+    expect(kept).not.toEqual([]);
     await fromMenu(page, "Sign out");
-    await page.getByRole("heading", { level: 1, name: "Sign out?" }).waitFor();
-    await page.getByRole("listitem").filter({ hasText: "Dev: 1 unfinished task" }).waitFor();
-    await page.getByRole("button", { name: "Sign out and erase" }).click();
     await page.getByRole("heading", { name: "Sign in" }).waitFor();
-    expect(await page.getByText(/Not all of it was erased/).count()).toBe(0);
-    expect((await databases(context)).filter((db) => ACCOUNT_DATABASES.test(db))).toEqual([]);
+    expect(await account()).toEqual(kept);
   });
 
   it("erases everything on this device, and the heartbeats once the tab is closed", async () => {

@@ -1,17 +1,17 @@
 // The way into the app (R16, R19, R61): the sign-in, the invite code of a user with no account with
-// the legal texts it accepts (R27), the owner's own profile, the choice of the learner and the
-// sign-out, each a screen of its own in the language of the device. The app below it opens only
-// once a learner is chosen, so that nothing of it opens before the device has erased what an
-// account other than the one api names left there. The section for adults opens from the choice of
-// the learner and from the bar above the learner's screens, in place of either, while the account
-// is open (R29); a profile it changes, the other tabs hear of by BroadcastChannel, and a change
-// they tell of comes here. The legal pages show at any step, before signing in too, from the
-// sign-in screen and from the section's first page, and their bar goes back to where they were
-// opened from (R31); the choice of the learner and the section's first page tell of a text's next
-// version and open its page (R46). So does the license of a module's version, opened from a card of
-// My subjects, in the language of the learner's screens while a learner is chosen, and closed home
-// (R32); and so does the page on the AI tutor, opened from My subjects too (R33), which opens the
-// page of who runs this copy, whose bar comes back to it (R46).
+// the legal texts it accepts (R27), the owner's own profile and the choice of the learner, each a
+// screen of its own in the language of the device; the sign-out asks nothing and erases nothing
+// (R04). The app below it opens only once a learner is chosen, so that nothing of it opens before
+// the device has erased what an account other than the one api names left there. The section for
+// adults opens from the choice of the learner and from the bar above the learner's screens, in
+// place of either, while the account is open (R29); a profile it changes, the other tabs hear of by
+// BroadcastChannel, and a change they tell of comes here. The legal pages show at any step, before
+// signing in too, from the sign-in screen and from the section's first page, and their bar goes
+// back to where they were opened from (R31); the section's first page tells of a text's next version
+// and opens its page (R46). So does the license of a module's version,
+// opened from a card of My subjects, in the language of the learner's screens while a learner is
+// chosen, and closed home (R32); and so does the page on the AI tutor, opened from My subjects too
+// (R33), which opens the page of who runs this copy, whose bar comes back to it (R46).
 import type { Profile } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import {
   createContext,
@@ -39,7 +39,7 @@ import {
   TUTOR,
   useRoute,
 } from "../app/router.ts";
-import { Screen } from "../app/Screen.tsx";
+import { Waiting } from "../app/Waiting.tsx";
 import { useDeployment, useStorage } from "../boot/Boot.tsx";
 import { Held, Offline, ReadFailed, StorageGone } from "../boot/Screens.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
@@ -51,12 +51,11 @@ import { LicensePages } from "../packages/LicensePage.tsx";
 import { usePackages } from "../packages/PackagesContext.tsx";
 import { useSignIn } from "../signin/SignInContext.tsx";
 import { SignInScreen } from "../signin/SignInScreen.tsx";
-import type { Device } from "../storage/device.ts";
 import { TutorPages } from "../tutor/TutorPage.tsx";
 import { ChooseScreen } from "./ChooseScreen.tsx";
 import { type InviteDraft, InviteScreen } from "./InviteScreen.tsx";
 import { OwnerProfileScreen } from "./OwnerProfileScreen.tsx";
-import { Session, type Unfinished, unfinishedWork } from "./session.ts";
+import { Session } from "./session.ts";
 import { PROFILES_CHANNEL, profileMessage, profileOf } from "./settings.ts";
 
 /** The learner chosen, and what the bar above the learner's screens does. */
@@ -110,7 +109,6 @@ export function AccountGate({ children }: { readonly children: ReactNode }) {
     if (owner === "") holder.close();
     else void holder.open(owner);
   }, [holder, owner]);
-  const [leaving, setLeaving] = useState(false);
   const [left, setLeft] = useState(false);
   const { language } = useLanguage();
   const route = useRoute();
@@ -153,28 +151,6 @@ export function AccountGate({ children }: { readonly children: ReactNode }) {
     [session],
   );
   const onFailed = useCallback((failure: Failure) => session.profileFailed(failure), [session]);
-  // The sign-out screen is for the account open when it was asked: once that has gone some other
-  // way — another tab signed out, the account is gone — the next account does not open on it.
-  useEffect(() => {
-    if (!open) setLeaving(false);
-  }, [open]);
-
-  if (leaving && open) {
-    return (
-      <SignOutScreen
-        device={device}
-        profiles={state.account.profiles}
-        onCancel={() => setLeaving(false)}
-        onConfirm={async () => {
-          const done = await session.signOut();
-          if (done === "failed") return "failed";
-          setLeft(done === "left");
-          setLeaving(false);
-          return done;
-        }}
-      />
-    );
-  }
   // The screen they close to is My subjects while a learner is chosen, in their language.
   if (route.screen === MODULE_LICENSE.screen || route.screen === TUTOR.screen) {
     const pages =
@@ -205,7 +181,7 @@ export function AccountGate({ children }: { readonly children: ReactNode }) {
           // has no child (R08).
           {...(state.step === "choose" ? { onOpenOwner: () => session.choose() } : {})}
           onEraseAll={async () => {
-            const done = await session.signOut(true);
+            const done = await session.eraseEverything();
             if (done === "failed") return "failed";
             // The sign-in comes next, and after it home, not the page of a device erased.
             setLeft(done === "left");
@@ -220,7 +196,8 @@ export function AccountGate({ children }: { readonly children: ReactNode }) {
   switch (state.step) {
     case "starting":
     case "loading":
-      return null;
+      // What comes next is the way in or "Who is learning?": the sky, never a white page.
+      return <Waiting ground="sky" />;
     case "signed-out":
       return (
         <SignInScreen
@@ -230,7 +207,7 @@ export function AccountGate({ children }: { readonly children: ReactNode }) {
           }}
           {...(state.result === undefined ? {} : { result: state.result })}
           left={left}
-          onLegal={() => openLegal(HOME)}
+          onLegal={(page) => openLegal(HOME, page)}
         />
       );
     case "offline":
@@ -242,7 +219,13 @@ export function AccountGate({ children }: { readonly children: ReactNode }) {
     case "failed":
       return <ReadFailed failure={state.failure} onRetry={() => void session.load()} />;
     case "invite":
-      return <InviteStep session={session} draft={inviteDraft} onLegal={() => openLegal(HOME)} />;
+      return (
+        <InviteStep
+          session={session}
+          draft={inviteDraft}
+          onLegal={(page) => openLegal(HOME, page)}
+        />
+      );
     case "owner-profile":
       return (
         <OwnerProfileScreen
@@ -257,21 +240,20 @@ export function AccountGate({ children }: { readonly children: ReactNode }) {
           profiles={[state.owner]}
           first={state.first}
           onChoose={() => session.choose()}
-          onSignOut={() => setLeaving(true)}
-          onLegal={(page) => openLegal(HOME, page)}
+          onSignOut={() => void session.signOut()}
         />
       );
     case "learning":
       // The learner's screens open once the key the owner profile keeps here is in memory: their
       // first request already names its provider.
-      if (owner !== "" && !opened) return null;
+      if (owner !== "" && !opened) return <Waiting ground="page" />;
       return (
         <KeyHolderProvider holder={holder}>
           <LearnerProvider
             value={{
               learner: state.learner,
               switchLearner: () => session.switchLearner(),
-              signOut: () => setLeaving(true),
+              signOut: () => void session.signOut(),
               openLegal: (page) => openLegal(HOME, page),
               onSaved,
               onFailed,
@@ -295,7 +277,7 @@ function InviteStep({
 }: {
   readonly session: Session;
   readonly draft: RefObject<InviteDraft | undefined>;
-  readonly onLegal: () => void;
+  readonly onLegal: (page: Route) => void;
 }) {
   const { language } = useLanguage();
   const read = useCallback(
@@ -312,85 +294,7 @@ function InviteStep({
       draft={draft}
       onCreate={(code, accepted) => session.createAccount(code, accepted)}
       onLegal={onLegal}
+      onSignOut={() => void session.signOut()}
     />
-  );
-}
-
-/** Before the sign-out: what it takes from this device (R04), and a way back. */
-export function SignOutScreen({
-  device,
-  profiles,
-  onConfirm,
-  onCancel,
-}: {
-  readonly device: Device;
-  readonly profiles: readonly Profile[];
-  readonly onConfirm: () => Promise<"erased" | "left" | "failed">;
-  readonly onCancel: () => void;
-}) {
-  const { words } = useLanguage();
-  const [work, setWork] = useState<Unfinished[] | undefined>(undefined);
-  const [pending, setPending] = useState(false);
-  const [failed, setFailed] = useState(false);
-  useEffect(() => {
-    let current = true;
-    void unfinishedWork(device, profiles)
-      .catch((): Unfinished[] => [])
-      .then((found) => {
-        if (current) setWork(found);
-      });
-    return () => {
-      current = false;
-    };
-  }, [device, profiles]);
-  return (
-    <Screen title={words.text("signout.title")}>
-      <p>{words.text("signout.erases")}</p>
-      {work === undefined ? null : work.length === 0 ? (
-        <p>{words.text("signout.nothing")}</p>
-      ) : (
-        <ul>
-          {work.flatMap(({ profileId, pseudonym, count, essays }) => [
-            ...(count === 0
-              ? []
-              : [
-                  <li key={profileId}>{words.text("signout.unfinished", { pseudonym, count })}</li>,
-                ]),
-            ...(essays === 0
-              ? []
-              : [
-                  <li key={`${profileId} essays`}>
-                    {words.text("signout.essays", { pseudonym, count: essays })}
-                  </li>,
-                ]),
-          ])}
-        </ul>
-      )}
-      <div className="nt-buttons">
-        <button
-          type="button"
-          disabled={pending}
-          onClick={() => {
-            setPending(true);
-            setFailed(false);
-            void onConfirm().then((done) => {
-              if (done !== "failed") return;
-              setPending(false);
-              setFailed(true);
-            });
-          }}
-        >
-          {words.text("signout.confirm")}
-        </button>
-        <button type="button" className="nt-secondary" onClick={onCancel}>
-          {words.text("common.cancel")}
-        </button>
-      </div>
-      {failed ? (
-        <p role="alert" className="nt-error">
-          {words.text("signout.failed")}
-        </p>
-      ) : null}
-    </Screen>
   );
 }

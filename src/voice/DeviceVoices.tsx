@@ -4,8 +4,8 @@
 // explanation languages of the modules the cache holds — the voice that says it, chosen among its
 // candidates, with a sample; a language with no voice says so, and how to add one in the system, in
 // words, with no link. The choice and the leave lie in the registry of this device, the other tabs
-// hear of a change of them, and the sign-out of the owner or another account signing in erases
-// them.
+// hear of a change of them, and "Erase everything on this device" or another account signing in
+// erases them.
 import { useEffect, useId, useMemo, useState, useSyncExternalStore } from "react";
 import { languageName } from "../i18n/intl.ts";
 import { useLanguage } from "../i18n/LanguageContext.tsx";

@@ -238,7 +238,9 @@ describe("Boot", () => {
     act(() => {
       window.dispatchEvent(new Event("vite:preloadError", { cancelable: true }));
     });
-    expect(screen.getByRole("status")).toBeTruthy();
+    // Before the file is read, over the sky the first screen will stand on: never a white page.
+    expect(screen.getByText("There is a new version of the app")).toBeTruthy();
+    expect(document.querySelector("main.nt-wait-sky")).not.toBeNull();
     expect(await screen.findByRole("heading", { name: "This app isn't set up" })).toBeTruthy();
     expect(screen.getByRole("status")).toBeTruthy();
     unmount();
