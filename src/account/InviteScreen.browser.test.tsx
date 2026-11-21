@@ -10,6 +10,7 @@ import {
 } from "@altnovatrail/contracts/novatrail/api/v1/legal_pb.js";
 import { create } from "@bufbuild/protobuf";
 import { render, screen, within } from "@testing-library/react";
+import { StrictMode } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 import { inLanguage } from "../test/language.tsx";
@@ -254,6 +255,17 @@ describe("the invite code's screen", () => {
     // The way at the card's foot opens the policy's sheet, as the mockup's.
     await userEvent.click(screen.getByRole("button", { name: "Privacy and legal information" }));
     expect(await screen.findByRole("dialog", { name: "Privacy Policy" })).toBeVisible();
+  });
+
+  it("keeps a text's sheet open under React's strict mode, which mounts it twice", async () => {
+    render(<StrictMode>{invite(read(2), async () => "done")}</StrictMode>);
+    await toAgree();
+    await userEvent.click(screen.getByRole("link", { name: "Privacy Policy" }));
+    const sheet = await screen.findByRole("dialog", { name: "Privacy Policy" });
+    // The close of the first mount comes as an event after the second: the sheet stays.
+    await new Promise((done) => setTimeout(done, 50));
+    expect(sheet).toBeVisible();
+    expect(sheet).toHaveAttribute("open");
   });
 
   it("takes the acceptance back when other versions are shown", async () => {

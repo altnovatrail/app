@@ -150,7 +150,11 @@ export function LegalSheet({ id, versions, onClose, onPage }: LegalSheetProps) {
         event.preventDefault();
         onClose();
       }}
-      onClose={onClose}
+      // Only a close the browser made itself, as on a second Escape: the close of an unmount — and
+      // of React's second mount in development, after which the sheet is open again — is not one.
+      onClose={() => {
+        if (dialog.current?.open !== true) onClose();
+      }}
     >
       <div className="nt-legal-body">
         <div className="nt-sheet-head">
