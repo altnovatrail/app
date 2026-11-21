@@ -1,4 +1,4 @@
-// The debug mode of a local run (R72): what the window writes of the models and the calls, and the
+// The debug mode (R72): what the window writes of the models and the calls, and the
 // tab's memory of them — the choice as api holds it, the calls taken after each request of a task
 // from paper, and the session's sum.
 import { Cause } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
@@ -50,6 +50,7 @@ import {
   truthOf,
   usd,
 } from "./debug.ts";
+import { signedIn } from "./gate.ts";
 
 const haiku = create(DebugModelSchema, {
   id: "claude-haiku-5-5",
@@ -172,6 +173,40 @@ describe("the tab's memory", () => {
     });
     await load(c);
     expect(snapshot().status).toBe("off");
+  });
+
+  it("is off for an account without the right", async () => {
+    const { client: c } = client({
+      get: async () => {
+        throw new ApiError({ kind: "forbidden" });
+      },
+    });
+    await load(c);
+    expect(snapshot().status).toBe("off");
+  });
+
+  it("begins from nothing with another account, and asks for it", async () => {
+    signedIn("a");
+    const { client: c } = client({ get: async () => create(GetDebugResponseSchema, { models }) });
+    await load(c);
+    await take(
+      client({
+        take: async () =>
+          create(TakeDebugCallsResponseSchema, {
+            actions: [create(DebugActionSchema, { kind: DebugActionKind.CHECK })],
+          }),
+      }).client,
+    );
+    expect(snapshot().actions).toHaveLength(1);
+    signedIn("b");
+    await load(
+      client({
+        get: async () => {
+          throw new ApiError({ kind: "forbidden" });
+        },
+      }).client,
+    );
+    expect(snapshot()).toMatchObject({ status: "off", actions: [], models: [] });
   });
 
   it("asks again after a failure that is no refusal, and holds what api answers", async () => {

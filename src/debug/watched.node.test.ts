@@ -1,6 +1,8 @@
-// The debug mode through app's own client (R72): an api without its debug flag answers GetDebug
-// `unimplemented`, which turns the mode off and is no sign of a stale build; with it, a request of a
-// task from paper watched by the slot takes what its calls returned once it ends.
+// The debug mode through app's own client (R72): an api beside the stub of tutor answers GetDebug
+// `unimplemented`, and an account without the right `permission_denied`, either of which turns the
+// mode off and is no sign of a stale build; with it, a request of a task from paper watched by the
+// slot takes what its calls returned once it ends, one made while GetDebug is asked waits for it, and
+// one made before anything asked it asks it first.
 import {
   DebugActionKind,
   DebugActionSchema,
@@ -8,10 +10,11 @@ import {
   DebugService,
 } from "@altnovatrail/contracts/novatrail/api/v1/debug_pb.js";
 import { create } from "@bufbuild/protobuf";
-import { type ConnectRouter, createRouterTransport } from "@connectrpc/connect";
+import { Code, ConnectError, type ConnectRouter, createRouterTransport } from "@connectrpc/connect";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createApi } from "../api/client.ts";
 import { load, reset, snapshot } from "./debug.ts";
+import { ask } from "./gate.ts";
 import { watched } from "./watched.ts";
 
 function apiOn(routes: (router: ConnectRouter) => void) {
@@ -37,6 +40,66 @@ describe("the debug mode through the client", () => {
     // A watched call goes all the same, and takes nothing.
     await expect(watched(api, async () => 7)).resolves.toBe(7);
     expect(snapshot().actions).toEqual([]);
+  });
+
+  it("is off for an account without the right, no stale build, and watches no call", async () => {
+    let taken = 0;
+    const { api, stale } = apiOn((router) =>
+      router.service(DebugService, {
+        getDebug: () => {
+          throw new ConnectError("no right", Code.PermissionDenied);
+        },
+        takeDebugCalls: () => {
+          taken++;
+          return {};
+        },
+      }),
+    );
+    await load(api.debug);
+    expect(snapshot().status).toBe("off");
+    expect(stale).not.toHaveBeenCalled();
+    await expect(watched(api, async () => 7)).resolves.toBe(7);
+    expect(taken).toBe(0);
+  });
+
+  it("makes a call while GetDebug is asked wait for its answer, and watches it", async () => {
+    let answered: () => void = () => {};
+    const asked = new Promise<void>((done) => (answered = done));
+    let taken = 0;
+    const { api } = apiOn((router) =>
+      router.service(DebugService, {
+        getDebug: async () => {
+          await asked;
+          return {};
+        },
+        takeDebugCalls: () => {
+          taken++;
+          return { actions: [create(DebugActionSchema, { kind: DebugActionKind.FIND_TASKS })] };
+        },
+      }),
+    );
+    void ask(api.debug);
+    const call = watched(api, async () => "found");
+    answered();
+    await expect(call).resolves.toBe("found");
+    await vi.waitFor(() => expect(snapshot().actions).toHaveLength(1));
+    expect(taken).toBe(1);
+  });
+
+  it("asks GetDebug for a call made before the slot asked it, and watches the call", async () => {
+    let taken = 0;
+    const { api } = apiOn((router) =>
+      router.service(DebugService, {
+        getDebug: () => ({}),
+        takeDebugCalls: () => {
+          taken++;
+          return { actions: [create(DebugActionSchema, { kind: DebugActionKind.FIND_TASKS })] };
+        },
+      }),
+    );
+    await expect(watched(api, async () => "found")).resolves.toBe("found");
+    await vi.waitFor(() => expect(snapshot().actions).toHaveLength(1));
+    expect(taken).toBe(1);
   });
 
   it("takes the calls of a watched request once it ends, a failed one too", async () => {
