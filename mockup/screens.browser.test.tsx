@@ -574,6 +574,7 @@ function invite() {
       texts={ACCOUNT_TEXTS}
       onCreate={() => new Promise(() => {})}
       onLegal={() => {}}
+      onSignOut={() => {}}
     />,
   );
 }
@@ -585,9 +586,9 @@ function owner() {
 
 /** api by the routing transport: no legal text has a next version. */
 
-/** A synthetic code, typed. */
+/** The mockup's code, synthetic, of api's form (R34 api), pasted as its boxes take it. */
 async function codeTyped() {
-  await userEvent.type(screen.getByRole("textbox", { name: "Invite code" }), "NOVA2026");
+  await userEvent.fill(screen.getByRole("textbox", { name: "Invite code" }), "N7VA-K2QM-9XB4-ZD3H");
 }
 
 /** The code typed and taken on to the statement and the texts. */
@@ -599,11 +600,10 @@ async function agreeing() {
 
 /**
  * Why a part of a step's card stands lower or higher than the mockup's: the card stands where the
- * mockup's does, but its words are app's own, without the mockup's full stops, the code's step has
- * no "Back", which in the mockup signs out, and the statement's texts stand in place below it (R27;
- * R46), so what follows them moves (R61).
+ * mockup's does, but its words are app's own, without the mockup's full stops, so what follows
+ * them moves (R61).
  */
-const SHIFTED = "app's own words, no Back from the code, the texts in place below (R27; R46; R61)";
+const SHIFTED = "app's own words, without the mockup's full stops (R61)";
 
 /** The way to the legal pages, at the card's foot: one button that names them all (R31). */
 const LEGAL_WAY: Region = {
@@ -663,34 +663,137 @@ const SIGN_IN: readonly Region[] = [
   LEGAL_WAY,
 ];
 
-const CODE: Region = {
-  name: "the code",
-  mockup: { role: "button", name: "Invite code" },
-  app: { role: "textbox", name: "Invite code" },
-  // Eight boxes in the mockup, one field here, whose edge is the one «Contrast» asks of a field.
+/** "Back" at the top of a step's card: from the code it signs out, from the statement to the code. */
+const BACK: Region = {
+  name: "Back",
+  mockup: { css: '.ph-card button:text-is("Back")' },
+  app: { role: "button", name: "Back" },
+  followsText: "start",
+};
+
+/** A step's heading, as each side words it, and the line below it, given as app words it. */
+function heading(mockup: string, app: string, lead: string): Region[] {
+  return [
+    {
+      name: "the heading",
+      mockup: { css: `.ph-card > div:text-is("${mockup}")` },
+      app: { role: "heading", name: app },
+      followsText: "start",
+    },
+    {
+      name: "the line below the heading",
+      mockup: { css: `.ph-card > div:text-is("${lead}.")` },
+      app: { css: ".nt-welcome .nt-lead" },
+      followsText: "start",
+    },
+  ];
+}
+
+/** Why a box is ringed in one and not the other: app rings it while its field has the focus. */
+const FOCUSED =
+  "app rings the box the next character goes to while the field has the focus, the last once the code is whole";
+
+/**
+ * The code's four boxes of four characters, the row and its first and last box: empty, the
+ * mockup rings the first, and filled, none, where app rings the box of the field's caret.
+ */
+function code(filled: boolean): Region[] {
+  const ring: Pick<Region, "differs"> = { differs: { what: ["border"], by: FOCUSED } };
+  return [
+    BACK,
+    ...heading(
+      "You’re invited",
+      "You're invited",
+      "NovaTrail is in a closed preview. Enter the code from your invitation",
+    ),
+    {
+      name: "the code",
+      mockup: { css: ".ph-codes" },
+      app: { css: ".nt-code-shown" },
+    },
+    {
+      name: "the code's first box",
+      mockup: { css: ".ph-codes > .ph-code >> nth=0" },
+      app: { css: ".nt-code-shown > .nt-code-box >> nth=0" },
+      ...(filled ? {} : ring),
+    },
+    {
+      name: "the code's last box",
+      mockup: { css: ".ph-codes > .ph-code >> nth=-1" },
+      app: { css: ".nt-code-shown > .nt-code-box >> nth=-1" },
+      ...(filled ? ring : {}),
+    },
+  ];
+}
+
+/** The line below the boxes: how to give the code. */
+const CODE_HINT: Region = {
+  name: "the code's hint",
+  mockup: { text: "Tap the boxes to paste the code from your invitation" },
+  app: { text: "Tap the boxes to paste the code from your invitation" },
+  followsText: "start",
+};
+
+/** The mockup's line once the code is filled, which app never says before api has answered. */
+const CODE_ACCEPTED: Region = {
+  name: "the code's line once filled",
+  mockup: { text: "Code accepted" },
+  app: { text: "Code accepted" },
   differs: {
-    what: ["y", "width", "border", "radius", "font-size"],
-    by: `${SHIFTED}; one field, its edge by «Contrast»`,
+    what: ["missing"],
+    by: "api alone takes a code, on Create account: app keeps its hint until then (R27)",
   },
 };
 
-const AGREE: readonly Region[] = [
-  ART_LATER,
-  CARD,
-  {
-    name: "Back",
-    mockup: { css: '.ph-card button:text-is("Back")' },
-    app: { role: "button", name: "Back" },
-    followsText: "start",
-  },
-  {
-    name: "the ticks",
-    mockup: { css: 'div:has(> button[role="checkbox"]):has(> div > button[role="checkbox"])' },
-    app: { css: ".nt-ticks" },
-    differs: { what: ["y", "height"], by: `${SHIFTED}; the browser's own checkbox, 44 high (R61)` },
-  },
-  LEGAL_WAY,
-];
+/**
+ * Why a tick's mark differs: it holds no words, so its font size draws nothing; and unticked, app
+ * draws the ring alone, where the mockup draws its tick in white too.
+ */
+const NO_WORDS = "the mark holds no words";
+const RING_ALONE = "unticked, app draws the ring alone, with no tick in it";
+
+/** The statement's step: its ticks, round, each mark of 24 in a target of 44, and the note below. */
+function agree(ticked: boolean): Region[] {
+  const mark: Pick<Region, "differs"> = {
+    differs: ticked
+      ? { what: ["font-size"], by: NO_WORDS }
+      : { what: ["font-size", "colour"], by: `${NO_WORDS}; ${RING_ALONE}` },
+  };
+  return [
+    ART_LATER,
+    CARD,
+    BACK,
+    ...heading(
+      "Create your account",
+      "Create your account",
+      "One account holds your own profile and your children’s. Only you sign in",
+    ),
+    {
+      name: "the ticks",
+      mockup: { css: 'div:has(> button[role="checkbox"]):has(> div > button[role="checkbox"])' },
+      app: { css: ".nt-ticks" },
+    },
+    {
+      name: "the statement's tick",
+      mockup: { css: 'button[role="checkbox"] > span:first-child >> nth=0' },
+      app: { css: ".nt-tick-mark >> nth=0" },
+      ...mark,
+    },
+    {
+      name: "the texts' tick",
+      mockup: { css: 'button[role="checkbox"] > span:first-child >> nth=1' },
+      app: { css: ".nt-tick-mark >> nth=1" },
+      ...mark,
+    },
+    {
+      name: "the note on the texts' language",
+      mockup: { text: "Each text is in English, the one in force" },
+      app: { text: "Each text is in English, the one in force" },
+      followsText: "start",
+    },
+    LEGAL_WAY,
+  ];
+}
 
 /** The owner's column: its heading, the avatar, its button, the card of the fields. */
 const OWNER: readonly Region[] = [
@@ -899,19 +1002,33 @@ const WAY_IN: readonly Compared[] = [
   {
     state: "invite",
     draw: invite,
-    regions: [ART_LATER, CARD, CODE, primary("Continue", "Continue"), LEGAL_WAY],
+    regions: [
+      ART_LATER,
+      CARD,
+      ...code(false),
+      CODE_HINT,
+      primary("Continue", "Continue"),
+      LEGAL_WAY,
+    ],
   },
   {
     state: "invite-filled",
     draw: invite,
     settle: codeTyped,
-    regions: [ART_LATER, CARD, CODE, primary("Continue", "Continue"), LEGAL_WAY],
+    regions: [
+      ART_LATER,
+      CARD,
+      ...code(true),
+      CODE_ACCEPTED,
+      primary("Continue", "Continue"),
+      LEGAL_WAY,
+    ],
   },
   {
     state: "agree",
     draw: invite,
     settle: agreeing,
-    regions: [...AGREE, primary("Create account", "Create account")],
+    regions: [...agree(false), primary("Create account", "Create account")],
   },
   {
     state: "agree-ticked",
@@ -920,10 +1037,12 @@ const WAY_IN: readonly Compared[] = [
       await agreeing();
       await userEvent.click(screen.getByRole("checkbox", { name: "I am 18 or older" }));
       await userEvent.click(
-        screen.getByRole("checkbox", { name: "I accept the Privacy Policy and the Terms of Use" }),
+        screen.getByRole("checkbox", {
+          name: "I agree to the Terms of Use and the Privacy Policy",
+        }),
       );
     },
-    regions: [...AGREE, primary("Create account", "Create account")],
+    regions: [...agree(true), primary("Create account", "Create account")],
   },
   {
     state: "owner",

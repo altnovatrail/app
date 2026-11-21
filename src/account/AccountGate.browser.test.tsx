@@ -238,6 +238,10 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+/** Invite codes of api's form, synthetic: one api takes, and one it refuses (R34 api). */
+const CODE = "N7VA-K2QM-9XB4-ZD3H";
+const WRONG = "W0RN-G7CD-5EFX-Q2TT";
+
 describe("the way in", () => {
   it("goes from the sign-in by the invite code and the owner's profile to the learner's screens", async () => {
     const persist = vi.fn(async () => true);
@@ -264,7 +268,7 @@ describe("the way in", () => {
           codes.push(request.inviteCode);
           accepted.push(request.acceptedTexts.map(({ id, version }) => `${id} ${version}`));
           expect(request.adultStated).toBe(true);
-          if (request.inviteCode !== "0123-4567-89AB-CDEF") {
+          if (request.inviteCode !== CODE) {
             return refusal("invalid_argument", Cause.CODE_NOT_ACCEPTED);
           }
           profiles = { accountId: "account-1", profiles: [] };
@@ -293,8 +297,8 @@ describe("the way in", () => {
     await userEvent.click(screen.getByRole("button", { name: "Sign in with Google" }));
 
     // The invite code, then the statement and the texts: nothing goes before each is given.
-    expect(await screen.findByRole("heading", { level: 1, name: "Invite code" })).toBeTruthy();
-    await userEvent.type(screen.getByRole("textbox", { name: "Invite code" }), "WRONG");
+    expect(await screen.findByRole("heading", { level: 1, name: "You're invited" })).toBeTruthy();
+    await userEvent.type(screen.getByRole("textbox", { name: "Invite code" }), WRONG);
     await userEvent.click(screen.getByRole("button", { name: "Continue" }));
     expect(
       await screen.findByRole("heading", { level: 1, name: "Create your account" }),
@@ -302,41 +306,38 @@ describe("the way in", () => {
     const create = screen.getByRole("button", { name: "Create account" });
     await userEvent.click(screen.getByRole("checkbox", { name: "I am 18 or older" }));
     expect(create).toHaveAttribute("aria-disabled", "true");
-    // The texts in force, each open in place, and the owner's acceptance of both.
-    expect(
-      screen.getByRole("heading", { level: 2, name: "Privacy Policy and Terms of Use" }),
-    ).toBeTruthy();
+    // The owner's acceptance of both texts in force, each name a link to its legal page, and no
+    // text shown in place.
     const accept = screen.getByRole("checkbox", {
-      name: "I accept the Privacy Policy and the Terms of Use",
+      name: "I agree to the Terms of Use and the Privacy Policy",
     });
-    expect(codes).toEqual([]);
-    await userEvent.click(screen.getByText("Privacy Policy", { selector: "summary span" }));
-    expect(screen.getByText("We keep little.")).toBeVisible();
-    expect(screen.getByRole("heading", { level: 3, name: "Privacy Policy" })).toBeTruthy();
-    // What the part refuses is text: no link, and no HTML of the body.
-    const body = screen.getByText(
-      (_, element) =>
-        element?.tagName === "P" &&
-        element.textContent === "We keep little. See <b>this</b> and a link.",
+    expect(screen.getByRole("link", { name: "Terms of Use" })).toHaveAttribute(
+      "href",
+      "#/legal/terms-of-use",
     );
-    expect(body.closest("section")).toHaveAttribute("lang", "en");
-    expect(document.querySelector(".nt-account-texts a, .nt-account-texts b")).toBeNull();
+    expect(screen.getByRole("link", { name: "Privacy Policy" })).toHaveAttribute(
+      "href",
+      "#/legal/privacy-policy",
+    );
+    expect(screen.queryByRole("heading", { level: 2 })).toBeNull();
+    expect(screen.queryByText("We keep little.")).toBeNull();
+    expect(codes).toEqual([]);
     await userEvent.click(accept);
     await userEvent.click(create);
     // A code api does not take: back to its step, with the line why.
     const code = await screen.findByRole("textbox", { name: "Invite code" });
     await vi.waitFor(() =>
       expect(code).toHaveAccessibleDescription(
-        "The code from your invitation This code isn't valid or has been used",
+        "Tap the boxes to paste the code from your invitation This code isn't valid or has been used",
       ),
     );
-    await userEvent.clear(code);
-    await userEvent.type(code, " 0123-4567-89AB-CDEF ");
+    // The right code pasted over the one refused, and sent trimmed.
+    await userEvent.fill(code, ` ${CODE} `);
     await userEvent.click(screen.getByRole("button", { name: "Continue" }));
     // The statement and the acceptance stay given for the versions shown.
     expect(screen.getByRole("checkbox", { name: "I am 18 or older" })).toBeChecked();
     await userEvent.click(await screen.findByRole("button", { name: "Create account" }));
-    expect(codes).toEqual(["WRONG", "0123-4567-89AB-CDEF"]);
+    expect(codes).toEqual([WRONG, CODE]);
     expect(accepted[1]).toEqual(["privacy-policy 2", "terms-of-use 1"]);
 
     // The owner's profile: a pseudonym of 1 to 30 characters, an avatar of the set, and a country
@@ -410,7 +411,7 @@ describe("the way in", () => {
     // Some twenty steps of the way in: under the load of the whole suite they outlast 15 s.
   }, 30_000);
 
-  it("shows the texts on a Russian screen with their translation, and anew when api has newer ones", async () => {
+  it("leads from a Russian screen to the texts' pages with their translation, and reads them anew when api has newer ones", async () => {
     const service = fakeSignIn("uid-1");
     let policy = 2;
     let down = true;
@@ -440,8 +441,8 @@ describe("the way in", () => {
       memoryDevice().device,
       ["ru"],
     );
-    expect(await screen.findByRole("heading", { level: 1, name: "Инвайт-код" })).toBeTruthy();
-    await userEvent.type(screen.getByRole("textbox", { name: "Инвайт-код" }), "CODE");
+    expect(await screen.findByRole("heading", { level: 1, name: "Вас пригласили" })).toBeTruthy();
+    await userEvent.type(screen.getByRole("textbox", { name: "Инвайт-код" }), CODE);
     await userEvent.click(screen.getByRole("button", { name: "Продолжить" }));
     // Texts that could not be read: nothing is sent, and a retry asks again.
     expect(await screen.findByRole("alert")).toHaveTextContent(
@@ -450,37 +451,48 @@ describe("the way in", () => {
     expect(screen.getByRole("button", { name: "Завести аккаунт" })).toBeDisabled();
     down = false;
     await userEvent.click(screen.getByRole("button", { name: "Повторить" }));
-    const accept = await screen.findByRole("checkbox", {
-      name: "Принимаю политику конфиденциальности и условия использования",
+    // The texts read, their checkbox comes, and the note on their language below it.
+    await screen.findByRole("checkbox", {
+      name: "Принимаю условия использования и политику конфиденциальности",
     });
-    // The gist in Russian, the line that the English text is in force, the translation and the text.
-    await userEvent.click(screen.getByText("Privacy Policy", { selector: "summary span" }));
-    expect(screen.getByText("Privacy Policy", { selector: "summary span" })).toHaveAttribute(
-      "lang",
-      "en",
-    );
-    expect(screen.getByText("Мы храним мало.", { selector: "section > p" })).toHaveAttribute(
-      "lang",
-      "ru",
-    );
     expect(
-      screen.getAllByText("Текст — на английском, и в силе английский текст")[0],
+      screen.getByText("Каждый текст — на английском, в силе именно он, а суть — на вашем языке"),
     ).toBeVisible();
+    await userEvent.click(screen.getByRole("checkbox", { name: "Мне 18 лет или больше" }));
+    // A text's name opens its legal page: the gist in Russian, the line that the English text is in
+    // force, the translation and the text.
+    await userEvent.click(screen.getByRole("link", { name: "политику конфиденциальности" }));
+    expect(
+      await screen.findByRole("heading", { level: 1, name: "Политика конфиденциальности" }),
+    ).toBeTruthy();
+    expect(window.location.hash).toBe("#/legal/privacy-policy");
+    expect(await screen.findByText("Мы храним мало.")).toHaveAttribute("lang", "ru");
+    expect(screen.getByText("Текст — на английском, и в силе английский текст")).toBeVisible();
     expect(screen.getByRole("region", { name: "Перевод, только для чтения" })).toHaveAttribute(
       "lang",
       "ru",
     );
-    expect(screen.getByRole("heading", { level: 3, name: "Политика" })).toBeTruthy();
-    expect(
-      screen.getAllByRole("region", { name: "Текст в силе, на английском" })[0],
-    ).toHaveAttribute("lang", "en");
-    // The terms' table, with its header.
-    await userEvent.click(screen.getByText("Terms of Use", { selector: "summary span" }));
-    expect(screen.getByRole("columnheader", { name: "Who" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Политика" })).toBeTruthy();
+    const original = screen.getByRole("region", { name: "Текст в силе, на английском" });
+    expect(original).toHaveAttribute("lang", "en");
+    // What the part refuses is text: no link, and no HTML of the body.
+    expect(original.textContent).toContain("We keep little. See <b>this</b> and a link.");
+    expect(original.querySelector("a, b")).toBeNull();
+    // Closed, the step comes back as it was left.
+    await userEvent.click(screen.getByRole("button", { name: "Закрыть" }));
+    expect(await screen.findByRole("heading", { level: 1, name: "Создайте аккаунт" })).toBeTruthy();
+    expect(screen.getByRole("checkbox", { name: "Мне 18 лет или больше" })).toBeChecked();
+    // The terms' page, with its table and its header, once the step has read the texts again.
+    await userEvent.click(await screen.findByRole("link", { name: "условия использования" }));
+    expect(window.location.hash).toBe("#/legal/terms-of-use");
+    expect(await screen.findByRole("columnheader", { name: "Who" })).toBeTruthy();
     expect(screen.getByRole("cell", { name: "Learn" })).toBeTruthy();
+    await userEvent.click(screen.getByRole("button", { name: "Закрыть" }));
+    const accept = await screen.findByRole("checkbox", {
+      name: "Принимаю условия использования и политику конфиденциальности",
+    });
 
     // api has a newer policy: the screen reads it, unticks, and says so.
-    await userEvent.click(screen.getByRole("checkbox", { name: "Мне 18 лет или больше" }));
     await userEvent.click(accept);
     policy = 3;
     await userEvent.click(screen.getByRole("button", { name: "Завести аккаунт" }));

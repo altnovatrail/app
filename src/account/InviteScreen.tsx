@@ -1,25 +1,34 @@
 // The invite code of a user with no account, in two steps, as the mockup's `invite` and `agree`
-// (R27, R46, R61): the code, then the owner's statement of being 18 or older (R118 spec) and their
-// acceptance of the privacy policy and the terms of use in force, each shown in place below (R131
-// spec). Nothing goes to api before "Create account", which sends the code with the statement and
-// the versions shown: a code api does not take brings the first step back with its line. While no
+// (R27, R61): the code in four boxes of four characters, and "Back" signing out; then the owner's
+// statement of being 18 or older (R118 spec) and their acceptance of the privacy policy and the terms
+// of use in force (R131 spec), each name a link to its legal page, which shows its next version too
+// (R46). Nothing goes to api before "Create account", which sends the code with the statement and
+// the versions in force: a code api does not take brings the first step back with its line. While no
 // text is in force there is nothing to accept; while the texts are not read, nothing is sent. The
-// acceptance holds for the versions it was given for: other versions shown take it back. A text's
-// next version shows in place below it, with the day it applies from, and is accepted by no one: a
-// consent names the current version (R46). A step's button looks off until its step is given but
-// keeps the focus (R20): pressed, it says what is missing and focuses it. What is typed and ticked
-// outlives a visit to the legal pages.
+// acceptance holds for the versions it was given for: other versions read take it back. A step's
+// button looks off until its step is given but keeps the focus (R20): pressed, it says what is
+// missing and focuses it. What is typed and ticked outlives a visit to the legal pages.
 import type { LegalTextRef } from "@altnovatrail/contracts/novatrail/api/v1/legal_pb.js";
-import { type FormEvent, type RefObject, useEffect, useId, useRef, useState } from "react";
+import {
+  type FormEvent,
+  Fragment,
+  type ReactNode,
+  type RefObject,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+} from "react";
 import type { RequestState } from "../api/ApiContext.tsx";
 import type { Failure } from "../api/failure.ts";
 import { ReadFailure } from "../api/ReadFailure.tsx";
 import { described } from "../app/described.ts";
+import { formatHash } from "../app/hash.ts";
 import { Icon } from "../app/Icon.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { Phrase } from "../i18n/Phrase.tsx";
-import { LegalText, NextLegalText } from "../legal/LegalText.tsx";
-import { ACCOUNT_TEXTS, type Legal, refsOf, type Versions, versionsOf } from "../legal/texts.ts";
+import { legalPage } from "../legal/LegalPages.tsx";
+import { type Legal, type PageText, refsOf } from "../legal/texts.ts";
 import { WelcomeScreen } from "../signin/Welcome.tsx";
 import { FormFailure } from "./FormFailure.tsx";
 
@@ -45,16 +54,37 @@ export interface InviteScreenProps {
     code: string,
     accepted: readonly Pick<LegalTextRef, "id" | "version">[],
   ) => Promise<"done" | "code-not-accepted" | "text-not-current" | Failure>;
-  /** Opens the legal pages. */
-  readonly onLegal: () => void;
+  /** Opens the legal pages: their list, or a text's page. */
+  readonly onLegal: (page?: PageText) => void;
+  /** "Back" from the code: the sign-in comes again. */
+  readonly onSignOut: () => void;
 }
 
-export function InviteScreen({ texts, draft, onCreate, onLegal }: InviteScreenProps) {
+/** The characters of the code as the boxes show them: Crockford's, at most 16 (R34 api). */
+const CODE_SHOWN = 16;
+const BOX = 4;
+
+/** The four groups of the code as typed: no hyphen, no space, upper case. */
+function codeGroups(code: string): string[] {
+  const shown = code
+    .toUpperCase()
+    .replace(/[^0-9A-Z]/g, "")
+    .slice(0, CODE_SHOWN);
+  return Array.from({ length: CODE_SHOWN / BOX }, (_, group) =>
+    shown.slice(group * BOX, group * BOX + BOX),
+  );
+}
+
+/** Whether the boxes are full: a shorter code is no code api takes (R34 api). */
+function whole(code: string): boolean {
+  return codeGroups(code).join("").length === CODE_SHOWN;
+}
+
+export function InviteScreen({ texts, draft, onCreate, onLegal, onSignOut }: InviteScreenProps) {
   const { words } = useLanguage();
   const id = useId();
   const codeField = useRef<HTMLInputElement>(null);
   const textsField = useRef<HTMLInputElement>(null);
-  const shownTexts = useRef(new Map<string, HTMLElement>());
   // While the texts are read anew, those read before stay, so that the checkbox keeps its place.
   const before = useRef<Legal>(NO_TEXTS);
   if (texts.status === "done") before.current = texts.value;
@@ -92,7 +122,7 @@ export function InviteScreen({ texts, draft, onCreate, onLegal }: InviteScreenPr
 
   function next(event: FormEvent) {
     event.preventDefault();
-    if (code.trim() === "") {
+    if (!whole(code)) {
       setCodeError("code-needed");
       codeField.current?.focus();
       return;
@@ -128,40 +158,70 @@ export function InviteScreen({ texts, draft, onCreate, onLegal }: InviteScreenPr
     }
   }
 
-  /** A text's place below, which a link of the checkbox's line scrolls to and focuses. */
-  function showText(text: string) {
-    const place = shownTexts.current.get(text);
-    place?.scrollIntoView({ block: "start" });
-    place?.focus({ preventScroll: true });
-  }
-
   if (step === "code") {
+    const groups = codeGroups(code);
+    const filled = groups.join("").length;
+    // The box the next character goes to, the last once the code is whole: the field's focus.
+    const nextBox = Math.min(Math.floor(filled / BOX), CODE_SHOWN / BOX - 1);
     return (
-      <WelcomeScreen key="code" title={words.text("account.invite-title")} onLegal={onLegal}>
+      <WelcomeScreen
+        key="code"
+        title={words.text("account.invite-title")}
+        lead={<BackLink onBack={onSignOut} />}
+        onLegal={() => onLegal()}
+      >
         <p className="nt-lead">{words.text("account.invite-intro")}</p>
         <form noValidate onSubmit={next}>
           <div className="nt-field nt-code">
             <label htmlFor={`${id}-code`} className="nt-hidden-label">
-              {words.text("account.invite-title")}
+              {words.text("account.code-label")}
             </label>
-            <input
-              ref={codeField}
-              id={`${id}-code`}
-              type="text"
-              autoComplete="off"
-              autoCapitalize="characters"
-              spellCheck={false}
-              value={code}
-              aria-invalid={codeError !== undefined}
-              aria-describedby={described(
-                `${id}-code-hint`,
-                codeError !== undefined && `${id}-code-error`,
-              )}
-              onChange={(event) => {
-                setCode(event.target.value);
-                setCodeError(undefined);
-              }}
-            />
+            {/* One field under the boxes: a paste fills them all, and a screen reader hears one field. */}
+            <div className="nt-code-boxes">
+              <input
+                ref={codeField}
+                id={`${id}-code`}
+                className="nt-code-input"
+                type="text"
+                autoComplete="off"
+                autoCapitalize="characters"
+                spellCheck={false}
+                value={code}
+                aria-invalid={codeError !== undefined}
+                aria-describedby={described(
+                  `${id}-code-hint`,
+                  codeError !== undefined && `${id}-code-error`,
+                )}
+                maxLength={24}
+                // The caret the boxes draw stands after the last character, and so does the field's; a
+                // selection stays, so that the code can be selected whole and typed or pasted over.
+                onSelect={(event) => {
+                  const field = event.currentTarget;
+                  const end = field.value.length;
+                  if (field.selectionStart === field.selectionEnd && field.selectionEnd !== end) {
+                    field.setSelectionRange(end, end);
+                  }
+                }}
+                onChange={(event) => {
+                  setCode(event.target.value);
+                  setCodeError(undefined);
+                }}
+              />
+              <div className="nt-code-shown" aria-hidden="true">
+                {groups.map((group, index) => (
+                  // biome-ignore lint/suspicious/noArrayIndexKey: the four boxes are fixed places.
+                  <Fragment key={index}>
+                    {index === 0 ? null : <span className="nt-code-sep" />}
+                    <span
+                      className={index === nextBox ? "nt-code-box nt-code-next" : "nt-code-box"}
+                    >
+                      {group}
+                      {index === nextBox ? <span className="nt-code-caret" /> : null}
+                    </span>
+                  </Fragment>
+                ))}
+              </div>
+            </div>
             <p id={`${id}-code-hint`} className="nt-hint">
               {words.text("account.code-hint")}
             </p>
@@ -171,7 +231,7 @@ export function InviteScreen({ texts, draft, onCreate, onLegal }: InviteScreenPr
               </p>
             )}
           </div>
-          <button type="submit" className="nt-main" aria-disabled={code.trim() === ""}>
+          <button type="submit" className="nt-main" aria-disabled={!whole(code)}>
             {words.text("account.next")}
           </button>
         </form>
@@ -187,30 +247,27 @@ export function InviteScreen({ texts, draft, onCreate, onLegal }: InviteScreenPr
     <WelcomeScreen
       key="agree"
       title={words.text("account.agree-title")}
-      lead={
-        <button type="button" className="nt-link nt-back" onClick={() => setStep("code")}>
-          <Icon value="back" />
-          {words.text("icon.back")}
-        </button>
-      }
-      onLegal={onLegal}
+      lead={<BackLink onBack={() => setStep("code")} />}
+      onLegal={() => onLegal()}
     >
       <p className="nt-lead">{words.text("account.agree-intro")}</p>
       <form noValidate onSubmit={(event) => void submit(event)}>
         <div className="nt-ticks">
           <div className="nt-check">
-            <input
-              ref={adultField}
-              id={`${id}-adult`}
-              type="checkbox"
-              checked={adult}
-              aria-invalid={adultError}
-              aria-describedby={described(`${id}-adult-line`, adultError && `${id}-adult-error`)}
-              onChange={(event) => {
-                setAdult(event.target.checked);
-                setAdultError(false);
-              }}
-            />
+            <Tick>
+              <input
+                ref={adultField}
+                id={`${id}-adult`}
+                type="checkbox"
+                checked={adult}
+                aria-invalid={adultError}
+                aria-describedby={described(`${id}-adult-line`, adultError && `${id}-adult-error`)}
+                onChange={(event) => {
+                  setAdult(event.target.checked);
+                  setAdultError(false);
+                }}
+              />
+            </Tick>
             <div>
               <label htmlFor={`${id}-adult`} className="nt-tick-title">
                 {words.text("account.adult")}
@@ -228,33 +285,32 @@ export function InviteScreen({ texts, draft, onCreate, onLegal }: InviteScreenPr
           {/* A next version alone, before its day, is accepted by no one: no checkbox for it. */}
           {shown.length === 0 ? null : (
             <div className="nt-check">
-              <input
-                ref={textsField}
-                id={`${id}-texts`}
-                type="checkbox"
-                checked={accepted}
-                aria-invalid={textsError !== undefined}
-                aria-describedby={described(textsError !== undefined && `${id}-texts-error`)}
-                onChange={(event) => {
-                  setAcceptedFor(event.target.checked ? versions : undefined);
-                  setTextsError(undefined);
-                }}
-              />
+              <Tick>
+                <input
+                  ref={textsField}
+                  id={`${id}-texts`}
+                  type="checkbox"
+                  checked={accepted}
+                  aria-invalid={textsError !== undefined}
+                  aria-describedby={described(textsError !== undefined && `${id}-texts-error`)}
+                  onChange={(event) => {
+                    setAcceptedFor(event.target.checked ? versions : undefined);
+                    setTextsError(undefined);
+                  }}
+                />
+              </Tick>
               <label htmlFor={`${id}-texts`}>
                 <Phrase
                   id="account.texts"
                   values={{
-                    policy: (
-                      <TextLink
-                        to={`${id}-privacy-policy`}
-                        onShow={() => showText("privacy-policy")}
-                      >
-                        {words.text("account.texts-policy")}
+                    terms: (
+                      <TextLink text="terms-of-use" onLegal={onLegal}>
+                        {words.text("account.texts-terms")}
                       </TextLink>
                     ),
-                    terms: (
-                      <TextLink to={`${id}-terms-of-use`} onShow={() => showText("terms-of-use")}>
-                        {words.text("account.texts-terms")}
+                    policy: (
+                      <TextLink text="privacy-policy" onLegal={onLegal}>
+                        {words.text("account.texts-policy")}
                       </TextLink>
                     ),
                   }}
@@ -268,9 +324,7 @@ export function InviteScreen({ texts, draft, onCreate, onLegal }: InviteScreenPr
             {words.text(`account.${textsError}`)}
           </p>
         ) : null}
-        {shown.length === 0 ? null : (
-          <p className="nt-hint">{words.text("legal.english-in-force")}</p>
-        )}
+        {shown.length === 0 ? null : <p className="nt-hint">{words.text("account.texts-note")}</p>}
         {texts.status === "failed" ? (
           <ReadFailure failure={texts.failure} onRetry={texts.retry} />
         ) : null}
@@ -289,62 +343,57 @@ export function InviteScreen({ texts, draft, onCreate, onLegal }: InviteScreenPr
           </p>
         ) : null}
         <FormFailure failure={failure} />
-        {shown.length === 0 && legal.next.length === 0 ? null : (
-          <section className="nt-account-texts" aria-labelledby={`${id}-texts-title`}>
-            <h2 id={`${id}-texts-title`}>{words.text("account.texts-title")}</h2>
-            {ACCOUNT_TEXTS.map((text) => (
-              <div
-                key={text}
-                id={`${id}-${text}`}
-                tabIndex={-1}
-                ref={(place) => {
-                  if (place === null) shownTexts.current.delete(text);
-                  else shownTexts.current.set(text, place);
-                }}
-              >
-                <AccountText {...versionsOf(legal, text)} />
-              </div>
-            ))}
-          </section>
-        )}
       </form>
     </WelcomeScreen>
   );
 }
 
+/** "Back" at the top of the card, as the mockup's: the step before, or the sign-in. */
+function BackLink({ onBack }: { readonly onBack: () => void }) {
+  const { words } = useLanguage();
+  return (
+    <button type="button" className="nt-link nt-back" onClick={onBack}>
+      <Icon value="back" />
+      {words.text("icon.back")}
+    </button>
+  );
+}
+
 /**
- * A text's name in the checkbox's line, inline in it: a link down to the text the line accepts,
- * which takes the focus there too.
+ * A checkbox drawn as the mockup's round mark: the browser's own input, a target of 44, over a ring
+ * that fills with the accent and its tick once ticked.
  */
+function Tick({ children }: { readonly children: ReactNode }) {
+  return (
+    <span className="nt-tick">
+      {children}
+      <span className="nt-tick-mark" aria-hidden="true">
+        <Icon value="ticked" />
+      </span>
+    </span>
+  );
+}
+
+/** A text's name in the checkbox's line, inline in it: a link to its legal page (R31). */
 function TextLink({
-  to,
-  onShow,
+  text,
+  onLegal,
   children,
 }: {
-  readonly to: string;
-  readonly onShow: () => void;
+  readonly text: PageText;
+  readonly onLegal: (page: PageText) => void;
   readonly children: string;
 }) {
   return (
     <a
-      href={`#${to}`}
+      href={formatHash(legalPage(text))}
       className="nt-inline"
       onClick={(event) => {
         event.preventDefault();
-        onShow();
+        onLegal(text);
       }}
     >
       {children}
     </a>
-  );
-}
-
-/** A text of the account below the ticks: its current version, then its next one. */
-function AccountText({ current, next }: Versions) {
-  return (
-    <>
-      {current === undefined ? null : <LegalText text={current} level={3} />}
-      {next === undefined ? null : <NextLegalText text={next} current={current} level={3} />}
-    </>
   );
 }

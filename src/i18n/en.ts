@@ -114,8 +114,10 @@ export const en = {
   "signin.other-tab":
     "The app is open in another tab with the previous sign-in. Close that tab and try again",
   /** The heading of the screen that asks for the invite code. */
-  "account.invite-title": "Invite code",
-  "account.invite-intro": "NovaTrail is open by invitation for now",
+  "account.invite-title": "You're invited",
+  "account.invite-intro": "NovaTrail is in a closed preview. Enter the code from your invitation",
+  /** The name of the code's field, drawn as four boxes of four characters. */
+  "account.code-label": "Invite code",
   /** The owner's statement, a checkbox: kept by api with its date (R118 spec). */
   "account.adult": "I am 18 or older",
   /** Below the statement: why it is asked. */
@@ -128,8 +130,8 @@ export const en = {
     "Another account's data on this device can't be erased yet. Close the app's other tabs and try again",
   /** api did not take the invite code. */
   "account.code-not-accepted": "This code isn't valid or has been used",
-  /** Below the field of the code. */
-  "account.code-hint": "The code from your invitation",
+  /** Below the boxes of the code. */
+  "account.code-hint": "Tap the boxes to paste the code from your invitation",
   /** Below the field when "Continue" is pressed with it empty. */
   "account.code-needed": "Enter the invite code",
   /** From the code to the statement and the texts. */
@@ -138,21 +140,20 @@ export const en = {
   "account.signed-in": "Signed in with Google",
   /** The heading of the step of the statement and the texts. */
   "account.agree-title": "Create your account",
-  "account.agree-intro":
-    "One account holds the profiles of those who learn in it. Only you sign in",
+  "account.agree-intro": "One account holds your own profile and your children's. Only you sign in",
   /**
-   * The owner accepts both legal texts, a checkbox: api keeps the versions shown (R131 spec). Each
-   * name is a link down to its text.
+   * The owner accepts both legal texts, a checkbox: api keeps the versions in force (R131 spec).
+   * Each name is a link to its legal page.
    */
-  "account.texts": "I accept the {policy} and the {terms}",
+  "account.texts": "I agree to the {terms} and the {policy}",
   "account.texts-policy": "Privacy Policy",
   "account.texts-terms": "Terms of Use",
   /** Below the checkbox when "Create account" is pressed with it unticked. */
   "account.texts-needed": "To create an account, accept the Privacy Policy and the Terms of Use",
   /** api has newer versions of the texts than the screen showed: they are shown anew, unticked. */
   "account.texts-changed": "The texts have changed. Read them again and accept them",
-  /** The heading above the legal texts of the account, each opened in place. */
-  "account.texts-title": "Privacy Policy and Terms of Use",
+  /** Below the checkboxes: each text is in English and in force, its gist in the screen's language. */
+  "account.texts-note": "Each text is in English, the one in force, with its gist in your language",
   /** The gist of a legal text, in the language of the screen, above the text. */
   "legal.gist": "In short",
   /** On a screen in another language than English: the legal text in force is the English one. */

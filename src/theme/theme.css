@@ -32,8 +32,9 @@
    * The way in (R61): the sky under the trail, its brightest glow, and the dark card of a step,
    * each colour on it opaque, as the mockup's white at 0.8, 0.72 and 0.6, a field's fill at 0.08
    * and the note's at 0.1, a field's edge at 0.5, the note's words at 0.88 on it; its link, its
-   * error and its tick; a disabled button, white at 0.5 on white at 0.12; the glass of the
-   * language's pill, white on it over any glow. Google's button keeps Google's colours.
+   * error and its tick; an unticked checkbox's ring, white at 0.55; a disabled button, white at 0.5
+   * on white at 0.12; the glass of the language's pill, white on it over any glow. Google's button
+   * keeps Google's colours.
    */
   --nt-sky: #0b0d2e;
   --nt-sky-glow: #5b5fe0;
@@ -46,6 +47,7 @@
   --nt-sky-caption: #bebfc9;
   --nt-sky-quiet: #a2a3b1;
   --nt-sky-edge: #8b8d9e;
+  --nt-sky-ring: rgba(255, 255, 255, 0.55);
   --nt-sky-link: #64a8ff;
   --nt-sky-error: #ff8a65;
   --nt-sky-correct: #30d158;
@@ -1129,23 +1131,104 @@ button.nt-lang-pill {
 .nt-code {
   margin: 1.75rem 0 0;
 }
-.nt-code input {
+/*
+ * The code as the mockup's boxes: four of four characters, a dash between them. The field itself
+ * lies over them, its text and caret transparent; its focus is the box the next character goes to,
+ * ringed in the link's blue, the last once the code is whole, with a caret of its own after the
+ * characters, which blinks unless less motion is asked for.
+ */
+.nt-code-boxes {
+  position: relative;
+  border-radius: 0.6875rem;
+}
+.nt-field input.nt-code-input {
+  position: absolute;
+  inset: 0;
   box-sizing: border-box;
   inline-size: 100%;
-  block-size: var(--nt-main);
-  padding: 0 0.75rem;
-  border: 0.0625rem solid var(--nt-edge);
+  block-size: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: transparent;
+  caret-color: transparent;
+  font-size: 1rem;
+  cursor: text;
+}
+.nt-field input.nt-code-input:focus {
+  outline: none;
+}
+.nt-field input.nt-code-input::selection {
+  background: transparent;
+}
+.nt-code-shown {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  pointer-events: none;
+}
+.nt-code-box {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  block-size: 3.25rem;
   border-radius: 0.6875rem;
   background: var(--nt-page-owner);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.5);
   color: var(--nt-text);
   font-family: ui-monospace, "SF Mono", Menlo, monospace;
-  font-size: 1.375rem;
+  font-size: 1.25rem;
   font-weight: var(--nt-weight-bold);
-  letter-spacing: 0.2em;
+  letter-spacing: 0.06em;
+}
+.nt-code-boxes:has(> .nt-code-input:focus) .nt-code-next {
+  box-shadow: inset 0 0 0 2px var(--nt-accent-text);
+}
+.nt-code-caret {
+  display: none;
+  inline-size: 0.125rem;
+  block-size: 1.5rem;
+  margin-inline-start: 0.0625rem;
+  border-radius: 1px;
+  background: var(--nt-accent-text);
+}
+.nt-code-boxes:has(> .nt-code-input:focus) .nt-code-caret {
+  display: block;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .nt-code-boxes:has(> .nt-code-input:focus) .nt-code-caret {
+    animation: nt-caret 1s steps(1) infinite;
+  }
+}
+@keyframes nt-caret {
+  50% {
+    opacity: 0;
+  }
+}
+.nt-code-sep {
+  flex: none;
+  inline-size: 0.625rem;
+  block-size: 0.125rem;
+  margin: 0 0.125rem;
+  border-radius: 1px;
+  background: var(--nt-edge);
+}
+@media (width < 600px) {
+  .nt-code-shown {
+    gap: 0.3125rem;
+  }
+  .nt-code-sep {
+    inline-size: 0.5rem;
+    margin: 0 0.0625rem;
+  }
 }
 .nt-code .nt-hint {
   margin-block-start: 0.625rem;
-  font-size: 0.78125rem;
+  font-size: 0.8125rem;
+  line-height: 1.1rem;
 }
 .nt-code + button.nt-main {
   margin-block-start: 1.75rem;
@@ -1172,6 +1255,9 @@ button.nt-link.nt-back {
   font-size: 0.9375rem;
   font-weight: 400;
 }
+.nt-welcome button.nt-link.nt-back {
+  margin-block-start: -0.625rem;
+}
 .nt-back + h1 {
   margin-block-start: 1.125rem;
 }
@@ -1183,6 +1269,7 @@ button.nt-link.nt-back {
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14);
 }
 .nt-ticks > .nt-check {
+  gap: 0.125rem;
   margin: 0;
   padding: 0.25rem 0.875rem 0.25rem 0.25rem;
   font-size: 0.9375rem;
@@ -1190,6 +1277,59 @@ button.nt-link.nt-back {
 }
 .nt-ticks > .nt-check + .nt-check {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+/*
+ * A checkbox as the mockup's round mark: the input a target of 44 with no look of its own, over a
+ * ring of 24 that fills with the accent and shows its tick once ticked; in forced colours, the
+ * browser's own.
+ */
+.nt-tick {
+  position: relative;
+  display: grid;
+  flex: none;
+  place-items: center;
+  inline-size: 2.75rem;
+  block-size: 2.75rem;
+}
+.nt-tick > input {
+  position: absolute;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  margin: 0;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+.nt-tick-mark {
+  display: grid;
+  place-items: center;
+  inline-size: 1.5rem;
+  block-size: 1.5rem;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1.5px var(--nt-sky-ring);
+  color: transparent;
+  pointer-events: none;
+}
+.nt-tick > input:checked + .nt-tick-mark {
+  background: var(--nt-accent);
+  box-shadow: none;
+  color: var(--nt-on-fill);
+}
+.nt-tick-mark > svg {
+  inline-size: 0.875rem;
+  block-size: 0.875rem;
+}
+@media (forced-colors: active) {
+  .nt-tick > input {
+    position: static;
+    inline-size: 1.5rem;
+    block-size: 1.5rem;
+    appearance: auto;
+  }
+  .nt-tick-mark {
+    display: none;
+  }
 }
 .nt-tick-title {
   font-weight: var(--nt-weight-bold);
@@ -1201,6 +1341,7 @@ button.nt-link.nt-back {
 /* A text's name inline in the checkbox's line, a link in the sentence and wrapping with it. */
 .nt-check a.nt-inline {
   color: var(--nt-accent-text);
+  font-weight: var(--nt-weight-bold);
   text-decoration: none;
 }
 .nt-check a.nt-inline:hover {
@@ -1218,12 +1359,6 @@ button.nt-link.nt-back {
 }
 .nt-welcome form > button.nt-main {
   margin-block-start: 1.5rem;
-}
-.nt-account-texts {
-  margin-block-start: 2rem;
-}
-.nt-account-texts > div:focus {
-  outline-offset: 0.25rem;
 }
 /* What the card's own look puts over the shared rules of its screens, after them. */
 .nt-lang-pill > svg {
