@@ -369,7 +369,11 @@ describe.each(ENGINES.map((type) => [type.name(), type] as const))(
       writeFileSync(local, JSON.stringify(file(ORIGIN)));
       const { page, violations, requests } = await open();
       await page.goto(`${ORIGIN}/`);
+      // The policy's sheet first: with no policy in force, its foot leads to the list.
       await page.getByRole("button", { name: "Privacy and legal information" }).click();
+      const sheet = page.getByRole("dialog", { name: "Privacy Policy" });
+      await sheet.getByText("This copy of the app has no version of this text in force").waitFor();
+      await sheet.getByRole("button", { name: "Privacy and legal information" }).click();
       await page.getByRole("button", { name: "Licenses and third-party notices" }).click();
       // NOTICE and LICENSE came with the build, not from the hosting's /NOTICE and /LICENSE.
       const files = page.locator("pre");
@@ -391,6 +395,7 @@ describe.each(ENGINES.map((type) => [type.name(), type] as const))(
       const own = requests.filter((path) => !path.startsWith("/assets/") && path !== "/");
       expect(own).toEqual([
         "/deployment.json",
+        "/novatrail.api.v1.LegalService/GetLegalTexts",
         "/novatrail.api.v1.LegalService/GetLegalTexts",
         "/novatrail.api.v1.LegalService/GetLegalTexts",
       ]);

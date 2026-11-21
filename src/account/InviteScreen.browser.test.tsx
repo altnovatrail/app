@@ -243,13 +243,15 @@ describe("the invite code's screen", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(privacy).toHaveFocus();
     expect(screen.getByRole("checkbox", ACCEPT)).not.toBeChecked();
-    // A text with no version in force says so.
+    // A text with no version in force says so, and leads to the list of the legal pages.
     await userEvent.click(terms);
+    const none = within(await screen.findByRole("dialog", { name: "Terms of Use" }));
     expect(
-      within(await screen.findByRole("dialog", { name: "Terms of Use" })).getByText(
-        "This copy of the app has no version of this text in force",
-      ),
+      none.getByText("This copy of the app has no version of this text in force"),
     ).toBeVisible();
+    expect(none.queryByRole("button", { name: "Read the full text" })).toBeNull();
+    await userEvent.click(none.getByRole("button", { name: "Privacy and legal information" }));
+    expect(onLegal).toHaveBeenLastCalledWith({ screen: "legal", parts: [] });
     await userEvent.keyboard("{Escape}");
     expect(screen.queryByRole("dialog")).toBeNull();
     // The way at the card's foot opens the policy's sheet, as the mockup's.

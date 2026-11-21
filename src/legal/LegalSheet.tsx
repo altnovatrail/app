@@ -2,7 +2,7 @@
 // `legal-privacy`; R69): its heading, the chip of its version, the gist below its caption, the next
 // version in a note with the way to its page (R46), and at its foot the line that the English text
 // is in force, on a screen in another language (R27), and "Read the full text", which opens the
-// text's page (R31). It opens once its text is read, so nothing stands half drawn, and is a modal
+// text's page (R31) — or, with no version in force, the list of the legal pages. It opens once its text is read, so nothing stands half drawn, and is a modal
 // <dialog>: the screen under it is inert, Escape, × and a tap outside close it, and the focus comes
 // back to what opened it. The way in opens it from its steps, the adult's Help from its pop-over; it
 // stands in the page's body, not in the screen, whose own colours, as the sky's, are not its.
@@ -11,7 +11,7 @@ import { createPortal } from "react-dom";
 import type { RequestState } from "../api/ApiContext.tsx";
 import { ReadFailure } from "../api/ReadFailure.tsx";
 import { IconButton } from "../app/IconButton.tsx";
-import type { Route } from "../app/router.ts";
+import { LEGAL, type Route } from "../app/router.ts";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { legalPage, nextPage, useVersions } from "./LegalPages.tsx";
 import { dayText, type PageText, type Versions } from "./texts.ts";
@@ -128,7 +128,14 @@ export function LegalSheet({ id, versions, onClose, onPage }: LegalSheetProps) {
             </button>
           </div>
         )}
-        {current === undefined ? null : (
+        {current === undefined ? (
+          // No text to read in full: the way to the other legal pages, which the sheet stands for.
+          <div className="nt-legal-foot">
+            <button type="button" className="nt-link" onClick={() => onPage(LEGAL)}>
+              {words.text("legal.title")}
+            </button>
+          </div>
+        ) : (
           <div className="nt-legal-foot">
             {language === "en" ? null : (
               <p className="nt-in-force">{words.text("legal.english-in-force")}</p>
