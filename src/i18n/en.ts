@@ -1066,12 +1066,6 @@ export const en = {
   "tutor.ai": "The tutor is an AI, not a person",
   /** The name of the part of the tutor's panel that holds its words and the verdicts, and scrolls. */
   "tutor.conversation": "Conversation",
-  /** The heading of the section of My subjects that leads to the page on the tutor. */
-  "tutor.home-title": "The tutor is an AI",
-  "tutor.home-text":
-    "The tutor, which gives hints and explains, is an AI: a computer program, not a person. Whether an answer is right, a program decides by the task's key, not the AI",
-  /** The button to the page on the tutor, the learning material of R123 spec. */
-  "tutor.open": "How to use the tutor safely",
   /** The heading of the page on the tutor. */
   "tutor.title": "How to use the AI tutor safely",
   "tutor.what": "The tutor is an AI",

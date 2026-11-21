@@ -1314,14 +1314,12 @@ describe("the page on the AI tutor", () => {
     listConnectedModules: () => message(ListConnectedModulesResponseSchema, { modules: [] }),
   });
 
-  it("opens from My subjects in the learner's language, closes back to it, and shows before signing in by its address", async () => {
+  it("opens by its address in the learner's language, closes home, and shows before signing in", async () => {
     const service = fakeSignIn("uid-1");
     renderApp(routes({ ...OWNER, interfaceLanguage: "ru" }), service);
     await userEvent.click(await screen.findByRole("button", { name: "Ёжик" }));
-    await userEvent.click(
-      await screen.findByRole("button", { name: "Как безопасно пользоваться наставником" }),
-    );
-    expect(window.location.hash).toBe("#/tutor");
+    await screen.findByRole("heading", { level: 1, name: "Мои предметы" });
+    window.location.hash = "#/tutor";
     expect(
       await screen.findByRole("heading", {
         level: 1,
@@ -1371,9 +1369,8 @@ describe("the page on the AI tutor and who runs this copy", () => {
       service,
     );
     await userEvent.click(await screen.findByRole("button", { name: "Ёжик" }));
-    await userEvent.click(
-      await screen.findByRole("button", { name: "Как безопасно пользоваться наставником" }),
-    );
+    await screen.findByRole("heading", { level: 1, name: "Мои предметы" });
+    window.location.hash = "#/tutor";
     await userEvent.click(await screen.findByRole("button", { name: "Кто ведёт приложение" }));
     expect(window.location.hash).toBe("#/legal/operator");
     // The legal pages are in the device's language.

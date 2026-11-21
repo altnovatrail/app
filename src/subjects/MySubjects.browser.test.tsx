@@ -429,15 +429,13 @@ describe("My subjects", () => {
     window.location.hash = "";
   });
 
-  it("says below the lists that the tutor is an AI, and leads to the page on using it safely", async () => {
+  it("leaves the tutor being an AI to the tutor's panel, with no part of its own below the lists", async () => {
     await renderSubjects({ connected: [], catalog: [] }, "ru");
-    const section = within(await screen.findByRole("region", { name: "Наставник — это ИИ" }));
-    expect(section.getByText(/компьютерная программа, а не человек/)).toBeVisible();
-    await userEvent.click(
-      section.getByRole("button", { name: "Как безопасно пользоваться наставником" }),
-    );
-    expect(window.location.hash).toBe("#/tutor");
-    window.location.hash = "";
+    await screen.findByRole("heading", { name: "Подключённые" });
+    expect(screen.queryByRole("region", { name: "Наставник — это ИИ" })).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Как безопасно пользоваться наставником" }),
+    ).toBeNull();
   });
 
   it("tells a connection api refused, and offers to try again when it does not answer", async () => {
