@@ -69,6 +69,11 @@ const GROUPS: readonly [number, string, string][] = [
   [TEXT, "on-fill", "who-start"],
   [TEXT, "who-why", "who-glass/who-under-glass"],
   [EDGE, "on-fill", "who-under-ring"],
+  // The owner's profile (R61): the labels, a value, "Choose" and an error on its rows, the avatar's
+  // button and the hint on its card, and the field's edge and the chevron on the rows.
+  [TEXT, "on-fill own-value own-link sky-error", "own-rows/sky-card"],
+  [TEXT, "own-link own-hint", "sky-card"],
+  [EDGE, "own-edge own-more", "own-rows/sky-card"],
   [TEXT, "google-text", "on-fill"],
   [EDGE, "google-edge", "on-fill"],
 ];
@@ -86,9 +91,9 @@ const PAIRS: readonly [string, readonly string[], number][] = GROUPS.flatMap(
 /**
  * The tokens no pair has to hold, and why: grey on a grey fill is a disabled button, which 1.4.3
  * exempts as an inactive control, and so are the way in's on its card and "Add a learner" while
- * it is closed.
+ * it is closed; the ring of the owner's rows is no field's edge, as the field has one of its own.
  */
-const EXEMPT = ["disabled", "sky-off", "sky-off-fill", "who-off"];
+const EXEMPT = ["disabled", "sky-off", "sky-off-fill", "who-off", "own-ring"];
 
 /** The pair as its test names it: the foreground, translucent too, on its layers. */
 function ratio(foreground: string, layers: readonly string[]): number {

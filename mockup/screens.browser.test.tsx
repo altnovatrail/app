@@ -702,7 +702,7 @@ const OWNER: readonly Region[] = [
   },
   {
     name: "the avatar",
-    mockup: { css: 'span:has(> svg[width="50"])' },
+    mockup: { css: 'span:has(> svg[width="54"])' },
     app: { css: ".nt-avatar-profile" },
   },
   {

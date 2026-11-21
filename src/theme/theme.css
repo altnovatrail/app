@@ -65,6 +65,15 @@
   --nt-who-under-lead: #292c71;
   --nt-who-under-glass: #6d4927;
   --nt-who-under-ring: #926024;
+  /* The owner's profile on that sky (R61): the avatar's button and "Choose", the rows' fill, their
+     ring and the line between them, a value, the hint, the field's edge and the chevron. */
+  --nt-own-link: #8fb8ff;
+  --nt-own-rows: rgba(255, 255, 255, 0.07);
+  --nt-own-ring: rgba(255, 255, 255, 0.1);
+  --nt-own-value: rgba(255, 255, 255, 0.85);
+  --nt-own-hint: rgba(255, 255, 255, 0.55);
+  --nt-own-edge: rgba(255, 255, 255, 0.5);
+  --nt-own-more: rgba(255, 255, 255, 0.4);
   --nt-google-edge: #747775;
   --nt-google-text: #1f1f1f;
 
@@ -4870,5 +4879,130 @@ main.nt-who .nt-avatar.nt-avatar-add > svg {
     margin-block-start: 0.875rem;
     padding: 0.5625rem 1.375rem;
     font-size: 0.9375rem;
+  }
+}
+
+/*
+ * The owner's profile on the sky of "Who is learning?" (R61; the mockup's `owner`): the name alone
+ * in the bar, and a dark card of 520, radius 36. The design's ring of the rows at 0.1 misses 3:1 for
+ * the field's edge, so the field has one of its own at 0.5, as the sign-in's. The pop-overs stay
+ * light, their focus ring the accent.
+ */
+main.nt-profiles.nt-own {
+  --nt-error: var(--nt-sky-error);
+  --nt-disabled: var(--nt-sky-off);
+  --nt-grey-16: var(--nt-sky-off-fill);
+}
+main.nt-profiles.nt-own dialog.nt-pop :focus-visible {
+  outline-color: var(--nt-accent);
+}
+main.nt-profiles.nt-own .nt-profiles-top {
+  grid-template-rows: 2.75rem;
+}
+main.nt-profiles.nt-own .nt-profiles-top > .nt-brand {
+  grid-area: brand;
+  justify-self: center;
+}
+main.nt-profiles.nt-own .nt-profiles-top ~ .nt-column {
+  inline-size: 32.5rem;
+  margin: 1.5rem auto 0;
+  padding: 2.5rem 2.75rem 2.25rem;
+  border: 0.0625rem solid rgba(255, 255, 255, 0.12);
+  border-radius: 2.25rem;
+  background: var(--nt-sky-card);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.35);
+}
+main.nt-profiles.nt-own .nt-profiles-top ~ .nt-column h1 {
+  font-size: 2.5rem;
+  letter-spacing: -0.8px;
+  line-height: 3rem;
+}
+main.nt-profiles.nt-own .nt-avatar-profile {
+  inline-size: 7.5rem;
+  block-size: 7.5rem;
+  margin-block-start: 1.375rem;
+  box-shadow:
+    0 0 0 10px rgba(255, 255, 255, 0.08),
+    0 20px 50px rgba(30, 90, 230, 0.45);
+}
+main.nt-profiles.nt-own .nt-avatar-profile > svg {
+  inline-size: 3.375rem;
+  block-size: 3.375rem;
+}
+main.nt-profiles.nt-own .nt-avatar-profile + button.nt-link {
+  margin-block-start: 0.125rem;
+  color: var(--nt-own-link);
+  font-size: 1rem;
+}
+main.nt-profiles.nt-own form .nt-rows {
+  margin-block-start: 1.25rem;
+  padding: 0;
+  border: 0.0625rem solid var(--nt-own-ring);
+  border-radius: 1.125rem;
+  background: var(--nt-own-rows);
+  box-shadow: none;
+}
+main.nt-profiles.nt-own form .nt-row {
+  gap: 1.5rem;
+  block-size: 3.625rem;
+  padding: 0 1.125rem 0 1.25rem;
+  color: var(--nt-on-fill);
+}
+main.nt-profiles.nt-own form .nt-rows > .nt-row + .nt-row {
+  box-shadow: inset 0 0.0625rem 0 var(--nt-own-ring);
+}
+main.nt-profiles.nt-own form .nt-row > label,
+main.nt-profiles.nt-own form .nt-row-name {
+  min-inline-size: 5.25rem;
+  font-size: 1.0625rem;
+}
+main.nt-profiles.nt-own form .nt-row > input {
+  border-color: var(--nt-own-edge);
+  background: transparent;
+  color: var(--nt-own-value);
+  font-size: 1.0625rem;
+}
+main.nt-profiles.nt-own form .nt-row-value {
+  color: var(--nt-own-value);
+  font-size: 1.0625rem;
+}
+main.nt-profiles.nt-own form .nt-row-choose {
+  color: var(--nt-own-link);
+  font-size: 1.0625rem;
+}
+main.nt-profiles.nt-own form button.nt-row > svg {
+  inline-size: 1rem;
+  block-size: 1rem;
+  color: var(--nt-own-more);
+}
+main.nt-profiles.nt-own form .nt-hint {
+  margin-block-start: 1rem;
+  padding: 0 0.25rem;
+  color: var(--nt-own-hint);
+  font-size: 0.8125rem;
+  line-height: 1.45;
+}
+main.nt-profiles.nt-own form > button.nt-main {
+  min-block-size: 3.375rem;
+  border-radius: 1.6875rem;
+  font-size: 1.125rem;
+}
+main.nt-profiles.nt-own form > button.nt-main:not(:disabled, [aria-disabled="true"]) {
+  background: var(--nt-who-start);
+}
+@media (width < 600px) {
+  main.nt-profiles.nt-own .nt-profiles-top ~ .nt-column {
+    inline-size: calc(100% - 2rem);
+    margin-block-start: 1.25rem;
+    padding: 1.75rem 1.25rem 1.5rem;
+    border-radius: 1.75rem;
+  }
+  main.nt-profiles.nt-own form .nt-row {
+    gap: 1rem;
+  }
+  main.nt-profiles.nt-own .nt-profiles-top ~ .nt-column h1 {
+    font-size: 2rem;
+    letter-spacing: -0.6px;
+    line-height: 2.5rem;
   }
 }

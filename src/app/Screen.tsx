@@ -39,7 +39,7 @@ const LAYOUT_CLASS: Readonly<Record<ScreenLayout, string | undefined>> = {
   reference: "nt-reference",
   canvas: "nt-canvas",
   welcome: "nt-welcome",
-  profiles: "nt-profiles",
+  profiles: "nt-profiles nt-who nt-own",
   who: "nt-profiles nt-who",
   map: "nt-map",
   lesson: "nt-lesson",
@@ -80,8 +80,8 @@ export interface ScreenProps {
    * How wide the screen is from 600 CSS px (R59): `column` a column of reading, `reference` the
    * mockup's frame — the home screen and the sign-in, 1194 px at most —, and `canvas` the whole
    * window, as a screen with a canvas; `welcome` the sign-in's frame, its art beside the column,
-   * and `profiles` the frame of the owner's profile, a column in the middle, and `who` the same for
-   * "Who is learning?" on the sign-in's sky (R61), and `map` the whole window, a frame below the
+   * and `profiles` the owner's profile, a card in the middle of the sign-in's sky, and `who` the
+   * frame of "Who is learning?" on the same sky (R61), and `map` the whole window, a frame below the
    * top bar (R63); `lesson` the whole window, a lesson's segment between its top bar and its row,
    * and `end` a card in the window's middle,
    * the end of a lesson (R64); `task` the whole window, the canvas between the top bar and the row

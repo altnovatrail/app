@@ -309,7 +309,6 @@ export const en = {
   "accessibility.operator": "Who runs this copy and how to reach them",
   /** The heading of the screen that makes the owner's own profile as a learner. */
   "profile.title": "Your learner profile",
-  "profile.intro": "This is how you learn here. Use a made-up name, never your real one",
   /** The button of the avatars, before one is chosen and after. */
   "profile.avatar-choose": "Choose an avatar",
   "profile.avatar-change": "Change the avatar",
