@@ -49,6 +49,19 @@ const GROUPS: readonly [number, string, string][] = [
   // The close of a sheet, on the page's grey, under the pointer's wash (R69).
   [EDGE, "text-muted", "grey-16/card"],
   [EDGE, "accent", "accent-tint/card accent-tint/glass-panel/page"],
+  // The way in (R61): the card of a step on the sky — its text, a field and the note on it —, the
+  // name and the language's pill over the brightest glow, the accent and a field's edge, the tick;
+  // Google's button, white on the card, its words and its edge.
+  [
+    TEXT,
+    "on-fill sky-muted sky-note-text sky-caption sky-quiet sky-link sky-error",
+    "sky-card sky-fill sky-note",
+  ],
+  [TEXT, "on-fill", "sky sky-glow sky-pill/sky-glow"],
+  [EDGE, "accent sky-edge sky-correct on-fill", "sky-card"],
+  [EDGE, "sky-edge", "sky-fill"],
+  [TEXT, "google-text", "on-fill"],
+  [EDGE, "google-edge", "on-fill"],
 ];
 
 /** Each pair: the foreground, the layers it stands on, and the least ratio. */
@@ -63,9 +76,9 @@ const PAIRS: readonly [string, readonly string[], number][] = GROUPS.flatMap(
 
 /**
  * The tokens no pair has to hold, and why: grey on a grey fill is a disabled button, which 1.4.3
- * exempts as an inactive control.
+ * exempts as an inactive control, and so is the way in's on its card.
  */
-const EXEMPT = ["disabled"];
+const EXEMPT = ["disabled", "sky-off", "sky-off-fill"];
 
 /** The pair as its test names it: the foreground on its layers. */
 function ratio(foreground: string, layers: readonly string[]): number {

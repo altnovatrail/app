@@ -33,6 +33,12 @@ react-dom 19.3.1 — MIT — Copyright (c) Meta Platforms, Inc. and affiliates.
 scheduler 0.28.0 — MIT — Copyright (c) Meta Platforms, Inc. and affiliates.
 tslib 2.9.1 — 0BSD — Copyright (c) Microsoft Corporation.
 
+The build of this app includes the "G" logo of Google, src/signin/google-g.svg, on its button
+"Sign in with Google": Google's artwork and a trademark of Google LLC, taken unchanged from
+Google's pre-approved Sign in with Google button assets, only its white circle left out, and used
+as Google's Sign in with Google branding guidelines allow. It is not under the Apache License, and
+no license to Google's trademarks is granted with this app (R12 spec; R61).
+
 Notice of @altnovatrail/canvas 0.3.36:
 
 @altnovatrail/canvas

@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { page, userEvent } from "vitest/browser";
 import { inLanguage } from "../test/language.tsx";
 import { LanguageButtons } from "./LanguageButtons.tsx";
+import { LanguagePill } from "./LanguagePill.tsx";
 import type { Language } from "./language.ts";
 import { Phrase } from "./Phrase.tsx";
 
@@ -20,6 +21,24 @@ describe("LanguageButtons", () => {
     await expect.element(russian).toHaveAttribute("aria-pressed", "true");
     await userEvent.click(english.element());
     expect(choose).toHaveBeenCalledWith("en");
+  });
+});
+
+describe("LanguagePill", () => {
+  it("shows the language by its own name, opens a button for each, and chooses and closes on a tap", async () => {
+    const choose = vi.fn<(language: Language) => void>();
+    render(inLanguage(<LanguagePill />, "ru", undefined, choose));
+    const pill = page.getByRole("button", { name: "Язык: Русский" });
+    await expect.element(pill).toBeVisible();
+    await userEvent.click(pill.element());
+    const english = page.getByRole("button", { name: "English" });
+    const russian = page.getByRole("button", { name: "Русский", exact: true });
+    await expect.element(english).toHaveAttribute("lang", "en");
+    await expect.element(english).toHaveAttribute("aria-pressed", "false");
+    await expect.element(russian).toHaveAttribute("aria-pressed", "true");
+    await userEvent.click(english.element());
+    expect(choose).toHaveBeenCalledWith("en");
+    expect(document.querySelector("dialog[open]")).toBeNull();
   });
 });
 

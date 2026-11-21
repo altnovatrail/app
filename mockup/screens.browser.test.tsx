@@ -599,60 +599,67 @@ async function agreeing() {
 }
 
 /**
- * Why the column of the way in stands elsewhere than the mockup has it: it stands in the middle of
- * the frame's height, as the mockup's, but its heading keeps app's own words — one line where the
- * mockup's has two —, the code's step has no "Back", which in the mockup signs out, and the
- * statement's texts stand in place below it (R27; R46), so the column is of another height (R61).
+ * Why a part of a step's card stands lower or higher than the mockup's: the card stands where the
+ * mockup's does, but its words are app's own, without the mockup's full stops, the code's step has
+ * no "Back", which in the mockup signs out, and the statement's texts stand in place below it (R27;
+ * R46), so what follows them moves (R61).
  */
-const CENTRED =
-  "app's own words of the headings, no Back from the code, the texts in place below (R27; R46; R61)";
+const SHIFTED = "app's own words, no Back from the code, the texts in place below (R27; R46; R61)";
 
-/** The way to the legal pages: one button that names them all (R31), not the mockup's two. */
+/** The way to the legal pages, at the card's foot: one button that names them all (R31). */
 const LEGAL_WAY: Region = {
   name: "the way to the legal texts",
-  mockup: { css: '.ph-signfoot button:text-is("Privacy Policy")' },
+  mockup: { role: "button", name: "Privacy and legal information" },
   app: { role: "button", name: "Privacy and legal information" },
   followsText: "centre",
-  differs: { what: ["x", "font-weight"], by: "one button to the legal pages (R31)" },
+  differs: { what: ["y"], by: SHIFTED },
 };
 
-/** The art of the way in, at the left from 600 and a band on the phone's first step. */
+/** The sky's trail to the spark: at the left from 600, and small above the phone's first step. */
 const ART: Region = {
-  name: "the art",
-  mockup: { css: ".ph-art" },
-  app: { css: ".nt-art" },
+  name: "the trail",
+  mockup: { css: ".ph-sky" },
+  app: { css: ".nt-sky" },
 };
 
-/** The art on the steps after the sign-in: at the left from 600, and none on the phone. */
+/** The trail on the steps after the sign-in: at the left from 600, and none on the phone. */
 const ART_LATER: Region = {
   ...ART,
-  differs: { what: ["missing"], by: "the art is a band above the sign-in alone on a phone" },
+  differs: { what: ["missing"], by: "the trail stands above the sign-in alone on a phone" },
 };
 
-/** The disabled or enabled primary button of a step, and what stands above it in the column. */
+/** The card of a step on the sky. */
+const CARD: Region = {
+  name: "the card",
+  mockup: { css: ".ph-card" },
+  app: { css: ".nt-welcome .nt-column" },
+  differs: { what: ["height"], by: SHIFTED },
+};
+
+/** The primary button of a step, and what stands above it in the card. */
 function primary(mockup: string, app: string): Region {
   return {
     name: `the primary button, ${app}`,
     mockup: { role: "button", name: mockup },
     app: { role: "button", name: app },
-    differs: { what: ["y"], by: CENTRED },
+    differs: { what: ["y"], by: SHIFTED },
   };
 }
 
 const SIGN_IN: readonly Region[] = [
   ART,
+  CARD,
   {
     name: "the heading",
-    mockup: { text: "Learn anything" },
+    mockup: { css: '.ph-card > div:text-is("Sign in")' },
     app: { role: "heading", name: "Sign in" },
     followsText: "start",
-    differs: { what: ["y", "height"], by: CENTRED },
   },
   {
     name: "the line for grown-ups",
     mockup: { css: 'div:has(> span:text("Accounts are for grown-ups"))' },
     app: { css: ".nt-note" },
-    differs: { what: ["y"], by: CENTRED },
+    differs: { what: ["y"], by: SHIFTED },
   },
   LEGAL_WAY,
 ];
@@ -664,25 +671,24 @@ const CODE: Region = {
   // Eight boxes in the mockup, one field here, whose edge is the one «Contrast» asks of a field.
   differs: {
     what: ["y", "width", "border", "radius", "font-size"],
-    by: `${CENTRED}; one field, its edge by «Contrast»`,
+    by: `${SHIFTED}; one field, its edge by «Contrast»`,
   },
 };
 
 const AGREE: readonly Region[] = [
   ART_LATER,
+  CARD,
   {
     name: "Back",
-    mockup: { css: '.ph-signcol button:text-is("Back")' },
+    mockup: { css: '.ph-card button:text-is("Back")' },
     app: { role: "button", name: "Back" },
     followsText: "start",
-    contrast: [{ property: "colour", mockup: "#0071e3", app: "#0066cc" }],
-    differs: { what: ["y"], by: CENTRED },
   },
   {
     name: "the ticks",
     mockup: { css: 'div:has(> button[role="checkbox"]):has(> div > button[role="checkbox"])' },
     app: { css: ".nt-ticks" },
-    differs: { what: ["y", "height"], by: `${CENTRED}; the browser's own checkbox, 44 high (R61)` },
+    differs: { what: ["y", "height"], by: `${SHIFTED}; the browser's own checkbox, 44 high (R61)` },
   },
   LEGAL_WAY,
 ];
@@ -883,7 +889,7 @@ const WAY_IN: readonly Compared[] = [
   {
     state: "signin",
     draw: signIn,
-    regions: [...SIGN_IN, primary("Continue with Google", "Sign in with Google")],
+    regions: [...SIGN_IN, primary("Sign in with Google", "Sign in with Google")],
   },
   {
     state: "signin-signing",
@@ -894,13 +900,13 @@ const WAY_IN: readonly Compared[] = [
   {
     state: "invite",
     draw: invite,
-    regions: [ART_LATER, CODE, primary("Continue", "Continue"), LEGAL_WAY],
+    regions: [ART_LATER, CARD, CODE, primary("Continue", "Continue"), LEGAL_WAY],
   },
   {
     state: "invite-filled",
     draw: invite,
     settle: codeTyped,
-    regions: [ART_LATER, CODE, primary("Continue", "Continue"), LEGAL_WAY],
+    regions: [ART_LATER, CARD, CODE, primary("Continue", "Continue"), LEGAL_WAY],
   },
   {
     state: "agree",

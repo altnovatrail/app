@@ -275,9 +275,9 @@ describe("the way in", () => {
       service,
     );
 
-    // The sign-in, with the buttons of the device's language.
+    // The sign-in, with the pill of the device's language.
     expect(await screen.findByRole("heading", { level: 1, name: "Sign in" })).toBeTruthy();
-    expect(screen.getByRole("group", { name: "Language" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Language: English" })).toBeTruthy();
     await userEvent.click(screen.getByRole("button", { name: "Sign in with Google" }));
 
     // The invite code, then the statement and the texts: nothing goes before each is given.

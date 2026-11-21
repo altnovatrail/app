@@ -101,14 +101,10 @@ export const en = {
   "signin.signing": "Signing in with Google…",
   /** Below the heading of the sign-in: what NovaTrail is. */
   "signin.intro":
-    "Lessons from teachers and authors, a canvas to think on, and an AI tutor that helps you find the answer yourself",
+    "Learn from the best teachers, think on a canvas, find the answers yourself — and the AI tutor will guide you",
   /** Below the button: an account is a grown-up's alone (R118 spec). */
   "signin.grown-ups":
     "Accounts are for grown-ups, 18 and over. A child learns in a profile their grown-up adds, and never signs in",
-  /** The line of the sign-in's art, and what it says of NovaTrail. */
-  "signin.tagline": "Any subject, one trail",
-  "signin.tagline-line":
-    "Maths, writing and more, on a canvas to think on, with a tutor that helps you find the answer yourself",
   /** The browser did not open the sign-in window. */
   "signin.blocked":
     "The browser didn't open the sign-in window. Allow pop-ups for this site and try again",
