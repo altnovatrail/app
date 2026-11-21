@@ -114,6 +114,19 @@ export const TABLE: Readonly<Record<string, Value>> = {
   // off until voice comes; each beside its caption.
   send: { base: "send", filled: false, mirrored: false },
   microphone: { base: "mic", filled: false, mirrored: false },
+  // The side menu of Home, Subjects and the skill map, and the phone's tab bar (R148 spec): Home,
+  // four squares, filled while it is the place; Subjects, a book; the cognitive map, a hub, shut;
+  // For grown-ups, a padlock. Help is the bar's. At the top right the notifications, a bell; in
+  // For grown-ups This device and the section's other settings; on Subjects a module's skill map,
+  // a tree of nodes.
+  "nav-home": { base: "grid-view", filled: true, mirrored: false },
+  "nav-subjects": { base: "menu-book", filled: true, mirrored: false },
+  "nav-cognitive": { base: "hub", filled: false, mirrored: false },
+  "nav-grown": { base: "lock", filled: true, mirrored: false },
+  notifications: { base: "notifications", filled: true, mirrored: false },
+  device: { base: "tablet-android", filled: false, mirrored: false },
+  settings: { base: "settings", filled: false, mirrored: false },
+  "skill-map": { base: "account-tree", filled: false, mirrored: false },
 };
 
 /** An icon as the app draws it: its view box, and the paths it fills in the text's colour. */

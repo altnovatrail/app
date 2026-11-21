@@ -44,6 +44,8 @@ export const CAPTIONLESS = {
   "choose-photos": { icon: "photos", word: "icon.choose-photos" },
   "remove-frame": { icon: "close", word: "icon.remove-frame" },
   "resize-frame": { icon: "resize", word: "icon.resize-frame" },
+  // At the top right of Home, Subjects and the skill map (R79): the notifications, a bell.
+  notifications: { icon: "notifications", word: "bell.title" },
 } as const satisfies Record<string, { icon: IconValue | undefined; word: Key }>;
 
 /** A button of the closed list. */

@@ -45,9 +45,15 @@ export const MODULE_LICENSE: Route = { screen: "license", parts: [] };
 export const TUTOR: Route = { screen: "tutor", parts: [] };
 
 /**
- * The skill map, the learner's second way in beside My subjects (R34): `#/skill-map` lists the maps
- * of the modules connected, and `#/skill-map/<module>` is a module's map, by the module's ID — an
- * ID of content, never the learner's.
+ * Subjects, a place of the side menu (R148 spec): the catalog of the server, the modules connected
+ * with the way to each one's map and the others with Connect.
+ */
+export const SUBJECTS: Route = { screen: "subjects", parts: [] };
+
+/**
+ * The skill map, the learner's second way in beside My subjects (R34): `#/skill-map/<module>` is a
+ * module's map, by the module's ID — an ID of content, never the learner's —, opened from Subjects;
+ * `#/skill-map` alone goes to Subjects in place of itself.
  */
 export const SKILL_MAP: Route = { screen: "skill-map", parts: [] };
 
@@ -66,6 +72,7 @@ export const SCREENS: ReadonlySet<string> = new Set([
   LEGAL.screen,
   MODULE_LICENSE.screen,
   TUTOR.screen,
+  SUBJECTS.screen,
   SKILL_MAP.screen,
   PAPER.screen,
 ]);

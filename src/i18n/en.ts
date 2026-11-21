@@ -400,6 +400,47 @@ export const en = {
   /** The cross and the corner of a frame the learner drew round a task the AI missed. */
   "icon.remove-frame": "Remove the frame",
   "icon.resize-frame": "Resize your frame",
+  /**
+   * The side menu of Home, Subjects and the skill map, and the phone's tab bar (R148 spec): its
+   * name, its places, the cognitive map shut until it comes with its "Soon" and its tooltip, and
+   * For grown-ups; Help is the bar's.
+   */
+  "nav.title": "Main",
+  "nav.home": "Home",
+  "nav.subjects": "Subjects",
+  "nav.cognitive": "Cognitive map",
+  "nav.soon": "Soon",
+  "nav.cognitive-later": "Cognitive map — comes later",
+  "nav.grown": "Grown-ups",
+  /** Home: its title and heading, no pseudonym — the profile's menu has it —, and the way to Subjects. */
+  "home.screen": "Home",
+  "home.all-subjects": "All subjects",
+  /**
+   * Subjects, the catalog of the server: its heading and line, the connected modules by their
+   * count, the others, and a connected module's mark.
+   */
+  "catalog.title": "Subjects",
+  "catalog.sub": "The modules of this server. A connected one is on Home, with its skill map",
+  "catalog.connected": "Connected · {count}",
+  "catalog.more": "More on this server",
+  "catalog.is-connected": "Connected",
+  /** At the title of a module's map: the pop-over of the connected modules, and its button. */
+  "skillmap.modules": "Connected modules",
+  "skillmap.module": "Module: {module}",
+  /** The profile's menu: whose profile it is. */
+  "learner.yours": "Your profile",
+  /** For grown-ups, from the side menu: whose settings it holds, and the section's other pages. */
+  "grown.who": "Your profile and this device",
+  "grown.section": "All settings",
+  /** The notifications at the top right: nothing sends one yet. */
+  "bell.title": "Notifications",
+  "bell.none": "Nothing new yet",
+  "bell.later": "Notifications will appear here",
+  /** The tutor's panel from the top right of Home, where there is no work: what it is and where it helps. */
+  "tutor-home.ai":
+    "The tutor is an AI — a computer program, not a person. A program checks every answer",
+  "tutor-home.where":
+    "Open a lesson or a page from your book, and the tutor helps with the work there",
   /** The heading of the learner's home: the modules connected to the profile (R62). */
   "subjects.title": "My subjects",
   /** The heading of the modules connected to the profile. */
@@ -420,8 +461,6 @@ export const en = {
   "subjects.license": "License",
   /** On a module's card: its skill graph is a chain, so its lessons go one after another (R06). */
   "subjects.sequential": "In order",
-  /** Under the heading of the home screen, where the learner picks up their work. */
-  "subjects.sub": "Pick up where you left off",
   /** The heading of the card of what comes next: the task in progress, the engine's way, the tutor time. */
   "subjects.next-up": "Next up",
   /** The second card at the top: "A task from my paper", the tasks of a page of the learner's book (R71). */

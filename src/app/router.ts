@@ -12,6 +12,7 @@ export {
   PAPER,
   type Route,
   SKILL_MAP,
+  SUBJECTS,
   TASK,
   TUTOR,
 } from "./hash.ts";

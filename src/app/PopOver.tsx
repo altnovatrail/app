@@ -44,6 +44,8 @@ export interface PopOverProps {
   readonly describedBy?: string | undefined;
   /** Hung below the middle of its button, from 600 CSS px, not from its edge. */
   readonly centred?: boolean;
+  /** Hung at the right of its button, from 600 CSS px, its foot at the window's margin: the side menu's. */
+  readonly beside?: boolean;
   /**
    * Between the button and the pop-over hung from it, CSS px, where it is not GAP of hang.ts: the
    * home's pop-overs hang 6 below its bar, as the mockup's do (R63).
@@ -76,6 +78,7 @@ export function PopOver({
   buttonRef,
   describedBy,
   centred = false,
+  beside = false,
   gap,
   anchor,
   popClassName,
@@ -117,6 +120,7 @@ export function PopOver({
         },
         centred,
         gap,
+        beside,
       );
       shown.style.setProperty("--nt-pop-left", `${at.left}px`);
       shown.style.setProperty("--nt-pop-top", `${at.top}px`);
@@ -160,7 +164,7 @@ export function PopOver({
       // back: the button takes it, while it is still on the page.
       if (button.current?.isConnected === true) button.current.focus();
     };
-  }, [open, close, centred, gap, anchor, button]);
+  }, [open, close, centred, beside, gap, anchor, button]);
 
   const opens = {
     className,

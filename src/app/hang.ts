@@ -1,7 +1,8 @@
 // Where a pop-over hangs from its button in the tablet's layout (R59): below the button, or above
 // it where below has no room and above has, or more of it where neither has; at the button's left
 // edge, or at its right where the left would leave the window — or, centred, below the button's
-// middle, as the mockup hangs the avatars from their button in the middle of the owner's column —;
+// middle, as the mockup hangs the avatars from their button in the middle of the owner's column —,
+// or beside it, its foot at the window's margin, as from the foot of the side menu (R148 spec);
 // inside the window by its margin, where what does not fit scrolls inside the pop-over. It grows
 // from the corner nearest the button, or from the middle of its edge. Without DOM.
 
@@ -29,7 +30,8 @@ export const MARGIN = 16;
 
 /**
  * The place of a pop-over of `width` × `height` hung from `button` in a window of `view`, `gap`
- * from it: GAP, or the home's 6 below its bar (R63).
+ * from it: GAP, or the home's 6 below its bar (R63); `beside` at the button's right, its foot at
+ * the window's margin.
  */
 export function hang(
   button: Box,
@@ -38,7 +40,15 @@ export function hang(
   view: { readonly width: number; readonly height: number },
   centred = false,
   gap = GAP,
+  beside = false,
 ): Hung {
+  if (beside) {
+    return {
+      left: Math.max(MARGIN, Math.min(button.right + gap, view.width - MARGIN - width)),
+      top: Math.max(MARGIN, view.height - MARGIN - height),
+      origin: "bottom left",
+    };
+  }
   const fitsBelow = button.bottom + gap + height <= view.height - MARGIN;
   const fitsAbove = button.top - gap - height >= MARGIN;
   const below = fitsBelow || (!fitsAbove && view.height - button.bottom >= button.top);

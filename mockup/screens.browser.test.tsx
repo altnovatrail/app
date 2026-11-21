@@ -30,8 +30,8 @@ import { ChooseScreen } from "../src/account/ChooseScreen.tsx";
 import { InviteScreen, type TextsRead } from "../src/account/InviteScreen.tsx";
 import { OwnerProfileScreen } from "../src/account/OwnerProfileScreen.tsx";
 import { ApiProvider } from "../src/api/ApiContext.tsx";
-import { HomeBar } from "../src/app/App.tsx";
 import { HOME as HOME_ROUTE, type Route } from "../src/app/router.ts";
+import { type Place, ShellBar } from "../src/app/Shell.tsx";
 import { Waiting } from "../src/app/Waiting.tsx";
 import { LegalPages } from "../src/legal/LegalPages.tsx";
 import { Example } from "../src/lesson/Example.tsx";
@@ -40,11 +40,10 @@ import { LessonEnd } from "../src/lesson/Lesson.tsx";
 import { ContinueButton, LessonScreen } from "../src/lesson/LessonScreen.tsx";
 import { NextStep } from "../src/next/NextStep.tsx";
 import { SignInScreen } from "../src/signin/SignInScreen.tsx";
-import type { ModuleMap } from "../src/skills/map.ts";
-import { MapBarHeading } from "../src/skills/SkillMap.tsx";
 import { MapScreen } from "../src/skills/SkillMapScreen.tsx";
-import { SubjectsScreen } from "../src/subjects/MySubjects.tsx";
+import { HomeScreen } from "../src/subjects/MySubjects.tsx";
 import type { ModuleCard } from "../src/subjects/modules.ts";
+import { CatalogScreen } from "../src/subjects/SubjectsPage.tsx";
 import type { SkillCounts } from "../src/subjects/states.ts";
 import { NO_VERDICTS, type Verdicts, verdictsOf } from "../src/task/attempt.ts";
 import { EssayScreen, type EssayScreenProps } from "../src/task/EssayScreen.tsx";
@@ -1289,35 +1288,6 @@ const SAM = {
   onFailed: () => {},
 };
 
-/** The home screen with the mockup's three modules, a fifth of today's tutor time used. */
-function home() {
-  return inLanguage(
-    <ApiProvider value={QUIET}>
-      <LearnerProvider value={SAM}>
-        <HomeBar />
-      </LearnerProvider>
-      <SubjectsScreen
-        connected={MODULES}
-        catalog={MODULES}
-        quota={create(QuotaShareSchema, { profilePercent: 20 })}
-        next={<NextStep profileId="p1" />}
-        onConnect={() => {}}
-        onDisconnect={() => {}}
-      />
-    </ApiProvider>,
-  );
-}
-
-/**
- * Why the home screen stands lower and its cards are of other heights than the mockup's: app's
- * screen keeps the heading "My subjects", where the mockup greets the learner by name (R63); the
- * card of what comes next holds the engine's way, "What's next", which names no lesson before it is
- * pressed (R24), not the mockup's lesson and its picture; the modules connected are "Connected",
- * with Disconnect and License beside their map, the catalog below them in place of "Add a module".
- */
-const HOME_PLACED =
-  'the heading "My subjects" (R63); "What\'s next" names no lesson (R24); Disconnect and License on a card (R32; R62)';
-
 /** A card or a bar, whose words are its own regions': the size of its own text is not drawn. */
 const NO_TEXT = "no text of its own: the body's 14 px (R11)";
 
@@ -1519,25 +1489,96 @@ const MODE_PILL: Region = {
   differs: { what: ["font-size"], by: NO_TEXT },
 };
 
+/** A screen in the frame of the side menu, as App lays it, for the learner Sam. */
+function framed(place: Place, child: ReactNode) {
+  return inLanguage(
+    <ApiProvider value={QUIET}>
+      <LearnerProvider value={SAM}>
+        <div className="nt-shell">
+          <ShellBar place={place} />
+          {child}
+        </div>
+      </LearnerProvider>
+    </ApiProvider>,
+  );
+}
+
+/** Home with the mockup's three modules, a fifth of today's tutor time used. */
+function home() {
+  return framed(
+    "home",
+    <HomeScreen
+      connected={MODULES}
+      quota={create(QuotaShareSchema, { profilePercent: 20 })}
+      next={<NextStep profileId="p1" />}
+    />,
+  );
+}
+
+/**
+ * Why Home's cards are of other heights than the mockup's: the card of what comes next holds the
+ * engine's way, "What's next", which names no lesson before it is pressed (R24), not the mockup's
+ * lesson and its picture; a module's card leads to its skill map, as ChooseNext takes no module,
+ * where the mockup's says Continue.
+ */
+const HOME_PLACED =
+  "\"What's next\" names no lesson (R24); a module's card leads to its map, ChooseNext takes no module (R79)";
+
+/** The side menu from 600, the tab bar on a phone, and the top right: the frame of Home (R79). */
+function frameOf(device: Device): readonly Region[] {
+  return [
+    device === "ipad"
+      ? {
+          name: "the side menu",
+          mockup: { css: "nav.ph-nav" },
+          app: { css: "nav.nt-nav" },
+          differs: { what: ["font-size"], by: NO_TEXT },
+        }
+      : {
+          name: "the tab bar",
+          mockup: { css: "nav.ph-tabs" },
+          app: { css: "nav.nt-nav" },
+          differs: { what: ["font-size"], by: NO_TEXT },
+        },
+    {
+      name: "Home, the place shown",
+      mockup: { css: 'nav button[aria-current="page"]' },
+      app: { css: 'nav a[aria-current="page"]' },
+    },
+    {
+      name: "the cognitive map, shut",
+      mockup: { css: "nav button:has-text('Cognitive map')" },
+      app: { css: "nav button:has-text('Cognitive map')" },
+    },
+    {
+      name: "the top right",
+      mockup: { css: ".ph-topend" },
+      app: { css: ".nt-shell-top" },
+      followsText: "end",
+      differs: { what: ["font-size"], by: NO_TEXT },
+    },
+    PILL,
+  ];
+}
+
 const HOME: readonly Region[] = [
   {
     name: "the heading",
-    mockup: { text: "Hi, Sam" },
-    app: { role: "heading", name: "My subjects" },
+    mockup: { css: "h1" },
+    app: { role: "heading", name: "Home" },
     followsText: "start",
-    differs: { what: ["y", "height", "font-size"], by: HOME_PLACED },
   },
   {
     name: "the card of what comes next",
     mockup: { css: ".ph-next" },
     app: { css: ".nt-next-up" },
-    differs: { what: ["y", "height", "font-size"], by: `${HOME_PLACED}; ${NO_TEXT}` },
+    differs: { what: ["height", "font-size"], by: `${HOME_PLACED}; ${NO_TEXT}` },
   },
   {
     name: "A task from my paper",
     mockup: { css: ".ph-paper" },
     app: { css: ".nt-paper" },
-    differs: { what: ["y", "height", "font-size"], by: `${HOME_PLACED}; ${NO_TEXT}` },
+    differs: { what: ["height", "font-size"], by: `${HOME_PLACED}; ${NO_TEXT}` },
   },
   {
     name: "the first module",
@@ -1561,48 +1602,38 @@ const LEGEND: Region = {
   differs: { what: ["y"], by: HOME_PLACED },
 };
 
-/** The profile's pill, whose width follows the pseudonym; its words are its name's (R63). */
+/** The profile's pill, whose width follows the pseudonym; on a phone its avatar alone (R79). */
 const PILL: Region = {
   name: "the profile's pill",
-  mockup: { role: "button", name: "Sam, switch learner" },
+  mockup: { role: "button", name: "Sam, profile menu" },
   app: { role: "button", name: "Sam, profile menu" },
-  followsText: "start",
+  followsText: "end",
 };
 
 /**
- * Why the profile's menu is taller, and on the phone its rows higher up the rising sheet: it holds
- * "For grown-ups" and "Sign out" too, the buttons of the profile's header (R63).
- */
-const HEADER_ROWS = 'the rows "For grown-ups" and "Sign out" of the profile\'s header (R63)';
-
-/**
- * Why a colour of Help's pop-over is read lighter: it is a modal dialog, which makes what it stands
- * on inert, out of the reading's reach, so its glass is read over white; the mockup's stands over
- * the gradient of the card of a task from paper, which the reading passes through to the page.
+ * Why a colour of a pop-over is read lighter: it is a modal dialog, which makes what it stands on
+ * inert, out of the reading's reach, so its glass is read over white.
  */
 const OVER_INERT = "a modal dialog, over nothing the reading takes (R59)";
 
-/** The adult's Help, open, and the bar it stands in. */
+/** A pop-over of the frame, by its name on either side. */
+function popOver(name: string, mockup: string, app = mockup): Region {
+  return {
+    name,
+    mockup: { css: `div.nt-pop[aria-label="${mockup}"]` },
+    app: { role: "dialog", name: app },
+    differs: { what: ["background", "border", "font-size"], by: `${OVER_INERT}; ${NO_TEXT}` },
+  };
+}
+
+/** The adult's Help, open from the foot of the side menu. */
 const HELP: readonly Region[] = [
-  PILL,
-  {
-    name: "the glass of Help",
-    mockup: { css: 'div.glass:has(> button[aria-label="Help"])' },
-    app: { css: ".nt-help" },
-    differs: { what: ["font-size"], by: NO_TEXT },
-  },
   {
     name: "Help",
-    mockup: { role: "button", name: "Help" },
-    app: { role: "button", name: "Help" },
-    differs: { what: ["font-size", "font-weight"], by: ICON_ALONE },
+    mockup: { css: 'nav button:has-text("Help")' },
+    app: { css: 'nav button:has-text("Help")' },
   },
-  {
-    name: "the pop-over of Help",
-    mockup: { css: 'div.glass.nt-pop:has(> div:text-is("Help"))' },
-    app: { role: "dialog", name: "Help" },
-    differs: { what: ["background", "border", "font-size"], by: `${OVER_INERT}; ${NO_TEXT}` },
-  },
+  popOver("the pop-over of Help", "Help"),
   {
     name: "The tutor is an AI",
     mockup: { css: 'div.nt-pop span:text-is("The tutor is an AI")' },
@@ -1617,79 +1648,156 @@ const HELP: readonly Region[] = [
     contrast: ACCENT_TEXT,
     differs: { what: ["background"], by: OVER_INERT },
   },
-  {
-    name: "Accessibility",
-    mockup: { role: "button", name: "Accessibility" },
-    app: { role: "button", name: "Accessibility" },
-    followsText: "end",
-    contrast: ACCENT_TEXT,
-  },
 ];
 
-/** The profile's menu, open. */
+/** The profile's menu, open: who is learning, and Switch learner. */
 const MENU: readonly Region[] = [
   PILL,
-  {
-    name: "the profile's menu",
-    mockup: { css: 'div.glass.nt-pop:has(> div:text-is("Learning now"))' },
-    app: { role: "dialog", name: "Profile menu" },
-    differs: { what: ["y", "height", "font-size"], by: `${HEADER_ROWS}; ${NO_TEXT}` },
-  },
-  {
-    name: "Learning now",
-    mockup: { text: "Learning now" },
-    // The caption of its own line, not the legend of the hint mode below it.
-    app: { css: "p.nt-menu-caption" },
-    differs: { what: ["y"], by: HEADER_ROWS },
-  },
+  popOver("the profile's menu", "Profile", "Profile menu"),
   {
     name: "Switch learner",
     mockup: { role: "button", name: "Switch learner" },
     app: { role: "button", name: "Switch learner" },
     contrast: ACCENT_TEXT,
-    differs: { what: ["y"], by: HEADER_ROWS },
+  },
+];
+
+/**
+ * Why For grown-ups is taller than the mockup's: it leads to the section's other pages too, "All
+ * settings", which the mockup's pop-over leaves out (R79).
+ */
+const ALL_SETTINGS = 'the row "All settings", the way to the section for adults (R79)';
+
+/** For grown-ups, open from the side menu: the hint mode, This device and Sign out. */
+const GROWN: readonly Region[] = [
+  {
+    name: "For grown-ups",
+    mockup: { css: 'nav button:has-text("Grown-ups")' },
+    app: { css: 'nav button:has-text("Grown-ups")' },
+  },
+  {
+    ...popOver("the pop-over For grown-ups", "For grown-ups"),
+    differs: {
+      what: ["y", "height", "background", "border", "font-size"],
+      by: `${ALL_SETTINGS}; ${OVER_INERT}; ${NO_TEXT}`,
+    },
+  },
+  {
+    name: "Questions only",
+    mockup: { css: 'div.nt-pop span:text-is("Questions only")' },
+    app: { css: ".nt-pop-grown .nt-hint-mode-title >> nth=0" },
+    followsText: "start",
+    differs: { what: ["y"], by: ALL_SETTINGS },
+  },
+];
+
+/** The notifications, open: nothing new yet. */
+const BELL: readonly Region[] = [
+  {
+    name: "the bell",
+    mockup: { role: "button", name: "Notifications" },
+    app: { role: "button", name: "Notifications" },
+    differs: { what: ["font-size", "font-weight"], by: ICON_ALONE },
+  },
+  popOver("the notifications", "Notifications"),
+];
+
+/** The tutor's panel from the top right of Home. */
+const HOME_TUTOR: readonly Region[] = [
+  {
+    name: "the tutor's button",
+    mockup: { role: "button", name: "Tutor" },
+    app: { role: "button", name: "Tutor" },
+    differs: {
+      what: ["border", "colour", "font-size", "font-weight"],
+      by: `the button is its sign, where the mockup's sign is a span in it (R67); ${ICON_ALONE}`,
+    },
+  },
+];
+
+/** Subjects, the catalog, with the three modules connected and the check board to connect. */
+function subjects() {
+  const board: ModuleCard = {
+    moduleId: "novatrail/check-board",
+    title: "Tasks on a sheet",
+    digest: `sha256:${"4".repeat(64)}`,
+    language: "en",
+  };
+  return framed(
+    "subjects",
+    <CatalogScreen
+      connected={MODULES}
+      catalog={[...MODULES, board]}
+      onConnect={() => {}}
+      onDisconnect={() => {}}
+    />,
+  );
+}
+
+/**
+ * Why a card of Subjects is shorter than the mockup's: a module's manifest has no words of what it
+ * teaches and no tags, so the card holds its title, its mark and its buttons (R79).
+ */
+const NO_ABOUT = "a manifest has no words of what a module teaches, nor tags (R79)";
+
+const SUBJECTS_REGIONS: readonly Region[] = [
+  {
+    name: "the heading",
+    mockup: { css: 'h1:text-is("Subjects")' },
+    app: { role: "heading", name: "Subjects" },
+    followsText: "start",
+  },
+  {
+    name: "the first module connected",
+    mockup: { css: 'div:has(> span > span > span:text-is("Olympiad maths 1–6")):has(button)' },
+    app: { css: "section:first-of-type .nt-catalog-card:first-child" },
+    differs: { what: ["height", "font-size"], by: `${NO_ABOUT}; ${NO_TEXT}` },
   },
 ];
 
 /** A module's skill map in the mockup's frame, the map itself a line: skill-map draws it. */
 function skillMap(title: string) {
-  const map = { manifest: { title, languages: { explanation: "en" } } } as ModuleMap;
   return () =>
-    inLanguage(
-      <LearnerProvider value={SAM}>
-        <MapScreen title={`Skill map: ${title}`} heading={<MapBarHeading map={map} />}>
-          <p>Choose a skill on the map to practise it.</p>
-        </MapScreen>
-      </LearnerProvider>,
+    framed(
+      "subjects",
+      <MapScreen
+        title={`Skill map: ${title}`}
+        profileId="p1"
+        module={{ moduleId: "novatrail/olympiad-math", title, language: "en" }}
+      >
+        <p>Choose a skill on the map to practise it.</p>
+      </MapScreen>,
     );
 }
 
-/** The top bar of the skill map and its frame. */
+/** The skill map's head and its frame. */
 const MAP: readonly Region[] = [
   {
-    name: "the top bar",
-    mockup: { css: 'div.glass:has(> button[aria-label="Back"]):has(span:text-is("Skill map"))' },
-    app: { css: ".nt-top-pill" },
+    name: "Subjects, back",
+    mockup: { css: 'button:text-is("Subjects")' },
+    app: { css: "button.nt-back-link" },
     followsText: "start",
-    differs: { what: ["font-size"], by: NO_TEXT },
   },
   {
-    name: "Back",
-    mockup: { css: 'div.glass:has(span:text-is("Skill map")) > button[aria-label="Back"]' },
-    app: { role: "button", name: "Back" },
-    differs: { what: ["font-size", "font-weight"], by: ICON_ALONE },
+    name: "the heading",
+    mockup: { css: 'h1:text-is("Skill map")' },
+    app: { role: "heading", name: "Skill map" },
+    followsText: "start",
   },
   {
-    name: "the title",
-    mockup: { text: "Skill map" },
-    app: { css: ".nt-top-title" },
+    name: "the module",
+    mockup: { css: 'button[aria-label^="Module: "]' },
+    app: { css: "button.nt-module-pill" },
     followsText: "start",
   },
   {
     name: "the frame",
     mockup: { css: ".ph-mapframe" },
     app: { css: ".nt-map-frame" },
-    differs: { what: ["font-size"], by: NO_TEXT },
+    differs: {
+      what: ["y", "height", "font-size"],
+      by: `the legend above the frame is skill-map's, inside it (R79); ${NO_TEXT}`,
+    },
   },
 ];
 
@@ -2044,21 +2152,21 @@ const WORKBOOK_AND_ESSAY: readonly Compared[] = [
 const SCREENS: readonly Compared[] = [
   ...WAY_IN,
   ...LEGAL_TEXTS,
-  { state: "home", devices: ["ipad"], draw: home, regions: [...HOME, LEGEND] },
-  { state: "home", devices: ["phone"], draw: home, regions: HOME },
+  ...DEVICES.map(
+    (device): Compared => ({
+      state: "home",
+      devices: [device],
+      draw: home,
+      regions: [...frameOf(device), ...HOME, ...(device === "ipad" ? [LEGEND] : [])],
+    }),
+  ),
   { state: "home-legend", devices: ["ipad"], draw: home, regions: [LEGEND] },
   {
     state: "home-legend",
     devices: ["phone"],
     draw: home,
     settle: () => userEvent.click(screen.getByRole("button", { name: "What the marks mean" })),
-    regions: [
-      {
-        name: "the sheet of the legend",
-        mockup: { css: ".ph-legend.on" },
-        app: { role: "dialog", name: "What the marks mean" },
-      },
-    ],
+    regions: [popOver("the sheet of the legend", "What the marks mean")],
   },
   {
     state: "home-help",
@@ -2072,6 +2180,30 @@ const SCREENS: readonly Compared[] = [
     settle: () => userEvent.click(screen.getByRole("button", { name: "Sam, profile menu" })),
     regions: MENU,
   },
+  {
+    state: "home-grownups",
+    draw: home,
+    settle: () => userEvent.click(screen.getByRole("button", { name: "Grown-ups" })),
+    regions: GROWN,
+  },
+  {
+    state: "home-bell",
+    draw: home,
+    settle: () => userEvent.click(screen.getByRole("button", { name: "Notifications" })),
+    regions: BELL,
+  },
+  { state: "home-tutor", draw: home, regions: HOME_TUTOR },
+  ...DEVICES.map(
+    (device): Compared => ({
+      state: "subjects",
+      devices: [device],
+      draw: subjects,
+      regions: [
+        ...frameOf(device).filter((region) => region.name !== "Home, the place shown"),
+        ...SUBJECTS_REGIONS,
+      ],
+    }),
+  ),
   { state: "map", draw: skillMap("Olympiad maths 1–6"), regions: MAP },
   { state: "map-essays", draw: skillMap("Short essays"), regions: MAP },
   {
