@@ -60,15 +60,14 @@ const GROUPS: readonly [number, string, string][] = [
   [TEXT, "on-fill", "sky sky-glow sky-pill/sky-glow"],
   [EDGE, "accent sky-edge sky-correct on-fill", "sky-card"],
   [EDGE, "sky-edge", "sky-fill"],
-  // "Who is learning?" (R61): the links and the line under the heading where the sky is brightest
-  // under them, a profile's card and "Start", the line of "Add a learner" on its glass, the line at
-  // the foot in the pill's fill, and the white focus ring, each over the brightest sky it meets.
-  [TEXT, "who-link on-fill", "who-under-bar"],
+  // "Who is learning?" (R61): "Sign out" on its glass and the line under the heading where the sky
+  // is brightest under them, a profile's card and "Start", the line of "Add a learner" on its
+  // glass, and the white focus ring, each over the brightest sky it meets.
+  [TEXT, "on-fill", "who-glass/who-under-bar"],
   [TEXT, "who-lead", "who-under-lead"],
   [TEXT, "who-line", "sky-card"],
   [TEXT, "on-fill", "who-start"],
   [TEXT, "who-why", "who-glass/who-under-glass"],
-  [TEXT, "who-foot", "sky-pill/who-under-foot"],
   [EDGE, "on-fill", "who-under-ring"],
   [TEXT, "google-text", "on-fill"],
   [EDGE, "google-edge", "on-fill"],

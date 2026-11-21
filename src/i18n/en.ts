@@ -346,8 +346,6 @@ export const en = {
   /** Shown but not open until a child's profile comes with a parent's consent (R148 spec). */
   "choose.add": "Add a learner",
   "choose.add-why": "Comes later: a child's profile waits for a parent's consent",
-  /** At the foot of the choice. */
-  "choose.foot": "Each learner has a made-up name and an avatar, never a real name or a photo",
   /** Switches to the choice of the learner. */
   "learner.switch": "Switch learner",
   /** The profile's menu (R63): its dialog, its pill by the pseudonym it shows, the learner in it. */

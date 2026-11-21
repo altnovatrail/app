@@ -1019,12 +1019,6 @@ const WAY_IN: readonly Compared[] = [
         followsText: "centre",
       },
       {
-        name: "For grown-ups",
-        mockup: { role: "button", name: "For grown-ups" },
-        app: { role: "button", name: "For grown-ups" },
-        followsText: "start",
-      },
-      {
         name: "Sign out",
         mockup: { role: "button", name: "Sign out" },
         app: { role: "button", name: "Sign out" },
@@ -1044,12 +1038,6 @@ const WAY_IN: readonly Compared[] = [
         name: "Add a learner",
         mockup: { css: "button.ph-addp" },
         app: { css: ".nt-learner-add" },
-      },
-      {
-        name: "the line at the foot",
-        mockup: { css: ".ph-whofoot > span" },
-        app: { css: ".nt-profiles-foot > span" },
-        followsText: "centre",
       },
     ],
   },

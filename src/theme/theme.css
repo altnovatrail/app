@@ -51,23 +51,20 @@
   --nt-sky-correct: #30d158;
   --nt-sky-off: rgba(255, 255, 255, 0.5);
   --nt-sky-off-fill: rgba(255, 255, 255, 0.12);
-  /* "Who is learning?" on the sky (R61): its links, the line under the heading, whose profile, "Start",
-     the glass of "Add a learner" and its line, its name while disabled, and the line at the foot. */
-  --nt-who-link: #a8c9ff;
+  /* "Who is learning?" on the sky (R61): the line under the heading, whose profile, "Start", the
+     glass of "Sign out" and of "Add a learner", its line, and its name while disabled. */
   --nt-who-lead: rgba(255, 255, 255, 0.7);
   --nt-who-line: rgba(255, 255, 255, 0.6);
   --nt-who-start: #2b66f6;
   --nt-who-glass: rgba(255, 255, 255, 0.12);
   --nt-who-why: rgba(255, 255, 255, 0.9);
   --nt-who-off: rgba(255, 255, 255, 0.8);
-  --nt-who-foot: rgba(255, 255, 255, 0.88);
   /* The sky where it is brightest under each, by the mockup's README, «Contrast»: no rule paints
      them, the contrast test lays the colours above over them. */
-  --nt-who-under-bar: #3e419e;
+  --nt-who-under-bar: #284578;
   --nt-who-under-lead: #292c71;
   --nt-who-under-glass: #6d4927;
   --nt-who-under-ring: #926024;
-  --nt-who-under-foot: #b27421;
   --nt-google-edge: #747775;
   --nt-google-text: #1f1f1f;
 
@@ -1677,14 +1674,6 @@ button.nt-row > svg {
 .nt-avatar.nt-avatar-add > svg {
   inline-size: 2.5rem;
   block-size: 2.5rem;
-}
-.nt-profiles-foot {
-  margin: auto 0 0;
-  padding: 0 1.75rem;
-  color: var(--nt-text-muted);
-  font-size: var(--nt-size-caption);
-  line-height: 1.1;
-  text-align: center;
 }
 @media (width < 600px) {
   .nt-profiles-top {
@@ -4638,9 +4627,9 @@ main.nt-sheet .nt-column .nt-sheet-note > button.nt-link {
 }
 
 /*
- * "Who is learning?" on the sign-in's sky (R61; the mockup's `who`): stars of its own, the light
- * links of the bar, each profile a dark card of 300 × 380 whose one button is the whole card, and
- * "Add a learner" a card of glass; the line at the foot in the language pill's fill; the focus ring
+ * "Who is learning?" on the sign-in's sky (R61; the mockup's `who`): stars of its own, the name
+ * in the middle of the bar and "Sign out" a pill of glass at its end, each profile a dark card of
+ * 300 × 380 whose one button is the whole card, and "Add a learner" a card of glass; the focus ring
  * white, which the sky's glows leave at 3:1.
  */
 main.nt-who {
@@ -4670,11 +4659,23 @@ main.nt-who {
   pointer-events: none;
 }
 .nt-who .nt-profiles-top {
-  padding: 3.125rem 2.25rem 0;
+  grid-template-areas: ". brand out";
+  padding: 3.125rem 2.5rem 0;
 }
-main.nt-profiles.nt-who .nt-profiles-top > button.nt-link {
-  color: var(--nt-who-link);
-  font-size: 1.0625rem;
+main.nt-profiles.nt-who .nt-profiles-top > button.nt-who-out {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 1.125rem 0 0.875rem;
+  border-color: rgba(255, 255, 255, 0.25);
+  background: var(--nt-who-glass);
+  -webkit-backdrop-filter: blur(30px);
+  backdrop-filter: blur(30px);
+  font-size: 1rem;
+}
+main.nt-who .nt-who-out > svg {
+  inline-size: 1.125rem;
+  block-size: 1.125rem;
 }
 .nt-who .nt-profiles-top > .nt-brand {
   gap: 0.625rem;
@@ -4797,22 +4798,14 @@ main.nt-who .nt-avatar.nt-avatar-add > svg {
   font-weight: var(--nt-weight-bold);
   line-height: 1.2;
 }
-.nt-who .nt-profiles-foot > span {
-  display: inline-block;
-  padding: 0.5rem 1rem;
-  border-radius: 1.125rem;
-  background: var(--nt-sky-pill);
-  color: var(--nt-who-foot);
-  font-size: 0.875rem;
-  line-height: 1.35;
-}
 @media (width < 600px) {
   .nt-who .nt-profiles-top {
     grid-template-columns: 1fr auto 1fr;
-    grid-template-areas: "adults brand out";
-    padding: 0.75rem 0.25rem 0;
+    grid-template-areas: ". brand out";
+    padding: 0.75rem 1rem 0;
   }
-  main.nt-profiles.nt-who .nt-profiles-top > button.nt-link {
+  main.nt-profiles.nt-who .nt-profiles-top > button.nt-who-out {
+    padding: 0 0.875rem 0 0.75rem;
     font-size: 0.9375rem;
   }
   .nt-who .nt-profiles-top > .nt-brand {
@@ -4877,8 +4870,5 @@ main.nt-who .nt-avatar.nt-avatar-add > svg {
     margin-block-start: 0.875rem;
     padding: 0.5625rem 1.375rem;
     font-size: 0.9375rem;
-  }
-  .nt-who .nt-profiles-foot {
-    padding: 0 1rem;
   }
 }

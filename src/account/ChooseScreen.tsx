@@ -2,14 +2,14 @@
 // stars of its own, each profile a dark card — its avatar and pseudonym, whose profile it is, and
 // "Start" — the owner's with no PIN while the account has no child; "Add a learner" a card of
 // glass, shown but not open, with the line why, until a child's profile comes with a parent's
-// consent. Above, the way into the section for adults and the sign-out. On the first sign-in it
-// asks the browser to keep the site's data, with no line of its own: the adult who just signed in is
-// the one who sees Firefox's prompt (R04).
+// consent. Above, the name, and the sign-out a pill of glass; the section for adults opens from the
+// profile's menu once a learner is chosen (R29). On the first sign-in it asks the browser to keep
+// the site's data, with no line of its own: the adult who just signed in is the one who sees
+// Firefox's prompt (R04).
 import type { Profile } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import { useEffect, useId } from "react";
 import { Brand } from "../app/Brand.tsx";
 import { Icon } from "../app/Icon.tsx";
-import { ADULTS, navigate } from "../app/router.ts";
 import { Screen } from "../app/Screen.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { siteStorage } from "../storage/browser.ts";
@@ -135,20 +135,13 @@ export function ChooseScreen({ profiles, first, onChoose, onSignOut }: ChooseScr
         <>
           <Stars />
           <div className="nt-profiles-top">
-            <button type="button" className="nt-link" onClick={() => navigate(ADULTS)}>
-              {words.text("adults.title")}
-            </button>
             <Brand className="nt-brand" />
-            <button type="button" className="nt-link" onClick={onSignOut}>
+            <button type="button" className="nt-who-out" onClick={onSignOut}>
+              <Icon value="sign-out" />
               {words.text("signout.button")}
             </button>
           </div>
         </>
-      }
-      after={
-        <p className="nt-profiles-foot">
-          <span>{words.text("choose.foot")}</span>
-        </p>
       }
     >
       <p className="nt-lead">{words.text("choose.intro")}</p>
