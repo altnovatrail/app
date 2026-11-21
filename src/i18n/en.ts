@@ -380,24 +380,7 @@ export const en = {
   "help.name": "Your name is made up",
   "help.name-text": "Write no real names in the work — in an essay either",
   "signout.button": "Sign out",
-  /** The heading of the screen before the sign-out. */
-  "signout.title": "Sign out?",
-  "signout.erases": "Signing out erases everything of this account on this device",
-  /** One line for each profile with unfinished tasks on this device. */
-  "signout.unfinished": plural({
-    one: "{pseudonym}: {count} unfinished task",
-    other: "{pseudonym}: {count} unfinished tasks",
-  }),
-  /** One line for each profile with essays on this device, which the server does not keep. */
-  "signout.essays": plural({
-    one: "{pseudonym}: {count} essay, which isn't on the server",
-    other: "{pseudonym}: {count} essays, which aren't on the server",
-  }),
-  "signout.nothing": "No unfinished work is on this device",
-  "signout.confirm": "Sign out and erase",
-  /** The sign-in service did not sign out: nothing was erased. */
-  "signout.failed": "The sign-out didn't go through. Nothing was erased. Try again",
-  /** After a sign-out whose erasure the browser did not finish. */
+  /** After "Erase everything on this device", whose erasure the browser did not finish. */
   "signout.left": "Not all of it was erased. The app finishes at the next start",
   "common.cancel": "Cancel",
   /** A button that shows its icon alone, ×, and its tooltip: closes a pop-over or a panel (R60). */

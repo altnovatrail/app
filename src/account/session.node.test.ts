@@ -23,7 +23,7 @@ import { FIREBASE_HEARTBEAT, profileDatabase, SETTINGS } from "../storage/schema
 import { readLanguage, writeLanguage } from "../storage/settings.ts";
 import { memoryDevice } from "../test/device.ts";
 import { fakeSignIn } from "../test/signin.ts";
-import { marksFollow, pseudonymOf, Session, type SessionState, unfinishedWork } from "./session.ts";
+import { marksFollow, pseudonymOf, Session, type SessionState } from "./session.ts";
 
 const PROJECT = { projectId: "example-project", apiKey: "synthetic-web-api-key" };
 
@@ -279,7 +279,36 @@ describe("the session", () => {
     expect(session.snapshot()).toMatchObject({ step: "choose", first: false });
   });
 
-  it("signs out of the sign-in service first, then erases everything of the account", async () => {
+  it("signs out of the sign-in service alone, and the account's data wait for its next sign-in", async () => {
+    const device = await deviceOf("account-1", "p1");
+    const { session, service, checks } = harness({}, "uid-1", device);
+    session.start();
+    await settled(session, "choose");
+    expect(await session.signOut()).toBe(true);
+    expect(service.calls.signOut).toBe(1);
+    expect(session.snapshot()).toEqual({ step: "signed-out" });
+    expect(checks.stop).toHaveBeenCalled();
+    const registry = await readRegistry(device);
+    expect(registry?.account).toBe("account-1");
+    expect(registry?.databases.has(profileDatabase("p1"))).toBe(true);
+    service.set("uid-1");
+    await settled(session, "choose");
+    expect((await readRegistry(device))?.databases.has(profileDatabase("p1"))).toBe(true);
+  });
+
+  it("stays where it was when the sign-in service could not sign out", async () => {
+    const device = await deviceOf("account-1", "p1");
+    const { session, service } = harness({}, "uid-1", device);
+    service.signOut = async () => {
+      throw new Error("no network");
+    };
+    session.start();
+    await settled(session, "choose");
+    expect(await session.signOut()).toBe(false);
+    expect(session.snapshot().step).toBe("choose");
+  });
+
+  it("signs out of the sign-in service first on Erase everything, then erases the account", async () => {
     const device = await deviceOf("account-1", "p1");
     const { session, service, checks } = harness({}, "uid-1", device);
     const order: string[] = [];
@@ -290,14 +319,14 @@ describe("the session", () => {
     };
     session.start();
     await settled(session, "choose");
-    expect(await session.signOut()).toBe("erased");
+    expect(await session.eraseEverything()).toBe("erased");
     expect(order).toEqual(["sign-out account-1"]);
     expect(await readRegistry(device)).toBeUndefined();
     expect(session.snapshot()).toEqual({ step: "signed-out" });
     expect(checks.stop).toHaveBeenCalled();
   });
 
-  it("erases nothing when the sign-in service could not sign out, and stays where it was", async () => {
+  it("erases nothing on Erase everything when the sign-in service could not sign out", async () => {
     const device = await deviceOf("account-1", "p1");
     const { session, service } = harness({}, "uid-1", device);
     service.signOut = async () => {
@@ -305,12 +334,12 @@ describe("the session", () => {
     };
     session.start();
     await settled(session, "choose");
-    expect(await session.signOut()).toBe("failed");
+    expect(await session.eraseEverything()).toBe("failed");
     expect(session.snapshot().step).toBe("choose");
     expect((await readRegistry(device))?.databases.has(profileDatabase("p1"))).toBe(true);
   });
 
-  it("says when the browser did not erase all of a sign-out, which the next start erases", async () => {
+  it("says when the browser did not erase all of Erase everything, which the next start erases", async () => {
     const backend = new MemoryBackend();
     const { device } = memoryDevice(backend);
     await setAccount(device, "account-1");
@@ -319,30 +348,27 @@ describe("the session", () => {
     session.start();
     await settled(session, "choose");
     backend.blocked.add(profileDatabase("p1"));
-    expect(await session.signOut()).toBe("left");
+    expect(await session.eraseEverything()).toBe("left");
     expect(session.snapshot().step).toBe("signed-out");
   });
 
-  it.each([false, true])(
-    "erases the device's settings and the heartbeats too on Erase everything alone (%s)",
-    async (everything) => {
-      const backend = new MemoryBackend();
-      const { device } = memoryDevice(backend);
-      await setAccount(device, "account-1");
-      await writeLanguage(device, "ru");
-      const heartbeats = { version: 1, stores: { "firebase-heartbeat-store": {} } };
-      await backend.open(FIREBASE_HEARTBEAT, heartbeats, { create: true, onLost: () => {} });
-      const { session } = harness({}, "uid-1", device);
-      session.start();
-      await settled(session, "choose");
-      // The SDK's connection holds the heartbeats: their removal waits for it, and is no failure.
-      backend.blocked.add(FIREBASE_HEARTBEAT);
-      expect(await session.signOut(everything)).toBe("erased");
-      expect(await readRegistry(device)).toBeUndefined();
-      expect(await readLanguage(device)).toBe(everything ? undefined : "ru");
-      expect(session.snapshot().step).toBe("signed-out");
-    },
-  );
+  it("erases the device's settings and the heartbeats too on Erase everything", async () => {
+    const backend = new MemoryBackend();
+    const { device } = memoryDevice(backend);
+    await setAccount(device, "account-1");
+    await writeLanguage(device, "ru");
+    const heartbeats = { version: 1, stores: { "firebase-heartbeat-store": {} } };
+    await backend.open(FIREBASE_HEARTBEAT, heartbeats, { create: true, onLost: () => {} });
+    const { session } = harness({}, "uid-1", device);
+    session.start();
+    await settled(session, "choose");
+    // The SDK's connection holds the heartbeats: their removal waits for it, and is no failure.
+    backend.blocked.add(FIREBASE_HEARTBEAT);
+    expect(await session.eraseEverything()).toBe("erased");
+    expect(await readRegistry(device)).toBeUndefined();
+    expect(await readLanguage(device)).toBeUndefined();
+    expect(session.snapshot().step).toBe("signed-out");
+  });
 
   it("says when Erase everything left the device's settings", async () => {
     const backend = new MemoryBackend();
@@ -353,7 +379,7 @@ describe("the session", () => {
     session.start();
     await settled(session, "choose");
     backend.failing.add(SETTINGS);
-    expect(await session.signOut(true)).toBe("left");
+    expect(await session.eraseEverything()).toBe("left");
     expect(await readRegistry(device)).toBeUndefined();
   });
 
@@ -641,47 +667,6 @@ describe("pseudonymOf", () => {
     expect(thirty.length).toBe(60);
     expect(pseudonymOf(thirty)).toBe(thirty);
     expect(pseudonymOf("🦔".repeat(31))).toBeUndefined();
-  });
-});
-
-describe("unfinishedWork", () => {
-  it("names each profile with unfinished attempts here, and no other", async () => {
-    const device = await deviceOf("account-1", "p1", "p2");
-    const p1 = await addProfile(device, "p1");
-    await p1?.beginAttempt({ attemptId: "a1", digest: `sha256:${"1".repeat(64)}` });
-    await p1?.beginAttempt({ attemptId: "a2", digest: `sha256:${"1".repeat(64)}` });
-    const profiles = [owner("p1"), owner("p2"), owner("p3")].map((p) => ({
-      ...p,
-      pseudonym: p.profileId ?? "",
-    }));
-    expect(await unfinishedWork(device, profiles as never)).toEqual([
-      { profileId: "p1", pseudonym: "p1", count: 2, essays: 0 },
-    ]);
-  });
-});
-
-describe("unfinishedWork with the storage of works on", () => {
-  it("names only the essays whose last PutWork did not go through, all of them while it is off", async () => {
-    const device = await deviceOf("account-1", "p1");
-    const p1 = await addProfile(device, "p1");
-    const digest = `sha256:${"1".repeat(64)}`;
-    for (const attemptId of ["e1", "e2"]) {
-      await p1?.beginAttempt({ attemptId, digest });
-      await p1?.beginEssay({ attemptId, digest }, "en");
-      const points = [{ x: 1, y: 1, t: 0, p: 0.5 }];
-      await p1?.replaceHistory(attemptId, [
-        { kind: "write", t: 1, stroke: { id: 1, kind: "pen", points } },
-      ]);
-      await p1?.attemptEnded(attemptId);
-    }
-    await p1?.markStored("e1", { history: 1, submissions: 0 });
-    const profile = { ...owner("p1"), pseudonym: "p1" };
-    expect(await unfinishedWork(device, [{ ...profile, workStorage: true }] as never)).toEqual([
-      { profileId: "p1", pseudonym: "p1", count: 0, essays: 1 },
-    ]);
-    expect(await unfinishedWork(device, [{ ...profile, workStorage: false }] as never)).toEqual([
-      { profileId: "p1", pseudonym: "p1", count: 0, essays: 2 },
-    ]);
   });
 });
 

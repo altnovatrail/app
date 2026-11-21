@@ -22,7 +22,7 @@ export interface DatabaseEntry {
 export interface Registry {
   readonly account?: string;
   readonly signIn?: SignIn;
-  /** A sign-out under way: the registry goes too once its databases are erased. */
+  /** An erasure of the account under way: the registry goes too once its databases are erased. */
   readonly ending: boolean;
   readonly databases: ReadonlyMap<string, DatabaseEntry>;
 }
@@ -57,7 +57,7 @@ export async function changeRegistry(
   await connection?.write(["registry", "databases"], change);
 }
 
-/** The account that signed in; a sign-out it ends is over. */
+/** The account that signed in; an erasure of the account it ends is over. */
 export function setAccount(device: Device, id: string): Promise<void> {
   return changeRegistry(device, async (tx) => {
     await tx.put("registry", "account", { id });

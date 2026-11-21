@@ -63,7 +63,7 @@ import { Boot } from "../boot/Boot.tsx";
 import { en } from "../i18n/en.ts";
 import { ru } from "../i18n/ru.ts";
 import { OWN_KEY_CHANNEL } from "../ownkey/OwnKeyContext.tsx";
-import { addProfile } from "../storage/profile.ts";
+import { addProfile, openProfile } from "../storage/profile.ts";
 import { readRegistry, setAccount } from "../storage/registry.ts";
 import { profileDatabase, SETTINGS } from "../storage/schema.ts";
 import { writeLanguage } from "../storage/settings.ts";
@@ -656,7 +656,7 @@ describe("the way in", () => {
     window.location.hash = "";
   });
 
-  it("names what the sign-out takes, comes back on Cancel, and erases on Sign out and erase", async () => {
+  it("signs out at once from the menu, and keeps the account's work on the device", async () => {
     const { device } = memoryDevice();
     const service = fakeSignIn("uid-1");
     const account = { accountId: "account-1", profiles: [OWNER] };
@@ -668,65 +668,35 @@ describe("the way in", () => {
     await userEvent.click(await screen.findByRole("button", { name: "Ёжик" }));
     const profile = await addProfile(device, "p1");
     await profile?.beginAttempt({ attemptId: "a1", digest: `sha256:${"1".repeat(64)}` });
-    // An essay ended stays on the device, which the server does not keep (R53).
-    await profile?.beginAttempt({ attemptId: "e1", digest: "d1" });
-    await profile?.beginEssay({ attemptId: "e1", digest: "d1" }, "en");
-    await profile?.attemptEnded("e1");
 
     await userEvent.click(await inMenu("Sign out"));
-    expect(await screen.findByRole("heading", { level: 1, name: "Sign out?" })).toBeTruthy();
-    expect(await screen.findByText("Ёжик: 1 unfinished task")).toBeTruthy();
-    expect(screen.getByText("Ёжик: 1 essay, which isn't on the server")).toBeTruthy();
-    await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
-    expect(await screen.findByRole("heading", { level: 1, name: "My subjects" })).toBeTruthy();
-
-    await userEvent.click(await inMenu("Sign out"));
-    await userEvent.click(await screen.findByRole("button", { name: "Sign out and erase" }));
     expect(await screen.findByRole("heading", { level: 1, name: "Sign in" })).toBeTruthy();
     expect(service.calls.signOut).toBe(1);
-    expect(await readRegistry(device)).toBeUndefined();
+    const registry = await readRegistry(device);
+    expect(registry?.account).toBe("account-1");
+    expect(registry?.databases.has(profileDatabase("p1"))).toBe(true);
+    expect(await (await openProfile(device, "p1"))?.unfinished()).toBe(1);
   });
 
-  it("does not open the next account on the sign-out screen when the account went some other way", async () => {
-    const service = fakeSignIn("uid-1");
-    const account = { accountId: "account-1", profiles: [OWNER] };
-    renderApp({ getAccount: () => message(GetAccountResponseSchema, { account }) }, service);
-    await userEvent.click(await screen.findByRole("button", { name: "Sign out" }));
-    expect(await screen.findByRole("heading", { level: 1, name: "Sign out?" })).toBeTruthy();
-    // Another tab signed out.
-    service.set(null);
-    await userEvent.click(await screen.findByRole("button", { name: "Sign in with Google" }));
-    expect(await screen.findByRole("heading", { level: 1, name: "Who is learning?" })).toBeTruthy();
-  });
-
-  it("erases nothing when the sign-out did not go through, and says so", async () => {
-    const { device } = memoryDevice();
+  it("stays where it was when the sign-out did not go through", async () => {
     const service = fakeSignIn("uid-1");
     service.signOut = async () => {
       throw new Error("no network");
     };
     const account = { accountId: "account-1", profiles: [OWNER] };
-    renderApp(
-      { getAccount: () => message(GetAccountResponseSchema, { account }) },
-      service,
-      device,
-    );
-    await userEvent.click(await screen.findByRole("button", { name: "Sign out" }));
-    await userEvent.click(await screen.findByRole("button", { name: "Sign out and erase" }));
-    expect((await screen.findByRole("alert")).textContent).toBe(
-      "The sign-out didn't go through. Nothing was erased. Try again",
-    );
-    expect(screen.getByRole("button", { name: "Sign out and erase" })).toBeEnabled();
-    expect((await readRegistry(device))?.account).toBe("account-1");
+    renderApp({ getAccount: () => message(GetAccountResponseSchema, { account }) }, service);
+    await screen.findByRole("heading", { level: 1, name: "Who is learning?" });
+    await userEvent.click(screen.getByRole("button", { name: "Sign out" }));
+    expect(screen.getByRole("heading", { level: 1, name: "Who is learning?" })).toBeTruthy();
   });
 
-  it("signs out from the choice too, saying there is nothing unfinished", async () => {
+  it("signs out from the choice too", async () => {
     const service = fakeSignIn("uid-1");
     const account = { accountId: "account-1", profiles: [OWNER] };
     renderApp({ getAccount: () => message(GetAccountResponseSchema, { account }) }, service);
     await screen.findByRole("heading", { level: 1, name: "Who is learning?" });
     await userEvent.click(screen.getByRole("button", { name: "Sign out" }));
-    expect(await screen.findByText("No unfinished work is on this device")).toBeTruthy();
+    expect(await screen.findByRole("heading", { level: 1, name: "Sign in" })).toBeTruthy();
   });
 
   it("offers to try again when api does not answer, and shows a failure no screen is for", async () => {

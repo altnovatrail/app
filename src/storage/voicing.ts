@@ -1,8 +1,8 @@
 // The voicing of this device in its registry (R04, R07, R36): the voice an adult chose for a
 // language, and on Android and Linux the adult's leave for voicing on this device. Not a learner's
-// data: the sign-out of the account's owner erases it with the registry, and another account that
-// signs in erases it, to decide anew (erase.ts). A registry that cannot be read is nothing chosen
-// and no leave. No DOM.
+// data: "Erase everything on this device" erases it with the registry, and another account that
+// signs in erases it, to decide anew (erase.ts); the sign-out leaves it. A registry that cannot be
+// read is nothing chosen and no leave. No DOM.
 import type { Device } from "./device.ts";
 import { changeRegistry } from "./registry.ts";
 import { REGISTRY, REGISTRY_SCHEMA } from "./schema.ts";

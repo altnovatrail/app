@@ -99,8 +99,9 @@ export class Cache {
 }
 
 /**
- * The cache, while an account is signed in: it is the account's, and sign-out erases it. Named in
- * the registry before it is first opened; `undefined` with no registry or while it is being erased.
+ * The cache, while an account is signed in: it is the account's, and its erasure erases it. Named
+ * in the registry before it is first opened; `undefined` with no registry or while it is being
+ * erased.
  */
 export async function openCache(device: Device): Promise<Cache | undefined> {
   const registry = await readRegistry(device);

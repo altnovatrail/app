@@ -2,7 +2,7 @@
 // keys out of its records; an index names the property of a record it reads.
 import type { Schema } from "./backend.ts";
 
-/** The device's settings: the language a grown-up chose. Sign-out leaves it. */
+/** The device's settings: the language a grown-up chose. Only "Erase everything" erases it. */
 export const SETTINGS = "novatrail-settings";
 /** The device's registry: the account signed in, the sign-in project, and app's databases. */
 export const REGISTRY = "novatrail-registry";
@@ -23,8 +23,8 @@ export function profileDatabase(profileId: string): string {
 export const SETTINGS_SCHEMA: Schema = { version: 1, stores: { settings: {} } };
 
 /**
- * `registry` holds `"account"` → `{ id }` and `"signIn"` → `{ projectId, apiKey }`, and
- * `"ending"` while a sign-out waits for a database it could not erase; `databases` holds app's
+ * `registry` holds `"account"` → `{ id }` and `"signIn"` → `{ projectId, apiKey }`, and `"ending"`
+ * while an erasure of the account waits for a database it could not erase; `databases` holds app's
  * databases of the account by name, each named before it is first opened.
  */
 export const REGISTRY_SCHEMA: Schema = { version: 1, stores: { registry: {}, databases: {} } };

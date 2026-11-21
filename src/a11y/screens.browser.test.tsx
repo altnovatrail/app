@@ -32,7 +32,7 @@ import {
 } from "@altnovatrail/contracts/novatrail/api/v1/progress_pb.js";
 import { create } from "@bufbuild/protobuf";
 import { userEvent } from "vitest/browser";
-import { LearnerProvider, SignOutScreen } from "../account/AccountGate.tsx";
+import { LearnerProvider } from "../account/AccountGate.tsx";
 import { ChooseScreen } from "../account/ChooseScreen.tsx";
 import { InviteScreen, type TextsRead } from "../account/InviteScreen.tsx";
 import { OwnerProfileScreen } from "../account/OwnerProfileScreen.tsx";
@@ -709,17 +709,6 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
     async () => {
       await vi.waitFor(() => expect(document.querySelectorAll("h2")).toHaveLength(1));
     },
-  ],
-  [
-    "sign-out",
-    () => (
-      <SignOutScreen
-        device={memoryDevice().device}
-        profiles={[OWNER]}
-        onConfirm={async () => "erased" as const}
-        onCancel={() => {}}
-      />
-    ),
   ],
   [
     "My subjects, below the bar, with a card of each kind",
