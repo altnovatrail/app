@@ -25,6 +25,7 @@ export type ScreenLayout =
   | "canvas"
   | "welcome"
   | "profiles"
+  | "who"
   | "map"
   | "lesson"
   | "task"
@@ -39,6 +40,7 @@ const LAYOUT_CLASS: Readonly<Record<ScreenLayout, string | undefined>> = {
   canvas: "nt-canvas",
   welcome: "nt-welcome",
   profiles: "nt-profiles",
+  who: "nt-profiles nt-who",
   map: "nt-map",
   lesson: "nt-lesson",
   task: "nt-task-screen",
@@ -78,9 +80,10 @@ export interface ScreenProps {
    * How wide the screen is from 600 CSS px (R59): `column` a column of reading, `reference` the
    * mockup's frame — the home screen and the sign-in, 1194 px at most —, and `canvas` the whole
    * window, as a screen with a canvas; `welcome` the sign-in's frame, its art beside the column,
-   * and `profiles` the frame of the owner's profile and "Who is learning?", a column in the middle
-   * (R61), and `map` the whole window, a frame below the top bar (R63); `lesson` the whole window,
-   * a lesson's segment between its top bar and its row, and `end` a card in the window's middle,
+   * and `profiles` the frame of the owner's profile, a column in the middle, and `who` the same for
+   * "Who is learning?" on the sign-in's sky (R61), and `map` the whole window, a frame below the
+   * top bar (R63); `lesson` the whole window, a lesson's segment between its top bar and its row,
+   * and `end` a card in the window's middle,
    * the end of a lesson (R64); `task` the whole window, the canvas between the top bar and the row
    * of glass (R65); `adults` a column of reading under the top bar, a page of the section for
    * adults (R68); `sheet` a card of 35rem, its top where the mockup's legal text has it, and the

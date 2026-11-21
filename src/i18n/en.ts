@@ -341,6 +341,8 @@ export const en = {
   /** Below a profile's name: whose it is. */
   "choose.owner": "You · grown-up",
   "choose.learner": "Learner",
+  /** On a profile's card: the look of the card's one button, not a button of its own. */
+  "choose.start": "Start",
   /** Shown but not open until a child's profile comes with a parent's consent (R148 spec). */
   "choose.add": "Add a learner",
   "choose.add-why": "Comes later: a child's profile waits for a parent's consent",

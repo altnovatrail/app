@@ -60,6 +60,16 @@ const GROUPS: readonly [number, string, string][] = [
   [TEXT, "on-fill", "sky sky-glow sky-pill/sky-glow"],
   [EDGE, "accent sky-edge sky-correct on-fill", "sky-card"],
   [EDGE, "sky-edge", "sky-fill"],
+  // "Who is learning?" (R61): the links and the line under the heading where the sky is brightest
+  // under them, a profile's card and "Start", the line of "Add a learner" on its glass, the line at
+  // the foot in the pill's fill, and the white focus ring, each over the brightest sky it meets.
+  [TEXT, "who-link on-fill", "who-under-bar"],
+  [TEXT, "who-lead", "who-under-lead"],
+  [TEXT, "who-line", "sky-card"],
+  [TEXT, "on-fill", "who-start"],
+  [TEXT, "who-why", "who-glass/who-under-glass"],
+  [TEXT, "who-foot", "sky-pill/who-under-foot"],
+  [EDGE, "on-fill", "who-under-ring"],
   [TEXT, "google-text", "on-fill"],
   [EDGE, "google-edge", "on-fill"],
 ];
@@ -76,18 +86,20 @@ const PAIRS: readonly [string, readonly string[], number][] = GROUPS.flatMap(
 
 /**
  * The tokens no pair has to hold, and why: grey on a grey fill is a disabled button, which 1.4.3
- * exempts as an inactive control, and so is the way in's on its card.
+ * exempts as an inactive control, and so are the way in's on its card and "Add a learner" while
+ * it is closed.
  */
-const EXEMPT = ["disabled", "sky-off", "sky-off-fill"];
+const EXEMPT = ["disabled", "sky-off", "sky-off-fill", "who-off"];
 
-/** The pair as its test names it: the foreground on its layers. */
+/** The pair as its test names it: the foreground, translucent too, on its layers. */
 function ratio(foreground: string, layers: readonly string[]): number {
   const colour = (name: string) => {
     const value = THEME.get(name);
     if (value === undefined) throw new Error(`no token --nt-${name}`);
     return value;
   };
-  return contrast(colour(foreground), over(...layers.map(colour)));
+  const grounds = layers.map(colour);
+  return contrast(over(colour(foreground), ...grounds), over(...grounds));
 }
 
 describe("the theme", () => {
