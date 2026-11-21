@@ -5242,3 +5242,73 @@ dialog.nt-legal-sheet .nt-legal-body .nt-legal-foot > button.nt-link {
     animation: nt-sheet 0.3s var(--nt-ease);
   }
 }
+/*
+ * Waiting, `Waiting` (the mockup's `wait` and `wait-home`): the whole window the ground of the
+ * screen to come — the sky of "Who is learning?" or the page — and the spark in a halo of 72 in its
+ * middle, white aglow on the sky and the name's indigo on the page, pulsing in 1.4 s.
+ */
+main.nt-wait {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  max-inline-size: none;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+main.nt-wait-sky {
+  background-color: var(--nt-sky);
+  background-image:
+    radial-gradient(circle at 18% 28%, #5b5fe0 0, rgba(91, 95, 224, 0) 38%),
+    radial-gradient(circle at 88% 42%, #0a6bd6 0, rgba(10, 107, 214, 0) 34%),
+    radial-gradient(circle at 8% 100%, #b8325a 0, rgba(184, 50, 90, 0) 34%),
+    radial-gradient(circle at 58% 108%, #e0901e 0, rgba(224, 144, 30, 0) 44%);
+  color-scheme: dark;
+}
+main.nt-wait-page {
+  background: var(--nt-page);
+}
+.nt-wait-status {
+  position: relative;
+  margin: 0;
+}
+.nt-wait-spark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 4.5rem;
+  block-size: 4.5rem;
+  border-radius: 50%;
+  font-size: 2.25rem;
+}
+main.nt-wait-sky .nt-wait-spark {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+.nt-wait-mark {
+  display: flex;
+}
+main.nt-wait-sky .nt-wait-mark {
+  filter: drop-shadow(0 0 10px rgba(123, 127, 255, 0.9));
+}
+main.nt-wait-page .nt-wait-spark {
+  background: rgba(91, 95, 224, 0.1);
+  color: #5b5fe0;
+}
+@keyframes nt-spark {
+  0%,
+  100% {
+    transform: scale(0.82);
+    opacity: 0.55;
+  }
+  50% {
+    transform: none;
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .nt-wait-mark {
+    animation: nt-spark 1.4s ease-in-out infinite;
+  }
+}

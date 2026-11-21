@@ -154,6 +154,8 @@ export const en = {
   "account.texts-changed": "The texts have changed. Read them again and accept them",
   /** Below the checkboxes: each text is in English and in force, its gist in the screen's language. */
   "account.texts-note": "Each text is in English, the one in force, with its gist in your language",
+  /** What a screen reader hears while the next screen is read, after 0.3 s. */
+  "wait.label": "Loading",
   /** The gist of a legal text, in the language of the screen, above the text. */
   "legal.gist": "In short",
   /** At the foot of a legal text's sheet: its page, with the whole text (R31). */

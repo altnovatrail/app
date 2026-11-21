@@ -32,6 +32,7 @@ import { OwnerProfileScreen } from "../src/account/OwnerProfileScreen.tsx";
 import { ApiProvider } from "../src/api/ApiContext.tsx";
 import { HomeBar } from "../src/app/App.tsx";
 import { HOME as HOME_ROUTE, type Route } from "../src/app/router.ts";
+import { Waiting } from "../src/app/Waiting.tsx";
 import { LegalPages } from "../src/legal/LegalPages.tsx";
 import { Example } from "../src/lesson/Example.tsx";
 import { Explanation } from "../src/lesson/Explanation.tsx";
@@ -1033,7 +1034,39 @@ const LEGAL_TEXTS: readonly Compared[] = [
   },
 ];
 
+/**
+ * Why the spark differs in its colour and size of text: app draws the name's mark, `Spark`, in the
+ * text's colour at 1em, where the mockup gives its SVG a fill and a size of its own — the same fill
+ * and 36 either way.
+ */
+const MARK = "the name's mark, Spark, drawn in the text's colour at 1em: the mockup's fill and 36";
+
+/** The wait on a ground, once its spark has come. */
+function waiting(ground: "sky" | "page"): Compared {
+  return {
+    state: ground === "sky" ? "wait" : "wait-home",
+    draw: () => inLanguage(<Waiting ground={ground} />),
+    settle: () => screen.findByText("Loading"),
+    regions: [
+      {
+        name: "the spark's halo",
+        mockup: { css: ".ph-waitspark" },
+        app: { css: ".nt-wait-spark" },
+        differs: { what: ["colour", "font-size"], by: MARK },
+      },
+      {
+        name: "the spark",
+        mockup: { css: ".ph-waitspark > svg" },
+        app: { css: ".nt-wait-spark svg" },
+        differs: { what: ["colour", "font-size"], by: MARK },
+      },
+    ],
+  };
+}
+
 const WAY_IN: readonly Compared[] = [
+  waiting("sky"),
+  waiting("page"),
   {
     state: "signin",
     draw: signIn,

@@ -39,6 +39,7 @@ import {
   TUTOR,
   useRoute,
 } from "../app/router.ts";
+import { Waiting } from "../app/Waiting.tsx";
 import { useDeployment, useStorage } from "../boot/Boot.tsx";
 import { Held, Offline, ReadFailed, StorageGone } from "../boot/Screens.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
@@ -195,7 +196,8 @@ export function AccountGate({ children }: { readonly children: ReactNode }) {
   switch (state.step) {
     case "starting":
     case "loading":
-      return null;
+      // What comes next is the way in or "Who is learning?": the sky, never a white page.
+      return <Waiting ground="sky" />;
     case "signed-out":
       return (
         <SignInScreen
@@ -244,7 +246,7 @@ export function AccountGate({ children }: { readonly children: ReactNode }) {
     case "learning":
       // The learner's screens open once the key the owner profile keeps here is in memory: their
       // first request already names its provider.
-      if (owner !== "" && !opened) return null;
+      if (owner !== "" && !opened) return <Waiting ground="page" />;
       return (
         <KeyHolderProvider holder={holder}>
           <LearnerProvider

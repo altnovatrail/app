@@ -26,6 +26,7 @@ import {
 import { ApiProvider } from "../api/ApiContext.tsx";
 import { createApi } from "../api/client.ts";
 import type { Tokens } from "../api/tokens.ts";
+import { Waiting } from "../app/Waiting.tsx";
 import type { Deployment } from "../config/deployment.ts";
 import { type Loaded, loadDeployment } from "../config/load.ts";
 import { LanguageProvider, type LanguageState } from "../i18n/LanguageContext.tsx";
@@ -340,10 +341,13 @@ export function Boot({
 
   /** The app, once the storage has started and the sign-in service is there. */
   function app(): ReactNode {
-    if (storage === undefined || api === undefined || packages === undefined) return null;
+    // Until the storage and the sign-in service are there, the sky the first screen stands on.
+    if (storage === undefined || api === undefined || packages === undefined) {
+      return <Waiting ground="sky" />;
+    }
     if (storage.signIn === "blocked") return <OtherTab />;
     if (storage.signIn === "failed") return <StorageGone trouble="unreadable" />;
-    if (service === undefined) return null;
+    if (service === undefined) return <Waiting ground="sky" />;
     return (
       <StorageContext.Provider value={storage}>
         <ApiProvider value={api}>
@@ -360,7 +364,14 @@ export function Boot({
     if (framed) return <Framed />;
     if (trouble !== undefined) return <StorageGone trouble={trouble} />;
     // The first screen waits for the device's settings: its language does not change under a finger.
-    if (loaded === undefined || !settingsRead) return offer;
+    if (loaded === undefined || !settingsRead) {
+      return (
+        <>
+          {offer}
+          <Waiting ground="sky" />
+        </>
+      );
+    }
     switch (loaded.kind) {
       case "offline":
         return (
