@@ -24,6 +24,7 @@ import { failureText } from "../api/words.ts";
 import { Icon } from "../app/Icon.tsx";
 import { LESSON, navigate, PAPER, TASK } from "../app/router.ts";
 import { Screen } from "../app/Screen.tsx";
+import { Loading, Sk } from "../app/Skeleton.tsx";
 import { ReadFailed } from "../boot/Screens.tsx";
 import { collator } from "../i18n/intl.ts";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
@@ -145,7 +146,9 @@ export function HomeScreen({
           {/* What is next in line: the task open, else the lesson begun, else what the engine
               will give — it gives no name before its press, ChooseNext being an action —, or that
               nothing can begin with no subject connected. */}
-          {onContinue !== undefined ? (
+          {connected === undefined && failure === undefined ? (
+            <NextUpLoading />
+          ) : onContinue !== undefined ? (
             <>
               <h3 id={continueId}>
                 <TaskName task={openTask} />
@@ -254,7 +257,11 @@ export function HomeScreen({
         <h2 id={connectedId} className="nt-hidden-label">
           {words.text("subjects.title")}
         </h2>
-        {mine === undefined ? null : mine.length === 0 ? (
+        {mine === undefined ? (
+          failure === undefined ? (
+            <CardsLoading />
+          ) : null
+        ) : mine.length === 0 ? (
           <p>{words.text("subjects.none")}</p>
         ) : (
           <ul className="nt-subjects">
@@ -275,6 +282,72 @@ export function HomeScreen({
       </section>
       {mine === undefined || mine.length === 0 ? null : <Legend />}
     </Screen>
+  );
+}
+
+/** "Next up" while the subjects are read: the name's two lines, a line, the button, the quota. */
+function NextUpLoading() {
+  return (
+    <Loading className="nt-next-loading">
+      <Sk width="92%" height="1.75rem" radius="0.5rem" />
+      <Sk width="58%" height="1.75rem" radius="0.5rem" />
+      <Sk
+        width="42%"
+        height="0.875rem"
+        radius="0.3125rem"
+        style={{ marginBlockStart: "0.375rem" }}
+      />
+      <Sk
+        width="9.25rem"
+        height="2.625rem"
+        radius="999px"
+        style={{ marginBlockStart: "0.375rem" }}
+      />
+      <div className="nt-next-foot">
+        <div className="nt-loading">
+          <Sk width="100%" height="0.375rem" radius="0.1875rem" />
+          <Sk width="68%" height="0.75rem" radius="0.25rem" />
+        </div>
+      </div>
+    </Loading>
+  );
+}
+
+/** Two subjects' cards while they are read, in the cards' own frame. */
+function CardsLoading() {
+  return (
+    <Loading>
+      <ul className="nt-subjects" aria-hidden="true">
+        {[0, 1].map((n) => (
+          <li key={n} className="nt-subject">
+            <article>
+              <div className="nt-subject-head">
+                <Sk width="3rem" height="3rem" radius="0.8125rem" />
+                <div className="nt-subject-words nt-loading">
+                  <div className="nt-subject-name">
+                    <Sk width="13.75rem" height="1.125rem" />
+                    <Sk width="6.875rem" height="1.375rem" radius="999px" />
+                  </div>
+                  <Sk width="10.625rem" height="0.75rem" radius="0.25rem" />
+                </div>
+                <div className="nt-subject-acts">
+                  <Sk width="2.5rem" height="2.5rem" radius="50%" />
+                  <Sk width="9.375rem" height="2.5rem" radius="999px" />
+                </div>
+              </div>
+              <Sk width="38%" height="0.5rem" radius="0.1875rem" />
+              <div className="nt-card-foot">
+                <Sk width="2.25rem" height="2.25rem" radius="50%" />
+                <div className="nt-foot-words nt-loading">
+                  <Sk width="8.125rem" height="0.625rem" radius="0.25rem" />
+                  <Sk width="17.5rem" height="0.875rem" radius="0.3125rem" />
+                </div>
+              </div>
+            </article>
+          </li>
+        ))}
+      </ul>
+    </Loading>
   );
 }
 

@@ -964,7 +964,7 @@ describe("the legal pages", () => {
       await screen.findByRole("button", { name: "Privacy and legal information" }),
     );
     const sheet = within(await screen.findByRole("dialog", { name: "Privacy Policy" }));
-    expect(sheet.getByText("We keep little.")).toBeVisible();
+    expect(await sheet.findByText("We keep little.")).toBeVisible();
     expect(window.location.hash).not.toBe("#/legal");
     await userEvent.click(sheet.getByRole("button", { name: "Read the full text" }));
     expect(await screen.findByRole("heading", { level: 1, name: "Privacy Policy" })).toBeTruthy();

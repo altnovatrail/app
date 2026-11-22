@@ -32,6 +32,7 @@ import { LearnerMenu } from "../app/LearnerMenu.tsx";
 import { useNarrow } from "../app/narrow.ts";
 import { PopOver } from "../app/PopOver.tsx";
 import { Screen } from "../app/Screen.tsx";
+import { Loading, Sk } from "../app/Skeleton.tsx";
 import { AtTopEnd } from "../app/TopEnd.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { ReadAloud } from "../voice/ReadAloud.tsx";
@@ -97,6 +98,35 @@ export function Frame({
     >
       {children}
     </Screen>
+  );
+}
+
+/**
+ * The task while its attempt is read (R168 spec): its frame as it will stand, the shapes of its
+ * statement below the bar and of the row of glass at its foot.
+ */
+export function TaskLoading({
+  inLesson,
+  onHome,
+}: {
+  readonly inLesson: boolean;
+  readonly onHome: () => void;
+}) {
+  const { words } = useLanguage();
+  return (
+    <Frame inLesson={inLesson} title={words.text("task.title")} onHome={onHome}>
+      <Loading className="nt-task-loading">
+        <Sk width="min(32rem, 90%)" height="1.125rem" radius="0.375rem" />
+        <Sk width="min(24rem, 70%)" height="1.125rem" radius="0.375rem" />
+        <Sk width="min(14rem, 45%)" height="0.875rem" radius="0.3125rem" />
+        <Sk
+          className="nt-task-loading-row"
+          width="min(20rem, 100%)"
+          height="3.5rem"
+          radius="1.75rem"
+        />
+      </Loading>
+    </Frame>
   );
 }
 

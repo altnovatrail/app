@@ -49,6 +49,7 @@ import { setAccount } from "../storage/registry.ts";
 import { AttemptProvider, useAttempt } from "../task/AttemptContext.tsx";
 import { memoryDevice } from "../test/device.ts";
 import { inLanguage } from "../test/language.tsx";
+import { expectLoaded, expectLoading, held } from "../test/loading.ts";
 import { moduleMapRoute, SkillMapRoute } from "./SkillMapScreen.tsx";
 
 const SHARES = "example/fair-shares";
@@ -116,6 +117,12 @@ interface Setup {
   /** The attempt the learner has open outside a lesson. */
   readonly attempt?: string;
   readonly connect?: () => void;
+  /** What GetSkillMap, ListConnectedModules and ListCatalog answer only once each is given. */
+  readonly held?: {
+    readonly map?: Promise<void>;
+    readonly list?: Promise<void>;
+    readonly catalog?: Promise<void>;
+  };
 }
 
 /** The attempt open, as the task screen would take it. */
@@ -149,16 +156,21 @@ async function renderMap(
   const answers = setup.maps ?? [() => ({ packageDigest: D1 })];
   const routes = (router: ConnectRouter) => {
     router.service(ProgressService, {
-      getSkillMap(request) {
+      async getSkillMap(request) {
         maps.push(request);
+        await setup.held?.map;
         const answer = answers[Math.min(maps.length, answers.length) - 1];
         return answer?.() ?? {};
       },
     });
     router.service(ModuleService, {
-      listConnectedModules: () => ({ modules: setup.connected ?? [] }),
-      listCatalog() {
+      listConnectedModules: async () => {
+        await setup.held?.list;
+        return { modules: setup.connected ?? [] };
+      },
+      async listCatalog() {
         asked.push("catalog");
+        await setup.held?.catalog;
         return { modules: [{ moduleId: TABLES, packageDigest: D2 }] };
       },
       connectModule(request) {
@@ -557,6 +569,37 @@ describe("a module's map", () => {
     await renderMap(moduleMapRoute(SHARES), {}, "ru");
     await drawn();
     expect(screen.queryByText(/Уровень поставил взрослый/)).toBeNull();
+  });
+
+  it("stands with the shapes of its bands and tiles while the map is read, in its frame (R168 spec)", async () => {
+    const { given, give } = held();
+    await renderMap(moduleMapRoute(SHARES), { held: { map: given } });
+    const frame = await screen.findByRole("region", { name: "Skill map" });
+    expectLoading(frame, 12);
+    give();
+    await drawn();
+    expectLoaded(frame);
+  });
+
+  it("stands with the shapes of the modules offered and of the modules connected while each is read (R168 spec)", async () => {
+    const catalog = held();
+    const list = held();
+    await renderMap(moduleMapRoute(SHARES), {
+      maps: [() => UNKNOWN],
+      connected: [{ moduleId: SHARES, packageDigest: D1 }],
+      held: { catalog: catalog.given, list: list.given },
+    });
+    const offered = await screen.findByRole("region", { name: "Modules to connect" });
+    expectLoading(offered, 6);
+    catalog.give();
+    expect(await within(offered).findByRole("article", { name: "Таблица умножения" })).toBeTruthy();
+    expectLoaded(offered);
+    await userEvent.click(await screen.findByRole("button", { name: "Module: Fair shares" }));
+    const menu = await screen.findByRole("dialog", { name: "Connected modules" });
+    expectLoading(menu, 4);
+    list.give();
+    expect(await within(menu).findByRole("button", { name: /Fair shares/ })).toBeTruthy();
+    expectLoaded(menu);
   });
 
   it("says a module has no map without a skill graph", async () => {

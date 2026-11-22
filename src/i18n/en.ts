@@ -758,6 +758,8 @@ export const en = {
   /** To the next segment; not "Next", which is the canvas's button of a worked example. */
   "lesson.continue": "Continue",
   "lesson.leave": "Leave the lesson",
+  /** The heading of a lesson's screen while its run is read, before its own title is known. */
+  "lesson.title": "Lesson",
   /** The end screen of a lesson done, below its title: no score, no comparison. */
   "lesson.complete": "Lesson complete",
   /** A task of the lesson left or abandoned: it begins once more, a new attempt. */

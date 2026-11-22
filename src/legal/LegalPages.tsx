@@ -24,7 +24,7 @@ import { LEGAL, navigate, type Route, redirect } from "../app/router.ts";
 import { SheetScreen } from "../app/SheetScreen.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { OPERATOR_SECTION, sectionOf } from "./body.ts";
-import { LegalContent, LegalOriginal } from "./LegalText.tsx";
+import { LegalContent, LegalLoading, LegalOriginal } from "./LegalText.tsx";
 import { LICENSE, NOTICE } from "./notices.ts";
 import {
   dayText,
@@ -149,7 +149,7 @@ export function TextPage({ id }: { readonly id: PageText }) {
   const { language, words } = useLanguage();
   const hint = useId();
   const versions = useVersions(id);
-  let shown: ReactNode = null;
+  let shown: ReactNode = <LegalLoading />;
   let chip: string | undefined;
   if (versions.status === "failed") {
     shown = <ReadFailure failure={versions.failure} onRetry={versions.retry} />;
@@ -212,7 +212,7 @@ export function NextTextPage({ id }: { readonly id: PageText }) {
       </button>
     </div>
   );
-  let shown: ReactNode = null;
+  let shown: ReactNode = <LegalLoading />;
   if (versions.status === "failed") {
     shown = <ReadFailure failure={versions.failure} onRetry={versions.retry} />;
   } else if (versions.status === "done") {
@@ -256,7 +256,7 @@ export function NextTextPage({ id }: { readonly id: PageText }) {
 export function OperatorPage() {
   const { language, words } = useLanguage();
   const versions = useVersions(POLICY);
-  let shown: ReactNode = null;
+  let shown: ReactNode = <LegalLoading />;
   if (versions.status === "failed") {
     shown = <ReadFailure failure={versions.failure} onRetry={versions.retry} />;
   } else if (versions.status === "done") {

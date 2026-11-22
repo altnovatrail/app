@@ -19,6 +19,7 @@ import { createApi } from "../api/client.ts";
 import { ADULTS, type Route } from "../app/router.ts";
 import type { Language } from "../i18n/language.ts";
 import { inLanguage } from "../test/language.tsx";
+import { expectLoaded, expectLoading, held } from "../test/loading.ts";
 import { LegalPages } from "./LegalPages.tsx";
 import { LICENSE, NOTICE } from "./notices.ts";
 import { dayText } from "./texts.ts";
@@ -152,6 +153,19 @@ describe("the legal pages", () => {
     expect(document.querySelector("details")).toBeNull();
     expect(document.querySelectorAll("a")).toHaveLength(0);
     expect(screen.getByRole("button", { name: "Назад к списку" })).toBeTruthy();
+  });
+
+  it("stand with the shapes of a text while it is read, under its heading, busy (R168 spec)", async () => {
+    const { given, give } = held();
+    renderPages(legal("privacy-policy"), async () => {
+      await given;
+      return [POLICY];
+    });
+    expect(screen.getByRole("heading", { level: 1, name: "Privacy Policy" })).toBeTruthy();
+    expectLoading(document, 5);
+    give();
+    expect(await screen.findByText("Version 2, in force since November 11, 2026")).toBeTruthy();
+    expectLoaded(document);
   });
 
   it("say so of a text with no version in force, and of an api with no LegalService", async () => {

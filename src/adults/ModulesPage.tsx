@@ -8,7 +8,12 @@ import type { Profile } from "@altnovatrail/contracts/novatrail/api/v1/account_p
 import { ReadFailure } from "../api/ReadFailure.tsx";
 import { ADULTS, navigate, type Route } from "../app/router.ts";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
-import { ModuleCardItem, ModuleCardList, useConnectedCards } from "../subjects/ModuleCards.tsx";
+import {
+  ModuleCardItem,
+  ModuleCardList,
+  ModuleCardsLoading,
+  useConnectedCards,
+} from "../subjects/ModuleCards.tsx";
 import { SectionScreen } from "./SectionScreen.tsx";
 
 /** The page of the profile's modules: the profile chosen in the section. */
@@ -25,7 +30,7 @@ export function sectionLicense(digest: string): Route {
 export function ModulesPage({ profile }: { readonly profile: Profile }) {
   const { words } = useLanguage();
   const cards = useConnectedCards(profile.profileId);
-  let shown = null;
+  let shown = <ModuleCardsLoading />;
   if (cards.status === "failed") {
     shown = <ReadFailure failure={cards.failure} onRetry={cards.retry} />;
   } else if (cards.status === "done") {

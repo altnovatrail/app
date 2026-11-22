@@ -6,6 +6,7 @@
 // its memory; a module with no skill graph has no map, and the screen says so. The heading of a
 // map's screen is the module's title, here too.
 import type { SkillMapView } from "@altnovatrail/skill-map";
+import { Loading, Sk } from "../app/Skeleton.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import type { Words } from "../i18n/words.ts";
 import type { HeadingLevel } from "./jsx.ts";
@@ -55,6 +56,31 @@ export function ModuleSkillMap({
             },
           })}
     />
+  );
+}
+
+/** The widths of the tiles of a map's bands while it is read, none alike in a band: their keys. */
+const BANDS = [
+  ["7.5rem", "9rem", "6.5rem"],
+  ["8.5rem", "7rem"],
+  ["6rem", "9.5rem", "8rem", "7rem"],
+] as const;
+
+/** A map while it is read: its bands' headings and rows of tiles, as the element draws them. */
+export function MapLoading() {
+  return (
+    <Loading>
+      {BANDS.map((tiles) => (
+        <div key={tiles.join()} className="nt-map-loading">
+          <Sk width="8rem" height="1.125rem" radius="0.3125rem" />
+          <div className="nt-map-loading-tiles">
+            {tiles.map((width) => (
+              <Sk key={width} width={width} height="2.75rem" radius="0.5rem" />
+            ))}
+          </div>
+        </div>
+      ))}
+    </Loading>
   );
 }
 

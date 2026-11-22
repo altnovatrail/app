@@ -29,7 +29,6 @@ import { Icon } from "../app/Icon.tsx";
 import { ProfilePill } from "../app/LearnerMenu.tsx";
 import { HOME, navigate, redirect } from "../app/router.ts";
 import { Screen } from "../app/Screen.tsx";
-import { Waiting } from "../app/Waiting.tsx";
 import { ReadFailed } from "../boot/Screens.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { NextStep } from "../next/NextStep.tsx";
@@ -42,7 +41,7 @@ import { Task, type TaskInLesson } from "../task/Task.tsx";
 import { Example } from "./Example.tsx";
 import { Explanation } from "./Explanation.tsx";
 import type { LessonOpen, RunRef } from "./LessonContext.tsx";
-import { ContinueButton, LessonScreen } from "./LessonScreen.tsx";
+import { ContinueButton, LessonLoading, LessonScreen } from "./LessonScreen.tsx";
 import {
   type Course,
   continueFrom,
@@ -207,7 +206,7 @@ export function Lesson(props: LessonProps) {
     }
   }, [api, holder, views, device, profileId, what, attempt]);
 
-  if (read.status === "loading") return <Waiting ground="page" />;
+  if (read.status === "loading") return <LessonLoading onLeave={() => navigate(HOME)} />;
   if (read.status === "failed") {
     return (
       <>

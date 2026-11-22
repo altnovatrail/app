@@ -73,6 +73,7 @@ import { addProfile } from "../storage/profile.ts";
 import { setAccount } from "../storage/registry.ts";
 import { memoryDevice } from "../test/device.ts";
 import { inLanguage } from "../test/language.tsx";
+import { expectLoaded, expectLoading, held } from "../test/loading.ts";
 import { fakeSpeech, voice } from "../test/speech.ts";
 import { SpeechProvider, VoicingProvider } from "../voice/VoicingContext.tsx";
 import { forgetPuts } from "../works/stored.ts";
@@ -137,6 +138,8 @@ function refused(code: Code, cause: Cause, closeReason?: CloseReason): ConnectEr
 interface Setup {
   /** Throws in place of the open attempt. */
   open?: () => void;
+  /** What GetOpenAttempt answers only once it is given. */
+  held?: Promise<void>;
   /** What api keeps of the attempt: the verdicts of its last submission and the like. */
   items?: { item: number; slot: number; verdict: string; value: string }[];
   wrongAnswers?: number;
@@ -296,8 +299,9 @@ async function renderTask(setup: Setup = {}) {
       },
     });
     router.service(LearningService, {
-      getOpenAttempt(request) {
+      async getOpenAttempt(request) {
         asked.push(`open ${request.attemptId}`);
+        await setup.held;
         setup.open?.();
         if (setup.noStart === true) return {};
         return {
@@ -585,6 +589,17 @@ afterEach(() => {
 });
 
 describe("the task screen", () => {
+  it("stands with its bar and the shapes of its statement and row while the attempt is read (R168 spec)", async () => {
+    const { given, give } = held();
+    await renderTask({ held: given });
+    expect(screen.getByRole("heading", { level: 1, name: "Task" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Back to My subjects" })).toBeTruthy();
+    expectLoading(document, 4);
+    give();
+    await screen.findByRole("heading", { name: "Understand the task", level: 2 });
+    expectLoaded(document);
+  });
+
   it("leads by steps: the chips open Step done, the plan asks api for the technique once", async () => {
     const { asked } = await renderTask();
     await screen.findByRole("heading", { name: "Understand the task", level: 2 });

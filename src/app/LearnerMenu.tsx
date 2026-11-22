@@ -1,9 +1,8 @@
 // The profile's menu (R148 spec; R63, R79): the pill of the learner chosen — the avatar, the
 // pseudonym and a chevron — at the top right of Home, Subjects and the skill map, the avatar alone
-// on a phone, and behind it, as a pop-over, who is learning now and "Switch learner": the hint mode,
-// This device and "Sign out" are For grown-ups' there (Shell.tsx). In a lesson and on the task
-// screen the menu holds them all still — the hint mode, "For grown-ups" and "Sign out" —, as their
-// bars have no side menu. The pill stands on each of those screens, so that an adult who hands the
+// on a phone, and behind it, as a pop-over, who is learning now, "Switch learner" and "Sign out":
+// the hint mode and This device are For grown-ups' there (Shell.tsx). In a lesson and on the task
+// screen the menu holds the hint mode and "For grown-ups" too, as their bars have no side menu. The pill stands on each of those screens, so that an adult who hands the
 // tablet over finds the switch on it.
 import { useLearner } from "../account/AccountGate.tsx";
 import { Avatar } from "../account/Avatar.tsx";
@@ -98,25 +97,23 @@ export function LearnerMenu({ short = false }: { readonly short?: boolean }) {
             }}
           />
           {short ? null : (
-            <>
-              <MenuRow
-                icon="grown"
-                text={words.text("adults.title")}
-                onPress={() => {
-                  close();
-                  navigate(ADULTS);
-                }}
-              />
-              <MenuRow
-                icon="sign-out"
-                text={words.text("signout.button")}
-                onPress={() => {
-                  close();
-                  chosen.signOut();
-                }}
-              />
-            </>
+            <MenuRow
+              icon="grown"
+              text={words.text("adults.title")}
+              onPress={() => {
+                close();
+                navigate(ADULTS);
+              }}
+            />
           )}
+          <MenuRow
+            icon="sign-out"
+            text={words.text("signout.button")}
+            onPress={() => {
+              close();
+              chosen.signOut();
+            }}
+          />
         </>
       )}
     </PopOver>

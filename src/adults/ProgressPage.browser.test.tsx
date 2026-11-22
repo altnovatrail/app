@@ -45,6 +45,7 @@ import { OpenViews } from "../packages/views.ts";
 import type { Device } from "../storage/device.ts";
 import { memoryDevice } from "../test/device.ts";
 import { inLanguage } from "../test/language.tsx";
+import { expectLoaded, expectLoading, held } from "../test/loading.ts";
 import { AdultSection } from "./AdultSection.tsx";
 
 const MATHS = "novatrail/olympiad-math";
@@ -175,6 +176,10 @@ interface Setup {
   readonly skillMaps?: (() => SkillMap)[];
   /** What SetModuleLevel answers; throwing makes it fail. */
   readonly setLevel?: (request: SetModuleLevelRequest) => LevelSet | Promise<LevelSet>;
+  /** What GetProgress and ListConnectedModules answer only once it is given. */
+  readonly lists?: Promise<void>;
+  /** What GetSkillMap answers only once it is given. */
+  readonly map?: Promise<void>;
 }
 
 type SkillMap = MessageInitShape<typeof GetSkillMapResponseSchema>;
@@ -208,14 +213,16 @@ function renderSection(setup: Setup = {}, language: Language = "en") {
   );
   const routes = (router: ConnectRouter) => {
     router.service(ProgressService, {
-      getProgress(request) {
+      async getProgress(request) {
         progress.push(request);
+        await setup.lists;
         const answers = pages[request.pageToken] ?? [];
         const answer = answers.length > 1 ? answers.shift() : answers[0];
         return answer?.() ?? {};
       },
-      getSkillMap(request) {
+      async getSkillMap(request) {
         maps.push(request);
+        await setup.map;
         if (setup.mapRefused?.() === true) {
           throw new ConnectError("refused", Code.NotFound, undefined, [
             { desc: RefusalSchema, value: create(RefusalSchema, { cause: Cause.NOT_FOUND }) },
@@ -230,7 +237,8 @@ function renderSection(setup: Setup = {}, language: Language = "en") {
       },
     });
     router.service(ModuleService, {
-      listConnectedModules: () => {
+      listConnectedModules: async () => {
+        await setup.lists;
         if (setup.connected === "fail") throw new ConnectError("down", Code.Unavailable);
         return {
           modules: setup.connected ?? [
@@ -549,6 +557,36 @@ describe("the progress of a profile", () => {
     expect(screen.getByText("No attempts yet")).toBeTruthy();
     expect(screen.getByText("No subjects are connected yet")).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Show more" })).toBeNull();
+  });
+
+  it("stands with the shapes of its maps, traps and attempts while they are read, under their headings (R168 spec)", async () => {
+    window.location.hash = "#/adults";
+    const { given, give } = held();
+    renderSection({ lists: given });
+    await openProgress();
+    for (const name of ["Skill maps", "Traps that repeat", "Attempts"]) {
+      expectLoading(await screen.findByRole("region", { name }), 4);
+    }
+    give();
+    expect(await screen.findAllByRole("article")).not.toHaveLength(0);
+    await vi.waitFor(() => expectLoaded(document));
+  });
+
+  it("stands with the shapes of a map while it is read, its way back as it is (R168 spec)", async () => {
+    window.location.hash = "#/adults";
+    const { given, give } = held();
+    renderSection({ map: given });
+    await openProgress();
+    const region = within(await screen.findByRole("region", { name: "Skill maps" }));
+    const [, maths] = await region.findAllByRole("article");
+    await userEvent.click(
+      within(maths as HTMLElement).getByRole("button", { name: "Open the map" }),
+    );
+    expect(await screen.findByRole("button", { name: "Back to the progress" })).toBeTruthy();
+    expectLoading(document, 9);
+    give();
+    await vi.waitFor(() => expect(document.querySelector("novatrail-skill-map")).not.toBeNull());
+    expectLoaded(document);
   });
 
   it("opens a module's map in the adult's view, by an adult's action, and leads back", async () => {

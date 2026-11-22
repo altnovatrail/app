@@ -7,6 +7,7 @@
 import { type ReactNode, useCallback, useId, useMemo } from "react";
 import { useRequest } from "../api/ApiContext.tsx";
 import type { Api } from "../api/client.ts";
+import { Loading, Sk } from "../app/Skeleton.tsx";
 import { collator } from "../i18n/intl.ts";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { usePackages } from "../packages/PackagesContext.tsx";
@@ -63,6 +64,23 @@ export function ModuleCardItem({
         )}
       </article>
     </li>
+  );
+}
+
+/** Two cards of modules while they are read, in the cards' own frame (R168 spec). */
+export function ModuleCardsLoading({ action = true }: { readonly action?: boolean }) {
+  return (
+    <Loading>
+      <ul className="nt-cards" aria-hidden="true">
+        {[0, 1].map((n) => (
+          <li key={n} className="nt-card nt-loading">
+            <Sk width="14rem" height="1.25rem" radius="0.375rem" />
+            <Sk width="9rem" height="0.875rem" radius="0.3125rem" />
+            {action ? <Sk width="9rem" height="var(--nt-target)" radius="999px" /> : null}
+          </li>
+        ))}
+      </ul>
+    </Loading>
   );
 }
 

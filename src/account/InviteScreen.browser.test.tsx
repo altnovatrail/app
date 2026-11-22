@@ -14,6 +14,7 @@ import { StrictMode } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 import { inLanguage } from "../test/language.tsx";
+import { expectLoaded, expectLoading } from "../test/loading.ts";
 import { InviteScreen, type InviteScreenProps, type TextsRead } from "./InviteScreen.tsx";
 
 function policy(version: number, inForceSince = "2026-11-11"): LegalText {
@@ -71,6 +72,18 @@ const ACCEPT = { name: "I agree to the Terms of Use and the Privacy Policy" };
 const NOTE = "Each text is in English, the one in force, with its gist in your language";
 
 describe("the invite code's screen", () => {
+  it("stands with the shape of the texts' tick while they are first read, the statement's as it is (R168 spec)", async () => {
+    const onCreate = vi.fn(async () => "done" as const);
+    const { rerender } = render(invite({ status: "loading", retry: () => {} }, onCreate));
+    await toAgree();
+    expect(screen.getByRole("checkbox", { name: "I am 18 or older" })).toBeTruthy();
+    expect(screen.queryByRole("checkbox", ACCEPT)).toBeNull();
+    expectLoading(document, 3);
+    rerender(invite(read(2), onCreate));
+    expect(screen.getByRole("checkbox", ACCEPT)).toBeTruthy();
+    expectLoaded(document);
+  });
+
   it("goes on from the whole code alone, and back to it as it was", async () => {
     const onCreate = vi.fn(async () => "done" as const);
     render(invite(read(2), onCreate));

@@ -90,6 +90,26 @@ describe("the profile's menu", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 
+  it("beside the side menu holds the switch and Sign out, the section being the side menu's", async () => {
+    const learner = chosen();
+    render(
+      inLanguage(
+        <ApiProvider value={{} as Api}>
+          <LearnerProvider value={learner}>
+            <LearnerMenu short />
+          </LearnerProvider>
+        </ApiProvider>,
+      ),
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Sam, profile menu" }));
+    const menu = within(screen.getByRole("dialog", { name: "Profile menu" }));
+    expect(menu.getByRole("button", { name: "Switch learner" })).toBeVisible();
+    expect(menu.queryByRole("button", { name: "For grown-ups" })).toBeNull();
+    await userEvent.click(menu.getByRole("button", { name: "Sign out" }));
+    expect(learner.signOut).toHaveBeenCalledOnce();
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
   it("is in Russian on a Russian screen, and not there with no learner", async () => {
     render(menuOf(chosen(), "ru"));
     await userEvent.click(screen.getByRole("button", { name: "Sam, меню профиля" }));

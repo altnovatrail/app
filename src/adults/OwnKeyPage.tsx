@@ -28,6 +28,7 @@ import { ReadFailure } from "../api/ReadFailure.tsx";
 import { failureText, outcomeText } from "../api/words.ts";
 import { described } from "../app/described.ts";
 import { ADULTS, type Route } from "../app/router.ts";
+import { Loading, Sk } from "../app/Skeleton.tsx";
 import { keyFor } from "../i18n/codes.ts";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import type { HeldKey, KeyRefusal } from "../ownkey/holder.ts";
@@ -130,7 +131,23 @@ function NewKey({
     }
   }
 
-  if (providers.status === "loading") return null;
+  if (providers.status === "loading") {
+    return (
+      <Loading>
+        {["8rem", "6rem"].map((label) => (
+          <div key={label} className="nt-field nt-loading nt-field-loading">
+            <Sk width={label} height="1rem" radius="0.3125rem" />
+            <Sk width="100%" height="var(--nt-target)" radius="var(--nt-radius-field)" />
+          </div>
+        ))}
+        <div className="nt-check">
+          <Sk width="2.75rem" height="2.75rem" radius="0.5rem" />
+          <Sk width="14rem" height="0.875rem" radius="0.3125rem" />
+        </div>
+        <Sk width="9rem" height="var(--nt-target)" radius="999px" />
+      </Loading>
+    );
+  }
   if (providers.status === "failed") {
     return <ReadFailure failure={providers.failure} onRetry={providers.retry} />;
   }

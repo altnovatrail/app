@@ -12,6 +12,7 @@ import { failureText } from "../api/words.ts";
 import { Icon } from "../app/Icon.tsx";
 import { navigate } from "../app/router.ts";
 import { Screen } from "../app/Screen.tsx";
+import { Loading, Sk } from "../app/Skeleton.tsx";
 import { ReadFailed } from "../boot/Screens.tsx";
 import { collator } from "../i18n/intl.ts";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
@@ -101,6 +102,31 @@ function Card({
   );
 }
 
+/** Two cards of the catalog while its lists are read, in the cards' own frame (R168 spec). */
+function CardsLoading() {
+  return (
+    <Loading>
+      <ul className="nt-cards nt-catalog" aria-hidden="true">
+        {[0, 1].map((n) => (
+          <li key={n} className="nt-card nt-module nt-catalog-card">
+            <div className="nt-module-head">
+              <Sk width="3.25rem" height="3.25rem" radius="0.9375rem" />
+              <div className="nt-loading nt-catalog-loading">
+                <Sk width="11rem" height="1.125rem" radius="0.3125rem" />
+                <Sk width="7rem" height="0.75rem" radius="0.25rem" />
+              </div>
+            </div>
+            <div className="nt-catalog-foot">
+              <Sk width="7rem" height="0.875rem" radius="0.3125rem" />
+              <Sk width="8rem" height="var(--nt-target)" radius="999px" />
+            </div>
+          </li>
+        ))}
+      </ul>
+    </Loading>
+  );
+}
+
 export interface CatalogScreenProps {
   /** The modules connected, as cards; none while they come. */
   readonly connected: readonly ModuleCard[] | undefined;
@@ -161,9 +187,19 @@ export function CatalogScreen({
       ) : null}
       <section aria-labelledby={connectedId}>
         <h2 id={connectedId} className="nt-caps">
-          {words.text("catalog.connected", { count: mine?.length ?? 0 })}
+          {mine === undefined ? (
+            // The count comes with the list: its place a shape till then.
+            <>
+              {words.pattern("catalog.connected").split("{count}")[0]}
+              <Sk width="1.25rem" height="0.75rem" radius="0.25rem" className="nt-sk-inline" />
+            </>
+          ) : (
+            words.text("catalog.connected", { count: mine.length })
+          )}
         </h2>
-        {mine === undefined ? null : mine.length === 0 ? (
+        {mine === undefined ? (
+          <CardsLoading />
+        ) : mine.length === 0 ? (
           <p>{words.text("subjects.none")}</p>
         ) : (
           <ul className="nt-cards nt-catalog">
@@ -184,7 +220,9 @@ export function CatalogScreen({
         <h2 id={moreId} className="nt-caps">
           {words.text("catalog.more")}
         </h2>
-        {more === undefined ? null : more.length === 0 ? (
+        {more === undefined ? (
+          <CardsLoading />
+        ) : more.length === 0 ? (
           <p>{words.text("subjects.catalog-empty")}</p>
         ) : (
           <ul className="nt-cards nt-catalog">

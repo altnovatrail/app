@@ -47,7 +47,9 @@ import { setAccount } from "../storage/registry.ts";
 import { AttemptProvider } from "../task/AttemptContext.tsx";
 import { memoryDevice } from "../test/device.ts";
 import { inLanguage } from "../test/language.tsx";
+import { expectLoaded, expectLoading } from "../test/loading.ts";
 import { MySubjects } from "./MySubjects.tsx";
+import { CatalogScreen } from "./SubjectsPage.tsx";
 
 const MATH = "novatrail/olympiad-math";
 const PHYSICS = "novatrail/physics";
@@ -819,5 +821,29 @@ describe("the legend and the task from paper", () => {
     await userEvent.click(button);
     expect(window.location.hash).toBe("#/paper");
     window.location.hash = "";
+  });
+});
+
+describe("Subjects while its lists are read", () => {
+  it("stands with the shapes of the cards and of the count under their headings (R168 spec)", () => {
+    const screenOf = (lists: { connected?: []; catalog?: [] }) =>
+      inLanguage(
+        <CatalogScreen
+          connected={lists.connected}
+          catalog={lists.catalog}
+          onConnect={() => {}}
+          onDisconnect={() => {}}
+        />,
+      );
+    const { rerender } = render(screenOf({}));
+    expect(screen.getByRole("heading", { level: 1, name: "Subjects" })).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 2, name: "More on this server" })).toBeTruthy();
+    expect(screen.getAllByRole("status").filter((s) => s.textContent === "Loading")).toHaveLength(
+      2,
+    );
+    expectLoading(document, 14);
+    rerender(screenOf({ connected: [], catalog: [] }));
+    expect(screen.getByRole("heading", { level: 2, name: "Connected · 0" })).toBeTruthy();
+    expectLoaded(document);
   });
 });

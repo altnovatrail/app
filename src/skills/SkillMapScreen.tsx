@@ -27,6 +27,7 @@ import { Icon } from "../app/Icon.tsx";
 import { PopOver } from "../app/PopOver.tsx";
 import { navigate, type Route, redirect, SKILL_MAP, SUBJECTS } from "../app/router.ts";
 import { Screen } from "../app/Screen.tsx";
+import { Loading, Sk } from "../app/Skeleton.tsx";
 import { collator } from "../i18n/intl.ts";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { givenOf } from "../next/choice.ts";
@@ -34,13 +35,18 @@ import { useEngine } from "../next/useEngine.ts";
 import { usePackages } from "../packages/PackagesContext.tsx";
 import type { Device } from "../storage/device.ts";
 import { CardHeading } from "../subjects/CardHeading.tsx";
-import { ModuleCardItem, ModuleCardList, useConnectedCards } from "../subjects/ModuleCards.tsx";
+import {
+  ModuleCardItem,
+  ModuleCardList,
+  ModuleCardsLoading,
+  useConnectedCards,
+} from "../subjects/ModuleCards.tsx";
 import { ModuleTile } from "../subjects/ModuleTile.tsx";
 import { byTitle, cardsOf } from "../subjects/modules.ts";
 import { useAttempt } from "../task/AttemptContext.tsx";
 import { LevelSetBy } from "./Level.tsx";
 import { type ModuleMap, offeredModules, readModuleMap } from "./map.ts";
-import { ModuleSkillMap, mapTitle } from "./SkillMap.tsx";
+import { MapLoading, ModuleSkillMap, mapTitle } from "./SkillMap.tsx";
 
 /** The map of a module, by its ID. */
 export function moduleMapRoute(moduleId: string): Route {
@@ -124,6 +130,16 @@ function ModuleChoice({
       <p className="nt-menu-caption">{title}</p>
       {cards.status === "failed" ? (
         <ReadFailure failure={cards.failure} onRetry={cards.retry} />
+      ) : null}
+      {cards.status === "loading" ? (
+        <Loading>
+          {[0, 1].map((n) => (
+            <div key={n} className="nt-menu-loading-row">
+              <Sk width="2rem" height="2rem" radius="0.625rem" />
+              <Sk width="8rem" height="0.875rem" radius="0.3125rem" />
+            </div>
+          ))}
+        </Loading>
       ) : null}
       {cards.status === "done"
         ? byTitle(cards.value, compare)
@@ -245,7 +261,7 @@ function Offered({
     },
     [api, profileId, onConnected],
   );
-  let shown = null;
+  let shown = <ModuleCardsLoading />;
   if (cards.status === "failed") {
     shown = <ReadFailure failure={cards.failure} onRetry={cards.retry} />;
   } else if (cards.status === "done") {
@@ -410,6 +426,7 @@ function MapOfModule({
           })}
     >
       {read.status === "failed" ? <ReadFailure failure={read.failure} onRetry={retry} /> : null}
+      {read.status === "loading" ? <MapLoading /> : null}
       {read.status === "done" ? (
         <>
           <p>{words.text("skillmap.hint")}</p>

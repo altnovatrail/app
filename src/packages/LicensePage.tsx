@@ -12,6 +12,7 @@ import { ReadFailure } from "../api/ReadFailure.tsx";
 import { HOME, MODULE_LICENSE, navigate, type Route, redirect } from "../app/router.ts";
 import { Screen } from "../app/Screen.tsx";
 import { SheetScreen } from "../app/SheetScreen.tsx";
+import { Loading, Sk } from "../app/Skeleton.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { isDigest } from "./files.ts";
 import { type LicenseRead, readLicense } from "./license.ts";
@@ -74,6 +75,21 @@ function Texts({
   );
 }
 
+/** The files while they are read: the module's three terms, then a text's block of lines. */
+function TextsLoading() {
+  return (
+    <Loading>
+      {["9rem", "4rem", "7rem"].map((width) => (
+        <div key={width} className="nt-loading nt-terms-loading">
+          <Sk width="6rem" height="0.875rem" radius="0.3125rem" />
+          <Sk width={width} height="0.875rem" radius="0.3125rem" />
+        </div>
+      ))}
+      <Sk width="100%" height="12rem" radius="0.5rem" />
+    </Loading>
+  );
+}
+
 /** The screen a license stands in: its title and what it shows. */
 export type LicenseFrame = (props: { title: string; children?: ReactNode }) => ReactNode;
 
@@ -110,7 +126,7 @@ export function ModuleLicense({
       current = false;
     };
   }, [views, digest]);
-  let shown: ReactNode = null;
+  let shown: ReactNode = <TextsLoading />;
   if (license.status === "failed") {
     shown = <ReadFailure failure={license.failure} onRetry={license.retry} />;
   } else if (license.status === "done") {

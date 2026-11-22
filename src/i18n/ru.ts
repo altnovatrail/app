@@ -483,6 +483,7 @@ export const ru = {
   "lesson.task-over-pressed": "{n} {kind}: уже закончилась",
   "lesson.continue": "Продолжить",
   "lesson.leave": "Выйти из урока",
+  "lesson.title": "Урок",
   "lesson.complete": "Урок пройден",
   "lesson.task-again": "Начать задачу заново",
   "lesson.task-left": "В уроке осталась задача",

@@ -6108,6 +6108,99 @@ dialog.nt-legal-sheet .nt-legal-body .nt-legal-foot > button.nt-link {
   }
 }
 /*
+ * Loading, `Sk` and `Loading` (R168 spec; the mockup's `Glavnaya-zagruzka`): a shape of what is read
+ * is grey, #ececef, and a lighter band, #f7f7f9, sweeps across it from right to left in 1.5 s, the
+ * band twice and a fifth the shape's width; it stands still under "Reduce motion", and with forced
+ * colours the shape is an outline in GrayText.
+ */
+@keyframes nt-sk {
+  from {
+    background-position: 120% 0;
+  }
+  to {
+    background-position: -120% 0;
+  }
+}
+.nt-sk {
+  display: block;
+  flex: none;
+  max-inline-size: 100%;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #ececef 0%, #f7f7f9 45%, #ececef 90%);
+  background-size: 220% 100%;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .nt-sk {
+    animation: nt-sk 1.5s ease-in-out infinite;
+  }
+}
+@media (forced-colors: active) {
+  .nt-sk {
+    border: 1px solid GrayText;
+  }
+}
+.nt-loading {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+/* Home's "Next up" while read: the column of the mockup's shapes, clear of the sheet drawn beside. */
+.nt-next-loading {
+  flex: 1 1 auto;
+  max-inline-size: 55%;
+}
+.nt-next-loading > .nt-next-foot > .nt-loading {
+  flex: 1 1 auto;
+}
+/* A shape in a line of text: a count in a heading. */
+.nt-sk-inline {
+  display: inline-block;
+  vertical-align: middle;
+}
+/* A term and its value, a field's label and its box, a checkbox's two lines: closer than parts. */
+.nt-terms-loading,
+.nt-field-loading,
+.nt-tick-loading,
+.nt-catalog-loading {
+  gap: 0.375rem;
+}
+.nt-field-loading {
+  margin: 0;
+}
+/* A checkbox's line among the ticks of the invite code: its ring beside its words. */
+.nt-ticks > .nt-check.nt-loading {
+  flex-direction: row;
+}
+/* A row of a menu of modules: its tile beside its name, as tall as the row. */
+.nt-menu-loading-row {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  block-size: var(--nt-target);
+  padding: 0 0.625rem;
+}
+/* A skill map: each band its heading over a row of tiles that wraps, as the element draws it. */
+.nt-map-loading {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-block-start: 0.5rem;
+}
+.nt-map-loading-tiles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+/* A task: its statement under the bar, and its row of glass at the window's foot, in the middle. */
+.nt-task-loading {
+  flex: 1 1 auto;
+  padding-block-start: 1rem;
+}
+.nt-task-loading > .nt-task-loading-row {
+  align-self: center;
+  margin-block-start: auto;
+}
+/*
  * Waiting, `Waiting` (the mockup's `wait` and `wait-home`): the whole window the ground of the
  * screen to come — the sky of "Who is learning?" or the page — and the spark in a halo of 72 in its
  * middle, white aglow on the sky and the name's indigo on the page, pulsing in 1.4 s.

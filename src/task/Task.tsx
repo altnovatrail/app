@@ -62,7 +62,6 @@ import { HomeButton } from "../app/HomeButton.tsx";
 import { ProfilePill } from "../app/LearnerMenu.tsx";
 import { HOME, navigate, redirect } from "../app/router.ts";
 import { Screen } from "../app/Screen.tsx";
-import { Waiting } from "../app/Waiting.tsx";
 import { ReadFailed } from "../boot/Screens.tsx";
 import { keyFor } from "../i18n/codes.ts";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
@@ -114,6 +113,7 @@ import {
   stepDone,
   tick,
 } from "./steps.ts";
+import { TaskLoading } from "./TaskLayout.tsx";
 import { TaskScreen } from "./TaskScreen.tsx";
 import { useQuotaLine } from "./TutorPanel.tsx";
 
@@ -313,8 +313,9 @@ export function Task({
     if (closedReason !== undefined) player.current?.onClosed(closedReason);
   }, [closedReason]);
 
-  // Under a lesson's header the lesson stands; alone, the page waits.
-  if (read.status === "loading") return lesson === undefined ? <Waiting ground="page" /> : null;
+  if (read.status === "loading") {
+    return <TaskLoading inLesson={lesson !== undefined} onHome={() => navigate(HOME)} />;
+  }
   if (lesson !== undefined && read.status !== "ready") {
     // Under a lesson's header: a line of the segment, not a screen of its own.
     return read.status === "failed" ? (
