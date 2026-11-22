@@ -1,8 +1,8 @@
-// The debug mode of a local run with models (R163 spec; R72): which models check a task from paper,
-// what each call returned and what it cost. app loads this module only under import.meta.env.DEV,
-// which a release's build replaces with false, and shows the mode only once api's `GetDebug`
-// answers, which it does only with its debug flag. The choice is api's; the calls taken from api and
-// the sum since the session began are the tab's memory alone, and go at a reload.
+// The debug mode of the models of a task from paper (R163 spec; R72): which models check it, what
+// each call returned and what it cost, for an account with api's debug right. app loads this module
+// only once api's `GetDebug` answered (gate.ts). The choice is api's; the calls taken from api and
+// the sum since the session began are the tab's memory alone, and go at a reload or with the
+// account.
 
 import { Cause } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import {
@@ -26,7 +26,7 @@ import {
 import { create, fromJsonString, toJsonString } from "@bufbuild/protobuf";
 import { timestampDate } from "@bufbuild/protobuf/wkt";
 import type { Client } from "@connectrpc/connect";
-import { ApiError } from "../api/failure.ts";
+import * as gate from "./gate.ts";
 
 export type DebugClient = Client<typeof DebugService>;
 
@@ -118,6 +118,8 @@ let sending: Promise<void> = Promise.resolve();
 let changes = 0;
 /** GetDebug under way, which a call of a task from paper waits for before it takes. */
 let loading: Promise<void> | undefined;
+/** The account of the gate the state is of: another account's begins from nothing. */
+let account = gate.snapshot().account;
 const listeners = new Set<() => void>();
 
 function set(change: (now: DebugState) => DebugState): void {
@@ -134,13 +136,19 @@ export function snapshot(): DebugState {
   return state;
 }
 
-/** The state forgotten, for the tests. */
-export function reset(): void {
+function forget(): void {
   confirmed = undefined;
   sending = Promise.resolve();
   changes = 0;
   loading = undefined;
   set(() => initial);
+}
+
+/** The state and the gate forgotten, for the tests. */
+export function reset(): void {
+  gate.reset();
+  account = gate.snapshot().account;
+  forget();
 }
 
 function pickOf(c: DebugModelChoice | undefined): Pick | undefined {
@@ -162,11 +170,15 @@ function held(now: DebugState, choice: DebugChoice | undefined): DebugState {
 }
 
 /**
- * Asks api once a session whether it has the mode, or joins the asking under way; after a failure
- * other than a refusal, the next call asks again.
+ * Takes the gate's answer of whether the account has the mode, or joins the asking under way; after
+ * a failure other than a refusal, the next call asks again.
  */
 export function load(client: DebugClient | undefined): Promise<void> {
   if (client === undefined) return Promise.resolve();
+  if (gate.snapshot().account !== account) {
+    account = gate.snapshot().account;
+    forget();
+  }
   if (loading !== undefined) return loading;
   if (state.status !== "unknown") return Promise.resolve();
   set((now) => ({ ...now, status: "loading" }));
@@ -179,20 +191,19 @@ export function load(client: DebugClient | undefined): Promise<void> {
 }
 
 async function ask(client: DebugClient): Promise<void> {
-  try {
-    const answer = await client.getDebug({});
-    confirmed = answer.choice;
-    set((now) => ({
-      ...held(now, answer.choice),
-      status: "on",
-      models: answer.models,
-      admitted: answer.admitted,
-    }));
-  } catch (reason) {
-    // unimplemented is api without its flag, for the session; anything else may answer later.
-    const absent = reason instanceof ApiError && reason.failure.kind === "stale";
-    set((now) => ({ ...now, status: absent ? "off" : "unknown" }));
+  const answer = await gate.ask(client);
+  if (answer === undefined) {
+    const off = gate.snapshot().status === "off";
+    set((now) => ({ ...now, status: off ? "off" : "unknown" }));
+    return;
   }
+  confirmed = answer.choice;
+  set((now) => ({
+    ...held(now, answer.choice),
+    status: "on",
+    models: answer.models,
+    admitted: answer.admitted,
+  }));
 }
 
 /** The model of the catalog by its ID. */

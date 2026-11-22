@@ -32,30 +32,30 @@ export const LEGAL: Route = { screen: "legal", parts: [] };
 
 /**
  * The license of a module: `#/license/<digest>`, LICENSE and NOTICE of a version by the digest of
- * its package, an ID of content, opened from a card of My subjects (R32). It shows at any step, as
- * the legal pages do; the section for adults shows the same page as one of its own.
+ * its package, an ID of content, opened from a module's card on Home (R32). It shows at any step,
+ * as the legal pages do; the section for adults shows the same page as one of its own.
  */
 export const MODULE_LICENSE: Route = { screen: "license", parts: [] };
 
 /**
  * The page on the AI tutor and how to use it safely, the learning material of R123 spec:
- * `#/tutor`, opened from My subjects (R33). It shows at any step, as the license of a module does,
+ * `#/tutor`, opened from Home (R33). It shows at any step, as the license of a module does,
  * in the language of the learner's screens while a learner is chosen.
  */
 export const TUTOR: Route = { screen: "tutor", parts: [] };
 
 /**
- * The skill map, the learner's second way in beside My subjects (R34): `#/skill-map` lists the maps
- * of the modules connected, and `#/skill-map/<module>` is a module's map, by the module's ID — an
- * ID of content, never the learner's.
+ * Subjects, a place of the row of places (R148 spec): the catalog of the server, the modules
+ * connected with the way to each one's map and the others with Connect.
  */
-export const SKILL_MAP: Route = { screen: "skill-map", parts: [] };
+export const SUBJECTS: Route = { screen: "subjects", parts: [] };
 
 /**
- * "My essays", where the learner reads again the essays this device keeps (R53): `#/essays`, the
- * essay opened in memory, as the hash names no attempt.
+ * The skill map, the learner's second way in beside Home (R34): `#/skill-map/<module>` is a
+ * module's map, by the module's ID — an ID of content, never the learner's —, opened from Subjects;
+ * `#/skill-map` alone goes to Subjects in place of itself.
  */
-export const ESSAYS: Route = { screen: "essays", parts: [] };
+export const SKILL_MAP: Route = { screen: "skill-map", parts: [] };
 
 /**
  * A task from the learner's paper (R71): `#/paper`, the camera, the tasks found on the page
@@ -72,8 +72,8 @@ export const SCREENS: ReadonlySet<string> = new Set([
   LEGAL.screen,
   MODULE_LICENSE.screen,
   TUTOR.screen,
+  SUBJECTS.screen,
   SKILL_MAP.screen,
-  ESSAYS.screen,
   PAPER.screen,
 ]);
 

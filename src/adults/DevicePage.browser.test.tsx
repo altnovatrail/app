@@ -15,7 +15,7 @@ import { KeyHolder } from "../ownkey/holder.ts";
 import { KeyHolderProvider } from "../ownkey/OwnKeyContext.tsx";
 import type { SiteStorage } from "../storage/browser.ts";
 import { deviceKeyStore, keptKey } from "../storage/ownkey.ts";
-import { addProfile, Profile as KeptProfile, openProfile } from "../storage/profile.ts";
+import { addProfile, openProfile } from "../storage/profile.ts";
 import { readRegistry, setAccount } from "../storage/registry.ts";
 import { profileDatabase } from "../storage/schema.ts";
 import { memoryDevice } from "../test/device.ts";
@@ -354,42 +354,5 @@ describe("the own key on the page This device", () => {
     expect(await owner.findByText("Erased")).toBeTruthy();
     expect(holder.routeFields("p1")).toEqual({});
     cleanup();
-  });
-});
-
-describe("the essays on the page This device", () => {
-  it("names each essay of a profile, and erases one when asked, with its history", async () => {
-    const { device } = memoryDevice();
-    await setAccount(device, "account-1");
-    const profile = await addProfile(device, "p1");
-    const task = {
-      id: "umbrella",
-      statement: [{ text: "An umbrella talks when it rains." }],
-      canvas: { kind: "handwriting_sheet" as const },
-      items: [{ answer_slots: [{ binding: "sheet" as const }] }],
-    };
-    await profile?.beginAttempt({ attemptId: "e1", digest: "d1", task });
-    await profile?.beginEssay({ attemptId: "e1", digest: "d1", task }, "en");
-    await profile?.attemptEnded("e1");
-    renderPage(device, { profiles: [OWNER] });
-    const owner = within(section("Profile: Ёжик"));
-    expect(await owner.findByText("1 essay")).toBeTruthy();
-    expect(await owner.findByText("An umbrella talks when it rains.")).toHaveAttribute(
-      "lang",
-      "en",
-    );
-    expect(owner.getByText(/^Essay of /)).toBeTruthy();
-    // An erasure that did not reach the database says so, and the essay stays to erase again.
-    vi.spyOn(KeptProfile.prototype, "eraseEssay").mockRejectedValueOnce(new Error("refused"));
-    await userEvent.click(owner.getByRole("button", { name: "Erase the essay" }));
-    await userEvent.click(owner.getByRole("button", { name: "Erase" }));
-    expect((await owner.findByRole("alert")).textContent).toBe("Nothing was erased. Try again");
-    expect(owner.getByText("1 essay")).toBeTruthy();
-    await userEvent.click(owner.getByRole("button", { name: "Erase the essay" }));
-    expect(owner.getByRole("group", { name: /and its feedback are lost/ })).toBeTruthy();
-    await userEvent.click(owner.getByRole("button", { name: "Erase" }));
-    await vi.waitFor(() => expect(owner.queryByText("1 essay")).toBeNull());
-    expect(await profile?.essays()).toEqual([]);
-    expect(owner.getAllByRole("status").map((line) => line.textContent)).toContain("Erased");
   });
 });

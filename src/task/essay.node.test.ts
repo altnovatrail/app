@@ -7,7 +7,7 @@ import type * as open from "@altnovatrail/spec/formatv0/open";
 import { create } from "@bufbuild/protobuf";
 import { describe, expect, it } from "vitest";
 import { WORDS } from "../i18n/words.ts";
-import { goesWhole, isEssay, noteOf, sentOf } from "./essay.ts";
+import { isEssay, noteOf, sentOf } from "./essay.ts";
 
 const words = WORDS.en;
 
@@ -29,18 +29,11 @@ const WORKBOOK: open.Task = {
   items: [{ line: [{ text: "2 + 2 =" }, { binding: "box" }] }],
 };
 
-describe("an essay and the reminder to write no names", () => {
+describe("an essay", () => {
   it("is an essay by an answer slot bound sheet alone", () => {
     expect(isEssay(sheet("sheet"))).toBe(true);
     expect(isEssay(sheet("anywhere"))).toBe(false);
     expect(isEssay(WORKBOOK)).toBe(false);
-  });
-
-  it("goes to AI whole on a handwriting sheet written by hand, not a workbook or a choice", () => {
-    expect(goesWhole(sheet("sheet"))).toBe(true);
-    expect(goesWhole(sheet("anywhere"))).toBe(true);
-    expect(goesWhole(sheet("choice"))).toBe(false);
-    expect(goesWhole(WORKBOOK)).toBe(false);
   });
 });
 

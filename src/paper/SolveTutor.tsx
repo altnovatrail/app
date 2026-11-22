@@ -1,13 +1,13 @@
 // The tutor's panel on the screen of solving a task from paper (R75; R148 spec), the shell of the
 // task screen's: in its head the learner's share of the quota and the switch of voicing; in the
-// conversation, after the line that the tutor is an AI, its line on what comes here, the program's
-// verdict of the last Check as a line — the reading while it runs —, the tutor's words, marked a
-// hint — the opening question, the rung's, or the rung's put another way (R82 spec) —, with "Report
-// a problem" below them for a learner of the category adult (R33), and what a Check or a Hint failed
-// with, which the phone's sheet would hide at the screen's foot; at its foot Hint while the task is
-// not solved, "Explain differently" once on a rung, and the next task once its Check is over. No
-// text field and no microphone (R148 spec). A task from paper is in no module: its words are in the
-// language of the interface.
+// conversation, first its line on what comes here, then the program's verdict of the last Check as
+// a line — the reading while it runs —, the tutor's words, marked a hint — the opening question,
+// the rung's, or the rung's put another way (R82 spec) —, with "Report a problem" below them for a
+// learner of the category adult (R33), and what a Check or a Hint failed with, which the phone's
+// sheet would hide at the screen's foot; at its foot Hint while the task is not solved, "Explain
+// differently" once on a rung, and the next task once its Check is over. No text field and no
+// microphone (R148 spec). A task from paper is in no module: its words are in the language of the
+// interface.
 import type { Ref } from "react";
 import type { Failure } from "../api/failure.ts";
 import { failureText } from "../api/words.ts";

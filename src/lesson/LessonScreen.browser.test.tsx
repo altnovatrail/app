@@ -147,7 +147,7 @@ describe("the end of a lesson", () => {
     expect(within(card).getByRole("heading", { level: 1, name: "Number patterns" })).toBeVisible();
     const done = within(card).getByText("Lesson complete");
     expect(done.querySelector("svg")).not.toBeNull();
-    expect(within(card).getByRole("button", { name: "Back to My subjects" })).toBeVisible();
+    expect(within(card).getByRole("button", { name: "Back to Home" })).toBeVisible();
   });
 
   it("names how it ended with no star, and no tile with no module", () => {

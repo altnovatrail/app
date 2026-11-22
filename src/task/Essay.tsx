@@ -3,14 +3,14 @@
 // is done. The steps, the history of writing and Hint go as on any task (R05, R20, R22). Check
 // sends the crop the canvas gives by `SubmitEssay`, with one idempotency key for this work and the
 // same with every repeat of it, and the own key or the clock's offset; how the submission ended —
-// feedback, unreadable or unchecked —, the text read and the words of the feedback are kept with
-// the essay and its crop, which the server keeps none of; while the profile's storage of works is
-// on, the essay goes there as every work does, its history, the contexts of its submissions and its
-// picture (R30). The attempt stays open: the learner writes the sheet again and sends it again, and
-// closes it by Done, open after the first submission, and then the task is solved. An attempt api
-// closed is the screen of Task.tsx, and the essay stays on the device. The feedback is said by the
-// voicing in the module's language, and "Report a problem" stands at it for a learner of the
-// category adult (R33).
+// feedback, unreadable or unchecked —, the text read and the words of the feedback the screen holds
+// in memory alone, and the attempt keeps the context of the submission, as any task's work, till
+// its end (R04); while the profile's storage of works is on, the essay goes to the server as every
+// work does, its history, the contexts of its submissions and its picture (R30). The attempt stays
+// open: the learner writes the sheet again and sends it again, and closes it by Done, open after
+// the first submission, and then the task is solved. An attempt api closed is the screen of
+// Task.tsx. The feedback is said by the voicing in the module's language, and "Report a problem"
+// stands at it for a learner of the category adult (R33).
 import { TutorReply } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
 import {
   CloseReason,
@@ -50,12 +50,11 @@ import {
 import type { OpenTaskProps } from "./Task.tsx";
 
 /**
- * The work of a check: its key, the crop as the canvas gave it and as the contract carries it, and
- * the context of the submission with the history's length then, for the work on the server.
+ * The work of a check: its key, the crop as the contract carries it, and the context of the
+ * submission with the history's length then, for the work on the server.
  */
 interface Sent {
   readonly key: string;
-  readonly png: Blob;
   readonly crop: Uint8Array;
   readonly context: SheetSubmission;
   readonly historyLength: number;
@@ -85,21 +84,18 @@ export function OpenEssay({
   const { task, profile, steps } = opened;
   const explanation = opened.manifest?.languages.explanation;
   const element = useRef<CanvasElement>(null);
-  const kept = opened.essay?.kept;
-  const last = kept?.sent[kept.sent.length - 1];
   const [state, setState] = useState(opened.state);
   const [pending, setPending] = useState(false);
   const [checking, setChecking] = useState(false);
   const [failure, setFailure] = useState<Failure | undefined>(undefined);
   const [blink, setBlink] = useState(false);
   const [hint, setHint] = useState<HintGiven | undefined>(opened.hint);
-  // What the last submission came to: the one this device kept, until a check here.
-  const [shown, setShown] = useState<Shown | undefined>(last);
+  // What the last submission sent from this screen came to; none after a reload, as the server
+  // keeps neither the text read nor the words (R87 spec).
+  const [shown, setShown] = useState<Shown | undefined>(undefined);
   const [came, setCame] = useState(false);
   // How many submissions the attempt has, by api's count and those sent here since.
-  const [submissions, setSubmissions] = useState(
-    Math.max(opened.essay?.submissions ?? 0, kept?.sent.length ?? 0),
-  );
+  const [submissions, setSubmissions] = useState(opened.essay?.submissions ?? 0);
   const [finished, setFinished] = useState<Finished | undefined>(undefined);
   const [choice, setChoice] = useState<EngineChoice | undefined>(undefined);
   // One key for a check of this work, the same with every repeat of it: a new stroke is a new action.
@@ -181,7 +177,6 @@ export function OpenEssay({
     if (work === null || !("png" in work) || work.statement !== undefined) return undefined;
     const made = {
       key: idempotencyKey(),
-      png: work.png,
       crop: new Uint8Array(await work.png.arrayBuffer()),
       context: work.submission,
       historyLength,
@@ -220,13 +215,8 @@ export function OpenEssay({
         setCame(true);
         // The answer came: the card says so at once, while the submission is written to the device.
         setChecking(false);
-        const { context, historyLength } = of;
         const saved =
-          (await profile?.addEssaySubmission(attemptId, of.png, {
-            ...end,
-            context,
-            historyLength,
-          })) ?? "unsaved";
+          (await profile?.addEssaySubmission(attemptId, of.context, of.historyLength)) ?? "unsaved";
         if (saved === "unsaved") unsavedNow();
         // Written to the device, the essay goes to the server too, while the storage is on.
         else if (profile !== undefined) void works.put(profile, attemptId);
@@ -236,7 +226,7 @@ export function OpenEssay({
         if (now.feedback === undefined || note !== undefined)
           auto([{ text: note ?? "", language }]);
         else if (panelOpen.current) auto([{ text: now.feedback, language: explanation }]);
-        // api closed the attempt while it went: the feedback came all the same, and stays here.
+        // api closed the attempt while it went: the screen of its end takes this one's place.
         if (answer.closed !== CloseReason.UNSPECIFIED) closed(answer.closed);
       } catch (reason) {
         setFailure(unlessClosed(reason, closed));

@@ -58,11 +58,8 @@ export interface Api {
   readonly legal: Client<typeof LegalService>;
   /** The works kept on the server: `PutWork` (R30). */
   readonly work: Client<typeof WorkService>;
-  /**
-   * The debug mode of a local run, in a build of the development server alone: a release's build
-   * replaces import.meta.env.DEV with false, and the service drops out of it (R72).
-   */
-  readonly debug?: Client<typeof DebugService>;
+  /** The debug mode, which answers an account with api's debug right alone (R72). */
+  readonly debug: Client<typeof DebugService>;
 }
 
 /** fetch whose failure is the network's: `unavailable`, which the client repeats. */
@@ -154,6 +151,6 @@ export function createApi(options: ApiOptions): Api {
     paper: client(PaperService),
     legal: guarded(createClient(LegalService, legalTransport)),
     work: client(WorkService),
-    ...(import.meta.env.DEV ? { debug: client(DebugService) } : {}),
+    debug: client(DebugService),
   };
 }

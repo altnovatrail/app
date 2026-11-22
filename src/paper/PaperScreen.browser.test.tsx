@@ -19,6 +19,8 @@ import {
   type GetRungWordsRequest,
   type GetRungWordsResponseSchema,
   MarkKind,
+  type ReadStatementRequest,
+  type ReadStatementResponseSchema,
   type SubmitWorkRequest,
   type SubmitWorkResponseSchema,
 } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
@@ -59,6 +61,8 @@ interface Setup {
   readonly rung?: (n: number) => MessageInitShape<typeof GetRungWordsResponseSchema>;
   /** Each "Explain differently", by how many came before; none, and api has no ExplainDifferently. */
   readonly explained?: (n: number) => MessageInitShape<typeof ExplainDifferentlyResponseSchema>;
+  /** Each reading of a statement by Recognise, by how many came before; none, and it is refused. */
+  readonly read?: (n: number) => MessageInitShape<typeof ReadStatementResponseSchema>;
   /** The answer to Start; none, an attempt for each task. */
   readonly began?: (tasks: number) => MessageInitShape<typeof BeginPaperAttemptsResponseSchema>;
   /** The learner's share of the quota, in percent; none, and api has no `GetQuota`. */
@@ -100,6 +104,7 @@ async function renderCamera(setup: Setup = {}) {
   const begins: BeginPaperAttemptsRequest[] = [];
   const submits: SubmitWorkRequest[] = [];
   const rungs: GetRungWordsRequest[] = [];
+  const reads: ReadStatementRequest[] = [];
   let explains = 0;
   let attempts = 0;
   const api = routedApi((router) => {
@@ -113,6 +118,12 @@ async function renderCamera(setup: Setup = {}) {
       // Before the first wrong answer a task from paper has no techniques: the opening question.
       getHint() {
         return setup.hint?.() ?? { hint: { case: "techniques", value: {} } };
+      },
+      readStatement(request) {
+        reads.push(request);
+        const answer = setup.read?.(reads.length - 1);
+        if (answer === undefined) throw new ConnectError("a refusal", Code.InvalidArgument);
+        return answer;
       },
       getOpeningWords() {
         return { words: setup.hinted ?? "" };
@@ -183,7 +194,7 @@ async function renderCamera(setup: Setup = {}) {
   );
   if (setup.camera === undefined)
     await screen.findByText("The camera isn't available here. Choose a photo of the page instead");
-  return { finds, begins, submits, rungs };
+  return { finds, begins, submits, rungs, reads };
 }
 
 /** A refusal of api for a cause. */
@@ -372,6 +383,14 @@ it("opens the device's photos by its button, and says a picture it cannot read c
   expect(finds).toHaveLength(0);
 });
 
+/** The bar's count, its numbers in bold: "{count} of {total} selected" whole. */
+function picks(text: string) {
+  return screen.getByText(
+    (_, element) =>
+      element?.classList.contains("nt-page-count") === true && element.textContent === text,
+  );
+}
+
 it("sends the photo once, a JPEG encoded anew, and picks the tasks found in the order of the page", async () => {
   const { finds } = await renderPaper();
   const first = await screen.findByRole("button", { name: "Deselect task 1" });
@@ -380,8 +399,8 @@ it("sends the photo once, a JPEG encoded anew, and picks the tasks found in the 
     "aria-pressed",
     "true",
   );
-  expect(screen.getByText("2 tasks found · tap one to leave it out")).toBeVisible();
-  expect(screen.getByText("2 of 2 selected")).toBeVisible();
+  expect(screen.getByText("2 tasks found")).toBeVisible();
+  expect(picks("2 of 2 selected")).toBeVisible();
   expect(finds).toHaveLength(1);
   const photo = finds[0]?.photo ?? new Uint8Array();
   expect([photo[0], photo[1]]).toEqual([0xff, 0xd8]);
@@ -396,8 +415,8 @@ it("removes a task the AI found by its cross", async () => {
   expect(crosses).toHaveLength(2);
   await userEvent.click(crosses[0] as HTMLElement);
   await waitFor(() => expect(screen.queryByRole("button", { name: "Deselect task 2" })).toBeNull());
-  expect(screen.getByText("1 task found · tap one to leave it out")).toBeVisible();
-  expect(screen.getByText("1 of 1 selected")).toBeVisible();
+  expect(screen.getByText("1 task found")).toBeVisible();
+  expect(picks("1 of 1 selected")).toBeVisible();
 });
 
 it("removes every frame at once, for frames of the learner's own", async () => {
@@ -407,7 +426,7 @@ it("removes every frame at once, for frames of the learner's own", async () => {
   await waitFor(() =>
     expect(screen.queryByRole("button", { name: "Remove the frame" })).toBeNull(),
   );
-  expect(screen.getByText("0 of 0 selected")).toBeVisible();
+  expect(picks("0 of 0 selected")).toBeVisible();
   expect(screen.queryByRole("button", { name: "Remove all frames" })).toBeNull();
 });
 
@@ -418,10 +437,10 @@ it("begins the tasks picked, each a sheet under its crop", async () => {
     "aria-pressed",
     "false",
   );
-  expect(screen.getByText("1 of 2 selected")).toBeVisible();
+  expect(picks("1 of 2 selected")).toBeVisible();
   await userEvent.click(screen.getByRole("button", { name: "Start" }));
   expect(await screen.findByRole("heading", { name: "Task 2" }, SLOW)).toBeVisible();
-  expect(screen.getByText("1 of 1 · from your page")).toBeVisible();
+  expect(screen.getByRole("button", { name: "Tasks, 1 / 1" })).toBeVisible();
   expect(begins).toHaveLength(1);
   expect(begins[0]?.tasks).toBe(1);
   expect(begins[0]?.profileId).toBe("p1");
@@ -429,7 +448,7 @@ it("begins the tasks picked, each a sheet under its crop", async () => {
   // The page's ID, by which api closes the open tasks of another page alone (R77).
   expect(begins[0]?.pageId).toMatch(/^[A-Za-z0-9_-][A-Za-z0-9._-]{0,199}$/);
   expect(sheet().paper?.statement).toBeInstanceOf(Blob);
-  expect(sheet().tracing).toEqual({ at: [180, 60], hidden: false });
+  expect(sheet().tracing).toEqual({ at: [180, 60], hidden: false, scale: 1 });
 });
 
 it("goes from task to task by ‹, › and the list, each with its own work", async () => {
@@ -589,7 +608,6 @@ it("opens the tutor's panel by its button: the verdict a line in it, and a card 
   expect(document.querySelector(".nt-card-verdict")).not.toBeNull();
   await userEvent.click(screen.getByRole("button", { name: "Tutor" }));
   expect(document.activeElement).toBe(tutorPanel().getByRole("heading", { name: "Tutor" }));
-  expect(tutorPanel().getByText("The tutor is an AI, not a person")).toBeVisible();
   expect(tutorPanel().getByText("Read: 84")).toBeVisible();
   expect(document.querySelector(".nt-card-verdict")).toBeNull();
   // Not yet: Hint at the panel's foot, and no way on yet.
@@ -646,7 +664,7 @@ it("brings the rung's words with the wavy line in the open panel, which the pape
   );
   // The canvas puts its marks away with the paper moved: the verdict's context is gone with them.
   await waitFor(() => expect(sheet().marks).toBeUndefined());
-  expect(sheet().tracing).toEqual({ at: [200, 90], hidden: false });
+  expect(sheet().tracing).toEqual({ at: [200, 90], hidden: false, scale: 1 });
 });
 
 it("words the rung anew once by Explain differently, and says when there are no other words", async () => {
@@ -754,6 +772,38 @@ it("gives a rung's words again by Hint, and makes a task api closed one only to 
     expect(alert).toHaveTextContent("This task is already over");
 });
 
+it("reads the statement into its text by Recognise, a reading for its task alone", async () => {
+  const { reads } = await solving({ read: () => ({ statements: ["□ + 1 = 3"] }) });
+  expect(sheet().reading).toEqual({ state: "ready" });
+  const recognise = () =>
+    sheet().dispatchEvent(new CustomEvent("tracingread", { detail: null, bubbles: true }));
+  recognise();
+  await waitFor(() =>
+    expect(sheet().reading).toEqual({ state: "done", statements: ["□ + 1 = 3"] }),
+  );
+  expect(reads).toHaveLength(1);
+  expect(reads[0]?.attemptId).toBe("a1");
+  expect(reads[0]?.statement.length).toBeGreaterThan(0);
+  // The next task has a reading of its own, which api refuses here.
+  await userEvent.click(screen.getByRole("button", { name: "Next task" }));
+  await screen.findByRole("heading", { name: "Task 2" });
+  expect(sheet().reading).toEqual({ state: "ready" });
+});
+
+it("gives the paper Recognise again when api refuses the reading, and says why", async () => {
+  const { reads } = await solving();
+  const key = () => reads.map((each) => each.idempotencyKey);
+  // A round trip to the browser: the screen has settled on the task it shows.
+  await userEvent.hover(screen.getByRole("heading", { name: "Task 1" }));
+  sheet().dispatchEvent(new CustomEvent("tracingread", { detail: null, bubbles: true }));
+  expect(await screen.findByRole("alert")).toBeVisible();
+  await waitFor(() => expect(sheet().reading).toEqual({ state: "ready" }));
+  // A press again repeats the reading by its key.
+  sheet().dispatchEvent(new CustomEvent("tracingread", { detail: null, bubbles: true }));
+  await waitFor(() => expect(reads).toHaveLength(2));
+  expect(new Set(key()).size).toBe(1);
+});
+
 it("asks for a solution again when the sheet gives no work at the press", async () => {
   const { submits } = await solving();
   writeOn(sheet());
@@ -839,9 +889,7 @@ it("frames a task the AI missed by two taps, and removes it by its cross", async
   tap(800, 300);
   const drawn = await screen.findByRole("button", { name: "Deselect your frame, task 1" });
   expect(drawn).toHaveAttribute("aria-pressed", "true");
-  expect(
-    screen.getByText("0 tasks found · 1 framed by you · tap one to leave it out"),
-  ).toBeVisible();
+  expect(screen.getByText("0 tasks found · 1 framed by you")).toBeVisible();
   expect(screen.getByRole("button", { name: "Start" })).toBeEnabled();
   await userEvent.click(screen.getByRole("button", { name: "Remove the frame" }));
   await waitFor(() => expect(screen.queryByRole("button", { name: /your frame/ })).toBeNull());
@@ -892,9 +940,8 @@ it("finds the page anew by the learner's request, its own frame staying, and Und
   await screen.findByRole("button", { name: /^Deselect your frame/ });
   await userEvent.click(screen.getByRole("button", { name: "Tutor" }));
   const field = await screen.findByRole("textbox", { name: "Your request about the page" });
-  expect(field).toHaveAccessibleDescription(
-    "Don't write your name or the real names of people you know",
-  );
+  // No reminder of names above the field.
+  expect(field).not.toHaveAttribute("aria-describedby");
   expect(screen.getByRole("button", { name: "Voice comes later" })).toBeDisabled();
   await userEvent.type(field, "only the first column, each task apart{Enter}");
   expect(await screen.findByText("Found 3 tasks")).toBeVisible();
@@ -1003,15 +1050,13 @@ it("says a page found as many tasks as start at once may hold more, and when too
   tap(600, 100);
   await screen.findByText("Now tap the opposite corner of the task");
   tap(900, 300);
-  expect(
-    await screen.findByText(`At most ${MAX_TASKS} tasks start at once: leave some out`),
-  ).toBeVisible();
+  expect(await screen.findByText(`At most ${MAX_TASKS} tasks start at once.`)).toBeVisible();
   expect(screen.getByRole("button", { name: "Start" })).toBeDisabled();
   await userEvent.click(screen.getByRole("button", { name: "Select none" }));
-  expect(screen.getByText(`0 of ${MAX_TASKS + 1} selected`)).toBeVisible();
+  expect(picks(`0 of ${MAX_TASKS + 1} selected`)).toBeVisible();
   expect(screen.getByText(most)).toBeVisible();
   await userEvent.click(screen.getByRole("button", { name: "Select all" }));
-  expect(screen.getByText(`${MAX_TASKS + 1} of ${MAX_TASKS + 1} selected`)).toBeVisible();
+  expect(picks(`${MAX_TASKS + 1} of ${MAX_TASKS + 1} selected`)).toBeVisible();
 });
 
 it("draws the loop as it goes, and drops it when the pointer is cancelled", async () => {
@@ -1037,10 +1082,10 @@ it("draws the loop as it goes, and drops it when the pointer is cancelled", asyn
   expect(screen.queryByRole("button", { name: /your frame/ })).toBeNull();
 });
 
-it("goes back to My subjects from the page, and the page goes with it", async () => {
+it("goes back to Home from the page, and the page goes with it", async () => {
   await renderPaper();
   await screen.findByRole("button", { name: "Deselect task 1" });
-  await userEvent.click(screen.getByRole("button", { name: "Back to My subjects" }));
+  await userEvent.click(screen.getByRole("button", { name: "Back to Home" }));
   expect(await screen.findByRole("heading", { name: "Photo of a page" })).toBeVisible();
   history.replaceState(null, "", location.pathname);
 });
@@ -1089,8 +1134,47 @@ it("keeps the page and its work in the profile's history, and opens it again fro
   await userEvent.click(screen.getByRole("button", { name: /· 2 tasks$/ }));
   await screen.findByRole("heading", { name: "Task 1" }, SLOW);
   await waitFor(() => expect(sheet().history).toHaveLength(1));
-  expect(sheet().tracing).toEqual({ at: [200, 90], hidden: true });
+  expect(sheet().tracing).toEqual({ at: [200, 90], hidden: true, scale: 1 });
   expect(screen.queryByRole("dialog")).toBeNull();
+  history.replaceState(null, "", location.pathname);
+});
+
+it("marks a task solved in the list of a page opened again, its verdict put away", async () => {
+  const { device } = memoryDevice();
+  await addProfile(device, "p1");
+  await solving({
+    device,
+    checked: () => ({
+      items: [
+        {
+          verdict: "correct",
+          answerSlots: [{ answerSlot: { item: 1, slot: 1 }, verdict: "correct", value: "85" }],
+        },
+      ],
+      solved: {},
+    }),
+  });
+  writeOn(sheet());
+  await userEvent.click(screen.getByRole("button", { name: "Check" }));
+  expect(await screen.findByText("Read: 85")).toBeVisible();
+  const profile = await openProfile(device, "p1");
+  vi.spyOn(document, "visibilityState", "get").mockReturnValue("hidden");
+  document.dispatchEvent(new Event("visibilitychange"));
+  await waitFor(async () => {
+    const [kept] = (await profile?.pages()) ?? [];
+    const tasks = (await profile?.page(kept?.pageId ?? ""))?.tasks ?? [];
+    expect(tasks.map((task) => task.solved)).toEqual([true, undefined]);
+  });
+  cleanup();
+
+  await renderCamera({ device });
+  await userEvent.click(await screen.findByRole("button", { name: "Your pages" }));
+  await userEvent.click(screen.getByRole("button", { name: /· 2 tasks$/ }));
+  await screen.findByRole("heading", { name: "Task 1" }, SLOW);
+  expect(screen.queryByText("Read: 85")).toBeNull();
+  await userEvent.click(screen.getByRole("button", { name: "Tasks, 1 / 2" }));
+  expect(await screen.findByRole("button", { name: /Task 1.*Correct/ })).toBeVisible();
+  expect(screen.getByRole("button", { name: "Task 2" })).toBeVisible();
   history.replaceState(null, "", location.pathname);
 });
 

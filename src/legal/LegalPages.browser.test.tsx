@@ -19,6 +19,7 @@ import { createApi } from "../api/client.ts";
 import { ADULTS, type Route } from "../app/router.ts";
 import type { Language } from "../i18n/language.ts";
 import { inLanguage } from "../test/language.tsx";
+import { expectLoaded, expectLoading, held } from "../test/loading.ts";
 import { LegalPages } from "./LegalPages.tsx";
 import { LICENSE, NOTICE } from "./notices.ts";
 import { dayText } from "./texts.ts";
@@ -152,6 +153,19 @@ describe("the legal pages", () => {
     expect(document.querySelector("details")).toBeNull();
     expect(document.querySelectorAll("a")).toHaveLength(0);
     expect(screen.getByRole("button", { name: "Назад к списку" })).toBeTruthy();
+  });
+
+  it("stand with the shapes of a text while it is read, under its heading, busy (R168 spec)", async () => {
+    const { given, give } = held();
+    renderPages(legal("privacy-policy"), async () => {
+      await given;
+      return [POLICY];
+    });
+    expect(screen.getByRole("heading", { level: 1, name: "Privacy Policy" })).toBeTruthy();
+    expectLoading(document, 5);
+    give();
+    expect(await screen.findByText("Version 2, in force since November 11, 2026")).toBeTruthy();
+    expectLoaded(document);
   });
 
   it("say so of a text with no version in force, and of an api with no LegalService", async () => {
@@ -369,14 +383,14 @@ describe("the legal pages", () => {
     expect(criteria[0]).toContain("2.5.7");
     // 2.5.7 twice: the canvas moves the sheet by dragging alone (R11).
     expect(criteria[1]).toBe("2.5.7 Dragging Movements, level AA");
-    expect(criteria[2]).toContain("1.4.12");
+    // The print fits the page to the sheet's width and keeps its own spacing (R11).
+    expect(criteria[2]).toBe("1.4.4 Resize Text, level AA; 1.4.12 Text Spacing, level AA");
     expect(criteria[3]).toContain("3.3.4");
     // A frame drawn by hand: two taps meet 2.5.1 and 2.5.7, the keyboard none (R71).
     expect(criteria[4]).toBe("2.1.1 Keyboard, level A");
     // A task from paper is solved in handwriting alone, with no options to choose among (R71).
     expect(criteria[5]).toBe("2.1.1 Keyboard, level A");
-    // The app meets 1.4.4 and 3.1.2, so no place declares them (R11).
-    expect(document.body.textContent).not.toContain("1.4.4");
+    // The app always gives the canvas its language, so it meets 3.1.2 and no place declares it (R11).
     expect(document.body.textContent).not.toContain("3.1.2");
     for (const place of places) {
       expect(

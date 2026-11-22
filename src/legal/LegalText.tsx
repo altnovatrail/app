@@ -6,10 +6,39 @@
 // apply yet, shows in place below it, closed too, with the day it applies from (R46).
 import type { LegalText as Text } from "@altnovatrail/contracts/novatrail/api/v1/legal_pb.js";
 import { type ReactNode, useId, useMemo } from "react";
+import { Loading, Sk } from "../app/Skeleton.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { titleOf } from "./body.ts";
 import { Markdown } from "./Markdown.tsx";
 import { dayText } from "./texts.ts";
+
+/**
+ * A legal text open on its page while it is read (R168 spec): the caption and the lines of its
+ * gist, and with `body` the heading and the first lines of the text below.
+ */
+export function LegalLoading({ body = true }: { readonly body?: boolean }) {
+  return (
+    <Loading>
+      <Sk width="4.5rem" height="0.75rem" radius="0.25rem" />
+      <Sk width="100%" height="0.9375rem" radius="0.3125rem" />
+      <Sk width="94%" height="0.9375rem" radius="0.3125rem" />
+      <Sk width="68%" height="0.9375rem" radius="0.3125rem" />
+      {body ? (
+        <>
+          <Sk
+            width="45%"
+            height="1.25rem"
+            radius="0.375rem"
+            style={{ marginBlockStart: "0.75rem" }}
+          />
+          {["100%", "97%", "99%", "82%"].map((width) => (
+            <Sk key={width} width={width} height="0.875rem" radius="0.3125rem" />
+          ))}
+        </>
+      ) : null}
+    </Loading>
+  );
+}
 
 /** A text, closed until it is opened; its own headings begin at `level`. */
 export function LegalText({ text, level }: { readonly text: Text; readonly level: number }) {

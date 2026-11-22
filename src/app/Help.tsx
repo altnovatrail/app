@@ -1,4 +1,4 @@
-// The adult's Help (R148 spec; R63): behind its button at the top right of the home screen, a
+// The adult's Help (R148 spec; R63, R79): behind its place at the end of the row of places, a
 // pop-over that says three things — the tutor is an AI and a program checks every answer, and what
 // to do when the AI read the work wrongly; the name is made up, so no real names go into the work —
 // and leads to three texts of the app itself: Privacy Policy and Terms of Use, each a sheet over the
@@ -12,7 +12,7 @@ import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { ACCESSIBILITY, type LegalPage, legalPage } from "../legal/LegalPages.tsx";
 import { ReadLegalSheet } from "../legal/LegalSheet.tsx";
 import { isPageText, type PageText } from "../legal/texts.ts";
-import { BELOW_BAR } from "./hang.ts";
+import { captionHidden, NavCaption } from "./NavCaption.tsx";
 import { PopOver } from "./PopOver.tsx";
 
 /** The pages Help leads to, in the mockup's order, each by the words of its name. */
@@ -31,9 +31,14 @@ export function AdultHelp() {
   if (chosen?.learner.ageCategory !== "adult") return null;
   const title = words.text("icon.help");
   return (
-    <span className="nt-help nt-glass">
-      {/* The button stands 2 inside its glass, whose bottom is the bar's. */}
-      <PopOver icon="help" label={title} popClassName="nt-pop-help" gap={BELOW_BAR + 2}>
+    <>
+      <PopOver
+        label={title}
+        className="nt-nav-item"
+        popClassName="nt-pop-help"
+        caption={<NavCaption icon="help" text={title} />}
+        tip={{ words: title, needed: captionHidden }}
+      >
         {(close) => (
           <>
             <h2>{title}</h2>
@@ -67,6 +72,6 @@ export function AdultHelp() {
       {sheet === undefined ? null : (
         <ReadLegalSheet id={sheet} onClose={() => setSheet(undefined)} onPage={chosen.openLegal} />
       )}
-    </span>
+    </>
   );
 }

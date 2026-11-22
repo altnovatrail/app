@@ -90,6 +90,26 @@ describe("the profile's menu", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 
+  it("beside the row of places holds the switch and Sign out, the section being Grown-ups'", async () => {
+    const learner = chosen();
+    render(
+      inLanguage(
+        <ApiProvider value={{} as Api}>
+          <LearnerProvider value={learner}>
+            <LearnerMenu short />
+          </LearnerProvider>
+        </ApiProvider>,
+      ),
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Sam, profile menu" }));
+    const menu = within(screen.getByRole("dialog", { name: "Profile menu" }));
+    expect(menu.getByRole("button", { name: "Switch learner" })).toBeVisible();
+    expect(menu.queryByRole("button", { name: "For grown-ups" })).toBeNull();
+    await userEvent.click(menu.getByRole("button", { name: "Sign out" }));
+    expect(learner.signOut).toHaveBeenCalledOnce();
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
   it("is in Russian on a Russian screen, and not there with no learner", async () => {
     render(menuOf(chosen(), "ru"));
     await userEvent.click(screen.getByRole("button", { name: "Sam, меню профиля" }));
@@ -183,24 +203,19 @@ describe("the learner's bar", () => {
     );
   }
 
-  it("is the pill and Help on My subjects, none on the skill map, the lesson, the task and a task from paper, the buttons on the others", () => {
-    renderBar("home");
-    expect(screen.getByRole("button", { name: "Sam, profile menu" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "Help" })).toBeVisible();
-    expect(screen.queryByRole("button", { name: "Switch learner" })).toBeNull();
-    cleanup();
-    // The skill map, the lesson and the task have the pill in their own top bar (R63, R64, R65),
-    // and a task from paper has a top bar of its own (R71).
-    for (const own of ["skill-map", "lesson", "task", "paper"]) {
+  it("is none on Home, Subjects, the skill map, the lesson, the task and a task from paper, the buttons on the others", () => {
+    // Home, Subjects and the skill map have the profile's menu in the frame's top bar (R79), the
+    // lesson and the task the pill in their own top bar (R63, R64, R65), and a task from paper a
+    // top bar of its own (R71).
+    for (const own of ["home", "subjects", "skill-map", "lesson", "task", "paper"]) {
       renderBar(own);
       expect(screen.queryByRole("banner")).toBeNull();
       cleanup();
     }
-    for (const shown of ["essays"]) {
-      renderBar(shown);
-      expect(screen.getByRole("button", { name: "Switch learner" })).toBeVisible();
-      expect(screen.queryByRole("button", { name: "Help" })).toBeNull();
-      cleanup();
-    }
+    // Any other screen, as one yet to come, keeps a way to switch (R63).
+    renderBar("adults");
+    expect(screen.getByRole("button", { name: "Switch learner" })).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Help" })).toBeNull();
+    cleanup();
   });
 });

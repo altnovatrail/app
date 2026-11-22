@@ -2,7 +2,8 @@
 // `legal-privacy`; R69): its heading, the chip of its version, the gist below its caption, the next
 // version in a note with the way to its page (R46), and at its foot the line that the English text
 // is in force, on a screen in another language (R27), and "Read the full text", which opens the
-// text's page (R31) — or, with no version in force, the list of the legal pages. It opens once its text is read, so nothing stands half drawn, and is a modal
+// text's page (R31) — or, with no version in force, the list of the legal pages. It opens at once,
+// the shapes of its chip and its gist standing while its text is read (R168 spec), and is a modal
 // <dialog>: the screen under it is inert, Escape, × and a tap outside close it, and the focus comes
 // back to what opened it. The way in opens it from its steps, the adult's Help from its pop-over; it
 // stands in the page's body, not in the screen, whose own colours, as the sky's, are not its.
@@ -12,13 +13,15 @@ import type { RequestState } from "../api/ApiContext.tsx";
 import { ReadFailure } from "../api/ReadFailure.tsx";
 import { IconButton } from "../app/IconButton.tsx";
 import { LEGAL, type Route } from "../app/router.ts";
+import { Sk } from "../app/Skeleton.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { legalPage, nextPage, useVersions } from "./LegalPages.tsx";
+import { LegalLoading } from "./LegalText.tsx";
 import { dayText, type PageText, type Versions } from "./texts.ts";
 
 export interface LegalSheetProps {
   readonly id: PageText;
-  /** The text's versions as their read stands; the sheet opens once it is over. */
+  /** The text's versions as their read stands. */
   readonly versions: RequestState<Versions> & { readonly retry: () => void };
   readonly onClose: () => void;
   /** Opens a page of the text — the whole of it, or its next version — in place of the screen. */
@@ -32,7 +35,6 @@ export function LegalSheet({ id, versions, onClose, onPage }: LegalSheetProps) {
   const hint = useId();
   const closed = useRef(onClose);
   closed.current = onClose;
-  const ready = versions.status !== "loading";
   // What opened the sheet, which the focus goes back to: the link pressed, or the button of the
   // pop-over it was opened from, which has the focus back once the pop-over is gone.
   const opener = useRef<Element | null>(null);
@@ -42,7 +44,7 @@ export function LegalSheet({ id, versions, onClose, onPage }: LegalSheetProps) {
 
   useLayoutEffect(() => {
     const shown = dialog.current;
-    if (!ready || shown === null) return;
+    if (shown === null) return;
     shown.showModal();
     // A tap outside is a press and a release both on the backdrop, as a pop-over's (R59).
     const beyond = (event: MouseEvent) => {
@@ -70,7 +72,7 @@ export function LegalSheet({ id, versions, onClose, onPage }: LegalSheetProps) {
       shown.removeEventListener("click", outside);
       shown.close();
     };
-  }, [ready]);
+  }, []);
   useEffect(
     () => () => {
       const back = opener.current;
@@ -79,19 +81,25 @@ export function LegalSheet({ id, versions, onClose, onPage }: LegalSheetProps) {
     [],
   );
 
-  if (!ready) return null;
   const title = words.text(`legal.${id}`);
-  let chip: string | undefined;
+  let chip: ReactNode = null;
   let shown: ReactNode;
-  if (versions.status === "failed") {
+  if (versions.status === "loading") {
+    chip = <Sk width="11rem" height="1.5rem" radius="999px" />;
+    shown = <LegalLoading body={false} />;
+  } else if (versions.status === "failed") {
     shown = <ReadFailure failure={versions.failure} onRetry={versions.retry} />;
   } else {
     const { current, next } = versions.value;
     if (current !== undefined) {
-      chip = words.text("legal.version", {
-        version: String(current.version),
-        date: dayText(language, current.inForceSince),
-      });
+      chip = (
+        <p className="nt-version-chip">
+          {words.text("legal.version", {
+            version: String(current.version),
+            date: dayText(language, current.inForceSince),
+          })}
+        </p>
+      );
     }
     shown = (
       <>
@@ -166,7 +174,7 @@ export function LegalSheet({ id, versions, onClose, onPage }: LegalSheetProps) {
         <div className="nt-sheet-head">
           <div className="nt-sheet-title">
             <h2>{title}</h2>
-            {chip === undefined ? null : <p className="nt-version-chip">{chip}</p>}
+            {chip}
           </div>
           <IconButton value="close" className="nt-sheet-close" onClick={onClose} />
         </div>

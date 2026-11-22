@@ -1,12 +1,13 @@
 // The cards of modules as the skill map and the section for adults list them (R32, R34 and R35):
 // each card named by CardHeading, with one button described by its title, in the order of the
 // screen's language, the mark "in order" coming when its graph has, and a retry when some names did
-// not come. My subjects keeps cards of its own: two lists, a button that moves its card between
+// not come. Home keeps cards of its own: two lists, a button that moves its card between
 // them, and the focus with it. The modules connected to a profile are read here for the screens
 // that list them.
 import { type ReactNode, useCallback, useId, useMemo } from "react";
 import { useRequest } from "../api/ApiContext.tsx";
 import type { Api } from "../api/client.ts";
+import { Loading, Sk } from "../app/Skeleton.tsx";
 import { collator } from "../i18n/intl.ts";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { usePackages } from "../packages/PackagesContext.tsx";
@@ -63,6 +64,23 @@ export function ModuleCardItem({
         )}
       </article>
     </li>
+  );
+}
+
+/** Two cards of modules while they are read, in the cards' own frame (R168 spec). */
+export function ModuleCardsLoading({ action = true }: { readonly action?: boolean }) {
+  return (
+    <Loading>
+      <ul className="nt-cards" aria-hidden="true">
+        {[0, 1].map((n) => (
+          <li key={n} className="nt-card nt-loading">
+            <Sk width="14rem" height="1.25rem" radius="0.375rem" />
+            <Sk width="9rem" height="0.875rem" radius="0.3125rem" />
+            {action ? <Sk width="9rem" height="var(--nt-target)" radius="999px" /> : null}
+          </li>
+        ))}
+      </ul>
+    </Loading>
   );
 }
 

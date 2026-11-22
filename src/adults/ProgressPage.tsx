@@ -30,8 +30,13 @@ import type { Language } from "../i18n/language.ts";
 import { usePackages } from "../packages/PackagesContext.tsx";
 import { LevelCorrection } from "../skills/Level.tsx";
 import { type ModuleMap, readModuleMap } from "../skills/map.ts";
-import { MapBarHeading, ModuleSkillMap, mapTitle } from "../skills/SkillMap.tsx";
-import { ModuleCardItem, ModuleCardList, useConnectedCards } from "../subjects/ModuleCards.tsx";
+import { MapBarHeading, MapLoading, ModuleSkillMap, mapTitle } from "../skills/SkillMap.tsx";
+import {
+  ModuleCardItem,
+  ModuleCardList,
+  ModuleCardsLoading,
+  useConnectedCards,
+} from "../subjects/ModuleCards.tsx";
 import { cardsOf, type ModuleCard } from "../subjects/modules.ts";
 import {
   choiceReasonKey,
@@ -357,7 +362,22 @@ function History({
     );
   }, [api, profileId, next, later.asking, all.length]);
 
-  if (first.status === "loading") return null;
+  if (first.status === "loading") {
+    return (
+      <>
+        <section aria-labelledby={traps}>
+          <h2 id={traps}>{words.text("progress.traps")}</h2>
+          <p>{words.text("progress.traps-hint")}</p>
+          <ModuleCardsLoading action={false} />
+        </section>
+        <section aria-labelledby={attempts}>
+          <h2 id={attempts}>{words.text("progress.attempts")}</h2>
+          <p>{words.text("progress.attempts-hint")}</p>
+          <ModuleCardsLoading action={false} />
+        </section>
+      </>
+    );
+  }
   if (first.status === "failed") {
     // The first page holds the traps and the attempts alike: what it came to stands under the
     // attempts' heading, so that it is not taken for the maps'.
@@ -429,7 +449,7 @@ export function ProgressPage({ profile }: { readonly profile: Profile }) {
   const maps = useId();
   const profileId = profile.profileId;
   const cards = useConnectedCards(profileId);
-  let shown = null;
+  let shown = <ModuleCardsLoading />;
   if (cards.status === "failed") {
     shown = <ReadFailure failure={cards.failure} onRetry={cards.retry} />;
   } else if (cards.status === "done") {
@@ -513,7 +533,11 @@ export function ProgressMap({
           </button>
         </div>
         {map.status === "failed" ? <ReadFailure failure={map.failure} onRetry={map.retry} /> : null}
-        {shown === undefined ? null : (
+        {shown === undefined ? (
+          map.status === "loading" ? (
+            <MapLoading />
+          ) : null
+        ) : (
           <>
             <LevelCorrection profileId={profileId} moduleId={moduleId} map={shown} onMap={onMap} />
             <ModuleSkillMap map={shown} view="adult" headingLevel="2" />

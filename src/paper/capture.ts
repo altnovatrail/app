@@ -2,6 +2,8 @@
 // picked, drawn upright on a canvas and encoded anew as a JPEG of at most 4 MiB — the metadata of
 // its file, its place and its time among them, stay behind —, and the crops of the
 // tasks picked cut from that same photo as PNGs. The photo and its crops stay in the tab's memory.
+// A kept page's thumbnail, for "Your pages", is made from its photo in memory too, and never kept:
+// the device's records go into the profile's export as they are (R77; R135 spec).
 import { cropRect, type Frame } from "./frame.ts";
 import { MAX_PHOTO, QUALITY, tries } from "./photo.ts";
 
@@ -97,6 +99,41 @@ export async function cropsOf(photo: Photo, frames: readonly Frame[]): Promise<r
       crops.push(await blobOf(canvas, "image/png"));
     }
     return crops;
+  } finally {
+    bitmap.close();
+  }
+}
+
+/**
+ * The box of a page's thumbnail in its list, in px: the mockup's 44 × 56 CSS px at three device px
+ * each, so that it is sharp on any screen.
+ */
+const THUMBNAIL = { width: 132, height: 168 } as const;
+
+/**
+ * The thumbnail of a page's photo, a small JPEG that covers the box at least, never larger than the
+ * photo: the list draws many, and a whole photo each would hold megabytes for a picture of 44 px.
+ * One the browser cannot read is a PhotoError.
+ */
+export async function thumbnailOf(bytes: Uint8Array): Promise<Blob> {
+  let bitmap: ImageBitmap;
+  try {
+    bitmap = await createImageBitmap(new Blob([bytes as BlobPart], { type: "image/jpeg" }));
+  } catch (reason) {
+    throw new PhotoError("the photo could not be read", { cause: reason });
+  }
+  try {
+    const k = Math.min(
+      1,
+      Math.max(THUMBNAIL.width / bitmap.width, THUMBNAIL.height / bitmap.height),
+    );
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(bitmap.width * k));
+    canvas.height = Math.max(1, Math.round(bitmap.height * k));
+    const context = canvas.getContext("2d");
+    if (context === null) throw new PhotoError("no canvas to draw on");
+    context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    return await blobOf(canvas, "image/jpeg", QUALITY);
   } finally {
     bitmap.close();
   }

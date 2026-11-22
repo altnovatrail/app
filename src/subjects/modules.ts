@@ -1,4 +1,4 @@
-// The cards of "My subjects" (R99 spec; ModuleService in the contract): each module by the title
+// The cards of Home's modules (R99 spec; ModuleService in the contract): each module by the title
 // and explanation language of the open view of its current version's manifest. A module with no
 // current version for the learner is named by the manifest the cache keeps of an earlier version,
 // or else by its ID, and shown unavailable; a manifest that cannot be had names the module by its
@@ -8,7 +8,7 @@
 // card back, and one that cannot be had marks nothing. No DOM.
 import type * as open from "@altnovatrail/spec/formatv0/open";
 import type { OpenViews } from "../packages/views.ts";
-import type { SkillCounts } from "./states.ts";
+import type { ChainPlace, SkillCounts } from "./states.ts";
 
 export interface ModuleCard {
   readonly moduleId: string;
@@ -24,6 +24,12 @@ export interface ModuleCard {
   readonly sequential?: true;
   /** How many of its skills have each state and mark, once its map has come (R62). */
   readonly skills?: SkillCounts;
+  /** The full ID of the skill its Continue works on, once its map has come. */
+  readonly skill?: string;
+  /** Its map is on its way: the card shows the shapes of its counts meanwhile (R168 spec). */
+  readonly counting?: true;
+  /** Where the learner stands in its chain of skills, once its map has come: a chain's alone (R06). */
+  readonly chain?: ChainPlace;
 }
 
 /** A module as the catalog or the list of connected modules gives it. */

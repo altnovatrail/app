@@ -1,18 +1,18 @@
-// The skill map, the learner's second way in beside My subjects (R34), in the language of the
-// learner's screens. `#/skill-map` lists the modules connected, each a card as My subjects names it
-// with the way to its map; `#/skill-map/<module>` is the map of a module's current version, the
-// learner's view of skill-map's element, by `GetSkillMap` and the open views of its graph and
-// manifest. Practise on the map asks `ChooseNext` with the skill chosen, and goes to what the
-// engine gives; the skill holds while the learner works, until they ask for something else —
-// `ChooseNext` without a skill, "What's next" in My subjects (R107 spec). Choosing closes the
-// attempt open outside a lesson for good: while one is open, a question says so first. Beside an
-// anchor skill whose holding is unknown, the modules of the catalog that teach it are offered with
-// Connect, `ConnectModule`, above the map, as the element shows no `teaching_modules`; once one is
-// connected, the map's state is read again in place. Above the map, "The level was set by an adult"
-// with its day, when an adult set the module's level (R157 spec; R56): every learner sees it. Each
-// screen of the map is the mockup's `map` (R148 spec; R63): a top bar — Back home, the heading in
-// its glass pill, the profile's pill at its other end — and below it a white frame of the whole
-// window, which scrolls inside, with the map in it.
+// The skill map, the learner's second way in beside Home (R34), in the language of the learner's
+// screens. `#/skill-map/<module>` is the map of a module's current version, the learner's view of
+// skill-map's element, by `GetSkillMap` and the open views of its graph and manifest. Practise on
+// the map asks `ChooseNext` with the skill chosen, and goes to what the engine gives; the skill
+// holds while the learner works, until they ask for something else — `ChooseNext` without a skill,
+// "What's next" on Home (R107 spec). Choosing closes the attempt open outside a lesson for good:
+// while one is open, a question says so first. Beside an anchor skill whose holding is unknown, the
+// modules of the catalog that teach it are offered with Connect, `ConnectModule`, above the map, as
+// the element shows no `teaching_modules`; once one is connected, the map's state is read again in
+// place. Above the map, "The level was set by an adult" with its day, when an adult set the
+// module's level (R157 spec; R56): every learner sees it. Each screen of the map is the mockup's
+// `map` (R148 spec; R79), in the frame of the row of places, a place of Subjects: "Subjects" back
+// above the heading, the module chosen beside it, which opens the modules connected to choose
+// another, and below them a white frame, which scrolls inside, with the map in it. `#/skill-map`
+// alone goes to Subjects in place of itself, whose cards lead to each map.
 import { Action } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
 import type { EngineChoice } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import { type ReactNode, useCallback, useEffect, useId, useRef, useState } from "react";
@@ -22,22 +22,31 @@ import { type Failure, parseFailure } from "../api/failure.ts";
 import { outcomeOf } from "../api/outcome.ts";
 import { ReadFailure } from "../api/ReadFailure.tsx";
 import { failureText, outcomeText } from "../api/words.ts";
-import { IconButton } from "../app/IconButton.tsx";
-import { LearnerMenu } from "../app/LearnerMenu.tsx";
-import { HOME, navigate, type Route, redirect, SKILL_MAP } from "../app/router.ts";
+import { BELOW_BAR } from "../app/hang.ts";
+import { Icon } from "../app/Icon.tsx";
+import { PopOver } from "../app/PopOver.tsx";
+import { navigate, type Route, redirect, SKILL_MAP, SUBJECTS } from "../app/router.ts";
 import { Screen } from "../app/Screen.tsx";
+import { Loading, Sk } from "../app/Skeleton.tsx";
+import { collator } from "../i18n/intl.ts";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { givenOf } from "../next/choice.ts";
 import { useEngine } from "../next/useEngine.ts";
 import { usePackages } from "../packages/PackagesContext.tsx";
 import type { Device } from "../storage/device.ts";
 import { CardHeading } from "../subjects/CardHeading.tsx";
-import { ModuleCardItem, ModuleCardList, useConnectedCards } from "../subjects/ModuleCards.tsx";
-import { cardsOf } from "../subjects/modules.ts";
+import {
+  ModuleCardItem,
+  ModuleCardList,
+  ModuleCardsLoading,
+  useConnectedCards,
+} from "../subjects/ModuleCards.tsx";
+import { ModuleTile } from "../subjects/ModuleTile.tsx";
+import { byTitle, cardsOf } from "../subjects/modules.ts";
 import { useAttempt } from "../task/AttemptContext.tsx";
 import { LevelSetBy } from "./Level.tsx";
 import { type ModuleMap, offeredModules, readModuleMap } from "./map.ts";
-import { MapBarHeading, ModuleSkillMap, mapTitle } from "./SkillMap.tsx";
+import { MapLoading, ModuleSkillMap, mapTitle } from "./SkillMap.tsx";
 
 /** The map of a module, by its ID. */
 export function moduleMapRoute(moduleId: string): Route {
@@ -47,73 +56,149 @@ export function moduleMapRoute(moduleId: string): Route {
 export interface MapScreenProps {
   /** The screen's title, and the frame's name. */
   readonly title: string;
-  /** The heading in the top bar's pill, in place of the title's plain text. */
-  readonly heading?: ReactNode;
+  /** The profile, whose modules connected the module beside the heading opens. */
+  readonly profileId?: string;
+  /** The module of the map, at the heading; none while its manifest has not come. */
+  readonly module?: {
+    readonly moduleId: string;
+    readonly title: string;
+    readonly language: string;
+  };
   readonly children?: ReactNode;
 }
 
 /**
- * A screen of the map: the top bar, whose Back goes home (R57) and whose other end is the profile's
- * pill, and the frame, named by the title, which the keyboard scrolls by the focus of what is in it:
- * the map's tiles and Practise, the cards' buttons.
+ * The module of the map beside the heading, its tile and its title, and behind it the modules
+ * connected, the one shown ticked: another's press opens its map.
  */
-export function MapScreen({ title, heading, children }: MapScreenProps) {
+function ModulePicker({
+  profileId,
+  module,
+}: {
+  readonly profileId: string;
+  readonly module: NonNullable<MapScreenProps["module"]>;
+}) {
+  const { language, words } = useLanguage();
+  const title = words.text("skillmap.modules");
+  return (
+    <PopOver
+      label={title}
+      buttonLabel={words.text("skillmap.module", { module: module.title })}
+      className="nt-module-pill"
+      popClassName="nt-pop-menu"
+      gap={BELOW_BAR}
+      caption={
+        <>
+          <ModuleTile moduleId={module.moduleId} title={module.title} className="nt-tile-pill" />
+          <span lang={module.language}>{module.title}</span>
+          <span className="nt-learner-chevron">
+            <Icon value="menu-open" />
+          </span>
+        </>
+      }
+    >
+      {(close) => (
+        <ModuleChoice
+          profileId={profileId}
+          current={module.moduleId}
+          title={title}
+          compare={collator(language).compare}
+          onChosen={close}
+        />
+      )}
+    </PopOver>
+  );
+}
+
+/** The modules connected, read when the pop-over opens, each a row of the menu. */
+function ModuleChoice({
+  profileId,
+  current,
+  title,
+  compare,
+  onChosen,
+}: {
+  readonly profileId: string;
+  readonly current: string;
+  readonly title: string;
+  readonly compare: (a: string, b: string) => number;
+  readonly onChosen: () => void;
+}) {
+  const cards = useConnectedCards(profileId);
+  return (
+    <>
+      <p className="nt-menu-caption">{title}</p>
+      {cards.status === "failed" ? (
+        <ReadFailure failure={cards.failure} onRetry={cards.retry} />
+      ) : null}
+      {cards.status === "loading" ? (
+        <Loading>
+          {[0, 1].map((n) => (
+            <div key={n} className="nt-menu-loading-row">
+              <Sk width="2rem" height="2rem" radius="0.625rem" />
+              <Sk width="8rem" height="0.875rem" radius="0.3125rem" />
+            </div>
+          ))}
+        </Loading>
+      ) : null}
+      {cards.status === "done"
+        ? byTitle(cards.value, compare)
+            .filter((card) => card.digest !== undefined)
+            .map((card) => (
+              <button
+                key={card.moduleId}
+                type="button"
+                className="nt-menu-row nt-module-row"
+                aria-pressed={card.moduleId === current}
+                onClick={() => {
+                  onChosen();
+                  if (card.moduleId !== current) navigate(moduleMapRoute(card.moduleId));
+                }}
+              >
+                <ModuleTile moduleId={card.moduleId} title={card.title} className="nt-tile-pill" />
+                <span lang={card.language}>{card.title}</span>
+                {card.moduleId === current ? (
+                  <span className="nt-menu-tick">
+                    <Icon value="ticked" />
+                  </span>
+                ) : null}
+              </button>
+            ))
+        : null}
+    </>
+  );
+}
+
+/**
+ * A screen of the map: "Subjects" back above the heading "Skill map", the module beside it, and the
+ * frame, named by the title, which the keyboard scrolls by the focus of what is in it: the map's
+ * tiles and Practise, the cards' buttons.
+ */
+export function MapScreen({ title, module, profileId, children }: MapScreenProps) {
+  const { words } = useLanguage();
   return (
     <Screen
       title={title}
-      heading={heading}
+      heading={words.text("skillmap.title")}
       layout="map"
-      bar={{
-        back: <IconButton value="back" onClick={() => navigate(HOME)} />,
-        end: <LearnerMenu />,
-      }}
+      above={
+        <button
+          type="button"
+          className="nt-link nt-icon-text nt-back-link"
+          onClick={() => navigate(SUBJECTS)}
+        >
+          <Icon value="back" />
+          {words.text("nav.subjects")}
+        </button>
+      }
+      {...(module === undefined || profileId === undefined
+        ? {}
+        : { beside: <ModulePicker profileId={profileId} module={module} /> })}
     >
       <section className="nt-map-frame" aria-label={title}>
         {children}
       </section>
     </Screen>
-  );
-}
-
-/** `#/skill-map`: the modules connected, each with the way to its map. */
-function MapList({ profileId }: { readonly profileId: string }) {
-  const { words } = useLanguage();
-  const cards = useConnectedCards(profileId);
-  let shown = null;
-  if (cards.status === "failed") {
-    shown = <ReadFailure failure={cards.failure} onRetry={cards.retry} />;
-  } else if (cards.status === "done") {
-    shown =
-      cards.value.length === 0 ? (
-        <p>{words.text("subjects.none")}</p>
-      ) : (
-        <ModuleCardList
-          cards={cards.value}
-          onRetry={cards.retry}
-          render={(card) => (
-            <ModuleCardItem
-              key={card.moduleId}
-              card={card}
-              {...(card.digest === undefined
-                ? {}
-                : {
-                    action: {
-                      text: words.text("skillmap.open"),
-                      onPress: () => navigate(moduleMapRoute(card.moduleId)),
-                    },
-                  })}
-            />
-          )}
-        />
-      );
-  }
-  return (
-    <MapScreen
-      title={words.text("skillmap.title")}
-      heading={<span className="nt-top-title">{words.text("skillmap.title")}</span>}
-    >
-      {shown}
-    </MapScreen>
   );
 }
 
@@ -176,7 +261,7 @@ function Offered({
     },
     [api, profileId, onConnected],
   );
-  let shown = null;
+  let shown = <ModuleCardsLoading />;
   if (cards.status === "failed") {
     shown = <ReadFailure failure={cards.failure} onRetry={cards.retry} />;
   } else if (cards.status === "done") {
@@ -329,14 +414,19 @@ function MapOfModule({
 
   const map = read.status === "done" ? read.map : undefined;
   const outcome = nothing === undefined ? undefined : outcomeOf(nothing.outcome);
+  const manifest = map?.manifest;
   return (
-    <MapScreen title={mapTitle(map, words)} heading={<MapBarHeading map={map} />}>
-      <div className="nt-buttons">
-        <button type="button" className="nt-link" onClick={() => navigate(SKILL_MAP)}>
-          {words.text("skillmap.all")}
-        </button>
-      </div>
+    <MapScreen
+      title={mapTitle(map, words)}
+      profileId={profileId}
+      {...(manifest === undefined
+        ? {}
+        : {
+            module: { moduleId, title: manifest.title, language: manifest.languages.explanation },
+          })}
+    >
       {read.status === "failed" ? <ReadFailure failure={read.failure} onRetry={retry} /> : null}
+      {read.status === "loading" ? <MapLoading /> : null}
       {read.status === "done" ? (
         <>
           <p>{words.text("skillmap.hint")}</p>
@@ -395,7 +485,7 @@ function MapOfModule({
   );
 }
 
-/** The screens of the skill map, by the route; a route of more parts goes to the list in place. */
+/** The map of a module, by the route; a route of no module or of more parts goes to Subjects in place. */
 export function SkillMapRoute({
   route,
   profileId,
@@ -406,12 +496,10 @@ export function SkillMapRoute({
   /** The device, whose database an attempt closed goes from; none in a screen's own test. */
   readonly device?: Device;
 }) {
-  const known = route.parts.length <= 1;
+  const moduleId = route.parts.length === 1 ? route.parts[0] : undefined;
   useEffect(() => {
-    if (!known) redirect(SKILL_MAP);
-  }, [known]);
-  if (!known) return null;
-  const moduleId = route.parts[0];
-  if (moduleId === undefined) return <MapList profileId={profileId} />;
+    if (moduleId === undefined) redirect(SUBJECTS);
+  }, [moduleId]);
+  if (moduleId === undefined) return null;
   return <MapOfModule key={moduleId} profileId={profileId} moduleId={moduleId} device={device} />;
 }

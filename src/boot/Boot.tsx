@@ -29,6 +29,7 @@ import type { Tokens } from "../api/tokens.ts";
 import { Waiting } from "../app/Waiting.tsx";
 import type { Deployment } from "../config/deployment.ts";
 import { type Loaded, loadDeployment } from "../config/load.ts";
+import { signedIn } from "../debug/gate.ts";
 import { LanguageProvider, type LanguageState } from "../i18n/LanguageContext.tsx";
 import { deviceLanguage, type Language, lookup } from "../i18n/language.ts";
 import { setDeviceLanguage } from "../i18n/page.ts";
@@ -320,6 +321,13 @@ export function Boot({
   useEffect(() => {
     service?.setLanguage(language);
   }, [service, language]);
+
+  // The debug right is the account's: another account signed in asks GetDebug again (R72).
+  useEffect(() => {
+    if (service === undefined) return;
+    signedIn(service.user());
+    return service.subscribe(() => signedIn(service.user()));
+  }, [service]);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: a new attempt asks for the file again.
   useEffect(() => {

@@ -53,7 +53,7 @@ export function Offline({
 
 /**
  * A screen's read did not answer: no connection, or the words of what it came to, and Try again —
- * with the way back to My subjects on a screen that is not the home itself.
+ * with the way back to Home on a screen that is not the home itself.
  */
 export function ReadFailed({
   failure,

@@ -13,6 +13,7 @@ import {
 } from "react";
 import { hang } from "./hang.ts";
 import { type Captionless, IconButton } from "./IconButton.tsx";
+import { useTooltip } from "./Tooltip.tsx";
 
 /** What takes the focus in a pop-over that opens: the first of these, or the pop-over itself. */
 const FOCUSABLE =
@@ -36,6 +37,14 @@ export interface PopOverProps {
    * pop-over is open, and its caption its name — Help.
    */
   readonly icon?: Captionless;
+  /**
+   * A tooltip of these words on the button where `needed` says its caption does not show: a place
+   * of the row of places, from 600 CSS px to 72em (R90 spec).
+   */
+  readonly tip?: {
+    readonly words: string;
+    readonly needed: (button: HTMLButtonElement) => boolean;
+  };
   /** The button's class, as `nt-secondary`. */
   readonly className?: string;
   /** The button, for a form that puts the focus on it. */
@@ -72,6 +81,7 @@ export function PopOver({
   caption,
   buttonLabel,
   icon,
+  tip,
   className,
   buttonRef,
   describedBy,
@@ -86,6 +96,18 @@ export function PopOver({
   const [open, setOpen] = useState(false);
   const own = useRef<HTMLButtonElement>(null);
   const button = buttonRef ?? own;
+  const tooltip = useTooltip<HTMLButtonElement>(tip?.words ?? "", {
+    open,
+    needed: (shown) => tip?.needed(shown) ?? false,
+  });
+  // The button the pop-over hangs from and gives the focus back to, and the one its tooltip names.
+  const setButton = useCallback(
+    (node: HTMLButtonElement | null) => {
+      button.current = node;
+      tooltip.host.current = node;
+    },
+    [button, tooltip.host],
+  );
   const dialog = useRef<HTMLDialogElement>(null);
   const content = useRef<HTMLDivElement>(null);
   const held = useRef(holds);
@@ -171,12 +193,25 @@ export function PopOver({
   } as const;
   return (
     <>
-      {icon === undefined ? (
+      {icon !== undefined ? (
+        <IconButton ref={button} value={icon} chosen={open} {...opens} />
+      ) : tip === undefined ? (
         <button ref={button} type="button" aria-label={buttonLabel} {...opens}>
           {caption ?? label}
         </button>
       ) : (
-        <IconButton ref={button} value={icon} chosen={open} {...opens} />
+        tooltip.wrap(
+          <button
+            ref={setButton}
+            type="button"
+            aria-label={buttonLabel}
+            onFocus={tooltip.onFocus}
+            onBlur={tooltip.onBlur}
+            {...opens}
+          >
+            {caption ?? label}
+          </button>,
+        )
       )}
       {open ? (
         <dialog

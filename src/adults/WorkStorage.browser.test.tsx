@@ -23,7 +23,7 @@ import {
 } from "@altnovatrail/contracts/novatrail/api/v1/work_pb.js";
 import { create } from "@bufbuild/protobuf";
 import { Code, ConnectError, type ConnectRouter, createRouterTransport } from "@connectrpc/connect";
-import { act, render, screen } from "@testing-library/react";
+import { act, render, screen, within } from "@testing-library/react";
 import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
@@ -35,6 +35,7 @@ import { addProfile } from "../storage/profile.ts";
 import { setAccount } from "../storage/registry.ts";
 import { memoryDevice } from "../test/device.ts";
 import { inLanguage } from "../test/language.tsx";
+import { expectLoaded, expectLoading, held } from "../test/loading.ts";
 import { WorkStorage } from "./WorkStorage.tsx";
 
 const OWNER = create(ProfileSchema, { profileId: "p1", owner: true, pseudonym: "Ёжик" });
@@ -57,7 +58,7 @@ function refused(cause: Cause, code = Code.FailedPrecondition): ConnectError {
 
 interface Routes {
   /** The texts in force at each reading; no LegalService at all when left out. */
-  readonly texts?: (reading: number) => LegalText[];
+  readonly texts?: (reading: number) => LegalText[] | Promise<LegalText[]>;
   /** The next versions of the texts. */
   readonly next?: LegalText[];
   /** The answer to SetWorkStorage: by default, the profile with the storage as asked. */
@@ -135,9 +136,9 @@ function renderSection(shown: Profile, routes: Routes = {}) {
           const { texts } = routes;
           if (texts !== undefined) {
             router.service(LegalService, {
-              getLegalTexts(request) {
+              async getLegalTexts(request) {
                 read.push(request.interfaceLanguage);
-                return { texts: texts(read.length), nextTexts: routes.next ?? [] };
+                return { texts: await texts(read.length), nextTexts: routes.next ?? [] };
               },
             });
           }
@@ -241,6 +242,27 @@ describe("the storage of works on the server", () => {
     const off = screen.getByRole("button", { name: "Stop keeping works on the server" });
     await vi.waitFor(() => expect(document.activeElement).toBe(off));
     expect(screen.queryByRole("checkbox")).toBeNull();
+  });
+
+  it("stands with the shape of the text while it is read, the consent's words as they are (R168 spec)", async () => {
+    const { given, give } = held();
+    renderSection(OWNER, {
+      texts: async () => {
+        await given;
+        return [consent(1)];
+      },
+    });
+    await userEvent.click(screen.getByRole("button", { name: "Keep works on the server" }));
+    const form = screen.getByRole("form", { name: "Consent to keeping works on the server" });
+    expect(within(form).getByRole("checkbox", { name: AGREE })).toBeTruthy();
+    expectLoading(form);
+    give();
+    await vi.waitFor(() =>
+      expect(form.querySelector("details summary")?.textContent).toBe(
+        "Keeping works on our server",
+      ),
+    );
+    expectLoaded(form);
   });
 
   it("shows the text's next version below it, with its day, and consents to the current one", async () => {

@@ -1,8 +1,8 @@
 // The tutor time on a profile's page in the section for adults, in the browser (the contract's
-// quota), with api on connect-es's router: below the progress, the share of the profile and of the
-// account by an adult's action, when the tutor time renews, the cap reached, no share while
-// platform AI is closed to the account, no section from an api with no GetQuota, and a share that
-// did not come, with its retry.
+// quota), with api on connect-es's router: below the progress, the shapes of its lines while it is
+// read, the share of the profile and of the account by an adult's action, when the tutor time
+// renews, the cap reached, no share while platform AI is closed to the account, no section from an
+// api with no GetQuota, and a share that did not come, with its retry.
 import {
   AccountService,
   type GetQuotaRequest,
@@ -22,6 +22,7 @@ import { dateTimeFormat, percentText } from "../i18n/intl.ts";
 import type { Language } from "../i18n/language.ts";
 import { memoryDevice } from "../test/device.ts";
 import { inLanguage } from "../test/language.tsx";
+import { expectLoaded, expectLoading, held } from "../test/loading.ts";
 import { ProfilePage } from "./ProfilePage.tsx";
 
 const OWNER = create(ProfileSchema, {
@@ -34,7 +35,7 @@ const OWNER = create(ProfileSchema, {
 type Share = MessageInitShape<typeof QuotaShareSchema>;
 
 /** The profile's page, api giving each share by `answer`; with none, api has no GetQuota. */
-function renderPage(answer?: (asked: number) => Share, language: Language = "en") {
+function renderPage(answer?: (asked: number) => Share | Promise<Share>, language: Language = "en") {
   const asked: GetQuotaRequest[] = [];
   const stale = vi.fn();
   const api = createApi({
@@ -47,9 +48,9 @@ function renderPage(answer?: (asked: number) => Share, language: Language = "en"
         (router: ConnectRouter) => {
           if (answer !== undefined) {
             router.service(AccountService, {
-              getQuota(request) {
+              async getQuota(request) {
                 asked.push(request);
-                return { share: answer(asked.length) };
+                return { share: await answer(asked.length) };
               },
             });
           }
@@ -73,6 +74,13 @@ function renderPage(answer?: (asked: number) => Share, language: Language = "en"
   return { asked, stale };
 }
 
+/** The section once its share is read: no shape of a line left in it. */
+async function settled(name: string) {
+  const region = await screen.findByRole("region", { name });
+  await vi.waitFor(() => expect(region.querySelector("[aria-busy]")).toBeNull());
+  return region;
+}
+
 /** The lines of a section below its heading. */
 const linesOf = (region: HTMLElement) =>
   [...region.querySelectorAll("p")].map((line) => line.textContent);
@@ -90,7 +98,7 @@ describe("the tutor time of a profile", () => {
       accountPercent: 65,
       nextFamilyDay: timestampFromDate(MIDNIGHT),
     }));
-    const region = await screen.findByRole("region", { name: "Tutor time" });
+    const region = await settled("Tutor time");
     expect(linesOf(region)).toEqual([
       "How much of today's tutor time — the platform's AI, which checks work and words the tutor's replies — this profile and the whole account have used",
       "This profile: 40% used",
@@ -105,6 +113,19 @@ describe("the tutor time of a profile", () => {
     expect(asked).toEqual([expect.objectContaining({ profileId: "p1", action: Action.ADULT })]);
   });
 
+  it("stands with the shapes of its lines while the share is read, busy, and says Loading (R168 spec)", async () => {
+    const { given, give } = held();
+    renderPage(async () => {
+      await given;
+      return { profilePercent: 40, accountPercent: 65, nextFamilyDay: timestampFromDate(MIDNIGHT) };
+    });
+    const region = await screen.findByRole("region", { name: "Tutor time" });
+    expectLoading(region, 2);
+    give();
+    expect(await within(region).findByText("This profile: 40% used")).toBeTruthy();
+    expectLoaded(region);
+  });
+
   it("says, once a cap is reached, that platform AI checks no work of the profile until then", async () => {
     renderPage(
       () => ({
@@ -115,7 +136,7 @@ describe("the tutor time of a profile", () => {
       }),
       "ru",
     );
-    const region = await screen.findByRole("region", { name: "Время наставника" });
+    const region = await settled("Время наставника");
     expect(linesOf(region).slice(1)).toEqual([
       `Этот профиль: потрачено ${percentText("ru", 20)}`,
       `Весь аккаунт: потрачено ${percentText("ru", 100)}`,
@@ -126,7 +147,7 @@ describe("the tutor time of a profile", () => {
 
   it("says in one line that platform AI is closed to an account whose tariff has no caps", async () => {
     renderPage(() => ({ nextFamilyDay: timestampFromDate(MIDNIGHT) }));
-    const region = await screen.findByRole("region", { name: "Tutor time" });
+    const region = await settled("Tutor time");
     expect(linesOf(region).slice(1)).toEqual([
       "The platform's AI has no tutor time on this account now: it is closed to it",
     ]);

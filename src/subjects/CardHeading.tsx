@@ -1,7 +1,7 @@
 // What a module's card says of it (R92 spec): its title as the card's heading, in its own
 // explanation language; a line that names that language when it is not the screen's; whether the
 // module is available — a module with no current version for the learner is not —; and the mark "in
-// order" of a module whose skill graph is a chain (R06). My subjects and the skill map name their
+// order" of a module whose skill graph is a chain (R06). Home and the skill map name their
 // modules so, and the section for adults its profile's modules and its progress (R32, R34 and R35).
 import { languageName } from "../i18n/intl.ts";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
@@ -9,12 +9,12 @@ import type { Language } from "../i18n/language.ts";
 import type { ModuleCard } from "./modules.ts";
 
 /** Whether a language tag is the screen's language, by its primary subtag. */
-function isScreenLanguage(tag: string, language: Language): boolean {
+export function isScreenLanguage(tag: string, language: Language): boolean {
   return tag.split("-")[0]?.toLowerCase() === language;
 }
 
 /** A language's name in the screen's language; a tag Intl cannot read stands for itself. */
-function nameOf(tag: string, language: Language): string {
+export function nameOf(tag: string, language: Language): string {
   try {
     return languageName(language, tag);
   } catch {

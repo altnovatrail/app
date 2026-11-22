@@ -1,8 +1,10 @@
-// The profile's menu (R148 spec; R63): the pill of the learner chosen — the avatar, the pseudonym
-// and a chevron — at the top of the home screen and of the skill map, and behind it, as a pop-over,
-// who is learning now, the hint mode (HintModeChoice), "Switch learner", "For grown-ups" and "Sign
-// out", the buttons of the profile's header. The pill stands on each of those screens, so that an adult who hands the tablet
-// over finds the switch on it.
+// The profile's menu (R148 spec; R63, R79): the pill of the learner chosen — the avatar, the
+// pseudonym and a chevron — at the top right of Home, Subjects and the skill map, the avatar alone
+// on a phone, and behind it, as a pop-over, who is learning now, "Switch learner" and "Sign out":
+// the hint mode and This device are For grown-ups' there (Shell.tsx). In a lesson and on the task
+// screen the menu holds the hint mode and "For grown-ups" too, as their bars have no row of places.
+// The pill stands on each of those screens, so that an adult who hands the tablet over finds the
+// switch on it.
 import { useLearner } from "../account/AccountGate.tsx";
 import { Avatar } from "../account/Avatar.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
@@ -13,8 +15,8 @@ import type { IconValue } from "./icons.ts";
 import { PopOver } from "./PopOver.tsx";
 import { ADULTS, navigate } from "./router.ts";
 
-/** A row of the menu: its icon and its words, a target of the menu's whole width. */
-function Row({
+/** A row of a menu: its icon and its words, a target of the menu's whole width. */
+export function MenuRow({
   icon,
   text,
   onPress,
@@ -33,8 +35,11 @@ function Row({
   );
 }
 
-/** The pill of the learner chosen and its menu; none with no learner, as in a screen's own test. */
-export function LearnerMenu() {
+/**
+ * The pill of the learner chosen and its menu, `short` beside the row of places; none with no
+ * learner, as in a screen's own test.
+ */
+export function LearnerMenu({ short = false }: { readonly short?: boolean }) {
   const chosen = useLearner();
   const { words } = useLanguage();
   if (chosen === undefined) return null;
@@ -62,16 +67,29 @@ export function LearnerMenu() {
           <p className="nt-menu-caption">{words.text("learner.now")}</p>
           <p className="nt-menu-current">
             <Avatar code={avatar} size="menu" />
-            <span className="nt-learner-name">{pseudonym}</span>
+            <span className="nt-menu-who">
+              <span className="nt-learner-name">{pseudonym}</span>
+              {learner.owner ? (
+                <span className="nt-menu-whose">{words.text("learner.yours")}</span>
+              ) : null}
+            </span>
             <span className="nt-menu-tick">
               <Icon value="ticked" />
             </span>
           </p>
           <hr />
-          <HintModeChoice learner={learner} onSaved={chosen.onSaved} onFailed={chosen.onFailed} />
-          <hr />
+          {short ? null : (
+            <>
+              <HintModeChoice
+                learner={learner}
+                onSaved={chosen.onSaved}
+                onFailed={chosen.onFailed}
+              />
+              <hr />
+            </>
+          )}
           {/* Each closes the menu first: what it opens takes the screen's place. */}
-          <Row
+          <MenuRow
             icon="switch-learner"
             text={words.text("learner.switch")}
             onPress={() => {
@@ -79,15 +97,17 @@ export function LearnerMenu() {
               chosen.switchLearner();
             }}
           />
-          <Row
-            icon="grown"
-            text={words.text("adults.title")}
-            onPress={() => {
-              close();
-              navigate(ADULTS);
-            }}
-          />
-          <Row
+          {short ? null : (
+            <MenuRow
+              icon="grown"
+              text={words.text("adults.title")}
+              onPress={() => {
+                close();
+                navigate(ADULTS);
+              }}
+            />
+          )}
+          <MenuRow
             icon="sign-out"
             text={words.text("signout.button")}
             onPress={() => {

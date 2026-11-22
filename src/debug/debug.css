@@ -1,10 +1,12 @@
 /*
- * The debug mode of a local run (R72), as the mockup's `ph-dbgbtn` and `ph-dbg`: the button, 56
- * round, glass round a graphite disc of 44 with an orange bug, at the tutor's place — 16 from the
- * window's right in the middle of its height —, or 72 above it on the page and the screen of
- * solving, and none while the tutor's panel is open; on a phone 172 above the foot, or 240. The window, glass of 0.94, 400 wide at the right from 74 below the top
- * to 16 above the foot, radius 28; on a phone a sheet of the whole width from 300 below the top, or
- * by its grabber from 70. Only a build of the development server loads this file.
+ * The debug mode (R72), as the mockup's `ph-dbgbtn` and `ph-dbg`: the button, 56 round, glass
+ * round a graphite disc of 44 with an orange bug, at the tutor's place — 16 from the window's right
+ * in the middle of its height —, or 72 above it on the page and the screen of solving, and none
+ * while the tutor's panel is open; on a phone 172 above the foot, or 240. The window is the tutor's
+ * panel's size, over the canvas as it: glass of 0.94, 400 wide at the right from 74 below the top
+ * to 16 above the foot, radius 28; on a phone a sheet of the whole width at half the window's
+ * height, or by its grabber from 70. The window's chunk alone holds this file, loaded once
+ * `GetDebug` answered.
  */
 .nt-debug-call {
   position: fixed;
@@ -72,7 +74,7 @@ button.nt-debug-button {
   .nt-debug-panel {
     inset: auto 0 0;
     inline-size: auto;
-    block-size: calc(100dvh - 18.75rem);
+    block-size: 51dvh;
     border-radius: var(--nt-radius-panel) var(--nt-radius-panel) 0 0;
     background: rgba(255, 255, 255, 0.97);
     box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.14);

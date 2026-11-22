@@ -29,7 +29,6 @@ import { Icon } from "../app/Icon.tsx";
 import { ProfilePill } from "../app/LearnerMenu.tsx";
 import { HOME, navigate, redirect } from "../app/router.ts";
 import { Screen } from "../app/Screen.tsx";
-import { Waiting } from "../app/Waiting.tsx";
 import { ReadFailed } from "../boot/Screens.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { NextStep } from "../next/NextStep.tsx";
@@ -42,7 +41,7 @@ import { Task, type TaskInLesson } from "../task/Task.tsx";
 import { Example } from "./Example.tsx";
 import { Explanation } from "./Explanation.tsx";
 import type { LessonOpen, RunRef } from "./LessonContext.tsx";
-import { ContinueButton, LessonScreen } from "./LessonScreen.tsx";
+import { ContinueButton, LessonLoading, LessonScreen } from "./LessonScreen.tsx";
 import {
   type Course,
   continueFrom,
@@ -207,7 +206,7 @@ export function Lesson(props: LessonProps) {
     }
   }, [api, holder, views, device, profileId, what, attempt]);
 
-  if (read.status === "loading") return <Waiting ground="page" />;
+  if (read.status === "loading") return <LessonLoading onLeave={() => navigate(HOME)} />;
   if (read.status === "failed") {
     return (
       <>
@@ -233,7 +232,7 @@ function nextStep(profileId: string, device: Device, choice: EngineChoice | unde
  * The end of a run, a card in the window's middle as the mockup's `lesson-end` (R64): the module's
  * tile and title if known, the lesson's title if known, how it ended — "Lesson complete" after a
  * star —, the way to what the engine chose — the choice the end gave, or else a press that asks for
- * it (R24) —, and the way to My subjects. No score, grade or comparison. The profile's pill stands
+ * it (R24) —, and the way to Home. No score, grade or comparison. The profile's pill stands
  * at the top, as on every screen of the profile (R63).
  */
 export function LessonEnd({

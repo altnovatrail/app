@@ -73,6 +73,7 @@ import { addProfile } from "../storage/profile.ts";
 import { setAccount } from "../storage/registry.ts";
 import { memoryDevice } from "../test/device.ts";
 import { inLanguage } from "../test/language.tsx";
+import { expectLoaded, expectLoading, held } from "../test/loading.ts";
 import { fakeSpeech, voice } from "../test/speech.ts";
 import { SpeechProvider, VoicingProvider } from "../voice/VoicingContext.tsx";
 import { forgetPuts } from "../works/stored.ts";
@@ -137,6 +138,8 @@ function refused(code: Code, cause: Cause, closeReason?: CloseReason): ConnectEr
 interface Setup {
   /** Throws in place of the open attempt. */
   open?: () => void;
+  /** What GetOpenAttempt answers only once it is given. */
+  held?: Promise<void>;
   /** What api keeps of the attempt: the verdicts of its last submission and the like. */
   items?: { item: number; slot: number; verdict: string; value: string }[];
   wrongAnswers?: number;
@@ -296,8 +299,9 @@ async function renderTask(setup: Setup = {}) {
       },
     });
     router.service(LearningService, {
-      getOpenAttempt(request) {
+      async getOpenAttempt(request) {
         asked.push(`open ${request.attemptId}`);
+        await setup.held;
         setup.open?.();
         if (setup.noStart === true) return {};
         return {
@@ -585,6 +589,17 @@ afterEach(() => {
 });
 
 describe("the task screen", () => {
+  it("stands with its bar and the shapes of its statement and row while the attempt is read (R168 spec)", async () => {
+    const { given, give } = held();
+    await renderTask({ held: given });
+    expect(screen.getByRole("heading", { level: 1, name: "Task" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Back to Home" })).toBeTruthy();
+    expectLoading(document, 4);
+    give();
+    await screen.findByRole("heading", { name: "Understand the task", level: 2 });
+    expectLoaded(document);
+  });
+
   it("leads by steps: the chips open Step done, the plan asks api for the technique once", async () => {
     const { asked } = await renderTask();
     await screen.findByRole("heading", { name: "Understand the task", level: 2 });
@@ -918,7 +933,7 @@ describe("the task screen", () => {
       },
     });
     await screen.findByRole("heading", { level: 1, name: "No connection" });
-    expect(screen.getByRole("button", { name: "Back to My subjects" })).toHaveClass("nt-secondary");
+    expect(screen.getByRole("button", { name: "Back to Home" })).toHaveClass("nt-secondary");
     down = false;
     await userEvent.click(screen.getByRole("button", { name: "Try again" }));
     await screen.findByRole("heading", { name: "Understand the task", level: 2 });
@@ -934,16 +949,16 @@ describe("the task screen", () => {
     await screen.findByRole("heading", { level: 1, name: "A grown-up's consent is needed first" });
     expect(screen.getByRole("button", { name: "Try again" })).toBeVisible();
     window.location.hash = "#/task";
-    await userEvent.click(screen.getByRole("button", { name: "Back to My subjects" }));
+    await userEvent.click(screen.getByRole("button", { name: "Back to Home" }));
     expect(window.location.hash).toBe("#/home");
     window.location.hash = "";
   });
 
-  it("goes back to My subjects during the attempt, from above the task (R57)", async () => {
+  it("goes back to Home during the attempt, from above the task (R57)", async () => {
     window.location.hash = "#/task";
     await renderTask({ mode: Mode.SELF });
     await screen.findByRole("button", { name: "Choose an answer" });
-    const home = screen.getByRole("button", { name: "Back to My subjects" });
+    const home = screen.getByRole("button", { name: "Back to Home" });
     expect(screen.queryByRole("complementary", { name: "Tutor" })).toBeNull();
     await userEvent.click(home);
     expect(window.location.hash).toBe("#/home");
@@ -1010,7 +1025,7 @@ describe("the task screen", () => {
     ]);
   });
 
-  it("goes back to My subjects from the result, and to the steps from on my own", async () => {
+  it("goes back to Home from the result, and to the steps from on my own", async () => {
     window.location.hash = "#/task";
     await renderTask();
     await screen.findByRole("heading", { name: "Understand the task", level: 2 });
@@ -1022,8 +1037,8 @@ describe("the task screen", () => {
     await userEvent.click(check());
     await panel().findByRole("button", { name: "Try it again" });
     // Once the attempt is over, the way back is still the bar's, and the result has none (R65).
-    expect(screen.getAllByRole("button", { name: "Back to My subjects" })).toHaveLength(1);
-    await userEvent.click(screen.getByRole("button", { name: "Back to My subjects" }));
+    expect(screen.getAllByRole("button", { name: "Back to Home" })).toHaveLength(1);
+    await userEvent.click(screen.getByRole("button", { name: "Back to Home" }));
     expect(window.location.hash).toBe("#/home");
     window.location.hash = "";
   });
@@ -1360,10 +1375,7 @@ describe("the task screen with handwriting", () => {
     await renderTask({ task: SHEET_TASK, mode: Mode.SELF });
     await screen.findByText("How many rungs?");
     expect(check()).toHaveAttribute("aria-disabled", "true");
-    // The reminder not to write names describes Check too: the sheet goes to AI whole (R127 spec).
-    expect(check()).toHaveAccessibleDescription(
-      "Don't write your name or the real names of people you know Write an answer on the sheet",
-    );
+    expect(check()).toHaveAccessibleDescription("Write an answer on the sheet");
   });
 
   it("sends a check again with the same key and work, and a new stroke with a new key", async () => {
@@ -1502,10 +1514,10 @@ describe("the task screen with handwriting", () => {
     await vi.waitFor(() => expect(check()).toHaveAttribute("aria-disabled", "false"));
     await userEvent.click(check());
     await vi.waitFor(() => expect(rungs.length).toBe(1));
-    // The conversation holds the line that the tutor is an AI and the verdict's, and nothing more.
+    // The conversation holds the verdict's line, and nothing more.
     expect(
       panel().getByRole("region", { name: "Conversation" }).querySelectorAll("p"),
-    ).toHaveLength(1);
+    ).toHaveLength(0);
     refusal = refused(Code.FailedPrecondition, Cause.NO_CONSENT);
     await userEvent.click(check());
     expect(await screen.findByText("A grown-up's consent is needed first")).toBeVisible();
@@ -2237,17 +2249,16 @@ describe("Report a problem with the tutor's words (R33)", () => {
   const day = dateTimeFormat("en", { dateStyle: "long" }).format(REVIEW_BY);
   const thanks = `Thank you: the report is sent. It will be reviewed by ${day}`;
 
-  it("says the tutor is an AI, and offers a learner who is not an adult no report", async () => {
+  it("offers a learner who is not an adult no report", async () => {
     await renderTask({ mode: Mode.SELF, tutor: true });
     await notYet();
-    expect(panel().getByText("The tutor is an AI, not a person")).toBeVisible();
+    expect(panel().queryByText("The tutor is an AI, not a person")).toBeNull();
     expect(screen.queryByRole("button", { name: "Report a problem" })).toBeNull();
   });
 
   it("reports the words of a rung with its kind, its text and a key, and says by when it is reviewed", async () => {
     const { reportRequests } = await renderTask({ mode: Mode.SELF, tutor: true, adult: true });
     await notYet();
-    expect(panel().getByText("The tutor is an AI, not a person")).toBeVisible();
     await userEvent.click(panel().getByRole("button", { name: "Report a problem" }));
     // The form opens in a pop-over, its first kind taking the focus, the words quoted above it.
     expect(document.activeElement).toBe(form().getAllByRole("radio")[0]);
@@ -2383,7 +2394,6 @@ describe("Report a problem with the tutor's words (R33)", () => {
     await choose("5", "Yes");
     await userEvent.click(check());
     await screen.findByText("Well done: five fruits.");
-    expect(panel().getByText("The tutor is an AI, not a person")).toBeVisible();
     await userEvent.click(panel().getByRole("button", { name: "Report a problem" }));
     await userEvent.click(
       form().getByRole("radio", { name: "Asks about something personal, or talks of it" }),
@@ -2460,7 +2470,7 @@ describe("Report a problem with the tutor's words (R33)", () => {
       kept: { rung: 1, words: "" },
       wrongAnswers: 1,
     });
-    expect(await screen.findByText("The tutor is an AI, not a person")).toBeVisible();
+    expect(await screen.findByRole("complementary", { name: "Tutor" })).toBeVisible();
     expect(screen.queryByRole("button", { name: "Report a problem" })).toBeNull();
   });
 

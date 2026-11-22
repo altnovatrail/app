@@ -38,14 +38,14 @@ export const CACHE_SCHEMA: Schema = {
 /**
  * `attempts` by attempt ID; `history` and `submissions` by `[attemptId, n]`, n from 0;
  * `correctWork` by attempt ID; `lessons` by lesson ID; since version 2, `ownKey` holds the owner's
- * own key under `"key"`, only while the adult keeps it on this device (R47); since version 3,
- * `essays` by attempt ID, the essays kept until an adult erases them (R53); since version 4, the
+ * own key under `"key"`, only while the adult keeps it on this device (R47); since version 4, the
  * profile's history of pages from paper, kept until the profile is erased (R77): `pages` by page ID,
  * a page's frames, `photos` by page ID, its photo, and `paperTasks` by attempt ID, each task begun
- * on a page with its crop and its work.
+ * on a page with its crop and its work. Version 5 takes off the store `essays` of versions 3 and 4,
+ * with every essay in it: an essay is an attempt's work like any other (R53).
  */
 export const PROFILE_SCHEMA: Schema = {
-  version: 4,
+  version: 5,
   stores: {
     attempts: { digest: "digest", changedAt: "changedAt" },
     history: {},
@@ -53,7 +53,6 @@ export const PROFILE_SCHEMA: Schema = {
     correctWork: {},
     lessons: { digest: "digest", changedAt: "changedAt" },
     ownKey: {},
-    essays: { digest: "digest" },
     pages: { takenAt: "takenAt" },
     photos: {},
     paperTasks: { page: "pageId" },

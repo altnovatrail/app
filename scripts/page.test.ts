@@ -294,20 +294,14 @@ describe.each(ENGINES.map((type) => [type.name(), type] as const))(
       expect(await page.evaluate(`document.querySelector("novatrail-canvas").history.length`)).toBe(
         1,
       );
-      // The page's zoom of the sheet, by the element's own button, lays the sheet out by a custom
-      // property it sets through the CSSOM, which style-src leaves be: on an element narrower than
-      // the sheet's cap, twice as wide, and scrolled across in a region of its own. The zoom has
-      // four steps above its fit.
-      const larger = sheet.getByRole("button", { name: "Zoom in" });
-      for (let i = 0; i < 8 && (await larger.getAttribute("aria-disabled")) !== "true"; i++) {
-        await larger.click();
-      }
-      expect(await larger.getAttribute("aria-disabled")).toBe("true");
+      // The sheet goes past the page, laid out by custom properties the element sets through the
+      // CSSOM, which style-src leaves be: wider than the element, and scrolled across in a region
+      // of its own (R73 canvas).
       const across = sheet.getByRole("region", { name: "Sheet" });
       await across.waitFor();
       await expect
         .poll(() => across.evaluate((element) => element.scrollWidth / element.clientWidth))
-        .toBeCloseTo(2, 1);
+        .toBeGreaterThan(1);
       expect(violations).toEqual([]);
       await page.context().close();
     }, 60_000);
@@ -334,10 +328,11 @@ describe.each(ENGINES.map((type) => [type.name(), type] as const))(
       const box = await ink.boundingBox();
       if (box === null) throw new Error("the sheet has no box");
       // "180 : 30 = 6, 6 + 1 = 7": twenty strokes of a digit's size, at the pace of a hand — a move
-      // every 8 ms, about 40 px a stroke —, two lines of it.
+      // every 8 ms, about 40 px a stroke —, two lines of it, right of the element's bar of buttons,
+      // which stands over the sheet's left edge, 16 to 68 px: a stroke begun on it draws nothing.
       const top = Math.max(box.y, 0) + 200;
       for (let n = 0; n < 20; n++) {
-        const x = box.x + 40 + (n % 10) * 60;
+        const x = box.x + 120 + (n % 10) * 60;
         const y = top + Math.floor(n / 10) * 80;
         await page.mouse.move(x, y);
         await page.mouse.down();

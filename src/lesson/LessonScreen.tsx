@@ -15,6 +15,7 @@ import { Icon } from "../app/Icon.tsx";
 import { IconButton } from "../app/IconButton.tsx";
 import { LearnerMenu } from "../app/LearnerMenu.tsx";
 import { Screen } from "../app/Screen.tsx";
+import { Loading, Sk } from "../app/Skeleton.tsx";
 import { TopEndProvider } from "../app/TopEnd.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import type { Course } from "./place.ts";
@@ -134,6 +135,39 @@ export function LessonScreen(props: LessonScreenProps) {
             )}
           </div>
         ) : null}
+      </div>
+    </Screen>
+  );
+}
+
+/**
+ * The lesson while its run is read (R168 spec): the bar as it will stand, the shapes of the title
+ * and of the segment's line in its pill, and of an explanation in its card.
+ */
+export function LessonLoading({ onLeave }: { readonly onLeave: () => void }) {
+  const { words } = useLanguage();
+  return (
+    <Screen
+      title={words.text("lesson.title")}
+      heading={<Sk width="10rem" height="0.875rem" radius="0.3125rem" />}
+      layout="lesson"
+      bar={{
+        back: <IconButton value="back" caption="lesson.leave" onClick={onLeave} />,
+        under: <Sk width="6.5rem" height="0.75rem" radius="0.25rem" />,
+        end: (
+          <div className="nt-top-end">
+            <LearnerMenu />
+          </div>
+        ),
+      }}
+    >
+      <div className="nt-segment-body" data-kind="explanation">
+        <Loading>
+          <Sk width="55%" height="1.75rem" radius="0.5rem" />
+          {["100%", "96%", "99%", "88%", "62%"].map((width) => (
+            <Sk key={width} width={width} height="0.9375rem" radius="0.3125rem" />
+          ))}
+        </Loading>
       </div>
     </Screen>
   );

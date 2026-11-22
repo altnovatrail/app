@@ -5,7 +5,6 @@ import { formatHash, parseHash, type Route } from "./hash.ts";
 
 export {
   ADULTS,
-  ESSAYS,
   HOME,
   LEGAL,
   LESSON,
@@ -13,6 +12,7 @@ export {
   PAPER,
   type Route,
   SKILL_MAP,
+  SUBJECTS,
   TASK,
   TUTOR,
 } from "./hash.ts";

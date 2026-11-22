@@ -1,5 +1,5 @@
-// The skill map in the browser (R34): the element of skill-map in JSX, the list of the maps of the
-// modules connected, a module's map with the learner's view in the learner's language, Practise to
+// The skill map in the browser (R34): the element of skill-map in JSX, a route of no module going
+// to Subjects, a module's map with the learner's view in the learner's language, Practise to
 // ChooseNext with the skill and to what the engine gives, the question while an attempt is open,
 // nothing to give, the modules that teach an anchor skill whose holding is unknown with Connect, a
 // module with no skill graph and a refusal — with api on connect-es's router and the open views on
@@ -37,7 +37,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 import { ApiProvider } from "../api/ApiContext.tsx";
 import { createApi } from "../api/client.ts";
-import { SKILL_MAP } from "../app/router.ts";
+import { SKILL_MAP, SUBJECTS } from "../app/router.ts";
 import { dateTimeFormat } from "../i18n/intl.ts";
 import { LessonProvider } from "../lesson/LessonContext.tsx";
 import { PackageChecks } from "../packages/checks.ts";
@@ -49,6 +49,7 @@ import { setAccount } from "../storage/registry.ts";
 import { AttemptProvider, useAttempt } from "../task/AttemptContext.tsx";
 import { memoryDevice } from "../test/device.ts";
 import { inLanguage } from "../test/language.tsx";
+import { expectLoaded, expectLoading, held } from "../test/loading.ts";
 import { moduleMapRoute, SkillMapRoute } from "./SkillMapScreen.tsx";
 
 const SHARES = "example/fair-shares";
@@ -116,6 +117,12 @@ interface Setup {
   /** The attempt the learner has open outside a lesson. */
   readonly attempt?: string;
   readonly connect?: () => void;
+  /** What GetSkillMap, ListConnectedModules and ListCatalog answer only once each is given. */
+  readonly held?: {
+    readonly map?: Promise<void>;
+    readonly list?: Promise<void>;
+    readonly catalog?: Promise<void>;
+  };
 }
 
 /** The attempt open, as the task screen would take it. */
@@ -149,16 +156,21 @@ async function renderMap(
   const answers = setup.maps ?? [() => ({ packageDigest: D1 })];
   const routes = (router: ConnectRouter) => {
     router.service(ProgressService, {
-      getSkillMap(request) {
+      async getSkillMap(request) {
         maps.push(request);
+        await setup.held?.map;
         const answer = answers[Math.min(maps.length, answers.length) - 1];
         return answer?.() ?? {};
       },
     });
     router.service(ModuleService, {
-      listConnectedModules: () => ({ modules: setup.connected ?? [] }),
-      listCatalog() {
+      listConnectedModules: async () => {
+        await setup.held?.list;
+        return { modules: setup.connected ?? [] };
+      },
+      async listCatalog() {
         asked.push("catalog");
+        await setup.held?.catalog;
         return { modules: [{ moduleId: TABLES, packageDigest: D2 }] };
       },
       connectModule(request) {
@@ -295,51 +307,31 @@ describe("<novatrail-skill-map> in JSX", () => {
   });
 });
 
-describe("the list of maps", () => {
-  it("offers the map of each module connected with a current version, and the way home", async () => {
-    await renderMap(SKILL_MAP, {
-      connected: [
-        { moduleId: SHARES, packageDigest: D1 },
-        { moduleId: GONE, packageDigest: "" },
-      ],
-    });
-    expect(screen.getByRole("heading", { level: 1, name: "Skill map" })).toBeVisible();
-    const gone = within(await screen.findByRole("article", { name: GONE }));
-    expect(gone.getByText("Not available now")).toBeVisible();
-    expect(gone.queryByRole("button")).toBeNull();
-    await userEvent.click(screen.getByRole("button", { name: "Open the map" }));
-    expect(window.location.hash).toBe("#/skill-map/example%2Ffair-shares");
-    expect(screen.getByRole("button", { name: "Open the map" })).toHaveAccessibleDescription(
-      "Fair shares",
-    );
-    expect(screen.queryByRole("button", { name: "All skill maps" })).toBeNull();
-    await userEvent.click(screen.getByRole("button", { name: "Back" }));
-    expect(window.location.hash).toBe("#/home");
-  });
-
-  it("says when no subject is connected, and goes to the list from a route it does not know", async () => {
+describe("a route of no module", () => {
+  it("goes to Subjects in place of itself, alone or with more parts than a module", async () => {
+    window.location.hash = "#/skill-map";
     await renderMap(SKILL_MAP);
-    expect(await screen.findByText("No subjects are connected yet")).toBeVisible();
+    await waitFor(() => expect(window.location.hash).toBe(`#/${SUBJECTS.screen}`));
+    expect(screen.queryByRole("heading", { level: 1 })).toBeNull();
     window.location.hash = "#/skill-map/a/b";
     await renderMap({ ...SKILL_MAP, parts: ["a", "b"] });
-    await waitFor(() => expect(window.location.hash).toBe("#/skill-map"));
+    await waitFor(() => expect(window.location.hash).toBe(`#/${SUBJECTS.screen}`));
   });
 });
 
 describe("a module's map", () => {
-  it("stands in the frame below the top bar, whose Back goes home, with the way to every map", async () => {
+  it("stands in the frame named by the module, under the heading, with Subjects back above it and the module beside it", async () => {
     await renderMap(moduleMapRoute(SHARES));
     await drawn();
     const frame = screen.getByRole("region", { name: "Skill map: Fair shares" });
     expect(frame).toContainElement(document.querySelector("novatrail-skill-map"));
-    const heading = screen.getByRole("heading", { level: 1, name: "Skill map: Fair shares" });
-    expect(heading.closest(".nt-top-pill")).toContainElement(
-      screen.getByRole("button", { name: "Back" }),
+    const heading = screen.getByRole("heading", { level: 1, name: "Skill map" });
+    expect(heading.closest(".nt-screen-title")).toContainElement(
+      screen.getByRole("button", { name: "Module: Fair shares" }),
     );
-    await userEvent.click(within(frame).getByRole("button", { name: "All skill maps" }));
-    expect(window.location.hash).toBe("#/skill-map");
-    await userEvent.click(screen.getByRole("button", { name: "Back" }));
-    expect(window.location.hash).toBe("#/home");
+    expect(frame).not.toContainElement(heading);
+    await userEvent.click(screen.getByRole("button", { name: "Subjects" }));
+    expect(window.location.hash).toBe(`#/${SUBJECTS.screen}`);
   });
 
   it("gives the element the learner's view in the learner's language, by the learner's action", async () => {
@@ -353,15 +345,16 @@ describe("a module's map", () => {
     expect(element.manifest?.id).toBe(SHARES);
     expect(element.skillMap?.packageDigest).toBe(D1);
     expect(maps[0]).toMatchObject({ profileId: "p1", moduleId: SHARES, action: Action.LEARNING });
-    const heading = screen.getByRole("heading", { level: 1 });
-    expect(heading).toHaveAccessibleName("Карта навыков: Fair shares");
-    expect(within(heading).getByText("Fair shares")).toHaveAttribute("lang", "en");
+    expect(screen.getByRole("heading", { level: 1 })).toHaveAccessibleName("Карта навыков");
+    expect(screen.getByRole("region", { name: "Карта навыков: Fair shares" })).toBeVisible();
+    const module = screen.getByRole("button", { name: "Модуль: Fair shares" });
+    expect(within(module).getByText("Fair shares")).toHaveAttribute("lang", "en");
     expect(document.title).toBe("Карта навыков: Fair shares — NovaTrail");
     // The map's own words are Russian, and its bands' headings are below the screen's.
     expect(element.shadowRoot?.querySelector("h2")).not.toBeNull();
     expect(screen.queryByRole("heading", { name: "Модули, которые можно подключить" })).toBeNull();
-    await userEvent.click(screen.getByRole("button", { name: "Все карты навыков" }));
-    expect(window.location.hash).toBe("#/skill-map");
+    await userEvent.click(screen.getByRole("button", { name: "Предметы" }));
+    expect(window.location.hash).toBe(`#/${SUBJECTS.screen}`);
   });
 
   it("asks the engine for the skill chosen, with its full ID, and begins the task it gives", async () => {
@@ -489,7 +482,7 @@ describe("a module's map", () => {
     expect(gone.getByText("Not available now")).toBeVisible();
     expect(gone.queryByRole("button")).toBeNull();
     await userEvent.click(tables.getByRole("button", { name: "Connect" }));
-    const done = await offered.findByText("Connected: it is in My subjects now");
+    const done = await offered.findByText("Connected: it is on Home now");
     expect(done).toHaveFocus();
     expect(asked).toEqual(["catalog", `connect ${TABLES}`]);
     // The map's state is read again in place: the anchor skill is no longer unknown on it.
@@ -516,7 +509,7 @@ describe("a module's map", () => {
     );
     fail = false;
     await userEvent.click(connect);
-    expect(await screen.findByText("Connected: it is in My subjects now")).toHaveFocus();
+    expect(await screen.findByText("Connected: it is on Home now")).toHaveFocus();
     expect(screen.queryByRole("alert")).toBeNull();
   });
 
@@ -559,10 +552,67 @@ describe("a module's map", () => {
     expect(screen.queryByText(/Уровень поставил взрослый/)).toBeNull();
   });
 
+  it("stands with the shapes of its bands and tiles while the map is read, in its frame (R168 spec)", async () => {
+    const { given, give } = held();
+    await renderMap(moduleMapRoute(SHARES), { held: { map: given } });
+    const frame = await screen.findByRole("region", { name: "Skill map" });
+    expectLoading(frame, 12);
+    give();
+    await drawn();
+    expectLoaded(frame);
+  });
+
+  it("stands with the shapes of the modules offered and of the modules connected while each is read (R168 spec)", async () => {
+    const catalog = held();
+    const list = held();
+    await renderMap(moduleMapRoute(SHARES), {
+      maps: [() => UNKNOWN],
+      connected: [{ moduleId: SHARES, packageDigest: D1 }],
+      held: { catalog: catalog.given, list: list.given },
+    });
+    const offered = await screen.findByRole("region", { name: "Modules to connect" });
+    expectLoading(offered, 6);
+    catalog.give();
+    expect(await within(offered).findByRole("article", { name: "Таблица умножения" })).toBeTruthy();
+    expectLoaded(offered);
+    await userEvent.click(await screen.findByRole("button", { name: "Module: Fair shares" }));
+    const menu = await screen.findByRole("dialog", { name: "Connected modules" });
+    expectLoading(menu, 4);
+    list.give();
+    expect(await within(menu).findByRole("button", { name: /Fair shares/ })).toBeTruthy();
+    expectLoaded(menu);
+  });
+
+  it("goes to the map of another module chosen in the menu, and stays on choosing its own", async () => {
+    await renderMap(moduleMapRoute(SHARES), {
+      connected: [
+        { moduleId: SHARES, packageDigest: D1 },
+        { moduleId: TABLES, packageDigest: D2 },
+      ],
+    });
+    window.location.hash = `#${moduleMapRoute(SHARES).screen}/${encodeURIComponent(SHARES)}`;
+    const before = window.location.hash;
+    await userEvent.click(await screen.findByRole("button", { name: "Module: Fair shares" }));
+    let menu = within(await screen.findByRole("dialog", { name: "Connected modules" }));
+    const own = await menu.findByRole("button", { name: /Fair shares/ });
+    expect(own).toHaveAttribute("aria-pressed", "true");
+    await userEvent.click(own);
+    expect(screen.queryByRole("dialog", { name: "Connected modules" })).toBeNull();
+    expect(window.location.hash).toBe(before);
+    await userEvent.click(screen.getByRole("button", { name: "Module: Fair shares" }));
+    menu = within(await screen.findByRole("dialog", { name: "Connected modules" }));
+    await userEvent.click(await menu.findByRole("button", { name: /Таблица умножения/ }));
+    expect(window.location.hash).toBe(`#/skill-map/${encodeURIComponent(TABLES)}`);
+    window.location.hash = "";
+  });
+
   it("says a module has no map without a skill graph", async () => {
     await renderMap(moduleMapRoute("example/no-graph"), { maps: [() => ({ packageDigest: D3 })] });
     expect(await screen.findByText("This subject has no skill map")).toBeVisible();
-    expect(screen.getByRole("heading", { level: 1 })).toHaveAccessibleName("Skill map: No graph");
+    expect(screen.getByRole("heading", { level: 1 })).toHaveAccessibleName("Skill map");
+    expect(screen.getByRole("region", { name: "Skill map: No graph" })).toContainElement(
+      screen.getByText("This subject has no skill map"),
+    );
     expect(document.querySelector("novatrail-skill-map")).toBeNull();
   });
 

@@ -35,6 +35,7 @@ import { indexedDbBackend } from "../storage/idb.ts";
 import { deviceKeyStore, type KeyStore, keptKey } from "../storage/ownkey.ts";
 import { setAccount } from "../storage/registry.ts";
 import { inLanguage } from "../test/language.tsx";
+import { expectLoaded, expectLoading, held } from "../test/loading.ts";
 import { OwnKeyPage } from "./OwnKeyPage.tsx";
 
 const OWNER = create(ProfileSchema, {
@@ -53,7 +54,7 @@ type Answer = MessageInitShape<typeof CheckOwnKeyResponseSchema>;
 
 interface Setup {
   readonly profiles?: readonly Profile[];
-  readonly providers?: () => (typeof ANTHROPIC)[];
+  readonly providers?: () => (typeof ANTHROPIC)[] | Promise<(typeof ANTHROPIC)[]>;
   /** The answer of the check; accepted when left out. */
   readonly check?: (request: CheckOwnKeyRequest) => Answer;
   /** The owner profile is not open: no learner chosen. */
@@ -76,9 +77,9 @@ async function renderPage(setup: Setup = {}) {
       createRouterTransport(
         (router: ConnectRouter) => {
           router.service(AccountService, {
-            listOwnKeyProviders(request) {
+            async listOwnKeyProviders(request) {
               listed.push(request.profileId);
-              return { providers: setup.providers?.() ?? [ANTHROPIC] };
+              return { providers: (await setup.providers?.()) ?? [ANTHROPIC] };
             },
             checkOwnKey(request) {
               checked.push(request);
@@ -182,6 +183,22 @@ describe("the page Own AI key", () => {
     // Shown by its last four alone.
     expect(document.body.textContent).not.toContain(KEY);
     expect(screen.getByText("The key is in this tab's memory alone")).toBeTruthy();
+  });
+
+  it("stands with the shapes of its form while the providers are read, busy (R168 spec)", async () => {
+    const { given, give } = held();
+    await renderPage({
+      providers: async () => {
+        await given;
+        return [ANTHROPIC];
+      },
+    });
+    expect(screen.getByRole("heading", { level: 1, name: "Own AI key" })).toBeTruthy();
+    expect(screen.queryByRole("combobox")).toBeNull();
+    expectLoading(document, 6);
+    give();
+    expect(await screen.findByRole("combobox", { name: "AI provider" })).toHaveValue("anthropic");
+    expectLoaded(document);
   });
 
   it("keeps the key in none of the browser's storages without the mark, and on the device with it", async () => {

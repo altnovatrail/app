@@ -1,4 +1,4 @@
-// The tutor's panel of the task screen and of an essay (R67): beside the canvas on a tablet, a
+// The tutor's panel of the task screen and of an essay (R67): over the canvas on a tablet, a
 // sheet over the row and the canvas's bar of tools on a phone, its grabber, its ×, the tutor's
 // button and the step's pill that open it, its head with the share of the quota, and the verdict a
 // line in it.
@@ -104,6 +104,7 @@ function Drawn({
 const panel = () => within(screen.getByRole("complementary", { name: "Tutor" }));
 const canvas = () => document.querySelector("novatrail-canvas") as HTMLElement;
 const row = () => document.querySelector(".nt-task-row") as HTMLElement;
+const lines = () => document.querySelector(".nt-task-lines") as HTMLElement;
 
 /** The panel's coming in, ended: its box is read where it stays. */
 const settled = () =>
@@ -114,23 +115,27 @@ afterEach(async () => {
 });
 
 describe("the tutor's panel on a tablet", () => {
-  it("stands beside the canvas, which ends where it begins, the row in sight", async () => {
+  it("stands over the canvas, which keeps the window's width, the lines and the row clear of it", async () => {
     await page.viewport(1194, 834);
     render(inLanguage(<Drawn />));
     const aside = screen.getByRole("complementary", { name: "Tutor" });
     await settled();
     const box = aside.getBoundingClientRect();
-    expect(box.width).toBeCloseTo(344, 0);
+    expect(box.width).toBeCloseTo(400, 0);
     expect(box.right).toBeCloseTo(1194 - 16, 0);
     expect(box.top).toBeCloseTo(74, 0);
     expect(box.bottom).toBeCloseTo(834 - 16, 0);
-    expect(canvas().getBoundingClientRect().right).toBeLessThanOrEqual(box.left + 0.5);
+    // The canvas moves for no panel, as under the debug window: its right part is under the glass.
+    const sheet = canvas().getBoundingClientRect();
+    expect(sheet.left).toBeCloseTo(0, 0);
+    expect(sheet.right).toBeCloseTo(1194, 0);
     expect(canvas()).not.toHaveAttribute("tools-hidden");
+    expect(lines().getBoundingClientRect().right).toBeLessThanOrEqual(box.left + 0.5);
     expect(row()).toBeVisible();
+    expect(row().getBoundingClientRect().right).toBeLessThanOrEqual(box.left + 0.5);
     // Its head: the tutor's name, the learner's share of the quota, the voicing and ×; no grabber.
     expect(panel().getByRole("heading", { name: "Tutor", level: 2 })).toBeVisible();
     expect(panel().getByText("Tutor time today: 20% used")).toBeVisible();
-    expect(panel().getByText("The tutor is an AI, not a person")).toBeVisible();
     expect(panel().queryByRole("button", { name: "Full screen" })).toBeNull();
     // Open, the panel stands in place of the tutor's button and of the step's pill.
     expect(screen.queryByRole("button", { name: "Tutor" })).toBeNull();
@@ -277,7 +282,6 @@ describe("the tutor's panel of an essay", () => {
     const { rerender } = render(inLanguage(<EssayDrawn />));
     expect(screen.queryByRole("complementary", { name: "Tutor" })).toBeNull();
     await userEvent.click(screen.getByRole("button", { name: "Tutor" }));
-    expect(panel().getByText("The tutor is an AI, not a person")).toBeVisible();
     await userEvent.click(panel().getByRole("button", { name: "Close" }));
     rerender(inLanguage(<EssayDrawn feedback="The second sentence works." />));
     // The card says where the feedback is; the panel opens only when called.

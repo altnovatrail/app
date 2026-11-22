@@ -12,7 +12,7 @@ import { create } from "@bufbuild/protobuf";
 import { type ConnectRouter, createRouterTransport } from "@connectrpc/connect";
 import { cleanup, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { userEvent } from "vitest/browser";
+import { page, userEvent } from "vitest/browser";
 import { type Learner, LearnerProvider } from "../account/AccountGate.tsx";
 import { ApiProvider } from "../api/ApiContext.tsx";
 import { createApi } from "../api/client.ts";
@@ -20,7 +20,7 @@ import type { Language } from "../i18n/language.ts";
 import { inLanguage } from "../test/language.tsx";
 import "../theme/theme.css";
 import { AdultHelp } from "./Help.tsx";
-import { TIP_DELAY_MS } from "./IconButton.tsx";
+import { TIP_DELAY_MS } from "./Tooltip.tsx";
 
 function chosen(ageCategory: string, openLegal = vi.fn()): Learner {
   return {
@@ -78,7 +78,10 @@ function renderHelp(learner: Learner | undefined, language: Language = "en") {
   );
 }
 
-afterEach(cleanup);
+afterEach(async () => {
+  cleanup();
+  await page.viewport(1024, 768);
+});
 
 describe("the adult's Help", () => {
   it("says the three things, and leads to the app's own texts alone", async () => {
@@ -138,9 +141,25 @@ describe("the adult's Help", () => {
   });
 
   it("shows no tooltip over its open pop-over, the pointer still on its button", async () => {
-    renderHelp(chosen("adult"));
+    // In the row of places from 600 CSS px to 72em, where Help shows its icon alone.
+    await page.viewport(800, 640);
+    render(
+      inLanguage(
+        <ApiProvider value={API}>
+          <LearnerProvider value={chosen("adult")}>
+            <div className="nt-shell">
+              <nav className="nt-nav">
+                <AdultHelp />
+              </nav>
+            </div>
+          </LearnerProvider>
+        </ApiProvider>,
+      ),
+    );
     const button = screen.getByRole("button", { name: "Help" });
     await userEvent.hover(button);
+    await new Promise((later) => setTimeout(later, TIP_DELAY_MS + 200));
+    expect(document.querySelector(".nt-tooltip")?.textContent).toBe("Help");
     await userEvent.click(button);
     await new Promise((later) => setTimeout(later, TIP_DELAY_MS + 200));
     expect(screen.getByRole("dialog")).toBeVisible();

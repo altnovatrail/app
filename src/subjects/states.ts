@@ -51,18 +51,63 @@ export function judged(counts: SkillCounts): number {
   return STATES.reduce((sum, state) => sum + counts[state], 0);
 }
 
-/** One segment of a module's bar: its state and its share of the bar, in per cent. */
-export interface Segment {
-  readonly state: (typeof STATES)[number];
-  readonly percent: number;
+/**
+ * Where the learner stands in a module whose skills go in a chain (R06): the skill to work on —
+ * the first not mastered in the order of the tiers — by its place from 1 and its title, the one
+ * after it, and how many are mastered of all; past the last, no skill to work on.
+ */
+export interface ChainPlace {
+  readonly step: number;
+  readonly total: number;
+  readonly mastered: number;
+  readonly current?: string;
+  readonly next?: string;
 }
 
-/** The segments of the bar, the states with no skill left out; none for a module with no verdict. */
-export function segmentsOf(counts: SkillCounts): Segment[] {
-  const all = judged(counts);
-  if (all === 0) return [];
-  return STATES.filter((state) => counts[state] > 0).map((state) => ({
-    state,
-    percent: (counts[state] / all) * 100,
-  }));
+/** The states a card's Continue works on, the first that has a skill: begun, then due, then new. */
+const TO_WORK: readonly SkillStatus[] = ["in-progress", "time-to-review", "ready-to-start"];
+
+/**
+ * The ID in the module of the skill its card's Continue works on: a chain's skill to work on, the
+ * first not mastered in the order of the tiers; else the first skill begun, else due, else ready
+ * to start, in the graph's order; none when no skill is any of them, and the map is the way.
+ */
+export function skillToWork(
+  statuses: ReadonlyMap<string, SkillStatus>,
+  tiers: Readonly<Record<string, number>> | undefined,
+): string | undefined {
+  if (tiers !== undefined) {
+    const order = [...statuses.keys()].sort(
+      (a, b) => (tiers[a] ?? Number.MAX_SAFE_INTEGER) - (tiers[b] ?? Number.MAX_SAFE_INTEGER),
+    );
+    return order.find((id) => statuses.get(id) !== "mastered");
+  }
+  for (const state of TO_WORK) {
+    for (const [id, status] of statuses) if (status === state) return id;
+  }
+  return undefined;
+}
+
+/** The place in a chain, by the graph's titles, the skills' statuses and the tiers of the graph. */
+export function chainPlace(
+  graph: open.SkillGraph,
+  statuses: ReadonlyMap<string, SkillStatus>,
+  tiers: Readonly<Record<string, number>>,
+): ChainPlace {
+  const order = [...statuses.keys()].sort(
+    (a, b) => (tiers[a] ?? Number.MAX_SAFE_INTEGER) - (tiers[b] ?? Number.MAX_SAFE_INTEGER),
+  );
+  const at = order.findIndex((id) => statuses.get(id) !== "mastered");
+  const mastered = order.filter((id) => statuses.get(id) === "mastered").length;
+  const title = (id: string | undefined) =>
+    id === undefined ? undefined : graph.skills[id]?.title;
+  const current = title(order[at]);
+  const next = at === -1 ? undefined : title(order[at + 1]);
+  return {
+    step: at === -1 ? order.length : at + 1,
+    total: order.length,
+    mastered,
+    ...(current === undefined ? {} : { current }),
+    ...(next === undefined ? {} : { next }),
+  };
 }

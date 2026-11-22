@@ -96,12 +96,13 @@
   /* A skill with a rubric, and the sign of an essay's feedback: 6.76:1 on its tint #f7f0fc. */
   --nt-rubric: #7a2ea8;
   /*
-   * The card of a task from paper: the mockup's gradient #ff9f0a → #ff5e3a → #ff375f, darker by the
-   * same hues, since white on it misses 4.5:1 — 2.06 at its start; white holds 5.02 at the least.
+   * The card of tasks from paper: the mockup's gradient #ff9f0a → #ff5e3a → #ff375f, as bright as
+   * white on it allows, since white on the mockup's misses 4.5:1 — 2.06 at its start; white holds
+   * 4.53 at the least.
    */
-  --nt-paper-from: #b85000;
-  --nt-paper-mid: #c8331a;
-  --nt-paper-to: #c81e46;
+  --nt-paper-from: #c25400;
+  --nt-paper-mid: #d2452f;
+  --nt-paper-to: #db2f52;
 
   /* The grey fills of fields, chips and disabled buttons; what is disabled; the edge of a field. */
   --nt-grey-08: rgba(118, 118, 128, 0.08);
@@ -605,10 +606,8 @@ button.nt-secondary {
   margin: 0;
 }
 /*
- * In the mockup's frame — the home screen —, a grid: one column on the phone, 12 apart; from 600
- * two in a row, as an iPad in portrait has them, 16 apart; four in a row where each is still 15rem
- * wide, as the reference of 1194 has them (R59): by the frame's own width, as a container, so that
- * a scroll bar beside it counts.
+ * In the mockup's frame — Subjects' catalog —, a grid: one column on the phone, 12 apart; from 600
+ * two in a row at any width, as the mockup's `subjects` has them, 16 apart (R59, R79).
  */
 .nt-reference .nt-cards {
   display: grid;
@@ -626,11 +625,6 @@ button.nt-secondary {
 }
 main.nt-reference {
   container-type: inline-size;
-}
-@container (width >= 1008px) {
-  .nt-reference .nt-cards {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
 }
 novatrail-canvas {
   display: block;
@@ -904,13 +898,14 @@ button.nt-icon-only:where(.nt-grabber) {
 }
 /*
  * The way in (R61): the sign-in, the invite code and the statement in the frame of the mockup's
- * `signin` — the sky over the whole window; from 600 the name, the language, the trail and the
- * step's card of 440 where the reference has them, in a middle of 1194 × 834, the trail left out
- * below 900; below 600 the name and the language in a row, the trail drawn small above the card
- * of the first step, and the card of a later step under the name. The card is dark: the tokens
- * of the screens it holds take the sky's there. The owner's profile and "Who is learning?" in
- * the frame of `owner` and `who`: the page's colour of the owner with its two glows, the app's name
- * at the top, a column in the middle.
+ * `signin` — the sky over the whole window; from 600 the name and the language 24 below the
+ * window's top, at the edges of a middle of 1194 × 834, and in that middle the trail and the
+ * step's card of 440 where the reference has them, the trail left out below 900; below 600 the
+ * name and the language in a row, the trail drawn small above the card of the first step, and the
+ * card of a later step under the name. The card is dark: the tokens of the screens it holds take
+ * the sky's there. The owner's profile and "Who is learning?" in the frame of `owner` and
+ * `who`: the page's colour of the owner with its two glows, the app's name at the top, a column
+ * in the middle.
  */
 .nt-hidden-label {
   position: absolute;
@@ -1397,6 +1392,7 @@ button.nt-link.nt-back {
     grid-template-rows: minmax(52.125rem, auto);
     justify-content: center;
     align-content: center;
+    position: relative;
   }
   main.nt-welcome > * {
     grid-row: 1;
@@ -1411,16 +1407,19 @@ button.nt-link.nt-back {
     block-size: auto;
     margin: 0;
   }
-  .nt-welcome-brand {
-    justify-self: start;
-    align-self: start;
-    margin: 3.5rem 0 0 3.5rem;
+  main.nt-welcome > .nt-welcome-brand,
+  main.nt-welcome > .nt-welcome-corner {
+    position: absolute;
+    grid-area: auto / 1 / auto / 2;
+    inset-block-start: 1.5rem;
+    margin: 0;
+  }
+  main.nt-welcome > .nt-welcome-brand {
+    inset-inline-start: 3.5rem;
     font-size: 1.5rem;
   }
-  .nt-welcome-corner {
-    justify-self: end;
-    align-self: start;
-    margin: 3.5rem 4.5rem 0 0;
+  main.nt-welcome > .nt-welcome-corner {
+    inset-inline-end: 4.5rem;
   }
   .nt-welcome .nt-column,
   .nt-sky-later ~ .nt-column {
@@ -1862,10 +1861,10 @@ button.nt-row > svg {
 }
 
 /*
- * The home screen, "My subjects", as the mockup's `home` (R62): the line under its heading; at the
+ * The home screen, Home, as the mockup's `home` (R62): the line under its heading; at the
  * top a card of what comes next, its heading the mockup's "Next up" with its dot, the tutor time at
- * its foot, and beside it from 600 "A task from my paper", shown and not open; each module a card
- * of the mockup's, its tile, its title and the bar of its skills, 22 round; the legend of the marks
+ * its foot, and beside it from 600 "Tasks from my paper"; each module a card of the mockup's, its
+ * tile, its title, its kind, its counts and the squares of its skills, 22 round; the legend of the marks
  * below them from 600, and on a phone a button that opens it as a sheet.
  */
 .nt-home-sub {
@@ -1873,63 +1872,50 @@ button.nt-row > svg {
   color: var(--nt-text-muted);
   font-size: 0.9375rem;
 }
+/*
+ * Home's top (R79; the mockup's `home`): one card, white at 0.85, of two halves side by side where
+ * each is 500 wide, a rule between them — what comes next, with a sheet in squares at its right,
+ * and tasks from paper under "Camera", with a page of a book at a slant at its right. The words
+ * stand clear of the pictures, which are dropped on a phone and in forced colours.
+ */
 .nt-home-top {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 1rem;
-  margin-block-end: 1.5rem;
-}
-@media (width >= 600px) {
-  .nt-home-top {
-    grid-template-columns: minmax(0, 600fr) minmax(0, 498fr);
-  }
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 31.25rem), 1fr));
+  margin-block-end: 2rem;
+  border: 0.0625rem solid transparent;
+  border-radius: 1.75rem;
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 10px 40px rgba(20, 40, 80, 0.06);
+  overflow: hidden;
 }
 .nt-next-up,
 .nt-paper {
+  position: relative;
   box-sizing: border-box;
-  min-block-size: 14.25rem;
-  padding: 1.5rem 1.625rem 1rem;
-  border: 0.0625rem solid transparent;
-  border-radius: 1.625rem;
-  background: var(--nt-card);
-  box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.05),
-    0 12px 32px rgba(0, 0, 0, 0.06);
-}
-.nt-next-up {
   display: flex;
   flex-direction: column;
+  gap: 0.875rem;
+  padding: 2rem;
+  overflow: hidden;
 }
-/* The card of a task from paper, the mockup's: white on its gradient, and "Open camera" white. */
-.nt-paper {
-  background: linear-gradient(
-    135deg,
-    var(--nt-paper-from) 0%,
-    var(--nt-paper-mid) 55%,
-    var(--nt-paper-to) 100%
-  );
-  box-shadow: 0 12px 32px rgba(255, 94, 58, 0.28);
-  color: var(--nt-on-fill);
+.nt-next-up {
+  border-inline-end: 0.0625rem solid #ededf0;
 }
-.nt-paper :focus-visible {
-  outline-color: var(--nt-on-fill);
+.nt-next-up > :not(.nt-deco),
+.nt-paper > :not(.nt-deco) {
+  position: relative;
 }
-@media (width < 600px) {
-  .nt-next-up {
-    min-block-size: 16.5rem;
-  }
-  .nt-paper {
-    min-block-size: 0;
-  }
-}
-.nt-next-up > h2 {
+.nt-next-up > h2,
+.nt-paper-eyebrow {
   display: flex;
   align-items: center;
-  gap: 0.375rem;
-  margin: 0 0 0.5rem;
-  color: var(--nt-next);
-  font-size: var(--nt-size-caption);
+  gap: 0.5rem;
+  margin: 0;
+  font-size: 0.875rem;
   font-weight: var(--nt-weight-bold);
+}
+.nt-next-up > h2 {
+  color: var(--nt-next);
 }
 .nt-next-up > h2::before {
   content: "";
@@ -1937,79 +1923,390 @@ button.nt-row > svg {
   inline-size: 0.5rem;
   block-size: 0.5rem;
   border-radius: 0.25rem;
-  background: #ff9f0a;
+  background: #ff9500;
 }
 .nt-next-up h3 {
-  margin-block: 0 0.5rem;
-  font-size: var(--nt-size-title);
+  max-inline-size: 60%;
+  margin: 0;
+  font-size: 1.875rem;
+  letter-spacing: -0.025em;
+  line-height: 1.1;
 }
 .nt-next-up .nt-buttons {
-  margin-block-end: 0.75rem;
+  margin: 0.375rem 0 0;
 }
-.nt-quota {
+.nt-next-line {
+  max-inline-size: 60%;
+  margin: 0;
+  color: var(--nt-text-muted);
+  font-size: 0.9375rem;
+  line-height: 1.45;
+}
+/* The start of the task's statement: two lines at most. */
+.nt-next-statement {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+.nt-next-more {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.5rem;
-  margin: auto 0 0;
-  padding-block-start: 0.5rem;
+  gap: 0 0.25rem;
+  max-inline-size: 60%;
+  margin: 0;
   color: var(--nt-text-muted);
-  font-size: var(--nt-size-caption);
+  font-size: 0.8125rem;
+}
+/* The card's foot: the tutor time at its left, the way to what comes next at its right. */
+.nt-next-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  margin-block-start: auto;
+  padding-block-start: 1.5rem;
+}
+.nt-next-step {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+  margin-inline-start: auto;
+  text-align: end;
+}
+.nt-next-step .nt-buttons {
+  margin: 0;
+}
+.nt-quota {
+  display: flex;
+  flex: 1 1 auto;
+  min-inline-size: 0;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 0;
+  color: var(--nt-text-muted);
+  font-size: 0.8125rem;
 }
 .nt-quota-bar {
   display: flex;
-  flex: none;
-  inline-size: 4rem;
   block-size: 0.375rem;
   border-radius: 0.1875rem;
-  background: rgba(118, 118, 128, 0.18);
+  background: #e8e8ed;
   overflow: hidden;
 }
 .nt-quota-bar > span {
-  background: var(--nt-state-progress);
+  border-radius: 0.1875rem;
+  background: var(--nt-accent);
 }
-.nt-paper-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  inline-size: 2.75rem;
-  block-size: 2.75rem;
-  margin-block-end: 0.875rem;
-  border-radius: var(--nt-radius-round);
-  background: rgba(255, 255, 255, 0.22);
-  box-shadow: inset 0 0 0 0.0625rem rgba(255, 255, 255, 0.35);
-  color: var(--nt-on-fill);
-  font-size: 1.375rem;
+.nt-paper-eyebrow {
+  color: var(--nt-accent-text);
 }
 .nt-paper > h2 {
-  margin: 0 0 0.25rem;
-  font-size: 1.5rem;
-  letter-spacing: -0.025rem;
+  max-inline-size: 62%;
+  margin: 0;
+  font-size: 1.875rem;
+  letter-spacing: -0.025em;
+  line-height: 1.1;
 }
-main .nt-paper > p {
-  max-inline-size: 17rem;
-  margin: 0 0 1rem;
-  font-size: var(--nt-size-body);
-  line-height: 1.4;
+main .nt-paper > p.nt-paper-sub {
+  max-inline-size: 62%;
+  margin: 0;
+  color: var(--nt-text-muted);
+  font-size: 0.9375rem;
+  line-height: 1.45;
 }
 .nt-paper-acts {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem;
+  gap: 0.625rem;
+  max-inline-size: 62%;
+  margin-block-start: auto;
+  padding-block-start: 1.5rem;
 }
 .nt-paper-acts > button {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
+  padding-inline: 1rem 1.25rem;
   font-size: 0.9375rem;
 }
-.nt-paper-acts > button.nt-paper-open {
-  background: var(--nt-card);
-  color: var(--nt-text);
+.nt-paper-acts > button.nt-paper-pages {
+  border-color: transparent;
+  background: #e5f0ff;
+  color: var(--nt-accent-text);
 }
-.nt-paper > p.nt-hint {
-  color: var(--nt-on-fill);
+/*
+ * Its pop-over (R77; the author's mockup `Vashi-stranicy-1a`): 400 wide from 600, the heading with
+ * "on this device" at its end, the rows 6 apart, each a sheet of 44 × 56 — the photo's thumbnail,
+ * white, radius 6, a shadow, straight where the mockup tilts it, by the author's word — 14 from the
+ * date at 15 semibold and the count at 13 below it, a chevron at the end; under them the line of where the pages live, beside a lock in a
+ * box of the grey, radius 14. The count is in the muted text's grey, not the mockup's #8e8e93,
+ * which misses 4.5:1 on white.
+ */
+@media (width >= 600px) {
+  dialog.nt-pop-pages {
+    inline-size: 25rem;
+  }
+  dialog.nt-pop-pages .nt-pop-body {
+    padding: 1.125rem 0.5rem 0.5rem;
+  }
+}
+.nt-pages-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0 0.75rem 0.375rem;
+}
+.nt-pages-head > h2 {
+  margin: 0;
+  font-size: var(--nt-size-emphasis);
+  font-weight: var(--nt-weight-heading);
+  letter-spacing: -0.01em;
+  line-height: normal;
+}
+.nt-pages-head > span {
+  color: var(--nt-text-muted);
+  font-size: var(--nt-size-caption);
+}
+.nt-pop-pages .nt-pop-content > p:not(.nt-pages-kept) {
+  margin: 0.375rem 0.75rem;
+}
+ol.nt-pages {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+button.nt-pages-row {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  inline-size: 100%;
+  padding: 0.4375rem 0.6875rem;
+  border-radius: 0.875rem;
+  background: transparent;
+  color: var(--nt-text);
+  font-weight: 400;
+  text-align: start;
+}
+@media (hover: hover) {
+  button.nt-pages-row:hover {
+    background: rgba(0, 0, 0, 0.04);
+  }
+}
+.nt-pages-thumb {
+  display: flex;
+  flex: none;
+  inline-size: 2.75rem;
+  block-size: 3.5rem;
+}
+.nt-pages-thumb > img,
+.nt-pages-blank {
+  box-sizing: border-box;
+  inline-size: 100%;
+  block-size: 100%;
+  border-radius: 0.375rem;
+  background: var(--nt-card);
+  box-shadow:
+    0 1px 4px rgba(0, 0, 0, 0.12),
+    0 0 0 0.5px rgba(0, 0, 0, 0.08);
+}
+.nt-pages-thumb > img {
+  object-fit: cover;
+}
+/* A photo that cannot be shown: a blank sheet, its lines grey, as the mockup draws the page. */
+.nt-pages-blank {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 7px 6px;
+}
+.nt-pages-blank > i {
+  block-size: 2px;
+  background: #e5e5ea;
+}
+.nt-pages-blank > i:first-child {
+  inline-size: 60%;
+  block-size: 3px;
+  border-radius: 1px;
+  background: #c7c7cc;
+}
+.nt-pages-blank > i:nth-child(4) {
+  inline-size: 80%;
+}
+.nt-pages-blank > i:nth-child(6) {
+  inline-size: 70%;
+}
+/* Both lines at the column's start, the count right under the date. */
+.nt-pages-words {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.1875rem;
+  min-inline-size: 0;
+  text-align: start;
+}
+.nt-pages-when {
+  font-size: 0.9375rem;
+  font-weight: var(--nt-weight-bold);
+}
+.nt-pages-count {
+  color: var(--nt-text-muted);
+  font-size: var(--nt-size-caption);
+}
+.nt-pages-more {
+  display: inline-flex;
+  flex: none;
+  color: var(--nt-edge);
+  font-size: 0.875rem;
+}
+p.nt-pages-kept {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.625rem;
+  margin: 0.625rem 0 0;
+  padding: 0.75rem 0.875rem;
+  border-radius: 0.875rem;
+  background: var(--nt-grey-08);
+  color: var(--nt-text-muted-on-grey);
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+.nt-pages-lock {
+  display: inline-flex;
+  flex: none;
+  margin-block-start: 0.0625rem;
+  font-size: 0.875rem;
+}
+/* Forced colours drop the shadows and the fills: the sheet keeps an edge, and its lines GrayText. */
+@media (forced-colors: active) {
+  .nt-pages-thumb > img,
+  .nt-pages-blank,
+  p.nt-pages-kept {
+    border: 1px solid CanvasText;
+  }
+  .nt-pages-blank > i,
+  .nt-pages-blank > i:first-child {
+    forced-color-adjust: none;
+    background: GrayText;
+  }
+}
+/* A card's drawing stands in a frame of the card's size that clips it, past the card's edge on
+   purpose: the card itself takes in nothing wider than it is (1.4.10; R79). */
+.nt-deco {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+/* The sheet in squares: white, its lines 18 apart, the puzzle in ink, at a slant. */
+.nt-grid-sheet,
+.nt-paper-sheet {
+  position: absolute;
+  box-sizing: border-box;
+  border-radius: 0.25rem;
+  box-shadow: 0 8px 30px rgba(20, 40, 80, 0.1);
+}
+.nt-grid-sheet {
+  inset-block-start: 1.75rem;
+  inset-inline-end: -1.5rem;
+  inline-size: 15.625rem;
+  block-size: 12.5rem;
+  padding: 2.25rem 1.25rem 0;
+  background-color: #fff;
+  background-image:
+    linear-gradient(#e6eaf0 1px, transparent 1px),
+    linear-gradient(90deg, #e6eaf0 1px, transparent 1px);
+  background-size: 18px 18px;
+  transform: rotate(-5deg);
+}
+.nt-next-up .nt-grid-sheet > svg {
+  inline-size: 12.5rem;
+  block-size: auto;
+}
+/* The page of a book: its lines grey, the task marked blue. */
+.nt-paper-sheet {
+  inset-block-start: 1.875rem;
+  inset-inline-end: -1.875rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  inline-size: 13.75rem;
+  block-size: 16.25rem;
+  padding: 1.625rem 1.375rem;
+  background: #fbfaf7;
+  transform: rotate(6deg);
+}
+.nt-paper-sheet i {
+  display: block;
+  block-size: 0.25rem;
+  border-radius: 0.125rem;
+  background: #e5e5ea;
+}
+.nt-paper-sheet > i:first-child {
+  inline-size: 45%;
+  block-size: 0.4375rem;
+  background: #c7ccd6;
+}
+.nt-paper-sheet > i:nth-child(3) {
+  inline-size: 80%;
+}
+.nt-paper-sheet > i:nth-last-child(2) {
+  inline-size: 60%;
+}
+.nt-paper-sheet > i:last-child {
+  inline-size: 85%;
+}
+.nt-sheet-task {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  margin: 0.125rem -0.375rem;
+  padding: 0.5rem;
+  border: 2px solid var(--nt-accent);
+  border-radius: 0.375rem;
+  background: rgba(0, 113, 227, 0.07);
+}
+.nt-paper-sheet .nt-sheet-task > i {
+  background: #b3d4f7;
+}
+.nt-paper-sheet .nt-sheet-task > i:last-child {
+  inline-size: 70%;
+}
+@media (width < 600px) {
+  .nt-next-up,
+  .nt-paper {
+    padding: 1.5rem;
+  }
+  .nt-next-foot {
+    flex-wrap: wrap;
+  }
+  .nt-next-up {
+    border-inline-end: 0;
+    border-block-end: 0.0625rem solid #ededf0;
+  }
+  .nt-next-up h3,
+  .nt-paper > h2,
+  main .nt-paper > p.nt-paper-sub,
+  .nt-paper-acts {
+    max-inline-size: none;
+  }
+  .nt-deco {
+    display: none;
+  }
+}
+@media (forced-colors: active) {
+  .nt-deco {
+    display: none;
+  }
 }
 /* A module's card: its tile, its title, its skills at the foot, and its buttons below them. */
 .nt-reference .nt-card.nt-module {
@@ -2069,63 +2366,29 @@ main .nt-paper > p {
   padding-inline: 0.625rem;
   font-size: var(--nt-size-body);
 }
-/* The skills at the card's foot, above its buttons, as the mockup's spacer puts them. */
-.nt-skills {
-  margin-block-start: auto;
-  padding-block-start: 1rem;
-}
-.nt-skills-bar {
-  display: flex;
-  gap: 0.125rem;
-  block-size: 0.5rem;
-  border-radius: var(--nt-radius-mark);
-  background: var(--nt-card);
-  overflow: hidden;
-}
 .nt-legend-swatch {
   flex: none;
   inline-size: 0.625rem;
   block-size: 0.625rem;
   border-radius: 0.1875rem;
 }
-.nt-skills-bar > span,
 .nt-legend-swatch {
   background: var(--nt-state-locked);
 }
-.nt-skills-bar > [data-state="mastered"],
 [data-state="mastered"] > .nt-legend-swatch {
   background: var(--nt-state-mastered);
 }
-.nt-skills-bar > [data-state="time-to-review"],
 [data-state="time-to-review"] > .nt-legend-swatch {
   background: var(--nt-state-review);
 }
-.nt-skills-bar > [data-state="in-progress"],
 [data-state="in-progress"] > .nt-legend-swatch {
   background: var(--nt-state-progress);
 }
-.nt-skills-bar > [data-state="ready-to-start"],
 [data-state="ready-to-start"] > .nt-legend-swatch {
   background: var(--nt-state-ready);
 }
-.nt-skills-words,
-.nt-skills-mark {
-  margin: 0.5rem 0 0;
-  color: var(--nt-segmented);
-  font-size: var(--nt-size-caption);
-}
-.nt-skills-mark {
-  display: flex;
-  align-items: center;
-  gap: 0.375rem;
-  margin: 0;
-}
-.nt-skills .nt-skills-mark > svg {
-  font-size: 1rem;
-}
-/* In forced colours the bar keeps its segments apart by their edges, which the colours lose. */
+/* In forced colours a swatch keeps its edge, which the colours lose. */
 @media (forced-colors: active) {
-  .nt-skills-bar > span,
   .nt-legend-swatch {
     border: 0.0625rem solid CanvasText;
   }
@@ -2190,6 +2453,732 @@ dialog.nt-pop-legend .nt-legend-items {
     font-size: inherit;
     line-height: 1.12;
   }
+}
+/*
+ * The frame of Home, Subjects and the skill map (R79; the mockup's `home`, `subjects` and `map`): a
+ * column of 1120 at most in the window's middle, 32 from its edges, on the page's colour with a
+ * blue glow at its top. From 600 CSS px a row above the screen: at its start a pill of the places,
+ * white at 0.75 — each 44 high with its icon and its word, the one shown dark, the cognitive map
+ * grey with its "Soon" chip, For grown-ups and Help after a rule —, at its end a pill of the tutor,
+ * the notifications and the profile's menu. Below 600 the places are a tab bar of 84 at the bottom,
+ * white at 0.96, the one shown in the accent's text, and the row holds the mark and the pill.
+ */
+.nt-shell {
+  position: relative;
+  min-block-size: 100dvh;
+  background: linear-gradient(180deg, #eaf1fb 0%, var(--nt-page-owner) 32.5rem);
+}
+.nt-shell-bar {
+  box-sizing: border-box;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  max-inline-size: 74rem;
+  margin-inline: auto;
+  padding: 2rem 2rem 0;
+}
+.nt-nav {
+  box-sizing: border-box;
+  z-index: 2;
+  display: flex;
+}
+.nt-nav-item {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-inline-size: 0;
+  border: 0.0625rem solid transparent;
+  background: transparent;
+  color: var(--nt-text);
+  font-weight: normal;
+  text-decoration: none;
+}
+.nt-nav-icon {
+  display: inline-flex;
+}
+/* Shut: an inactive control, which 1.4.3 excepts; its "Soon" holds 4.5:1 on its chip. */
+.nt-soon {
+  padding: 0.125rem 0.4375rem;
+  border-radius: var(--nt-radius-round);
+  background: var(--nt-grey-12);
+  color: var(--nt-text-muted-on-grey);
+  font-size: 0.6875rem;
+  font-weight: var(--nt-weight-bold);
+}
+.nt-mark {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  background: var(--nt-accent);
+  color: var(--nt-on-fill);
+}
+.nt-shell-top {
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  margin-inline-start: auto;
+}
+.nt-nav,
+.nt-top-pills {
+  border-radius: var(--nt-radius-round);
+  background: rgba(255, 255, 255, 0.75);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+.nt-top-pills {
+  display: flex;
+  align-items: center;
+  gap: 0.125rem;
+  padding: 0.25rem;
+}
+.nt-top-pills button.nt-icon-only.nt-top-round {
+  border-color: transparent;
+  border-radius: var(--nt-radius-round);
+  background: transparent;
+  box-shadow: none;
+  color: var(--nt-text);
+  font-size: 1.125rem;
+}
+.nt-top-pills button.nt-icon-only.nt-top-round[aria-expanded="true"] {
+  background: var(--nt-accent-tint);
+  color: var(--nt-accent-text);
+}
+@media (width >= 600px) {
+  .nt-nav {
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.125rem;
+    padding: 0.25rem;
+  }
+  .nt-nav-item {
+    min-block-size: var(--nt-target);
+    padding: 0 0.875rem 0 0.75rem;
+    border-radius: var(--nt-radius-round);
+    font-size: 0.875rem;
+  }
+  .nt-nav-item:hover {
+    background: rgba(0, 0, 0, 0.05);
+  }
+  .nt-nav-item[aria-current="page"] {
+    background: var(--nt-text);
+    color: var(--nt-on-fill);
+    font-weight: var(--nt-weight-bold);
+  }
+  .nt-nav-item[aria-expanded="true"] {
+    background: var(--nt-accent-tint);
+    color: var(--nt-accent-text);
+  }
+  .nt-nav-icon {
+    font-size: 1rem;
+  }
+  .nt-nav-rule {
+    inline-size: 1px;
+    block-size: 1.125rem;
+    margin-inline: 0.25rem;
+    background: rgba(0, 0, 0, 0.1);
+  }
+  .nt-top-mark {
+    display: none;
+  }
+}
+@media (width < 600px) {
+  .nt-nav {
+    position: fixed;
+    inset-inline: 0;
+    inset-block-end: 0;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    padding: 0.375rem 0.25rem max(1.375rem, env(safe-area-inset-bottom));
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: 0 -0.5px 0 rgba(0, 0, 0, 0.14);
+  }
+  .nt-nav-rule {
+    display: none;
+  }
+  /* "Soon" stays in the place's name, hidden to the eye only: the tab has no room for its chip. */
+  .nt-nav-item > .nt-soon {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .nt-nav-item {
+    flex-direction: column;
+    gap: 0.25rem;
+    min-block-size: 3.25rem;
+    /* The whole fifth for the caption: a button's 1rem a side broke "Cognitive" inside the word. */
+    padding: 0.25rem 0;
+    border-radius: 0.875rem;
+    color: var(--nt-text-muted);
+    font-size: 0.6875rem;
+    font-weight: var(--nt-weight-bold);
+    line-height: 1.1;
+    text-align: center;
+    /* A fifth of 320 px holds no longer word: it wraps, never cut (1.4.10). */
+    overflow-wrap: anywhere;
+  }
+  .nt-nav-item[aria-current="page"],
+  .nt-nav-item[aria-expanded="true"] {
+    color: var(--nt-accent-text);
+  }
+  .nt-nav-icon {
+    font-size: 1.5rem;
+  }
+  .nt-shell-bar {
+    padding: 0.75rem 1rem 0;
+  }
+  .nt-shell-top {
+    flex: 1 1 auto;
+    gap: 0.5rem;
+  }
+  .nt-top-mark {
+    inline-size: 2.5rem;
+    block-size: 2.5rem;
+    margin-inline-end: auto;
+    border-radius: 0.8125rem;
+    font-size: 1.5rem;
+  }
+  .nt-shell-top button.nt-learner-pill > .nt-learner-name,
+  .nt-shell-top button.nt-learner-pill > .nt-learner-chevron {
+    display: none;
+  }
+}
+/*
+ * Between the phone and a width where the words of every place fit in one row beside the pills —
+ * 72em, Russian's longest —, a place shows its icon alone, but the page's, which keeps its words;
+ * the words stay the link's name, hidden to the eye only. The profile's pill, its avatar alone.
+ */
+@media (600px <= width < 72em) {
+  .nt-nav-item:not([aria-current="page"]) {
+    inline-size: var(--nt-target);
+    padding: 0;
+  }
+  .nt-nav-item:not([aria-current="page"]) > .nt-nav-label,
+  .nt-nav-item > .nt-soon {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .nt-shell-top button.nt-learner-pill > .nt-learner-name,
+  .nt-shell-top button.nt-learner-pill > .nt-learner-chevron {
+    display: none;
+  }
+}
+@media (forced-colors: active) {
+  .nt-nav,
+  .nt-top-pills {
+    border: 0.0625rem solid CanvasText;
+  }
+  .nt-nav-item[aria-current="page"] {
+    border-color: Highlight;
+  }
+}
+/* The heading of Subjects and the map at 32 from 600, 28 on a phone, and the line under it. */
+@media (width >= 600px) {
+  .nt-shell > main {
+    --nt-size-heading: 2rem;
+  }
+}
+.nt-shell .nt-home-sub {
+  margin-block: 0.25rem 1.5rem;
+}
+.nt-icon-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+/*
+ * A module's card on Home (R79): white, 24 round; its tile of 48, its title and the chip of its
+ * kind, its counts in grey, the skills due for review an orange chip, and the way to the map a grey
+ * pill; under them a square of 8 for each skill, 2 apart, in its state's colour — "Ready to start"
+ * an edge of dashes.
+ */
+.nt-subjects {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.nt-subject > article {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.5rem;
+  border: 0.0625rem solid transparent;
+  border-radius: 1.5rem;
+  background: var(--nt-card);
+}
+.nt-subject-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 0.875rem;
+}
+.nt-subject-head > .nt-module-tile {
+  inline-size: 3rem;
+  block-size: 3rem;
+  margin: 0;
+  border-radius: 0.8125rem;
+}
+.nt-subject-words {
+  display: flex;
+  flex: 1 1 12rem;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-inline-size: 0;
+}
+.nt-subject-name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.625rem;
+}
+.nt-subject .nt-subject-name > h3 {
+  margin: 0;
+  font-size: 1.1875rem;
+  font-weight: var(--nt-weight-bold);
+  letter-spacing: -0.01em;
+}
+.nt-subject-kind,
+.nt-subject-review {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.1875rem 0.5625rem;
+  border-radius: var(--nt-radius-round);
+  font-size: 0.75rem;
+  font-weight: var(--nt-weight-bold);
+}
+.nt-subject-kind[data-kind="adaptive"] {
+  background: #e8f3ff;
+  color: #0058b8;
+}
+.nt-subject-kind[data-kind="sequential"] {
+  background: var(--nt-text);
+  color: var(--nt-on-fill);
+}
+.nt-subject-kind[data-kind="rubric"] {
+  background: #f6ecfc;
+  color: var(--nt-rubric);
+}
+.nt-subject-review {
+  padding: 0.3125rem 0.6875rem;
+  background: #fff4e5;
+  color: var(--nt-next);
+}
+.nt-subject-review::before {
+  content: "";
+  inline-size: 0.5rem;
+  block-size: 0.5rem;
+  border-radius: 0.125rem;
+  background: #ff9500;
+}
+p.nt-subject-stat {
+  margin: 0;
+  color: var(--nt-text-muted);
+  font-size: 0.8125rem;
+}
+/* Its round map of 44 and its blue Continue, a play sign in a lighter circle. */
+.nt-subject-acts {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 0.625rem;
+}
+.nt-subject-acts button.nt-icon-only.nt-subject-map {
+  inline-size: 2.75rem;
+  padding: 0;
+  border-color: transparent;
+  border-radius: 50%;
+  background: #f2f2f7;
+  color: var(--nt-text);
+}
+.nt-subject-acts > button.nt-subject-go {
+  gap: 0.5rem;
+  padding-inline: 0.75rem 1.125rem;
+  border-color: transparent;
+  border-radius: var(--nt-radius-round);
+  background: var(--nt-accent);
+  color: var(--nt-on-fill);
+  font-size: 0.9375rem;
+  font-weight: var(--nt-weight-medium);
+}
+.nt-go-sign {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 1.375rem;
+  block-size: 1.375rem;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 0.22);
+  font-size: 0.875rem;
+}
+/*
+ * Under the squares: an adaptive module's strip, light blue — the tutor's loop in a white circle,
+ * who chooses, the skills due, "Any module" in grey —; a chain's, light grey — the place a dark pill,
+ * the current skill, a green bar with its share, and after a rule the next with an arrow.
+ */
+.nt-card-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.625rem 0.875rem;
+  padding: 0.75rem 0.875rem;
+  border-radius: 1rem;
+  background: #f5f5f7;
+}
+.nt-engine-foot {
+  background: #f5f9ff;
+}
+.nt-engine-sign,
+.nt-chain-arrow {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  inline-size: 2.25rem;
+  block-size: 2.25rem;
+  border-radius: 50%;
+  background: var(--nt-card);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.06);
+  color: var(--nt-accent);
+}
+.nt-chain-arrow {
+  inline-size: 1.75rem;
+  block-size: 1.75rem;
+  color: var(--nt-text-muted);
+}
+.nt-foot-words {
+  display: flex;
+  flex: 1 1 10rem;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-inline-size: 0;
+}
+.nt-foot-eyebrow {
+  color: var(--nt-text-muted);
+  font-size: 0.6875rem;
+  font-weight: var(--nt-weight-bold);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.nt-engine-foot .nt-foot-eyebrow {
+  color: #0058b8;
+}
+/* A skill's name wraps rather than ending in an ellipsis: no text is cut (R11). */
+.nt-foot-main {
+  font-size: 0.9375rem;
+  font-weight: var(--nt-weight-bold);
+  overflow-wrap: anywhere;
+}
+.nt-foot-next {
+  font-size: 0.875rem;
+}
+.nt-engine-any {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  color: var(--nt-text-muted);
+  font-size: 0.75rem;
+}
+.nt-chain-step {
+  display: inline-flex;
+  flex: none;
+  align-items: baseline;
+  padding-inline: 0.75rem;
+  border-radius: var(--nt-radius-round);
+  background: var(--nt-text);
+  color: var(--nt-on-fill);
+  font-size: 0.9375rem;
+  font-weight: var(--nt-weight-bold);
+  line-height: 2.25rem;
+}
+.nt-chain-step > small {
+  font-size: 0.75rem;
+  font-weight: normal;
+  opacity: 0.6;
+}
+.nt-chain-share {
+  display: flex;
+  flex: 0 1 9.375rem;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: var(--nt-weight-bold);
+}
+.nt-chain-bar {
+  flex: 1;
+  block-size: 0.3125rem;
+  overflow: hidden;
+  border-radius: 0.1875rem;
+  background: #e5e5ea;
+}
+.nt-chain-bar > span {
+  display: block;
+  block-size: 100%;
+  background: var(--nt-state-mastered);
+}
+.nt-chain-next {
+  display: flex;
+  flex: 1 1 12rem;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding-inline-start: 1rem;
+  border-inline-start: 0.0625rem solid #e5e5ea;
+}
+.nt-chain-foot > .nt-foot-words {
+  flex: 0 1 18.75rem;
+}
+.nt-chain-next > .nt-foot-words {
+  flex: 0 1 auto;
+  align-items: flex-end;
+}
+@media (forced-colors: active) {
+  .nt-card-foot {
+    border: 0.0625rem solid CanvasText;
+  }
+}
+.nt-dots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+}
+.nt-subject .nt-dots i {
+  box-sizing: border-box;
+  inline-size: 8px;
+  block-size: 8px;
+  border-radius: 2px;
+  background: #e5e5ea;
+}
+.nt-dots i[data-state="mastered"] {
+  background: var(--nt-state-mastered);
+}
+.nt-dots i[data-state="time-to-review"] {
+  background: #ff9500;
+}
+.nt-dots i[data-state="in-progress"] {
+  background: var(--nt-accent);
+}
+.nt-dots i[data-state="ready-to-start"] {
+  border: 1.5px dashed var(--nt-accent);
+  background: transparent;
+}
+.nt-dots i[data-state="feedback-by-criteria"] {
+  background: #d9b3f0;
+}
+.nt-dots i[data-state="not-assessed"] {
+  border: 1px solid #c7c7cc;
+  background: transparent;
+}
+@media (forced-colors: active) {
+  .nt-dots i {
+    border: 1px solid CanvasText;
+  }
+}
+/*
+ * Subjects (the mockup's `subjects`): the headings of its lists small, grey and in capitals; each
+ * card its tile of 52 beside its title, the mark "Connected" and its buttons below.
+ */
+h2.nt-caps {
+  margin-block: 1.625rem 0.625rem;
+  color: var(--nt-text-muted);
+  font-size: var(--nt-size-caption);
+  font-weight: var(--nt-weight-bold);
+  letter-spacing: 0.0125rem;
+  text-transform: uppercase;
+}
+.nt-module-head {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.nt-module-head .nt-module-tile {
+  flex: none;
+  inline-size: 2.75rem;
+  block-size: 2.75rem;
+  margin: 0;
+}
+.nt-catalog-card .nt-module-head {
+  gap: 0.875rem;
+}
+.nt-catalog-card .nt-module-head .nt-module-tile {
+  inline-size: 3.25rem;
+  block-size: 3.25rem;
+  border-radius: 0.9375rem;
+}
+.nt-catalog-card .nt-module-head .nt-module-tile::before {
+  font-size: 1.375rem;
+}
+.nt-catalog-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0 0.5rem;
+  margin-block-start: 0.625rem;
+}
+.nt-module article p.nt-connected-mark {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  color: var(--nt-correct);
+  font-weight: var(--nt-weight-bold);
+}
+/*
+ * A module's skill map in the frame (the mockup's `map`): "Subjects" back above the heading, the
+ * module's pill of 44 beside it, white with its tile of 32, and the frame below to the window's foot.
+ */
+.nt-shell .nt-screen-head {
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+}
+.nt-screen-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.875rem;
+}
+button.nt-back-link {
+  margin: -0.625rem 0 -0.25rem -0.5rem;
+  padding-inline: 0.25rem 0.625rem;
+  font-size: 0.9375rem;
+}
+button.nt-module-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 0.875rem 0 0.375rem;
+  background: var(--nt-card);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.06),
+    0 4px 14px rgba(17, 24, 39, 0.06);
+  color: var(--nt-text);
+  font-size: 0.9375rem;
+}
+.nt-module-tile.nt-tile-pill {
+  flex: none;
+  inline-size: 2rem;
+  block-size: 2rem;
+  margin: 0;
+  border-radius: 0.625rem;
+}
+.nt-module-tile.nt-tile-pill::before {
+  font-size: 0.9375rem;
+}
+button.nt-menu-row.nt-module-row {
+  color: var(--nt-text);
+  font-weight: var(--nt-weight-bold);
+}
+button.nt-module-row > span[lang] {
+  flex: 1 1 auto;
+}
+/*
+ * The pop-overs of the frame: For grown-ups and Help under the row of places, 340 wide; the
+ * notifications and the tutor's panel below the top right. Their heading at 17 bold, a line under
+ * it, and the empty notifications in the middle.
+ */
+.nt-pop-heading {
+  margin: 0;
+  padding: 0.375rem 0.625rem 0;
+  font-size: var(--nt-size-emphasis);
+  line-height: normal;
+}
+.nt-pop-line {
+  margin: 0;
+  padding: 0 0.625rem 0.5rem;
+  color: var(--nt-text-muted);
+  font-size: 0.78125rem;
+}
+.nt-bell-none {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1.375rem 0.625rem 1.125rem;
+  text-align: center;
+}
+.nt-bell-none > b {
+  font-size: 0.9375rem;
+}
+.nt-bell-none > span:last-child {
+  color: var(--nt-text-muted);
+  font-size: var(--nt-size-caption);
+  line-height: 1.4;
+}
+.nt-bell-sign {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 3.25rem;
+  block-size: 3.25rem;
+  border-radius: 50%;
+  background: var(--nt-grey-10);
+  color: var(--nt-text-muted);
+  font-size: 1.5rem;
+}
+.nt-tutor-home-head {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.25rem 0.25rem 0.625rem;
+}
+.nt-tutor-home-head > .nt-pop-heading {
+  padding: 0;
+}
+.nt-tutor-sign {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  inline-size: 2.375rem;
+  block-size: 2.375rem;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #5e5ce6 0%, #0a84ff 100%);
+  color: var(--nt-on-fill);
+  font-size: 1.1875rem;
+}
+.nt-tutor-bubble {
+  max-inline-size: 18.125rem;
+  margin: 0 0 0.625rem;
+  padding: 0.625rem 0.875rem;
+  border-radius: 1.125rem 1.125rem 1.125rem 0.375rem;
+  background: var(--nt-grey-10);
+  line-height: 1.42;
+}
+.nt-tutor-home-acts {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-block-start: 0.375rem;
+}
+.nt-tutor-home-acts > button {
+  justify-content: center;
+  min-block-size: 3rem;
+  border-radius: var(--nt-radius-main);
+}
+.nt-menu-who {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-inline-size: 0;
+}
+.nt-menu-whose {
+  color: var(--nt-text-muted);
+  font-size: 0.78125rem;
+  font-weight: 400;
 }
 /*
  * A task from paper (R71). The camera: the task screen's frame on near-black, the viewfinder filling
@@ -2268,9 +3257,6 @@ main.nt-task-screen:has(> .nt-camera) .nt-top-pill.nt-glass {
  * button of the photo's accent; a frame drawn by hand has a dashed line inside, and its cross and
  * corner are targets of 44 on its corners.
  */
-.nt-page-sub {
-  margin: 0;
-}
 .nt-top-end > button.nt-retake {
   display: inline-flex;
   align-items: center;
@@ -2297,20 +3283,15 @@ main .nt-page-lines > p {
 .nt-page-photo {
   position: relative;
   aspect-ratio: var(--nt-ratio);
-  inline-size: min(100cqw, 100cqh * var(--nt-ratio));
-  border-radius: 0.1875rem;
-  box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.06),
-    0 16px 48px rgba(0, 0, 0, 0.1);
+  inline-size: min(100cqw, 100cqh * var(--nt-ratio), 55rem);
+  border-radius: 0.375rem;
+  box-shadow: 0 12px 40px rgba(20, 40, 80, 0.1);
   user-select: none;
 }
 .nt-page-photo > img {
   display: block;
   inline-size: 100%;
   block-size: 100%;
-}
-.nt-page-photo[data-finding] > img {
-  opacity: 0.6;
 }
 .nt-page-draw {
   position: absolute;
@@ -2326,14 +3307,14 @@ main .nt-page-lines > p {
   border: 0;
   border-radius: 0.625rem;
   background: rgba(0, 113, 227, 0.035);
-  box-shadow: inset 0 0 0 0.09375rem rgba(0, 113, 227, 0.4);
+  box-shadow: inset 0 0 0 0.125rem rgba(0, 113, 227, 0.4);
   transition:
     background var(--nt-quick),
     box-shadow var(--nt-quick);
 }
 .nt-page-photo > button.nt-page-frame[aria-pressed="true"] {
-  background: rgba(0, 113, 227, 0.12);
-  box-shadow: inset 0 0 0 0.1875rem var(--nt-accent);
+  background: rgba(0, 113, 227, 0.08);
+  box-shadow: inset 0 0 0 0.125rem var(--nt-accent);
 }
 .nt-page-photo > button.nt-page-frame[data-drawn]::after {
   content: "";
@@ -2345,42 +3326,55 @@ main .nt-page-lines > p {
 }
 .nt-page-mark {
   position: absolute;
-  inset-block-start: -0.75rem;
-  inset-inline-start: -0.75rem;
+  inset-block-start: -0.6875rem;
+  inset-inline-start: -0.6875rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  inline-size: 1.875rem;
-  block-size: 1.875rem;
+  inline-size: 1.375rem;
+  block-size: 1.375rem;
   border-radius: 50%;
   background: var(--nt-card);
   box-shadow:
     0 0 0 0.09375rem rgba(0, 113, 227, 0.55),
     0 2px 6px rgba(0, 0, 0, 0.08);
   color: var(--nt-accent-text);
-  font-size: 0.9375rem;
+  font-size: 0.75rem;
   font-weight: var(--nt-weight-heading);
 }
 .nt-page-frame[aria-pressed="true"] > .nt-page-mark {
   background: var(--nt-accent);
-  box-shadow: 0 2px 6px rgba(0, 113, 227, 0.4);
+  box-shadow: 0 0 0 0.125rem var(--nt-card);
   color: var(--nt-on-fill);
 }
 .nt-frame-control {
   position: absolute;
   translate: -50% -50%;
 }
+/* A target of 44, the circle of 24 drawn inside it. */
 .nt-frame-control button.nt-icon-only {
+  isolation: isolate;
+  position: relative;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--nt-text);
+  font-size: 0.625rem;
+}
+.nt-frame-control button.nt-icon-only::before {
+  content: "";
+  position: absolute;
+  inset: calc(50% - 0.75rem);
+  z-index: -1;
   border-radius: 50%;
   background: var(--nt-card);
   box-shadow:
-    0 0 0 0.09375rem rgba(0, 113, 227, 0.55),
-    0 2px 6px rgba(0, 0, 0, 0.12);
-  color: var(--nt-text);
-  font-size: 1rem;
+    0 2px 6px rgba(0, 0, 0, 0.18),
+    0 0 0 0.5px rgba(0, 0, 0, 0.08);
+}
+.nt-frame-control button.nt-icon-only.nt-frame-corner::before {
+  background: var(--nt-accent);
 }
 .nt-frame-control button.nt-icon-only.nt-frame-corner {
-  background: var(--nt-accent);
   color: var(--nt-on-fill);
   cursor: nwse-resize;
   touch-action: none;
@@ -2423,18 +3417,23 @@ p.nt-page-note {
 }
 .nt-page-bar {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
+  flex-direction: column;
   align-self: center;
-  justify-content: center;
-  gap: 0.625rem;
   max-inline-size: 100%;
   box-sizing: border-box;
-  min-block-size: 3.5rem;
-  padding: 0.375rem 0.375rem 0.375rem 0.5rem;
+  overflow: hidden;
   border-radius: 1.75rem;
 }
-.nt-page-bar > button.nt-plain {
+.nt-page-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.625rem;
+  min-block-size: 3.5rem;
+  padding: 0.375rem 0.375rem 0.375rem 0.5rem;
+}
+.nt-page-row > button.nt-plain {
   background: transparent;
   color: var(--nt-accent-text);
   font-weight: var(--nt-weight-medium);
@@ -2446,20 +3445,21 @@ p.nt-page-note {
   font-variant-numeric: tabular-nums;
   text-align: center;
 }
-.nt-page-bar > button.nt-start {
+.nt-page-row > button.nt-start {
   display: inline-flex;
   align-items: center;
   gap: 0.375rem;
   padding-inline: 1.375rem 1.125rem;
 }
 /*
- * The screen of solving: at the top bar's end ‹, the counter and › in a pill of glass; the counter
- * opens the list of the tasks begun, each its number in a circle of 26 and its name, the one shown
+ * The screen of solving: at the top bar's end ‹, the counter and › in a pill of glass as tall as the
+ * bar's pill at its start, 48; the counter opens the list of the tasks begun, each its number in a circle of 26 and its name, the one shown
  * in the accent, and "Add" at its head.
  */
 .nt-solve-nav {
   display: inline-flex;
   align-items: center;
+  padding: 0.125rem;
   border-radius: var(--nt-radius-top-bar);
 }
 .nt-solve-nav > button.nt-solve-count {
@@ -2554,35 +3554,12 @@ button[aria-disabled="true"] {
     color: GrayText;
   }
 }
-/*
- * The top of "My subjects" by the mockup's `home` (R63): the profile's pill 16 from the left and 14
- * from the top of the frame, the adult's Help in a glass of its own at the right, 48 high each.
- */
-.nt-help,
+/* The close of a top bar in a glass of its own, 48 high. */
 .nt-top-close {
   display: inline-flex;
   flex: none;
   padding: 0.125rem;
   border-radius: var(--nt-radius-top-bar);
-}
-.nt-home-bar {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  box-sizing: border-box;
-  max-inline-size: 74.625rem;
-  margin-inline: auto;
-  padding: 0.875rem 1rem 0;
-}
-.nt-home-bar > .nt-help {
-  margin-inline-start: auto;
-}
-/* From 600 the heading 30 below the bar, 92 from the top, as the mockup's greeting. */
-@media (width >= 600px) {
-  .nt-home-bar + main.nt-reference,
-  .nt-home-bar + * > main.nt-reference {
-    padding-block-start: 1.875rem;
-  }
 }
 .nt-learner-name {
   min-inline-size: 0;
@@ -2626,8 +3603,7 @@ button.nt-learner-pill {
   box-shadow: none;
   font-size: 0.9375rem;
 }
-/* The icons of a bar in the text's colour, as the mockup's: Help, Back, Close. */
-.nt-help button.nt-icon-only,
+/* The icons of a bar in the text's colour, as the mockup's: Back, Close. */
 .nt-top-close button.nt-icon-only,
 .nt-top-pill button.nt-icon-only {
   color: var(--nt-text);
@@ -2652,6 +3628,9 @@ button.nt-learner-pill {
 }
 .nt-menu-current > .nt-learner-name {
   flex: 1 1 auto;
+}
+.nt-menu-who > .nt-learner-name {
+  font-weight: var(--nt-weight-bold);
 }
 .nt-menu-tick {
   display: inline-flex;
@@ -3281,15 +4260,15 @@ main.nt-end .nt-result > svg {
   white-space: nowrap;
 }
 /*
- * The task screen (R20, R65; the mockup's `task-pill`): the whole window, the top bar 14 from the
- * top and 16 from the sides — at its end the profile's pill and the pill of the mode —, the lines
- * of the voicing and of "Read aloud" under it, the canvas from edge to edge below them, which its
- * statement and sheet scroll in, and the foot, 16 from the bottom: the screen's lines, the
- * verdict's card and the row of glass, in the middle. Nothing floats over the sheet: the canvas
- * ends where the foot begins, so that neither covers a target of the other (2.4.11, 2.5.8). On a
- * narrow screen the tutor's panel stands above the canvas and the two scroll in the window's
- * height; from 64rem the panel stands at the right, 22rem, and scrolls inside. In a lesson the
- * same, under the lesson's bar.
+ * The task screen (R20, R65; the mockup's `task-pill` and `solve`): the canvas fills the whole
+ * window, from edge to edge, and over it float the top bar, 14 from the top and 16 from the sides —
+ * at its end the profile's pill and the pill of the mode —, the lines of the voicing and of "Read
+ * aloud" under it, and the foot, 16 from the bottom: the screen's lines, the verdict's card and
+ * the row of glass, in the middle. Between their pills a pointer reaches the sheet. The canvas's
+ * statement starts below the top bar, 68 down, and its sheet scrolls up past the foot, 80 high,
+ * so that neither covers a target of the other at the scroll's ends (2.4.11, 2.5.8); its bar of
+ * tools stands between them (--novatrail-canvas-pad-*; R73 canvas). In a lesson the canvas stands
+ * under the lesson's bar, between what stands above and below it.
  */
 main.nt-task-screen {
   display: flex;
@@ -3374,19 +4353,17 @@ main.nt-lesson:has(> .nt-segment-body > .nt-lesson-task > .nt-task) {
   margin: 0.5rem 1rem 0;
 }
 /*
- * Beside the open panel (R67): the canvas, the lines above it and the foot end where the panel
- * begins, 344 + 16 from the window's right edge, so that the task stays in view; the foot's middle is
- * the middle between the canvas's bar of tools, 16 + 52, and the panel, as the mockup's `task-rung`.
+ * Beside the open panel (R67): the panel opens over the canvas, as the debug panel, and moves no
+ * part of it; the lines above it and the foot end where the panel begins, 400 + 16 from the
+ * window's right edge, so that they stay in view; the foot's middle is the middle between the
+ * canvas's bar of tools, 16 + 52, and the panel, as the mockup's `task-rung`.
  */
 @media (width >= 600px) {
   .nt-task-lines[data-beside="panel"] {
-    margin-inline-end: 21.5rem;
-  }
-  .nt-task[data-beside="panel"] {
-    margin-inline-end: 21.5rem;
+    margin-inline-end: 25rem;
   }
   .nt-task-foot[data-beside="panel"] {
-    padding-inline: 3.25rem 21.5rem;
+    padding-inline: 3.25rem 25rem;
   }
 }
 /* On a phone the open sheet hides the row (R148 spec). */
@@ -3406,6 +4383,36 @@ main.nt-lesson:has(> .nt-segment-body > .nt-lesson-task > .nt-task) {
 .nt-task-foot > .nt-error {
   margin: 0;
   text-align: center;
+}
+/* The task screen over its canvas (above, at main.nt-task-screen), after .nt-task and .nt-task-foot,
+   which it overrides. */
+main.nt-task-screen:has(> .nt-task) {
+  position: relative;
+  --novatrail-canvas-top: 4.25rem;
+  --novatrail-canvas-pad-top: 4.25rem;
+  --novatrail-canvas-pad-bottom: 5rem;
+}
+/* A task from paper has no statement to keep clear of the top bar: its sheet runs up under the bar,
+   to be written on between its pills and to take the tracing paper there (R71). */
+main.nt-task-screen:has(> .nt-task-paper) {
+  --novatrail-canvas-pad-top: 0px;
+}
+main.nt-task-screen > .nt-task {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+}
+/* The bars float over the canvas; the tutor's button and panel stand fixed, over both. */
+main.nt-task-screen:has(> .nt-task) > :is(.nt-top, .nt-task-lines, .nt-task-foot) {
+  position: relative;
+  z-index: 1;
+  pointer-events: none;
+}
+:where(main.nt-task-screen:has(> .nt-task) > :is(.nt-top, .nt-task-lines, .nt-task-foot)) > * {
+  pointer-events: auto;
+}
+main.nt-task-screen > .nt-task-foot {
+  margin-block-start: auto;
 }
 /*
  * The row of glass (the mockup's `.ph-row`): 56 high, radius 28, its buttons 44 high and round,
@@ -3759,8 +4766,9 @@ button.nt-confirm-yes {
   padding: 0 1.125rem;
 }
 /*
- * The tutor's panel (R67; the mockup's `task`): glass of 0.86, 344 wide at the window's right, from
- * 74 below its top — under the top bar — to 16 above its foot, radius 28; on a phone a sheet from
+ * The tutor's panel (R67; the mockup's `task`): glass of 0.86, 400 wide at the window's right, as
+ * the debug panel, from 74 below its top — under the top bar — to 16 above its foot, as it too,
+ * radius 28; on a phone a sheet from
  * the bottom of the whole width, glass of 0.96, radius 28 at its top, at half the window's height,
  * or by its grabber to 70 below its top. A column: the head, the step's card, the conversation,
  * which scrolls, and the buttons at its foot.
@@ -3773,7 +4781,7 @@ button.nt-confirm-yes {
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
-  inline-size: 21.5rem;
+  inline-size: 25rem;
   overflow: hidden;
   border-radius: var(--nt-radius-panel);
 }
@@ -4364,59 +5372,62 @@ button.nt-act[aria-disabled="true"] {
   background: rgba(0, 113, 227, 0.12);
   color: var(--nt-accent);
 }
+/*
+ * The field of a request (R74): one rounded box of grey in a blue edge of 2, the text at its top,
+ * growing down with its lines up to 7.5rem and then scrolling, and under it at the right the
+ * microphone, shut, and Send, a blue circle with its arrow, each a target of 44.
+ */
 form.nt-ask {
   display: flex;
   flex: none;
   flex-direction: column;
-  gap: 0.375rem;
-  padding: 0 0.625rem 0.625rem;
-}
-form.nt-ask > p.nt-hint {
-  margin: 0;
-  padding: 0 0.375rem;
-  font-size: 0.71875rem;
-  line-height: 1.35;
-}
-form.nt-ask > input.nt-ask-input {
-  box-sizing: border-box;
-  inline-size: 100%;
-  min-block-size: 3.25rem;
-  padding: 0 1rem;
-  border: 0;
+  gap: 0.25rem;
+  margin: 0 0.625rem 0.625rem;
+  padding: 0.75rem 0.375rem 0.375rem 1rem;
+  border: 0.125rem solid var(--nt-accent);
   border-radius: 1.625rem;
   background: var(--nt-grey-12);
-  font-size: 0.90625rem;
+}
+form.nt-ask > textarea.nt-ask-input {
+  box-sizing: border-box;
+  inline-size: 100%;
+  max-block-size: 7.5rem;
+  margin: 0;
+  padding: 0 0.625rem 0 0;
+  border: 0;
+  background: transparent;
+  color: var(--nt-text);
+  font: inherit;
+  font-size: 0.9375rem;
+  line-height: 1.4;
+  resize: none;
+}
+form.nt-ask > textarea.nt-ask-input:focus-visible {
+  outline: none;
 }
 .nt-ask-buttons {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.375rem;
+  justify-content: flex-end;
+  gap: 0.25rem;
 }
-form.nt-ask > .nt-ask-buttons > button {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-  min-block-size: var(--nt-target);
-  padding: 0 0.875rem 0 0.75rem;
-  border-radius: var(--nt-radius-round);
-  font-size: var(--nt-size-caption);
+/* Shut until voice comes: its icon grey, with no fill of a disabled button. */
+.nt-ask-buttons button.nt-icon-only.nt-ask-voice:disabled {
+  background: transparent;
+  color: #aeaeb2;
+  font-size: 1.25rem;
 }
-form.nt-ask > .nt-ask-buttons > button.nt-ask-send {
+.nt-ask-buttons button.nt-icon-only.nt-ask-send {
+  border-radius: 50%;
   background: var(--nt-accent);
   color: var(--nt-on-fill);
-  font-weight: var(--nt-weight-bold);
+  font-size: 1.25rem;
 }
-/* Beside the open panel the page ends where the panel begins; on a phone its sheet hides the bar. */
-@media (width >= 600px) {
-  .nt-page-lines[data-beside="panel"],
-  .nt-page-stage[data-beside="panel"],
-  .nt-page-note[data-beside="panel"],
-  .nt-page-bar[data-beside="panel"] {
-    margin-inline-end: 21.5rem;
-  }
+.nt-ask-buttons button.nt-icon-only.nt-ask-send:disabled {
+  background: rgba(0, 0, 0, 0.08);
+  color: #aeaeb2;
 }
+/* The open panel lies over the page, which stays where it is; on a phone its sheet hides the bar. */
 @media (width < 600px) {
   .nt-page-bar[data-beside="panel"] {
     display: none;
@@ -5242,6 +6253,103 @@ dialog.nt-legal-sheet .nt-legal-body .nt-legal-foot > button.nt-link {
   }
 }
 /*
+ * Loading, `Sk` and `Loading` (R168 spec; the mockup's `Glavnaya-zagruzka`): a shape of what is read
+ * is grey, #ececef, and a lighter band, #f7f7f9, sweeps across it from right to left in 1.5 s, the
+ * band twice and a fifth the shape's width; it stands still under "Reduce motion", and with forced
+ * colours the shape is an outline in GrayText.
+ */
+@keyframes nt-sk {
+  from {
+    background-position: 120% 0;
+  }
+  to {
+    background-position: -120% 0;
+  }
+}
+.nt-sk {
+  display: block;
+  flex: none;
+  max-inline-size: 100%;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #ececef 0%, #f7f7f9 45%, #ececef 90%);
+  background-size: 220% 100%;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .nt-sk {
+    animation: nt-sk 1.5s ease-in-out infinite;
+  }
+}
+@media (forced-colors: active) {
+  .nt-sk {
+    border: 1px solid GrayText;
+  }
+}
+.nt-loading {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+/* A module's card while its map comes: the squares and the foot, as far apart as the card's rows. */
+.nt-counting {
+  gap: 1rem;
+}
+/* Home's "Next up" while read: the column of the mockup's shapes, clear of the sheet drawn beside. */
+.nt-next-loading {
+  flex: 1 1 auto;
+  max-inline-size: 55%;
+}
+.nt-next-loading > .nt-next-foot > .nt-loading {
+  flex: 1 1 auto;
+}
+/* A shape in a line of text: a count in a heading. */
+.nt-sk-inline {
+  display: inline-block;
+  vertical-align: middle;
+}
+/* A term and its value, a field's label and its box, a checkbox's two lines: closer than parts. */
+.nt-terms-loading,
+.nt-field-loading,
+.nt-tick-loading,
+.nt-catalog-loading {
+  gap: 0.375rem;
+}
+.nt-field-loading {
+  margin: 0;
+}
+/* A checkbox's line among the ticks of the invite code: its ring beside its words. */
+.nt-ticks > .nt-check.nt-loading {
+  flex-direction: row;
+}
+/* A row of a menu of modules: its tile beside its name, as tall as the row. */
+.nt-menu-loading-row {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  block-size: var(--nt-target);
+  padding: 0 0.625rem;
+}
+/* A skill map: each band its heading over a row of tiles that wraps, as the element draws it. */
+.nt-map-loading {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-block-start: 0.5rem;
+}
+.nt-map-loading-tiles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+/* A task: its statement under the bar, and its row of glass at the window's foot, in the middle. */
+.nt-task-loading {
+  flex: 1 1 auto;
+  padding-block-start: 1rem;
+}
+.nt-task-loading > .nt-task-loading-row {
+  align-self: center;
+  margin-block-start: auto;
+}
+/*
  * Waiting, `Waiting` (the mockup's `wait` and `wait-home`): the whole window the ground of the
  * screen to come — the sky of "Who is learning?" or the page — and the spark in a halo of 72 in its
  * middle, white aglow on the sky and the name's indigo on the page, pulsing in 1.4 s.
@@ -5310,4 +6418,323 @@ main.nt-wait-page .nt-wait-spark {
   .nt-wait-mark {
     animation: nt-spark 1.4s ease-in-out infinite;
   }
+}
+
+/*
+ * The frame's own look over the shared rules of the bars and the legend, after them (R79): the
+ * profile's pill in the pill of the top right, clear, and below 72em the avatar alone; Home's
+ * legend a row of small squares, a state's icon left to the map.
+ */
+.nt-shell-top button.nt-learner-pill {
+  block-size: var(--nt-target);
+  padding: 0 0.625rem 0 0.25rem;
+  border-color: transparent;
+  border-radius: var(--nt-radius-round);
+  background: transparent;
+  box-shadow: none;
+}
+@media (width < 72em) {
+  /* The avatar alone, named by the pseudonym, as R90 spec's list has it. */
+  .nt-shell-top button.nt-learner-pill {
+    padding: 0 0.25rem;
+  }
+}
+/* The cognitive map shut, with no fill of a disabled button: an item of the menu, not a button. */
+nav.nt-nav button.nt-nav-item[aria-disabled="true"] {
+  background: transparent;
+  color: #aeaeb2;
+}
+@media (width >= 600px) {
+  dialog.nt-pop.nt-pop-menu.nt-pop-grown {
+    inline-size: 21.25rem;
+  }
+  dialog.nt-pop.nt-pop-bell {
+    inline-size: 18.75rem;
+  }
+  dialog.nt-pop.nt-pop-tutor {
+    inline-size: 21.5rem;
+  }
+  .nt-shell section.nt-legend {
+    margin: 0.375rem 0 0;
+    padding-inline: 0.25rem;
+    color: var(--nt-text-muted);
+    font-size: 0.75rem;
+  }
+  .nt-shell .nt-legend .nt-legend-items {
+    gap: 1rem;
+  }
+  .nt-shell .nt-legend .nt-legend-items > li:has(> .nt-legend-swatch) > svg {
+    display: none;
+  }
+  .nt-shell .nt-legend .nt-legend-swatch {
+    inline-size: 0.5625rem;
+    block-size: 0.5625rem;
+    border-radius: 0.125rem;
+  }
+  .nt-shell .nt-legend [data-state="time-to-review"] > .nt-legend-swatch {
+    background: #ff9500;
+  }
+  .nt-shell .nt-legend [data-state="in-progress"] > .nt-legend-swatch {
+    background: var(--nt-accent);
+  }
+  .nt-shell .nt-legend [data-state="ready-to-start"] > .nt-legend-swatch {
+    border: 1.5px dashed var(--nt-accent);
+    background: transparent;
+  }
+  .nt-shell .nt-legend [data-state="locked"] > .nt-legend-swatch {
+    background: #e5e5ea;
+  }
+}
+/* A module's card in the frame: its title beside its tile, the catalog's buttons at the foot's right. */
+.nt-card.nt-module .nt-module-head h3 {
+  margin: 0;
+  font-size: var(--nt-size-emphasis);
+}
+/* The last button's text ends at the card's edge by its padding, not by a margin past the foot. */
+.nt-module.nt-catalog-card .nt-catalog-foot > .nt-buttons {
+  margin: 0 0 0 auto;
+}
+.nt-module.nt-catalog-card .nt-catalog-foot > .nt-buttons:not(:only-child) > button:last-child {
+  padding-inline-end: 0;
+}
+.nt-module.nt-catalog-card .nt-catalog-foot > .nt-buttons:only-child {
+  margin-inline: 0 auto;
+}
+/* The screen in the frame's column, over the widths and margins of its layout. */
+.nt-shell > main,
+.nt-shell > main.nt-map {
+  box-sizing: border-box;
+  max-inline-size: 74rem;
+  margin-inline: auto;
+  padding: 2rem 2rem 4rem;
+}
+@media (width < 600px) {
+  .nt-shell > main,
+  .nt-shell > main.nt-map {
+    padding: 1.25rem 1rem 7.5rem;
+  }
+}
+/* biome-ignore lint/style/noDescendingSpecificity: no profile's screen stands in the frame. */
+.nt-shell > main > h1 {
+  margin-block: 0 1.25rem;
+  line-height: 1.1;
+}
+.nt-shell > main > h1:has(+ .nt-home-sub) {
+  margin-block-end: 0;
+}
+/*
+ * The page's screen as the mockup's finding (R71): the sky of Home behind it; the way back a grey
+ * circle in the pill, Retake a pill of 48; while the tasks are found, in the bar's middle a pill
+ * of 48 that breathes, a ring turning and its words in a gleam running through them, and over the
+ * photo a blue tint with a line of light that runs down and back. The bar at the foot one row.
+ */
+main.nt-task-screen:has(.nt-page-stage) {
+  background: linear-gradient(180deg, #eaf1fb 0%, var(--nt-page-owner) 30rem);
+}
+.nt-top[data-middle] {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+}
+.nt-top[data-middle] > .nt-top-pill {
+  justify-self: start;
+  max-inline-size: 100%;
+}
+.nt-top[data-middle] > :last-child {
+  justify-self: end;
+}
+@media (width < 600px) {
+  .nt-top[data-middle] {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .nt-top[data-middle] > .nt-finding {
+    grid-row: 2;
+    grid-column: 1 / -1;
+    justify-self: center;
+  }
+}
+/* Where the pill and the buttons at the end do not fit one row, the buttons go below it, at its
+   end, and the finding below them: a squeezed pill would wrap its name a letter a line (1.4.10). */
+@media (width < 25rem) {
+  .nt-top[data-middle] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .nt-top[data-middle] > :last-child {
+    grid-row: 2;
+  }
+  .nt-top[data-middle] > .nt-finding {
+    grid-row: 3;
+    max-inline-size: 100%;
+    white-space: normal;
+  }
+}
+.nt-top-pill button.nt-icon-only.nt-page-back {
+  border-radius: 50%;
+  background: #f2f2f7;
+  color: var(--nt-text);
+}
+.nt-top-end > button.nt-retake {
+  gap: 0.5rem;
+  padding-inline: 1rem 1.25rem;
+  font-size: 0.9375rem;
+  font-weight: var(--nt-weight-medium);
+}
+p.nt-finding {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  box-sizing: border-box;
+  min-block-size: 3rem;
+  margin: 0;
+  padding: 0 1.375rem 0 0.875rem;
+  border-radius: var(--nt-radius-round);
+  font-size: 0.9375rem;
+  font-weight: var(--nt-weight-bold);
+  white-space: nowrap;
+}
+.nt-top > p.nt-finding > .nt-spin {
+  inline-size: 1.375rem;
+  block-size: 1.375rem;
+  border-color: #e5f0ff;
+  border-block-start-color: var(--nt-accent);
+  border-inline-end-color: var(--nt-accent);
+}
+.nt-page-scan {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  background: rgba(0, 113, 227, 0.03);
+  pointer-events: none;
+}
+.nt-page-scan > span {
+  display: none;
+  position: absolute;
+  inset-inline: 0;
+  inset-block-start: -12%;
+  block-size: 12%;
+  border-block-end: 0.125rem solid rgba(0, 113, 227, 0.7);
+  background: linear-gradient(
+    180deg,
+    rgba(0, 113, 227, 0) 0%,
+    rgba(0, 113, 227, 0.12) 85%,
+    rgba(0, 113, 227, 0) 100%
+  );
+  box-shadow: 0 6px 18px rgba(0, 113, 227, 0.25);
+}
+@keyframes nt-scan {
+  to {
+    inset-block-start: 100%;
+  }
+}
+@keyframes nt-breathe {
+  50% {
+    box-shadow:
+      0 0 0 0.4375rem rgba(0, 113, 227, 0),
+      0 1px 3px rgba(0, 0, 0, 0.06);
+  }
+}
+@keyframes nt-gleam {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+@media (prefers-reduced-motion: no-preference) and (forced-colors: none) {
+  .nt-page-scan > span {
+    display: block;
+    animation: nt-scan 2.4s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate;
+  }
+  p.nt-finding:not(.nt-found) {
+    box-shadow:
+      0 0 0 0 rgba(0, 113, 227, 0.28),
+      0 1px 3px rgba(0, 0, 0, 0.06);
+    animation: nt-breathe 2s ease-in-out infinite;
+  }
+  .nt-finding-words {
+    background:
+      linear-gradient(90deg, var(--nt-text) 40%, var(--nt-accent) 50%, var(--nt-text) 60%) 0 0 /
+      200% 100%;
+    background-clip: text;
+    color: transparent;
+    animation: nt-gleam 2.4s linear infinite;
+  }
+}
+@media (width >= 600px) {
+  .nt-page-row {
+    flex-wrap: nowrap;
+    gap: 1.25rem;
+    white-space: nowrap;
+    padding: 0.5rem 0.5rem 0.5rem 1.5rem;
+  }
+  .nt-page-bar:not(:has(> .nt-page-limit)) {
+    border-radius: var(--nt-radius-round);
+  }
+  /* With the most at its head, the bar of the mockup's 640, its count in the middle. */
+  .nt-page-bar:has(> .nt-page-limit) {
+    inline-size: min(40rem, 100%);
+  }
+  .nt-page-bar:has(> .nt-page-limit) .nt-page-count {
+    flex: 1;
+  }
+}
+.nt-page-row > button.nt-plain:disabled {
+  color: #aeaeb2;
+}
+.nt-page-count > strong {
+  color: var(--nt-text);
+  font-weight: var(--nt-weight-bold);
+}
+/* The most at once: a ring of orange round its number, on a band of warm white. */
+.nt-page-limit {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  padding: 1rem 1.25rem;
+  border-block-end: 1px solid rgba(255, 149, 0, 0.15);
+  background: linear-gradient(180deg, #fff8ec, #fff4e2);
+}
+.nt-limit-ring {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  inline-size: 2.75rem;
+  block-size: 2.75rem;
+  border: 0.28rem solid #ff9500;
+  border-radius: 50%;
+  color: #b25e00;
+  font-size: 0.875rem;
+  font-weight: var(--nt-weight-heading);
+  letter-spacing: -0.02em;
+}
+.nt-limit-words {
+  margin: 0;
+  color: #4a3412;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  text-wrap: pretty;
+}
+.nt-limit-words > strong {
+  color: var(--nt-text);
+  font-size: 0.9375rem;
+  font-weight: var(--nt-weight-bold);
+}
+/* Found: a green circle of 26 with its tick. */
+.nt-top > p.nt-found {
+  gap: 0.625rem;
+  padding-inline: 0.75rem 1.25rem;
+}
+.nt-found-sign {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 1.625rem;
+  block-size: 1.625rem;
+  border-radius: 50%;
+  background: var(--nt-state-mastered);
+  color: var(--nt-on-fill);
+  font-size: 0.875rem;
 }

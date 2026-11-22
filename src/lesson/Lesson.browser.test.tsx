@@ -49,6 +49,7 @@ import { addProfile, openProfile } from "../storage/profile.ts";
 import { setAccount } from "../storage/registry.ts";
 import { memoryDevice } from "../test/device.ts";
 import { inLanguage } from "../test/language.tsx";
+import { expectLoaded, expectLoading, held } from "../test/loading.ts";
 import { Lesson } from "./Lesson.tsx";
 import type { LessonOpen, RunRef } from "./LessonContext.tsx";
 
@@ -200,6 +201,10 @@ interface Setup {
   readonly ownKey?: boolean;
   /** The package has solving steps, which the pill of the mode stands for. */
   readonly steps?: boolean;
+  /** What the run's reads answer only once it is given. */
+  readonly runHeld?: Promise<void>;
+  /** What GetOpenAttempt answers only once it is given. */
+  readonly taskHeld?: Promise<void>;
 }
 
 const RUN: RunRef = { lessonRunId: "r1", lesson: GAPS_ID, packageDigest: D1 };
@@ -256,8 +261,9 @@ async function renderLesson(setup: Setup = {}) {
   if (openAttempt !== undefined) segmentOf.set(openAttempt.attemptId, openAttempt.segment);
   const routes = (router: ConnectRouter) => {
     router.service(LearningService, {
-      getLessonRun(request) {
+      async getLessonRun(request) {
         asked.push(`run ${request.lessonRunId}`);
+        await setup.runHeld;
         providers.push(`run ${request.ownKeyProvider}`);
         setup.run?.(reads++);
         return { run: runOf() };
@@ -295,8 +301,9 @@ async function renderLesson(setup: Setup = {}) {
           attempt: { attemptId, packageDigest: D1, segment: { lessonRunId: "r1", segment } },
         };
       },
-      getOpenAttempt(request) {
+      async getOpenAttempt(request) {
         asked.push(`open ${request.attemptId}`);
+        await setup.taskHeld;
         try {
           setup.openTask?.(request.attemptId);
         } catch (error) {
@@ -586,7 +593,28 @@ describe("the lesson player", () => {
     expect(asked).toContain("lesson done");
     expect(await kept()).toBeUndefined();
     expect(endedRuns).toEqual(["r1"]);
-    expect(screen.getByRole("button", { name: "Back to My subjects" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Back to Home" })).toBeVisible();
+  });
+
+  it("stands with its bar and the shapes of its title, its line and a segment while the run is read (R168 spec)", async () => {
+    const { given, give } = held();
+    await renderLesson({ runHeld: given });
+    expect(screen.getByRole("heading", { level: 1, name: "Lesson" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Leave the lesson" })).toBeTruthy();
+    expectLoading(document, 6);
+    give();
+    expect(await screen.findByRole("heading", { level: 1, name: "Gaps and posts" })).toBeTruthy();
+    expectLoaded(document);
+  });
+
+  it("stands with the shapes of a task segment while its attempt is read, under the lesson's bar (R168 spec)", async () => {
+    const { given, give } = held();
+    await renderLesson({ openAttempt: { attemptId: "a7", segment: 3 }, taskHeld: given });
+    expect(await screen.findByRole("heading", { level: 1, name: "Gaps and posts" })).toBeTruthy();
+    await vi.waitFor(() => expectLoading(document, 4));
+    give();
+    await screen.findByRole("button", { name: "Choose an answer" });
+    expectLoaded(document);
   });
 
   it("opens after a restart at its place, with the attempt open and the demo as it was", async () => {
@@ -860,13 +888,13 @@ describe("the lesson player", () => {
       },
     });
     const retry = await screen.findByRole("button", { name: "Try again" });
-    expect(screen.getByRole("button", { name: "Back to My subjects" })).toHaveClass("nt-secondary");
+    expect(screen.getByRole("button", { name: "Back to Home" })).toHaveClass("nt-secondary");
     failing = false;
     await userEvent.click(retry);
     await screen.findByText("A fence has posts and gaps between them.");
   });
 
-  it("goes back to My subjects from a run that did not come (R57)", async () => {
+  it("goes back to Home from a run that did not come (R57)", async () => {
     window.location.hash = "#/lesson";
     await renderLesson({
       run: () => {
@@ -874,7 +902,7 @@ describe("the lesson player", () => {
       },
     });
     await screen.findByRole("heading", { level: 1, name: "No connection" });
-    await userEvent.click(screen.getByRole("button", { name: "Back to My subjects" }));
+    await userEvent.click(screen.getByRole("button", { name: "Back to Home" }));
     expect(window.location.hash).toBe("#/home");
     window.location.hash = "";
   });
@@ -1134,7 +1162,7 @@ describe("the lesson player", () => {
     });
     await userEvent.click(await continueButton());
     expect(await screen.findByRole("button", { name: "Next lesson" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "Back to My subjects" })).toHaveClass("nt-secondary");
+    expect(screen.getByRole("button", { name: "Back to Home" })).toHaveClass("nt-secondary");
     chosen.unmount();
 
     await renderLesson({

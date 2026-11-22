@@ -1,4 +1,4 @@
-// "Back to My subjects" (R57): home by default, what the screen gives otherwise, and nothing while
+// "Back to Home" (R57): home by default, what the screen gives otherwise, and nothing while
 // a request of the screen is under way.
 import { render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -6,15 +6,15 @@ import { userEvent } from "vitest/browser";
 import { inLanguage } from "../test/language.tsx";
 import { HomeButton, HomeWay } from "./HomeButton.tsx";
 
-const home = () => screen.getByRole("button", { name: "Back to My subjects" });
+const home = () => screen.getByRole("button", { name: "Back to Home" });
 
 afterEach(() => {
   window.location.hash = "";
 });
 
-describe("the way back to My subjects", () => {
+describe("the way back to Home", () => {
   it("goes home", async () => {
-    window.location.hash = "#/essays";
+    window.location.hash = "#/skill-map";
     render(inLanguage(<HomeWay />));
     expect(home().parentElement).toHaveClass("nt-buttons");
     expect(home()).toHaveClass("nt-secondary");
@@ -39,6 +39,6 @@ describe("the way back to My subjects", () => {
 
   it("is named in Russian on a Russian screen", () => {
     render(inLanguage(<HomeButton />, "ru"));
-    expect(screen.getByRole("button", { name: "К моим предметам" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "На главную" })).toBeVisible();
   });
 });

@@ -6,6 +6,8 @@
 // its heading in the bar's glass pill, beside its way back, as the mockup's top bar has its title,
 // named by the title, whose words the pill shows on two lines (R63). A screen drawn as the mockup's
 // legal text has its heading in the sheet's head instead, between its way back and its close (R69).
+// A screen in the frame of the row of places may have a way back above its heading and what stands
+// beside it, as a module's skill map its way back to Subjects and the module chosen (R79).
 import { type ReactNode, useEffect, useRef } from "react";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 
@@ -61,6 +63,8 @@ export interface TopBar {
   readonly end?: ReactNode;
   /** What stands under the heading in the pill: a lesson's segments, behind its line (R64). */
   readonly under?: ReactNode;
+  /** What stands in the bar's middle, between the pill and its end: the page's finding (R71). */
+  readonly middle?: ReactNode;
 }
 
 /** The head of a sheet, the mockup's legal text (R69): its way back, its close, and a chip. */
@@ -103,6 +107,12 @@ export interface ScreenProps {
   readonly bar?: TopBar;
   /** The head of a sheet, which then holds the heading. */
   readonly head?: SheetHead;
+  /** What stands above the heading, unframed: a way back. */
+  readonly above?: ReactNode;
+  /** What stands beside the heading, in its line: the module of a map. */
+  readonly beside?: ReactNode;
+  /** The heading for assistive technology alone, where the frame shows the place: Home. */
+  readonly unseen?: boolean;
 }
 
 export function Screen({
@@ -115,6 +125,9 @@ export function Screen({
   after,
   bar,
   head,
+  above,
+  beside,
+  unseen = false,
 }: ScreenProps) {
   const { language, words } = useLanguage();
   const heading = useRef<HTMLHeadingElement>(null);
@@ -131,13 +144,28 @@ export function Screen({
   }, []);
 
   const h1 = (
-    <h1 ref={heading} tabIndex={-1} aria-label={bar === undefined ? undefined : title}>
+    <h1
+      ref={heading}
+      tabIndex={-1}
+      aria-label={bar === undefined ? undefined : title}
+      className={unseen ? "nt-hidden-label" : undefined}
+    >
       {shown ?? title}
     </h1>
   );
   const top =
     head === undefined ? (
-      h1
+      above === undefined && beside === undefined ? (
+        h1
+      ) : (
+        <div className="nt-screen-head">
+          {above}
+          <div className="nt-screen-title">
+            {h1}
+            {beside}
+          </div>
+        </div>
+      )
     ) : (
       <div className="nt-sheet-head">
         {head.back}
@@ -153,7 +181,7 @@ export function Screen({
       {bar === undefined ? (
         top
       ) : (
-        <div className="nt-top">
+        <div className="nt-top" data-middle={bar.middle === undefined ? undefined : ""}>
           <div className="nt-top-pill nt-glass">
             {bar.back}
             {bar.under === undefined ? (
@@ -165,6 +193,7 @@ export function Screen({
               </div>
             )}
           </div>
+          {bar.middle}
           {bar.end}
         </div>
       )}

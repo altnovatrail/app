@@ -110,10 +110,28 @@ export const TABLE: Readonly<Record<string, Value>> = {
   // home screen's card, a frame's cross the close.
   photos: { base: "photo-library", filled: false, mirrored: false },
   resize: { base: "open-in-full", filled: false, mirrored: false },
-  // The field of a request on the page to pick from (R74): Send, a paper plane, and the microphone,
-  // off until voice comes; each beside its caption.
-  send: { base: "send", filled: false, mirrored: false },
+  // The field of a request on the page to pick from (R74): Send, an arrow up in a blue circle, and
+  // the microphone, off until voice comes; each without its caption (R90 spec).
+  send: { base: "arrow-upward", filled: false, mirrored: false },
   microphone: { base: "mic", filled: false, mirrored: false },
+  // The row of places of Home, Subjects and the skill map, and the phone's tab bar (R148 spec): Home,
+  // four squares, filled while it is the place; Subjects, a book; the cognitive map, a hub, shut;
+  // For grown-ups, a padlock. Help is the bar's. At the top right the notifications, a bell; in
+  // For grown-ups This device and the section's other settings; on Subjects a module's skill map,
+  // a tree of nodes.
+  "nav-home": { base: "grid-view", filled: true, mirrored: false },
+  "nav-subjects": { base: "menu-book", filled: true, mirrored: false },
+  "nav-cognitive": { base: "hub", filled: false, mirrored: false },
+  "nav-grown": { base: "lock", filled: true, mirrored: false },
+  notifications: { base: "notifications", filled: true, mirrored: false },
+  device: { base: "tablet-android", filled: false, mirrored: false },
+  settings: { base: "settings", filled: false, mirrored: false },
+  "skill-map": { base: "account-tree", filled: false, mirrored: false },
+  // A module's card on Home (R79): Continue, the engine that chooses, and the next skill.
+  play: { base: "play-arrow", filled: false, mirrored: true },
+  engine: { base: "autorenew", filled: false, mirrored: false },
+  "next-skill": { base: "arrow-forward", filled: false, mirrored: true },
+  chain: { base: "keyboard-double-arrow-right", filled: false, mirrored: true },
 };
 
 /** An icon as the app draws it: its view box, and the paths it fills in the text's colour. */

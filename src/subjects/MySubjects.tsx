@@ -1,41 +1,38 @@
-// "My subjects", the learner's home (R99 spec): the modules connected to the profile and, below
-// them, the catalog of the ones it may connect, each a card with its title in its own explanation
-// language and, when that is not the screen's, a line that names it, in the order of the screen's
-// language. Connecting and disconnecting are a press away; api's answer is the list of connected
-// modules, and the focus goes with the card to its new place. An attempt open outside a lesson is a
-// press away, above the lists (R20), and so is each lesson run open, by the lesson's title as this
-// device keeps it, or else its module's name (R23); and "What's next" asks the engine, or
-// "Something else" beside an attempt open, which it closes (R24). A card of a version has the page
-// of its license beside its button (R32). Below the lists the screen says that the tutor is an AI,
-// and leads to the page on how to use it safely (R33). Beside the engine's way the screen leads to
-// the skill map, the second way in, where the learner chooses a skill (R34), and to "My essays"
-// (R53); a card marks a module whose skill graph is a chain "in order" (R06). Under its heading,
-// where the learner begins their work, the screen says how much of today's tutor time the profile
-// has used, or, once it is used up, when it comes back (the contract's quota; R37). It is drawn as
-// the mockup's `home` (R148 spec; R62): what comes next and the tutor time on a card at the top, "A
-// task from my paper" beside it, which opens the camera of a new page (R71); each card of a module connected with the
-// states of its skills, counted by the rule of skill-map's map, and a way to its map; the legend of
-// the marks below the cards, and on a phone behind a button.
+// Home (R99 spec; R62, R79): the learner's home, in the frame of the row of places. Under
+// its heading, "Home" — the pseudonym is the profile's menu's —, the learner begins their work:
+// what comes next and the tutor time on a card at the top — an attempt open outside a lesson a
+// press away (R20), else the engine's way, "What's next" (R24): no "Something else" beside the
+// attempt, which it would close; a module's Continue or its map goes elsewhere —,
+// with how much of today's tutor time the profile has used, or, once it is used up, when it comes
+// back (the contract's quota; R37); "A task from my paper" beside it, which opens the camera of a
+// new page (R71), and its pages (R77); each lesson run open, by the lesson's title as this device
+// keeps it, or else its module's name (R23); and the modules connected, each a card with its title
+// in its own explanation language, the states of its skills counted by the rule of skill-map's map,
+// the mark "in order" of a chain (R06), and the way to its map (R34). The catalog, connecting and
+// the licenses are Subjects' (SubjectsPage.tsx), which "All subjects" opens. The legend of the
+// marks stands below the cards, on a phone behind a button; that the tutor is an AI is Help's and
+// the tutor's panel's of the top right (Shell.tsx). It is drawn as the mockup's `home` (R148 spec).
 import type { QuotaShare } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 // Whose action a request is; the cards have actions of their own.
 import { Action as Actor } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
-import type { ConnectedModule } from "@altnovatrail/contracts/novatrail/api/v1/module_pb.js";
 import { type ReactNode, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { learnerQuotaText, readQuota } from "../account/quota.ts";
 import { useApi, useRequest } from "../api/ApiContext.tsx";
 import type { Api } from "../api/client.ts";
-import { type Failure, parseFailure } from "../api/failure.ts";
+import type { Failure } from "../api/failure.ts";
 import { failureText } from "../api/words.ts";
 import { Icon } from "../app/Icon.tsx";
-import { ESSAYS, LESSON, navigate, PAPER, SKILL_MAP, TASK, TUTOR } from "../app/router.ts";
+import { LESSON, navigate, PAPER, TASK } from "../app/router.ts";
 import { Screen } from "../app/Screen.tsx";
+import { Loading, Sk } from "../app/Skeleton.tsx";
 import { ReadFailed } from "../boot/Screens.tsx";
 import { collator } from "../i18n/intl.ts";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { type RunRef, useLessons } from "../lesson/LessonContext.tsx";
 import { moduleOf } from "../lesson/run.ts";
+import { givenOf } from "../next/choice.ts";
 import { NextStep } from "../next/NextStep.tsx";
-import { licenseRoute } from "../packages/LicensePage.tsx";
+import { useEngine } from "../next/useEngine.ts";
 import { usePackages } from "../packages/PackagesContext.tsx";
 import type { OpenViews } from "../packages/views.ts";
 import { usePaper } from "../paper/PaperContext.tsx";
@@ -44,20 +41,21 @@ import { moduleMapRoute } from "../skills/SkillMapScreen.tsx";
 import type { Device } from "../storage/device.ts";
 import { openProfile, type Profile } from "../storage/profile.ts";
 import { useAttempt } from "../task/AttemptContext.tsx";
-import { CardHeading } from "./CardHeading.tsx";
-import { ModuleTile } from "./ModuleTile.tsx";
-import { byTitle, cardsOf, type ModuleCard, type ModuleRef } from "./modules.ts";
-import { Legend, SkillBar } from "./SkillBar.tsx";
-import { useSequential } from "./useSequential.ts";
-import { useSkillCounts } from "./useSkillCounts.ts";
+import { type OpenTask, openTaskOf } from "../task/openTask.ts";
+import { HomeCard } from "./HomeCard.tsx";
+import { Legend } from "./Legend.tsx";
+import { byTitle, type ModuleCard } from "./modules.ts";
+import { useModules } from "./useModules.ts";
 
-/** A lesson run open, as My subjects names it. */
+/** A lesson run open, as Home names it. */
 export interface OpenRun {
   readonly lessonRunId: string;
   /** The lesson's title as this device keeps it; none when the device keeps no state of the run. */
   readonly title?: string;
   /** Its module's name, when the title is not kept: its ID while the manifest has not come. */
   readonly module: string;
+  /** Its module's ID, by which a module's card goes on with it. */
+  readonly moduleId?: string;
   /** The module's explanation language, the `lang` of either. */
   readonly language?: string;
 }
@@ -86,120 +84,50 @@ function quotaFill(quota: QuotaShare | undefined): number {
   return Math.min(100, Math.max(0, quota?.profilePercent ?? 0));
 }
 
-/** What a card's button does. */
-type Action = "connect" | "disconnect";
-
-/** A module's card, its buttons described by its title. */
-function Card({
-  card,
-  action,
-  pending,
-  onPress,
-  onLicense,
-}: {
-  readonly card: ModuleCard;
-  readonly action: Action;
-  readonly pending: boolean;
-  readonly onPress: (moduleId: string) => void;
-  readonly onLicense: ((digest: string) => void) | undefined;
-}) {
-  const { words } = useLanguage();
-  const id = useId();
-  const digest = card.digest;
-  const own = action === "disconnect";
-  return (
-    <li className="nt-card nt-module">
-      <article aria-labelledby={id}>
-        <ModuleTile moduleId={card.moduleId} title={card.title} />
-        <CardHeading card={card} id={id} />
-        {card.skills === undefined ? null : <SkillBar counts={card.skills} />}
-        <div className="nt-buttons">
-          {/* A module connected with a current version has its map, as the list of maps has it. */}
-          {own && digest !== undefined ? (
-            <button
-              type="button"
-              className="nt-link"
-              aria-describedby={id}
-              onClick={() => navigate(moduleMapRoute(card.moduleId))}
-            >
-              {words.text("skillmap.title")}
-            </button>
-          ) : null}
-          {/* Not disabled while a press is under way: a disabled button would drop the focus. */}
-          <button
-            type="button"
-            className={own ? "nt-link" : undefined}
-            aria-describedby={id}
-            aria-disabled={pending}
-            data-module={card.moduleId}
-            data-action={action}
-            onClick={() => {
-              if (!pending) onPress(card.moduleId);
-            }}
-          >
-            {words.text(action === "connect" ? "subjects.connect" : "subjects.disconnect")}
-          </button>
-          {digest === undefined || onLicense === undefined ? null : (
-            <button
-              type="button"
-              className="nt-link"
-              aria-describedby={id}
-              onClick={() => onLicense(digest)}
-            >
-              {words.text("subjects.license")}
-            </button>
-          )}
-        </div>
-      </article>
-    </li>
-  );
-}
-
-export interface SubjectsScreenProps {
+export interface HomeScreenProps {
   /** The modules connected, as cards; none while they come. */
   readonly connected: readonly ModuleCard[] | undefined;
-  /** The catalog's modules, connected ones too; none while they come. */
-  readonly catalog: readonly ModuleCard[] | undefined;
-  /** What the last connection or disconnection came to, when it did not answer. */
+  /** What the lists came to, when they did not answer. */
   readonly failure?: Failure;
-  /** A connection or disconnection under way. */
-  readonly pending?: boolean;
-  readonly onConnect: (moduleId: string) => void;
-  readonly onDisconnect: (moduleId: string) => void;
   /** Asks for the lists again: offered when the names of some modules did not come. */
   readonly onRetry?: () => void;
   /** Goes on with the attempt the learner has open; none when there is none. */
   readonly onContinue?: () => void;
-  /** The way to what the engine chooses: "What's next", or "Something else" beside Continue. */
+  /** The way to what the engine chooses, "What's next"; none beside an attempt open. */
   readonly next?: ReactNode;
   /** The learner's lesson runs open, each a press away. */
   readonly runs?: readonly OpenRun[];
   readonly onLesson?: (lessonRunId: string) => void;
-  /** Opens the page of a version's license, by its digest; no button without it. */
-  readonly onLicense?: (digest: string) => void;
   /** The share of today's quota of platform AI the profile has used; none while it is not known. */
   readonly quota?: QuotaShare;
+  /**
+   * Works on a module's skill, the full ID its card names, when the module has no lesson begun and
+   * the task open is not its own: the engine's task of that skill on the task screen.
+   */
+  readonly onPractise?: (skill: string, moduleId: string) => void;
+  /** The share is on its way: its line is a shape meanwhile (R168 spec). */
+  readonly quotaLoading?: boolean;
   /** "Your pages", the history of pages from paper, beside "Open camera". */
   readonly pages?: ReactNode;
+  /** What the attempt open is, once read; none while it comes, or when it could not be had. */
+  readonly openTask?: OpenTask;
 }
 
 /** The screen itself, from what its container has read. */
-export function SubjectsScreen({
+export function HomeScreen({
   connected,
-  catalog,
   failure,
-  pending = false,
-  onConnect,
-  onDisconnect,
   onRetry,
   onContinue,
   runs = [],
   onLesson,
-  onLicense,
   next,
   quota,
+  quotaLoading = false,
+  onPractise,
   pages,
-}: SubjectsScreenProps) {
+  openTask,
+}: HomeScreenProps) {
   const { language, words } = useLanguage();
   const paper = usePaper();
   // Once for each share that comes, not for each render: its formats of Intl are made anew.
@@ -211,23 +139,12 @@ export function SubjectsScreen({
   const paperId = useId();
   const connectedId = useId();
   const continueId = useId();
-  const lessonsId = useId();
-  const catalogId = useId();
-  const tutorId = useId();
   const compare = useMemo(() => collator(language).compare, [language]);
-  const own = new Set(connected?.map((card) => card.moduleId));
   const mine = connected === undefined ? undefined : byTitle(connected, compare);
-  const more =
-    catalog === undefined
-      ? undefined
-      : byTitle(
-          catalog.filter((card) => !own.has(card.moduleId)),
-          compare,
-        );
-  const unnamed = [...(mine ?? []), ...(more ?? [])].some((card) => card.unnamed === true);
+  const [first, ...later] = runs;
+  const unnamed = connected?.some((card) => card.unnamed === true) === true;
   return (
-    <Screen title={words.text("subjects.title")} layout="reference">
-      <p className="nt-home-sub">{words.text("subjects.sub")}</p>
+    <Screen title={words.text("home.screen")} layout="reference" unseen>
       {failure === undefined ? null : (
         <p role="alert" className="nt-error">
           {failureText(failure, words)}
@@ -235,41 +152,104 @@ export function SubjectsScreen({
       )}
       <div className="nt-home-top">
         <section aria-labelledby={nextId} className="nt-next-up">
+          <GridSheet />
           <h2 id={nextId}>{words.text("subjects.next-up")}</h2>
-          {onContinue === undefined ? null : (
-            <section aria-labelledby={continueId} className="nt-continue">
-              <h3 id={continueId}>{words.text("task.continue-title")}</h3>
+          {/* What is next in line: the task open, else the lesson begun, else what the engine
+              will give — it gives no name before its press, ChooseNext being an action —, or that
+              nothing can begin with no subject connected. */}
+          {connected === undefined && failure === undefined ? (
+            <NextUpLoading />
+          ) : onContinue !== undefined ? (
+            <>
+              <h3 id={continueId}>
+                <TaskName task={openTask} />
+              </h3>
+              {openTask?.kind === "module" && openTask.statement !== undefined ? (
+                <p
+                  className="nt-next-line nt-next-statement"
+                  {...(openTask.language === undefined ? {} : { lang: openTask.language })}
+                >
+                  {openTask.statement}
+                </p>
+              ) : null}
               <div className="nt-buttons">
-                <button type="button" onClick={onContinue}>
+                <button type="button" aria-describedby={continueId} onClick={onContinue}>
                   {words.text("task.continue")}
                 </button>
               </div>
-            </section>
-          )}
-          {/* One place, whatever is open: the step stays itself while its press closes the attempt. */}
-          {next}
-          {/* At the card's foot, as the mockup has it: how much of today's tutor time is used. */}
-          {spent === undefined ? null : (
-            <p className="nt-quota">
-              <span className="nt-quota-bar" aria-hidden="true">
-                <span style={{ inlineSize: `${quotaFill(quota)}%` }} />
-              </span>
-              {spent}
+            </>
+          ) : first !== undefined ? (
+            <>
+              <h3 id={continueId}>
+                <RunName run={first} />
+              </h3>
+              <div className="nt-buttons">
+                <button
+                  type="button"
+                  aria-describedby={continueId}
+                  onClick={() => onLesson?.(first.lessonRunId)}
+                >
+                  {words.text("lesson.open-continue")}
+                </button>
+              </div>
+            </>
+          ) : (
+            <p className="nt-next-line">
+              {words.text(connected?.length === 0 ? "home.nothing" : "home.engine-picks")}
             </p>
           )}
+          {/* The other lessons begun, a press away each. */}
+          {later.length === 0 ? null : (
+            <p className="nt-next-more">
+              {words.text("home.more-runs")}
+              {later.map((run) => (
+                <button
+                  key={run.lessonRunId}
+                  type="button"
+                  className="nt-link"
+                  onClick={() => onLesson?.(run.lessonRunId)}
+                >
+                  <RunName run={run} />
+                </button>
+              ))}
+            </p>
+          )}
+          {/* At the card's foot: how much of today's tutor time is used, and at its right the way
+              to what the engine chooses, when no attempt is open. */}
+          <div className="nt-next-foot">
+            {spent === undefined ? (
+              quotaLoading ? (
+                <Loading className="nt-quota">
+                  <Sk width="100%" height="0.375rem" radius="0.1875rem" />
+                  <Sk width="68%" height="0.75rem" radius="0.25rem" />
+                </Loading>
+              ) : null
+            ) : (
+              <p className="nt-quota">
+                <span className="nt-quota-bar" aria-hidden="true">
+                  <span style={{ inlineSize: `${quotaFill(quota)}%` }} />
+                </span>
+                {spent}
+              </p>
+            )}
+            <div className="nt-next-step">{next}</div>
+          </div>
         </section>
-        {/* A new page each time: the camera, and before it the line to keep names out (R71); and
-            beside it the pages of the history (R77). */}
+        {/* A new page each time: the camera, whose screen says to keep names out (R71); and
+            beside it the pages of the history (R77). A sheet with a task marked is drawn at the
+            right from 600, as the mockup's. */}
         <section aria-labelledby={paperId} className="nt-paper">
-          <span className="nt-paper-icon" aria-hidden="true">
+          <PaperSheet />
+          <p className="nt-paper-eyebrow">
             <Icon value="camera" />
-          </span>
+            {words.text("home.camera")}
+          </p>
           <h2 id={paperId}>{words.text("subjects.paper")}</h2>
+          <p className="nt-paper-sub">{words.text("subjects.paper-sub")}</p>
           <div className="nt-paper-acts">
             <button
               type="button"
-              className="nt-paper-open"
-              aria-describedby={`${paperId}-names`}
+              className="nt-icon-text"
               onClick={() => {
                 paper?.clear();
                 navigate(PAPER);
@@ -280,34 +260,8 @@ export function SubjectsScreen({
             </button>
             {pages}
           </div>
-          <p id={`${paperId}-names`} className="nt-hint">
-            {words.text("paper.names")}
-          </p>
         </section>
       </div>
-      {runs.length === 0 ? null : (
-        <section aria-labelledby={lessonsId} className="nt-continue">
-          <h2 id={lessonsId}>{words.text("lesson.open-title")}</h2>
-          <ul className="nt-cards">
-            {runs.map((run) => (
-              <li key={run.lessonRunId} className="nt-card">
-                <h3 id={`${lessonsId}-${run.lessonRunId}`}>
-                  <RunName run={run} />
-                </h3>
-                <div className="nt-buttons">
-                  <button
-                    type="button"
-                    aria-describedby={`${lessonsId}-${run.lessonRunId}`}
-                    onClick={() => onLesson?.(run.lessonRunId)}
-                  >
-                    {words.text("lesson.open-continue")}
-                  </button>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
       {unnamed && onRetry !== undefined ? (
         <div role="status">
           <p>{words.text("subjects.unnamed")}</p>
@@ -317,72 +271,188 @@ export function SubjectsScreen({
         </div>
       ) : null}
       <section aria-labelledby={connectedId}>
-        <h2 id={connectedId}>{words.text("subjects.connected")}</h2>
-        {mine === undefined ? null : mine.length === 0 ? (
+        {/* Unseen: the cards say what they are, and Subjects is in the bar; the section keeps its name. */}
+        <h2 id={connectedId} className="nt-hidden-label">
+          {words.text("subjects.title")}
+        </h2>
+        {mine === undefined ? (
+          failure === undefined ? (
+            <CardsLoading />
+          ) : null
+        ) : mine.length === 0 ? (
           <p>{words.text("subjects.none")}</p>
         ) : (
-          <ul className="nt-cards">
+          <ul className="nt-subjects">
             {mine.map((card) => (
-              <Card
+              <HomeCard
                 key={card.moduleId}
                 card={card}
-                action="disconnect"
-                pending={pending}
-                onPress={onDisconnect}
-                onLicense={onLicense}
+                onContinue={() => {
+                  // The lesson begun of the module, else its task open, else a task of its skill
+                  // to work on (R107 spec), else its map, where a skill is chosen.
+                  const run = runs.find((each) => each.moduleId === card.moduleId);
+                  if (run !== undefined) onLesson?.(run.lessonRunId);
+                  else if (
+                    onContinue !== undefined &&
+                    openTask?.kind === "module" &&
+                    openTask.moduleId === card.moduleId
+                  ) {
+                    onContinue();
+                  } else if (card.skill !== undefined && onPractise !== undefined) {
+                    onPractise(card.skill, card.moduleId);
+                  } else navigate(moduleMapRoute(card.moduleId));
+                }}
               />
             ))}
           </ul>
         )}
       </section>
       {mine === undefined || mine.length === 0 ? null : <Legend />}
-      <div className="nt-buttons">
-        <button type="button" className="nt-secondary" onClick={() => navigate(SKILL_MAP)}>
-          {words.text("skillmap.title")}
-        </button>
-        <button type="button" className="nt-secondary" onClick={() => navigate(ESSAYS)}>
-          {words.text("essays.title")}
-        </button>
-      </div>
-      <section aria-labelledby={catalogId}>
-        <h2 id={catalogId}>{words.text("subjects.catalog")}</h2>
-        {more === undefined ? null : more.length === 0 ? (
-          <p>{words.text("subjects.catalog-empty")}</p>
-        ) : (
-          <ul className="nt-cards">
-            {more.map((card) => (
-              <Card
-                key={card.moduleId}
-                card={card}
-                action="connect"
-                pending={pending}
-                onPress={onConnect}
-                onLicense={onLicense}
-              />
-            ))}
-          </ul>
-        )}
-      </section>
-      <section aria-labelledby={tutorId}>
-        <h2 id={tutorId}>{words.text("tutor.home-title")}</h2>
-        <p>{words.text("tutor.home-text")}</p>
-        <div className="nt-buttons">
-          <button type="button" className="nt-secondary" onClick={() => navigate(TUTOR)}>
-            {words.text("tutor.open")}
-          </button>
-        </div>
-      </section>
     </Screen>
   );
 }
 
-type Read =
-  | { readonly status: "loading" }
-  | { readonly status: "failed"; readonly failure: Failure }
-  | { readonly status: "done"; readonly connected: ModuleCard[]; readonly catalog: ModuleCard[] };
+/** "Next up" while the subjects are read: the name's two lines, a line, the button, the quota. */
+function NextUpLoading() {
+  return (
+    <Loading className="nt-next-loading">
+      <Sk width="92%" height="1.75rem" radius="0.5rem" />
+      <Sk width="58%" height="1.75rem" radius="0.5rem" />
+      <Sk
+        width="42%"
+        height="0.875rem"
+        radius="0.3125rem"
+        style={{ marginBlockStart: "0.375rem" }}
+      />
+      <Sk
+        width="9.25rem"
+        height="2.625rem"
+        radius="999px"
+        style={{ marginBlockStart: "0.375rem" }}
+      />
+      <div className="nt-next-foot">
+        <div className="nt-loading">
+          <Sk width="100%" height="0.375rem" radius="0.1875rem" />
+          <Sk width="68%" height="0.75rem" radius="0.25rem" />
+        </div>
+      </div>
+    </Loading>
+  );
+}
 
-/** The key of a module at a version: a module in both lists is one card. */
-const keyOf = (module: ModuleRef) => `${module.moduleId} ${module.packageDigest}`;
+/** Two subjects' cards while they are read, in the cards' own frame. */
+function CardsLoading() {
+  return (
+    <Loading>
+      <ul className="nt-subjects" aria-hidden="true">
+        {[0, 1].map((n) => (
+          <li key={n} className="nt-subject">
+            <article>
+              <div className="nt-subject-head">
+                <Sk width="3rem" height="3rem" radius="0.8125rem" />
+                <div className="nt-subject-words nt-loading">
+                  <div className="nt-subject-name">
+                    <Sk width="13.75rem" height="1.125rem" />
+                    <Sk width="6.875rem" height="1.375rem" radius="999px" />
+                  </div>
+                  <Sk width="10.625rem" height="0.75rem" radius="0.25rem" />
+                </div>
+                <div className="nt-subject-acts">
+                  <Sk width="2.5rem" height="2.5rem" radius="50%" />
+                  <Sk width="9.375rem" height="2.5rem" radius="999px" />
+                </div>
+              </div>
+              <Sk width="38%" height="0.5rem" radius="0.1875rem" />
+              <div className="nt-card-foot">
+                <Sk width="2.25rem" height="2.25rem" radius="50%" />
+                <div className="nt-foot-words nt-loading">
+                  <Sk width="8.125rem" height="0.625rem" radius="0.25rem" />
+                  <Sk width="17.5rem" height="0.875rem" radius="0.3125rem" />
+                </div>
+              </div>
+            </article>
+          </li>
+        ))}
+      </ul>
+    </Loading>
+  );
+}
+
+/** A page of a book with a task marked on it: a picture of the card, not read out. */
+function PaperSheet() {
+  return (
+    <span className="nt-deco" aria-hidden="true">
+      <span className="nt-paper-sheet">
+        <i />
+        <i />
+        <i />
+        <span className="nt-sheet-task">
+          <i />
+          <i />
+        </span>
+        <i />
+        <i />
+        <i />
+      </span>
+    </span>
+  );
+}
+
+/**
+ * A sheet in squares with a puzzle solved on it, in ink, no words: a row of shapes that repeat, the
+ * square of the one that comes next marked "?", and below it that shape ringed in orange — a
+ * picture of a task, not of the lesson that comes next, so that it says nothing of one it is not.
+ */
+function GridSheet() {
+  return (
+    <span className="nt-deco" aria-hidden="true">
+      <span className="nt-grid-sheet">
+        <svg
+          aria-hidden="true"
+          viewBox="0 0 216 104"
+          fill="none"
+          strokeWidth="2.4"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <g stroke="#1f3a93">
+            <ellipse cx="17" cy="24" rx="11" ry="10.5" transform="rotate(-8 17 24)" />
+            <path d="M40 35.5 52.5 12.5 64.5 35" />
+            <path d="M40 35.5 64.5 35" />
+            <path d="M77 13.5 99.5 12.8 100.2 35.6 77.6 36.2Z" />
+            <ellipse cx="124" cy="24.5" rx="11" ry="10.5" transform="rotate(6 124 24.5)" />
+            <path d="M147 35.5 159.5 12.5 171.5 35.2" />
+            <path d="M147 35.5 171.5 35.2" />
+            <path d="M183 12h26v25h-26z" strokeDasharray="4 3.5" />
+            <path d="M190.5 19.5q5.5-6.5 11 0q2 5-5 7.5v3.5" />
+            <path d="M196.5 33.6v.2" strokeWidth="3" />
+            <path d="M185.8 73.5 207.8 72.8 208.5 94.5 186.4 95.2Z" />
+          </g>
+          <g stroke="#e8590c">
+            <path d="M196 42q-6 7 0 15" />
+            <path d="M191.5 52.5 196 57.5 199.5 51.8" />
+            <ellipse cx="197" cy="84" rx="18" ry="16.5" transform="rotate(-10 197 84)" />
+          </g>
+        </svg>
+      </span>
+    </span>
+  );
+}
+
+/** The name of the task open: of its module, of paper, or that one is open while neither is known. */
+function TaskName({ task }: { readonly task: OpenTask | undefined }) {
+  const { words } = useLanguage();
+  if (task?.kind === "paper") return <>{words.text("task.of-paper")}</>;
+  if (task?.module === undefined) return <>{words.text("task.continue-title")}</>;
+  const [before = "", after = ""] = words.pattern("task.of-module").split("{module}");
+  return (
+    <>
+      {before}
+      <span {...(task.language === undefined ? {} : { lang: task.language })}>{task.module}</span>
+      {after}
+    </>
+  );
+}
 
 /** The name of a run open, from the state of its lesson on this device or its module's manifest. */
 async function runOf(
@@ -398,11 +468,12 @@ async function runOf(
     lessonRunId: run.lessonRunId,
     ...(kept === undefined ? {} : { title: kept.view.title }),
     module: manifest?.title ?? moduleOf(run.lesson),
+    moduleId: moduleOf(run.lesson),
     ...(manifest === undefined ? {} : { language: manifest.languages.explanation }),
   };
 }
 
-/** "My subjects" of the learner chosen: what api says is connected and in the catalog. */
+/** Home of the learner chosen: what api says is connected. */
 export function MySubjects({
   profileId,
   device,
@@ -411,7 +482,6 @@ export function MySubjects({
   /** The device, whose database names the lessons open; none in a screen's own test. */
   readonly device?: Device;
 }) {
-  const api = useApi();
   const { views } = usePackages();
   const open = useAttempt()?.attemptId;
   const lessons = useLessons();
@@ -433,43 +503,24 @@ export function MySubjects({
       current = false;
     };
   }, [views, device, profileId, refs]);
-  const [read, setRead] = useState<Read>({ status: "loading" });
-  const [attempt, setAttempt] = useState(0);
-  const [failure, setFailure] = useState<Failure | undefined>(undefined);
-  const [pending, setPending] = useState(false);
-  // The button the focus goes to once a card has moved: its own, in its new list.
-  const focus = useRef<{ moduleId: string; action: Action } | undefined>(undefined);
-
-  // biome-ignore lint/correctness/useExhaustiveDependencies: a retry reads the lists again.
+  const modules = useModules(profileId, false);
+  // What the attempt open is: a name that did not come leaves the line that one is open.
+  const api = useApi();
+  const [openTask, setOpenTask] = useState<OpenTask | undefined>(undefined);
   useEffect(() => {
+    setOpenTask(undefined);
+    if (open === undefined) return;
     let current = true;
-    setRead({ status: "loading" });
-    void Promise.all([
-      api.module.listConnectedModules({ profileId }),
-      api.module.listCatalog({ profileId }),
-    ])
-      .then(async ([own, catalog]) => {
-        // One card for a module in both lists: its manifest is read once.
-        const all = new Map<string, ModuleRef>();
-        for (const module of [...own.modules, ...catalog.modules]) all.set(keyOf(module), module);
-        const cards = await cardsOf(views, [...all.values()]);
-        const byKey = new Map([...all.keys()].map((key, i) => [key, cards[i] as ModuleCard]));
-        const pick = (modules: readonly ModuleRef[]) =>
-          modules.map((module) => byKey.get(keyOf(module)) as ModuleCard);
-        return { connected: pick(own.modules), catalog: pick(catalog.modules) };
-      })
-      .then(
-        ({ connected, catalog }) => {
-          if (current) setRead({ status: "done", connected, catalog });
-        },
-        (reason: unknown) => {
-          if (current) setRead({ status: "failed", failure: parseFailure(reason) });
-        },
-      );
+    openTaskOf(api, views, profileId, open).then(
+      (task) => {
+        if (current) setOpenTask(task);
+      },
+      () => {},
+    );
     return () => {
       current = false;
     };
-  }, [api, views, profileId, attempt]);
+  }, [api, views, profileId, open]);
 
   // The share of the quota, by the learner's action: the profile's alone. It holds nothing back:
   // a share that did not come is no line, nor is one from an api that has none yet (R27), and the
@@ -477,61 +528,60 @@ export function MySubjects({
   const readShare = useCallback((of: Api) => readQuota(of, profileId, Actor.LEARNING), [profileId]);
   const share = useRequest(readShare);
   const retryShare = share.retry;
+  const retryModules = modules.retry;
   // A retry reads the lists again, and the share with them: it may have failed with them.
   const retry = useCallback(() => {
-    setAttempt((n) => n + 1);
+    retryModules();
     retryShare();
-  }, [retryShare]);
+  }, [retryModules, retryShare]);
 
-  // Once a card has moved, its button in the new list takes the focus the old one had.
-  useEffect(() => {
-    const target = focus.current;
-    if (target === undefined || read.status !== "done") return;
-    focus.current = undefined;
-    document
-      .querySelector<HTMLButtonElement>(
-        `button[data-module="${CSS.escape(target.moduleId)}"][data-action="${target.action}"]`,
-      )
-      ?.focus();
-  });
-
-  // api answers with the modules connected: they become the list, the catalog stays.
-  const change = useCallback(
-    async (moduleId: string, then: Action, call: () => Promise<{ modules: ConnectedModule[] }>) => {
-      setPending(true);
-      setFailure(undefined);
-      try {
-        const connected = await cardsOf(views, (await call()).modules);
-        focus.current = { moduleId, action: then };
-        setRead((held) => (held.status === "done" ? { ...held, connected } : held));
-      } catch (reason) {
-        setFailure(parseFailure(reason));
-      } finally {
-        setPending(false);
+  // A card's skill: the engine's task of it on the task screen. Choosing closes the attempt open,
+  // which the map asks of first, so with one open — of another module or of paper — the map is the
+  // way; and so it is when the engine gives nothing, or the choice fails, as the map says why.
+  const { choose, act } = useEngine(profileId, device);
+  const practising = useRef(false);
+  const onPractise = useCallback(
+    (skill: string, moduleId: string) => {
+      if (open !== undefined) {
+        navigate(moduleMapRoute(moduleId));
+        return;
       }
+      if (practising.current) return;
+      practising.current = true;
+      void (async () => {
+        const given = await choose(skill, undefined);
+        if (given === undefined || givenOf(given) === "nothing") navigate(moduleMapRoute(moduleId));
+        else await act(given, undefined);
+      })()
+        .catch(() => navigate(moduleMapRoute(moduleId)))
+        .finally(() => {
+          practising.current = false;
+        });
     },
-    [views],
+    [open, choose, act],
   );
 
-  const done = read.status === "done";
-  const connected = useSkillCounts(
-    api,
-    views,
-    profileId,
-    useSequential(views, done ? read.connected : undefined),
-  );
-  const catalog = useSequential(views, done ? read.catalog : undefined);
-  if (read.status === "failed") return <ReadFailed failure={read.failure} onRetry={retry} />;
+  if (modules.failed !== undefined) return <ReadFailed failure={modules.failed} onRetry={retry} />;
   return (
-    <SubjectsScreen
-      connected={connected}
-      catalog={catalog}
-      {...(failure === undefined ? {} : { failure })}
+    <HomeScreen
+      connected={modules.connected}
       {...(share.status === "done" && share.value !== undefined ? { quota: share.value } : {})}
-      pending={pending}
+      quotaLoading={share.status === "loading"}
+      onPractise={onPractise}
       onRetry={retry}
       {...(open === undefined ? {} : { onContinue: () => navigate(TASK) })}
-      next={<NextStep profileId={profileId} {...(device === undefined ? {} : { device })} />}
+      {...(openTask === undefined ? {} : { openTask })}
+      {...(open !== undefined
+        ? {}
+        : {
+            next: (
+              <NextStep
+                profileId={profileId}
+                secondary={runs.length > 0}
+                {...(device === undefined ? {} : { device })}
+              />
+            ),
+          })}
       {...(device === undefined
         ? {}
         : { pages: <YourPages profileId={profileId} device={device} /> })}
@@ -542,13 +592,6 @@ export function MySubjects({
         lessons?.choose({ kind: "run", run });
         navigate(LESSON);
       }}
-      onLicense={(digest) => navigate(licenseRoute(digest))}
-      onConnect={(moduleId) =>
-        void change(moduleId, "disconnect", () => api.module.connectModule({ profileId, moduleId }))
-      }
-      onDisconnect={(moduleId) =>
-        void change(moduleId, "connect", () => api.module.disconnectModule({ profileId, moduleId }))
-      }
     />
   );
 }

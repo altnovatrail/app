@@ -1,11 +1,12 @@
 // The backend on the engine's own IndexedDB: what the store in memory stands in for in Node; and
-// the work kept as bytes, with a Blob that schema version 1 kept read after it (R16).
+// the work kept as bytes, with a Blob that schema version 1 kept read after it, and the store
+// `essays` of version 4 taken off by version 5 (R16, R53).
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { server } from "vitest/browser";
 import { type Connection, NewerSchemaError, type Schema, within } from "./backend.ts";
 import { browserDevice, siteStorage } from "./browser.ts";
 import { indexedDbBackend } from "./idb.ts";
-import { addProfile } from "./profile.ts";
+import { addProfile, Profile } from "./profile.ts";
 import { readRegistry, setAccount } from "./registry.ts";
 import { PROFILE_SCHEMA, profileDatabase } from "./schema.ts";
 
@@ -211,6 +212,29 @@ describe("the work in a profile's database on IndexedDB", () => {
       expect(png?.type).toBe("image/png");
     },
   );
+});
+
+describe("a profile's database of version 4 on IndexedDB", () => {
+  it("loses its store `essays` at version 5, with every essay in it, and keeps the rest", async () => {
+    const database = name();
+    const v4 = { version: 4, stores: { ...PROFILE_SCHEMA.stores, essays: { digest: "digest" } } };
+    const old = await open(database, v4);
+    await old.write(["attempts", "history", "essays"], async (tx) => {
+      await tx.put("attempts", "a1", { attemptId: "a1", digest: "d1", changedAt: 1 });
+      await tx.put("history", ["a1", 0], { kind: "clear", t: 0, ids: [1] });
+      await tx.put("essays", "e1", { attemptId: "e1", digest: "d1", startedAt: 1, sent: [] });
+    });
+    const next = await open(database, PROFILE_SCHEMA);
+    await expect(next.read(["essays"], async () => 1)).rejects.toMatchObject({
+      name: "NotFoundError",
+    });
+    const kept = await new Profile(next, () => 2).readAttempt("a1");
+    expect(kept?.attempt.digest).toBe("d1");
+    expect(kept?.history).toEqual([{ kind: "clear", t: 0, ids: [1] }]);
+    expect(
+      await next.read(["attempts"], (tx) => tx.count("attempts", { index: "changedAt" })),
+    ).toBe(1);
+  });
 });
 
 describe("what the browser tells of the site's storage", () => {

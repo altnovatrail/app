@@ -262,22 +262,22 @@ export const en = {
   /** The sheet's own scrolling, which canvas declares (R11). */
   "accessibility.moving": "Moving the sheet",
   "accessibility.moving-criteria": "2.5.7 Dragging Movements, level AA",
+  /** Hand is the canvas's own tool, in its words. */
   "accessibility.moving-why":
-    "With a single finger, the sheet moves only by dragging it, and two fingers drag it too. The sheet has no buttons that move it. A task from paper over its sheet is moved by dragging its grip",
-  /** Zoom in and Zoom out are the canvas's own buttons, in its words. */
+    "With a single pointer, the sheet moves only by dragging it: with the Hand tool under a finger, a stylus or a mouse, with one finger once a stylus has written on it, and with two fingers always. The sheet has no buttons that move it. A task from paper over its sheet is moved by dragging its grip",
   "accessibility.moving-instead":
-    "A mouse wheel, a trackpad and the arrow keys move the sheet once it has the focus, and the arrow keys move a task from paper by its grip. Where the sheet is taller than the screen, the page scrolls as any page does. Zoom in and Zoom out work with a tap",
+    "A mouse wheel, a trackpad and the arrow keys move the sheet across and down once it has the focus, and the arrow keys move a task from paper by its grip",
   "accessibility.moving-when":
     "There is no date: buttons that move the sheet come back only if the platform decides so",
   "accessibility.print": "Print in the lines of a workbook",
-  "accessibility.print-criteria": "1.4.12 Text Spacing, level AA",
+  "accessibility.print-criteria": "1.4.4 Resize Text, level AA; 1.4.12 Text Spacing, level AA",
+  /** The page is the task's, 1000 CSS px wide at most, fitted to the sheet's width (R11). */
   "accessibility.print-why":
-    "The printed numbers, words and values in the lines of a workbook keep their own spacing: the place of each piece is fixed on the page, so the spacing you set for text does not reach them",
-  /** Zoom in and Zoom out are the canvas's own buttons, in its words. */
+    "The printed numbers, words and values in the lines of a workbook lie on the task's page, which fits the width of the sheet. The browser's zoom makes them larger only until the page fills the sheet's width, and on a sheet narrower than 1000 pixels, as on a tablet or a phone, not at all. The place of each piece is fixed on the page too, so the spacing you set for text does not reach them",
   "accessibility.print-instead":
-    "The print can be made up to twice as large with the sheet's buttons Zoom in and Zoom out. The task's statement above the workbook takes your spacing",
+    "The task's statement above the workbook and the rest of the app grow with the browser's zoom and take your spacing. On a sheet wider than the page, the zoom makes the print larger too, until the page fills it",
   "accessibility.print-when":
-    "There is no date yet: only once the layout of the page leaves the lines room for wider spacing",
+    "There is no date: a way to enlarge the print comes only if the platform decides so, and wider spacing only once the layout of the page leaves the lines room for it",
   /** Check and Not yet are the words of the task screen, Can't read this its reading's. */
   "accessibility.check": "Sending an answer with Check",
   "accessibility.check-criteria": "3.3.4 Error Prevention (Legal, Financial, Data), level AA",
@@ -400,8 +400,78 @@ export const en = {
   /** The cross and the corner of a frame the learner drew round a task the AI missed. */
   "icon.remove-frame": "Remove the frame",
   "icon.resize-frame": "Resize your frame",
+  /**
+   * The row of places of Home, Subjects and the skill map, and the phone's tab bar (R148 spec): its
+   * name, its places, the cognitive map shut until it comes with its "Soon" and its tooltip, and
+   * For grown-ups; Help is the bar's.
+   */
+  "nav.title": "Main",
+  "nav.home": "Home",
+  "nav.subjects": "Subjects",
+  "nav.cognitive": "Cognitive map",
+  "nav.soon": "Soon",
+  "nav.cognitive-later": "Cognitive map — comes later",
+  "nav.grown": "Grown-ups",
+  /** Home: its title and heading, no pseudonym — the profile's menu has it. */
+  "home.screen": "Home",
+  /**
+   * Subjects, the catalog of the server: its heading and line, the connected modules by their
+   * count, the others, and a connected module's mark.
+   */
+  "catalog.title": "Subjects",
+  "catalog.sub": "The modules of this server. A connected one is on Home, with its skill map",
+  "catalog.connected": "Connected · {count}",
+  "catalog.more": "More on this server",
+  "catalog.is-connected": "Connected",
+  /** At the title of a module's map: the pop-over of the connected modules, and its button. */
+  "skillmap.modules": "Connected modules",
+  "skillmap.module": "Module: {module}",
+  /** The profile's menu: whose profile it is. */
+  "learner.yours": "Your profile",
+  /** For grown-ups, from the row of places: whose settings it holds, and the section's other pages. */
+  "grown.who": "Your profile and this device",
+  "grown.section": "All settings",
+  /** The notifications at the top right: nothing sends one yet. */
+  "bell.title": "Notifications",
+  "bell.none": "Nothing new yet",
+  "bell.later": "Notifications will appear here",
+  /** The tutor's panel from the top right of Home, where there is no work: what it is and where it helps. */
+  "tutor-home.ai":
+    "The tutor is an AI — a computer program, not a person. A program checks every answer",
+  "tutor-home.where":
+    "Open a lesson or a page from your book, and the tutor helps with the work there",
   /** The heading of the learner's home: the modules connected to the profile (R62). */
   "subjects.title": "My subjects",
+  /** A module's kind on Home: the engine leads, or its skills go in a chain (R06). */
+  "home.adaptive": "Adaptive",
+  "home.sequential": "Sequential",
+  /** A module's card on Home: goes on with it. */
+  "home.continue": "Continue",
+  /** Under an adaptive module: who chooses what comes next, from any module connected. */
+  "home.engine-chooses": "The tutor chooses",
+  "home.engine-what": "The next skill, as the work goes",
+  "home.engine-any": "Any module",
+  /** Under a module whose skills go in a chain: the skill to work on, how much is mastered, the next. */
+  "home.chain-current": "Current skill",
+  "home.chain-done": "Every skill mastered",
+  "home.chain-percent": "{percent}%",
+  "home.chain-next": "Next",
+  /** A module's skills due for review, a chip. */
+  "home.review": plural({
+    one: "{count} skill to review",
+    other: "{count} skills to review",
+  }),
+  /** Above "Tasks from my paper": what the half of the card opens. */
+  "home.camera": "Camera",
+  /** In "Next up", the task open: of its module, not declined, or from paper. */
+  "task.of-module": "A task: {module}",
+  "task.of-paper": "A task from paper",
+  /** In "Next up" with nothing open: the engine names what it gives only once asked. */
+  "home.engine-picks": "The tutor picks the next lesson or task",
+  /** In "Next up" with no module connected. */
+  "home.nothing": "Nothing to begin yet: no subject is connected",
+  /** Before the other lessons begun, each a link. */
+  "home.more-runs": "Also begun:",
   /** The heading of the modules connected to the profile. */
   "subjects.connected": "Connected",
   "subjects.none": "No subjects are connected yet",
@@ -420,18 +490,16 @@ export const en = {
   "subjects.license": "License",
   /** On a module's card: its skill graph is a chain, so its lessons go one after another (R06). */
   "subjects.sequential": "In order",
-  /** Under the heading of the home screen, where the learner picks up their work. */
-  "subjects.sub": "Pick up where you left off",
   /** The heading of the card of what comes next: the task in progress, the engine's way, the tutor time. */
   "subjects.next-up": "Next up",
-  /** The second card at the top: "A task from my paper", the tasks of a page of the learner's book (R71). */
-  "subjects.paper": "A task from my paper",
-  /** The button of "A task from my paper": it opens the camera. */
+  /** The second card at the top: "Tasks from my paper", the tasks of a page of the learner's book (R71). */
+  "subjects.paper": "Tasks from my paper",
+  /** Under its heading: what the card does, the mockup's line. */
+  "subjects.paper-sub": "Snap a page from your book, pick the tasks, and solve each one here",
+  /** The button of "Tasks from my paper": it opens the camera. */
   "subjects.paper-open": "Open camera",
   /** On a module's card under its bar: of its skills with a verdict, how many are mastered. */
   "subjects.mastered": "{mastered} of {count} mastered",
-  /** Beside it, the skills whose review is due. */
-  "subjects.review": "{count} time to review",
   /** On the card of a module whose skills have a rubric and no verdict. */
   "subjects.rubric": plural({
     one: "{count} skill, with a rubric",
@@ -454,12 +522,11 @@ export const en = {
   "skill-state.locked": "Locked",
   "skill-state.feedback-by-criteria": "Feedback by criteria",
   "skill-state.not-assessed": "Not assessed",
-  /** The second way in beside My subjects, and its screen's heading (R34). */
+  /** The second way in beside Home, and its screen's heading (R34). */
   "skillmap.title": "Skill map",
   /** On a module's card on the screen Skill map: opens the module's map. */
   "skillmap.open": "Open the map",
   /** Back from a module's map to the list of the maps of the modules connected. */
-  "skillmap.all": "All skill maps",
   /** The heading of a module's map; {module} is the module's title, in its own language. */
   "skillmap.module-title": "Skill map: {module}",
   /** Above a module's map: the map's own button is Practise (skill-map's words). */
@@ -474,7 +541,7 @@ export const en = {
   /** While the choice of a skill pressed on the map is under way: another press waits for it. */
   "skillmap.choosing": "Opening what's next…",
   /** A module of those connected from the map: its card says so in place of its button. */
-  "skillmap.connected": "Connected: it is in My subjects now",
+  "skillmap.connected": "Connected: it is on Home now",
   /**
    * Under a module's map, on the learner's screen and in the section for adults alike: an adult set
    * the module's level, {date} the day of the last correction (R157 spec).
@@ -495,25 +562,6 @@ export const en = {
   "level.harder": "Harder: {band}",
   /** The band pressed was no longer next to the level: the map was read again. */
   "level.moved": "The level had changed meanwhile. It shows here as it stands now",
-  /** The learner's essays kept on this device, read again here (R04; R53). */
-  "essays.title": "My essays",
-  "essays.none": "No essays are kept on this device yet",
-  /** The button that opens one essay: {date} is when it was begun. */
-  "essays.open": "Open the essay of {date}",
-  "essays.finished": "Finished",
-  "essays.not-finished": "Not finished yet",
-  /** The essay's module version was withdrawn: its task's statement is not kept (R53). */
-  "essays.withdrawn": "The version of its module was withdrawn, so its task isn't kept",
-  /** The heading of one submission of the essay: when it was sent. */
-  "essays.sent": "Sent {date}",
-  "essays.not-sent": "It hasn't been sent yet",
-  /** The `alt` of the crop of the sheet that a submission sent. */
-  "essays.sheet": "The sheet as it was sent",
-  /** The heading of what was read of the essay. */
-  "essays.text": "What was read",
-  /** The heading of the feedback of a submission. */
-  "essays.feedback": "Feedback",
-  "essays.all": "All essays",
   /** The heading of the task screen: a task has no title of its own. */
   "task.title": "Task",
   /** The name of the group of the two buttons of the mode. */
@@ -551,8 +599,8 @@ export const en = {
   "task.solution": "Solution",
   /** Begins the same task again: a template may give another instance. */
   "task.again": "Try it again",
-  "task.home": "Back to My subjects",
-  /** On My subjects while the learner has an attempt open. */
+  "task.home": "Back to Home",
+  /** On Home while the learner has an attempt open. */
   "task.continue-title": "There is a task in progress",
   "task.continue": "Continue the task",
   /** Why the task is over, below "This task is already over". */
@@ -628,8 +676,6 @@ export const en = {
   "task.no-showing": "This task has no solution to show",
   /** A child asks for the solution before the hint ladder is passed. */
   "task.ladder-not-passed": "The solution can be shown after a few more answers",
-  /** Before each submission of a work that goes to AI whole (R127 spec): beside Check. */
-  "task.no-names": "Don't write your name or the real names of people you know",
   /** Ends the attempt of an essay: open once it was sent at least once (R87 spec). */
   "task.done": "Done",
   "task.done-locked": "Done opens once the essay has been sent",
@@ -640,6 +686,8 @@ export const en = {
   "task.feedback-line": "The feedback is in the tutor's panel. Write again, or press Done.",
   /** The result of an essay finished by Done. */
   "task.essay-done": "Essay finished",
+  /** The heading of what was read of the essay at its last submission. */
+  "task.essay-text": "What was read",
   /** The feedback whose words did not pass the checks of api (R53). */
   "task.feedback-none": "No feedback this time",
   /** A repeat of a submission whose answer was lost: the words are nowhere on the server. */
@@ -707,6 +755,8 @@ export const en = {
   /** To the next segment; not "Next", which is the canvas's button of a worked example. */
   "lesson.continue": "Continue",
   "lesson.leave": "Leave the lesson",
+  /** The heading of a lesson's screen while its run is read, before its own title is known. */
+  "lesson.title": "Lesson",
   /** The end screen of a lesson done, below its title: no score, no comparison. */
   "lesson.complete": "Lesson complete",
   /** A task of the lesson left or abandoned: it begins once more, a new attempt. */
@@ -718,8 +768,7 @@ export const en = {
   "lesson.ended-abandoned": "The lesson wasn't opened for 30 days",
   /** A lesson ended for a reason this build has no words for. */
   "lesson.ended": "This lesson is over",
-  /** On My subjects while the learner has a lesson open. */
-  "lesson.open-title": "A lesson in progress",
+  /** In "Next up" while the learner has a lesson open. */
   "lesson.open-continue": "Continue the lesson",
   /** A lesson open whose title is not on this device: its module's name, not declined. */
   "lesson.of-module": "A lesson: {module}",
@@ -881,7 +930,7 @@ export const en = {
   /** The button of the consent: switches the storage on. */
   "storage.switch-on": "Switch it on",
   /**
-   * On My subjects: the share of today's quota of platform AI the learner's profile has used, as a
+   * On Home: the share of today's quota of platform AI the learner's profile has used, as a
    * percentage — never a sum of money (R40). Once it is used up, the line is api.quota.
    */
   "quota.learner": "Tutor time today: {percent} used",
@@ -988,16 +1037,6 @@ export const en = {
    */
   "device.only-here":
     "Its work is on this device alone: if the site's data is erased, the work is lost",
-  /** The essays a profile keeps on this device. */
-  "device.essays": plural({
-    one: "{count} essay",
-    other: "{count} essays",
-  }),
-  /** One essay of the profile: {date} is when it was begun. */
-  "device.essay": "Essay of {date}",
-  "device.erase-essay": "Erase the essay",
-  "device.erase-essay-confirm":
-    "The essay of {date} and its feedback are lost: the server doesn't keep them",
   /** The owner's own key kept on this device: {provider} is the provider's name. */
   "device.own-key": "Its own AI key is kept on this device: a key of {provider} ending in {last4}",
   "device.erase-profile": "Erase the profile's data on this device",
@@ -1059,19 +1098,8 @@ export const en = {
   /** Says a sentence by the voice chosen. */
   "voice.sample": "Read a sample aloud",
   "voice.not-kept": "The choice wasn't kept on this device. Try again",
-  /**
-   * In the block Tutor, below its heading, wherever the tutor's words stand: the disclosure that
-   * the tutor is an AI (R123 spec). Plain, for a learner of any age.
-   */
-  "tutor.ai": "The tutor is an AI, not a person",
   /** The name of the part of the tutor's panel that holds its words and the verdicts, and scrolls. */
   "tutor.conversation": "Conversation",
-  /** The heading of the section of My subjects that leads to the page on the tutor. */
-  "tutor.home-title": "The tutor is an AI",
-  "tutor.home-text":
-    "The tutor, which gives hints and explains, is an AI: a computer program, not a person. Whether an answer is right, a program decides by the task's key, not the AI",
-  /** The button to the page on the tutor, the learning material of R123 spec. */
-  "tutor.open": "How to use the tutor safely",
   /** The heading of the page on the tutor. */
   "tutor.title": "How to use the AI tutor safely",
   "tutor.what": "The tutor is an AI",
@@ -1147,16 +1175,11 @@ export const en = {
   "paper.unreadable": "This picture can't be read. Take another photo, or choose one",
   /** The heading of the screen where the learner picks the tasks of the page. */
   "paper.title": "Your page",
-  /** Under it, three phrases between dots: the tasks found, those framed by hand, and what a tap does. */
-  "paper.found": plural({
-    one: "{count} task found",
-    other: "{count} tasks found",
-  }),
+  /** After "{count} tasks found" in the top bar's middle, between dots: those framed by hand. */
   "paper.drawn": plural({
     one: "{count} framed by you",
     other: "{count} framed by you",
   }),
-  "paper.tap": "tap one to leave it out",
   /** The top bar's button that throws the page away and opens the camera again. */
   "paper.retake": "Retake",
   "paper.remove-all": "Remove all frames",
@@ -1165,11 +1188,21 @@ export const en = {
   /** FindTasks gave no frames: the learner draws them. */
   "paper.none-found": "No tasks were found. Draw round each task you want to solve",
   "paper.find-again": "Find the tasks again",
-  /** FindTasks gave the most tasks one page begins, {max}; the page may hold more. */
-  "paper.at-most":
-    "{max} tasks is the most at once. To take another, remove one of these with its cross and draw round the one you want",
-  /** More than {max} tasks are picked, and "Start" is shut. */
-  "paper.too-many": "At most {max} tasks start at once: leave some out",
+  /**
+   * At the head of the bar: FindTasks gave the most tasks one page begins, {max}, and the page may
+   * hold more; or more than {max} are picked, and "Start" is shut. Each a sentence in bold, no full
+   * stop of its own, and what to do after it.
+   */
+  "paper.at-most": "{max} tasks is the most at once",
+  "paper.at-most-how":
+    "To take another, remove one of these with its cross and draw round the one you want. You can also draw one frame round several tasks, or ask the tutor to",
+  "paper.too-many": "At most {max} tasks start at once",
+  "paper.too-many-how": "Leave some out",
+  /** In the middle of the top bar once the tasks are found. */
+  "paper.found-head": plural({
+    one: "{count} task found",
+    other: "{count} tasks found",
+  }),
   /** A task's frame, a button; {n} is its place on the page, from the top. */
   "paper.select": "Select task {n}",
   "paper.deselect": "Deselect task {n}",
@@ -1211,8 +1244,6 @@ export const en = {
   "paper.task": "Task {n}",
   /** A frame drawn by hand; {n} is its place on the page, from the top. */
   "paper.your-frame": "Your frame, task {n}",
-  /** Under the heading: the task's place among those begun. */
-  "paper.of": "{n} of {total} · from your page",
   /** The button between ‹ and ›, which opens the list of the tasks begun. */
   "paper.counter": "{n} / {total}",
   /** The list's heading, and the button's name, which holds its caption as said (WCAG 2.5.3). */
@@ -1220,16 +1251,18 @@ export const en = {
   "paper.tasks-open": "Tasks, {n} / {total}",
   /** At the list's head: back to the page, to pick more of its tasks. */
   "paper.add": "Add",
-  /** The button on the card "A task from my paper" that opens the profile's pages from paper kept on the device (R77). */
+  /** The button on the card "Tasks from my paper" that opens the profile's pages from paper kept on the device (R77). */
   "paper.pages": "Your pages",
-  /** The heading of its pop-over. */
-  "paper.pages-title": "Your pages · on this device",
+  /** Beside the heading of its pop-over, which is its button's words. */
+  "paper.pages-here": "on this device",
   /** A page in it: when it was photographed, and how many tasks were begun on it. */
   "paper.page": "{when} · {tasks}",
   "paper.page-tasks": plural({
     one: "{count} task",
     other: "{count} tasks",
   }),
+  /** The pop-over while the device keeps no page of the profile. */
+  "paper.pages-none": "No pages yet",
   /** A page that would not open: the device keeps it no more. */
   "paper.page-gone": "This page isn't on this device any more",
   /** Under the list: where the pages live and until when (R77). */
@@ -1240,7 +1273,7 @@ export const en = {
   /** The card of a task from paper whose solution gave no one answer a program can compare. */
   "paper.no-key": "Couldn't check this one",
   "paper.no-key-line": "This task has no answer that can be checked. Hints still work.",
-  /** The tutor's line on the screen of solving, after the one that the tutor is an AI (R75). */
+  /** The tutor's first line on the screen of solving, where hints come (R75). */
   "paper.solve-hello":
     "Hints for this task come here, a question at a time. A program checks every answer.",
   /**

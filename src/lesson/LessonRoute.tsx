@@ -1,6 +1,6 @@
 // The screen `#/lesson` (R23): the lesson run the learner chose, from memory. It shows the run
 // until the learner leaves it or chooses another — a run ended stays on the screen with its end,
-// while "My subjects" no longer offers to continue it. With no run chosen it goes home in place of
+// while Home no longer offers to continue it. With no run chosen it goes home in place of
 // itself, so that "back" does not come here again.
 import type { Mode } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import { useCallback, useEffect } from "react";

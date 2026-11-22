@@ -43,8 +43,9 @@ import { ProfilePage } from "../adults/ProfilePage.tsx";
 import { ProgressMap, ProgressPage } from "../adults/ProgressPage.tsx";
 import { ApiProvider } from "../api/ApiContext.tsx";
 import type { Api } from "../api/client.ts";
-import { App, LearnerBar } from "../app/App.tsx";
-import { HOME, LEGAL, SKILL_MAP, TUTOR } from "../app/router.ts";
+import { App } from "../app/App.tsx";
+import { HOME, LEGAL, TUTOR } from "../app/router.ts";
+import { ShellBar } from "../app/Shell.tsx";
 import {
   Framed,
   Held,
@@ -72,8 +73,8 @@ import { moduleMapRoute, SkillMapRoute } from "../skills/SkillMapScreen.tsx";
 import { addProfile } from "../storage/profile.ts";
 import { addDatabase, setAccount } from "../storage/registry.ts";
 import { PROFILE_SCHEMA, profileDatabase } from "../storage/schema.ts";
-import { SubjectsScreen } from "../subjects/MySubjects.tsx";
-import { AttemptProvider } from "../task/AttemptContext.tsx";
+import { HomeScreen } from "../subjects/MySubjects.tsx";
+import { CatalogScreen } from "../subjects/SubjectsPage.tsx";
 import { NO_VERDICTS, verdictsOf } from "../task/attempt.ts";
 import { initialState } from "../task/steps.ts";
 import { TaskScreen, type TaskScreenProps } from "../task/TaskScreen.tsx";
@@ -103,19 +104,16 @@ const CHOSEN = {
   onFailed: () => {},
 };
 
-/** My subjects with nothing connected, below its bar, and a press on a button of the bar. */
+/** Home with nothing connected, in the frame of its bar, and a press on a button of the bar. */
 function homeWith(button: string): [() => ReactNode, () => Promise<void>] {
   return [
     () => (
       <ApiProvider value={{} as Api}>
         <LearnerProvider value={CHOSEN}>
-          <LearnerBar />
-          <SubjectsScreen
-            connected={[]}
-            catalog={[]}
-            onConnect={() => {}}
-            onDisconnect={() => {}}
-          />
+          <div className="nt-shell">
+            <ShellBar place="home" />
+            <HomeScreen connected={[]} />
+          </div>
         </LearnerProvider>
       </ApiProvider>
     ),
@@ -715,66 +713,90 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
     ),
   ],
   [
-    "My subjects, below the bar, with a card of each kind",
+    "Home, in the frame of its bar, with a card of each kind",
     () => (
       <LearnerProvider value={CHOSEN}>
-        <LearnerBar />
-        <SubjectsScreen
-          connected={[
-            {
-              moduleId: "novatrail/olympiad-math",
-              digest: "sha256:1",
-              title: "Olympiad maths",
-              language: "en",
-              skills: {
-                mastered: 14,
-                "time-to-review": 3,
-                "in-progress": 6,
-                "ready-to-start": 9,
-                locked: 13,
-                "feedback-by-criteria": 2,
-                "not-assessed": 1,
+        <div className="nt-shell">
+          <ShellBar place="home" />
+          <HomeScreen
+            connected={[
+              {
+                moduleId: "novatrail/olympiad-math",
+                digest: "sha256:1",
+                title: "Olympiad maths",
+                language: "en",
+                skills: {
+                  mastered: 14,
+                  "time-to-review": 3,
+                  "in-progress": 6,
+                  "ready-to-start": 9,
+                  locked: 13,
+                  "feedback-by-criteria": 2,
+                  "not-assessed": 1,
+                },
               },
-            },
-            {
-              moduleId: "novatrail/short-essays",
-              digest: "sha256:3",
-              title: "Short essays",
-              language: "en",
-              skills: {
-                mastered: 0,
-                "time-to-review": 0,
-                "in-progress": 0,
-                "ready-to-start": 0,
-                locked: 0,
-                "feedback-by-criteria": 18,
-                "not-assessed": 0,
+              {
+                moduleId: "novatrail/fractions",
+                digest: "sha256:4",
+                title: "Fractions step by step",
+                language: "en",
+                sequential: true,
+                skills: {
+                  mastered: 3,
+                  "time-to-review": 1,
+                  "in-progress": 1,
+                  "ready-to-start": 1,
+                  locked: 4,
+                  "feedback-by-criteria": 0,
+                  "not-assessed": 0,
+                },
+                chain: {
+                  step: 5,
+                  total: 10,
+                  mastered: 3,
+                  current: "Comparing fractions with different denominators",
+                  next: "Adding fractions",
+                },
               },
-            },
-            { moduleId: "novatrail/gone", title: "novatrail/gone" },
-          ]}
-          quota={create(QuotaShareSchema, { profilePercent: 20 })}
-          catalog={[
-            { moduleId: "novatrail/physics", digest: "sha256:2", title: "Физика", language: "ru" },
-          ]}
-          failure={{ kind: "offline" }}
-          onConnect={() => {}}
-          onDisconnect={() => {}}
-        />
+              {
+                moduleId: "novatrail/short-essays",
+                digest: "sha256:3",
+                title: "Short essays",
+                language: "en",
+                skills: {
+                  mastered: 0,
+                  "time-to-review": 0,
+                  "in-progress": 0,
+                  "ready-to-start": 0,
+                  locked: 0,
+                  "feedback-by-criteria": 18,
+                  "not-assessed": 0,
+                },
+              },
+              { moduleId: "novatrail/gone", title: "novatrail/gone" },
+            ]}
+            quota={create(QuotaShareSchema, { profilePercent: 20 })}
+            failure={{ kind: "offline" }}
+          />
+        </div>
       </LearnerProvider>
     ),
   ],
-  ["My subjects with the adult's Help open", ...homeWith(".nt-help button")],
-  ["My subjects with the profile's menu open", ...homeWith("button.nt-learner-pill")],
+  ["Home with the adult's Help open", ...homeWith(".nt-nav > .nt-tip-host:last-of-type > button")],
+  ["Home with the profile's menu open", ...homeWith("button.nt-learner-pill")],
   [
-    "My subjects with a task in progress",
+    "Home with a task in progress",
     () => (
-      <SubjectsScreen
+      <HomeScreen
         connected={[]}
-        catalog={[]}
-        onConnect={() => {}}
-        onDisconnect={() => {}}
         onContinue={() => {}}
+        openTask={{
+          kind: "module",
+          moduleId: "novatrail/olympiad-math",
+          module: "Olympiad maths",
+          language: "en",
+          statement: "Two apples and three pears are in a bowl. How many fruits are there?",
+        }}
       />
     ),
   ],
@@ -1139,42 +1161,7 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
         next: nextStep({ choice: choice(ChoiceKind.TASK) }),
       }),
   ],
-  [
-    "My subjects with What's next",
-    () => (
-      <SubjectsScreen
-        connected={[]}
-        catalog={[]}
-        onConnect={() => {}}
-        onDisconnect={() => {}}
-        next={nextStep()}
-      />
-    ),
-  ],
-  [
-    "My subjects asking whether to leave the task in progress",
-    () => (
-      <SubjectsScreen
-        connected={[]}
-        catalog={[]}
-        onConnect={() => {}}
-        onDisconnect={() => {}}
-        onContinue={() => {}}
-        next={
-          <AttemptProvider
-            learner={create(ProfileSchema, { profileId: "p1", openAttempt: { attemptId: "a1" } })}
-          >
-            {nextStep()}
-          </AttemptProvider>
-        }
-      />
-    ),
-    async () => {
-      const button = document.querySelector<HTMLButtonElement>("button.nt-secondary");
-      if (button === null) throw new Error("no Something else");
-      await userEvent.click(button);
-    },
-  ],
+  ["Home with What's next", () => <HomeScreen connected={[]} next={nextStep()} />],
   ["lesson ended by api", () => <LessonEnd reason={RunEndReason.ABANDONED} />],
   ["the legal pages, below their bar", () => <LegalPages route={LEGAL} back={HOME} />],
   [
@@ -1342,25 +1329,14 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
     },
   ],
   [
-    "My subjects with the tutor time used today",
-    () => (
-      <SubjectsScreen
-        connected={[]}
-        catalog={[]}
-        onConnect={() => {}}
-        onDisconnect={() => {}}
-        quota={create(QuotaShareSchema, { profilePercent: 40 })}
-      />
-    ),
+    "Home with the tutor time used today",
+    () => <HomeScreen connected={[]} quota={create(QuotaShareSchema, { profilePercent: 40 })} />,
   ],
   [
-    "My subjects with lessons in progress",
+    "Home with lessons in progress",
     () => (
-      <SubjectsScreen
+      <HomeScreen
         connected={[]}
-        catalog={[]}
-        onConnect={() => {}}
-        onDisconnect={() => {}}
         runs={[
           { lessonRunId: "r1", title: "Gaps and posts", module: "Olympiad maths", language: "en" },
           { lessonRunId: "r2", module: "Физика", language: "ru" },
@@ -1370,9 +1346,9 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
     ),
   ],
   [
-    "My subjects with cards that open their licenses",
+    "Subjects with cards that open their licenses",
     () => (
-      <SubjectsScreen
+      <CatalogScreen
         connected={[
           {
             moduleId: "novatrail/olympiad-math",
@@ -1388,19 +1364,6 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
         onLicense={() => {}}
       />
     ),
-  ],
-  [
-    "the skill maps of the modules connected",
-    () => (
-      <ApiProvider value={MAP_API}>
-        <PackagesProvider value={MAPPED}>
-          <SkillMapRoute route={SKILL_MAP} profileId="p1" />
-        </PackagesProvider>
-      </ApiProvider>
-    ),
-    async () => {
-      await vi.waitFor(() => expect(document.querySelectorAll("article")).toHaveLength(2));
-    },
   ],
   [
     "a module's skill map, a skill open, with a module to connect",
@@ -1486,10 +1449,11 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
       await vi.waitFor(() => expect(root.querySelector("[aria-expanded='true']")).not.toBeNull());
     },
   ],
+  ["Home with none connected", () => <HomeScreen connected={[]} />],
   [
-    "My subjects with none connected and an empty catalog",
+    "Subjects with none connected and an empty catalog",
     () => (
-      <SubjectsScreen connected={[]} catalog={[]} onConnect={() => {}} onDisconnect={() => {}} />
+      <CatalogScreen connected={[]} catalog={[]} onConnect={() => {}} onDisconnect={() => {}} />
     ),
   ],
 ];

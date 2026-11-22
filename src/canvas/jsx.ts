@@ -12,9 +12,11 @@ import type { NovatrailCanvas } from "@altnovatrail/canvas";
 import type {
   CanvasElement,
   DemoChangeEvent,
+  GridChangeEvent,
   HistoryChangeEvent,
   ToolChangeEvent,
   TracingChangeEvent,
+  TracingReadEvent,
 } from "@altnovatrail/spec/canvas";
 import type { Key, ReactNode, Ref } from "react";
 import type { Language } from "../i18n/language.ts";
@@ -44,6 +46,8 @@ export interface CanvasProps
       | "media"
       | "paper"
       | "tracing"
+      | "reading"
+      | "grid"
       | "history"
       | "marks"
     >
@@ -59,6 +63,8 @@ export interface CanvasProps
   readonly ontoolchange?: (event: ToolChangeEvent) => void;
   readonly ondemochange?: (event: DemoChangeEvent) => void;
   readonly ontracingchange?: (event: TracingChangeEvent) => void;
+  readonly ontracingread?: (event: TracingReadEvent) => void;
+  readonly ongridchange?: (event: GridChangeEvent) => void;
 }
 
 declare module "react" {

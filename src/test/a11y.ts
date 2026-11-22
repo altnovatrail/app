@@ -84,7 +84,8 @@ export function smallTargets(root: ParentNode = document): string[] {
 /**
  * What does not fit the width: the page scrolling sideways, and every box whose content is wider
  * than it — text cut or spilling out (1.4.10 Reflow). A box clipped to nothing on purpose, a name
- * for assistive technology alone (`.nt-hidden-label`), shows nothing to cut.
+ * for assistive technology alone (`.nt-hidden-label`), and a drawing's frame (`.nt-deco`) show nothing
+ * to cut.
  */
 export function overflows(root: Element = document.body): string[] {
   const found: string[] = [];
@@ -95,6 +96,9 @@ export function overflows(root: Element = document.body): string[] {
   for (const element of root.querySelectorAll<HTMLElement>("*")) {
     if (!ours(element) || element.clientWidth === 0) continue;
     if (getComputedStyle(element).clipPath === "inset(50%)") continue;
+    // A card's drawing past its edge, clipped by its frame on purpose and hidden from assistive
+    // technology: no text in it to cut (R79).
+    if (element.classList.contains("nt-deco")) continue;
     if (element.scrollWidth > element.clientWidth + 1) {
       found.push(
         `${element.tagName.toLowerCase()} "${element.textContent ?? ""}": ${element.scrollWidth} > ${element.clientWidth}`,

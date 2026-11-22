@@ -26,6 +26,7 @@ import type { Api } from "../api/client.ts";
 import { ApiError, type Failure, parseFailure, refusedWith } from "../api/failure.ts";
 import { ReadFailure } from "../api/ReadFailure.tsx";
 import { failureText } from "../api/words.ts";
+import { Loading, Sk } from "../app/Skeleton.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { LegalText, NextLegalText } from "../legal/LegalText.tsx";
 import { readLegal, STORAGE_TEXT, type Versions, versionsOf } from "../legal/texts.ts";
@@ -125,7 +126,14 @@ function Consent({
       {texts.status === "failed" ? (
         <ReadFailure failure={texts.failure} onRetry={texts.retry} />
       ) : null}
-      {shown === undefined ? null : <LegalText text={shown} level={4} />}
+      {shown !== undefined ? (
+        <LegalText text={shown} level={4} />
+      ) : texts.status === "loading" ? (
+        // The text comes closed: its title's line alone.
+        <Loading>
+          <Sk width="12rem" height="1rem" radius="0.3125rem" />
+        </Loading>
+      ) : null}
       {consent.next === undefined ? null : (
         <NextLegalText text={consent.next} current={shown} level={4} />
       )}

@@ -27,6 +27,7 @@ import { described } from "../app/described.ts";
 import { formatHash } from "../app/hash.ts";
 import { Icon } from "../app/Icon.tsx";
 import type { Route } from "../app/router.ts";
+import { Loading, Sk } from "../app/Skeleton.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { Phrase } from "../i18n/Phrase.tsx";
 import { legalPage } from "../legal/LegalPages.tsx";
@@ -305,7 +306,17 @@ export function InviteScreen({ texts, draft, onCreate, onLegal, onSignOut }: Inv
             </div>
           </div>
           {/* A next version alone, before its day, is accepted by no one: no checkbox for it. */}
-          {shown.length === 0 ? null : (
+          {shown.length === 0 ? (
+            texts.status === "loading" ? (
+              <Loading className="nt-check">
+                <Sk width="1.5rem" height="1.5rem" radius="50%" style={{ margin: "0.625rem" }} />
+                <div className="nt-loading nt-tick-loading">
+                  <Sk width="15rem" height="0.9375rem" radius="0.3125rem" />
+                  <Sk width="9rem" height="0.9375rem" radius="0.3125rem" />
+                </div>
+              </Loading>
+            ) : null
+          ) : (
             <div className="nt-check">
               <Tick>
                 <input

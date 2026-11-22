@@ -22,6 +22,7 @@ import { type Route, routeOf, useRoute } from "../app/router.ts";
 import type { Language } from "../i18n/language.ts";
 import { memoryDevice } from "../test/device.ts";
 import { inLanguage } from "../test/language.tsx";
+import { expectLoaded, expectLoading, held } from "../test/loading.ts";
 import { PackageChecks } from "./checks.ts";
 import { DeviceFiles } from "./files.ts";
 import { LicensePages, licenseRoute } from "./LicensePage.tsx";
@@ -63,13 +64,15 @@ const MANIFESTS: Readonly<Record<string, ReturnType<typeof manifest>>> = {
 };
 
 /** The answers to the files, by their path in the device part, each a list in turn. */
-type Files = Record<string, (() => Response)[]>;
+type Files = Record<string, (() => Response | Promise<Response>)[]>;
 
 function renderWith(
   node: ReactNode,
   files: Files,
   language: Language = "en",
   connected: { moduleId: string; packageDigest: string }[] | "fail" = [],
+  /** What ListConnectedModules answers only once it is given. */
+  listed?: Promise<void>,
 ) {
   const { device } = memoryDevice();
   const asked: string[] = [];
@@ -83,8 +86,9 @@ function renderWith(
       },
     });
     router.service(ModuleService, {
-      listConnectedModules(request) {
+      async listConnectedModules(request) {
         asked.push(`list ${request.profileId}`);
+        await listed;
         if (connected === "fail") throw new ConnectError("down", Code.Unavailable);
         return { modules: connected };
       },
@@ -164,6 +168,26 @@ describe("the page of a module's license", () => {
     expect(document.querySelector("a")).toBeNull();
     await userEvent.click(within(head as HTMLElement).getByRole("button", { name: "Close" }));
     expect(window.location.hash).toBe("#/home");
+  });
+
+  it("stands with the shapes of the files while they are read, under its heading, busy (R168 spec)", async () => {
+    const { given, give } = held();
+    renderWith(<LicensePages route={licenseRoute(D1)} />, {
+      LICENSE: [
+        async () => {
+          await given;
+          return new Response(LICENSE);
+        },
+      ],
+      NOTICE: [text(NOTICE)],
+    });
+    expect(
+      screen.getByRole("heading", { level: 1, name: "The module's license and notices" }),
+    ).toBeTruthy();
+    expectLoading(document, 7);
+    give();
+    await vi.waitFor(() => expect(document.querySelectorAll("pre")).toHaveLength(2));
+    expectLoaded(document);
   });
 
   it("says so of a module with no NOTICE, in the screen's language", async () => {
@@ -298,6 +322,21 @@ describe("the modules of a profile in the section for adults", () => {
     await vi.waitFor(() => expect(document.querySelectorAll("pre")).toHaveLength(2));
     expect(screen.queryByRole("button", { name: "Back to the modules" })).toBeNull();
     expect(screen.getByRole("button", { name: "Back to the section" })).toBeTruthy();
+  });
+
+  it("stand as the shapes of their cards while they are read, under the page's heading (R168 spec)", async () => {
+    window.location.hash = "#/adults";
+    const { given, give } = held();
+    renderWith(<Section />, {}, "en", connected, given);
+    await userEvent.click(screen.getByRole("button", { name: "Profile: Ёжик" }));
+    await userEvent.click(
+      await screen.findByRole("button", { name: "See the modules and their licenses" }),
+    );
+    expect(await screen.findByRole("heading", { level: 1, name: "Modules: Ёжик" })).toBeTruthy();
+    expectLoading(document, 6);
+    give();
+    expect(await screen.findAllByRole("article")).toHaveLength(3);
+    expectLoaded(document);
   });
 
   it("go to the first page from the modules with no profile chosen, and from a license of no digest", async () => {

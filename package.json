@@ -10,8 +10,8 @@
   },
   "type": "module",
   "dependencies": {
-    "@altnovatrail/canvas": "0.3.36",
-    "@altnovatrail/contracts": "0.19.5",
+    "@altnovatrail/canvas": "0.3.38",
+    "@altnovatrail/contracts": "0.19.8",
     "@altnovatrail/skill-map": "0.1.19",
     "@bufbuild/protobuf": "2.17.0",
     "@connectrpc/connect": "2.3.0",
@@ -24,7 +24,7 @@
     "react-dom": "19.3.1"
   },
   "devDependencies": {
-    "@altnovatrail/spec": "0.19.5",
+    "@altnovatrail/spec": "0.19.8",
     "@biomejs/biome": "2.6.7",
     "@iconify/utils": "3.1.7",
     "@testing-library/dom": "10.4.2",

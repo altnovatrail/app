@@ -8,7 +8,6 @@ import type * as open from "@altnovatrail/spec/formatv0/open";
 import { render, screen, waitFor } from "@testing-library/react";
 import { createRef } from "react";
 import { describe, expect, it, vi } from "vitest";
-import { userEvent } from "vitest/browser";
 
 describe("<novatrail-canvas> in JSX", () => {
   it("is the registered element, and takes its language as an attribute and media as a property", () => {
@@ -117,55 +116,55 @@ function printSpan(element: CanvasElement): number {
 const settled = () =>
   new Promise<void>((done) => requestAnimationFrame(() => requestAnimationFrame(() => done())));
 
-/** More presses than the zoom has steps, from its fit to twice it by quarters. */
-const MOST_PRESSES = 8;
+/** Every button of the element, in any row, by its text and by a name of its own. */
+const buttonLabels = (element: CanvasElement) =>
+  [...(element.shadowRoot?.querySelectorAll("button") ?? [])].flatMap((button) => [
+    button.textContent?.trim(),
+    button.getAttribute("aria-label"),
+  ]);
 
-/** A button of the row pressed till it is at its end, and no more often than the zoom has steps. */
-async function pressToEnd(button: HTMLButtonElement) {
-  for (let i = 0; i < MOST_PRESSES && button.getAttribute("aria-disabled") !== "true"; i++) {
-    await userEvent.click(button);
-  }
-  expect(button.getAttribute("aria-disabled")).toBe("true");
-}
-
-/** The page's zoom of the sheet back at its fit, as every other test of the page expects it. */
-async function unzoom(element: CanvasElement) {
-  await pressToEnd(await rowButton(element, "Мельче"));
+/** The print's span and the page's width, as the statement takes it, once laid out anew. */
+async function fitOf(element: CanvasElement) {
+  await settled();
+  const statement = element.shadowRoot?.querySelector(".statement") as HTMLElement;
+  return { page: statement.getBoundingClientRect().width, print: printSpan(element) };
 }
 
 // What canvas declares, or does not, for app's Accessibility page, held on the element itself
 // rather than taken from canvas's documents (R11). A later canvas that changes any of it fails
 // here, and the page's list is to be read again.
 describe("what canvas declares for app's Accessibility page", () => {
-  it("zooms a workbook's print to 200 % by «Крупнее», in a region that scrolls across: 1.4.4 is met", async () => {
+  it("does not grow a workbook's print past the page's fit to the width: 1.4.4 is not met", async () => {
     const ref = createRef<CanvasElement>();
-    render(
+    const { rerender } = render(
       <div style={{ inlineSize: "20rem" }}>
         <novatrail-canvas ref={ref} lang="ru" task={PAGE} />
       </div>,
     );
     const element = ref.current as CanvasElement;
-    const larger = await rowButton(element, "Крупнее");
-    expect((await rowButton(element, "Мельче")).getAttribute("aria-disabled")).toBe("true");
+    await rowButton(element, "Перо");
+    // Nothing on the bar enlarges the sheet (R73 canvas).
+    for (const gone of ["Крупнее", "Мельче"]) expect(buttonLabels(element)).not.toContain(gone);
     await waitFor(() => expect(printWidths(element).length).toBeGreaterThan(0));
-    await settled();
-    // The sheet fits the element's width, 20rem, below the sheet's cap.
-    const fit = { page: element.clientWidth, print: printSpan(element) };
-    expect(fit.page).toBeGreaterThan(0);
-    try {
-      await pressToEnd(larger);
-      // Twice the fit, and not a step short of it: 150 % and 175 % are steps of the zoom too.
-      // The zoomed sheet is wider than the element: a region of its own, named in the element's
-      // language, which the wheel, the trackpad and the keys scroll across.
-      await waitFor(() => expect(region(element)?.getAttribute("aria-label")).toBe("Тетрадь"));
-      await waitFor(() => {
-        expect((region(element)?.scrollWidth ?? 0) / fit.page).toBeCloseTo(2, 2);
-        expect(printSpan(element) / fit.print).toBeCloseTo(2, 1);
-      });
-      expect(region(element)?.tabIndex).toBe(0);
-    } finally {
-      await unzoom(element);
-    }
+    const narrow = await fitOf(element);
+    // The page fits the element's width, below 1000 CSS px: the browser's zoom, which narrows
+    // the element in CSS px, narrows the page with it, and the print stays a share of the page.
+    expect(narrow.page).toBeLessThanOrEqual(element.clientWidth);
+    expect(narrow.page).toBeGreaterThan(element.clientWidth * 0.9);
+    rerender(
+      <div style={{ inlineSize: "40rem" }}>
+        <novatrail-canvas ref={ref} lang="ru" task={PAGE} />
+      </div>,
+    );
+    await waitFor(async () => {
+      const wide = await fitOf(element);
+      expect(wide.page / narrow.page).toBeGreaterThan(1.8);
+      expect(wide.print / wide.page).toBeCloseTo(narrow.print / narrow.page, 2);
+    });
+    // The sheet goes on past the page: a region of its own, named in the element's language,
+    // which the wheel, the trackpad and the keys scroll across.
+    await waitFor(() => expect(region(element)?.getAttribute("aria-label")).toBe("Тетрадь"));
+    expect(region(element)?.tabIndex).toBe(0);
   });
 
   it("moves the sheet by dragging alone, with no button that scrolls it: 2.5.7 is not met", async () => {
@@ -173,13 +172,11 @@ describe("what canvas declares for app's Accessibility page", () => {
       const ref = createRef<CanvasElement>();
       const { unmount } = render(<novatrail-canvas ref={ref} lang="ru" task={task} />);
       const element = ref.current as CanvasElement;
-      // The bar of glass holds the tools and the zoom's pair, and no button that scrolls
-      // (R90 spec): every button of it, in any row, by its text and by a name of its own.
-      await rowButton(element, "Крупнее");
-      const labels = [...(element.shadowRoot?.querySelectorAll("button") ?? [])].flatMap(
-        (button) => [button.textContent?.trim(), button.getAttribute("aria-label")],
-      );
-      expect(labels).toEqual(expect.arrayContaining(["Перо", "Отменить", "Крупнее", "Мельче"]));
+      // The bar of glass holds the tools, the hand among them, and no button that scrolls
+      // (R90 spec; R88 canvas).
+      await rowButton(element, "Рука");
+      const labels = buttonLabels(element);
+      expect(labels).toEqual(expect.arrayContaining(["Перо", "Рука", "Отменить"]));
       for (const gone of ["Выше", "Ниже", "Левее", "Правее"]) expect(labels).not.toContain(gone);
       unmount();
     }
