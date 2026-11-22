@@ -2,7 +2,7 @@
 // version, as they are, each in `<pre lang="en">`, and the module by its manifest — its title in
 // its explanation language, its version and its license by name. The files come from api by the
 // digest of the package (files.ts), and nothing on the page leads out of app. The page shows at
-// `#/license/<digest>` at any step, as the legal pages do, opened from a card of My subjects, a
+// `#/license/<digest>` at any step, as the legal pages do, opened from a module's card on Home, a
 // sheet of the mockup's legal text that closes home (R69); and in the section for adults as one of
 // its pages (ModulesPage.tsx).
 import type * as open from "@altnovatrail/spec/formatv0/open";

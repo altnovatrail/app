@@ -2,8 +2,9 @@
 // pseudonym and a chevron — at the top right of Home, Subjects and the skill map, the avatar alone
 // on a phone, and behind it, as a pop-over, who is learning now, "Switch learner" and "Sign out":
 // the hint mode and This device are For grown-ups' there (Shell.tsx). In a lesson and on the task
-// screen the menu holds the hint mode and "For grown-ups" too, as their bars have no side menu. The pill stands on each of those screens, so that an adult who hands the
-// tablet over finds the switch on it.
+// screen the menu holds the hint mode and "For grown-ups" too, as their bars have no row of places.
+// The pill stands on each of those screens, so that an adult who hands the tablet over finds the
+// switch on it.
 import { useLearner } from "../account/AccountGate.tsx";
 import { Avatar } from "../account/Avatar.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
@@ -35,8 +36,8 @@ export function MenuRow({
 }
 
 /**
- * The pill of the learner chosen and its menu, `short` beside the side menu; none with no learner,
- * as in a screen's own test.
+ * The pill of the learner chosen and its menu, `short` beside the row of places; none with no
+ * learner, as in a screen's own test.
  */
 export function LearnerMenu({ short = false }: { readonly short?: boolean }) {
   const chosen = useLearner();

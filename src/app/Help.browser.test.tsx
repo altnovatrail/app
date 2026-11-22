@@ -20,7 +20,7 @@ import type { Language } from "../i18n/language.ts";
 import { inLanguage } from "../test/language.tsx";
 import "../theme/theme.css";
 import { AdultHelp } from "./Help.tsx";
-import { TIP_DELAY_MS } from "./IconButton.tsx";
+import { TIP_DELAY_MS } from "./Tooltip.tsx";
 
 function chosen(ageCategory: string, openLegal = vi.fn()): Learner {
   return {

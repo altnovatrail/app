@@ -1,6 +1,5 @@
 // The counts of a module's skills on its card (R62): by the function ./states of skill-map, the
-// five states with a verdict and the two marks, a status the build does not know left out, and the
-// segments of the bar in the legend's order, the states with no skill left out.
+// five states with a verdict and the two marks, a status the build does not know left out.
 import { GetSkillMapResponseSchema } from "@altnovatrail/contracts/novatrail/api/v1/progress_pb.js";
 import { create } from "@bufbuild/protobuf";
 import { describe, expect, it } from "vitest";
@@ -9,7 +8,6 @@ import {
   countsOf,
   judged,
   type SkillStatus,
-  segmentsOf,
   skillCounts,
   skillToWork,
 } from "./states.ts";
@@ -35,14 +33,6 @@ describe("the states of a module's skills", () => {
       "not-assessed": 0,
     });
     expect(judged(counts)).toBe(3);
-    expect(segmentsOf(counts)).toEqual([
-      { state: "mastered", percent: (2 / 3) * 100 },
-      { state: "locked", percent: (1 / 3) * 100 },
-    ]);
-  });
-
-  it("has no segment for a module with no skill with a verdict", () => {
-    expect(segmentsOf(countsOf(new Map([["a", "not-assessed"]])))).toEqual([]);
   });
 
   it("takes the state of each skill from skill-map's rule, on the graph and the answer", () => {

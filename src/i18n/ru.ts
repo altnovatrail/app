@@ -328,7 +328,6 @@ export const ru = {
   "subjects.paper-sub": "Снимок страницы из книги, выбор задач и решение каждой здесь",
   "subjects.paper-open": "Открыть камеру",
   "subjects.mastered": "Освоено {mastered} из {count}",
-  "subjects.review": "пора повторить: {count}",
   "subjects.rubric": plural({
     one: "{count} навык, с критериями",
     few: "{count} навыка, у каждого — критерии",
@@ -354,7 +353,7 @@ export const ru = {
   "skillmap.offered-text":
     "Этот предмет опирается на навыки других модулей, у которых на карте — «Неизвестно». Им учат эти модули",
   "skillmap.choosing": "Сейчас откроется то, что дальше…",
-  "skillmap.connected": "Подключён: теперь он в «Мои предметы»",
+  "skillmap.connected": "Подключён: теперь он на главной",
   "level.set-by-adult": "Уровень поставил взрослый: {date}",
   "level.title": "Уровень",
   "level.hint":
@@ -392,7 +391,7 @@ export const ru = {
   }),
   "task.solution": "Решение",
   "task.again": "Решить ещё раз",
-  "task.home": "К моим предметам",
+  "task.home": "На главную",
   "task.continue-title": "Есть начатая задача",
   "task.continue": "Продолжить задачу",
   "task.closed-correct": "На неё уже дан верный ответ",

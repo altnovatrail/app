@@ -401,7 +401,7 @@ export const en = {
   "icon.remove-frame": "Remove the frame",
   "icon.resize-frame": "Resize your frame",
   /**
-   * The side menu of Home, Subjects and the skill map, and the phone's tab bar (R148 spec): its
+   * The row of places of Home, Subjects and the skill map, and the phone's tab bar (R148 spec): its
    * name, its places, the cognitive map shut until it comes with its "Soon" and its tooltip, and
    * For grown-ups; Help is the bar's.
    */
@@ -428,7 +428,7 @@ export const en = {
   "skillmap.module": "Module: {module}",
   /** The profile's menu: whose profile it is. */
   "learner.yours": "Your profile",
-  /** For grown-ups, from the side menu: whose settings it holds, and the section's other pages. */
+  /** For grown-ups, from the row of places: whose settings it holds, and the section's other pages. */
   "grown.who": "Your profile and this device",
   "grown.section": "All settings",
   /** The notifications at the top right: nothing sends one yet. */
@@ -500,8 +500,6 @@ export const en = {
   "subjects.paper-open": "Open camera",
   /** On a module's card under its bar: of its skills with a verdict, how many are mastered. */
   "subjects.mastered": "{mastered} of {count} mastered",
-  /** Beside it, the skills whose review is due. */
-  "subjects.review": "{count} time to review",
   /** On the card of a module whose skills have a rubric and no verdict. */
   "subjects.rubric": plural({
     one: "{count} skill, with a rubric",
@@ -524,7 +522,7 @@ export const en = {
   "skill-state.locked": "Locked",
   "skill-state.feedback-by-criteria": "Feedback by criteria",
   "skill-state.not-assessed": "Not assessed",
-  /** The second way in beside My subjects, and its screen's heading (R34). */
+  /** The second way in beside Home, and its screen's heading (R34). */
   "skillmap.title": "Skill map",
   /** On a module's card on the screen Skill map: opens the module's map. */
   "skillmap.open": "Open the map",
@@ -543,7 +541,7 @@ export const en = {
   /** While the choice of a skill pressed on the map is under way: another press waits for it. */
   "skillmap.choosing": "Opening what's next…",
   /** A module of those connected from the map: its card says so in place of its button. */
-  "skillmap.connected": "Connected: it is in My subjects now",
+  "skillmap.connected": "Connected: it is on Home now",
   /**
    * Under a module's map, on the learner's screen and in the section for adults alike: an adult set
    * the module's level, {date} the day of the last correction (R157 spec).
@@ -601,8 +599,8 @@ export const en = {
   "task.solution": "Solution",
   /** Begins the same task again: a template may give another instance. */
   "task.again": "Try it again",
-  "task.home": "Back to My subjects",
-  /** On My subjects while the learner has an attempt open. */
+  "task.home": "Back to Home",
+  /** On Home while the learner has an attempt open. */
   "task.continue-title": "There is a task in progress",
   "task.continue": "Continue the task",
   /** Why the task is over, below "This task is already over". */
@@ -932,7 +930,7 @@ export const en = {
   /** The button of the consent: switches the storage on. */
   "storage.switch-on": "Switch it on",
   /**
-   * On My subjects: the share of today's quota of platform AI the learner's profile has used, as a
+   * On Home: the share of today's quota of platform AI the learner's profile has used, as a
    * percentage — never a sum of money (R40). Once it is used up, the line is api.quota.
    */
   "quota.learner": "Tutor time today: {percent} used",
@@ -1275,7 +1273,7 @@ export const en = {
   /** The card of a task from paper whose solution gave no one answer a program can compare. */
   "paper.no-key": "Couldn't check this one",
   "paper.no-key-line": "This task has no answer that can be checked. Hints still work.",
-  /** The tutor's line on the screen of solving, after the one that the tutor is an AI (R75). */
+  /** The tutor's first line on the screen of solving, where hints come (R75). */
   "paper.solve-hello":
     "Hints for this task come here, a question at a time. A program checks every answer.",
   /**

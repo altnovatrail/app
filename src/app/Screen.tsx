@@ -6,7 +6,7 @@
 // its heading in the bar's glass pill, beside its way back, as the mockup's top bar has its title,
 // named by the title, whose words the pill shows on two lines (R63). A screen drawn as the mockup's
 // legal text has its heading in the sheet's head instead, between its way back and its close (R69).
-// A screen in the frame of the side menu may have a way back above its heading and what stands
+// A screen in the frame of the row of places may have a way back above its heading and what stands
 // beside it, as a module's skill map its way back to Subjects and the module chosen (R79).
 import { type ReactNode, useEffect, useRef } from "react";
 import { useLanguage } from "../i18n/LanguageContext.tsx";

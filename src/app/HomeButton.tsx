@@ -1,4 +1,4 @@
-// The way back to My subjects from a learner's screen that is not the home itself (R57): a
+// The way back to Home from a learner's screen that is not the home itself (R57): a
 // secondary button with its words on it, the one element every such screen shows — at the top,
 // under the heading, as the skill map has it, or beside the screen's last buttons.
 import { useLanguage } from "../i18n/LanguageContext.tsx";
@@ -14,7 +14,7 @@ interface HomeProps {
   readonly pending?: boolean;
 }
 
-/** "Back to My subjects", which goes home, or does what the screen gives for leaving. */
+/** "Back to Home", which goes home, or does what the screen gives for leaving. */
 export function HomeButton({ onPress = () => navigate(HOME), pending = false }: HomeProps) {
   const { words } = useLanguage();
   return (

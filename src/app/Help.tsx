@@ -1,4 +1,4 @@
-// The adult's Help (R148 spec; R63, R79): behind its place at the foot of the side menu, a
+// The adult's Help (R148 spec; R63, R79): behind its place at the end of the row of places, a
 // pop-over that says three things — the tutor is an AI and a program checks every answer, and what
 // to do when the AI read the work wrongly; the name is made up, so no real names go into the work —
 // and leads to three texts of the app itself: Privacy Policy and Terms of Use, each a sheet over the
@@ -12,7 +12,7 @@ import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { ACCESSIBILITY, type LegalPage, legalPage } from "../legal/LegalPages.tsx";
 import { ReadLegalSheet } from "../legal/LegalSheet.tsx";
 import { isPageText, type PageText } from "../legal/texts.ts";
-import { NavCaption } from "./NavCaption.tsx";
+import { captionHidden, NavCaption } from "./NavCaption.tsx";
 import { PopOver } from "./PopOver.tsx";
 
 /** The pages Help leads to, in the mockup's order, each by the words of its name. */
@@ -37,6 +37,7 @@ export function AdultHelp() {
         className="nt-nav-item"
         popClassName="nt-pop-help"
         caption={<NavCaption icon="help" text={title} />}
+        tip={{ words: title, needed: captionHidden }}
       >
         {(close) => (
           <>

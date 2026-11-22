@@ -482,7 +482,7 @@ describe("a module's map", () => {
     expect(gone.getByText("Not available now")).toBeVisible();
     expect(gone.queryByRole("button")).toBeNull();
     await userEvent.click(tables.getByRole("button", { name: "Connect" }));
-    const done = await offered.findByText("Connected: it is in My subjects now");
+    const done = await offered.findByText("Connected: it is on Home now");
     expect(done).toHaveFocus();
     expect(asked).toEqual(["catalog", `connect ${TABLES}`]);
     // The map's state is read again in place: the anchor skill is no longer unknown on it.
@@ -509,7 +509,7 @@ describe("a module's map", () => {
     );
     fail = false;
     await userEvent.click(connect);
-    expect(await screen.findByText("Connected: it is in My subjects now")).toHaveFocus();
+    expect(await screen.findByText("Connected: it is on Home now")).toHaveFocus();
     expect(screen.queryByRole("alert")).toBeNull();
   });
 
@@ -581,6 +581,29 @@ describe("a module's map", () => {
     list.give();
     expect(await within(menu).findByRole("button", { name: /Fair shares/ })).toBeTruthy();
     expectLoaded(menu);
+  });
+
+  it("goes to the map of another module chosen in the menu, and stays on choosing its own", async () => {
+    await renderMap(moduleMapRoute(SHARES), {
+      connected: [
+        { moduleId: SHARES, packageDigest: D1 },
+        { moduleId: TABLES, packageDigest: D2 },
+      ],
+    });
+    window.location.hash = `#${moduleMapRoute(SHARES).screen}/${encodeURIComponent(SHARES)}`;
+    const before = window.location.hash;
+    await userEvent.click(await screen.findByRole("button", { name: "Module: Fair shares" }));
+    let menu = within(await screen.findByRole("dialog", { name: "Connected modules" }));
+    const own = await menu.findByRole("button", { name: /Fair shares/ });
+    expect(own).toHaveAttribute("aria-pressed", "true");
+    await userEvent.click(own);
+    expect(screen.queryByRole("dialog", { name: "Connected modules" })).toBeNull();
+    expect(window.location.hash).toBe(before);
+    await userEvent.click(screen.getByRole("button", { name: "Module: Fair shares" }));
+    menu = within(await screen.findByRole("dialog", { name: "Connected modules" }));
+    await userEvent.click(await menu.findByRole("button", { name: /Таблица умножения/ }));
+    expect(window.location.hash).toBe(`#/skill-map/${encodeURIComponent(TABLES)}`);
+    window.location.hash = "";
   });
 
   it("says a module has no map without a skill graph", async () => {

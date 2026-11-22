@@ -1,4 +1,4 @@
-// Home, "My subjects" (R99 spec; R62, R79): the learner's home, in the frame of the side menu. Under
+// Home (R99 spec; R62, R79): the learner's home, in the frame of the row of places. Under
 // its heading, "Home" — the pseudonym is the profile's menu's —, the learner begins their work:
 // what comes next and the tutor time on a card at the top — an attempt open outside a lesson a
 // press away (R20), else the engine's way, "What's next" (R24): no "Something else" beside the
@@ -10,8 +10,8 @@
 // in its own explanation language, the states of its skills counted by the rule of skill-map's map,
 // the mark "in order" of a chain (R06), and the way to its map (R34). The catalog, connecting and
 // the licenses are Subjects' (SubjectsPage.tsx), which "All subjects" opens. The legend of the
-// marks stands below the cards, on a phone behind a button; that the tutor is an AI is its panel's
-// (Shell.tsx). It is drawn as the mockup's `home` (R148 spec).
+// marks stands below the cards, on a phone behind a button; that the tutor is an AI is Help's and
+// the tutor's panel's of the top right (Shell.tsx). It is drawn as the mockup's `home` (R148 spec).
 import type { QuotaShare } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 // Whose action a request is; the cards have actions of their own.
 import { Action as Actor } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
@@ -43,11 +43,11 @@ import { openProfile, type Profile } from "../storage/profile.ts";
 import { useAttempt } from "../task/AttemptContext.tsx";
 import { type OpenTask, openTaskOf } from "../task/openTask.ts";
 import { HomeCard } from "./HomeCard.tsx";
+import { Legend } from "./Legend.tsx";
 import { byTitle, type ModuleCard } from "./modules.ts";
-import { Legend } from "./SkillBar.tsx";
 import { useModules } from "./useModules.ts";
 
-/** A lesson run open, as My subjects names it. */
+/** A lesson run open, as Home names it. */
 export interface OpenRun {
   readonly lessonRunId: string;
   /** The lesson's title as this device keeps it; none when the device keeps no state of the run. */

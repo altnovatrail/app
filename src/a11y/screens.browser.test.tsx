@@ -782,7 +782,7 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
       </LearnerProvider>
     ),
   ],
-  ["Home with the adult's Help open", ...homeWith(".nt-nav > button:last-of-type")],
+  ["Home with the adult's Help open", ...homeWith(".nt-nav > .nt-tip-host:last-of-type > button")],
   ["Home with the profile's menu open", ...homeWith("button.nt-learner-pill")],
   [
     "Home with a task in progress",

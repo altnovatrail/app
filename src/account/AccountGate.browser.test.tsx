@@ -595,7 +595,7 @@ describe("the way in", () => {
       await screen.findByRole("heading", { level: 1, name: "This task is already over" }),
     ).toBeTruthy();
     expect(asked).toContain("GetOpenAttempt");
-    await userEvent.click(screen.getByRole("button", { name: "Back to My subjects" }));
+    await userEvent.click(screen.getByRole("button", { name: "Back to Home" }));
     expect(await screen.findByRole("heading", { level: 1, name: "Home" })).toBeTruthy();
     // The attempt is over: nothing to go on with any more, after switching the learner and back too.
     expect(screen.queryByRole("button", { name: "Continue the task" })).toBeNull();
@@ -648,7 +648,7 @@ describe("the way in", () => {
       await screen.findByRole("heading", { level: 1, name: "This lesson is over" }),
     ).toBeTruthy();
     expect(asked).toContain("GetLessonRun");
-    await userEvent.click(screen.getByRole("button", { name: "Back to My subjects" }));
+    await userEvent.click(screen.getByRole("button", { name: "Back to Home" }));
     expect(await screen.findByRole("heading", { level: 1, name: "Home" })).toBeTruthy();
     // The run is over: nothing to go on with, after switching the learner and back too.
     expect(screen.queryByRole("button", { name: "Continue the lesson" })).toBeNull();

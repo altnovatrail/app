@@ -1861,7 +1861,7 @@ button.nt-row > svg {
 }
 
 /*
- * The home screen, "My subjects", as the mockup's `home` (R62): the line under its heading; at the
+ * The home screen, Home, as the mockup's `home` (R62): the line under its heading; at the
  * top a card of what comes next, its heading the mockup's "Next up" with its dot, the tutor time at
  * its foot, and beside it from 600 "A task from my paper", shown and not open; each module a card
  * of the mockup's, its tile, its title and the bar of its skills, 22 round; the legend of the marks
@@ -2366,63 +2366,29 @@ p.nt-pages-kept {
   padding-inline: 0.625rem;
   font-size: var(--nt-size-body);
 }
-/* The skills at the card's foot, above its buttons, as the mockup's spacer puts them. */
-.nt-skills {
-  margin-block-start: auto;
-  padding-block-start: 1rem;
-}
-.nt-skills-bar {
-  display: flex;
-  gap: 0.125rem;
-  block-size: 0.5rem;
-  border-radius: var(--nt-radius-mark);
-  background: var(--nt-card);
-  overflow: hidden;
-}
 .nt-legend-swatch {
   flex: none;
   inline-size: 0.625rem;
   block-size: 0.625rem;
   border-radius: 0.1875rem;
 }
-.nt-skills-bar > span,
 .nt-legend-swatch {
   background: var(--nt-state-locked);
 }
-.nt-skills-bar > [data-state="mastered"],
 [data-state="mastered"] > .nt-legend-swatch {
   background: var(--nt-state-mastered);
 }
-.nt-skills-bar > [data-state="time-to-review"],
 [data-state="time-to-review"] > .nt-legend-swatch {
   background: var(--nt-state-review);
 }
-.nt-skills-bar > [data-state="in-progress"],
 [data-state="in-progress"] > .nt-legend-swatch {
   background: var(--nt-state-progress);
 }
-.nt-skills-bar > [data-state="ready-to-start"],
 [data-state="ready-to-start"] > .nt-legend-swatch {
   background: var(--nt-state-ready);
 }
-.nt-skills-words,
-.nt-skills-mark {
-  margin: 0.5rem 0 0;
-  color: var(--nt-segmented);
-  font-size: var(--nt-size-caption);
-}
-.nt-skills-mark {
-  display: flex;
-  align-items: center;
-  gap: 0.375rem;
-  margin: 0;
-}
-.nt-skills .nt-skills-mark > svg {
-  font-size: 1rem;
-}
-/* In forced colours the bar keeps its segments apart by their edges, which the colours lose. */
+/* In forced colours a swatch keeps its edge, which the colours lose. */
 @media (forced-colors: active) {
-  .nt-skills-bar > span,
   .nt-legend-swatch {
     border: 0.0625rem solid CanvasText;
   }
@@ -3120,7 +3086,7 @@ button.nt-module-row > span[lang] {
   flex: 1 1 auto;
 }
 /*
- * The pop-overs of the frame: For grown-ups and Help beside the side menu, 340 wide; the
+ * The pop-overs of the frame: For grown-ups and Help under the row of places, 340 wide; the
  * notifications and the tutor's panel below the top right. Their heading at 17 bold, a line under
  * it, and the empty notifications in the middle.
  */

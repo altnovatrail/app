@@ -232,7 +232,7 @@ function nextStep(profileId: string, device: Device, choice: EngineChoice | unde
  * The end of a run, a card in the window's middle as the mockup's `lesson-end` (R64): the module's
  * tile and title if known, the lesson's title if known, how it ended — "Lesson complete" after a
  * star —, the way to what the engine chose — the choice the end gave, or else a press that asks for
- * it (R24) —, and the way to My subjects. No score, grade or comparison. The profile's pill stands
+ * it (R24) —, and the way to Home. No score, grade or comparison. The profile's pill stands
  * at the top, as on every screen of the profile (R63).
  */
 export function LessonEnd({

@@ -399,7 +399,7 @@ describe("the screen of an essay", () => {
     window.location.hash = "#/task";
     await renderEssay({ history: WRITTEN });
     await vi.waitFor(() => expect(check()).toHaveAttribute("aria-disabled", "false"));
-    await userEvent.click(screen.getByRole("button", { name: "Back to My subjects" }));
+    await userEvent.click(screen.getByRole("button", { name: "Back to Home" }));
     expect(window.location.hash).toBe("#/home");
     window.location.hash = "";
   });
@@ -593,7 +593,7 @@ describe("the screen of an essay", () => {
     expect(await (await shown()).findByText("Essay finished")).toBeVisible();
     expect(panel().queryByRole("heading", { name: "What the feedback looked at" })).toBeNull();
     expect(panel().getByRole("button", { name: "Next task" })).toBeVisible();
-    await userEvent.click(screen.getByRole("button", { name: "Back to My subjects" }));
+    await userEvent.click(screen.getByRole("button", { name: "Back to Home" }));
     expect(window.location.hash).toBe("#/home");
     window.location.hash = "";
   });

@@ -1085,7 +1085,7 @@ it("draws the loop as it goes, and drops it when the pointer is cancelled", asyn
 it("goes back to My subjects from the page, and the page goes with it", async () => {
   await renderPaper();
   await screen.findByRole("button", { name: "Deselect task 1" });
-  await userEvent.click(screen.getByRole("button", { name: "Back to My subjects" }));
+  await userEvent.click(screen.getByRole("button", { name: "Back to Home" }));
   expect(await screen.findByRole("heading", { name: "Photo of a page" })).toBeVisible();
   history.replaceState(null, "", location.pathname);
 });

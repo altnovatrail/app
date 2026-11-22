@@ -1,5 +1,5 @@
 // The screen of solving the tasks from the learner's paper (R71), as the mockup's `solve`: the top
-// bar's pill — Back to My subjects and the task's name —, and at its other end ‹, the counter that
+// bar's pill — Back to Home and the task's name —, and at its other end ‹, the counter that
 // opens the list of the tasks begun with "Add", and ›. Each task is a sheet in dots of its own
 // under its crop, the tracing paper, which canvas draws and the learner moves and hides (R87
 // canvas); its history and the paper's place stay with the page, so that a task left and come back

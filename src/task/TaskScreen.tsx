@@ -4,7 +4,7 @@
 // learner may ask for it, which asks first in a pop-over of its own, and after a line Check. The
 // tutor's panel opens by the tutor's button, by the step's pill and by Hint, and closes by its × —
 // a verdict does not open it, and with it closed the tutor says nothing of the work (R148 spec;
-// R21). In the open panel stand the line that the tutor is an AI, the verdict's line, the hint
+// R21). In the open panel stand the verdict's line, the hint
 // asked for and the tutor's words, and at its foot Hint and "Explain differently". Above the row
 // stands the verdict's card while the panel is closed: the work being read, "Not yet" with what was
 // read, Hint and "Try again", which puts it away; why Check does not open, once it is pressed so,

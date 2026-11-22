@@ -593,7 +593,7 @@ describe("the lesson player", () => {
     expect(asked).toContain("lesson done");
     expect(await kept()).toBeUndefined();
     expect(endedRuns).toEqual(["r1"]);
-    expect(screen.getByRole("button", { name: "Back to My subjects" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Back to Home" })).toBeVisible();
   });
 
   it("stands with its bar and the shapes of its title, its line and a segment while the run is read (R168 spec)", async () => {
@@ -888,7 +888,7 @@ describe("the lesson player", () => {
       },
     });
     const retry = await screen.findByRole("button", { name: "Try again" });
-    expect(screen.getByRole("button", { name: "Back to My subjects" })).toHaveClass("nt-secondary");
+    expect(screen.getByRole("button", { name: "Back to Home" })).toHaveClass("nt-secondary");
     failing = false;
     await userEvent.click(retry);
     await screen.findByText("A fence has posts and gaps between them.");
@@ -902,7 +902,7 @@ describe("the lesson player", () => {
       },
     });
     await screen.findByRole("heading", { level: 1, name: "No connection" });
-    await userEvent.click(screen.getByRole("button", { name: "Back to My subjects" }));
+    await userEvent.click(screen.getByRole("button", { name: "Back to Home" }));
     expect(window.location.hash).toBe("#/home");
     window.location.hash = "";
   });
@@ -1162,7 +1162,7 @@ describe("the lesson player", () => {
     });
     await userEvent.click(await continueButton());
     expect(await screen.findByRole("button", { name: "Next lesson" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "Back to My subjects" })).toHaveClass("nt-secondary");
+    expect(screen.getByRole("button", { name: "Back to Home" })).toHaveClass("nt-secondary");
     chosen.unmount();
 
     await renderLesson({

@@ -1,18 +1,18 @@
 // What the task screen and the screen of an essay share (R20, R53, R65, R67), as the mockup's
 // `task-pill` and `task`: the whole window, the top bar's glass pill at the top — Back, which goes
-// to My subjects, and the heading — with the profile's pill and the pill of the mode at its other
+// to Home, and the heading — with the profile's pill and the pill of the mode at its other
 // end, or, in a lesson, the lesson's bar with the pill of the mode in it; the voicing switched on
 // and off and "Read aloud" of the statement above the canvas, which fills the rest of the window,
 // its statement, its sheet and its bar of tools its own, with what each screen puts under it; at
 // the foot the screen's lines, the verdict's card or the step's pill, and the row of glass, in the
 // middle, of the screen's buttons; and the tutor's panel. Closed, it is the tutor's button at the
 // window's right edge, and by steps the step's pill above the row, either of which opens it. Open,
-// it is glass of 344 at the right, from under the top bar to 16 above the window's foot, the
+// it is glass of 400 at the right, from under the top bar to 16 above the window's foot, the
 // canvas, its lines and the foot ending where it begins; on a phone it is a sheet from the bottom,
 // at half the height or by its grabber over the whole screen, which hides the row and the canvas's
 // bar of tools (R148 spec). Its head — the tutor's sign, its name, the learner's share of the
 // quota, the switch of voicing and ×; the step's card by steps; the conversation, which scrolls —
-// the line that the tutor is an AI, the verdict's line, the hint and the tutor's words, or the
+// the verdict's line, the hint and the tutor's words, or the
 // attempt's result once it is over —; and at its foot Hint and "Explain differently". Each screen
 // gives what is its own: under the canvas, the words, the result, the card and the row's buttons.
 import type {
@@ -44,7 +44,7 @@ import type { Mode, StepsState } from "./steps.ts";
 import { TutorButton, TutorPanel, usePanelFocus } from "./TutorPanel.tsx";
 
 /**
- * The screen of the task — the top bar's pill with Back to My subjects (R57) and the heading, the
+ * The screen of the task — the top bar's pill with Back to Home (R57) and the heading, the
  * profile's pill and the mode's at the bar's other end —, or, in a lesson, the lesson's screen around
  * it, the mode's pill at the end of the lesson's bar.
  */

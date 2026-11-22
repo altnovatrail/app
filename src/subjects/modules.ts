@@ -1,4 +1,4 @@
-// The cards of "My subjects" (R99 spec; ModuleService in the contract): each module by the title
+// The cards of Home's modules (R99 spec; ModuleService in the contract): each module by the title
 // and explanation language of the open view of its current version's manifest. A module with no
 // current version for the learner is named by the manifest the cache keeps of an earlier version,
 // or else by its ID, and shown unavailable; a manifest that cannot be had names the module by its

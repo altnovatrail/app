@@ -17,10 +17,11 @@ import { formatHash } from "./hash.ts";
 import { Icon } from "./Icon.tsx";
 import type { IconValue } from "./icons.ts";
 import { LearnerMenu, MenuRow } from "./LearnerMenu.tsx";
-import { NavCaption } from "./NavCaption.tsx";
+import { captionHidden, NavCaption } from "./NavCaption.tsx";
 import { PopOver } from "./PopOver.tsx";
 import { ADULTS, HOME, navigate, PAPER, type Route, SUBJECTS, TASK } from "./router.ts";
 import { APP_NAME } from "./Screen.tsx";
+import { useTooltip } from "./Tooltip.tsx";
 
 /** The places of the menu a route belongs to: a module's map is Subjects'. */
 export type Place = "home" | "subjects";
@@ -46,10 +47,14 @@ function PlaceLink({
   readonly text: string;
   readonly current: boolean;
 }) {
-  return (
+  const tooltip = useTooltip<HTMLAnchorElement>(text, { needed: captionHidden });
+  return tooltip.wrap(
     <a
+      ref={tooltip.host}
       className="nt-nav-item"
       href={formatHash(route)}
+      onFocus={tooltip.onFocus}
+      onBlur={tooltip.onBlur}
       aria-current={current ? "page" : undefined}
       onClick={(event) => {
         // The hash of the route, not a new entry of the history for the page already shown.
@@ -58,14 +63,14 @@ function PlaceLink({
       }}
     >
       <NavCaption icon={icon} text={text} chosen={current} />
-    </a>
+    </a>,
   );
 }
 
 /**
  * For grown-ups (R76): whose settings it holds, the profile's hint mode, This device and the
- * section's other pages; Sign out is the profile's menu's alone (R63). A child's profile, which this build has not, would open it behind the
- * PIN (epic E4).
+ * section's other pages; Sign out is the profile's menu's alone (R63). A child's profile, which
+ * this build has not, would open it behind the PIN (epic E4).
  */
 export function GrownUps() {
   const chosen = useLearner();
@@ -78,6 +83,7 @@ export function GrownUps() {
       className="nt-nav-item"
       popClassName="nt-pop-menu nt-pop-grown"
       caption={<NavCaption icon="nav-grown" text={words.text("nav.grown")} />}
+      tip={{ words: words.text("nav.grown"), needed: captionHidden }}
     >
       {(close) => (
         <>
@@ -194,7 +200,7 @@ export function HomeTutor() {
   );
 }
 
-/** The side menu, or the phone's tab bar, and the top right, for the place shown. */
+/** The row of places, or the phone's tab bar, and the top right, for the place shown. */
 export function ShellBar({ place }: { readonly place: Place }) {
   const { words } = useLanguage();
   const later = words.text("nav.cognitive-later");

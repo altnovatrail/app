@@ -107,6 +107,8 @@ interface Setup {
   maps?: Record<string, MessageInitShape<typeof GetSkillMapResponseSchema>>;
   /** The share GetQuota gives; throwing makes it fail. Without it, api has no GetQuota. */
   quota?: () => MessageInitShape<typeof QuotaShareSchema>;
+  /** Called on ChooseNext, by the skill asked for; throwing makes it fail. It gives nothing. */
+  choose?: (skill: string) => void;
 }
 
 async function renderSubjects(setup: Setup, language: "en" | "ru" = "en") {
@@ -150,8 +152,9 @@ async function renderSubjects(setup: Setup, language: "en" | "ru" = "en") {
       });
     }
     router.service(LearningService, {
-      chooseNext() {
+      chooseNext(request) {
         asked.push("choose");
+        setup.choose?.(request.skill);
         return { choice: { kind: ChoiceKind.NOTHING } };
       },
     });
@@ -817,6 +820,52 @@ describe("the states of the skills", () => {
     expect(map).toHaveAccessibleDescription("Olympiad maths");
     await userEvent.click(map);
     expect(window.location.hash).toBe(`#/skill-map/${encodeURIComponent(MATH)}`);
+    window.location.hash = "";
+  });
+});
+
+describe("a card's Continue on a skill to work on", () => {
+  const setup = {
+    connected: [{ moduleId: MATH, packageDigest: D1 }],
+    tiers: { [D1]: SKILL_TIERS },
+    graphs: { [D1]: SKILLS },
+    maps: { [MATH]: STATED },
+  };
+  const toMap = `#/skill-map/${encodeURIComponent(MATH)}`;
+
+  async function pressContinue() {
+    const math = await card("Olympiad maths");
+    await math.findByRole("img", { name: ALL_STATES });
+    await userEvent.click(math.getByRole("button", { name: "Continue" }));
+  }
+
+  it("asks the engine for the skill, and opens the map when it gives nothing", async () => {
+    const choose = vi.fn();
+    await renderSubjects({ ...setup, choose });
+    await pressContinue();
+    await waitFor(() => expect(window.location.hash).toBe(toMap));
+    expect(choose).toHaveBeenCalledWith(`${MATH}/skill/patterns`);
+    window.location.hash = "";
+  });
+
+  it("opens the map when the engine's choice fails", async () => {
+    await renderSubjects({
+      ...setup,
+      choose: () => {
+        throw new ConnectError("down", Code.Unavailable);
+      },
+    });
+    await pressContinue();
+    await waitFor(() => expect(window.location.hash).toBe(toMap));
+    window.location.hash = "";
+  });
+
+  it("opens the map, asking the engine nothing, with another attempt open", async () => {
+    const choose = vi.fn();
+    await renderSubjects({ ...setup, attempt: "a1", choose });
+    await pressContinue();
+    expect(window.location.hash).toBe(toMap);
+    expect(choose).not.toHaveBeenCalled();
     window.location.hash = "";
   });
 });

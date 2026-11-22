@@ -51,22 +51,6 @@ export function judged(counts: SkillCounts): number {
   return STATES.reduce((sum, state) => sum + counts[state], 0);
 }
 
-/** One segment of a module's bar: its state and its share of the bar, in per cent. */
-export interface Segment {
-  readonly state: (typeof STATES)[number];
-  readonly percent: number;
-}
-
-/** The segments of the bar, the states with no skill left out; none for a module with no verdict. */
-export function segmentsOf(counts: SkillCounts): Segment[] {
-  const all = judged(counts);
-  if (all === 0) return [];
-  return STATES.filter((state) => counts[state] > 0).map((state) => ({
-    state,
-    percent: (counts[state] / all) * 100,
-  }));
-}
-
 /**
  * Where the learner stands in a module whose skills go in a chain (R06): the skill to work on —
  * the first not mastered in the order of the tiers — by its place from 1 and its title, the one

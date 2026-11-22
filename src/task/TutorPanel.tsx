@@ -1,12 +1,11 @@
-// The tutor's button and its panel (R67; R148 spec), as the mockup's: those of the task screen and of
-// an essay, and of the page to pick from, where the learner asks how to find its tasks (R74). Closed,
-// it is the button at the window's right edge; open, glass of 344 at the right, from under the top
-// bar to 16 above the window's foot, and on a phone a sheet from the bottom, at half the height or by
-// its grabber over the whole screen. Its head — the tutor's sign, its name, a line under it, the
-// switch of voicing and × —; what stands above the conversation, the step's card by steps; the
-// conversation, which scrolls, its first line that the tutor is an AI; the buttons at its foot; and
-// under them what the screen puts there, the field of a request. The screen of solving a task from
-// paper has them too (R75).
+// The tutor's button and its panel (R67; R148 spec), as the mockup's: those of the task screen and
+// of an essay, and of the page to pick from, where the learner asks how to find its tasks (R74).
+// Closed, it is the button at the window's right edge; open, glass of 400 at the right, from under
+// the top bar to 16 above the window's foot, and on a phone a sheet from the bottom, at half the
+// height or by its grabber over the whole screen. Its head — the tutor's sign, its name, a line
+// under it, the switch of voicing and × —; what stands above the conversation, the step's card by
+// steps; the conversation, which scrolls; the buttons at its foot; and under them what the screen
+// puts there, the field of a request. The screen of solving a task from paper has them too (R75).
 import { Action } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
 import type { ReactNode, Ref } from "react";
 import { useEffect, useRef, useState } from "react";

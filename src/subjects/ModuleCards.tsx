@@ -1,7 +1,7 @@
 // The cards of modules as the skill map and the section for adults list them (R32, R34 and R35):
 // each card named by CardHeading, with one button described by its title, in the order of the
 // screen's language, the mark "in order" coming when its graph has, and a retry when some names did
-// not come. My subjects keeps cards of its own: two lists, a button that moves its card between
+// not come. Home keeps cards of its own: two lists, a button that moves its card between
 // them, and the focus with it. The modules connected to a profile are read here for the screens
 // that list them.
 import { type ReactNode, useCallback, useId, useMemo } from "react";

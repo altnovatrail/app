@@ -1518,7 +1518,7 @@ function home() {
  * engine's way, "What's next", which names no lesson before it is pressed (R24), not the mockup's
  * lesson begun with its line.
  */
-const HOME_PLACED = "\"What's next\" names no lesson before it is pressed (R24)";
+const HOME_PLACED = '"What\'s next" names no lesson before it is pressed (R24)';
 
 /** The row of places from 600, the tab bar on a phone, and the pills at the right: Home's frame (R79). */
 function frameOf(device: Device): readonly Region[] {
@@ -1954,9 +1954,9 @@ const LESSON_END: readonly Region[] = [
     app: { role: "button", name: "Next lesson" },
   },
   {
-    name: "Back to My subjects",
-    mockup: { role: "button", name: "Back to My subjects" },
-    app: { role: "button", name: "Back to My subjects" },
+    name: "Back to Home",
+    mockup: { role: "button", name: "Back to Home" },
+    app: { role: "button", name: "Back to Home" },
     contrast: ACCENT_TEXT,
   },
 ];

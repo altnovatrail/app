@@ -593,7 +593,7 @@ describe("the task screen", () => {
     const { given, give } = held();
     await renderTask({ held: given });
     expect(screen.getByRole("heading", { level: 1, name: "Task" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Back to My subjects" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Back to Home" })).toBeTruthy();
     expectLoading(document, 4);
     give();
     await screen.findByRole("heading", { name: "Understand the task", level: 2 });
@@ -933,7 +933,7 @@ describe("the task screen", () => {
       },
     });
     await screen.findByRole("heading", { level: 1, name: "No connection" });
-    expect(screen.getByRole("button", { name: "Back to My subjects" })).toHaveClass("nt-secondary");
+    expect(screen.getByRole("button", { name: "Back to Home" })).toHaveClass("nt-secondary");
     down = false;
     await userEvent.click(screen.getByRole("button", { name: "Try again" }));
     await screen.findByRole("heading", { name: "Understand the task", level: 2 });
@@ -949,7 +949,7 @@ describe("the task screen", () => {
     await screen.findByRole("heading", { level: 1, name: "A grown-up's consent is needed first" });
     expect(screen.getByRole("button", { name: "Try again" })).toBeVisible();
     window.location.hash = "#/task";
-    await userEvent.click(screen.getByRole("button", { name: "Back to My subjects" }));
+    await userEvent.click(screen.getByRole("button", { name: "Back to Home" }));
     expect(window.location.hash).toBe("#/home");
     window.location.hash = "";
   });
@@ -958,7 +958,7 @@ describe("the task screen", () => {
     window.location.hash = "#/task";
     await renderTask({ mode: Mode.SELF });
     await screen.findByRole("button", { name: "Choose an answer" });
-    const home = screen.getByRole("button", { name: "Back to My subjects" });
+    const home = screen.getByRole("button", { name: "Back to Home" });
     expect(screen.queryByRole("complementary", { name: "Tutor" })).toBeNull();
     await userEvent.click(home);
     expect(window.location.hash).toBe("#/home");
@@ -1037,8 +1037,8 @@ describe("the task screen", () => {
     await userEvent.click(check());
     await panel().findByRole("button", { name: "Try it again" });
     // Once the attempt is over, the way back is still the bar's, and the result has none (R65).
-    expect(screen.getAllByRole("button", { name: "Back to My subjects" })).toHaveLength(1);
-    await userEvent.click(screen.getByRole("button", { name: "Back to My subjects" }));
+    expect(screen.getAllByRole("button", { name: "Back to Home" })).toHaveLength(1);
+    await userEvent.click(screen.getByRole("button", { name: "Back to Home" }));
     expect(window.location.hash).toBe("#/home");
     window.location.hash = "";
   });

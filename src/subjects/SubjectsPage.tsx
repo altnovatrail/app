@@ -1,11 +1,11 @@
-// Subjects, a place of the side menu (R99 spec; R79): the catalog of the server, as the mockup's
-// `subjects` (R148 spec). The modules connected to the profile come first, by their count, each a
-// card with its title in its own explanation language and, when that is not the screen's, a line
-// that names it — the mark "Connected", the way to its skill map, Disconnect and the page of its
-// license (R32) —; the others below, "More on this server", each with Connect and its license. Each
-// list is in the order of the screen's language, and the focus goes with a card to its new place.
-// The manifest has no words of what a module teaches: the card says what it holds of the module, not
-// the mockup's sample lines.
+// Subjects, a place of the row of places (R99 spec; R79): the catalog of the server, as the
+// mockup's `subjects` (R148 spec). The modules connected to the profile come first, by their count,
+// each a card with its title in its own explanation language and, when that is not the screen's, a
+// line that names it — the mark "Connected", the way to its skill map, Disconnect and the page of
+// its license (R32) —; the others below, "More on this server", each with Connect and its license.
+// Each list is in the order of the screen's language, and the focus goes with a card to its new
+// place. The manifest has no words of what a module teaches: the card says what it holds of the
+// module, not the mockup's sample lines.
 import { useId, useMemo } from "react";
 import type { Failure } from "../api/failure.ts";
 import { failureText } from "../api/words.ts";

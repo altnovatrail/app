@@ -9,8 +9,8 @@
 // signing in too, from the sign-in screen and from the section's first page, and their bar goes
 // back to where they were opened from (R31); the section's first page tells of a text's next version
 // and opens its page (R46). So does the license of a module's version,
-// opened from a card of My subjects, in the language of the learner's screens while a learner is
-// chosen, and closed home (R32); and so does the page on the AI tutor, opened from My subjects too
+// opened from a module's card on Home, in the language of the learner's screens while a learner is
+// chosen, and closed home (R32); and so does the page on the AI tutor, opened from Home too
 // (R33), which opens the page of who runs this copy, whose bar comes back to it (R46).
 import type { Profile } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import {
@@ -151,7 +151,7 @@ export function AccountGate({ children }: { readonly children: ReactNode }) {
     [session],
   );
   const onFailed = useCallback((failure: Failure) => session.profileFailed(failure), [session]);
-  // The screen they close to is My subjects while a learner is chosen, in their language.
+  // The screen they close to is Home while a learner is chosen, in their language.
   if (route.screen === MODULE_LICENSE.screen || route.screen === TUTOR.screen) {
     const pages =
       route.screen === TUTOR.screen ? (
