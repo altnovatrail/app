@@ -328,10 +328,11 @@ describe.each(ENGINES.map((type) => [type.name(), type] as const))(
       const box = await ink.boundingBox();
       if (box === null) throw new Error("the sheet has no box");
       // "180 : 30 = 6, 6 + 1 = 7": twenty strokes of a digit's size, at the pace of a hand — a move
-      // every 8 ms, about 40 px a stroke —, two lines of it.
+      // every 8 ms, about 40 px a stroke —, two lines of it, right of the element's bar of buttons,
+      // which stands over the sheet's left edge, 16 to 68 px: a stroke begun on it draws nothing.
       const top = Math.max(box.y, 0) + 200;
       for (let n = 0; n < 20; n++) {
-        const x = box.x + 40 + (n % 10) * 60;
+        const x = box.x + 120 + (n % 10) * 60;
         const y = top + Math.floor(n / 10) * 80;
         await page.mouse.move(x, y);
         await page.mouse.down();

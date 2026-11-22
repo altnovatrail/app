@@ -223,7 +223,7 @@ export function ShellBar({ place }: { readonly place: Place }) {
         />
         {/* Shut until it comes: in the order of the keyboard still, so that its "Soon" is read. */}
         <button type="button" className="nt-nav-item" aria-disabled="true" title={later}>
-          <NavCaption icon="nav-cognitive" text={words.text("nav.cognitive")} />
+          <NavCaption icon="nav-cognitive" text={words.text("nav.cognitive")} />{" "}
           <span className="nt-soon">{words.text("nav.soon")}</span>
         </button>
         <span className="nt-nav-rule" />

@@ -381,17 +381,19 @@ function CardsLoading() {
 /** A page of a book with a task marked on it: a picture of the card, not read out. */
 function PaperSheet() {
   return (
-    <span className="nt-paper-sheet" aria-hidden="true">
-      <i />
-      <i />
-      <i />
-      <span className="nt-sheet-task">
+    <span className="nt-deco" aria-hidden="true">
+      <span className="nt-paper-sheet">
+        <i />
+        <i />
+        <i />
+        <span className="nt-sheet-task">
+          <i />
+          <i />
+        </span>
+        <i />
         <i />
         <i />
       </span>
-      <i />
-      <i />
-      <i />
     </span>
   );
 }
@@ -403,34 +405,36 @@ function PaperSheet() {
  */
 function GridSheet() {
   return (
-    <span className="nt-grid-sheet" aria-hidden="true">
-      <svg
-        aria-hidden="true"
-        viewBox="0 0 216 104"
-        fill="none"
-        strokeWidth="2.4"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <g stroke="#1f3a93">
-          <ellipse cx="17" cy="24" rx="11" ry="10.5" transform="rotate(-8 17 24)" />
-          <path d="M40 35.5 52.5 12.5 64.5 35" />
-          <path d="M40 35.5 64.5 35" />
-          <path d="M77 13.5 99.5 12.8 100.2 35.6 77.6 36.2Z" />
-          <ellipse cx="124" cy="24.5" rx="11" ry="10.5" transform="rotate(6 124 24.5)" />
-          <path d="M147 35.5 159.5 12.5 171.5 35.2" />
-          <path d="M147 35.5 171.5 35.2" />
-          <path d="M183 12h26v25h-26z" strokeDasharray="4 3.5" />
-          <path d="M190.5 19.5q5.5-6.5 11 0q2 5-5 7.5v3.5" />
-          <path d="M196.5 33.6v.2" strokeWidth="3" />
-          <path d="M185.8 73.5 207.8 72.8 208.5 94.5 186.4 95.2Z" />
-        </g>
-        <g stroke="#e8590c">
-          <path d="M196 42q-6 7 0 15" />
-          <path d="M191.5 52.5 196 57.5 199.5 51.8" />
-          <ellipse cx="197" cy="84" rx="18" ry="16.5" transform="rotate(-10 197 84)" />
-        </g>
-      </svg>
+    <span className="nt-deco" aria-hidden="true">
+      <span className="nt-grid-sheet">
+        <svg
+          aria-hidden="true"
+          viewBox="0 0 216 104"
+          fill="none"
+          strokeWidth="2.4"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <g stroke="#1f3a93">
+            <ellipse cx="17" cy="24" rx="11" ry="10.5" transform="rotate(-8 17 24)" />
+            <path d="M40 35.5 52.5 12.5 64.5 35" />
+            <path d="M40 35.5 64.5 35" />
+            <path d="M77 13.5 99.5 12.8 100.2 35.6 77.6 36.2Z" />
+            <ellipse cx="124" cy="24.5" rx="11" ry="10.5" transform="rotate(6 124 24.5)" />
+            <path d="M147 35.5 159.5 12.5 171.5 35.2" />
+            <path d="M147 35.5 171.5 35.2" />
+            <path d="M183 12h26v25h-26z" strokeDasharray="4 3.5" />
+            <path d="M190.5 19.5q5.5-6.5 11 0q2 5-5 7.5v3.5" />
+            <path d="M196.5 33.6v.2" strokeWidth="3" />
+            <path d="M185.8 73.5 207.8 72.8 208.5 94.5 186.4 95.2Z" />
+          </g>
+          <g stroke="#e8590c">
+            <path d="M196 42q-6 7 0 15" />
+            <path d="M191.5 52.5 196 57.5 199.5 51.8" />
+            <ellipse cx="197" cy="84" rx="18" ry="16.5" transform="rotate(-10 197 84)" />
+          </g>
+        </svg>
+      </span>
     </span>
   );
 }

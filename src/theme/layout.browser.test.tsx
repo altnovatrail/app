@@ -1,7 +1,7 @@
 // The layout from the width (R59): below 600 CSS px one column of the whole width; from 600 a
 // column of reading, the mockup's frame of 1194 at most, centred, for the home screen and the
-// sign-in, with the cards two in a row and four where each is 15rem wide, and the whole window for
-// a screen with a canvas; the bar above a screen at the screen's own width.
+// sign-in, with the cards two in a row at any width (R79), and the whole window for a screen with a
+// canvas; the bar above a screen at the screen's own width.
 import { render } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import { page } from "vitest/browser";
@@ -58,9 +58,9 @@ describe("the layout from the width", () => {
     [600, 640, 600, 40, 2],
     [834, 640, 834, 40, 2],
     [1087, 640, 1087, 40, 2],
-    [1088, 640, 1088, 40, 4],
-    [1194, 640, 1194, 40, 4],
-    [1600, 640, 1194, 40, 4],
+    [1088, 640, 1088, 40, 2],
+    [1194, 640, 1194, 40, 2],
+    [1600, 640, 1194, 40, 2],
   ])(
     "at %i px: a column %i, the frame %i padded %i, %i cards in a row",
     async (width, column, frame, padding, cards) => {

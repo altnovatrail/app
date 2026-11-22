@@ -415,8 +415,8 @@ export function TaskLayout({
   const shown = over || open;
   // The step's pill goes with its press too (2.4.3).
   const { heading, call } = usePanelFocus(shown);
-  // Beside the open panel the canvas, its lines and the foot end where it begins; on a phone its
-  // sheet hides the row and the canvas's bar of tools (R148 spec).
+  // The open panel stands over the canvas, and its lines and the foot end where it begins; on a
+  // phone its sheet hides the row and the canvas's bar of tools (R67; R148 spec).
   const beside = shown ? { "data-beside": "panel" } : {};
   const stepsShown = !over && mode === "steps";
   return (

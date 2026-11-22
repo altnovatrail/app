@@ -529,7 +529,6 @@ export const en = {
   /** On a module's card on the screen Skill map: opens the module's map. */
   "skillmap.open": "Open the map",
   /** Back from a module's map to the list of the maps of the modules connected. */
-  "skillmap.all": "All skill maps",
   /** The heading of a module's map; {module} is the module's title, in its own language. */
   "skillmap.module-title": "Skill map: {module}",
   /** Above a module's map: the map's own button is Practise (skill-map's words). */

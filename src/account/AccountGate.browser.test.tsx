@@ -1,6 +1,6 @@
 // The way in, through Boot, in the browser (R16, R19, R61): the sign-in, the invite code, the
 // owner's profile, the choice of the learner, which asks the browser to keep the site's data on the
-// first sign-in (R04), the bar above the learner's screens and the sign-out, each screen by its role and name, with api
+// first sign-in (R04), the top bar of the learner's screens and the sign-out, each screen by its role and name, with api
 // answering by the test's fetch and the sign-in service the test's own.
 import {
   CheckOwnKeyRequestSchema,
@@ -97,14 +97,32 @@ async function inMenu(name: string): Promise<HTMLElement> {
   return within(await screen.findByRole("dialog")).findByRole("button", { name });
 }
 
+/** The words of For grown-ups in the top bar: its place, and the row that opens the section. */
+const GROWN_UPS = {
+  en: { place: "Grown-ups", section: "All settings" },
+  ru: { place: "Взрослым", section: "Все настройки" },
+} as const;
+
+/**
+ * The section for adults from the top bar of Home, Subjects and the skill map (R76): the place
+ * For grown-ups is pressed, and the section's row in the pop-over it opens, in the profile's
+ * language.
+ */
+async function grownUps(language: keyof typeof GROWN_UPS = "en"): Promise<void> {
+  const { place, section } = GROWN_UPS[language];
+  await userEvent.click(await screen.findByRole("button", { name: place }));
+  const pop = within(await screen.findByRole("dialog"));
+  await userEvent.click(await pop.findByRole("button", { name: section }));
+}
+
 /**
  * Opens the section for adults as the adult does since the choice of the learner has no way to it:
- * the first profile chosen, then "For grown-ups" in its menu, in the profile's language (R29).
+ * the first profile chosen, then the section from For grown-ups, in the profile's language (R29).
  */
-async function toAdults(name = "For grown-ups"): Promise<void> {
+async function toAdults(language: keyof typeof GROWN_UPS = "en"): Promise<void> {
   await vi.waitFor(() => expect(document.querySelector(".nt-learners button")).not.toBeNull());
   await userEvent.click(document.querySelector(".nt-learners button") as HTMLElement);
-  await userEvent.click(await inMenu(name));
+  await grownUps(language);
 }
 
 /** The texts of the account, synthetic: the policy with a translation into Russian. */
@@ -387,15 +405,15 @@ describe("the way in", () => {
     await userEvent.click(screen.getByRole("button", { name: "Ёжик" }));
 
     // The learner's screens, below the bar.
-    expect(await screen.findByRole("heading", { level: 1, name: "My subjects" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { level: 1, name: "Home" })).toBeTruthy();
     expect(screen.getByRole("banner").textContent).toContain("Ёжик");
     await userEvent.click(await inMenu("Switch learner"));
     expect(await screen.findByRole("heading", { level: 1, name: "Who is learning?" })).toBeTruthy();
     // Shown again, it asks the browser no more.
     expect(persist).toHaveBeenCalledOnce();
-    // Each request of the way in, then the learner's home — its lists and the share of the quota —,
-    // and no other: the choice of the learner reads no text (R46), and CheckPackages has no package
-    // to ask about.
+    // Each request of the way in, then the learner's home — the modules connected and the share of
+    // the quota —, and no other: the catalog is Subjects', the choice of the learner reads no text
+    // (R46), and CheckPackages has no package to ask about.
     expect(asked).toEqual([
       "GetAccount",
       "GetLegalTexts",
@@ -405,7 +423,6 @@ describe("the way in", () => {
       "CreateOwnerProfile",
       "GetAccount",
       "ListConnectedModules",
-      "ListCatalog",
       "GetQuota",
     ]);
     // Some twenty steps of the way in: under the load of the whole suite they outlast 15 s.
@@ -576,12 +593,12 @@ describe("the way in", () => {
     ).toBeTruthy();
     expect(asked).toContain("GetOpenAttempt");
     await userEvent.click(screen.getByRole("button", { name: "Back to My subjects" }));
-    expect(await screen.findByRole("heading", { level: 1, name: "My subjects" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { level: 1, name: "Home" })).toBeTruthy();
     // The attempt is over: nothing to go on with any more, after switching the learner and back too.
     expect(screen.queryByRole("button", { name: "Continue the task" })).toBeNull();
     await userEvent.click(await inMenu("Switch learner"));
     await userEvent.click(await screen.findByRole("button", { name: "Ёжик" }));
-    expect(await screen.findByRole("heading", { level: 1, name: "My subjects" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { level: 1, name: "Home" })).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Continue the task" })).toBeNull();
     window.location.hash = "";
   });
@@ -593,7 +610,7 @@ describe("the way in", () => {
     const account = { accountId: "account-1", profiles: [OWNER] };
     renderApp({ getAccount: () => message(GetAccountResponseSchema, { account }) }, service);
     await userEvent.click(await screen.findByRole("button", { name: "Ёжик" }));
-    expect(await screen.findByRole("heading", { level: 1, name: "My subjects" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { level: 1, name: "Home" })).toBeTruthy();
     expect(window.location.hash).toBe("#/home");
     expect(window.history.length).toBe(entries);
     window.location.hash = "";
@@ -616,9 +633,8 @@ describe("the way in", () => {
       service,
     );
     await userEvent.click(await screen.findByRole("button", { name: "Ёжик" }));
-    expect(
-      await screen.findByRole("heading", { level: 2, name: "A lesson in progress" }),
-    ).toBeTruthy();
+    // Next up names the lesson begun, there being no task open.
+    expect(await screen.findByRole("heading", { level: 2, name: "Next up" })).toBeTruthy();
     // No state of the run on this device, and no manifest: the lesson by its module's ID.
     expect(
       await screen.findByRole("heading", { level: 3, name: "A lesson: example/with-lessons" }),
@@ -630,17 +646,17 @@ describe("the way in", () => {
     ).toBeTruthy();
     expect(asked).toContain("GetLessonRun");
     await userEvent.click(screen.getByRole("button", { name: "Back to My subjects" }));
-    expect(await screen.findByRole("heading", { level: 1, name: "My subjects" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { level: 1, name: "Home" })).toBeTruthy();
     // The run is over: nothing to go on with, after switching the learner and back too.
     expect(screen.queryByRole("button", { name: "Continue the lesson" })).toBeNull();
     await userEvent.click(await inMenu("Switch learner"));
     await userEvent.click(await screen.findByRole("button", { name: "Ёжик" }));
-    expect(await screen.findByRole("heading", { level: 1, name: "My subjects" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { level: 1, name: "Home" })).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Continue the lesson" })).toBeNull();
     window.location.hash = "";
   });
 
-  it("goes to the lesson the engine chose from My subjects, and on to its next task", async () => {
+  it("goes to the lesson the engine chose from Home, and on to its next task", async () => {
     const service = fakeSignIn("uid-1");
     const account = { accountId: "account-1", profiles: [OWNER] };
     let next = ChoiceKind.LESSON;
@@ -683,7 +699,7 @@ describe("the way in", () => {
     const account = { accountId: "account-1", profiles: [OWNER] };
     renderApp({ getAccount: () => message(GetAccountResponseSchema, { account }) }, service);
     await userEvent.click(await screen.findByRole("button", { name: "Ёжик" }));
-    expect(await screen.findByRole("heading", { level: 1, name: "My subjects" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { level: 1, name: "Home" })).toBeTruthy();
     expect(window.location.hash).toBe("#/home");
     expect(window.history.length).toBe(entries);
     window.location.hash = "";
@@ -813,7 +829,7 @@ describe("the section for adults", () => {
     window.location.hash = "";
   });
 
-  it("opens from the profile's menu, saves what changed, and the learner's screens take it", async () => {
+  it("opens from For grown-ups in the top bar, saves what changed, and the learner's screens take it", async () => {
     const service = fakeSignIn("uid-1");
     const account = { accountId: "account-1", profiles: [OWNER] };
     const updates: ReturnType<typeof fromBinary<typeof UpdateProfileRequestSchema>>[] = [];
@@ -833,7 +849,7 @@ describe("the section for adults", () => {
       service,
     );
 
-    // From the profile's menu, in the device's language.
+    // From For grown-ups, the section in the device's language.
     await toAdults();
     expect(await screen.findByRole("heading", { level: 1, name: "For grown-ups" })).toBeTruthy();
     expect(window.location.hash).toBe("#/adults");
@@ -865,14 +881,14 @@ describe("the section for adults", () => {
     expect(await screen.findByRole("heading", { level: 1, name: "For grown-ups" })).toBeTruthy();
     await userEvent.click(screen.getByRole("button", { name: "Close the section" }));
     // The learner's screens in the profile's language, the page's language with them.
-    expect(await screen.findByRole("heading", { level: 1, name: "Мои предметы" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { level: 1, name: "Главная" })).toBeTruthy();
     expect(document.documentElement.lang).toBe("ru");
-    // From the menu again, back to the device's language.
-    await userEvent.click(await inMenu("Для взрослых"));
+    // From For grown-ups again, back to the device's language.
+    await grownUps("ru");
     expect(await screen.findByRole("heading", { level: 1, name: "For grown-ups" })).toBeTruthy();
     expect(document.documentElement.lang).toBe("en");
     await userEvent.click(screen.getByRole("button", { name: "Close the section" }));
-    expect(await screen.findByRole("heading", { level: 1, name: "Мои предметы" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { level: 1, name: "Главная" })).toBeTruthy();
     other.close();
   });
 
@@ -886,7 +902,7 @@ describe("the section for adults", () => {
       service,
     );
     await userEvent.click(await screen.findByRole("button", { name: "Ёжик" }));
-    expect(await screen.findByRole("heading", { level: 1, name: "My subjects" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { level: 1, name: "Home" })).toBeTruthy();
     // Something that is no profile changes nothing.
     other.postMessage("ru");
     other.postMessage(
@@ -894,7 +910,7 @@ describe("the section for adults", () => {
         create(ProfileSchema, { ...OWNER, defaultMode: Mode.SELF, interfaceLanguage: "ru" }),
       ),
     );
-    expect(await screen.findByRole("heading", { level: 1, name: "Мои предметы" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { level: 1, name: "Главная" })).toBeTruthy();
     // The open attempt GetAccount named stays: other settings make no other profile of it.
     await userEvent.click(screen.getByRole("button", { name: "Продолжить задачу" }));
     expect(await screen.findByRole("heading", { level: 1, name: "Задача" })).toBeTruthy();
@@ -1001,7 +1017,7 @@ describe("the legal pages", () => {
     expect(window.location.hash).toBe("#/adults");
   });
 
-  it("open from the adult's Help on My subjects, and close back home", async () => {
+  it("open from the adult's Help on Home, and close back home", async () => {
     const service = fakeSignIn("uid-1");
     const account = { accountId: "account-1", profiles: [OWNER] };
     renderApp({ getAccount: () => message(GetAccountResponseSchema, { account }) }, service);
@@ -1011,7 +1027,7 @@ describe("the legal pages", () => {
     expect(await screen.findByRole("heading", { level: 1, name: "Accessibility" })).toBeTruthy();
     expect(window.location.hash).toBe("#/legal/accessibility");
     await userEvent.click(screen.getByRole("button", { name: "Close" }));
-    expect(await screen.findByRole("heading", { level: 1, name: "My subjects" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { level: 1, name: "Home" })).toBeTruthy();
   });
 
   it("tell of a next version on the section's first page, not on the choice of the learner, and close its page back to the section", async () => {
@@ -1091,7 +1107,7 @@ describe("the own key", () => {
       },
       service,
     );
-    // From the profile's menu, the owner profile chosen, which holds the key.
+    // From For grown-ups, the owner profile chosen, which holds the key.
     await toAdults();
     await userEvent.click(await screen.findByRole("button", { name: "Set up an own AI key" }));
     // A synthetic key: no provider issued it.
@@ -1255,10 +1271,12 @@ describe("the license of a module", () => {
     "device LICENSE": () => new Response(LICENSE),
   });
 
-  it("opens from a card of My subjects in the learner's language, and closes back to it", async () => {
+  it("opens from a card of Subjects in the learner's language, and closes home", async () => {
     const service = fakeSignIn("uid-1");
     const { asked } = renderApp(routes({ ...OWNER, interfaceLanguage: "ru" }), service);
     await userEvent.click(await screen.findByRole("button", { name: "Ёжик" }));
+    // The catalog and the licenses are Subjects', not Home's cards.
+    await userEvent.click(await screen.findByRole("link", { name: "Предметы" }));
     const card = within(await screen.findByRole("article", { name: "Choices" }));
     await userEvent.click(card.getByRole("button", { name: "Лицензия" }));
     expect(window.location.hash).toBe(`#/license/sha256%3A${"1".repeat(64)}`);
@@ -1271,13 +1289,13 @@ describe("the license of a module", () => {
     expect(asked).toContain("device LICENSE");
     expect(asked).toContain("device NOTICE");
     await userEvent.click(screen.getByRole("button", { name: "Закрыть" }));
-    expect(await screen.findByRole("heading", { level: 1, name: "Мои предметы" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { level: 1, name: "Главная" })).toBeTruthy();
   });
 
   it("opens from the profile's modules in the section, in the device's language, and before signing in by its address", async () => {
     const service = fakeSignIn("uid-1");
     renderApp(routes({ ...OWNER, interfaceLanguage: "ru" }), service);
-    await toAdults("Для взрослых");
+    await toAdults("ru");
     await userEvent.click(await screen.findByRole("button", { name: "Profile: Ёжик" }));
     await userEvent.click(
       await screen.findByRole("button", { name: "See the modules and their licenses" }),
@@ -1318,7 +1336,7 @@ describe("the page on the AI tutor", () => {
     const service = fakeSignIn("uid-1");
     renderApp(routes({ ...OWNER, interfaceLanguage: "ru" }), service);
     await userEvent.click(await screen.findByRole("button", { name: "Ёжик" }));
-    await screen.findByRole("heading", { level: 1, name: "Мои предметы" });
+    await screen.findByRole("heading", { level: 1, name: "Главная" });
     window.location.hash = "#/tutor";
     expect(
       await screen.findByRole("heading", {
@@ -1330,7 +1348,7 @@ describe("the page on the AI tutor", () => {
     expect(screen.getAllByRole("heading", { level: 2 })).toHaveLength(6);
     expect(document.querySelector("a")).toBeNull();
     await userEvent.click(screen.getByRole("button", { name: "Закрыть" }));
-    expect(await screen.findByRole("heading", { level: 1, name: "Мои предметы" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { level: 1, name: "Главная" })).toBeTruthy();
     // Signed out, the page shows by its address in the device's language; a part it does not know
     // goes to the page itself.
     service.set(null);
@@ -1369,7 +1387,7 @@ describe("the page on the AI tutor and who runs this copy", () => {
       service,
     );
     await userEvent.click(await screen.findByRole("button", { name: "Ёжик" }));
-    await screen.findByRole("heading", { level: 1, name: "Мои предметы" });
+    await screen.findByRole("heading", { level: 1, name: "Главная" });
     window.location.hash = "#/tutor";
     await userEvent.click(await screen.findByRole("button", { name: "Кто ведёт приложение" }));
     expect(window.location.hash).toBe("#/legal/operator");
@@ -1443,10 +1461,9 @@ describe("the reason code of the engine's choice", () => {
       },
       service,
     );
-    // The learner's screens, in the learner's language: My subjects, what's next, the task screen
-    // and the skill map.
+    // The learner's screens, in the learner's language: Home, the task screen and the skill map.
     await userEvent.click(await screen.findByRole("button", { name: "Ёжик" }));
-    expect(await screen.findByRole("heading", { level: 1, name: "Мои предметы" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { level: 1, name: "Главная" })).toBeTruthy();
     await screen.findByRole("article", { name: "Choices" });
     expect(reasonsShown()).toEqual([]);
     await userEvent.click(screen.getByRole("button", { name: "Продолжить задачу" }));
@@ -1454,22 +1471,17 @@ describe("the reason code of the engine's choice", () => {
     expect(await screen.findByRole("button", { name: /^Режим: / })).toBeTruthy();
     expect(reasonsShown()).toEqual([]);
     window.location.hash = "#/home";
-    await userEvent.click(await screen.findByRole("button", { name: "Что-то другое" }));
-    await userEvent.click(await screen.findByRole("button", { name: "Перейти" }));
-    expect(await screen.findByText("Пока больше нечего предложить")).toBeTruthy();
-    expect(reasonsShown()).toEqual([]);
-    window.location.hash = "#/skill-map";
-    await userEvent.click(await screen.findByRole("button", { name: "Открыть карту" }));
-    expect(
-      await screen.findByRole("heading", { level: 1, name: "Карта навыков: Choices" }),
-    ).toBeTruthy();
+    const card = within(await screen.findByRole("article", { name: "Choices" }));
+    await userEvent.click(card.getByRole("button", { name: "Карта навыков" }));
+    // The heading is the map's, and its frame names the module.
+    expect(await screen.findByRole("region", { name: "Карта навыков: Choices" })).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 1, name: "Карта навыков" })).toBeTruthy();
     expect(reasonsShown()).toEqual([]);
     expect(asked).toContain("GetSkillMap");
-    expect(asked).toContain("ChooseNext");
     expect(asked).not.toContain("GetProgress");
 
     // The section for adults, in the device's language: the progress names each code.
-    await userEvent.click(await inMenu("Для взрослых"));
+    await grownUps("ru");
     await userEvent.click(await screen.findByRole("button", { name: "Profile: Ёжик" }));
     await userEvent.click(await screen.findByRole("button", { name: "See the progress" }));
     expect(await screen.findByRole("heading", { level: 1, name: "Progress: Ёжик" })).toBeTruthy();
@@ -1478,7 +1490,7 @@ describe("the reason code of the engine's choice", () => {
     );
     expect(asked).toContain("GetProgress");
     await userEvent.click(screen.getByRole("button", { name: "Close the section" }));
-    expect(await screen.findByRole("heading", { level: 1, name: "Мои предметы" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { level: 1, name: "Главная" })).toBeTruthy();
     expect(reasonsShown()).toEqual([]);
   });
 });

@@ -606,10 +606,8 @@ button.nt-secondary {
   margin: 0;
 }
 /*
- * In the mockup's frame — Home and Subjects —, a grid: one column on the phone, 12 apart; from 600
- * two in a row, as an iPad in portrait has them, 16 apart; on Home three where the screen is 900
- * wide, as the reference of 1194 has them (R59, R79): by the frame's own width, as a container, so
- * that a scroll bar beside it counts.
+ * In the mockup's frame — Subjects' catalog —, a grid: one column on the phone, 12 apart; from 600
+ * two in a row at any width, as the mockup's `subjects` has them, 16 apart (R59, R79).
  */
 .nt-reference .nt-cards {
   display: grid;
@@ -1903,8 +1901,8 @@ button.nt-row > svg {
 .nt-next-up {
   border-inline-end: 0.0625rem solid #ededf0;
 }
-.nt-next-up > :not(.nt-grid-sheet),
-.nt-paper > :not(.nt-paper-sheet) {
+.nt-next-up > :not(.nt-deco),
+.nt-paper > :not(.nt-deco) {
   position: relative;
 }
 .nt-next-up > h2,
@@ -2201,6 +2199,14 @@ p.nt-pages-kept {
     background: GrayText;
   }
 }
+/* A card's drawing stands in a frame of the card's size that clips it, past the card's edge on
+   purpose: the card itself takes in nothing wider than it is (1.4.10; R79). */
+.nt-deco {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
 /* The sheet in squares: white, its lines 18 apart, the puzzle in ink, at a slant. */
 .nt-grid-sheet,
 .nt-paper-sheet {
@@ -2222,7 +2228,7 @@ p.nt-pages-kept {
   background-size: 18px 18px;
   transform: rotate(-5deg);
 }
-.nt-next-up > .nt-grid-sheet > svg {
+.nt-next-up .nt-grid-sheet > svg {
   inline-size: 12.5rem;
   block-size: auto;
 }
@@ -2293,14 +2299,12 @@ p.nt-pages-kept {
   .nt-paper-acts {
     max-inline-size: none;
   }
-  .nt-grid-sheet,
-  .nt-paper-sheet {
+  .nt-deco {
     display: none;
   }
 }
 @media (forced-colors: active) {
-  .nt-grid-sheet,
-  .nt-paper-sheet {
+  .nt-deco {
     display: none;
   }
 }
@@ -2626,9 +2630,17 @@ dialog.nt-pop-legend .nt-legend-items {
     background: rgba(255, 255, 255, 0.96);
     box-shadow: 0 -0.5px 0 rgba(0, 0, 0, 0.14);
   }
-  .nt-nav-rule,
-  .nt-soon {
+  .nt-nav-rule {
     display: none;
+  }
+  /* "Soon" stays in the place's name, hidden to the eye only: the tab has no room for its chip. */
+  .nt-nav-item > .nt-soon {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
   .nt-nav-item {
     flex-direction: column;
@@ -2640,7 +2652,9 @@ dialog.nt-pop-legend .nt-legend-items {
     font-size: 0.6875rem;
     font-weight: var(--nt-weight-bold);
     line-height: 1.1;
-    white-space: nowrap;
+    text-align: center;
+    /* A fifth of 320 px holds no longer word: it wraps, never cut (1.4.10). */
+    overflow-wrap: anywhere;
   }
   .nt-nav-item[aria-current="page"],
   .nt-nav-item[aria-expanded="true"] {
@@ -2895,12 +2909,11 @@ p.nt-subject-stat {
 .nt-engine-foot .nt-foot-eyebrow {
   color: #0058b8;
 }
+/* A skill's name wraps rather than ending in an ellipsis: no text is cut (R11). */
 .nt-foot-main {
-  overflow: hidden;
   font-size: 0.9375rem;
   font-weight: var(--nt-weight-bold);
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 .nt-foot-next {
   font-size: 0.875rem;
@@ -6510,8 +6523,12 @@ nav.nt-nav button.nt-nav-item[aria-disabled="true"] {
   margin: 0;
   font-size: var(--nt-size-emphasis);
 }
+/* The last button's text ends at the card's edge by its padding, not by a margin past the foot. */
 .nt-module.nt-catalog-card .nt-catalog-foot > .nt-buttons {
-  margin: 0 -0.625rem 0 auto;
+  margin: 0 0 0 auto;
+}
+.nt-module.nt-catalog-card .nt-catalog-foot > .nt-buttons:not(:only-child) > button:last-child {
+  padding-inline-end: 0;
 }
 .nt-module.nt-catalog-card .nt-catalog-foot > .nt-buttons:only-child {
   margin-inline: 0 auto;
@@ -6566,6 +6583,21 @@ main.nt-task-screen:has(.nt-page-stage) {
     grid-row: 2;
     grid-column: 1 / -1;
     justify-self: center;
+  }
+}
+/* Where the pill and the buttons at the end do not fit one row, the buttons go below it, at its
+   end, and the finding below them: a squeezed pill would wrap its name a letter a line (1.4.10). */
+@media (width < 25rem) {
+  .nt-top[data-middle] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .nt-top[data-middle] > :last-child {
+    grid-row: 2;
+  }
+  .nt-top[data-middle] > .nt-finding {
+    grid-row: 3;
+    max-inline-size: 100%;
+    white-space: normal;
   }
 }
 .nt-top-pill button.nt-icon-only.nt-page-back {

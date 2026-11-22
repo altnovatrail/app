@@ -347,7 +347,6 @@ export const ru = {
   "skill-state.not-assessed": "Без оценки",
   "skillmap.title": "Карта навыков",
   "skillmap.open": "Открыть карту",
-  "skillmap.all": "Все карты навыков",
   "skillmap.module-title": "Карта навыков: {module}",
   "skillmap.hint": "Чтобы заняться навыком, нужно открыть его на карте и нажать «Заниматься»",
   "skillmap.none": "У этого предмета нет карты навыков",
