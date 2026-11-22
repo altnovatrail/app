@@ -1,29 +1,29 @@
 // The screen of solving the tasks from the learner's paper (R71), as the mockup's `solve`: the top
-// bar's pill — Back to My subjects and the task's name, "n of N · from your page" under it but on a
-// phone —, and at its other end ‹, the counter that opens the list of the tasks begun with "Add",
-// and ›. Each task is a sheet in dots of its own under its crop, the tracing paper, which canvas
-// draws and the learner moves and hides (R87 canvas); its history and the paper's place stay with
-// the page, so that a task left and come back to is as it was, and the page's history keeps them
-// (R77). At the foot the row of glass: Hint · Check, Hint till the task is solved. Check sends the
-// task's crop with the crop of the work (R162 spec), and the page keeps the context of the work of
-// each Check answered, but no verdict: its verdict is that of each task of the frame by the key api
-// derived — Correct with Next task, Not yet with Hint, of several tasks with how many are correct,
-// the work not read with why, not checked with the outcome —, with a tick or a cross by each answer
-// on the sheet; or "Couldn't check this one" when no task has a key, with Hint and Next task. A
-// frame solved or with no key takes no Check again, and the list marks the one solved. A task whose
-// attempt is over — solved, or closed by api, as a page of the history opened again may hold — is
-// only to be looked at: its sheet takes no writing, no Hint stands, and its Check says "This task
-// is already over". The tutor's button at the right edge opens its panel, and so does Hint; a
-// verdict does not (R75; R148 spec). While the panel is open the verdict is a line in it, the hint
-// a bubble there, said by itself while the voicing is on, and on a phone its sheet hides the row and
-// the canvas's bar of tools; while it is closed the verdict is a card above the row, with the
-// panel's buttons. The tutor's words are of AI (R82 spec): Hint before the first wrong answer asks
-// the opening question from the task's crop as printed, once on the attempt; after Not yet, with the
-// panel open — or once it opens — the words of the rung come with the work of the Check, and in the
-// mode "Show where" with the wavy line under the first mistake, which goes with other work or the
-// paper moved; "Explain differently" words the rung anew, once on it; and an adult may report a
-// problem with the words. The words stand till another task or Check, and what is said of them
-// stops with another task or the panel closed.
+// bar's pill — Back to My subjects and the task's name —, and at its other end ‹, the counter that
+// opens the list of the tasks begun with "Add", and ›. Each task is a sheet in dots of its own
+// under its crop, the tracing paper, which canvas draws and the learner moves and hides (R87
+// canvas); its history and the paper's place stay with the page, so that a task left and come back
+// to is as it was, and the page's history keeps them (R77). At the foot the row of glass: Hint ·
+// Check, Hint till the task is solved. Check sends the task's crop with the crop of the work (R162
+// spec), and the page keeps the context of the work of each Check answered, but no verdict: its
+// verdict is that of each task of the frame by the key api derived — Correct with Next task, Not
+// yet with Hint, of several tasks with how many are correct, the work not read with why, not
+// checked with the outcome —, with a tick or a cross by each answer on the sheet; or "Couldn't
+// check this one" when no task has a key, with Hint and Next task. A frame solved or with no key
+// takes no Check again, and the list marks the one solved. A task whose attempt is over — solved,
+// or closed by api, as a page of the history opened again may hold — is only to be looked at: its
+// sheet takes no writing, no Hint stands, and its Check says "This task is already over". The
+// tutor's button at the right edge opens its panel, and so does Hint; a verdict does not (R75; R148
+// spec). While the panel is open the verdict is a line in it, the hint a bubble there, said by
+// itself while the voicing is on, and on a phone its sheet hides the row and the canvas's bar of
+// tools; while it is closed the verdict is a card above the row, with the panel's buttons. The
+// tutor's words are of AI (R82 spec): Hint before the first wrong answer asks the opening question
+// from the task's crop as printed, once on the attempt; after Not yet, with the panel open — or
+// once it opens — the words of the rung come with the work of the Check, and in the mode "Show
+// where" with the wavy line under the first mistake, which goes with other work or the paper moved;
+// "Explain differently" words the rung anew, once on it; and an adult may report a problem with the
+// words. The words stand till another task or Check, and what is said of them stops with another
+// task or the panel closed.
 import {
   TutorReply,
   type WorkSchema,
@@ -31,7 +31,9 @@ import {
 import { Cause } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import type {
   CanvasElement,
+  GridChangeEvent,
   HistoryChangeEvent,
+  PaperGrid,
   PaperTask,
   TracingChangeEvent,
 } from "@altnovatrail/spec/canvas";
@@ -122,12 +124,14 @@ export function Solve({
   const holder = useKeyHolder();
   const { language, words } = useLanguage();
   const narrow = useNarrow();
-  const namesId = useId();
   const writeId = useId();
   const element = useRef<CanvasElement>(null);
   const [asked, setAsked] = useState<string | undefined>(undefined);
   const [pending, setPending] = useState(false);
   const [checking, setChecking] = useState(false);
+  // The sheet's grid the learner turned, kept from task to task of the page while the screen is
+  // open: it is the interface's, not the work's, and no store holds it (R88 canvas).
+  const [grid, setGrid] = useState<PaperGrid | undefined>(undefined);
   const [failure, setFailure] = useState<Failure | undefined>(undefined);
   // The tutor's words in its panel, with the reply that brought them (R123 spec).
   const [said, setSaid] = useState<Said | undefined>(undefined);
@@ -211,6 +215,7 @@ export function Solve({
     },
     [attemptId, onKeep],
   );
+  const onGridChange = useCallback((event: GridChangeEvent) => setGrid(event.detail.grid), []);
   const onTracingChange = useCallback(
     (event: TracingChangeEvent) => {
       if (attemptId === undefined) return;
@@ -582,7 +587,6 @@ export function Solve({
     </PopOver>
   );
 
-  const described = [namesId, written ? "" : writeId].join(" ").trim();
   // Hint waits while the rung's words are on their way, as for any request of its own.
   const busy = pending || wordsWaiting;
   const only = viewOnly(task);
@@ -599,7 +603,6 @@ export function Solve({
       layout="task"
       bar={{
         back: <IconButton value="back" caption="task.home" onClick={onHome} />,
-        ...(narrow ? {} : { under: <p className="nt-top-sub">{words.text("paper.of", place)}</p> }),
         end: (
           <div className="nt-top-end">
             <div className="nt-solve-nav nt-glass">
@@ -630,9 +633,11 @@ export function Solve({
             paper={paperOf(task.crop)}
             history={task.history}
             {...(task.tracing === undefined ? {} : { tracing: task.tracing })}
+            {...(grid === undefined ? {} : { grid })}
             marks={marks}
             onhistorychange={onHistoryChange}
             ontracingchange={onTracingChange}
+            ongridchange={onGridChange}
           />
         </div>
       </div>
@@ -643,9 +648,6 @@ export function Solve({
             {failureText(failure, words)}
           </p>
         )}
-        <p id={namesId} className="nt-hint">
-          {words.text("task.no-names")}
-        </p>
         {written ? null : (
           <span id={writeId} className="nt-hidden-label">
             {words.text("paper.write-first")}
@@ -714,7 +716,7 @@ export function Solve({
             type="button"
             className="nt-check-button"
             aria-disabled={!written || pending || checkOver(task)}
-            aria-describedby={described}
+            {...(written ? {} : { "aria-describedby": writeId })}
             onClick={check}
           >
             {words.text("task.check")}

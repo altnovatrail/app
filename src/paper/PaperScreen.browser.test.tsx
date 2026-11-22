@@ -429,7 +429,7 @@ it("begins the tasks picked, each a sheet under its crop", async () => {
   expect(picks("1 of 2 selected")).toBeVisible();
   await userEvent.click(screen.getByRole("button", { name: "Start" }));
   expect(await screen.findByRole("heading", { name: "Task 2" }, SLOW)).toBeVisible();
-  expect(screen.getByText("1 of 1 · from your page")).toBeVisible();
+  expect(screen.getByRole("button", { name: "Tasks, 1 / 1" })).toBeVisible();
   expect(begins).toHaveLength(1);
   expect(begins[0]?.tasks).toBe(1);
   expect(begins[0]?.profileId).toBe("p1");

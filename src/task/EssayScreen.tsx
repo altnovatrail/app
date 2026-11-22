@@ -5,8 +5,7 @@
 // does not (R67). An essay has no verdict (R75, R87 spec): the panel's block "Tutor" holds the
 // feedback of the last submission, or why it gave none — no feedback this time, an essay that
 // cannot be read, no check —, with "Report a problem" for a learner of the category adult (R33).
-// Above the row stands the reminder to write no names, before each submission (R127 spec), and the
-// card: the essay being read; "Feedback", which says where the feedback is, with Done; why Check or
+// Above the row stands the card: the essay being read; "Feedback", which says where the feedback is, with Done; why Check or
 // Done does not open, once it is pressed so. Done opens once the essay was sent; there is no "Show
 // the solution". Done gives way to the result: "Essay finished", the last feedback, the criteria of
 // the rubric and the solution if the task has one, the way to what the engine chose, "Try it again"
@@ -58,7 +57,6 @@ type Locked = "task.check-write" | "task.done-locked";
 export function EssayScreen(props: EssayScreenProps) {
   const { manifest, filled, finished, pending } = props;
   const { words } = useLanguage();
-  const namesId = useId();
   const lockedId = useId();
   const doneId = useId();
   const criteriaId = useId();
@@ -177,10 +175,6 @@ export function EssayScreen(props: EssayScreenProps) {
         <>
           {ended ? null : (
             <>
-              {/* Before each submission, as the description of Check too (R127 spec). */}
-              <p id={namesId} className="nt-hint">
-                {words.text("task.no-names")}
-              </p>
               {/* Why Check and Done do not open, their descriptions: the card says it on a press. */}
               {written ? null : (
                 <span id={lockedId} className="nt-hidden-label">
@@ -220,7 +214,7 @@ export function EssayScreen(props: EssayScreenProps) {
               type="button"
               className={props.blink && written ? "nt-check-button nt-blink" : "nt-check-button"}
               aria-disabled={!written || pending}
-              aria-describedby={written ? namesId : `${namesId} ${lockedId}`}
+              {...(written ? {} : { "aria-describedby": lockedId })}
               onClick={() => {
                 if (pending) return;
                 if (written) props.onCheck();

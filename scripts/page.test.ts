@@ -294,20 +294,14 @@ describe.each(ENGINES.map((type) => [type.name(), type] as const))(
       expect(await page.evaluate(`document.querySelector("novatrail-canvas").history.length`)).toBe(
         1,
       );
-      // The page's zoom of the sheet, by the element's own button, lays the sheet out by a custom
-      // property it sets through the CSSOM, which style-src leaves be: on an element narrower than
-      // the sheet's cap, twice as wide, and scrolled across in a region of its own. The zoom has
-      // four steps above its fit.
-      const larger = sheet.getByRole("button", { name: "Zoom in" });
-      for (let i = 0; i < 8 && (await larger.getAttribute("aria-disabled")) !== "true"; i++) {
-        await larger.click();
-      }
-      expect(await larger.getAttribute("aria-disabled")).toBe("true");
+      // The sheet goes past the page, laid out by custom properties the element sets through the
+      // CSSOM, which style-src leaves be: wider than the element, and scrolled across in a region
+      // of its own (R73 canvas).
       const across = sheet.getByRole("region", { name: "Sheet" });
       await across.waitFor();
       await expect
         .poll(() => across.evaluate((element) => element.scrollWidth / element.clientWidth))
-        .toBeCloseTo(2, 1);
+        .toBeGreaterThan(1);
       expect(violations).toEqual([]);
       await page.context().close();
     }, 60_000);

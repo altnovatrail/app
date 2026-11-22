@@ -331,12 +331,11 @@ const keptOf = async (device: Device) => (await openProfile(device, "p1"))?.read
 afterEach(() => forgetPuts("p1"));
 
 describe("the screen of an essay", () => {
-  it("reminds to write no names, sends the crop and shows the feedback, and keeps the submission's context alone", async () => {
+  it("sends the crop and shows the feedback, and keeps the submission's context alone", async () => {
     const { submitted, device } = await renderEssay({ history: WRITTEN });
     await vi.waitFor(() => expect(check()).toHaveAttribute("aria-disabled", "false"));
-    const reminder = "Don't write your name or the real names of people you know";
-    expect(screen.getByText(reminder)).toBeVisible();
-    expect(check()).toHaveAccessibleDescription(reminder);
+    expect(screen.queryByText(/real names/)).toBeNull();
+    expect(check()).not.toHaveAccessibleDescription();
     expect(done()).toHaveAttribute("aria-disabled", "true");
     expect(done()).toHaveAccessibleDescription("Done opens once the essay has been sent");
     expect(screen.queryByRole("button", { name: "Show the solution" })).toBeNull();
@@ -408,16 +407,14 @@ describe("the screen of an essay", () => {
   it("locks Check on a blank sheet, and says so", async () => {
     await renderEssay();
     await vi.waitFor(() =>
-      expect(check()).toHaveAccessibleDescription(
-        "Don't write your name or the real names of people you know Write an answer on the sheet",
-      ),
+      expect(check()).toHaveAccessibleDescription("Write an answer on the sheet"),
     );
     expect(check()).toHaveAttribute("aria-disabled", "true");
     // The lines why are descriptions alone, till a press asks for them: the card says each, and OK
     // puts it away.
     expect(
       [...document.querySelectorAll(".nt-task-foot .nt-hint")].map((line) => line.textContent),
-    ).toEqual(["Don't write your name or the real names of people you know"]);
+    ).toEqual([]);
     await userEvent.click(check(), { force: true });
     expect(card()).toHaveTextContent(
       "Write an answer on the sheetWrite it with the pen, then Check.OK",
@@ -751,8 +748,8 @@ describe("the screen of an essay", () => {
   });
 });
 
-describe("the reminder on the task screen", () => {
-  it("stands before Check on a sheet written by hand, and not on a choice", async () => {
+describe("the task screen of a sheet written by hand", () => {
+  it("says to write on the sheet before Check, with no Done of an essay", async () => {
     await renderEssay({
       task: {
         id: "rungs",
@@ -762,9 +759,7 @@ describe("the reminder on the task screen", () => {
       },
     });
     await vi.waitFor(() =>
-      expect(check()).toHaveAccessibleDescription(
-        "Don't write your name or the real names of people you know Write an answer on the sheet",
-      ),
+      expect(check()).toHaveAccessibleDescription("Write an answer on the sheet"),
     );
     expect(screen.queryByRole("button", { name: "Done" })).toBeNull();
   });

@@ -256,11 +256,10 @@ async function checked(history: readonly HistoryEvent[]) {
 }
 
 describe("the task screen of a workbook", () => {
-  it("keeps Check closed while a box is empty, and says to write in each, with no reminder of names", async () => {
+  it("keeps Check closed while a box is empty, and says to write in each", async () => {
     const { submitted } = await renderWorkbook({ history: [...IN_BOXES.slice(0, -1), DRAFT] });
     await vi.waitFor(() => expect(canvas().filled?.[4]).toEqual([true, false]));
     expect(check()).toHaveAttribute("aria-disabled", "true");
-    // A workbook sends its boxes, not the whole ink: no reminder not to write names (R127 spec).
     expect(check()).toHaveAccessibleDescription("Write an answer in each box");
     // A press the browser lets through, as a screen reader's would: nothing goes to api.
     check().click();

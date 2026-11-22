@@ -900,13 +900,14 @@ button.nt-icon-only:where(.nt-grabber) {
 }
 /*
  * The way in (R61): the sign-in, the invite code and the statement in the frame of the mockup's
- * `signin` — the sky over the whole window; from 600 the name, the language, the trail and the
- * step's card of 440 where the reference has them, in a middle of 1194 × 834, the trail left out
- * below 900; below 600 the name and the language in a row, the trail drawn small above the card
- * of the first step, and the card of a later step under the name. The card is dark: the tokens
- * of the screens it holds take the sky's there. The owner's profile and "Who is learning?" in
- * the frame of `owner` and `who`: the page's colour of the owner with its two glows, the app's name
- * at the top, a column in the middle.
+ * `signin` — the sky over the whole window; from 600 the name and the language 24 below the
+ * window's top, at the edges of a middle of 1194 × 834, and in that middle the trail and the
+ * step's card of 440 where the reference has them, the trail left out below 900; below 600 the
+ * name and the language in a row, the trail drawn small above the card of the first step, and the
+ * card of a later step under the name. The card is dark: the tokens of the screens it holds take
+ * the sky's there. The owner's profile and "Who is learning?" in the frame of `owner` and
+ * `who`: the page's colour of the owner with its two glows, the app's name at the top, a column
+ * in the middle.
  */
 .nt-hidden-label {
   position: absolute;
@@ -1393,6 +1394,7 @@ button.nt-link.nt-back {
     grid-template-rows: minmax(52.125rem, auto);
     justify-content: center;
     align-content: center;
+    position: relative;
   }
   main.nt-welcome > * {
     grid-row: 1;
@@ -1407,16 +1409,19 @@ button.nt-link.nt-back {
     block-size: auto;
     margin: 0;
   }
-  .nt-welcome-brand {
-    justify-self: start;
-    align-self: start;
-    margin: 3.5rem 0 0 3.5rem;
+  main.nt-welcome > .nt-welcome-brand,
+  main.nt-welcome > .nt-welcome-corner {
+    position: absolute;
+    grid-area: auto / 1 / auto / 2;
+    inset-block-start: 1.5rem;
+    margin: 0;
+  }
+  main.nt-welcome > .nt-welcome-brand {
+    inset-inline-start: 3.5rem;
     font-size: 1.5rem;
   }
-  .nt-welcome-corner {
-    justify-self: end;
-    align-self: start;
-    margin: 3.5rem 4.5rem 0 0;
+  main.nt-welcome > .nt-welcome-corner {
+    inset-inline-end: 4.5rem;
   }
   .nt-welcome .nt-column,
   .nt-sky-later ~ .nt-column {
@@ -3307,13 +3312,14 @@ p.nt-page-note {
   padding-inline: 1.375rem 1.125rem;
 }
 /*
- * The screen of solving: at the top bar's end ‹, the counter and › in a pill of glass; the counter
- * opens the list of the tasks begun, each its number in a circle of 26 and its name, the one shown
+ * The screen of solving: at the top bar's end ‹, the counter and › in a pill of glass as tall as the
+ * bar's pill at its start, 48; the counter opens the list of the tasks begun, each its number in a circle of 26 and its name, the one shown
  * in the accent, and "Add" at its head.
  */
 .nt-solve-nav {
   display: inline-flex;
   align-items: center;
+  padding: 0.125rem;
   border-radius: var(--nt-radius-top-bar);
 }
 .nt-solve-nav > button.nt-solve-count {
@@ -4114,15 +4120,15 @@ main.nt-end .nt-result > svg {
   white-space: nowrap;
 }
 /*
- * The task screen (R20, R65; the mockup's `task-pill`): the whole window, the top bar 14 from the
- * top and 16 from the sides — at its end the profile's pill and the pill of the mode —, the lines
- * of the voicing and of "Read aloud" under it, the canvas from edge to edge below them, which its
- * statement and sheet scroll in, and the foot, 16 from the bottom: the screen's lines, the
- * verdict's card and the row of glass, in the middle. Nothing floats over the sheet: the canvas
- * ends where the foot begins, so that neither covers a target of the other (2.4.11, 2.5.8). On a
- * narrow screen the tutor's panel stands above the canvas and the two scroll in the window's
- * height; from 64rem the panel stands at the right, 22rem, and scrolls inside. In a lesson the
- * same, under the lesson's bar.
+ * The task screen (R20, R65; the mockup's `task-pill` and `solve`): the canvas fills the whole
+ * window, from edge to edge, and over it float the top bar, 14 from the top and 16 from the sides —
+ * at its end the profile's pill and the pill of the mode —, the lines of the voicing and of "Read
+ * aloud" under it, and the foot, 16 from the bottom: the screen's lines, the verdict's card and
+ * the row of glass, in the middle. Between their pills a pointer reaches the sheet. The canvas's
+ * statement starts below the top bar, 68 down, and its sheet scrolls up past the foot, 80 high,
+ * so that neither covers a target of the other at the scroll's ends (2.4.11, 2.5.8); its bar of
+ * tools stands between them (--novatrail-canvas-pad-*; R73 canvas). In a lesson the canvas stands
+ * under the lesson's bar, between what stands above and below it.
  */
 main.nt-task-screen {
   display: flex;
@@ -4207,15 +4213,13 @@ main.nt-lesson:has(> .nt-segment-body > .nt-lesson-task > .nt-task) {
   margin: 0.5rem 1rem 0;
 }
 /*
- * Beside the open panel (R67): the canvas, the lines above it and the foot end where the panel
- * begins, 400 + 16 from the window's right edge, so that the task stays in view; the foot's middle is
- * the middle between the canvas's bar of tools, 16 + 52, and the panel, as the mockup's `task-rung`.
+ * Beside the open panel (R67): the panel opens over the canvas, as the debug panel, and moves no
+ * part of it; the lines above it and the foot end where the panel begins, 400 + 16 from the
+ * window's right edge, so that they stay in view; the foot's middle is the middle between the
+ * canvas's bar of tools, 16 + 52, and the panel, as the mockup's `task-rung`.
  */
 @media (width >= 600px) {
   .nt-task-lines[data-beside="panel"] {
-    margin-inline-end: 25rem;
-  }
-  .nt-task[data-beside="panel"] {
     margin-inline-end: 25rem;
   }
   .nt-task-foot[data-beside="panel"] {
@@ -4239,6 +4243,31 @@ main.nt-lesson:has(> .nt-segment-body > .nt-lesson-task > .nt-task) {
 .nt-task-foot > .nt-error {
   margin: 0;
   text-align: center;
+}
+/* The task screen over its canvas (above, at main.nt-task-screen), after .nt-task and .nt-task-foot,
+   which it overrides. */
+main.nt-task-screen:has(> .nt-task) {
+  position: relative;
+  --novatrail-canvas-top: 4.25rem;
+  --novatrail-canvas-pad-top: 4.25rem;
+  --novatrail-canvas-pad-bottom: 5rem;
+}
+main.nt-task-screen > .nt-task {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+}
+/* The bars float over the canvas; the tutor's button and panel stand fixed, over both. */
+main.nt-task-screen:has(> .nt-task) > :is(.nt-top, .nt-task-lines, .nt-task-foot) {
+  position: relative;
+  z-index: 1;
+  pointer-events: none;
+}
+:where(main.nt-task-screen:has(> .nt-task) > :is(.nt-top, .nt-task-lines, .nt-task-foot)) > * {
+  pointer-events: auto;
+}
+main.nt-task-screen > .nt-task-foot {
+  margin-block-start: auto;
 }
 /*
  * The row of glass (the mockup's `.ph-row`): 56 high, radius 28, its buttons 44 high and round,

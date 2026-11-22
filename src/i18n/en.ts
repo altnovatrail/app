@@ -262,22 +262,22 @@ export const en = {
   /** The sheet's own scrolling, which canvas declares (R11). */
   "accessibility.moving": "Moving the sheet",
   "accessibility.moving-criteria": "2.5.7 Dragging Movements, level AA",
+  /** Hand is the canvas's own tool, in its words. */
   "accessibility.moving-why":
-    "With a single finger, the sheet moves only by dragging it, and two fingers drag it too. The sheet has no buttons that move it. A task from paper over its sheet is moved by dragging its grip",
-  /** Zoom in and Zoom out are the canvas's own buttons, in its words. */
+    "With a single pointer, the sheet moves only by dragging it: with the Hand tool under a finger, a stylus or a mouse, with one finger once a stylus has written on it, and with two fingers always. The sheet has no buttons that move it. A task from paper over its sheet is moved by dragging its grip",
   "accessibility.moving-instead":
-    "A mouse wheel, a trackpad and the arrow keys move the sheet once it has the focus, and the arrow keys move a task from paper by its grip. Where the sheet is taller than the screen, the page scrolls as any page does. Zoom in and Zoom out work with a tap",
+    "A mouse wheel, a trackpad and the arrow keys move the sheet across and down once it has the focus, and the arrow keys move a task from paper by its grip",
   "accessibility.moving-when":
     "There is no date: buttons that move the sheet come back only if the platform decides so",
   "accessibility.print": "Print in the lines of a workbook",
-  "accessibility.print-criteria": "1.4.12 Text Spacing, level AA",
+  "accessibility.print-criteria": "1.4.4 Resize Text, level AA; 1.4.12 Text Spacing, level AA",
+  /** The page is the task's, 1000 CSS px wide at most, fitted to the sheet's width (R11). */
   "accessibility.print-why":
-    "The printed numbers, words and values in the lines of a workbook keep their own spacing: the place of each piece is fixed on the page, so the spacing you set for text does not reach them",
-  /** Zoom in and Zoom out are the canvas's own buttons, in its words. */
+    "The printed numbers, words and values in the lines of a workbook lie on the task's page, which fits the width of the sheet. The browser's zoom makes them larger only until the page fills the sheet's width, and on a sheet narrower than 1000 pixels, as on a tablet or a phone, not at all. The place of each piece is fixed on the page too, so the spacing you set for text does not reach them",
   "accessibility.print-instead":
-    "The print can be made up to twice as large with the sheet's buttons Zoom in and Zoom out. The task's statement above the workbook takes your spacing",
+    "The task's statement above the workbook and the rest of the app grow with the browser's zoom and take your spacing. On a sheet wider than the page, the zoom makes the print larger too, until the page fills it",
   "accessibility.print-when":
-    "There is no date yet: only once the layout of the page leaves the lines room for wider spacing",
+    "There is no date: a way to enlarge the print comes only if the platform decides so, and wider spacing only once the layout of the page leaves the lines room for it",
   /** Check and Not yet are the words of the task screen, Can't read this its reading's. */
   "accessibility.check": "Sending an answer with Check",
   "accessibility.check-criteria": "3.3.4 Error Prevention (Legal, Financial, Data), level AA",
@@ -679,8 +679,6 @@ export const en = {
   "task.no-showing": "This task has no solution to show",
   /** A child asks for the solution before the hint ladder is passed. */
   "task.ladder-not-passed": "The solution can be shown after a few more answers",
-  /** Before each submission of a work that goes to AI whole (R127 spec): beside Check. */
-  "task.no-names": "Don't write your name or the real names of people you know",
   /** Ends the attempt of an essay: open once it was sent at least once (R87 spec). */
   "task.done": "Done",
   "task.done-locked": "Done opens once the essay has been sent",
@@ -1247,8 +1245,6 @@ export const en = {
   "paper.task": "Task {n}",
   /** A frame drawn by hand; {n} is its place on the page, from the top. */
   "paper.your-frame": "Your frame, task {n}",
-  /** Under the heading: the task's place among those begun. */
-  "paper.of": "{n} of {total} · from your page",
   /** The button between ‹ and ›, which opens the list of the tasks begun. */
   "paper.counter": "{n} / {total}",
   /** The list's heading, and the button's name, which holds its caption as said (WCAG 2.5.3). */

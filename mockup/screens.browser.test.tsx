@@ -512,20 +512,18 @@ async function barDrawn() {
 /**
  * Why the canvas's bar stands lower than the mockup has it, the sheet scrolled to the top: the line
  * of "Read aloud" and the voicing stands above the element, where the mockup has the statement's card
- * and its speaker (R65; В74 in run/QUESTIONS.md); and "Draw with finger" with its line, 57 px, comes
- * only in pen mode (R29 canvas), so the bar is that much shorter.
+ * and its speaker (R65; В74 in run/QUESTIONS.md).
  */
-const PLACED =
-  'the line of "Read aloud" above the canvas, R65; "Draw with finger" only in pen mode, R29 canvas';
+const PLACED = 'the line of "Read aloud" above the canvas, R65';
 
 /** A button the bar shows by its icon alone: the font of its caption, out of sight, is not drawn. */
 const ICON_ALONE = "the caption is out of sight (R60; R84 canvas)";
 
-/** The canvas's bar of glass, its first tool and the zoom (R84 canvas). */
+/** The canvas's bar of glass, its first tool and the hand (R84, R88 canvas). */
 const BAR: readonly Region[] = [
   {
     name: "the tool bar",
-    mockup: { css: 'div.glass:has(> button[aria-label="Zoom in"])' },
+    mockup: { css: 'div.glass:has(> button[aria-label="Hand"])' },
     app: { role: "toolbar", name: "Sheet buttons" },
     differs: { what: ["x", "y", "height", "font-size"], by: `${PLACED}; ${ICON_ALONE}` },
   },
@@ -536,9 +534,9 @@ const BAR: readonly Region[] = [
     differs: { what: ["x", "y", "font-size", "font-weight"], by: `${PLACED}; ${ICON_ALONE}` },
   },
   {
-    name: "Zoom in",
-    mockup: { role: "button", name: "Zoom in" },
-    app: { role: "button", name: "Zoom in" },
+    name: "the hand",
+    mockup: { role: "button", name: "Hand" },
+    app: { role: "radio", name: "Hand" },
     differs: { what: ["x", "y", "font-size", "font-weight"], by: `${PLACED}; ${ICON_ALONE}` },
   },
 ];

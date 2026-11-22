@@ -17,8 +17,7 @@
 // Task.tsx, which also gives the canvas the tutor's marks and "Report a problem" with the tutor's
 // words, for a learner of the category adult (R33). Above the canvas, "Read aloud" of the statement
 // with its items, and the voicing of the profile switched on and off while the panel, whose head
-// has it then, is closed (R07). Above the card on a handwriting sheet, the reminder to write no
-// names, whose crop goes to AI whole (R127 spec; R53).
+// has it then, is closed (R07).
 import type * as open from "@altnovatrail/spec/formatv0/open";
 import { useEffect, useId, useState } from "react";
 import { Icon } from "../app/Icon.tsx";
@@ -26,7 +25,6 @@ import { PopOver } from "../app/PopOver.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import type { Words } from "../i18n/words.ts";
 import { summaryText, type Verdicts, verdictKey } from "./attempt.ts";
-import { goesWhole } from "./essay.ts";
 import {
   ChoiceGroups,
   hasChoices,
@@ -109,7 +107,6 @@ export function TaskScreen(props: TaskScreenProps) {
   const { task, manifest, state, verdicts, filled, solution, pending } = props;
   const { words } = useLanguage();
   const lockedId = useId();
-  const namesId = useId();
   const explanation = manifest?.languages.explanation;
   const solved = solution !== undefined;
   // The card of "Not yet" stays till "Try again" or Hint puts it away, or a new check comes: a
@@ -133,9 +130,6 @@ export function TaskScreen(props: TaskScreenProps) {
         {words.text("task.tutor")}
       </button>
     );
-  // The crop of a handwriting sheet goes to AI whole: the reminder to write no names stands before
-  // each submission, and describes Check (R127 spec; R53).
-  const whole = goesWhole(task);
   const open = !solved && slotsFilled(task, state.choices, filled);
   // What locks Check: the sheet first — on a workbook, each of its boxes —, then the options.
   const locked = open
@@ -148,7 +142,7 @@ export function TaskScreen(props: TaskScreenProps) {
   useEffect(() => {
     if (locked === undefined) setAsked(false);
   }, [locked]);
-  const described = [whole ? namesId : "", locked === undefined ? "" : lockedId].join(" ").trim();
+  const described = locked === undefined ? "" : lockedId;
   const summary = summaryText(
     verdicts,
     solved ? (props.shown === true ? "shown" : "correct") : undefined,
@@ -261,11 +255,6 @@ export function TaskScreen(props: TaskScreenProps) {
       }
       lines={
         <>
-          {solved || !whole ? null : (
-            <p id={namesId} className="nt-hint">
-              {words.text("task.no-names")}
-            </p>
-          )}
           {locked === undefined || solved ? null : (
             <span id={lockedId} className="nt-hidden-label">
               {words.text(locked)}

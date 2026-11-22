@@ -12,6 +12,7 @@ import type { NovatrailCanvas } from "@altnovatrail/canvas";
 import type {
   CanvasElement,
   DemoChangeEvent,
+  GridChangeEvent,
   HistoryChangeEvent,
   ToolChangeEvent,
   TracingChangeEvent,
@@ -44,6 +45,7 @@ export interface CanvasProps
       | "media"
       | "paper"
       | "tracing"
+      | "grid"
       | "history"
       | "marks"
     >
@@ -59,6 +61,7 @@ export interface CanvasProps
   readonly ontoolchange?: (event: ToolChangeEvent) => void;
   readonly ondemochange?: (event: DemoChangeEvent) => void;
   readonly ontracingchange?: (event: TracingChangeEvent) => void;
+  readonly ongridchange?: (event: GridChangeEvent) => void;
 }
 
 declare module "react" {
