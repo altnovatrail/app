@@ -8,7 +8,8 @@
 // the tutor's panel opens by its button and by Hint, with the verdict and the hint in it, the
 // rung's words after Not yet, with the wavy line, and "Explain differently" once on a rung, and on a
 // phone hides the canvas's bar of tools; a task api closed is only to be looked at; a repeat of
-// FindTasks finds again, and a Start that failed says why; a camera that answers too late is
+// FindTasks finds again, and a Start that failed says why; a photo whose tasks were found on it
+// turned upright is turned so on the page, and the page goes on with it; a camera that answers too late is
 // stopped; with the device, the page and its work are the profile's history, which "Your pages"
 // opens again — with api on connect-es's router.
 import { AccountService } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
@@ -995,6 +996,36 @@ it("finds the page anew by the learner's request, its own frame staying, and Und
   expect(await screen.findByText("The frames are back as they were")).toBeVisible();
   expect(screen.getAllByRole("button", { name: /^Deselect task/ })).toHaveLength(1);
   expect(screen.queryByRole("button", { name: "Undo" })).toBeNull();
+});
+
+it("turns the photo upright as its tasks were found, and goes on with it turned", async () => {
+  const half = { box: { ymin: 0, xmin: 0, ymax: 500, xmax: 500 } };
+  const { finds } = await renderPaper({
+    found: (request) =>
+      request.request === "" ? { frames: [half], turnDegrees: 30 } : { frames: [half] },
+  });
+  await screen.findByRole("button", { name: "Deselect task 1" }, SLOW);
+  // 600 × 800 px turned 30°: 600·cos 30° + 800·sin 30° = 919.6, 600·sin 30° + 800·cos 30° = 992.8.
+  const sizeOf = async (picture: Blob) => {
+    const bitmap = await createImageBitmap(picture);
+    return [bitmap.width, bitmap.height];
+  };
+  const shown = document.querySelector<HTMLImageElement>(".nt-page-photo img");
+  await waitFor(() => expect([shown?.naturalWidth, shown?.naturalHeight]).toEqual([920, 993]));
+  await userEvent.click(screen.getByRole("button", { name: "Tutor" }));
+  const field = await screen.findByRole("textbox", { name: "Your request about the page" });
+  await userEvent.type(field, "the first task{Enter}");
+  expect(await screen.findByText("Found 1 task")).toBeVisible();
+  const sent = new Blob([(finds[1]?.photo ?? new Uint8Array()) as BlobPart], {
+    type: "image/jpeg",
+  });
+  expect(await sizeOf(sent)).toEqual([920, 993]);
+  await userEvent.click(tutorPanel().getByRole("button", { name: "Close" }));
+  // The crop is cut from the photo turned: half of it across and down.
+  await userEvent.click(screen.getByRole("button", { name: "Start" }));
+  await screen.findByRole("heading", { name: "Task 1" }, SLOW);
+  const crop = sheet().paper?.statement;
+  expect(crop && (await sizeOf(crop))).toEqual([460, 497]);
 });
 
 it("finds the page again after a repeat that held no frames, a frame drawn meanwhile staying", async () => {

@@ -3,7 +3,8 @@
 // and whether the screen of solving is shown or the page, by "Add". The address names none of them
 // (R14): `#/paper` takes them from here, and they go with the learner chosen, on a new photo, or at
 // a reload. So does the conversation with the tutor about the page, the learner's requests among it
-// (R74). Each photo replaced has its URLs revoked. From Start on, the page is the profile's history
+// (R74). Each photo replaced has its URLs revoked; so is the photo before once the tasks found on it
+// turned upright turn the page's photo too (R162 spec). From Start on, the page is the profile's history
 // too, in its database (R77): the photo and the frames, and each task begun with its crop and its
 // work — the history, the tracing paper's place, the contexts of its submissions and whether it is
 // over —, the work written a moment after it changes, not on every stroke, and at once when the
@@ -24,7 +25,7 @@ import type { ReadOutcome } from "../api/outcome.ts";
 import type { Device } from "../storage/device.ts";
 import { openProfile, type PaperWork, type Profile } from "../storage/profile.ts";
 import { type Photo, release } from "./capture.ts";
-import { keptTasks, type PageTask } from "./page.ts";
+import { keptTasks, type PageTask, uprightPage } from "./page.ts";
 import { type BegunTask, changed, withBegun } from "./solve.ts";
 
 export type { BegunTask } from "./solve.ts";
@@ -75,6 +76,16 @@ export interface Paper {
   readonly takePhoto: (photo: Photo) => void;
   /** A change to the page of this photo; none once another has taken its place. */
   readonly change: (photo: Photo, update: (page: PaperPage) => PaperPage) => void;
+  /**
+   * The page of this photo on `turned`, the photo turned upright by `degrees`, the frames on it
+   * turned with it, and then changed; none once another has taken its place, and `turned` released.
+   */
+  readonly turn: (
+    photo: Photo,
+    turned: Photo,
+    degrees: number,
+    update: (page: PaperPage) => PaperPage,
+  ) => void;
   /** Tasks begun on the page of this photo, beside those begun before, or none: solving goes on. */
   readonly begin: (photo: Photo, begun: readonly BegunTask[]) => void;
   /** "Add": the page again, to pick more of its tasks; the tasks begun stay. */
@@ -235,6 +246,20 @@ export function PaperProvider({
   const change = useCallback((photo: Photo, update: (page: PaperPage) => PaperPage) => {
     setHeld((now) => (now.page?.photo === photo ? { ...now, page: update(now.page) } : now));
   }, []);
+  const turn = useCallback(
+    (photo: Photo, turned: Photo, degrees: number, update: (page: PaperPage) => PaperPage) => {
+      setHeld((now) => {
+        const upright = uprightPage(now.page, photo, turned, degrees);
+        if (upright === undefined) {
+          release(turned);
+          return now;
+        }
+        release(photo);
+        return { ...now, page: update(upright) };
+      });
+    },
+    [],
+  );
   const begin = useCallback(
     (photo: Photo, begun: readonly BegunTask[]) => {
       const page = shown.current.page;
@@ -336,13 +361,14 @@ export function PaperProvider({
       solving: held.solving,
       takePhoto,
       change,
+      turn,
       begin,
       add,
       keep,
       clear,
       open,
     }),
-    [held, takePhoto, change, begin, add, keep, clear, open],
+    [held, takePhoto, change, turn, begin, add, keep, clear, open],
   );
   return <PaperContext.Provider value={value}>{children}</PaperContext.Provider>;
 }

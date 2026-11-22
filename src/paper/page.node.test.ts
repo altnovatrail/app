@@ -1,6 +1,7 @@
 // The tasks of a page on the pick screen (R71): the frames FindTasks gave, picked and in the order of
 // the page; a tap, "Select all" and "Select none"; the frames the learner draws; what Start begins;
-// and a request about the page, its frames and what its answer leaves on the page (R74).
+// and a request about the page, its frames and what its answer leaves on the page (R74); and the
+// page on its photo turned upright (R162 spec).
 import { FindTasksResponseSchema } from "@altnovatrail/contracts/novatrail/api/v1/paper_pb.js";
 import { create } from "@bufbuild/protobuf";
 import { describe, expect, it } from "vitest";
@@ -19,6 +20,9 @@ import {
   picked,
   requestOf,
   toggled,
+  turnedTasks,
+  unturned,
+  uprightPage,
   withDrawn,
   withFrame,
   without,
@@ -200,5 +204,44 @@ describe("a page of the history", () => {
       { id: "found-2", frame: frame(200), drawn: false, picked: false },
       { id: "drawn-1", frame: frame(300), drawn: true, picked: true },
     ]);
+  });
+});
+
+describe("the page on its photo turned upright", () => {
+  // A photo 1000 × 2000 px turned 90° clockwise is 2000 × 1000 px.
+  const photo = { width: 1000, height: 2000, url: "before" };
+  const turned = { width: 2000, height: 1000, url: "turned" };
+  const drawn = withDrawn([], { ymin: 200, xmin: 100, ymax: 300, xmax: 400 });
+  const page = { photo, tasks: drawn, before: drawn, talk: [] as const };
+
+  it("takes the turned photo, the frames on it before turned with it", () => {
+    const upright = uprightPage(page, photo, turned, 90);
+    expect(upright?.photo).toBe(turned);
+    const frame = { ymin: 100, xmin: 700, ymax: 400, xmax: 800 };
+    expect(upright?.tasks).toEqual([{ ...drawn[0], frame }]);
+    expect(upright?.before).toEqual([{ ...drawn[0], frame }]);
+    expect(upright?.talk).toBe(page.talk);
+  });
+
+  it("keeps the frames as they are with no turn", () => {
+    expect(uprightPage(page, photo, photo, 0)?.tasks).toEqual(drawn);
+    expect(uprightPage({ photo, tasks: [] }, photo, turned, 90)).toEqual({
+      photo: turned,
+      tasks: [],
+    });
+  });
+
+  it("is none for an answer about a photo the page no longer holds", () => {
+    const other = { width: 1000, height: 2000, url: "other" };
+    expect(uprightPage({ ...page, photo: other }, photo, turned, 90)).toBeUndefined();
+    expect(uprightPage(undefined, photo, turned, 90)).toBeUndefined();
+  });
+
+  it("puts the frames found on the photo turned back on the photo as it is", () => {
+    const found = foundTasks(answer([box(100, 700, 400, 800)]));
+    expect(unturned(found, 90, photo).map((t) => t.frame)).toEqual([
+      { ymin: 200, xmin: 100, ymax: 300, xmax: 400 },
+    ]);
+    expect(turnedTasks(found, 0, photo, photo)).toEqual(found);
   });
 });

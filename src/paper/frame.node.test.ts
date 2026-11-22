@@ -1,6 +1,6 @@
 // The geometry of a frame the learner draws (R71): a rectangle dragged corner to corner, a tap that
 // is no drag, two taps, the corner that resizes it, the photo's edge, and the crop's rectangle in
-// pixels.
+// pixels; and a frame on the photo turned upright (R162 spec).
 import { describe, expect, it } from "vitest";
 import {
   cropRect,
@@ -15,6 +15,7 @@ import {
   sameFrame,
   spanned,
   tapsFrame,
+  turnedFrame,
 } from "./frame.ts";
 
 // A photo drawn 500 × 700 CSS px: a thousandth is 0.5 px across and 0.7 px down.
@@ -175,5 +176,55 @@ describe("the crop's rectangle", () => {
       sw: 1,
       sh: 1,
     });
+  });
+});
+
+describe("a frame on the photo turned", () => {
+  const tall = { width: 1000, height: 2000 };
+  const wide = { width: 2000, height: 1000 };
+  const frame = { xmin: 100, ymin: 200, xmax: 400, ymax: 300 };
+
+  it("turns exactly by a multiple of 90°", () => {
+    // Clockwise, the top-left corner goes to the top-right.
+    expect(turnedFrame(frame, 90, tall, wide)).toEqual({
+      xmin: 700,
+      ymin: 100,
+      xmax: 800,
+      ymax: 400,
+    });
+    expect(turnedFrame(frame, -90, tall, wide)).toEqual({
+      xmin: 200,
+      ymin: 600,
+      xmax: 300,
+      ymax: 900,
+    });
+    expect(turnedFrame(frame, 180, tall, tall)).toEqual({
+      xmin: 600,
+      ymin: 700,
+      xmax: 900,
+      ymax: 800,
+    });
+    expect(turnedFrame(frame, 0, tall, tall)).toEqual(frame);
+  });
+
+  it("turned back by a multiple of 90° is the frame again", () => {
+    const there = turnedFrame(frame, 90, tall, wide);
+    expect(there && turnedFrame(there, -90, wide, tall)).toEqual(frame);
+  });
+
+  it("by another angle is the rectangle that holds its corners turned", () => {
+    // The centre of a square photo stays where it is, and a square round it grows by √2 at 45°.
+    const square = { width: 1000, height: 1000 };
+    const upright = { width: 1414, height: 1414 };
+    const turned = turnedFrame({ xmin: 400, ymin: 400, xmax: 600, ymax: 600 }, 45, square, upright);
+    expect(turned).toEqual({ xmin: 399, ymin: 399, xmax: 601, ymax: 601 });
+  });
+
+  it("is none with nothing of it left on the photo", () => {
+    // A corner of the photo turned 45° falls past the photo of the size before.
+    const square = { width: 1000, height: 1000 };
+    expect(
+      turnedFrame({ xmin: 0, ymin: 0, xmax: 50, ymax: 50 }, 45, square, square),
+    ).toBeUndefined();
   });
 });

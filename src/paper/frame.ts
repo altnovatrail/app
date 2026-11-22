@@ -4,7 +4,8 @@
 // learner sees is the frame — or of two taps, a corner and then the one opposite; its corner
 // resizes it. Each is at least the size of a target on the screen and
 // never past the photo's edge. The sizes on the screen come in CSS px, by the scale the screen
-// draws the photo at. No DOM.
+// draws the photo at. A frame on a photo turned upright turns with it (R162 spec). No DOM.
+import type { Size } from "./photo.ts";
 
 /** A frame, in whole thousandths of the photo: `ymin` and `xmin` its top-left, the rest bottom-right. */
 export interface Frame {
@@ -159,4 +160,43 @@ export function cropRect(
   const ex = clamp(Math.ceil((frame.xmax * width) / 1000), sx + 1, Math.max(sx + 1, width));
   const ey = clamp(Math.ceil((frame.ymax * height) / 1000), sy + 1, Math.max(sy + 1, height));
   return { sx, sy, sw: ex - sx, sh: ey - sy };
+}
+
+/**
+ * The frame on a photo of `from` px turned by `degrees` clockwise about its centre onto one of `to`
+ * px (R162 spec): the upright rectangle that holds its corners turned, rounded out to whole
+ * thousandths and kept in the photo, which a turn by a multiple of 90° gives exactly; none when
+ * nothing of it is left on the photo.
+ */
+export function turnedFrame(
+  frame: Frame,
+  degrees: number,
+  from: Size,
+  to: Size,
+): Frame | undefined {
+  const angle = (degrees * Math.PI) / 180;
+  const cos = Math.cos(angle);
+  const sin = Math.sin(angle);
+  // To a millionth, so that the error of floats never rounds an exact edge out by one.
+  const snapped = (value: number) => Math.round(value * 1e6) / 1e6;
+  const corners = [
+    { x: frame.xmin, y: frame.ymin },
+    { x: frame.xmax, y: frame.ymin },
+    { x: frame.xmin, y: frame.ymax },
+    { x: frame.xmax, y: frame.ymax },
+  ].map(({ x, y }) => {
+    const u = (x * from.width) / 1000 - from.width / 2;
+    const v = (y * from.height) / 1000 - from.height / 2;
+    return {
+      x: snapped(((u * cos - v * sin + to.width / 2) * 1000) / to.width),
+      y: snapped(((u * sin + v * cos + to.height / 2) * 1000) / to.height),
+    };
+  });
+  const turned = rounded(
+    Math.min(...corners.map((p) => p.x)),
+    Math.min(...corners.map((p) => p.y)),
+    Math.max(...corners.map((p) => p.x)),
+    Math.max(...corners.map((p) => p.y)),
+  );
+  return isFrame(turned) ? turned : undefined;
 }

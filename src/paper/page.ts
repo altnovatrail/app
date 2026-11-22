@@ -2,9 +2,12 @@
 // each picked at first, and those the learner draws, each picked as it comes; a tap on one leaves
 // it out or takes it back, and "Start" begins an attempt for each picked, in the order of the page.
 // The learner may ask in words to find them anew (R165 spec): the request goes with the frames on
-// the page, and the frames it gave take the place of those found, the learner's own staying. No DOM.
+// the page, and the frames it gave take the place of those found, the learner's own staying. Frames
+// found on the photo turned upright turn the page's photo, and the frames on it, with them (R162
+// spec). No DOM.
 import type { FindTasksResponse } from "@altnovatrail/contracts/novatrail/api/v1/paper_pb.js";
-import { type Frame, isFrame, pageOrder } from "./frame.ts";
+import { type Frame, isFrame, pageOrder, turnedFrame } from "./frame.ts";
+import { type Size, turnedSize } from "./photo.ts";
 
 /** The most tasks one page begins: those of `BeginPaperAttempts` (the contract). */
 export const MAX_TASKS = 20;
@@ -40,6 +43,61 @@ export function foundTasks(answer: FindTasksResponse): readonly PageTask[] {
     .sort(pageOrder)
     .slice(0, MAX_TASKS)
     .map((frame, i) => ({ id: `found-${i + 1}`, frame, drawn: false, picked: true }));
+}
+
+/** A page on its photo, as `PaperContext` holds it. */
+interface OnPhoto<P extends Size> {
+  readonly photo: P;
+  readonly tasks: readonly PageTask[];
+  readonly before?: readonly PageTask[] | undefined;
+}
+
+/** The tasks with each frame turned as `turnedFrame` turns it: one with nothing left on the photo goes. */
+export function turnedTasks(
+  tasks: readonly PageTask[],
+  degrees: number,
+  from: Size,
+  to: Size,
+): readonly PageTask[] {
+  return tasks.flatMap((task) => {
+    const frame = turnedFrame(task.frame, degrees, from, to);
+    return frame === undefined ? [] : [{ ...task, frame }];
+  });
+}
+
+/**
+ * The page on `turned`, its photo turned upright by `degrees` (R162 spec): the frames on it before —
+ * those drawn, and those Undo puts back — turned with the photo, so that each stays round its task.
+ * None when the page holds another photo than `photo`, the one the answer was for: it came too late.
+ */
+export function uprightPage<P extends Size, T extends OnPhoto<P>>(
+  page: T | undefined,
+  photo: P,
+  turned: P,
+  degrees: number,
+): T | undefined {
+  if (page === undefined || page.photo !== photo) return undefined;
+  const from = { width: photo.width, height: photo.height };
+  const to = turnedSize(photo.width, photo.height, degrees);
+  return {
+    ...page,
+    photo: turned,
+    tasks: turnedTasks(page.tasks, degrees, from, to),
+    ...(page.before === undefined ? {} : { before: turnedTasks(page.before, degrees, from, to) }),
+  };
+}
+
+/**
+ * The tasks an answer found on the photo turned upright by `degrees`, on the photo of `size` as it
+ * is, each the rectangle that holds its frame turned back: for a page whose photo stays, as its
+ * tasks begun and the history hold it, or as it could not be turned.
+ */
+export function unturned(
+  tasks: readonly PageTask[],
+  degrees: number,
+  size: Size,
+): readonly PageTask[] {
+  return turnedTasks(tasks, -degrees, turnedSize(size.width, size.height, degrees), size);
 }
 
 /**
