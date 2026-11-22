@@ -27,6 +27,20 @@ describe("Home while its subjects are read", () => {
     expect(foot?.querySelector(".nt-quota-bar")).not.toBeNull();
   });
 
+  it("keeps the quota's line and its shape no wider than its words on a card of the whole width", () => {
+    // An iPad in portrait: Next up alone in its row, the whole width of the page.
+    const wide = { container: document.body.appendChild(document.createElement("div")) };
+    wide.container.style.inlineSize = "800px";
+    const { rerender } = render(inLanguage(<HomeScreen connected={[]} quotaLoading />), wide);
+    const width = (q: string) => document.querySelector(q)?.getBoundingClientRect().width;
+    expect(width(".nt-next-foot")).toBeGreaterThan(600);
+    expect(width(".nt-next-foot .nt-quota")).toBe(320);
+    rerender(inLanguage(<HomeScreen connected={[]} quota={{ profilePercent: 40 } as never} />));
+    expect(width(".nt-quota")).toBe(320);
+    rerender(inLanguage(<HomeScreen connected={undefined} />));
+    expect(width(".nt-next-loading > .nt-next-foot > .nt-loading")).toBeLessThanOrEqual(320);
+  });
+
   it("shows a card's kind, counts, squares and foot as shapes while its map comes (R168 spec)", async () => {
     const card = { moduleId: "m", digest: "d", title: "M" };
     const { rerender } = render(

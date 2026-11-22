@@ -1981,10 +1981,12 @@ button.nt-row > svg {
 .nt-next-step .nt-buttons {
   margin: 0;
 }
+/* No wider than its words: on a card of the whole width, in portrait, it does not stretch across. */
 .nt-quota {
   display: flex;
   flex: 1 1 auto;
   min-inline-size: 0;
+  max-inline-size: 20rem;
   flex-direction: column;
   gap: 0.75rem;
   margin: 0;
@@ -6297,6 +6299,7 @@ dialog.nt-legal-sheet .nt-legal-body .nt-legal-foot > button.nt-link {
 }
 .nt-next-loading > .nt-next-foot > .nt-loading {
   flex: 1 1 auto;
+  max-inline-size: 20rem;
 }
 /* A shape in a line of text: a count in a heading. */
 .nt-sk-inline {
