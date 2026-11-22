@@ -199,4 +199,34 @@ describe("the theme", () => {
     expect(pad(false)).toBe("4.25rem");
     expect(pad(true)).toBe("0px");
   });
+
+  it("sweeps the page being searched with a line through the middle of its glow, the same above and below it", () => {
+    const { container } = render(
+      <div style={{ position: "relative", inlineSize: 400, blockSize: 500 }}>
+        <span className="nt-page-scan">
+          <span />
+        </span>
+      </div>,
+    );
+    const band = container.querySelector(".nt-page-scan > span");
+    const height = band?.getBoundingClientRect().height ?? 0;
+    expect(height).toBeGreaterThan(0);
+    // The band has no edge or shadow to one side: the line and its glow are its pseudo-element,
+    // whose middle is the band's.
+    expect(styleOf(band).borderBottomStyle).toBe("none");
+    expect(styleOf(band).boxShadow).toBe("none");
+    const line = getComputedStyle(band as Element, "::after");
+    expect(Number.parseFloat(line.top) + Number.parseFloat(line.height) / 2).toBeCloseTo(
+      height / 2,
+      1,
+    );
+    // The glow fades the same way on each side of it: its colours and stops read the same from
+    // either end.
+    const stops = [...styleOf(band).backgroundImage.matchAll(/(rgba?\([^)]*\))\s*([\d.]+)%/g)];
+    expect(stops.length).toBe(3);
+    expect(stops.map((stop) => stop[1])).toEqual(stops.map((stop) => stop[1]).reverse());
+    expect(stops.map((stop) => Number(stop[2]))).toEqual(
+      stops.map((stop) => 100 - Number(stop[2])).reverse(),
+    );
+  });
 });
