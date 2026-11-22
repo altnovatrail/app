@@ -100,7 +100,8 @@ function sameWork(a: BegunTask | undefined, b: BegunTask): boolean {
     a.history === b.history &&
     a.tracing === b.tracing &&
     a.sent === b.sent &&
-    a.over === b.over
+    a.over === b.over &&
+    a.solved === b.solved
   );
 }
 
@@ -111,6 +112,7 @@ function workOf(task: BegunTask): PaperWork {
     tracing: task.tracing,
     sent: task.sent ?? [],
     over: task.over === true,
+    ...(task.solved === true ? { solved: true } : {}),
   };
 }
 
@@ -303,6 +305,7 @@ export function PaperProvider({
         ...(task.tracing === undefined ? {} : { tracing: task.tracing }),
         sent: task.sent,
         over: task.over,
+        ...(task.solved === true ? { solved: true } : {}),
       }));
       for (const task of begun) written.current.set(task.attemptId, task);
       const url = URL.createObjectURL(new Blob([photo.bytes.slice()], { type: "image/jpeg" }));

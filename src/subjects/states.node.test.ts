@@ -11,6 +11,7 @@ import {
   type SkillStatus,
   segmentsOf,
   skillCounts,
+  skillToWork,
 } from "./states.ts";
 
 describe("the states of a module's skills", () => {
@@ -96,5 +97,38 @@ describe("the place in a chain", () => {
       ["c", "mastered"],
     ]);
     expect(chainPlace(graph, all, tiers)).toEqual({ step: 3, total: 3, mastered: 3 });
+  });
+});
+
+describe("the skill a card's Continue works on", () => {
+  const statuses = new Map([
+    ["a", "mastered"],
+    ["b", "ready-to-start"],
+    ["c", "time-to-review"],
+    ["d", "in-progress"],
+  ] as const);
+  it("is a chain's first skill not mastered, by its tiers", () => {
+    expect(skillToWork(statuses, { a: 0, b: 2, c: 1, d: 3 })).toBe("c");
+  });
+  it("is the first skill begun, else due, else ready to start, in an adaptive module", () => {
+    expect(skillToWork(statuses, undefined)).toBe("d");
+    expect(
+      skillToWork(
+        new Map([
+          ["b", "ready-to-start"],
+          ["c", "time-to-review"],
+        ]),
+        undefined,
+      ),
+    ).toBe("c");
+    expect(
+      skillToWork(
+        new Map([
+          ["a", "mastered"],
+          ["e", "locked"],
+        ]),
+        undefined,
+      ),
+    ).toBeUndefined();
   });
 });

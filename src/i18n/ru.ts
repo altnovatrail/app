@@ -845,7 +845,7 @@ export const ru = {
   "paper.tasks": "Задачи",
   "paper.tasks-open": "Задачи, {n} / {total}",
   "paper.pages": "Ваши страницы",
-  "paper.pages-title": "Ваши страницы · на этом устройстве",
+  "paper.pages-here": "на этом устройстве",
   "paper.page": "{when} · {tasks}",
   "paper.page-tasks": plural({
     one: "{count} задача",

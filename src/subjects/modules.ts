@@ -24,6 +24,10 @@ export interface ModuleCard {
   readonly sequential?: true;
   /** How many of its skills have each state and mark, once its map has come (R62). */
   readonly skills?: SkillCounts;
+  /** The full ID of the skill its Continue works on, once its map has come. */
+  readonly skill?: string;
+  /** Its map is on its way: the card shows the shapes of its counts meanwhile (R168 spec). */
+  readonly counting?: true;
   /** Where the learner stands in its chain of skills, once its map has come: a chain's alone (R06). */
   readonly chain?: ChainPlace;
 }

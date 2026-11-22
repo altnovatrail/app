@@ -2041,6 +2041,166 @@ main .nt-paper > p.nt-paper-sub {
   background: #e5f0ff;
   color: var(--nt-accent-text);
 }
+/*
+ * Its pop-over (R77; the author's mockup `Vashi-stranicy-1a`): 400 wide from 600, the heading with
+ * "on this device" at its end, the rows 6 apart, each a sheet of 44 × 56 — the photo's thumbnail,
+ * white, radius 6, a shadow, straight where the mockup tilts it, by the author's word — 14 from the
+ * date at 15 semibold and the count at 13 below it, a chevron at the end; under them the line of where the pages live, beside a lock in a
+ * box of the grey, radius 14. The count is in the muted text's grey, not the mockup's #8e8e93,
+ * which misses 4.5:1 on white.
+ */
+@media (width >= 600px) {
+  dialog.nt-pop-pages {
+    inline-size: 25rem;
+  }
+  dialog.nt-pop-pages .nt-pop-body {
+    padding: 1.125rem 0.5rem 0.5rem;
+  }
+}
+.nt-pages-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0 0.75rem 0.375rem;
+}
+.nt-pages-head > h2 {
+  margin: 0;
+  font-size: var(--nt-size-emphasis);
+  font-weight: var(--nt-weight-heading);
+  letter-spacing: -0.01em;
+  line-height: normal;
+}
+.nt-pages-head > span {
+  color: var(--nt-text-muted);
+  font-size: var(--nt-size-caption);
+}
+.nt-pop-pages .nt-pop-content > p:not(.nt-pages-kept) {
+  margin: 0.375rem 0.75rem;
+}
+ol.nt-pages {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+button.nt-pages-row {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  inline-size: 100%;
+  padding: 0.4375rem 0.6875rem;
+  border-radius: 0.875rem;
+  background: transparent;
+  color: var(--nt-text);
+  font-weight: 400;
+  text-align: start;
+}
+@media (hover: hover) {
+  button.nt-pages-row:hover {
+    background: rgba(0, 0, 0, 0.04);
+  }
+}
+.nt-pages-thumb {
+  display: flex;
+  flex: none;
+  inline-size: 2.75rem;
+  block-size: 3.5rem;
+}
+.nt-pages-thumb > img,
+.nt-pages-blank {
+  box-sizing: border-box;
+  inline-size: 100%;
+  block-size: 100%;
+  border-radius: 0.375rem;
+  background: var(--nt-card);
+  box-shadow:
+    0 1px 4px rgba(0, 0, 0, 0.12),
+    0 0 0 0.5px rgba(0, 0, 0, 0.08);
+}
+.nt-pages-thumb > img {
+  object-fit: cover;
+}
+/* A photo that cannot be shown: a blank sheet, its lines grey, as the mockup draws the page. */
+.nt-pages-blank {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 7px 6px;
+}
+.nt-pages-blank > i {
+  block-size: 2px;
+  background: #e5e5ea;
+}
+.nt-pages-blank > i:first-child {
+  inline-size: 60%;
+  block-size: 3px;
+  border-radius: 1px;
+  background: #c7c7cc;
+}
+.nt-pages-blank > i:nth-child(4) {
+  inline-size: 80%;
+}
+.nt-pages-blank > i:nth-child(6) {
+  inline-size: 70%;
+}
+/* Both lines at the column's start, the count right under the date. */
+.nt-pages-words {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.1875rem;
+  min-inline-size: 0;
+  text-align: start;
+}
+.nt-pages-when {
+  font-size: 0.9375rem;
+  font-weight: var(--nt-weight-bold);
+}
+.nt-pages-count {
+  color: var(--nt-text-muted);
+  font-size: var(--nt-size-caption);
+}
+.nt-pages-more {
+  display: inline-flex;
+  flex: none;
+  color: var(--nt-edge);
+  font-size: 0.875rem;
+}
+p.nt-pages-kept {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.625rem;
+  margin: 0.625rem 0 0;
+  padding: 0.75rem 0.875rem;
+  border-radius: 0.875rem;
+  background: var(--nt-grey-08);
+  color: var(--nt-text-muted-on-grey);
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+.nt-pages-lock {
+  display: inline-flex;
+  flex: none;
+  margin-block-start: 0.0625rem;
+  font-size: 0.875rem;
+}
+/* Forced colours drop the shadows and the fills: the sheet keeps an edge, and its lines GrayText. */
+@media (forced-colors: active) {
+  .nt-pages-thumb > img,
+  .nt-pages-blank,
+  p.nt-pages-kept {
+    border: 1px solid CanvasText;
+  }
+  .nt-pages-blank > i,
+  .nt-pages-blank > i:first-child {
+    forced-color-adjust: none;
+    background: GrayText;
+  }
+}
 /* The sheet in squares: white, its lines 18 apart, the puzzle in ink, at a slant. */
 .nt-grid-sheet,
 .nt-paper-sheet {
@@ -4252,6 +4412,11 @@ main.nt-task-screen:has(> .nt-task) {
   --novatrail-canvas-pad-top: 4.25rem;
   --novatrail-canvas-pad-bottom: 5rem;
 }
+/* A task from paper has no statement to keep clear of the top bar: its sheet runs up under the bar,
+   to be written on between its pills and to take the tracing paper there (R71). */
+main.nt-task-screen:has(> .nt-task-paper) {
+  --novatrail-canvas-pad-top: 0px;
+}
 main.nt-task-screen > .nt-task {
   position: absolute;
   inset: 0;
@@ -6143,6 +6308,10 @@ dialog.nt-legal-sheet .nt-legal-body .nt-legal-foot > button.nt-link {
   display: flex;
   flex-direction: column;
   gap: 0.625rem;
+}
+/* A module's card while its map comes: the squares and the foot, as far apart as the card's rows. */
+.nt-counting {
+  gap: 1rem;
 }
 /* Home's "Next up" while read: the column of the mockup's shapes, clear of the sheet drawn beside. */
 .nt-next-loading {

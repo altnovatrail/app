@@ -80,6 +80,30 @@ export interface ChainPlace {
   readonly next?: string;
 }
 
+/** The states a card's Continue works on, the first that has a skill: begun, then due, then new. */
+const TO_WORK: readonly SkillStatus[] = ["in-progress", "time-to-review", "ready-to-start"];
+
+/**
+ * The ID in the module of the skill its card's Continue works on: a chain's skill to work on, the
+ * first not mastered in the order of the tiers; else the first skill begun, else due, else ready
+ * to start, in the graph's order; none when no skill is any of them, and the map is the way.
+ */
+export function skillToWork(
+  statuses: ReadonlyMap<string, SkillStatus>,
+  tiers: Readonly<Record<string, number>> | undefined,
+): string | undefined {
+  if (tiers !== undefined) {
+    const order = [...statuses.keys()].sort(
+      (a, b) => (tiers[a] ?? Number.MAX_SAFE_INTEGER) - (tiers[b] ?? Number.MAX_SAFE_INTEGER),
+    );
+    return order.find((id) => statuses.get(id) !== "mastered");
+  }
+  for (const state of TO_WORK) {
+    for (const [id, status] of statuses) if (status === state) return id;
+  }
+  return undefined;
+}
+
 /** The place in a chain, by the graph's titles, the skills' statuses and the tiers of the graph. */
 export function chainPlace(
   graph: open.SkillGraph,

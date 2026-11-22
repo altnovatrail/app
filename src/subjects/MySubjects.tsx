@@ -15,7 +15,7 @@
 import type { QuotaShare } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 // Whose action a request is; the cards have actions of their own.
 import { Action as Actor } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
-import { type ReactNode, useCallback, useEffect, useId, useMemo, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { learnerQuotaText, readQuota } from "../account/quota.ts";
 import { useApi, useRequest } from "../api/ApiContext.tsx";
 import type { Api } from "../api/client.ts";
@@ -30,7 +30,9 @@ import { collator } from "../i18n/intl.ts";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { type RunRef, useLessons } from "../lesson/LessonContext.tsx";
 import { moduleOf } from "../lesson/run.ts";
+import { givenOf } from "../next/choice.ts";
 import { NextStep } from "../next/NextStep.tsx";
+import { useEngine } from "../next/useEngine.ts";
 import { usePackages } from "../packages/PackagesContext.tsx";
 import type { OpenViews } from "../packages/views.ts";
 import { usePaper } from "../paper/PaperContext.tsx";
@@ -98,6 +100,13 @@ export interface HomeScreenProps {
   readonly onLesson?: (lessonRunId: string) => void;
   /** The share of today's quota of platform AI the profile has used; none while it is not known. */
   readonly quota?: QuotaShare;
+  /**
+   * Works on a module's skill, the full ID its card names, when the module has no lesson begun and
+   * the task open is not its own: the engine's task of that skill on the task screen.
+   */
+  readonly onPractise?: (skill: string, moduleId: string) => void;
+  /** The share is on its way: its line is a shape meanwhile (R168 spec). */
+  readonly quotaLoading?: boolean;
   /** "Your pages", the history of pages from paper, beside "Open camera". */
   readonly pages?: ReactNode;
   /** What the attempt open is, once read; none while it comes, or when it could not be had. */
@@ -114,6 +123,8 @@ export function HomeScreen({
   onLesson,
   next,
   quota,
+  quotaLoading = false,
+  onPractise,
   pages,
   openTask,
 }: HomeScreenProps) {
@@ -206,7 +217,14 @@ export function HomeScreen({
           {/* At the card's foot: how much of today's tutor time is used, and at its right the way
               to what the engine chooses, when no attempt is open. */}
           <div className="nt-next-foot">
-            {spent === undefined ? null : (
+            {spent === undefined ? (
+              quotaLoading ? (
+                <Loading className="nt-quota">
+                  <Sk width="100%" height="0.375rem" radius="0.1875rem" />
+                  <Sk width="68%" height="0.75rem" radius="0.25rem" />
+                </Loading>
+              ) : null
+            ) : (
               <p className="nt-quota">
                 <span className="nt-quota-bar" aria-hidden="true">
                   <span style={{ inlineSize: `${quotaFill(quota)}%` }} />
@@ -270,10 +288,19 @@ export function HomeScreen({
                 key={card.moduleId}
                 card={card}
                 onContinue={() => {
-                  // The lesson begun of the module, else its map, where a skill is chosen (R107 spec).
+                  // The lesson begun of the module, else its task open, else a task of its skill
+                  // to work on (R107 spec), else its map, where a skill is chosen.
                   const run = runs.find((each) => each.moduleId === card.moduleId);
                   if (run !== undefined) onLesson?.(run.lessonRunId);
-                  else navigate(moduleMapRoute(card.moduleId));
+                  else if (
+                    onContinue !== undefined &&
+                    openTask?.kind === "module" &&
+                    openTask.moduleId === card.moduleId
+                  ) {
+                    onContinue();
+                  } else if (card.skill !== undefined && onPractise !== undefined) {
+                    onPractise(card.skill, card.moduleId);
+                  } else navigate(moduleMapRoute(card.moduleId));
                 }}
               />
             ))}
@@ -504,11 +531,39 @@ export function MySubjects({
     retryShare();
   }, [retryModules, retryShare]);
 
+  // A card's skill: the engine's task of it on the task screen. Choosing closes the attempt open,
+  // which the map asks of first, so with one open — of another module or of paper — the map is the
+  // way; and so it is when the engine gives nothing, or the choice fails, as the map says why.
+  const { choose, act } = useEngine(profileId, device);
+  const practising = useRef(false);
+  const onPractise = useCallback(
+    (skill: string, moduleId: string) => {
+      if (open !== undefined) {
+        navigate(moduleMapRoute(moduleId));
+        return;
+      }
+      if (practising.current) return;
+      practising.current = true;
+      void (async () => {
+        const given = await choose(skill, undefined);
+        if (given === undefined || givenOf(given) === "nothing") navigate(moduleMapRoute(moduleId));
+        else await act(given, undefined);
+      })()
+        .catch(() => navigate(moduleMapRoute(moduleId)))
+        .finally(() => {
+          practising.current = false;
+        });
+    },
+    [open, choose, act],
+  );
+
   if (modules.failed !== undefined) return <ReadFailed failure={modules.failed} onRetry={retry} />;
   return (
     <HomeScreen
       connected={modules.connected}
       {...(share.status === "done" && share.value !== undefined ? { quota: share.value } : {})}
+      quotaLoading={share.status === "loading"}
+      onPractise={onPractise}
       onRetry={retry}
       {...(open === undefined ? {} : { onContinue: () => navigate(TASK) })}
       {...(openTask === undefined ? {} : { openTask })}

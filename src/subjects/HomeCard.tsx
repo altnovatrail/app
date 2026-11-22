@@ -4,14 +4,17 @@
 // skill in the colour of its state. The kind is "Sequential" where its skills go in a chain (R06),
 // "Feedback by criteria" where no skill has a verdict, and "Adaptive" otherwise; the line under the
 // title names the explanation language when it is not the screen's, and a module not available
-// (R92 spec). Its Continue goes on with the module's lesson begun, else opens its map, where a
-// skill is chosen: ChooseNext takes no module. Under a chain, the skill to work on by its place and
+// (R92 spec). Its Continue goes on with the module's lesson begun, else its task open, else asks
+// ChooseNext for the skill to work on, which its map names (ChooseNext takes no module), and opens
+// the task the engine gives; with no such skill, or another task open, it opens the map. Under a chain, the skill to work on by its place and
 // the next; under an adaptive module, that the tutor chooses, from any module — what it gives is
-// known only once it is asked, ChooseNext being an action.
+// known only once it is asked, ChooseNext being an action. While its map is on its way, the card's
+// kind, counts, squares and foot are shapes (R168 spec).
 import { type ReactNode, useId } from "react";
 import { Icon } from "../app/Icon.tsx";
 import { IconButton } from "../app/IconButton.tsx";
 import { navigate } from "../app/router.ts";
+import { Loading, Sk } from "../app/Skeleton.tsx";
 import { listFormat } from "../i18n/intl.ts";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { moduleMapRoute } from "../skills/SkillMapScreen.tsx";
@@ -123,7 +126,7 @@ export function HomeCard({
   onContinue,
 }: {
   readonly card: ModuleCard;
-  /** Goes on with the module: its lesson begun, else its map. */
+  /** Goes on with the module: its lesson begun, its task open, a task of its skill, or its map. */
   readonly onContinue: () => void;
 }) {
   const { language, words } = useLanguage();
@@ -163,16 +166,26 @@ export function HomeCard({
               <h3 id={id} {...(explanation === undefined ? {} : { lang: explanation })}>
                 {card.title}
               </h3>
-              <span className="nt-subject-kind" data-kind={kind}>
-                {kind === "rubric" ? null : (
-                  <Icon value={kind === "adaptive" ? "engine" : "chain"} />
-                )}
-                {words.text(
-                  kind === "rubric" ? "skill-state.feedback-by-criteria" : `home.${kind}`,
-                )}
-              </span>
+              {card.counting === true ? (
+                <Sk width="6.5rem" height="1.5rem" radius="999px" />
+              ) : (
+                <span className="nt-subject-kind" data-kind={kind}>
+                  {kind === "rubric" ? null : (
+                    <Icon value={kind === "adaptive" ? "engine" : "chain"} />
+                  )}
+                  {words.text(
+                    kind === "rubric" ? "skill-state.feedback-by-criteria" : `home.${kind}`,
+                  )}
+                </span>
+              )}
             </div>
-            {stat.length === 0 ? null : <p className="nt-subject-stat">{stat.join(" · ")}</p>}
+            {card.counting === true && stat.length === 0 ? (
+              <p className="nt-subject-stat">
+                <Sk width="9rem" height="0.8125rem" radius="0.25rem" />
+              </p>
+            ) : stat.length === 0 ? null : (
+              <p className="nt-subject-stat">{stat.join(" · ")}</p>
+            )}
           </div>
           {/* The adaptive card names them in its foot. */}
           {review > 0 && kind !== "adaptive" ? (
@@ -203,6 +216,12 @@ export function HomeCard({
             </div>
           )}
         </div>
+        {card.counting === true ? (
+          <Loading className="nt-counting">
+            <Sk width="9.375rem" height="8px" radius="2px" />
+            <Sk width="100%" height="3.875rem" radius="1rem" />
+          </Loading>
+        ) : null}
         {counts === undefined || Object.values(counts).every((n) => n === 0) ? null : (
           <SkillDots counts={counts} />
         )}

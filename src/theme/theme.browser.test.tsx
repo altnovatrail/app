@@ -180,4 +180,23 @@ describe("the theme", () => {
     // No sticky header: the bar's band starts at the window's top.
     expect(styleOf(element).getPropertyValue("--novatrail-canvas-top").trim()).toBe("0px");
   });
+
+  it("keeps a task's statement below the floating top bar, and lets a task from paper's sheet run under it", () => {
+    const pad = (paper: boolean) => {
+      const { container, unmount } = render(
+        <main className="nt-task-screen">
+          <div className={paper ? "nt-task nt-task-paper" : "nt-task"}>
+            <div className="sheet" />
+          </div>
+        </main>,
+      );
+      const value = styleOf(container.querySelector(".sheet"))
+        .getPropertyValue("--novatrail-canvas-pad-top")
+        .trim();
+      unmount();
+      return value;
+    };
+    expect(pad(false)).toBe("4.25rem");
+    expect(pad(true)).toBe("0px");
+  });
 });

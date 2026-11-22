@@ -23,12 +23,14 @@
 // where" with the wavy line under the first mistake, which goes with other work or the paper moved;
 // "Explain differently" words the rung anew, once on it; and an adult may report a problem with the
 // words. The words stand till another task or Check, and what is said of them stops with another
-// task or the panel closed.
+// task or the panel closed. "Recognise" on the tracing paper reads the task's crop into its text by
+// AI, which api keeps on the attempt for its first Check; the page keeps the reading while it is
+// open, and the paper shows the photo again each time it is mounted (R169 spec).
 import {
   TutorReply,
   type WorkSchema,
 } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
-import { Cause } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
+import { Cause, CloseReason } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import type {
   CanvasElement,
   GridChangeEvent,
@@ -36,6 +38,7 @@ import type {
   PaperGrid,
   PaperTask,
   TracingChangeEvent,
+  TracingReading,
 } from "@altnovatrail/spec/canvas";
 import type { MessageInitShape } from "@bufbuild/protobuf";
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
@@ -75,6 +78,9 @@ import {
   wavyOf,
   withChange,
 } from "./solve.ts";
+
+/** The reading of a statement not asked yet, or asked again after none came. */
+const READY: TracingReading = Object.freeze({ state: "ready" });
 
 /** Each crop's task for the element, one object a crop, so that a render gives it no new one. */
 const papers = new WeakMap<Blob, PaperTask>();
@@ -147,6 +153,12 @@ export function Solve({
   // press again after a failure repeats the action.
   const openingKey = useRef<{ readonly of: string; readonly key: string } | undefined>(undefined);
   const explainKey = useRef<string | undefined>(undefined);
+  // The reading of each task's statement by Recognise, while the page is open, and the key of the
+  // one on its way, kept till an answer, so that a press again after a failure repeats it.
+  const [readings, setReadings] = useState<ReadonlyMap<string, TracingReading>>(new Map());
+  const readKey = useRef<{ readonly of: string; readonly key: string } | undefined>(undefined);
+  // What a reading came to when it gave no text.
+  const [readNote, setReadNote] = useState<string | undefined>(undefined);
   // The wrong answer of the last Check whose rung's words the closed panel left unasked.
   const unasked = useRef<RungAsk | undefined>(undefined);
   // Another task or Check: an answer asked before it shows nothing.
@@ -185,6 +197,7 @@ export function Solve({
     setWordsWaiting(false);
     setExplaining(false);
     setFailure(undefined);
+    setReadNote(undefined);
     setSaid(undefined);
     setWordsNote(undefined);
     setExplained(false);
@@ -326,6 +339,50 @@ export function Solve({
     if (closesAI(read)) setWordsNote(outcomeText(read, words));
   };
 
+  /** The task's statement read by AI into its text, on the learner's Recognise (R169 spec). */
+  const recognise = () => {
+    const of = attemptId;
+    if (readings.get(of)?.state === "busy") return;
+    if (readKey.current?.of !== of) readKey.current = { of, key: idempotencyKey() };
+    const key = readKey.current.key;
+    const asked = epoch.current;
+    const keep = (reading: TracingReading) =>
+      setReadings((before) => new Map(before).set(of, reading));
+    keep({ state: "busy" });
+    setReadNote(undefined);
+    setFailure(undefined);
+    const ai = holder.aiFields(profileId);
+    void task.crop
+      .arrayBuffer()
+      .then((buffer) =>
+        watched(api, () =>
+          api.attempt.readStatement({
+            profileId,
+            attemptId: of,
+            idempotencyKey: key,
+            statement: new Uint8Array(buffer),
+            ...ai,
+          }),
+        ),
+      )
+      .then(
+        (answer) => {
+          readKey.current = undefined;
+          const read = outcomeOf(answer.outcome);
+          holder.noteOutcome(profileId, read, ai);
+          const got = answer.statements.length > 0;
+          keep(got ? { state: "done", statements: answer.statements } : READY);
+          if (asked === epoch.current && read !== undefined && (!got || closesAI(read)))
+            setReadNote(outcomeText(read, words));
+        },
+        (reason: unknown) => {
+          keep(READY);
+          if (asked === epoch.current) setFailure(parseFailure(reason));
+        },
+      )
+      .finally(() => setSpent((n) => n + 1));
+  };
+
   const hint = () => {
     // The rung's words on their way are the hint: a Hint meanwhile would show the fallback text.
     if (pending || wordsWaiting) return;
@@ -418,8 +475,15 @@ export function Solve({
   const closed = (found: Failure) => {
     // A verdict still shown is put away, so that the task is only to be looked at, as it is when
     // its page is opened again.
-    if (closedBy(found) !== undefined)
-      onKeep(attemptId, (was) => withoutVerdict({ ...was, over: true }));
+    const reason = closedBy(found);
+    if (reason !== undefined)
+      onKeep(attemptId, (was) =>
+        withoutVerdict({
+          ...was,
+          over: true,
+          ...(reason === CloseReason.CORRECT ? { solved: true } : {}),
+        }),
+      );
   };
 
   const check = () => {
@@ -500,7 +564,7 @@ export function Solve({
           ...(context === undefined || !first
             ? {}
             : { sent: [...(was.sent ?? []), { context, historyLength: length }] }),
-          ...(verdict.kind === "correct" ? { over: true } : {}),
+          ...(verdict.kind === "correct" ? { over: true, solved: true } : {}),
         }));
         const card = paperCard(verdict, words);
         setTold(card.line === undefined ? card.title : `${card.title}. ${card.line}`);
@@ -572,7 +636,7 @@ export function Solve({
                     {order.get(each.taskId)}
                   </span>
                   {nameOf(each)}
-                  {each.verdict?.kind === "correct" ? (
+                  {each.solved === true || each.verdict?.kind === "correct" ? (
                     <>
                       <Icon value="ticked" />
                       <span className="nt-hidden-label">{words.text("task.correct")}</span>
@@ -622,7 +686,7 @@ export function Solve({
         ),
       }}
     >
-      <div className="nt-task" {...beside}>
+      <div className="nt-task nt-task-paper" {...beside}>
         <div className="nt-task-work" inert={only}>
           {/* The order of the properties is the order React gives them: the paper first (R74 spec). */}
           <novatrail-canvas
@@ -633,10 +697,12 @@ export function Solve({
             paper={paperOf(task.crop)}
             history={task.history}
             {...(task.tracing === undefined ? {} : { tracing: task.tracing })}
+            {...(only ? {} : { reading: readings.get(attemptId) ?? READY })}
             {...(grid === undefined ? {} : { grid })}
             marks={marks}
             onhistorychange={onHistoryChange}
             ontracingchange={onTracingChange}
+            {...(only ? {} : { ontracingread: recognise })}
             ongridchange={onGridChange}
           />
         </div>
@@ -656,6 +722,11 @@ export function Solve({
         <p role="status" className="nt-hidden-label">
           {told}
         </p>
+        {readNote === undefined ? null : (
+          <p role="alert" className="nt-error">
+            {readNote}
+          </p>
+        )}
         {overTold ? (
           <p role="alert" className="nt-error">
             {words.text("api.attempt-closed")}

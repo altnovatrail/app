@@ -12,6 +12,8 @@ import type { OpenViews } from "../packages/views.ts";
 export type OpenTask =
   | {
       readonly kind: "module";
+      /** The module's ID, from its manifest; none when the manifest did not come. */
+      readonly moduleId?: string;
       /** The module's title, from its manifest; none when the manifest did not come. */
       readonly module?: string;
       /** The explanation language of the module, the `lang` of its words. */
@@ -49,7 +51,11 @@ export async function openTaskOf(
     kind: "module",
     ...(manifest === undefined
       ? {}
-      : { module: manifest.title, language: manifest.languages.explanation }),
+      : {
+          moduleId: manifest.id,
+          module: manifest.title,
+          language: manifest.languages.explanation,
+        }),
     ...(statement === undefined ? {} : { statement }),
   };
 }

@@ -53,6 +53,8 @@ export interface BegunTask {
   readonly sent?: readonly PaperSent[];
   /** Its attempt is over — solved, or closed by api —, which a page of the history keeps. */
   readonly over?: boolean;
+  /** Its Check came to Correct, here or in a tab before: the list marks it, which the page keeps. */
+  readonly solved?: true;
 }
 
 /**

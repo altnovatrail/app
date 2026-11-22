@@ -19,6 +19,8 @@ import {
   type GetRungWordsRequest,
   type GetRungWordsResponseSchema,
   MarkKind,
+  type ReadStatementRequest,
+  type ReadStatementResponseSchema,
   type SubmitWorkRequest,
   type SubmitWorkResponseSchema,
 } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
@@ -59,6 +61,8 @@ interface Setup {
   readonly rung?: (n: number) => MessageInitShape<typeof GetRungWordsResponseSchema>;
   /** Each "Explain differently", by how many came before; none, and api has no ExplainDifferently. */
   readonly explained?: (n: number) => MessageInitShape<typeof ExplainDifferentlyResponseSchema>;
+  /** Each reading of a statement by Recognise, by how many came before; none, and it is refused. */
+  readonly read?: (n: number) => MessageInitShape<typeof ReadStatementResponseSchema>;
   /** The answer to Start; none, an attempt for each task. */
   readonly began?: (tasks: number) => MessageInitShape<typeof BeginPaperAttemptsResponseSchema>;
   /** The learner's share of the quota, in percent; none, and api has no `GetQuota`. */
@@ -100,6 +104,7 @@ async function renderCamera(setup: Setup = {}) {
   const begins: BeginPaperAttemptsRequest[] = [];
   const submits: SubmitWorkRequest[] = [];
   const rungs: GetRungWordsRequest[] = [];
+  const reads: ReadStatementRequest[] = [];
   let explains = 0;
   let attempts = 0;
   const api = routedApi((router) => {
@@ -113,6 +118,12 @@ async function renderCamera(setup: Setup = {}) {
       // Before the first wrong answer a task from paper has no techniques: the opening question.
       getHint() {
         return setup.hint?.() ?? { hint: { case: "techniques", value: {} } };
+      },
+      readStatement(request) {
+        reads.push(request);
+        const answer = setup.read?.(reads.length - 1);
+        if (answer === undefined) throw new ConnectError("a refusal", Code.InvalidArgument);
+        return answer;
       },
       getOpeningWords() {
         return { words: setup.hinted ?? "" };
@@ -183,7 +194,7 @@ async function renderCamera(setup: Setup = {}) {
   );
   if (setup.camera === undefined)
     await screen.findByText("The camera isn't available here. Choose a photo of the page instead");
-  return { finds, begins, submits, rungs };
+  return { finds, begins, submits, rungs, reads };
 }
 
 /** A refusal of api for a cause. */
@@ -437,7 +448,7 @@ it("begins the tasks picked, each a sheet under its crop", async () => {
   // The page's ID, by which api closes the open tasks of another page alone (R77).
   expect(begins[0]?.pageId).toMatch(/^[A-Za-z0-9_-][A-Za-z0-9._-]{0,199}$/);
   expect(sheet().paper?.statement).toBeInstanceOf(Blob);
-  expect(sheet().tracing).toEqual({ at: [180, 60], hidden: false });
+  expect(sheet().tracing).toEqual({ at: [180, 60], hidden: false, scale: 1 });
 });
 
 it("goes from task to task by ‹, › and the list, each with its own work", async () => {
@@ -653,7 +664,7 @@ it("brings the rung's words with the wavy line in the open panel, which the pape
   );
   // The canvas puts its marks away with the paper moved: the verdict's context is gone with them.
   await waitFor(() => expect(sheet().marks).toBeUndefined());
-  expect(sheet().tracing).toEqual({ at: [200, 90], hidden: false });
+  expect(sheet().tracing).toEqual({ at: [200, 90], hidden: false, scale: 1 });
 });
 
 it("words the rung anew once by Explain differently, and says when there are no other words", async () => {
@@ -759,6 +770,38 @@ it("gives a rung's words again by Hint, and makes a task api closed one only to 
   await waitFor(() => expect(screen.getAllByRole("alert")).toHaveLength(2));
   for (const alert of screen.getAllByRole("alert"))
     expect(alert).toHaveTextContent("This task is already over");
+});
+
+it("reads the statement into its text by Recognise, a reading for its task alone", async () => {
+  const { reads } = await solving({ read: () => ({ statements: ["□ + 1 = 3"] }) });
+  expect(sheet().reading).toEqual({ state: "ready" });
+  const recognise = () =>
+    sheet().dispatchEvent(new CustomEvent("tracingread", { detail: null, bubbles: true }));
+  recognise();
+  await waitFor(() =>
+    expect(sheet().reading).toEqual({ state: "done", statements: ["□ + 1 = 3"] }),
+  );
+  expect(reads).toHaveLength(1);
+  expect(reads[0]?.attemptId).toBe("a1");
+  expect(reads[0]?.statement.length).toBeGreaterThan(0);
+  // The next task has a reading of its own, which api refuses here.
+  await userEvent.click(screen.getByRole("button", { name: "Next task" }));
+  await screen.findByRole("heading", { name: "Task 2" });
+  expect(sheet().reading).toEqual({ state: "ready" });
+});
+
+it("gives the paper Recognise again when api refuses the reading, and says why", async () => {
+  const { reads } = await solving();
+  const key = () => reads.map((each) => each.idempotencyKey);
+  // A round trip to the browser: the screen has settled on the task it shows.
+  await userEvent.hover(screen.getByRole("heading", { name: "Task 1" }));
+  sheet().dispatchEvent(new CustomEvent("tracingread", { detail: null, bubbles: true }));
+  expect(await screen.findByRole("alert")).toBeVisible();
+  await waitFor(() => expect(sheet().reading).toEqual({ state: "ready" }));
+  // A press again repeats the reading by its key.
+  sheet().dispatchEvent(new CustomEvent("tracingread", { detail: null, bubbles: true }));
+  await waitFor(() => expect(reads).toHaveLength(2));
+  expect(new Set(key()).size).toBe(1);
 });
 
 it("asks for a solution again when the sheet gives no work at the press", async () => {
@@ -1091,8 +1134,47 @@ it("keeps the page and its work in the profile's history, and opens it again fro
   await userEvent.click(screen.getByRole("button", { name: /· 2 tasks$/ }));
   await screen.findByRole("heading", { name: "Task 1" }, SLOW);
   await waitFor(() => expect(sheet().history).toHaveLength(1));
-  expect(sheet().tracing).toEqual({ at: [200, 90], hidden: true });
+  expect(sheet().tracing).toEqual({ at: [200, 90], hidden: true, scale: 1 });
   expect(screen.queryByRole("dialog")).toBeNull();
+  history.replaceState(null, "", location.pathname);
+});
+
+it("marks a task solved in the list of a page opened again, its verdict put away", async () => {
+  const { device } = memoryDevice();
+  await addProfile(device, "p1");
+  await solving({
+    device,
+    checked: () => ({
+      items: [
+        {
+          verdict: "correct",
+          answerSlots: [{ answerSlot: { item: 1, slot: 1 }, verdict: "correct", value: "85" }],
+        },
+      ],
+      solved: {},
+    }),
+  });
+  writeOn(sheet());
+  await userEvent.click(screen.getByRole("button", { name: "Check" }));
+  expect(await screen.findByText("Read: 85")).toBeVisible();
+  const profile = await openProfile(device, "p1");
+  vi.spyOn(document, "visibilityState", "get").mockReturnValue("hidden");
+  document.dispatchEvent(new Event("visibilitychange"));
+  await waitFor(async () => {
+    const [kept] = (await profile?.pages()) ?? [];
+    const tasks = (await profile?.page(kept?.pageId ?? ""))?.tasks ?? [];
+    expect(tasks.map((task) => task.solved)).toEqual([true, undefined]);
+  });
+  cleanup();
+
+  await renderCamera({ device });
+  await userEvent.click(await screen.findByRole("button", { name: "Your pages" }));
+  await userEvent.click(screen.getByRole("button", { name: /· 2 tasks$/ }));
+  await screen.findByRole("heading", { name: "Task 1" }, SLOW);
+  expect(screen.queryByText("Read: 85")).toBeNull();
+  await userEvent.click(screen.getByRole("button", { name: "Tasks, 1 / 2" }));
+  expect(await screen.findByRole("button", { name: /Task 1.*Correct/ })).toBeVisible();
+  expect(screen.getByRole("button", { name: "Task 2" })).toBeVisible();
   history.replaceState(null, "", location.pathname);
 });
 

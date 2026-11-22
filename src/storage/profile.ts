@@ -156,6 +156,8 @@ export interface PaperWork {
   readonly sent: readonly PaperSent[];
   /** Its attempt is over: solved, or closed by api, so that the page shows it and takes no work. */
   readonly over: boolean;
+  /** Its Check came to Correct: the list of the page's tasks marks it, once the verdict is put away. */
+  readonly solved?: true;
 }
 
 /** A task begun on a page: its attempt, the page's task it began from, its frame, crop and work. */
@@ -193,6 +195,17 @@ function pageOf(kept: unknown): KeptPage | undefined {
   return { pageId: page.pageId, takenAt: page.takenAt, frames };
 }
 
+/** A photo's record as this build writes it; anything else is none. */
+function photoOf(kept: unknown): KeptPhoto | undefined {
+  const photo = kept as
+    | (Partial<Bytes> & { readonly width?: unknown; readonly height?: unknown })
+    | null
+    | undefined;
+  if (!(photo?.bytes instanceof ArrayBuffer)) return undefined;
+  if (typeof photo.width !== "number" || typeof photo.height !== "number") return undefined;
+  return { bytes: new Uint8Array(photo.bytes), width: photo.width, height: photo.height };
+}
+
 /** A task's record with its crop again as a Blob; one this build cannot read is none. */
 function paperTaskOf(kept: unknown): KeptPaperTask | undefined {
   const { crop, ...task } = (kept ?? {}) as Partial<Omit<KeptPaperTask, "crop">> & {
@@ -215,6 +228,7 @@ function paperTaskOf(kept: unknown): KeptPaperTask | undefined {
     ...(task.tracing === undefined ? {} : { tracing: task.tracing }),
     sent: task.sent,
     over: task.over === true,
+    ...(task.solved === true ? { solved: true } : {}),
   };
 }
 
@@ -758,13 +772,14 @@ export class Profile {
     return this.save([PAPER_TASKS], async (tx) => {
       const kept = (await tx.get(PAPER_TASKS, attemptId)) as object | undefined;
       if (kept === undefined) return "unsaved";
-      const { history, tracing, sent, over } = work;
+      const { history, tracing, sent, over, solved } = work;
       await tx.put(PAPER_TASKS, attemptId, {
         ...kept,
         history,
         ...(tracing === undefined ? {} : { tracing }),
         sent,
         over,
+        ...(solved === true ? { solved } : {}),
       });
       return "saved";
     });
@@ -800,11 +815,8 @@ export class Profile {
   > {
     return this.connection.read([PAGES, PHOTOS, PAPER_TASKS], async (tx) => {
       const page = pageOf(await tx.get(PAGES, pageId));
-      const kept = (await tx.get(PHOTOS, pageId)) as
-        | (Partial<Bytes> & { readonly width?: unknown; readonly height?: unknown })
-        | undefined;
-      if (page === undefined || !(kept?.bytes instanceof ArrayBuffer)) return undefined;
-      if (typeof kept.width !== "number" || typeof kept.height !== "number") return undefined;
+      const photo = photoOf(await tx.get(PHOTOS, pageId));
+      if (page === undefined || photo === undefined) return undefined;
       const range = { lower: pageId, upper: pageId };
       const tasks = (await tx.entries(PAPER_TASKS, { index: "page", range }))
         .flatMap(({ value }) => {
@@ -812,9 +824,16 @@ export class Profile {
           return task === undefined ? [] : [task];
         })
         .sort((a, b) => a.n - b.n);
-      const photo = { bytes: new Uint8Array(kept.bytes), width: kept.width, height: kept.height };
       return { page, photo, tasks };
     });
+  }
+
+  /**
+   * The photo of a page alone, for its thumbnail in the list of pages, which reads none; none when
+   * it is not kept or is in a form this build does not read.
+   */
+  async photo(pageId: string): Promise<KeptPhoto | undefined> {
+    return this.connection.read([PHOTOS], async (tx) => photoOf(await tx.get(PHOTOS, pageId)));
   }
 }
 

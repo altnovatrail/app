@@ -581,6 +581,7 @@ describe("the pages from paper", () => {
       tracing: { at: [200, 80], hidden: true },
       sent: [{ context, historyLength: 1 }],
       over: true,
+      solved: true,
     } as const;
     expect(await profile.keepPaperWork("pa2", work)).toBe("saved");
     // The work of a task the page does not keep is none.
@@ -588,9 +589,11 @@ describe("the pages from paper", () => {
     const kept = await profile.page("g1");
     expect(kept?.page).toEqual(page("g1", 1000, [1, 2, 3]));
     expect(kept?.photo).toEqual(photo);
-    expect(kept?.tasks.map(({ attemptId, n, over }) => ({ attemptId, n, over }))).toEqual([
-      { attemptId: "pa1", n: 0, over: false },
-      { attemptId: "pa2", n: 1, over: true },
+    expect(
+      kept?.tasks.map(({ attemptId, n, over, solved }) => ({ attemptId, n, over, solved })),
+    ).toEqual([
+      { attemptId: "pa1", n: 0, over: false, solved: undefined },
+      { attemptId: "pa2", n: 1, over: true, solved: true },
     ]);
     const second = kept?.tasks[1];
     expect(second?.history).toEqual([write(1, 0)]);

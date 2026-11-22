@@ -1256,8 +1256,8 @@ export const en = {
   "paper.add": "Add",
   /** The button on the card "Tasks from my paper" that opens the profile's pages from paper kept on the device (R77). */
   "paper.pages": "Your pages",
-  /** The heading of its pop-over. */
-  "paper.pages-title": "Your pages · on this device",
+  /** Beside the heading of its pop-over, which is its button's words. */
+  "paper.pages-here": "on this device",
   /** A page in it: when it was photographed, and how many tasks were begun on it. */
   "paper.page": "{when} · {tasks}",
   "paper.page-tasks": plural({
