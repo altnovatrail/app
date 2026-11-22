@@ -270,14 +270,14 @@ export const en = {
   "accessibility.moving-when":
     "There is no date: buttons that move the sheet come back only if the platform decides so",
   "accessibility.print": "Print in the lines of a workbook",
-  "accessibility.print-criteria": "1.4.4 Resize Text, level AA; 1.4.12 Text Spacing, level AA",
-  /** The page is the task's, 1000 CSS px wide at most, fitted to the sheet's width (R11). */
+  "accessibility.print-criteria": "1.4.12 Text Spacing, level AA",
+  /** Zoom in and Zoom out are the words of the sheet's bar (architecture 6 spec). */
   "accessibility.print-why":
-    "The printed numbers, words and values in the lines of a workbook lie on the task's page, which fits the width of the sheet. The browser's zoom makes them larger only until the page fills the sheet's width, and on a sheet narrower than 1000 pixels, as on a tablet or a phone, not at all. The place of each piece is fixed on the page too, so the spacing you set for text does not reach them",
+    "The printed numbers, words and values in the lines of a workbook lie on the task's page, each in a place fixed on it, so the spacing you set for text does not reach them",
   "accessibility.print-instead":
-    "The task's statement above the workbook and the rest of the app grow with the browser's zoom and take your spacing. On a sheet wider than the page, the zoom makes the print larger too, until the page fills it",
+    "The task's statement above the workbook and the rest of the app take your spacing, and Zoom in on the sheet's bar makes the print up to twice as large",
   "accessibility.print-when":
-    "There is no date: a way to enlarge the print comes only if the platform decides so, and wider spacing only once the layout of the page leaves the lines room for it",
+    "There is no date: wider spacing comes only once the layout of the page leaves the lines room for it",
   /** Check and Not yet are the words of the task screen, Can't read this its reading's. */
   "accessibility.check": "Sending an answer with Check",
   "accessibility.check-criteria": "3.3.4 Error Prevention (Legal, Financial, Data), level AA",

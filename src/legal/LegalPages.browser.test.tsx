@@ -384,7 +384,7 @@ describe("the legal pages", () => {
     // 2.5.7 twice: the canvas moves the sheet by dragging alone (R11).
     expect(criteria[1]).toBe("2.5.7 Dragging Movements, level AA");
     // The print fits the page to the sheet's width and keeps its own spacing (R11).
-    expect(criteria[2]).toBe("1.4.4 Resize Text, level AA; 1.4.12 Text Spacing, level AA");
+    expect(criteria[2]).toBe("1.4.12 Text Spacing, level AA");
     expect(criteria[3]).toContain("3.3.4");
     // A frame drawn by hand: two taps meet 2.5.1 and 2.5.7, the keyboard none (R71).
     expect(criteria[4]).toBe("2.1.1 Keyboard, level A");
