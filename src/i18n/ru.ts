@@ -795,7 +795,8 @@ export const ru = {
   "paper.retake": "Переснять",
   "paper.remove-all": "Убрать все рамки",
   "paper.finding": "Ищем задачи на странице…",
-  "paper.none-found": "Задачи не найдены. Каждую задачу, которую нужно решить, можно обвести",
+  "paper.none-found": "Задачи не найдены",
+  "paper.none-found-how": "Каждую задачу, которую нужно решить, можно обвести",
   "paper.find-again": "Найти задачи ещё раз",
   "paper.at-most": "Больше {max} задач за раз не взять",
   "paper.at-most-how":

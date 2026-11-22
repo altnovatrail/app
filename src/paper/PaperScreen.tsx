@@ -27,7 +27,7 @@ import { Camera } from "./Camera.tsx";
 import { cropsOf, type Photo } from "./capture.ts";
 import { PageTutor } from "./PageTutor.tsx";
 import { type BegunTask, type PaperPage, usePaper } from "./PaperContext.tsx";
-import { Pick } from "./Pick.tsx";
+import { type PageSay, Pick } from "./Pick.tsx";
 import { asked, foundTasks, framesOf, type PageTask, picked } from "./page.ts";
 import { Solve } from "./Solve.tsx";
 import { notBegun } from "./solve.ts";
@@ -230,43 +230,38 @@ export function PaperScreen({
       .finally(() => setStarting(false));
   };
 
-  const lines = (
-    <>
-      {/* While the tasks are found, the top bar's middle says so. */}
-      {finding.status === "found" && page.tasks.length === 0 ? (
-        <p role="status">{words.text("paper.none-found")}</p>
-      ) : finding.status === "outcome" ? (
-        <p role="status">
-          {outcomeText(finding.outcome, words)}
-          {closesAI(finding.outcome) || page.tasks.length > 0
-            ? null
-            : ` ${words.text("paper.none-found")}`}
-        </p>
-      ) : finding.status === "failed" ? (
-        <p role="alert" className="nt-error">
-          {failureText(finding.failure, words)}
-          {shuts(finding.failure) ? null : (
-            <>
-              {" "}
-              <button
-                type="button"
-                className="nt-secondary"
-                onClick={() => find(page.photo, finding.request, page.tasks)}
-              >
-                {words.text("paper.find-again")}
-              </button>
-            </>
-          )}
-        </p>
-      ) : null}
-      {startFailure === undefined ? null : (
-        <p role="alert" className="nt-error">
-          {failureText(startFailure, words)}
-        </p>
-      )}
-      {closed ? <p className="nt-hint">{words.text("paper.no-ai")}</p> : null}
-    </>
-  );
+  const says: PageSay[] = [
+    ...(finding.status === "outcome"
+      ? [
+          {
+            kind: "fail" as const,
+            title: outcomeText(finding.outcome, words),
+            // Found nothing, and AI is still open: the way on is a frame by hand.
+            line:
+              closesAI(finding.outcome) || page.tasks.length > 0
+                ? undefined
+                : words.text("paper.none-found-how"),
+          },
+        ]
+      : finding.status === "failed"
+        ? [
+            {
+              kind: "fail" as const,
+              title: failureText(finding.failure, words),
+              action: shuts(finding.failure)
+                ? undefined
+                : {
+                    label: words.text("paper.find-again"),
+                    onClick: () => find(page.photo, finding.request, page.tasks),
+                  },
+            },
+          ]
+        : []),
+    ...(startFailure === undefined
+      ? []
+      : [{ kind: "fail" as const, title: failureText(startFailure, words) }]),
+    ...(closed ? [{ kind: "warn" as const, title: words.text("paper.no-ai") }] : []),
+  ];
 
   const ask = (request: string) => {
     paper.change(page.photo, (now) => ({
@@ -296,7 +291,8 @@ export function PaperScreen({
             before: undefined,
           }))
         }
-        lines={lines}
+        says={says}
+        none={finding.status === "found"}
         finding={finding.status === "finding"}
         closed={closed}
         starting={starting}

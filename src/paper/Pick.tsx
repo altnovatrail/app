@@ -59,6 +59,65 @@ function at(x: number, y: number): CSSProperties {
 }
 
 /**
+ * What the page to pick from says: a card of its own just above the bar, which keeps its size — a
+ * hint in cool white, a warning in warm white, a failure in a red tint with its way on at its end
+ * (the mockup's `pick-none`, `pick-corner`, `pick-failed`, `pick-outcome` and `pick-closed`).
+ */
+export interface PageSay {
+  readonly kind: "hint" | "warn" | "fail";
+  readonly title: string;
+  readonly line?: string | undefined;
+  readonly action?: { readonly label: string; readonly onClick: () => void } | undefined;
+}
+
+/** The signs of the cards: a loop drawn by hand, two opposite corners of a frame, and "!". */
+const LOOP = "M4 12c0-4 3.6-7 8-7s8 3 8 6.5-3.4 6-7.5 6c-2 0-3.3-.4-4.3-1.1M8.2 16.4 5.5 19.5";
+const CORNERS = "M4 10V4h6M20 14v6h-6";
+const BANG = "M12 7v6M12 17h.01";
+
+function Drawn({ path, bold = false }: { readonly path: string; readonly bold?: boolean }) {
+  return (
+    <svg
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={bold ? 2.8 : 2.2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d={path} />
+    </svg>
+  );
+}
+
+/** A sentence ends with its stop: the title is in bold, and the line, when there is one, after it. */
+function stopped(title: string): string {
+  return /[.!?…]$/.test(title) ? title : `${title}.`;
+}
+
+function Say({ kind, title, line, action, sign }: PageSay & { readonly sign: ReactNode }) {
+  return (
+    <div className="nt-page-say" data-kind={kind} role={kind === "fail" ? "alert" : "status"}>
+      <span className="nt-say-sign" aria-hidden="true">
+        {sign}
+      </span>
+      <p className="nt-say-words">
+        <strong>{stopped(title)}</strong>
+        {line === undefined ? null : ` ${line}`}
+      </p>
+      {action === undefined ? null : (
+        <button type="button" className="nt-say-action" onClick={action.onClick}>
+          {action.label}
+        </button>
+      )}
+    </div>
+  );
+}
+
+/**
  * Where a frame's control stands: on the frame's corner, kept inside the photo by half of the
  * target, so that a frame at the photo's edge never puts its cross or corner past the screen's.
  */
@@ -74,8 +133,10 @@ export interface PickProps {
   readonly onTasks: (update: (tasks: readonly PageTask[]) => readonly PageTask[]) => void;
   /** The keys of the tasks begun on the page, their frames on it or gone: a frame drawn takes none. */
   readonly begun?: readonly string[] | undefined;
-  /** The line under the top bar's: finding, none found, or what finding or Start came to. */
-  readonly lines?: ReactNode;
+  /** What finding or Start came to, and whether Start is shut, each a card above the bar. */
+  readonly says?: readonly PageSay[];
+  /** The finding found no task: with none framed, a card above the bar says to draw round each. */
+  readonly none?: boolean;
   /** The tasks are being found: the frames wait. */
   readonly finding: boolean;
   /** Start is shut: AI is closed to the learner, and a task from paper can't be checked. */
@@ -94,7 +155,8 @@ export function Pick({
   tasks,
   onTasks,
   begun,
-  lines,
+  says = [],
+  none = false,
   finding,
   closed,
   starting,
@@ -239,10 +301,6 @@ export function Pick({
         ),
       }}
     >
-      <div className="nt-page-lines">
-        {lines}
-        {corner === undefined ? null : <p role="status">{words.text("paper.corner")}</p>}
-      </div>
       <div className="nt-page-stage">
         <div
           ref={surface}
@@ -350,18 +408,30 @@ export function Pick({
         <Icon value="state-locked" />
         {words.text("paper.note")}
       </p>
-      <div className="nt-page-bar nt-glass" {...besideIt}>
+      <div className="nt-page-says" {...besideIt}>
+        {says.map((say) => (
+          <Say key={`${say.kind}-${say.title}`} {...say} sign={<Drawn path={BANG} bold />} />
+        ))}
         {over === undefined ? null : (
-          <div className="nt-page-limit" role="status">
-            <span className="nt-limit-ring" aria-hidden="true">
-              {MAX_TASKS}
-            </span>
-            <p className="nt-limit-words">
-              <strong>{words.text(`paper.${over}`, { max: MAX_TASKS })}.</strong>{" "}
-              {words.text(`paper.${over}-how`)}
-            </p>
-          </div>
+          <Say
+            kind="warn"
+            title={words.text(`paper.${over}`, { max: MAX_TASKS })}
+            line={words.text(`paper.${over}-how`)}
+            sign={MAX_TASKS}
+          />
         )}
+        {corner !== undefined ? (
+          <Say kind="hint" title={words.text("paper.corner")} sign={<Drawn path={CORNERS} />} />
+        ) : none && tasks.length === 0 ? (
+          <Say
+            kind="hint"
+            title={words.text("paper.none-found")}
+            line={words.text("paper.none-found-how")}
+            sign={<Drawn path={LOOP} />}
+          />
+        ) : null}
+      </div>
+      <div className="nt-page-bar nt-glass" {...besideIt}>
         <div className="nt-page-row">
           <button
             type="button"

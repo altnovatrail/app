@@ -1186,7 +1186,8 @@ export const en = {
   /** While FindTasks is under way. */
   "paper.finding": "Finding the tasks on the page…",
   /** FindTasks gave no frames: the learner draws them. */
-  "paper.none-found": "No tasks were found. Draw round each task you want to solve",
+  "paper.none-found": "No tasks were found",
+  "paper.none-found-how": "Draw round each task you want to solve",
   "paper.find-again": "Find the tasks again",
   /**
    * At the head of the bar: FindTasks gave the most tasks one page begins, {max}, and the page may
