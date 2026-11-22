@@ -1,5 +1,5 @@
-// The screen of an essay in the browser, with the canvas element itself (R53): the reminder to
-// write no names before each submission, SubmitEssay with the crop and one key for a check and its
+// The screen of an essay in the browser, with the canvas element itself (R53): no reminder of names
+// before a submission, SubmitEssay with the crop and one key for a check and its
 // repeat, each way a submission ends, what was read and the feedback while the attempt is open, the
 // context of each submission kept with the attempt and put on the server, Done once it was sent,
 // the work off the device at the end, an attempt api closed meanwhile, and "Report a problem" at the
@@ -395,7 +395,7 @@ describe("the screen of an essay", () => {
     expect(puts).toHaveLength(1);
   });
 
-  it("goes back to My subjects before the essay is finished (R57)", async () => {
+  it("goes back to Home before the essay is finished (R57)", async () => {
     window.location.hash = "#/task";
     await renderEssay({ history: WRITTEN });
     await vi.waitFor(() => expect(check()).toHaveAttribute("aria-disabled", "false"));

@@ -1863,8 +1863,8 @@ button.nt-row > svg {
 /*
  * The home screen, Home, as the mockup's `home` (R62): the line under its heading; at the
  * top a card of what comes next, its heading the mockup's "Next up" with its dot, the tutor time at
- * its foot, and beside it from 600 "A task from my paper", shown and not open; each module a card
- * of the mockup's, its tile, its title and the bar of its skills, 22 round; the legend of the marks
+ * its foot, and beside it from 600 "Tasks from my paper"; each module a card of the mockup's, its
+ * tile, its title, its kind, its counts and the squares of its skills, 22 round; the legend of the marks
  * below them from 600, and on a phone a button that opens it as a sheet.
  */
 .nt-home-sub {

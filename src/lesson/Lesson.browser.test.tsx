@@ -894,7 +894,7 @@ describe("the lesson player", () => {
     await screen.findByText("A fence has posts and gaps between them.");
   });
 
-  it("goes back to My subjects from a run that did not come (R57)", async () => {
+  it("goes back to Home from a run that did not come (R57)", async () => {
     window.location.hash = "#/lesson";
     await renderLesson({
       run: () => {

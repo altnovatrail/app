@@ -114,7 +114,7 @@ export const TABLE: Readonly<Record<string, Value>> = {
   // the microphone, off until voice comes; each without its caption (R90 spec).
   send: { base: "arrow-upward", filled: false, mirrored: false },
   microphone: { base: "mic", filled: false, mirrored: false },
-  // The side menu of Home, Subjects and the skill map, and the phone's tab bar (R148 spec): Home,
+  // The row of places of Home, Subjects and the skill map, and the phone's tab bar (R148 spec): Home,
   // four squares, filled while it is the place; Subjects, a book; the cognitive map, a hub, shut;
   // For grown-ups, a padlock. Help is the bar's. At the top right the notifications, a bell; in
   // For grown-ups This device and the section's other settings; on Subjects a module's skill map,

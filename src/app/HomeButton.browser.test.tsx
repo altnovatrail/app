@@ -12,7 +12,7 @@ afterEach(() => {
   window.location.hash = "";
 });
 
-describe("the way back to My subjects", () => {
+describe("the way back to Home", () => {
   it("goes home", async () => {
     window.location.hash = "#/skill-map";
     render(inLanguage(<HomeWay />));

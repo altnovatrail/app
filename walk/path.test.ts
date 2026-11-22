@@ -464,7 +464,7 @@ describe.each(NAMED)("the path in %s", (name) => {
       console.error(`walk: at ${walk.page.url()}`);
     });
 
-  it("signs in by the development token and comes to My subjects, with the tutor's time today", async () => {
+  it("signs in by the development token and comes to Home, with the tutor's time today", async () => {
     shoot();
     const { page } = walk;
     await page.goto(`${ORIGIN}/`);
@@ -557,11 +557,11 @@ describe.each(NAMED)("the path in %s", (name) => {
         if (page.url().endsWith("#/lesson")) break;
         await showSolution(page);
         note("What's next gave a task, ended by its solution");
-        await page.getByRole("button", { name: "Back to My subjects" }).click();
+        await page.getByRole("button", { name: "Back to Home" }).click();
         await home(page);
       }
     }
-    // The lesson's heading once its segment is shown: until then the heading may be My subjects'.
+    // The lesson's heading once its segment is shown: until then the heading may be Home's.
     await segment(page).waitFor();
     lessonTitle = (await page.getByRole("heading", { level: 1 }).textContent()) ?? "";
     expect(lessonTitle).not.toBe("");
@@ -621,7 +621,7 @@ describe.each(NAMED)("the path in %s", (name) => {
       await onward.click();
       await expect.poll(() => place(page)).not.toBe(now);
     }
-    await page.getByRole("button", { name: "Back to My subjects" }).click();
+    await page.getByRole("button", { name: "Back to Home" }).click();
     await home(page);
   });
 
@@ -687,7 +687,7 @@ describe.each(NAMED)("the path in %s", (name) => {
     await chooseDev(page);
     await page.getByRole("heading", { level: 1, name: "Task" }).waitFor();
     await expect.poll(() => strokes(page)).toBe(8);
-    // From My subjects, the same task by Continue the task.
+    // From Home, the same task by Continue the task.
     await page.goto(`${ORIGIN}/#/home`);
     await home(page);
     await page.getByRole("heading", { name: "There is a task in progress" }).waitFor();

@@ -90,7 +90,7 @@ describe("the profile's menu", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 
-  it("beside the side menu holds the switch and Sign out, the section being the side menu's", async () => {
+  it("beside the row of places holds the switch and Sign out, the section being Grown-ups'", async () => {
     const learner = chosen();
     render(
       inLanguage(

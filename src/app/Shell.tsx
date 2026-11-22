@@ -68,6 +68,28 @@ function PlaceLink({
 }
 
 /**
+ * The cognitive map, shut until it comes: in the order of the keyboard still, so that its "Soon" is
+ * read, and named at every width by a tooltip of why it waits (R90 spec).
+ */
+function ShutPlace() {
+  const { words } = useLanguage();
+  const tooltip = useTooltip<HTMLButtonElement>(words.text("nav.cognitive-later"));
+  return tooltip.wrap(
+    <button
+      ref={tooltip.host}
+      type="button"
+      className="nt-nav-item"
+      aria-disabled="true"
+      onFocus={tooltip.onFocus}
+      onBlur={tooltip.onBlur}
+    >
+      <NavCaption icon="nav-cognitive" text={words.text("nav.cognitive")} />{" "}
+      <span className="nt-soon">{words.text("nav.soon")}</span>
+    </button>,
+  );
+}
+
+/**
  * For grown-ups (R76): whose settings it holds, the profile's hint mode, This device and the
  * section's other pages; Sign out is the profile's menu's alone (R63). A child's profile, which
  * this build has not, would open it behind the PIN (epic E4).
@@ -203,7 +225,6 @@ export function HomeTutor() {
 /** The row of places, or the phone's tab bar, and the top right, for the place shown. */
 export function ShellBar({ place }: { readonly place: Place }) {
   const { words } = useLanguage();
-  const later = words.text("nav.cognitive-later");
   return (
     <div className="nt-shell-bar">
       <nav className="nt-nav" aria-label={words.text("nav.title")}>
@@ -219,11 +240,7 @@ export function ShellBar({ place }: { readonly place: Place }) {
           text={words.text("nav.subjects")}
           current={place === "subjects"}
         />
-        {/* Shut until it comes: in the order of the keyboard still, so that its "Soon" is read. */}
-        <button type="button" className="nt-nav-item" aria-disabled="true" title={later}>
-          <NavCaption icon="nav-cognitive" text={words.text("nav.cognitive")} />{" "}
-          <span className="nt-soon">{words.text("nav.soon")}</span>
-        </button>
+        <ShutPlace />
         <span className="nt-nav-rule" />
         <GrownUps />
         <AdultHelp />

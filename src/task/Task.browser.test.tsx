@@ -954,7 +954,7 @@ describe("the task screen", () => {
     window.location.hash = "";
   });
 
-  it("goes back to My subjects during the attempt, from above the task (R57)", async () => {
+  it("goes back to Home during the attempt, from above the task (R57)", async () => {
     window.location.hash = "#/task";
     await renderTask({ mode: Mode.SELF });
     await screen.findByRole("button", { name: "Choose an answer" });
@@ -1025,7 +1025,7 @@ describe("the task screen", () => {
     ]);
   });
 
-  it("goes back to My subjects from the result, and to the steps from on my own", async () => {
+  it("goes back to Home from the result, and to the steps from on my own", async () => {
     window.location.hash = "#/task";
     await renderTask();
     await screen.findByRole("heading", { name: "Understand the task", level: 2 });

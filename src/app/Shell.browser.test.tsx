@@ -107,7 +107,15 @@ describe("the frame of Home", () => {
     await userEvent.unhover(subjects);
     await expect.poll(() => document.querySelector(".nt-tooltip")).toBeNull();
 
+    // The cognitive map, shut, at every width; Escape dismisses its tooltip, the pointer on it.
     await page.viewport(1300, 768);
+    const shut = screen.getByRole("button", { name: "Cognitive map Soon" });
+    await userEvent.hover(shut);
+    await new Promise((done) => setTimeout(done, TIP_DELAY_MS + 100));
+    expect(document.querySelector(".nt-tooltip")?.textContent).toBe("Cognitive map — comes later");
+    await userEvent.keyboard("{Escape}");
+    await expect.poll(() => document.querySelector(".nt-tooltip")).toBeNull();
+    await userEvent.unhover(shut);
     await userEvent.hover(screen.getByRole("button", { name: "Grown-ups" }));
     await new Promise((done) => setTimeout(done, TIP_DELAY_MS + 100));
     expect(document.querySelector(".nt-tooltip")).toBeNull();
