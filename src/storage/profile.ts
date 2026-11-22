@@ -7,7 +7,8 @@
 // saved on this device. Each attempt holds the mark of its work on the server: how long a history
 // and how many submissions the last `PutWork` that went through carried (R16, R30). The pages from
 // paper are the profile's history, apart from its attempts: neither an attempt's end nor the 30
-// days take them, the profile's erasure does (R77).
+// days take them; a page kept beyond the MAX_PAGES newest takes the oldest, and the profile's
+// erasure takes them all (R77; R162 spec).
 import type {
   CellPlace,
   DemoState,
@@ -179,9 +180,21 @@ export interface PageSummary {
   readonly tasks: number;
 }
 
+/** The most pages from paper a profile keeps on the device: a new one past them takes the oldest. */
+export const MAX_PAGES = 5;
+
 const PAGES = "pages";
 const PHOTOS = "photos";
 const PAPER_TASKS = "paperTasks";
+
+/** A page goes: its record, its photo and the tasks begun on it. */
+async function erasePage(tx: Transaction, pageId: string): Promise<void> {
+  const range = { lower: pageId, upper: pageId };
+  for (const key of await tx.keys(PAPER_TASKS, { index: "page", range }))
+    await tx.delete(PAPER_TASKS, key);
+  await tx.delete(PHOTOS, pageId);
+  await tx.delete(PAGES, pageId);
+}
 
 /** A page's record as this build writes it; anything else is none. */
 function pageOf(kept: unknown): KeptPage | undefined {
@@ -720,7 +733,8 @@ export class Profile {
   /**
    * A page from paper and the tasks Start began on it now (R77): the page with its frames as they
    * are, its photo the first time, and each task with its crop, after those begun on it before. A
-   * task begun anew, its frame resized, takes the place of its earlier attempt.
+   * task begun anew, its frame resized, takes the place of its earlier attempt. A new page past
+   * MAX_PAGES takes the oldest with its photo and its tasks, never the page kept now.
    */
   async keepPage(
     page: KeptPage,
@@ -759,6 +773,12 @@ export class Profile {
               crop: crops[i],
             });
           }
+          // The oldest first: each past the MAX_PAGES - 1 newest beside this one goes.
+          const others = (await tx.keys(PAGES, { index: "takenAt" })).filter(
+            (key) => key !== pageId,
+          );
+          for (const key of others.slice(0, Math.max(0, others.length - (MAX_PAGES - 1))))
+            await erasePage(tx, key as string);
           return "saved";
         },
       );

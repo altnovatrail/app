@@ -1266,8 +1266,12 @@ export const en = {
   "paper.pages-none": "No pages yet",
   /** A page that would not open: the device keeps it no more. */
   "paper.page-gone": "This page isn't on this device any more",
-  /** Under the list: where the pages live and until when (R77). */
-  "paper.pages-kept": "Kept on this device until the profile is deleted, and in its export.",
+  /** Under the list: how many pages live, where and until when (R77). */
+  "paper.pages-kept": plural({
+    one: "The latest {count} page is kept on this device until the profile is deleted, and is in its export.",
+    other:
+      "The latest {count} pages are kept on this device until the profile is deleted, and are in its export.",
+  }),
   /** Check pressed with nothing written, on the sheet or on the task. */
   "paper.write-first": "Write your solution first",
   "paper.write-first-line": "Write it with the pen on the sheet or on the task, then Check.",
