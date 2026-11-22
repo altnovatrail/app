@@ -26,20 +26,6 @@ describe("hang", () => {
     expect(hang(button(16, 700), 270, 140, VIEW, false, 6)).toMatchObject({ top: 700 - 6 - 140 });
   });
 
-  it("hangs beside the button, its foot at the window's margin, growing from the bottom left, when asked", () => {
-    expect(hang(button(22, 700), 340, 260, VIEW, false, 18, true)).toEqual({
-      left: 66 + 18,
-      top: 834 - MARGIN - 260,
-      origin: "bottom left",
-    });
-    // Taller than the window: inside the margin at its top, and inside it at the right too.
-    expect(hang(button(1100, 100), 340, 900, VIEW, false, 18, true)).toEqual({
-      left: 1194 - MARGIN - 340,
-      top: MARGIN,
-      origin: "bottom left",
-    });
-  });
-
   it("hangs centred below the button's middle, growing from the middle of its top, when asked", () => {
     expect(hang(button(500, 300), 300, 200, VIEW, true)).toEqual({
       left: 522 - 150,

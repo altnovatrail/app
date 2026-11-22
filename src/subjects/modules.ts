@@ -8,7 +8,7 @@
 // card back, and one that cannot be had marks nothing. No DOM.
 import type * as open from "@altnovatrail/spec/formatv0/open";
 import type { OpenViews } from "../packages/views.ts";
-import type { SkillCounts } from "./states.ts";
+import type { ChainPlace, SkillCounts } from "./states.ts";
 
 export interface ModuleCard {
   readonly moduleId: string;
@@ -24,6 +24,8 @@ export interface ModuleCard {
   readonly sequential?: true;
   /** How many of its skills have each state and mark, once its map has come (R62). */
   readonly skills?: SkillCounts;
+  /** Where the learner stands in its chain of skills, once its map has come: a chain's alone (R06). */
+  readonly chain?: ChainPlace;
 }
 
 /** A module as the catalog or the list of connected modules gives it. */

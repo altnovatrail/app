@@ -15,9 +15,6 @@ import { isPageText, type PageText } from "../legal/texts.ts";
 import { NavCaption } from "./NavCaption.tsx";
 import { PopOver } from "./PopOver.tsx";
 
-/** Between a place at the side menu's foot and the pop-over beside it: 12 beyond the menu's edge. */
-export const BESIDE_MENU = 18;
-
 /** The pages Help leads to, in the mockup's order, each by the words of its name. */
 const PAGES = [
   ["privacy-policy", "legal.privacy-policy"],
@@ -38,9 +35,7 @@ export function AdultHelp() {
       <PopOver
         label={title}
         className="nt-nav-item"
-        popClassName="nt-pop-help nt-pop-beside"
-        beside
-        gap={BESIDE_MENU}
+        popClassName="nt-pop-help"
         caption={<NavCaption icon="help" text={title} />}
       >
         {(close) => (

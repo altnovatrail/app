@@ -1,16 +1,16 @@
 // The frame of Home, Subjects and the skill map, as the mockup's `home` (R148 spec; R79): from 600
-// CSS px the side menu at the left — the mark, the places Home and Subjects, the cognitive map shut
-// with "Soon" until it comes, and at its foot For grown-ups and Help —, on a phone the same five as a
-// tab bar at the bottom and the mark at the top left; and at the top right the tutor, the
-// notifications and the profile's menu at the edge. A place is a link of the hash, the page shown
-// marked as current; For grown-ups and Help are pop-overs, hung beside the menu.
+// CSS px a row at the top — at its left a pill of the places, Home and Subjects, the cognitive map
+// shut with "Soon" until it comes, and after a rule For grown-ups and Help; at its right a pill of
+// the tutor, the notifications and the profile's menu —, on a phone the five places as a tab bar at
+// the bottom and the mark at the top left. A place is a link of the hash, the page shown marked as
+// current; For grown-ups and Help are pop-overs, hung below their places.
 import { useLearner } from "../account/AccountGate.tsx";
 import { DEVICE_PAGE } from "../adults/AdultSection.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { usePaper } from "../paper/PaperContext.tsx";
 import { useAttempt } from "../task/AttemptContext.tsx";
 import { Spark } from "./Brand.tsx";
-import { AdultHelp, BESIDE_MENU } from "./Help.tsx";
+import { AdultHelp } from "./Help.tsx";
 import { HintModeChoice } from "./HintModeChoice.tsx";
 import { BELOW_BAR } from "./hang.ts";
 import { formatHash } from "./hash.ts";
@@ -77,8 +77,6 @@ export function GrownUps() {
       label={title}
       className="nt-nav-item"
       popClassName="nt-pop-menu nt-pop-grown"
-      beside
-      gap={BESIDE_MENU}
       caption={<NavCaption icon="nav-grown" text={words.text("nav.grown")} />}
     >
       {(close) => (
@@ -159,7 +157,7 @@ export function HomeTutor() {
     <PopOver
       icon="tutor"
       label={title}
-      className="nt-tutor-button nt-home-tutor"
+      className="nt-top-round"
       popClassName="nt-pop-tutor"
       gap={BELOW_BAR}
     >
@@ -209,9 +207,8 @@ export function ShellBar({ place }: { readonly place: Place }) {
   const { words } = useLanguage();
   const later = words.text("nav.cognitive-later");
   return (
-    <>
+    <div className="nt-shell-bar">
       <nav className="nt-nav" aria-label={words.text("nav.title")}>
-        <Mark className="nt-mark nt-nav-mark" />
         <PlaceLink
           route={HOME}
           icon="nav-home"
@@ -229,16 +226,18 @@ export function ShellBar({ place }: { readonly place: Place }) {
           <NavCaption icon="nav-cognitive" text={words.text("nav.cognitive")} />
           <span className="nt-soon">{words.text("nav.soon")}</span>
         </button>
-        <span className="nt-nav-gap" />
+        <span className="nt-nav-rule" />
         <GrownUps />
         <AdultHelp />
       </nav>
       <header className="nt-shell-top">
         <Mark className="nt-mark nt-top-mark" />
-        <HomeTutor />
-        <Bell />
-        <LearnerMenu short />
+        <div className="nt-top-pills">
+          <HomeTutor />
+          <Bell />
+          <LearnerMenu short />
+        </div>
       </header>
-    </>
+    </div>
   );
 }

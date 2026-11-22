@@ -9,12 +9,12 @@ import type { Language } from "../i18n/language.ts";
 import type { ModuleCard } from "./modules.ts";
 
 /** Whether a language tag is the screen's language, by its primary subtag. */
-function isScreenLanguage(tag: string, language: Language): boolean {
+export function isScreenLanguage(tag: string, language: Language): boolean {
   return tag.split("-")[0]?.toLowerCase() === language;
 }
 
 /** A language's name in the screen's language; a tag Intl cannot read stands for itself. */
-function nameOf(tag: string, language: Language): string {
+export function nameOf(tag: string, language: Language): string {
   try {
     return languageName(language, tag);
   } catch {

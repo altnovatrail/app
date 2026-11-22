@@ -127,6 +127,11 @@ export const TABLE: Readonly<Record<string, Value>> = {
   device: { base: "tablet-android", filled: false, mirrored: false },
   settings: { base: "settings", filled: false, mirrored: false },
   "skill-map": { base: "account-tree", filled: false, mirrored: false },
+  // A module's card on Home (R79): Continue, the engine that chooses, and the next skill.
+  play: { base: "play-arrow", filled: false, mirrored: true },
+  engine: { base: "autorenew", filled: false, mirrored: false },
+  "next-skill": { base: "arrow-forward", filled: false, mirrored: true },
+  chain: { base: "keyboard-double-arrow-right", filled: false, mirrored: true },
 };
 
 /** An icon as the app draws it: its view box, and the paths it fills in the text's colour. */

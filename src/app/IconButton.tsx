@@ -46,6 +46,8 @@ export const CAPTIONLESS = {
   "resize-frame": { icon: "resize", word: "icon.resize-frame" },
   // At the top right of Home, Subjects and the skill map (R79): the notifications, a bell.
   notifications: { icon: "notifications", word: "bell.title" },
+  // On a module's card on Home (R79): its skill map, described by the module's title.
+  "skill-map": { icon: "skill-map", word: "skillmap.title" },
 } as const satisfies Record<string, { icon: IconValue | undefined; word: Key }>;
 
 /** A button of the closed list. */

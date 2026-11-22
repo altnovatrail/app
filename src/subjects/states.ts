@@ -66,3 +66,40 @@ export function segmentsOf(counts: SkillCounts): Segment[] {
     percent: (counts[state] / all) * 100,
   }));
 }
+
+/**
+ * Where the learner stands in a module whose skills go in a chain (R06): the skill to work on —
+ * the first not mastered in the order of the tiers — by its place from 1 and its title, the one
+ * after it, and how many are mastered of all; past the last, no skill to work on.
+ */
+export interface ChainPlace {
+  readonly step: number;
+  readonly total: number;
+  readonly mastered: number;
+  readonly current?: string;
+  readonly next?: string;
+}
+
+/** The place in a chain, by the graph's titles, the skills' statuses and the tiers of the graph. */
+export function chainPlace(
+  graph: open.SkillGraph,
+  statuses: ReadonlyMap<string, SkillStatus>,
+  tiers: Readonly<Record<string, number>>,
+): ChainPlace {
+  const order = [...statuses.keys()].sort(
+    (a, b) => (tiers[a] ?? Number.MAX_SAFE_INTEGER) - (tiers[b] ?? Number.MAX_SAFE_INTEGER),
+  );
+  const at = order.findIndex((id) => statuses.get(id) !== "mastered");
+  const mastered = order.filter((id) => statuses.get(id) === "mastered").length;
+  const title = (id: string | undefined) =>
+    id === undefined ? undefined : graph.skills[id]?.title;
+  const current = title(order[at]);
+  const next = at === -1 ? undefined : title(order[at + 1]);
+  return {
+    step: at === -1 ? order.length : at + 1,
+    total: order.length,
+    mastered,
+    ...(current === undefined ? {} : { current }),
+    ...(next === undefined ? {} : { next }),
+  };
+}

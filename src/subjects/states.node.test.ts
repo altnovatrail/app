@@ -4,7 +4,14 @@
 import { GetSkillMapResponseSchema } from "@altnovatrail/contracts/novatrail/api/v1/progress_pb.js";
 import { create } from "@bufbuild/protobuf";
 import { describe, expect, it } from "vitest";
-import { countsOf, judged, type SkillStatus, segmentsOf, skillCounts } from "./states.ts";
+import {
+  chainPlace,
+  countsOf,
+  judged,
+  type SkillStatus,
+  segmentsOf,
+  skillCounts,
+} from "./states.ts";
 
 describe("the states of a module's skills", () => {
   it("counts each state and mark, and leaves out one the build does not know", () => {
@@ -55,5 +62,39 @@ describe("the states of a module's skills", () => {
     expect(counts["ready-to-start"]).toBe(1);
     expect(counts.locked).toBe(1);
     expect(counts["not-assessed"]).toBe(1);
+  });
+});
+
+describe("the place in a chain", () => {
+  const graph = {
+    skills: {
+      a: { title: "A", assessability: "verdict" },
+      b: { title: "B", assessability: "verdict" },
+      c: { title: "C", assessability: "verdict" },
+    },
+  } as unknown as Parameters<typeof chainPlace>[0];
+  const tiers = { a: 0, b: 1, c: 2 };
+
+  it("is the first skill not mastered by the tiers, with the one after it", () => {
+    expect(
+      chainPlace(
+        graph,
+        new Map<string, SkillStatus>([
+          ["c", "locked"],
+          ["b", "in-progress"],
+          ["a", "mastered"],
+        ]),
+        tiers,
+      ),
+    ).toEqual({ step: 2, total: 3, mastered: 1, current: "B", next: "C" });
+  });
+
+  it("has no skill to work on past the last", () => {
+    const all = new Map<string, SkillStatus>([
+      ["a", "mastered"],
+      ["b", "mastered"],
+      ["c", "mastered"],
+    ]);
+    expect(chainPlace(graph, all, tiers)).toEqual({ step: 3, total: 3, mastered: 3 });
   });
 });

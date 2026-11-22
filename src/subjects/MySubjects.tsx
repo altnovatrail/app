@@ -1,7 +1,8 @@
 // Home, "My subjects" (R99 spec; R62, R79): the learner's home, in the frame of the side menu. Under
 // its heading, "Home" — the pseudonym is the profile's menu's —, the learner begins their work:
-// what comes next and the tutor time on a card at the top — an attempt open outside a lesson a press away (R20), and the
-// engine's way, "What's next", or "Something else" beside an attempt open, which it closes (R24) —,
+// what comes next and the tutor time on a card at the top — an attempt open outside a lesson a
+// press away (R20), else the engine's way, "What's next" (R24): no "Something else" beside the
+// attempt, which it would close; a module's Continue or its map goes elsewhere —,
 // with how much of today's tutor time the profile has used, or, once it is used up, when it comes
 // back (the contract's quota; R37); "A task from my paper" beside it, which opens the camera of a
 // new page (R71), and its pages (R77); each lesson run open, by the lesson's title as this device
@@ -16,12 +17,12 @@ import type { QuotaShare } from "@altnovatrail/contracts/novatrail/api/v1/accoun
 import { Action as Actor } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
 import { type ReactNode, useCallback, useEffect, useId, useMemo, useState } from "react";
 import { learnerQuotaText, readQuota } from "../account/quota.ts";
-import { useRequest } from "../api/ApiContext.tsx";
+import { useApi, useRequest } from "../api/ApiContext.tsx";
 import type { Api } from "../api/client.ts";
 import type { Failure } from "../api/failure.ts";
 import { failureText } from "../api/words.ts";
 import { Icon } from "../app/Icon.tsx";
-import { LESSON, navigate, PAPER, SUBJECTS, TASK } from "../app/router.ts";
+import { LESSON, navigate, PAPER, TASK } from "../app/router.ts";
 import { Screen } from "../app/Screen.tsx";
 import { ReadFailed } from "../boot/Screens.tsx";
 import { collator } from "../i18n/intl.ts";
@@ -37,10 +38,10 @@ import { moduleMapRoute } from "../skills/SkillMapScreen.tsx";
 import type { Device } from "../storage/device.ts";
 import { openProfile, type Profile } from "../storage/profile.ts";
 import { useAttempt } from "../task/AttemptContext.tsx";
-import { CardHeading } from "./CardHeading.tsx";
-import { ModuleTile } from "./ModuleTile.tsx";
+import { type OpenTask, openTaskOf } from "../task/openTask.ts";
+import { HomeCard } from "./HomeCard.tsx";
 import { byTitle, type ModuleCard } from "./modules.ts";
-import { Legend, SkillBar } from "./SkillBar.tsx";
+import { Legend } from "./SkillBar.tsx";
 import { useModules } from "./useModules.ts";
 
 /** A lesson run open, as My subjects names it. */
@@ -50,6 +51,8 @@ export interface OpenRun {
   readonly title?: string;
   /** Its module's name, when the title is not kept: its ID while the manifest has not come. */
   readonly module: string;
+  /** Its module's ID, by which a module's card goes on with it. */
+  readonly moduleId?: string;
   /** The module's explanation language, the `lang` of either. */
   readonly language?: string;
 }
@@ -78,39 +81,6 @@ function quotaFill(quota: QuotaShare | undefined): number {
   return Math.min(100, Math.max(0, quota?.profilePercent ?? 0));
 }
 
-/** A module's card on Home: its tile, its title, its skills, and the way to its map. */
-function Card({ card }: { readonly card: ModuleCard }) {
-  const { words } = useLanguage();
-  const id = useId();
-  return (
-    <li className="nt-card nt-module">
-      <article aria-labelledby={id}>
-        <div className="nt-module-head">
-          <ModuleTile moduleId={card.moduleId} title={card.title} />
-          <div>
-            <CardHeading card={card} id={id} />
-          </div>
-        </div>
-        {card.skills === undefined ? null : <SkillBar counts={card.skills} />}
-        {/* A module with a current version has its map; ChooseNext takes no module, so no Continue. */}
-        {card.digest === undefined ? null : (
-          <div className="nt-buttons">
-            <button
-              type="button"
-              className="nt-link nt-icon-text"
-              aria-describedby={id}
-              onClick={() => navigate(moduleMapRoute(card.moduleId))}
-            >
-              <Icon value="skill-map" />
-              {words.text("skillmap.title")}
-            </button>
-          </div>
-        )}
-      </article>
-    </li>
-  );
-}
-
 export interface HomeScreenProps {
   /** The modules connected, as cards; none while they come. */
   readonly connected: readonly ModuleCard[] | undefined;
@@ -120,7 +90,7 @@ export interface HomeScreenProps {
   readonly onRetry?: () => void;
   /** Goes on with the attempt the learner has open; none when there is none. */
   readonly onContinue?: () => void;
-  /** The way to what the engine chooses: "What's next", or "Something else" beside Continue. */
+  /** The way to what the engine chooses, "What's next"; none beside an attempt open. */
   readonly next?: ReactNode;
   /** The learner's lesson runs open, each a press away. */
   readonly runs?: readonly OpenRun[];
@@ -129,6 +99,8 @@ export interface HomeScreenProps {
   readonly quota?: QuotaShare;
   /** "Your pages", the history of pages from paper, beside "Open camera". */
   readonly pages?: ReactNode;
+  /** What the attempt open is, once read; none while it comes, or when it could not be had. */
+  readonly openTask?: OpenTask;
 }
 
 /** The screen itself, from what its container has read. */
@@ -142,6 +114,7 @@ export function HomeScreen({
   next,
   quota,
   pages,
+  openTask,
 }: HomeScreenProps) {
   const { language, words } = useLanguage();
   const paper = usePaper();
@@ -154,12 +127,12 @@ export function HomeScreen({
   const paperId = useId();
   const connectedId = useId();
   const continueId = useId();
-  const lessonsId = useId();
   const compare = useMemo(() => collator(language).compare, [language]);
   const mine = connected === undefined ? undefined : byTitle(connected, compare);
-  const unnamed = mine?.some((card) => card.unnamed === true) === true;
+  const [first, ...later] = runs;
+  const unnamed = connected?.some((card) => card.unnamed === true) === true;
   return (
-    <Screen title={words.text("home.screen")} layout="reference">
+    <Screen title={words.text("home.screen")} layout="reference" unseen>
       {failure === undefined ? null : (
         <p role="alert" className="nt-error">
           {failureText(failure, words)}
@@ -167,41 +140,95 @@ export function HomeScreen({
       )}
       <div className="nt-home-top">
         <section aria-labelledby={nextId} className="nt-next-up">
+          <GridSheet />
           <h2 id={nextId}>{words.text("subjects.next-up")}</h2>
-          {onContinue === undefined ? null : (
-            <section aria-labelledby={continueId} className="nt-continue">
-              <h3 id={continueId}>{words.text("task.continue-title")}</h3>
+          {/* What is next in line: the task open, else the lesson begun, else what the engine
+              will give — it gives no name before its press, ChooseNext being an action —, or that
+              nothing can begin with no subject connected. */}
+          {onContinue !== undefined ? (
+            <>
+              <h3 id={continueId}>
+                <TaskName task={openTask} />
+              </h3>
+              {openTask?.kind === "module" && openTask.statement !== undefined ? (
+                <p
+                  className="nt-next-line nt-next-statement"
+                  {...(openTask.language === undefined ? {} : { lang: openTask.language })}
+                >
+                  {openTask.statement}
+                </p>
+              ) : null}
               <div className="nt-buttons">
-                <button type="button" onClick={onContinue}>
+                <button type="button" aria-describedby={continueId} onClick={onContinue}>
                   {words.text("task.continue")}
                 </button>
               </div>
-            </section>
-          )}
-          {/* One place, whatever is open: the step stays itself while its press closes the attempt. */}
-          {next}
-          {/* At the card's foot, as the mockup has it: how much of today's tutor time is used. */}
-          {spent === undefined ? null : (
-            <p className="nt-quota">
-              <span className="nt-quota-bar" aria-hidden="true">
-                <span style={{ inlineSize: `${quotaFill(quota)}%` }} />
-              </span>
-              {spent}
+            </>
+          ) : first !== undefined ? (
+            <>
+              <h3 id={continueId}>
+                <RunName run={first} />
+              </h3>
+              <div className="nt-buttons">
+                <button
+                  type="button"
+                  aria-describedby={continueId}
+                  onClick={() => onLesson?.(first.lessonRunId)}
+                >
+                  {words.text("lesson.open-continue")}
+                </button>
+              </div>
+            </>
+          ) : (
+            <p className="nt-next-line">
+              {words.text(connected?.length === 0 ? "home.nothing" : "home.engine-picks")}
             </p>
           )}
+          {/* The other lessons begun, a press away each. */}
+          {later.length === 0 ? null : (
+            <p className="nt-next-more">
+              {words.text("home.more-runs")}
+              {later.map((run) => (
+                <button
+                  key={run.lessonRunId}
+                  type="button"
+                  className="nt-link"
+                  onClick={() => onLesson?.(run.lessonRunId)}
+                >
+                  <RunName run={run} />
+                </button>
+              ))}
+            </p>
+          )}
+          {/* At the card's foot: how much of today's tutor time is used, and at its right the way
+              to what the engine chooses, when no attempt is open. */}
+          <div className="nt-next-foot">
+            {spent === undefined ? null : (
+              <p className="nt-quota">
+                <span className="nt-quota-bar" aria-hidden="true">
+                  <span style={{ inlineSize: `${quotaFill(quota)}%` }} />
+                </span>
+                {spent}
+              </p>
+            )}
+            <div className="nt-next-step">{next}</div>
+          </div>
         </section>
-        {/* A new page each time: the camera, and before it the line to keep names out (R71); and
-            beside it the pages of the history (R77). */}
+        {/* A new page each time: the camera, whose screen says to keep names out (R71); and
+            beside it the pages of the history (R77). A sheet with a task marked is drawn at the
+            right from 600, as the mockup's. */}
         <section aria-labelledby={paperId} className="nt-paper">
-          <span className="nt-paper-icon" aria-hidden="true">
+          <PaperSheet />
+          <p className="nt-paper-eyebrow">
             <Icon value="camera" />
-          </span>
+            {words.text("home.camera")}
+          </p>
           <h2 id={paperId}>{words.text("subjects.paper")}</h2>
+          <p className="nt-paper-sub">{words.text("subjects.paper-sub")}</p>
           <div className="nt-paper-acts">
             <button
               type="button"
-              className="nt-paper-open"
-              aria-describedby={`${paperId}-names`}
+              className="nt-icon-text"
               onClick={() => {
                 paper?.clear();
                 navigate(PAPER);
@@ -212,34 +239,8 @@ export function HomeScreen({
             </button>
             {pages}
           </div>
-          <p id={`${paperId}-names`} className="nt-hint">
-            {words.text("paper.names")}
-          </p>
         </section>
       </div>
-      {runs.length === 0 ? null : (
-        <section aria-labelledby={lessonsId} className="nt-continue">
-          <h2 id={lessonsId}>{words.text("lesson.open-title")}</h2>
-          <ul className="nt-cards">
-            {runs.map((run) => (
-              <li key={run.lessonRunId} className="nt-card">
-                <h3 id={`${lessonsId}-${run.lessonRunId}`}>
-                  <RunName run={run} />
-                </h3>
-                <div className="nt-buttons">
-                  <button
-                    type="button"
-                    aria-describedby={`${lessonsId}-${run.lessonRunId}`}
-                    onClick={() => onLesson?.(run.lessonRunId)}
-                  >
-                    {words.text("lesson.open-continue")}
-                  </button>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
       {unnamed && onRetry !== undefined ? (
         <div role="status">
           <p>{words.text("subjects.unnamed")}</p>
@@ -249,29 +250,103 @@ export function HomeScreen({
         </div>
       ) : null}
       <section aria-labelledby={connectedId}>
-        <div className="nt-section-head">
-          <h2 id={connectedId}>{words.text("subjects.title")}</h2>
-          <button
-            type="button"
-            className="nt-link nt-icon-text nt-all-link"
-            onClick={() => navigate(SUBJECTS)}
-          >
-            {words.text("home.all-subjects")}
-            <Icon value="more" />
-          </button>
-        </div>
+        {/* Unseen: the cards say what they are, and Subjects is in the bar; the section keeps its name. */}
+        <h2 id={connectedId} className="nt-hidden-label">
+          {words.text("subjects.title")}
+        </h2>
         {mine === undefined ? null : mine.length === 0 ? (
           <p>{words.text("subjects.none")}</p>
         ) : (
-          <ul className="nt-cards">
+          <ul className="nt-subjects">
             {mine.map((card) => (
-              <Card key={card.moduleId} card={card} />
+              <HomeCard
+                key={card.moduleId}
+                card={card}
+                onContinue={() => {
+                  // The lesson begun of the module, else its map, where a skill is chosen (R107 spec).
+                  const run = runs.find((each) => each.moduleId === card.moduleId);
+                  if (run !== undefined) onLesson?.(run.lessonRunId);
+                  else navigate(moduleMapRoute(card.moduleId));
+                }}
+              />
             ))}
           </ul>
         )}
       </section>
       {mine === undefined || mine.length === 0 ? null : <Legend />}
     </Screen>
+  );
+}
+
+/** A page of a book with a task marked on it: a picture of the card, not read out. */
+function PaperSheet() {
+  return (
+    <span className="nt-paper-sheet" aria-hidden="true">
+      <i />
+      <i />
+      <i />
+      <span className="nt-sheet-task">
+        <i />
+        <i />
+      </span>
+      <i />
+      <i />
+      <i />
+    </span>
+  );
+}
+
+/**
+ * A sheet in squares with a puzzle solved on it, in ink, no words: a row of shapes that repeat, the
+ * square of the one that comes next marked "?", and below it that shape ringed in orange — a
+ * picture of a task, not of the lesson that comes next, so that it says nothing of one it is not.
+ */
+function GridSheet() {
+  return (
+    <span className="nt-grid-sheet" aria-hidden="true">
+      <svg
+        aria-hidden="true"
+        viewBox="0 0 216 104"
+        fill="none"
+        strokeWidth="2.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <g stroke="#1f3a93">
+          <ellipse cx="17" cy="24" rx="11" ry="10.5" transform="rotate(-8 17 24)" />
+          <path d="M40 35.5 52.5 12.5 64.5 35" />
+          <path d="M40 35.5 64.5 35" />
+          <path d="M77 13.5 99.5 12.8 100.2 35.6 77.6 36.2Z" />
+          <ellipse cx="124" cy="24.5" rx="11" ry="10.5" transform="rotate(6 124 24.5)" />
+          <path d="M147 35.5 159.5 12.5 171.5 35.2" />
+          <path d="M147 35.5 171.5 35.2" />
+          <path d="M183 12h26v25h-26z" strokeDasharray="4 3.5" />
+          <path d="M190.5 19.5q5.5-6.5 11 0q2 5-5 7.5v3.5" />
+          <path d="M196.5 33.6v.2" strokeWidth="3" />
+          <path d="M185.8 73.5 207.8 72.8 208.5 94.5 186.4 95.2Z" />
+        </g>
+        <g stroke="#e8590c">
+          <path d="M196 42q-6 7 0 15" />
+          <path d="M191.5 52.5 196 57.5 199.5 51.8" />
+          <ellipse cx="197" cy="84" rx="18" ry="16.5" transform="rotate(-10 197 84)" />
+        </g>
+      </svg>
+    </span>
+  );
+}
+
+/** The name of the task open: of its module, of paper, or that one is open while neither is known. */
+function TaskName({ task }: { readonly task: OpenTask | undefined }) {
+  const { words } = useLanguage();
+  if (task?.kind === "paper") return <>{words.text("task.of-paper")}</>;
+  if (task?.module === undefined) return <>{words.text("task.continue-title")}</>;
+  const [before = "", after = ""] = words.pattern("task.of-module").split("{module}");
+  return (
+    <>
+      {before}
+      <span {...(task.language === undefined ? {} : { lang: task.language })}>{task.module}</span>
+      {after}
+    </>
   );
 }
 
@@ -289,6 +364,7 @@ async function runOf(
     lessonRunId: run.lessonRunId,
     ...(kept === undefined ? {} : { title: kept.view.title }),
     module: manifest?.title ?? moduleOf(run.lesson),
+    moduleId: moduleOf(run.lesson),
     ...(manifest === undefined ? {} : { language: manifest.languages.explanation }),
   };
 }
@@ -324,6 +400,23 @@ export function MySubjects({
     };
   }, [views, device, profileId, refs]);
   const modules = useModules(profileId, false);
+  // What the attempt open is: a name that did not come leaves the line that one is open.
+  const api = useApi();
+  const [openTask, setOpenTask] = useState<OpenTask | undefined>(undefined);
+  useEffect(() => {
+    setOpenTask(undefined);
+    if (open === undefined) return;
+    let current = true;
+    openTaskOf(api, views, profileId, open).then(
+      (task) => {
+        if (current) setOpenTask(task);
+      },
+      () => {},
+    );
+    return () => {
+      current = false;
+    };
+  }, [api, views, profileId, open]);
 
   // The share of the quota, by the learner's action: the profile's alone. It holds nothing back:
   // a share that did not come is no line, nor is one from an api that has none yet (R27), and the
@@ -345,7 +438,18 @@ export function MySubjects({
       {...(share.status === "done" && share.value !== undefined ? { quota: share.value } : {})}
       onRetry={retry}
       {...(open === undefined ? {} : { onContinue: () => navigate(TASK) })}
-      next={<NextStep profileId={profileId} {...(device === undefined ? {} : { device })} />}
+      {...(openTask === undefined ? {} : { openTask })}
+      {...(open !== undefined
+        ? {}
+        : {
+            next: (
+              <NextStep
+                profileId={profileId}
+                secondary={runs.length > 0}
+                {...(device === undefined ? {} : { device })}
+              />
+            ),
+          })}
       {...(device === undefined
         ? {}
         : { pages: <YourPages profileId={profileId} device={device} /> })}

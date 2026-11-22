@@ -412,9 +412,8 @@ export const en = {
   "nav.soon": "Soon",
   "nav.cognitive-later": "Cognitive map — comes later",
   "nav.grown": "Grown-ups",
-  /** Home: its title and heading, no pseudonym — the profile's menu has it —, and the way to Subjects. */
+  /** Home: its title and heading, no pseudonym — the profile's menu has it. */
   "home.screen": "Home",
-  "home.all-subjects": "All subjects",
   /**
    * Subjects, the catalog of the server: its heading and line, the connected modules by their
    * count, the others, and a connected module's mark.
@@ -443,6 +442,36 @@ export const en = {
     "Open a lesson or a page from your book, and the tutor helps with the work there",
   /** The heading of the learner's home: the modules connected to the profile (R62). */
   "subjects.title": "My subjects",
+  /** A module's kind on Home: the engine leads, or its skills go in a chain (R06). */
+  "home.adaptive": "Adaptive",
+  "home.sequential": "Sequential",
+  /** A module's card on Home: goes on with it. */
+  "home.continue": "Continue",
+  /** Under an adaptive module: who chooses what comes next, from any module connected. */
+  "home.engine-chooses": "The tutor chooses",
+  "home.engine-what": "The next skill, as the work goes",
+  "home.engine-any": "Any module",
+  /** Under a module whose skills go in a chain: the skill to work on, how much is mastered, the next. */
+  "home.chain-current": "Current skill",
+  "home.chain-done": "Every skill mastered",
+  "home.chain-percent": "{percent}%",
+  "home.chain-next": "Next",
+  /** A module's skills due for review, a chip. */
+  "home.review": plural({
+    one: "{count} skill to review",
+    other: "{count} skills to review",
+  }),
+  /** Above "Tasks from my paper": what the half of the card opens. */
+  "home.camera": "Camera",
+  /** In "Next up", the task open: of its module, not declined, or from paper. */
+  "task.of-module": "A task: {module}",
+  "task.of-paper": "A task from paper",
+  /** In "Next up" with nothing open: the engine names what it gives only once asked. */
+  "home.engine-picks": "The tutor picks the next lesson or task",
+  /** In "Next up" with no module connected. */
+  "home.nothing": "Nothing to begin yet: no subject is connected",
+  /** Before the other lessons begun, each a link. */
+  "home.more-runs": "Also begun:",
   /** The heading of the modules connected to the profile. */
   "subjects.connected": "Connected",
   "subjects.none": "No subjects are connected yet",
@@ -463,9 +492,11 @@ export const en = {
   "subjects.sequential": "In order",
   /** The heading of the card of what comes next: the task in progress, the engine's way, the tutor time. */
   "subjects.next-up": "Next up",
-  /** The second card at the top: "A task from my paper", the tasks of a page of the learner's book (R71). */
-  "subjects.paper": "A task from my paper",
-  /** The button of "A task from my paper": it opens the camera. */
+  /** The second card at the top: "Tasks from my paper", the tasks of a page of the learner's book (R71). */
+  "subjects.paper": "Tasks from my paper",
+  /** Under its heading: what the card does, the mockup's line. */
+  "subjects.paper-sub": "Snap a page from your book, pick the tasks, and solve each one here",
+  /** The button of "Tasks from my paper": it opens the camera. */
   "subjects.paper-open": "Open camera",
   /** On a module's card under its bar: of its skills with a verdict, how many are mastered. */
   "subjects.mastered": "{mastered} of {count} mastered",
@@ -740,8 +771,7 @@ export const en = {
   "lesson.ended-abandoned": "The lesson wasn't opened for 30 days",
   /** A lesson ended for a reason this build has no words for. */
   "lesson.ended": "This lesson is over",
-  /** On My subjects while the learner has a lesson open. */
-  "lesson.open-title": "A lesson in progress",
+  /** In "Next up" while the learner has a lesson open. */
   "lesson.open-continue": "Continue the lesson",
   /** A lesson open whose title is not on this device: its module's name, not declined. */
   "lesson.of-module": "A lesson: {module}",
@@ -1226,7 +1256,7 @@ export const en = {
   "paper.tasks-open": "Tasks, {n} / {total}",
   /** At the list's head: back to the page, to pick more of its tasks. */
   "paper.add": "Add",
-  /** The button on the card "A task from my paper" that opens the profile's pages from paper kept on the device (R77). */
+  /** The button on the card "Tasks from my paper" that opens the profile's pages from paper kept on the device (R77). */
   "paper.pages": "Your pages",
   /** The heading of its pop-over. */
   "paper.pages-title": "Your pages · on this device",
@@ -1236,6 +1266,8 @@ export const en = {
     one: "{count} task",
     other: "{count} tasks",
   }),
+  /** The pop-over while the device keeps no page of the profile. */
+  "paper.pages-none": "No pages yet",
   /** A page that would not open: the device keeps it no more. */
   "paper.page-gone": "This page isn't on this device any more",
   /** Under the list: where the pages live and until when (R77). */

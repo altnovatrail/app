@@ -6,23 +6,36 @@
 // bar; the next lists read — a retry, a connection — ask again for a map that failed, and never
 // again for one that came.
 import { Action } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
+import { skillStates } from "@altnovatrail/skill-map/states";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Api } from "../api/client.ts";
 import type { OpenViews } from "../packages/views.ts";
 import { readModuleMap } from "../skills/map.ts";
-import type { ModuleCard } from "./modules.ts";
-import { type SkillCounts, skillCounts } from "./states.ts";
+import { isSequential, type ModuleCard } from "./modules.ts";
+import { type ChainPlace, chainPlace, countsOf, type SkillCounts } from "./states.ts";
 
-/** The counts of a module's skills, or none when it has no map to count. */
+/** What a card shows of a module's skills: their counts, and the place in a chain's. */
+export interface Counted {
+  readonly counts: SkillCounts;
+  readonly chain?: ChainPlace;
+}
+
+/** The counts of a module's skills and its place in a chain, or none when it has no map to count. */
 export async function countsOfModule(
   api: Api,
   views: OpenViews,
   profileId: string,
   moduleId: string,
   now: () => Date = () => new Date(),
-): Promise<SkillCounts | undefined> {
+): Promise<Counted | undefined> {
   const map = await readModuleMap(api, views, { profileId, moduleId, action: Action.LEARNING });
-  return map.graph === undefined ? undefined : skillCounts(map.graph.view, map.skillMap, now());
+  if (map.graph === undefined) return undefined;
+  const statuses = skillStates(map.graph.view, map.skillMap, now());
+  const tiers = map.graph.skillTiers;
+  return {
+    counts: countsOf(statuses),
+    ...(isSequential(tiers) ? { chain: chainPlace(map.graph.view, statuses, tiers) } : {}),
+  };
 }
 
 /** A card's key: the profile, whose map it is, the module and its version. */
@@ -36,7 +49,7 @@ export function useSkillCounts(
   profileId: string,
   cards: readonly ModuleCard[] | undefined,
 ): readonly ModuleCard[] | undefined {
-  const [counted, setCounted] = useState<ReadonlyMap<string, SkillCounts>>(new Map());
+  const [counted, setCounted] = useState<ReadonlyMap<string, Counted>>(new Map());
   // The keys asked for and not failed: each map is asked once while it is on its way or has come.
   const asked = useRef(new Set<string>());
   const mounted = useRef(true);
@@ -65,8 +78,13 @@ export function useSkillCounts(
   return useMemo(
     () =>
       cards?.map((card) => {
-        const counts = card.digest === undefined ? undefined : counted.get(keyOf(profileId, card));
-        return counts === undefined ? card : { ...card, skills: counts };
+        const got = card.digest === undefined ? undefined : counted.get(keyOf(profileId, card));
+        if (got === undefined) return card;
+        return {
+          ...card,
+          skills: got.counts,
+          ...(got.chain === undefined ? {} : { chain: got.chain }),
+        };
       }),
     [cards, counted, profileId],
   );

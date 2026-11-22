@@ -334,6 +334,30 @@ export const ICONS = {
       "M15 19v-1h-2q-.825 0-1.412-.587T11 16V8H9v1q0 .825-.587 1.413T7 11H4q-.825 0-1.412-.587T2 9V5q0-.825.588-1.412T4 3h3q.825 0 1.413.588T9 5v1h6V5q0-.825.588-1.412T17 3h3q.825 0 1.413.588T22 5v4q0 .825-.587 1.413T20 11h-3q-.825 0-1.412-.587T15 9V8h-2v8h2v-1q0-.825.588-1.412T17 13h3q.825 0 1.413.588T22 15v4q0 .825-.587 1.413T20 21h-3q-.825 0-1.412-.587T15 19M4 5v4zm13 10v4zm0-10v4zm0 4h3V5h-3zm0 10h3v-4h-3zM4 9h3V5H4z",
     ],
   },
+  "play-arrow-outline-rounded": {
+    viewBox: "0 0 24 24",
+    paths: [
+      "M8 17.175V6.825q0-.425.3-.713t.7-.287q.125 0 .263.037t.262.113l8.15 5.175q.225.15.338.375t.112.475t-.112.475t-.338.375l-8.15 5.175q-.125.075-.262.113T9 18.175q-.4 0-.7-.288t-.3-.712m2-1.825L15.25 12L10 8.65z",
+    ],
+  },
+  "autorenew-outline-rounded": {
+    viewBox: "0 0 24 24",
+    paths: [
+      "M6 12.05q0 .4.05.788t.175.762q.125.425-.025.813t-.525.562q-.4.2-.787.038t-.513-.588q-.2-.575-.288-1.175T4 12.05q0-3.35 2.325-5.7T12 4h.175l-.9-.9Q11 2.825 11 2.4t.275-.7t.7-.275t.7.275l2.6 2.6q.3.3.3.7t-.3.7l-2.6 2.6q-.275.275-.7.275t-.7-.275T11 7.6t.275-.7l.9-.9H12Q9.5 6 7.75 7.763T6 12.05m12-.1q0-.4-.05-.787t-.175-.763q-.125-.425.025-.812t.525-.563q.4-.2.787-.037t.513.587q.2.575.288 1.175t.087 1.2q0 3.35-2.325 5.7T12 20h-.175l.9.9q.275.275.275.7t-.275.7t-.7.275t-.7-.275l-2.6-2.6q-.3-.3-.3-.7t.3-.7l2.6-2.6q.275-.275.7-.275t.7.275t.275.7t-.275.7l-.9.9H12q2.5 0 4.25-1.762T18 11.95",
+    ],
+  },
+  "arrow-forward-outline-rounded": {
+    viewBox: "0 0 24 24",
+    paths: [
+      "M16.175 13H5q-.425 0-.712-.288T4 12t.288-.712T5 11h11.175l-4.9-4.9q-.3-.3-.288-.7t.313-.7q.3-.275.7-.288t.7.288l6.6 6.6q.15.15.213.325t.062.375t-.062.375t-.213.325l-6.6 6.6q-.275.275-.687.275T11.3 19.3q-.3-.3-.3-.712t.3-.713z",
+    ],
+  },
+  "keyboard-double-arrow-right-outline-rounded": {
+    viewBox: "0 0 24 24",
+    paths: [
+      "M9.575 12L5.7 8.1q-.275-.275-.288-.687T5.7 6.7q.275-.275.7-.275t.7.275l4.6 4.6q.15.15.213.325t.062.375t-.062.375t-.213.325l-4.6 4.6q-.275.275-.687.288T5.7 17.3q-.275-.275-.275-.7t.275-.7zm6.6 0L12.3 8.1q-.275-.275-.288-.687T12.3 6.7q.275-.275.7-.275t.7.275l4.6 4.6q.15.15.213.325t.062.375t-.062.375t-.213.325l-4.6 4.6q-.275.275-.687.288T12.3 17.3q-.275-.275-.275-.7t.275-.7z",
+    ],
+  },
 } as const;
 
 /** The name of an icon of the app. */
@@ -548,6 +572,26 @@ export const VALUES = {
     outline: "account-tree-outline-rounded",
     filled: "account-tree-outline-rounded",
     mirrored: false,
+  },
+  play: {
+    outline: "play-arrow-outline-rounded",
+    filled: "play-arrow-outline-rounded",
+    mirrored: true,
+  },
+  engine: {
+    outline: "autorenew-outline-rounded",
+    filled: "autorenew-outline-rounded",
+    mirrored: false,
+  },
+  "next-skill": {
+    outline: "arrow-forward-outline-rounded",
+    filled: "arrow-forward-outline-rounded",
+    mirrored: true,
+  },
+  chain: {
+    outline: "keyboard-double-arrow-right-outline-rounded",
+    filled: "keyboard-double-arrow-right-outline-rounded",
+    mirrored: true,
   },
 } as const satisfies Record<string, { outline: IconName; filled: IconName; mirrored: boolean }>;
 

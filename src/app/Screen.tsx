@@ -109,6 +109,8 @@ export interface ScreenProps {
   readonly above?: ReactNode;
   /** What stands beside the heading, in its line: the module of a map. */
   readonly beside?: ReactNode;
+  /** The heading for assistive technology alone, where the frame shows the place: Home. */
+  readonly unseen?: boolean;
 }
 
 export function Screen({
@@ -123,6 +125,7 @@ export function Screen({
   head,
   above,
   beside,
+  unseen = false,
 }: ScreenProps) {
   const { language, words } = useLanguage();
   const heading = useRef<HTMLHeadingElement>(null);
@@ -139,7 +142,12 @@ export function Screen({
   }, []);
 
   const h1 = (
-    <h1 ref={heading} tabIndex={-1} aria-label={bar === undefined ? undefined : title}>
+    <h1
+      ref={heading}
+      tabIndex={-1}
+      aria-label={bar === undefined ? undefined : title}
+      className={unseen ? "nt-hidden-label" : undefined}
+    >
       {shown ?? title}
     </h1>
   );
