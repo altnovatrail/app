@@ -94,6 +94,9 @@ export function PopOver({
   children,
 }: PopOverProps) {
   const [open, setOpen] = useState(false);
+  // Opened by a tap or a click, not by a key: WebKit draws the focus ring on what the pop-over then
+  // focuses, which Chromium and Firefox do not, so the pop-over hides it until a key is pressed.
+  const [tapped, setTapped] = useState(false);
   const own = useRef<HTMLButtonElement>(null);
   const button = buttonRef ?? own;
   const tooltip = useTooltip<HTMLButtonElement>(tip?.words ?? "", {
@@ -189,7 +192,10 @@ export function PopOver({
     "aria-describedby": describedBy,
     "aria-haspopup": "dialog",
     "aria-expanded": open,
-    onClick: () => setOpen((was) => !was),
+    onClick: (event: { readonly detail: number }) => {
+      setTapped(event.detail > 0);
+      setOpen((was) => !was);
+    },
   } as const;
   return (
     <>
@@ -218,6 +224,8 @@ export function PopOver({
           ref={dialog}
           className={`nt-pop nt-glass nt-glass-panel${popClassName === undefined ? "" : ` ${popClassName}`}`}
           aria-label={label}
+          data-tapped={tapped ? "" : undefined}
+          onKeyDown={() => setTapped(false)}
           onCancel={(event) => {
             event.preventDefault();
             close();

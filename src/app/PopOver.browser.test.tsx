@@ -240,3 +240,25 @@ describe("a pop-over that holds", () => {
     expect(closings).toBe(1);
   });
 });
+
+describe("a pop-over's focus ring", () => {
+  const ring = () =>
+    getComputedStyle(page.getByRole("button", { name: "Step by step" }).element()).outlineStyle;
+
+  it("is not drawn on what takes the focus when a tap opens it, and is once a key is pressed", async () => {
+    render(inLanguage(<Choice />));
+    await opened();
+    expect(ring()).toBe("none");
+    await userEvent.keyboard("{Tab}");
+    await userEvent.keyboard("{Shift>}{Tab}{/Shift}");
+    expect(ring()).toBe("solid");
+  });
+
+  it("is drawn when the keyboard opens it", async () => {
+    render(inLanguage(<Choice />));
+    opener().element().focus();
+    await userEvent.keyboard("{Enter}");
+    await expect.element(page.getByRole("dialog", { name: "Solving mode" })).toBeVisible();
+    expect(ring()).toBe("solid");
+  });
+});

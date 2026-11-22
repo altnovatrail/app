@@ -351,7 +351,8 @@ button[aria-pressed="true"] {
  * puts it, 16rem to 27.5rem wide, the panel's glass, radius 20, and grows from its button's corner
  * in 0.2 s. Below 600 it is a sheet from the bottom, the whole width: white — the mockup's 0.98 over
  * the page it dims by 0.22 —, radius 28 above, "Close" at its top right, rising in 0.3 s. Either
- * scrolls inside where it does not fit the window.
+ * scrolls inside where it does not fit the window. Opened by a tap, it draws no focus ring until a key
+ * is pressed.
  */
 dialog.nt-pop {
   box-sizing: border-box;
@@ -367,6 +368,9 @@ dialog.nt-pop {
   padding: 0.75rem;
 }
 .nt-pop-content:focus:not(:focus-visible) {
+  outline: none;
+}
+:where(dialog.nt-pop[data-tapped]) :focus-visible {
   outline: none;
 }
 @media (width >= 600px) {
@@ -5774,6 +5778,9 @@ main.nt-sheet .nt-column .nt-sheet-note > button.nt-link {
 .nt-hint-mode:has(:focus-visible) {
   outline: 0.125rem solid var(--nt-accent);
   outline-offset: 0.125rem;
+}
+:where(dialog.nt-pop[data-tapped]) .nt-hint-mode:has(:focus-visible) {
+  outline: none;
 }
 @media (forced-colors: active) {
   .nt-hint-mode:has(:checked) {
