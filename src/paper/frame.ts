@@ -1,7 +1,8 @@
 // The geometry of a task frame on the photo of a page (R71): a rectangle in whole thousandths of
 // the photo's width and height, as a crop box is written. A frame the learner
-// draws comes of a loop round a task — its box, with a margin — or of two taps, a corner and then
-// the one opposite; its corner resizes it. Each is at least the size of a target on the screen and
+// draws comes of a rectangle dragged from one corner of a task to the opposite — the rectangle the
+// learner sees is the frame — or of two taps, a corner and then the one opposite; its corner
+// resizes it. Each is at least the size of a target on the screen and
 // never past the photo's edge. The sizes on the screen come in CSS px, by the scale the screen
 // draws the photo at. No DOM.
 
@@ -25,9 +26,7 @@ export interface Scale {
   readonly y: number;
 }
 
-/** The margin round a loop's box, in CSS px: the loop drawn tight round a task still holds it. */
-export const MARGIN = 6;
-/** The least frame, in CSS px: a stroke whose box is smaller is a tap, not a loop. */
+/** The least frame, in CSS px: a stroke whose box is smaller is a tap, not a drag. */
 export const MIN_WIDTH = 40;
 export const MIN_HEIGHT = 30;
 
@@ -49,7 +48,7 @@ function rounded(x0: number, y0: number, x1: number, y1: number): Frame {
 }
 
 /**
- * Whether a stroke is a tap: its box smaller than the least frame, across or down. A tap is no loop,
+ * Whether a stroke is a tap: its box smaller than the least frame, across or down. A tap is no drag,
  * and stands for a corner of two taps.
  */
 export function isTap(points: readonly Point[], scale: Scale): boolean {
@@ -60,23 +59,23 @@ export function isTap(points: readonly Point[], scale: Scale): boolean {
   return Math.max(...xs) - Math.min(...xs) < w || Math.max(...ys) - Math.min(...ys) < h;
 }
 
-/**
- * The frame of a loop drawn round a task: its box, with the margin, in the photo; none when the
- * stroke is a tap, or its box with the margin is smaller than the least frame where the photo's
- * edge cuts it.
- */
-export function loopFrame(points: readonly Point[], scale: Scale): Frame | undefined {
-  if (isTap(points, scale)) return undefined;
-  const xs = points.map((p) => p.x);
-  const ys = points.map((p) => p.y);
-  const mx = MARGIN / scale.x;
-  const my = MARGIN / scale.y;
-  const frame = rounded(
-    Math.min(...xs) - mx,
-    Math.min(...ys) - my,
-    Math.max(...xs) + mx,
-    Math.max(...ys) + my,
+/** The rectangle of two opposite corners, in whichever direction, kept in the photo. */
+export function spanned(from: Point, to: Point): Frame {
+  return rounded(
+    Math.min(from.x, to.x),
+    Math.min(from.y, to.y),
+    Math.max(from.x, to.x),
+    Math.max(from.y, to.y),
   );
+}
+
+/**
+ * The frame of a rectangle dragged from one corner to the opposite: the rectangle itself; none when
+ * it is smaller than the least frame, as when the pointer came back near where it was pressed, or
+ * where the photo's edge cuts it.
+ */
+export function dragFrame(from: Point, to: Point, scale: Scale): Frame | undefined {
+  const frame = spanned(from, to);
   const { w, h } = least(scale);
   return frame.xmax - frame.xmin < w || frame.ymax - frame.ymin < h ? undefined : frame;
 }

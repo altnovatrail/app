@@ -393,7 +393,7 @@ function card(text: string) {
 }
 
 function noneCard() {
-  return card("No tasks were found. Draw round each task you want to solve");
+  return card("No tasks were found. Drag a frame round each task you want to solve");
 }
 
 function picks(text: string) {
@@ -929,22 +929,27 @@ it("lifts the tutor's button on a phone over a card of what the page says", asyn
   );
 });
 
-it("frames a task by a loop drawn round it, after a tap, and resizes it by its corner", async () => {
+it("frames a task by a rectangle dragged corner to corner, after a tap, and resizes it by its corner", async () => {
   await renderPaper({ found: () => ({ frames: [] }) });
   await noneCard();
   tap(100, 100);
   await screen.findByText("Now tap the opposite corner of the task.");
+  // Past the corner and back: the frame is where the pointer is lifted, not the farthest it went.
   stroke(drawing(), [
     [200, 200],
     [200.5, 200],
-    [600, 200],
+    [800, 700],
     [600, 500],
-    [200, 500],
-    [200, 210],
   ]);
   const drawn = await screen.findByRole("button", { name: "Deselect your frame, task 1" });
   expect(screen.queryByText("Now tap the opposite corner of the task.")).toBeNull();
-  const width = drawn.getBoundingClientRect().width;
+  const photo = drawing().getBoundingClientRect();
+  const box = drawn.getBoundingClientRect();
+  expect(box.left - photo.left).toBeCloseTo(photo.width * 0.2, 0);
+  expect(box.top - photo.top).toBeCloseTo(photo.height * 0.2, 0);
+  expect(box.width).toBeCloseTo(photo.width * 0.4, 0);
+  expect(box.height).toBeCloseTo(photo.height * 0.3, 0);
+  const width = box.width;
 
   const corner = screen.getByRole("button", { name: "Resize your frame" });
   // Another pointer's moves are not the corner's.
@@ -1023,7 +1028,7 @@ it("says what AI came to when it found nothing, and that no tasks were found", a
   await renderPaper({ found: () => ({ outcome: { cause: Cause.AI_FAILURE } }) });
   // One card in red: what AI came to, and the way on.
   expect(
-    await card("The tutor can't answer right now. Draw round each task you want to solve"),
+    await card("The tutor can't answer right now. Drag a frame round each task you want to solve"),
   ).toBeVisible();
   expect(screen.getByRole("alert")).toHaveClass("nt-page-say");
   expect(document.querySelectorAll(".nt-page-say")).toHaveLength(1);
@@ -1099,7 +1104,7 @@ it("says a page found as many tasks as start at once may hold more, and when too
   expect(picks(`${MAX_TASKS + 1} of ${MAX_TASKS + 1} selected`)).toBeVisible();
 });
 
-it("draws the loop as it goes, and drops it when the pointer is cancelled", async () => {
+it("draws the frame as it is dragged, none for a tap, and drops it when the pointer is cancelled", async () => {
   await renderPaper({ found: () => ({ frames: [] }) });
   await noneCard();
   const surface = drawing();
@@ -1113,9 +1118,21 @@ it("draws the loop as it goes, and drops it when the pointer is cancelled", asyn
     clientY: box.top + (box.height * y) / 1000,
   });
   surface.dispatchEvent(new PointerEvent("pointerdown", at(200, 200)));
-  surface.dispatchEvent(new PointerEvent("pointermove", at(600, 200)));
-  await waitFor(() => expect(document.querySelector(".nt-page-live polyline")).not.toBeNull());
-  surface.dispatchEvent(new PointerEvent("pointercancel", at(600, 200)));
+  // Still the size of a tap: no rectangle yet.
+  surface.dispatchEvent(new PointerEvent("pointermove", at(201, 201)));
+  expect(document.querySelector(".nt-page-live")).toBeNull();
+  surface.dispatchEvent(new PointerEvent("pointermove", at(600, 500)));
+  const live = await waitFor(() => {
+    const found = document.querySelector<HTMLElement>(".nt-page-live");
+    if (found === null) throw new Error("no frame being dragged");
+    return found;
+  });
+  expect(live.style.left).toBe("20%");
+  expect(live.style.width).toBe("40%");
+  // It follows the pointer back.
+  surface.dispatchEvent(new PointerEvent("pointermove", at(400, 400)));
+  await waitFor(() => expect(live.style.width).toBe("20%"));
+  surface.dispatchEvent(new PointerEvent("pointercancel", at(400, 400)));
   await waitFor(() => expect(document.querySelector(".nt-page-live")).toBeNull());
   // A lift after the cancel makes no frame.
   surface.dispatchEvent(new PointerEvent("pointerup", at(600, 500)));

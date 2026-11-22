@@ -1,49 +1,61 @@
-// The geometry of a frame the learner draws (R71): a loop's box with its margin, a tap that is no
-// loop, two taps, the corner that resizes it, the photo's edge, and the crop's rectangle in pixels.
+// The geometry of a frame the learner draws (R71): a rectangle dragged corner to corner, a tap that
+// is no drag, two taps, the corner that resizes it, the photo's edge, and the crop's rectangle in
+// pixels.
 import { describe, expect, it } from "vitest";
 import {
   cropRect,
+  dragFrame,
   isFrame,
   isTap,
-  loopFrame,
-  MARGIN,
   MIN_HEIGHT,
   MIN_WIDTH,
   pageOrder,
   resizedFrame,
   type Scale,
   sameFrame,
+  spanned,
   tapsFrame,
 } from "./frame.ts";
 
 // A photo drawn 500 × 700 CSS px: a thousandth is 0.5 px across and 0.7 px down.
 const scale: Scale = { x: 0.5, y: 0.7 };
 
-describe("a loop", () => {
-  it("is its box with the margin", () => {
-    const loop = [
-      { x: 200, y: 300 },
-      { x: 600, y: 310 },
-      { x: 590, y: 500 },
-      { x: 210, y: 490 },
-    ];
-    expect(loopFrame(loop, scale)).toEqual({
-      xmin: 200 - MARGIN / scale.x,
-      ymin: Math.floor(300 - MARGIN / scale.y),
-      xmax: 600 + MARGIN / scale.x,
-      ymax: Math.ceil(500 + MARGIN / scale.y),
+describe("a drag", () => {
+  it("is the rectangle of its two corners, with no margin, in whichever direction", () => {
+    const frame = { xmin: 200, ymin: 300, xmax: 600, ymax: 500 };
+    expect(dragFrame({ x: 200, y: 300 }, { x: 600, y: 500 }, scale)).toEqual(frame);
+    expect(dragFrame({ x: 600, y: 500 }, { x: 200, y: 300 }, scale)).toEqual(frame);
+    expect(dragFrame({ x: 600, y: 300 }, { x: 200, y: 500 }, scale)).toEqual(frame);
+  });
+
+  it("rounds out to whole thousandths and stays in the photo", () => {
+    expect(spanned({ x: 200.6, y: 300.2 }, { x: 599.4, y: 499.9 })).toEqual({
+      xmin: 200,
+      ymin: 300,
+      xmax: 600,
+      ymax: 500,
+    });
+    expect(dragFrame({ x: -40, y: -3 }, { x: 1200, y: 1001 }, scale)).toEqual({
+      xmin: 0,
+      ymin: 0,
+      xmax: 1000,
+      ymax: 1000,
     });
   });
 
-  it("stays in the photo", () => {
-    const loop = [
-      { x: 1, y: 2 },
-      { x: 999, y: 998 },
-    ];
-    expect(loopFrame(loop, scale)).toEqual({ xmin: 0, ymin: 0, xmax: 1000, ymax: 1000 });
+  it("smaller than the least frame is none: the pointer came back near where it was pressed", () => {
+    const w = MIN_WIDTH / scale.x;
+    const h = MIN_HEIGHT / scale.y;
+    expect(dragFrame({ x: 100, y: 100 }, { x: 100 + w - 1, y: 400 }, scale)).toBeUndefined();
+    expect(dragFrame({ x: 100, y: 100 }, { x: 400, y: 100 + h - 1 }, scale)).toBeUndefined();
+    expect(dragFrame({ x: 100, y: 100 }, { x: 100 + w, y: 100 + h }, scale)).toBeDefined();
+    // Cut by the photo's edge below the least frame.
+    expect(dragFrame({ x: 990, y: 100 }, { x: 1200, y: 400 }, scale)).toBeUndefined();
   });
+});
 
-  it("smaller than the least frame is a tap", () => {
+describe("a tap", () => {
+  it("is a stroke smaller than the least frame", () => {
     const narrow = [
       { x: 100, y: 100 },
       { x: 100 + MIN_WIDTH / scale.x - 1, y: 400 },
@@ -55,8 +67,6 @@ describe("a loop", () => {
     expect(isTap(narrow, scale)).toBe(true);
     expect(isTap(low, scale)).toBe(true);
     expect(isTap([], scale)).toBe(true);
-    expect(loopFrame(narrow, scale)).toBeUndefined();
-    expect(loopFrame(low, scale)).toBeUndefined();
     expect(
       isTap(
         [

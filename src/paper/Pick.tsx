@@ -1,7 +1,8 @@
 // The page photographed, its tasks to pick (R71), as the mockup's pick screen: the photo, each
 // task's frame over it a button that is picked or left out, every one picked at first, and its
-// cross removes it; a task the AI missed the learner frames by hand, by a loop drawn round it with a
-// finger or a pen or by two taps, a corner and then the one opposite, and its corner resizes it.
+// cross removes it; a task the AI missed the learner frames by hand, by a rectangle dragged from one
+// corner of it to the opposite with a finger or a pen, which follows the pointer and looks as the
+// frame it becomes, or by two taps, a corner and then the one opposite, and its corner resizes it.
 // The top bar's pill holds the title alone, and its end "Remove all frames", which clears the
 // photo for frames of the learner's own, and Retake; while the tasks are found, its middle says
 // so, by a turning ring, and a line of light runs down the photo and back; once they are, how many
@@ -18,12 +19,13 @@ import { Screen } from "../app/Screen.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import type { Photo } from "./capture.ts";
 import {
+  dragFrame,
   type Frame,
   isTap,
-  loopFrame,
   type Point,
   resizedFrame,
   type Scale,
+  spanned,
   tapsFrame,
 } from "./frame.ts";
 import {
@@ -39,9 +41,6 @@ import {
   withFrame,
   without,
 } from "./page.ts";
-
-/** A pointer moves at least this many CSS px before the loop takes another point. */
-const STEP_PX = 2;
 
 /** Where a frame stands over the photo, in percent of it. */
 function placed(frame: Frame): CSSProperties {
@@ -70,8 +69,8 @@ export interface PageSay {
   readonly action?: { readonly label: string; readonly onClick: () => void } | undefined;
 }
 
-/** The signs of the cards: a loop drawn by hand, two opposite corners of a frame, and "!". */
-const LOOP = "M4 12c0-4 3.6-7 8-7s8 3 8 6.5-3.4 6-7.5 6c-2 0-3.3-.4-4.3-1.1M8.2 16.4 5.5 19.5";
+/** The signs of the cards: a frame dragged from its corner, two opposite corners of one, and "!". */
+const DRAG = "M4 5h12v10H4zM16 15l4.5 4.5";
 const CORNERS = "M4 10V4h6M20 14v6h-6";
 const BANG = "M12 7v6M12 17h.01";
 
@@ -135,7 +134,7 @@ export interface PickProps {
   readonly begun?: readonly string[] | undefined;
   /** What finding or Start came to, and whether Start is shut, each a card above the bar. */
   readonly says?: readonly PageSay[];
-  /** The finding found no task: with none framed, a card above the bar says to draw round each. */
+  /** The finding found no task: with none framed, a card above the bar says to drag a frame round each. */
   readonly none?: boolean;
   /** The tasks are being found: the frames wait. */
   readonly finding: boolean;
@@ -167,11 +166,20 @@ export function Pick({
 }: PickProps) {
   const { words } = useLanguage();
   const surface = useRef<HTMLDivElement>(null);
-  const stroke = useRef<{ readonly pointer: number; readonly points: Point[] } | undefined>(
-    undefined,
-  );
+  // A press on the photo: where it began, where the pointer is, and the farthest corners it reached,
+  // by which a press that never left the size of a tap is a tap.
+  const stroke = useRef<
+    | {
+        readonly pointer: number;
+        readonly from: Point;
+        to: Point;
+        low: Point;
+        high: Point;
+      }
+    | undefined
+  >(undefined);
   const resizing = useRef<{ readonly pointer: number; readonly id: string } | undefined>(undefined);
-  const [live, setLive] = useState<readonly Point[] | undefined>(undefined);
+  const [live, setLive] = useState<Frame | undefined>(undefined);
   const [corner, setCorner] = useState<Point | undefined>(undefined);
 
   /** A pointer's place on the photo, in thousandths, and the scale the photo is drawn at. */
@@ -191,22 +199,18 @@ export function Pick({
   const down = (event: PointerEvent<HTMLDivElement>) => {
     if (finding || event.button !== 0) return;
     event.currentTarget.setPointerCapture?.(event.pointerId);
-    stroke.current = { pointer: event.pointerId, points: [where(event).point] };
-    setLive(stroke.current.points);
+    const { point } = where(event);
+    stroke.current = { pointer: event.pointerId, from: point, to: point, low: point, high: point };
   };
   const move = (event: PointerEvent<HTMLDivElement>) => {
     const now = stroke.current;
     if (now === undefined || now.pointer !== event.pointerId) return;
     const { point, scale } = where(event);
-    const last = now.points[now.points.length - 1];
-    if (
-      last !== undefined &&
-      Math.hypot((point.x - last.x) * scale.x, (point.y - last.y) * scale.y) < STEP_PX
-    ) {
-      return;
-    }
-    now.points.push(point);
-    setLive([...now.points]);
+    now.to = point;
+    now.low = { x: Math.min(now.low.x, point.x), y: Math.min(now.low.y, point.y) };
+    now.high = { x: Math.max(now.high.x, point.x), y: Math.max(now.high.y, point.y) };
+    // A press still the size of a tap draws nothing, so that a tap shows no rectangle.
+    if (!isTap([now.low, now.high], scale)) setLive(spanned(now.from, now.to));
   };
   const up = (event: PointerEvent<HTMLDivElement>) => {
     const now = stroke.current;
@@ -214,9 +218,8 @@ export function Pick({
     stroke.current = undefined;
     setLive(undefined);
     const { scale } = where(event);
-    if (isTap(now.points, scale)) {
-      const tap = now.points[0];
-      if (tap === undefined) return;
+    if (isTap([now.low, now.high], scale)) {
+      const tap = now.from;
       // The first tap is a corner; the second makes the frame.
       if (corner === undefined) setCorner(tap);
       else {
@@ -227,7 +230,7 @@ export function Pick({
       return;
     }
     setCorner(undefined);
-    const frame = loopFrame(now.points, scale);
+    const frame = dragFrame(now.from, now.to, scale);
     if (frame !== undefined) onTasks((was) => withDrawn(was, frame, begun));
   };
   const cancel = () => {
@@ -392,15 +395,8 @@ export function Pick({
               <span />
             </span>
           ) : null}
-          {live === undefined || live.length < 2 ? null : (
-            <svg
-              className="nt-page-live"
-              viewBox="0 0 1000 1000"
-              preserveAspectRatio="none"
-              aria-hidden="true"
-            >
-              <polyline points={live.map((p) => `${p.x},${p.y}`).join(" ")} />
-            </svg>
+          {live === undefined ? null : (
+            <span className="nt-page-live" style={placed(live)} aria-hidden="true" />
           )}
         </div>
       </div>
@@ -427,7 +423,7 @@ export function Pick({
             kind="hint"
             title={words.text("paper.none-found")}
             line={words.text("paper.none-found-how")}
-            sign={<Drawn path={LOOP} />}
+            sign={<Drawn path={DRAG} />}
           />
         ) : null}
       </div>

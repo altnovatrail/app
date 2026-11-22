@@ -1187,7 +1187,7 @@ export const en = {
   "paper.finding": "Finding the tasks on the page…",
   /** FindTasks gave no frames: the learner draws them. */
   "paper.none-found": "No tasks were found",
-  "paper.none-found-how": "Draw round each task you want to solve",
+  "paper.none-found-how": "Drag a frame round each task you want to solve",
   "paper.find-again": "Find the tasks again",
   /**
    * At the head of the bar: FindTasks gave the most tasks one page begins, {max}, and the page may
@@ -1196,7 +1196,7 @@ export const en = {
    */
   "paper.at-most": "{max} tasks is the most at once",
   "paper.at-most-how":
-    "To take another, remove one of these with its cross and draw round the one you want. You can also draw one frame round several tasks, or ask the tutor to",
+    "To take another, remove one of these with its cross and drag a frame round the one you want. You can also drag one frame round several tasks, or ask the tutor to",
   "paper.too-many": "At most {max} tasks start at once",
   "paper.too-many-how": "Leave some out",
   /** In the middle of the top bar once the tasks are found. */
@@ -1214,7 +1214,7 @@ export const en = {
   "paper.corner": "Now tap the opposite corner of the task",
   /** The note above the bar, beside a lock. */
   "paper.note":
-    "The AI looked at the whole page to find the tasks. The photo stays on this device. Draw round a task it missed.",
+    "The AI looked at the whole page to find the tasks. The photo stays on this device. Drag a frame round a task it missed.",
   "paper.select-all": "Select all",
   "paper.select-none": "Select none",
   "paper.picked": "{count} of {total} selected",
