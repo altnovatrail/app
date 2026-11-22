@@ -46,6 +46,10 @@ export const CAPTIONLESS = {
   "resize-frame": { icon: "resize", word: "icon.resize-frame" },
   // At the top right of Home, Subjects and the skill map (R79): the notifications, a bell.
   notifications: { icon: "notifications", word: "bell.title" },
+  // Under the field of a request on the page to pick from (R74): the microphone, off until voice
+  // comes, and Send.
+  "ask-voice": { icon: "microphone", word: "paper.ask-voice" },
+  "ask-send": { icon: "send", word: "paper.ask-send" },
   // On a module's card on Home (R79): its skill map, described by the module's title.
   "skill-map": { icon: "skill-map", word: "skillmap.title" },
 } as const satisfies Record<string, { icon: IconValue | undefined; word: Key }>;

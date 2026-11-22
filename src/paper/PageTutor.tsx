@@ -1,11 +1,11 @@
 // The tutor's panel on the page to pick from (R74; R165 spec), as the mockup's `pick-ask` and
 // `pick-asked`: the line of what it takes — which tasks of the page and how they split —, each
 // request of the learner's and the program's line of what it came to, Undo while the frames before
-// can come back, and under the reminder to write no names the field of a request, its Send and its
+// can come back, and the field of a request, with no reminder of names above it, its Send and its
 // microphone, off until voice comes (R165 spec). No word of the AI comes back: its answer is
 // frames. The field is off while the finding runs and while AI is shut to the learner.
-import { type Ref, useId, useState } from "react";
-import { Icon } from "../app/Icon.tsx";
+import { type Ref, useLayoutEffect, useRef, useState } from "react";
+import { IconButton } from "../app/IconButton.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { VerdictLine } from "../task/TaskLayout.tsx";
 import { TutorPanel } from "../task/TutorPanel.tsx";
@@ -33,10 +33,23 @@ export function PageTutor({
   readonly headingRef?: Ref<HTMLHeadingElement>;
 }) {
   const { words } = useLanguage();
-  const id = useId();
   const [draft, setDraft] = useState("");
   const request = requestOf(draft);
   const off = busy || closed;
+  // The field grows down with its lines, up to the height CSS gives it, and then scrolls.
+  const field = useRef<HTMLTextAreaElement>(null);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the height follows the draft.
+  useLayoutEffect(() => {
+    const area = field.current;
+    if (area === null) return;
+    area.style.blockSize = "auto";
+    area.style.blockSize = `${area.scrollHeight}px`;
+  }, [draft]);
+  const send = () => {
+    if (off || request === undefined) return;
+    setDraft("");
+    onAsk(request);
+  };
   return (
     <TutorPanel
       headingRef={headingRef}
@@ -100,35 +113,36 @@ export function PageTutor({
           className="nt-ask"
           onSubmit={(event) => {
             event.preventDefault();
-            if (off || request === undefined) return;
-            setDraft("");
-            onAsk(request);
+            send();
           }}
         >
-          <p id={`${id}-names`} className="nt-hint">
-            {words.text("task.no-names")}
-          </p>
-          <input
+          <textarea
+            ref={field}
             className="nt-ask-input"
-            type="text"
+            rows={1}
             aria-label={words.text("paper.ask-label")}
-            aria-describedby={`${id}-names`}
             placeholder={words.text("paper.ask-placeholder")}
             maxLength={MAX_REQUEST}
             enterKeyHint="send"
             disabled={off}
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
+            onKeyDown={(event) => {
+              // Enter sends, as the field's one line did; Shift+Enter breaks the line.
+              if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {
+                event.preventDefault();
+                send();
+              }
+            }}
           />
           <div className="nt-ask-buttons">
-            <button type="button" className="nt-plain nt-ask-voice" disabled>
-              <Icon value="microphone" />
-              {words.text("paper.ask-voice")}
-            </button>
-            <button type="submit" className="nt-ask-send" disabled={off || request === undefined}>
-              <Icon value="send" />
-              {words.text("paper.ask-send")}
-            </button>
+            <IconButton value="ask-voice" className="nt-ask-voice" disabled />
+            <IconButton
+              value="ask-send"
+              className="nt-ask-send"
+              disabled={off || request === undefined}
+              onClick={send}
+            />
           </div>
         </form>
       }

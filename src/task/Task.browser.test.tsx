@@ -1502,10 +1502,10 @@ describe("the task screen with handwriting", () => {
     await vi.waitFor(() => expect(check()).toHaveAttribute("aria-disabled", "false"));
     await userEvent.click(check());
     await vi.waitFor(() => expect(rungs.length).toBe(1));
-    // The conversation holds the line that the tutor is an AI and the verdict's, and nothing more.
+    // The conversation holds the verdict's line, and nothing more.
     expect(
       panel().getByRole("region", { name: "Conversation" }).querySelectorAll("p"),
-    ).toHaveLength(1);
+    ).toHaveLength(0);
     refusal = refused(Code.FailedPrecondition, Cause.NO_CONSENT);
     await userEvent.click(check());
     expect(await screen.findByText("A grown-up's consent is needed first")).toBeVisible();
@@ -2237,17 +2237,16 @@ describe("Report a problem with the tutor's words (R33)", () => {
   const day = dateTimeFormat("en", { dateStyle: "long" }).format(REVIEW_BY);
   const thanks = `Thank you: the report is sent. It will be reviewed by ${day}`;
 
-  it("says the tutor is an AI, and offers a learner who is not an adult no report", async () => {
+  it("offers a learner who is not an adult no report", async () => {
     await renderTask({ mode: Mode.SELF, tutor: true });
     await notYet();
-    expect(panel().getByText("The tutor is an AI, not a person")).toBeVisible();
+    expect(panel().queryByText("The tutor is an AI, not a person")).toBeNull();
     expect(screen.queryByRole("button", { name: "Report a problem" })).toBeNull();
   });
 
   it("reports the words of a rung with its kind, its text and a key, and says by when it is reviewed", async () => {
     const { reportRequests } = await renderTask({ mode: Mode.SELF, tutor: true, adult: true });
     await notYet();
-    expect(panel().getByText("The tutor is an AI, not a person")).toBeVisible();
     await userEvent.click(panel().getByRole("button", { name: "Report a problem" }));
     // The form opens in a pop-over, its first kind taking the focus, the words quoted above it.
     expect(document.activeElement).toBe(form().getAllByRole("radio")[0]);
@@ -2383,7 +2382,6 @@ describe("Report a problem with the tutor's words (R33)", () => {
     await choose("5", "Yes");
     await userEvent.click(check());
     await screen.findByText("Well done: five fruits.");
-    expect(panel().getByText("The tutor is an AI, not a person")).toBeVisible();
     await userEvent.click(panel().getByRole("button", { name: "Report a problem" }));
     await userEvent.click(
       form().getByRole("radio", { name: "Asks about something personal, or talks of it" }),
@@ -2460,7 +2458,7 @@ describe("Report a problem with the tutor's words (R33)", () => {
       kept: { rung: 1, words: "" },
       wrongAnswers: 1,
     });
-    expect(await screen.findByText("The tutor is an AI, not a person")).toBeVisible();
+    expect(await screen.findByRole("complementary", { name: "Tutor" })).toBeVisible();
     expect(screen.queryByRole("button", { name: "Report a problem" })).toBeNull();
   });
 

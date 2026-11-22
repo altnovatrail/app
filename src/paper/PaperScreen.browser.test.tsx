@@ -372,6 +372,14 @@ it("opens the device's photos by its button, and says a picture it cannot read c
   expect(finds).toHaveLength(0);
 });
 
+/** The bar's count, its numbers in bold: "{count} of {total} selected" whole. */
+function picks(text: string) {
+  return screen.getByText(
+    (_, element) =>
+      element?.classList.contains("nt-page-count") === true && element.textContent === text,
+  );
+}
+
 it("sends the photo once, a JPEG encoded anew, and picks the tasks found in the order of the page", async () => {
   const { finds } = await renderPaper();
   const first = await screen.findByRole("button", { name: "Deselect task 1" });
@@ -380,8 +388,8 @@ it("sends the photo once, a JPEG encoded anew, and picks the tasks found in the 
     "aria-pressed",
     "true",
   );
-  expect(screen.getByText("2 tasks found · tap one to leave it out")).toBeVisible();
-  expect(screen.getByText("2 of 2 selected")).toBeVisible();
+  expect(screen.getByText("2 tasks found")).toBeVisible();
+  expect(picks("2 of 2 selected")).toBeVisible();
   expect(finds).toHaveLength(1);
   const photo = finds[0]?.photo ?? new Uint8Array();
   expect([photo[0], photo[1]]).toEqual([0xff, 0xd8]);
@@ -396,8 +404,8 @@ it("removes a task the AI found by its cross", async () => {
   expect(crosses).toHaveLength(2);
   await userEvent.click(crosses[0] as HTMLElement);
   await waitFor(() => expect(screen.queryByRole("button", { name: "Deselect task 2" })).toBeNull());
-  expect(screen.getByText("1 task found · tap one to leave it out")).toBeVisible();
-  expect(screen.getByText("1 of 1 selected")).toBeVisible();
+  expect(screen.getByText("1 task found")).toBeVisible();
+  expect(picks("1 of 1 selected")).toBeVisible();
 });
 
 it("removes every frame at once, for frames of the learner's own", async () => {
@@ -407,7 +415,7 @@ it("removes every frame at once, for frames of the learner's own", async () => {
   await waitFor(() =>
     expect(screen.queryByRole("button", { name: "Remove the frame" })).toBeNull(),
   );
-  expect(screen.getByText("0 of 0 selected")).toBeVisible();
+  expect(picks("0 of 0 selected")).toBeVisible();
   expect(screen.queryByRole("button", { name: "Remove all frames" })).toBeNull();
 });
 
@@ -418,7 +426,7 @@ it("begins the tasks picked, each a sheet under its crop", async () => {
     "aria-pressed",
     "false",
   );
-  expect(screen.getByText("1 of 2 selected")).toBeVisible();
+  expect(picks("1 of 2 selected")).toBeVisible();
   await userEvent.click(screen.getByRole("button", { name: "Start" }));
   expect(await screen.findByRole("heading", { name: "Task 2" }, SLOW)).toBeVisible();
   expect(screen.getByText("1 of 1 · from your page")).toBeVisible();
@@ -589,7 +597,6 @@ it("opens the tutor's panel by its button: the verdict a line in it, and a card 
   expect(document.querySelector(".nt-card-verdict")).not.toBeNull();
   await userEvent.click(screen.getByRole("button", { name: "Tutor" }));
   expect(document.activeElement).toBe(tutorPanel().getByRole("heading", { name: "Tutor" }));
-  expect(tutorPanel().getByText("The tutor is an AI, not a person")).toBeVisible();
   expect(tutorPanel().getByText("Read: 84")).toBeVisible();
   expect(document.querySelector(".nt-card-verdict")).toBeNull();
   // Not yet: Hint at the panel's foot, and no way on yet.
@@ -839,9 +846,7 @@ it("frames a task the AI missed by two taps, and removes it by its cross", async
   tap(800, 300);
   const drawn = await screen.findByRole("button", { name: "Deselect your frame, task 1" });
   expect(drawn).toHaveAttribute("aria-pressed", "true");
-  expect(
-    screen.getByText("0 tasks found · 1 framed by you · tap one to leave it out"),
-  ).toBeVisible();
+  expect(screen.getByText("0 tasks found · 1 framed by you")).toBeVisible();
   expect(screen.getByRole("button", { name: "Start" })).toBeEnabled();
   await userEvent.click(screen.getByRole("button", { name: "Remove the frame" }));
   await waitFor(() => expect(screen.queryByRole("button", { name: /your frame/ })).toBeNull());
@@ -892,9 +897,8 @@ it("finds the page anew by the learner's request, its own frame staying, and Und
   await screen.findByRole("button", { name: /^Deselect your frame/ });
   await userEvent.click(screen.getByRole("button", { name: "Tutor" }));
   const field = await screen.findByRole("textbox", { name: "Your request about the page" });
-  expect(field).toHaveAccessibleDescription(
-    "Don't write your name or the real names of people you know",
-  );
+  // No reminder of names above the field.
+  expect(field).not.toHaveAttribute("aria-describedby");
   expect(screen.getByRole("button", { name: "Voice comes later" })).toBeDisabled();
   await userEvent.type(field, "only the first column, each task apart{Enter}");
   expect(await screen.findByText("Found 3 tasks")).toBeVisible();
@@ -1003,15 +1007,13 @@ it("says a page found as many tasks as start at once may hold more, and when too
   tap(600, 100);
   await screen.findByText("Now tap the opposite corner of the task");
   tap(900, 300);
-  expect(
-    await screen.findByText(`At most ${MAX_TASKS} tasks start at once: leave some out`),
-  ).toBeVisible();
+  expect(await screen.findByText(`At most ${MAX_TASKS} tasks start at once.`)).toBeVisible();
   expect(screen.getByRole("button", { name: "Start" })).toBeDisabled();
   await userEvent.click(screen.getByRole("button", { name: "Select none" }));
-  expect(screen.getByText(`0 of ${MAX_TASKS + 1} selected`)).toBeVisible();
+  expect(picks(`0 of ${MAX_TASKS + 1} selected`)).toBeVisible();
   expect(screen.getByText(most)).toBeVisible();
   await userEvent.click(screen.getByRole("button", { name: "Select all" }));
-  expect(screen.getByText(`${MAX_TASKS + 1} of ${MAX_TASKS + 1} selected`)).toBeVisible();
+  expect(picks(`${MAX_TASKS + 1} of ${MAX_TASKS + 1} selected`)).toBeVisible();
 });
 
 it("draws the loop as it goes, and drops it when the pointer is cancelled", async () => {

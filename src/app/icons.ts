@@ -256,10 +256,10 @@ export const ICONS = {
       "M4 21q-.425 0-.712-.288T3 20v-6q0-.425.288-.712T4 13t.713.288T5 14v3.6L17.6 5H14q-.425 0-.712-.288T13 4t.288-.712T14 3h6q.425 0 .713.288T21 4v6q0 .425-.288.713T20 11t-.712-.288T19 10V6.4L6.4 19H10q.425 0 .713.288T11 20t-.288.713T10 21z",
     ],
   },
-  "send-outline-rounded": {
+  "arrow-upward-outline-rounded": {
     viewBox: "0 0 24 24",
     paths: [
-      "m19.8 12.925l-15.4 6.5q-.5.2-.95-.088T3 18.5v-13q0-.55.45-.837t.95-.088l15.4 6.5q.625.275.625.925t-.625.925M5 17l11.85-5L5 7v3.5l6 1.5l-6 1.5zm0 0V7z",
+      "m11 7.825l-4.9 4.9q-.3.3-.7.288t-.7-.313q-.275-.3-.288-.7t.288-.7l6.6-6.6q.15-.15.325-.212T12 4.425t.375.063t.325.212l6.6 6.6q.275.275.275.688t-.275.712q-.3.3-.712.3t-.713-.3L13 7.825V19q0 .425-.288.713T12 20t-.712-.288T11 19z",
     ],
   },
   "mic-outline-rounded": {
@@ -535,7 +535,11 @@ export const VALUES = {
     filled: "open-in-full-outline-rounded",
     mirrored: false,
   },
-  send: { outline: "send-outline-rounded", filled: "send-outline-rounded", mirrored: false },
+  send: {
+    outline: "arrow-upward-outline-rounded",
+    filled: "arrow-upward-outline-rounded",
+    mirrored: false,
+  },
   microphone: { outline: "mic-outline-rounded", filled: "mic-outline-rounded", mirrored: false },
   "nav-home": {
     outline: "grid-view-outline-rounded",

@@ -28,7 +28,7 @@ import { cropsOf, type Photo } from "./capture.ts";
 import { PageTutor } from "./PageTutor.tsx";
 import { type BegunTask, type PaperPage, usePaper } from "./PaperContext.tsx";
 import { Pick } from "./Pick.tsx";
-import { asked, foundTasks, framesOf, limit, MAX_TASKS, type PageTask, picked } from "./page.ts";
+import { asked, foundTasks, framesOf, type PageTask, picked } from "./page.ts";
 import { Solve } from "./Solve.tsx";
 import { notBegun } from "./solve.ts";
 
@@ -230,14 +230,10 @@ export function PaperScreen({
       .finally(() => setStarting(false));
   };
 
-  const over = limit(page.tasks);
-  const limitLine =
-    over === "too-many" ? "paper.too-many" : over === "at-most" ? "paper.at-most" : undefined;
   const lines = (
     <>
-      {finding.status === "finding" ? (
-        <p role="status">{words.text("paper.finding")}</p>
-      ) : finding.status === "found" && page.tasks.length === 0 ? (
+      {/* While the tasks are found, the top bar's middle says so. */}
+      {finding.status === "found" && page.tasks.length === 0 ? (
         <p role="status">{words.text("paper.none-found")}</p>
       ) : finding.status === "outcome" ? (
         <p role="status">
@@ -269,11 +265,6 @@ export function PaperScreen({
         </p>
       )}
       {closed ? <p className="nt-hint">{words.text("paper.no-ai")}</p> : null}
-      {limitLine === undefined ? null : (
-        <p role="status" className="nt-hint">
-          {words.text(limitLine, { max: MAX_TASKS })}
-        </p>
-      )}
     </>
   );
 

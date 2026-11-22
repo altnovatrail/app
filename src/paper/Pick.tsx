@@ -2,12 +2,15 @@
 // task's frame over it a button that is picked or left out, every one picked at first, and its
 // cross removes it; a task the AI missed the learner frames by hand, by a loop drawn round it with a
 // finger or a pen or by two taps, a corner and then the one opposite, and its corner resizes it.
-// The top bar says how many tasks were found and framed by hand, and holds "Remove all frames",
-// which clears the photo for frames of the learner's own, and Retake; at the foot,
-// the note that the photo stays on the device, and the bar of "Select all", the count and Start.
+// The top bar's pill holds the title alone, and its end "Remove all frames", which clears the
+// photo for frames of the learner's own, and Retake; while the tasks are found, its middle says
+// so, by a turning ring, and a line of light runs down the photo and back; once they are, how many
+// were found and framed by hand. At the foot, the note
+// that the photo stays on the device, and the bar of "Select all", the count and Start, with the
+// most tasks at once at its head, in a ring, once the page holds as many or more are picked.
 // Drawing a frame takes a pointer: a learner on the keyboard picks among the AI's frames alone.
-// Beside the tutor's open panel the page ends where the panel begins, and on a phone its sheet
-// hides the bar (R74).
+// The tutor's open panel lies over the page, as the debug panel does, and moves none of it; on a
+// phone its sheet hides the bar (R74).
 import { type CSSProperties, type PointerEvent, type ReactNode, useRef, useState } from "react";
 import { Icon } from "../app/Icon.tsx";
 import { IconButton } from "../app/IconButton.tsx";
@@ -27,6 +30,8 @@ import {
   allOrNone,
   canStart,
   counts,
+  limit,
+  MAX_TASKS,
   numbers,
   type PageTask,
   toggled,
@@ -172,19 +177,48 @@ export function Pick({
   const order = numbers(tasks);
   const count = counts(tasks);
   const all = count.picked === count.all && count.all > 0;
-  const under = [
-    words.text("paper.found", { count: count.found }),
-    ...(count.drawn > 0 ? [words.text("paper.drawn", { count: count.drawn })] : []),
-    words.text("paper.tap"),
-  ].join(" · ");
+  const over = limit(tasks);
+  // The numbers of "{count} of {total}" in bold, the words around them not.
+  const picks = words.pattern("paper.picked");
+  const from = picks.indexOf("{count}");
+  const to = picks.indexOf("{total}") + "{total}".length;
+  const fill = (part: string) =>
+    part.replace("{count}", String(count.picked)).replace("{total}", String(count.all));
 
   return (
     <Screen
       title={words.text("paper.title")}
       layout="task"
       bar={{
-        back: <IconButton value="back" caption="task.home" onClick={onHome} />,
-        under: <p className="nt-top-sub nt-page-sub">{under}</p>,
+        back: (
+          <IconButton value="back" caption="task.home" className="nt-page-back" onClick={onHome} />
+        ),
+        ...(finding
+          ? {
+              middle: (
+                <p role="status" className="nt-finding nt-glass">
+                  <span className="nt-spin" aria-hidden="true" />
+                  <span className="nt-finding-words">{words.text("paper.finding")}</span>
+                </p>
+              ),
+            }
+          : tasks.length > 0
+            ? {
+                middle: (
+                  <p role="status" className="nt-finding nt-found nt-glass">
+                    <span className="nt-found-sign" aria-hidden="true">
+                      <Icon value="ticked" />
+                    </span>
+                    {[
+                      words.text("paper.found-head", { count: count.found }),
+                      ...(count.drawn > 0
+                        ? [words.text("paper.drawn", { count: count.drawn })]
+                        : []),
+                    ].join(" · ")}
+                  </p>
+                ),
+              }
+            : {}),
         end: (
           <div className="nt-top-end">
             {count.all === 0 || finding ? null : (
@@ -205,11 +239,11 @@ export function Pick({
         ),
       }}
     >
-      <div className="nt-page-lines" {...besideIt}>
+      <div className="nt-page-lines">
         {lines}
         {corner === undefined ? null : <p role="status">{words.text("paper.corner")}</p>}
       </div>
-      <div className="nt-page-stage" {...besideIt}>
+      <div className="nt-page-stage">
         <div
           ref={surface}
           className="nt-page-photo"
@@ -295,6 +329,11 @@ export function Pick({
           {corner === undefined ? null : (
             <span className="nt-page-corner" style={at(corner.x, corner.y)} aria-hidden="true" />
           )}
+          {finding ? (
+            <span className="nt-page-scan" aria-hidden="true">
+              <span />
+            </span>
+          ) : null}
           {live === undefined || live.length < 2 ? null : (
             <svg
               className="nt-page-live"
@@ -307,34 +346,55 @@ export function Pick({
           )}
         </div>
       </div>
-      <p className="nt-page-note" {...besideIt}>
+      <p className="nt-page-note">
         <Icon value="state-locked" />
         {words.text("paper.note")}
       </p>
       <div className="nt-page-bar nt-glass" {...besideIt}>
-        <button
-          type="button"
-          className="nt-plain"
-          disabled={count.all === 0}
-          onClick={() => onTasks(allOrNone)}
-        >
-          {words.text(all ? "paper.select-none" : "paper.select-all")}
-        </button>
-        <span className="nt-page-count">
-          {words.text("paper.picked", { count: count.picked, total: count.all })}
-        </span>
-        <button
-          type="button"
-          className="nt-start"
-          disabled={!canStart(tasks) || closed || finding}
-          {...(starting ? { "aria-disabled": true } : {})}
-          onClick={() => {
-            if (!starting) onStart();
-          }}
-        >
-          {words.text("paper.start")}
-          <Icon value="more" />
-        </button>
+        {over === undefined ? null : (
+          <div className="nt-page-limit" role="status">
+            <span className="nt-limit-ring" aria-hidden="true">
+              {MAX_TASKS}
+            </span>
+            <p className="nt-limit-words">
+              <strong>{words.text(`paper.${over}`, { max: MAX_TASKS })}.</strong>{" "}
+              {words.text(`paper.${over}-how`)}
+            </p>
+          </div>
+        )}
+        <div className="nt-page-row">
+          <button
+            type="button"
+            className="nt-plain"
+            disabled={count.all === 0}
+            onClick={() => onTasks(allOrNone)}
+          >
+            {words.text(all ? "paper.select-none" : "paper.select-all")}
+          </button>
+          <span className="nt-page-count">
+            {from < 0 || to < from ? (
+              words.text("paper.picked", { count: count.picked, total: count.all })
+            ) : (
+              <>
+                {picks.slice(0, from)}
+                <strong>{fill(picks.slice(from, to))}</strong>
+                {picks.slice(to)}
+              </>
+            )}
+          </span>
+          <button
+            type="button"
+            className="nt-start"
+            disabled={!canStart(tasks) || closed || finding}
+            {...(starting ? { "aria-disabled": true } : {})}
+            onClick={() => {
+              if (!starting) onStart();
+            }}
+          >
+            {words.text("paper.start")}
+            <Icon value="more" />
+          </button>
+        </div>
       </div>
     </Screen>
   );

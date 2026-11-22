@@ -1101,11 +1101,6 @@ export const en = {
   /** Says a sentence by the voice chosen. */
   "voice.sample": "Read a sample aloud",
   "voice.not-kept": "The choice wasn't kept on this device. Try again",
-  /**
-   * In the block Tutor, below its heading, wherever the tutor's words stand: the disclosure that
-   * the tutor is an AI (R123 spec). Plain, for a learner of any age.
-   */
-  "tutor.ai": "The tutor is an AI, not a person",
   /** The name of the part of the tutor's panel that holds its words and the verdicts, and scrolls. */
   "tutor.conversation": "Conversation",
   /** The heading of the page on the tutor. */
@@ -1183,16 +1178,11 @@ export const en = {
   "paper.unreadable": "This picture can't be read. Take another photo, or choose one",
   /** The heading of the screen where the learner picks the tasks of the page. */
   "paper.title": "Your page",
-  /** Under it, three phrases between dots: the tasks found, those framed by hand, and what a tap does. */
-  "paper.found": plural({
-    one: "{count} task found",
-    other: "{count} tasks found",
-  }),
+  /** After "{count} tasks found" in the top bar's middle, between dots: those framed by hand. */
   "paper.drawn": plural({
     one: "{count} framed by you",
     other: "{count} framed by you",
   }),
-  "paper.tap": "tap one to leave it out",
   /** The top bar's button that throws the page away and opens the camera again. */
   "paper.retake": "Retake",
   "paper.remove-all": "Remove all frames",
@@ -1201,11 +1191,21 @@ export const en = {
   /** FindTasks gave no frames: the learner draws them. */
   "paper.none-found": "No tasks were found. Draw round each task you want to solve",
   "paper.find-again": "Find the tasks again",
-  /** FindTasks gave the most tasks one page begins, {max}; the page may hold more. */
-  "paper.at-most":
-    "{max} tasks is the most at once. To take another, remove one of these with its cross and draw round the one you want",
-  /** More than {max} tasks are picked, and "Start" is shut. */
-  "paper.too-many": "At most {max} tasks start at once: leave some out",
+  /**
+   * At the head of the bar: FindTasks gave the most tasks one page begins, {max}, and the page may
+   * hold more; or more than {max} are picked, and "Start" is shut. Each a sentence in bold, no full
+   * stop of its own, and what to do after it.
+   */
+  "paper.at-most": "{max} tasks is the most at once",
+  "paper.at-most-how":
+    "To take another, remove one of these with its cross and draw round the one you want. You can also draw one frame round several tasks, or ask the tutor to",
+  "paper.too-many": "At most {max} tasks start at once",
+  "paper.too-many-how": "Leave some out",
+  /** In the middle of the top bar once the tasks are found. */
+  "paper.found-head": plural({
+    one: "{count} task found",
+    other: "{count} tasks found",
+  }),
   /** A task's frame, a button; {n} is its place on the page, from the top. */
   "paper.select": "Select task {n}",
   "paper.deselect": "Deselect task {n}",

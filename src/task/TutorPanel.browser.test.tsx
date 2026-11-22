@@ -120,7 +120,7 @@ describe("the tutor's panel on a tablet", () => {
     const aside = screen.getByRole("complementary", { name: "Tutor" });
     await settled();
     const box = aside.getBoundingClientRect();
-    expect(box.width).toBeCloseTo(344, 0);
+    expect(box.width).toBeCloseTo(400, 0);
     expect(box.right).toBeCloseTo(1194 - 16, 0);
     expect(box.top).toBeCloseTo(74, 0);
     expect(box.bottom).toBeCloseTo(834 - 16, 0);
@@ -130,7 +130,6 @@ describe("the tutor's panel on a tablet", () => {
     // Its head: the tutor's name, the learner's share of the quota, the voicing and ×; no grabber.
     expect(panel().getByRole("heading", { name: "Tutor", level: 2 })).toBeVisible();
     expect(panel().getByText("Tutor time today: 20% used")).toBeVisible();
-    expect(panel().getByText("The tutor is an AI, not a person")).toBeVisible();
     expect(panel().queryByRole("button", { name: "Full screen" })).toBeNull();
     // Open, the panel stands in place of the tutor's button and of the step's pill.
     expect(screen.queryByRole("button", { name: "Tutor" })).toBeNull();
@@ -277,7 +276,6 @@ describe("the tutor's panel of an essay", () => {
     const { rerender } = render(inLanguage(<EssayDrawn />));
     expect(screen.queryByRole("complementary", { name: "Tutor" })).toBeNull();
     await userEvent.click(screen.getByRole("button", { name: "Tutor" }));
-    expect(panel().getByText("The tutor is an AI, not a person")).toBeVisible();
     await userEvent.click(panel().getByRole("button", { name: "Close" }));
     rerender(inLanguage(<EssayDrawn feedback="The second sentence works." />));
     // The card says where the feedback is; the panel opens only when called.

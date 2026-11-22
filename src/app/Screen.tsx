@@ -63,6 +63,8 @@ export interface TopBar {
   readonly end?: ReactNode;
   /** What stands under the heading in the pill: a lesson's segments, behind its line (R64). */
   readonly under?: ReactNode;
+  /** What stands in the bar's middle, between the pill and its end: the page's finding (R71). */
+  readonly middle?: ReactNode;
 }
 
 /** The head of a sheet, the mockup's legal text (R69): its way back, its close, and a chip. */
@@ -179,7 +181,7 @@ export function Screen({
       {bar === undefined ? (
         top
       ) : (
-        <div className="nt-top">
+        <div className="nt-top" data-middle={bar.middle === undefined ? undefined : ""}>
           <div className="nt-top-pill nt-glass">
             {bar.back}
             {bar.under === undefined ? (
@@ -191,6 +193,7 @@ export function Screen({
               </div>
             )}
           </div>
+          {bar.middle}
           {bar.end}
         </div>
       )}

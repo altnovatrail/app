@@ -156,10 +156,7 @@ export function TutorPanel({
         */}
         <section className="nt-talk" aria-label={words.text("tutor.conversation")}>
           <div className="nt-talk-end">
-            <div className="nt-talk-lines">
-              <p className="nt-bubble">{words.text("tutor.ai")}</p>
-              {talk}
-            </div>
+            <div className="nt-talk-lines">{talk}</div>
             {acts === undefined || acts === null ? null : (
               <div className="nt-tutor-acts">{acts}</div>
             )}

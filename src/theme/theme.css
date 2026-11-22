@@ -3112,9 +3112,6 @@ main.nt-task-screen:has(> .nt-camera) .nt-top-pill.nt-glass {
  * button of the photo's accent; a frame drawn by hand has a dashed line inside, and its cross and
  * corner are targets of 44 on its corners.
  */
-.nt-page-sub {
-  margin: 0;
-}
 .nt-top-end > button.nt-retake {
   display: inline-flex;
   align-items: center;
@@ -3141,20 +3138,15 @@ main .nt-page-lines > p {
 .nt-page-photo {
   position: relative;
   aspect-ratio: var(--nt-ratio);
-  inline-size: min(100cqw, 100cqh * var(--nt-ratio));
-  border-radius: 0.1875rem;
-  box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.06),
-    0 16px 48px rgba(0, 0, 0, 0.1);
+  inline-size: min(100cqw, 100cqh * var(--nt-ratio), 55rem);
+  border-radius: 0.375rem;
+  box-shadow: 0 12px 40px rgba(20, 40, 80, 0.1);
   user-select: none;
 }
 .nt-page-photo > img {
   display: block;
   inline-size: 100%;
   block-size: 100%;
-}
-.nt-page-photo[data-finding] > img {
-  opacity: 0.6;
 }
 .nt-page-draw {
   position: absolute;
@@ -3170,14 +3162,14 @@ main .nt-page-lines > p {
   border: 0;
   border-radius: 0.625rem;
   background: rgba(0, 113, 227, 0.035);
-  box-shadow: inset 0 0 0 0.09375rem rgba(0, 113, 227, 0.4);
+  box-shadow: inset 0 0 0 0.125rem rgba(0, 113, 227, 0.4);
   transition:
     background var(--nt-quick),
     box-shadow var(--nt-quick);
 }
 .nt-page-photo > button.nt-page-frame[aria-pressed="true"] {
-  background: rgba(0, 113, 227, 0.12);
-  box-shadow: inset 0 0 0 0.1875rem var(--nt-accent);
+  background: rgba(0, 113, 227, 0.08);
+  box-shadow: inset 0 0 0 0.125rem var(--nt-accent);
 }
 .nt-page-photo > button.nt-page-frame[data-drawn]::after {
   content: "";
@@ -3189,42 +3181,55 @@ main .nt-page-lines > p {
 }
 .nt-page-mark {
   position: absolute;
-  inset-block-start: -0.75rem;
-  inset-inline-start: -0.75rem;
+  inset-block-start: -0.6875rem;
+  inset-inline-start: -0.6875rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  inline-size: 1.875rem;
-  block-size: 1.875rem;
+  inline-size: 1.375rem;
+  block-size: 1.375rem;
   border-radius: 50%;
   background: var(--nt-card);
   box-shadow:
     0 0 0 0.09375rem rgba(0, 113, 227, 0.55),
     0 2px 6px rgba(0, 0, 0, 0.08);
   color: var(--nt-accent-text);
-  font-size: 0.9375rem;
+  font-size: 0.75rem;
   font-weight: var(--nt-weight-heading);
 }
 .nt-page-frame[aria-pressed="true"] > .nt-page-mark {
   background: var(--nt-accent);
-  box-shadow: 0 2px 6px rgba(0, 113, 227, 0.4);
+  box-shadow: 0 0 0 0.125rem var(--nt-card);
   color: var(--nt-on-fill);
 }
 .nt-frame-control {
   position: absolute;
   translate: -50% -50%;
 }
+/* A target of 44, the circle of 24 drawn inside it. */
 .nt-frame-control button.nt-icon-only {
+  isolation: isolate;
+  position: relative;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--nt-text);
+  font-size: 0.625rem;
+}
+.nt-frame-control button.nt-icon-only::before {
+  content: "";
+  position: absolute;
+  inset: calc(50% - 0.75rem);
+  z-index: -1;
   border-radius: 50%;
   background: var(--nt-card);
   box-shadow:
-    0 0 0 0.09375rem rgba(0, 113, 227, 0.55),
-    0 2px 6px rgba(0, 0, 0, 0.12);
-  color: var(--nt-text);
-  font-size: 1rem;
+    0 2px 6px rgba(0, 0, 0, 0.18),
+    0 0 0 0.5px rgba(0, 0, 0, 0.08);
+}
+.nt-frame-control button.nt-icon-only.nt-frame-corner::before {
+  background: var(--nt-accent);
 }
 .nt-frame-control button.nt-icon-only.nt-frame-corner {
-  background: var(--nt-accent);
   color: var(--nt-on-fill);
   cursor: nwse-resize;
   touch-action: none;
@@ -3267,18 +3272,23 @@ p.nt-page-note {
 }
 .nt-page-bar {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
+  flex-direction: column;
   align-self: center;
-  justify-content: center;
-  gap: 0.625rem;
   max-inline-size: 100%;
   box-sizing: border-box;
-  min-block-size: 3.5rem;
-  padding: 0.375rem 0.375rem 0.375rem 0.5rem;
+  overflow: hidden;
   border-radius: 1.75rem;
 }
-.nt-page-bar > button.nt-plain {
+.nt-page-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.625rem;
+  min-block-size: 3.5rem;
+  padding: 0.375rem 0.375rem 0.375rem 0.5rem;
+}
+.nt-page-row > button.nt-plain {
   background: transparent;
   color: var(--nt-accent-text);
   font-weight: var(--nt-weight-medium);
@@ -3290,7 +3300,7 @@ p.nt-page-note {
   font-variant-numeric: tabular-nums;
   text-align: center;
 }
-.nt-page-bar > button.nt-start {
+.nt-page-row > button.nt-start {
   display: inline-flex;
   align-items: center;
   gap: 0.375rem;
@@ -4198,18 +4208,18 @@ main.nt-lesson:has(> .nt-segment-body > .nt-lesson-task > .nt-task) {
 }
 /*
  * Beside the open panel (R67): the canvas, the lines above it and the foot end where the panel
- * begins, 344 + 16 from the window's right edge, so that the task stays in view; the foot's middle is
+ * begins, 400 + 16 from the window's right edge, so that the task stays in view; the foot's middle is
  * the middle between the canvas's bar of tools, 16 + 52, and the panel, as the mockup's `task-rung`.
  */
 @media (width >= 600px) {
   .nt-task-lines[data-beside="panel"] {
-    margin-inline-end: 21.5rem;
+    margin-inline-end: 25rem;
   }
   .nt-task[data-beside="panel"] {
-    margin-inline-end: 21.5rem;
+    margin-inline-end: 25rem;
   }
   .nt-task-foot[data-beside="panel"] {
-    padding-inline: 3.25rem 21.5rem;
+    padding-inline: 3.25rem 25rem;
   }
 }
 /* On a phone the open sheet hides the row (R148 spec). */
@@ -4582,8 +4592,9 @@ button.nt-confirm-yes {
   padding: 0 1.125rem;
 }
 /*
- * The tutor's panel (R67; the mockup's `task`): glass of 0.86, 344 wide at the window's right, from
- * 74 below its top — under the top bar — to 16 above its foot, radius 28; on a phone a sheet from
+ * The tutor's panel (R67; the mockup's `task`): glass of 0.86, 400 wide at the window's right, as
+ * the debug panel, from 74 below its top — under the top bar — to 16 above its foot, as it too,
+ * radius 28; on a phone a sheet from
  * the bottom of the whole width, glass of 0.96, radius 28 at its top, at half the window's height,
  * or by its grabber to 70 below its top. A column: the head, the step's card, the conversation,
  * which scrolls, and the buttons at its foot.
@@ -4596,7 +4607,7 @@ button.nt-confirm-yes {
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
-  inline-size: 21.5rem;
+  inline-size: 25rem;
   overflow: hidden;
   border-radius: var(--nt-radius-panel);
 }
@@ -5187,59 +5198,62 @@ button.nt-act[aria-disabled="true"] {
   background: rgba(0, 113, 227, 0.12);
   color: var(--nt-accent);
 }
+/*
+ * The field of a request (R74): one rounded box of grey in a blue edge of 2, the text at its top,
+ * growing down with its lines up to 7.5rem and then scrolling, and under it at the right the
+ * microphone, shut, and Send, a blue circle with its arrow, each a target of 44.
+ */
 form.nt-ask {
   display: flex;
   flex: none;
   flex-direction: column;
-  gap: 0.375rem;
-  padding: 0 0.625rem 0.625rem;
-}
-form.nt-ask > p.nt-hint {
-  margin: 0;
-  padding: 0 0.375rem;
-  font-size: 0.71875rem;
-  line-height: 1.35;
-}
-form.nt-ask > input.nt-ask-input {
-  box-sizing: border-box;
-  inline-size: 100%;
-  min-block-size: 3.25rem;
-  padding: 0 1rem;
-  border: 0;
+  gap: 0.25rem;
+  margin: 0 0.625rem 0.625rem;
+  padding: 0.75rem 0.375rem 0.375rem 1rem;
+  border: 0.125rem solid var(--nt-accent);
   border-radius: 1.625rem;
   background: var(--nt-grey-12);
-  font-size: 0.90625rem;
+}
+form.nt-ask > textarea.nt-ask-input {
+  box-sizing: border-box;
+  inline-size: 100%;
+  max-block-size: 7.5rem;
+  margin: 0;
+  padding: 0 0.625rem 0 0;
+  border: 0;
+  background: transparent;
+  color: var(--nt-text);
+  font: inherit;
+  font-size: 0.9375rem;
+  line-height: 1.4;
+  resize: none;
+}
+form.nt-ask > textarea.nt-ask-input:focus-visible {
+  outline: none;
 }
 .nt-ask-buttons {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.375rem;
+  justify-content: flex-end;
+  gap: 0.25rem;
 }
-form.nt-ask > .nt-ask-buttons > button {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-  min-block-size: var(--nt-target);
-  padding: 0 0.875rem 0 0.75rem;
-  border-radius: var(--nt-radius-round);
-  font-size: var(--nt-size-caption);
+/* Shut until voice comes: its icon grey, with no fill of a disabled button. */
+.nt-ask-buttons button.nt-icon-only.nt-ask-voice:disabled {
+  background: transparent;
+  color: #aeaeb2;
+  font-size: 1.25rem;
 }
-form.nt-ask > .nt-ask-buttons > button.nt-ask-send {
+.nt-ask-buttons button.nt-icon-only.nt-ask-send {
+  border-radius: 50%;
   background: var(--nt-accent);
   color: var(--nt-on-fill);
-  font-weight: var(--nt-weight-bold);
+  font-size: 1.25rem;
 }
-/* Beside the open panel the page ends where the panel begins; on a phone its sheet hides the bar. */
-@media (width >= 600px) {
-  .nt-page-lines[data-beside="panel"],
-  .nt-page-stage[data-beside="panel"],
-  .nt-page-note[data-beside="panel"],
-  .nt-page-bar[data-beside="panel"] {
-    margin-inline-end: 21.5rem;
-  }
+.nt-ask-buttons button.nt-icon-only.nt-ask-send:disabled {
+  background: rgba(0, 0, 0, 0.08);
+  color: #aeaeb2;
 }
+/* The open panel lies over the page, which stays where it is; on a phone its sheet hides the bar. */
 @media (width < 600px) {
   .nt-page-bar[data-beside="panel"] {
     display: none;
@@ -6232,4 +6246,205 @@ nav.nt-nav button.nt-nav-item[aria-disabled="true"] {
 }
 .nt-shell > main > h1:has(+ .nt-home-sub) {
   margin-block-end: 0;
+}
+/*
+ * The page's screen as the mockup's finding (R71): the sky of Home behind it; the way back a grey
+ * circle in the pill, Retake a pill of 48; while the tasks are found, in the bar's middle a pill
+ * of 48 that breathes, a ring turning and its words in a gleam running through them, and over the
+ * photo a blue tint with a line of light that runs down and back. The bar at the foot one row.
+ */
+main.nt-task-screen:has(.nt-page-stage) {
+  background: linear-gradient(180deg, #eaf1fb 0%, var(--nt-page-owner) 30rem);
+}
+.nt-top[data-middle] {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+}
+.nt-top[data-middle] > .nt-top-pill {
+  justify-self: start;
+  max-inline-size: 100%;
+}
+.nt-top[data-middle] > :last-child {
+  justify-self: end;
+}
+@media (width < 600px) {
+  .nt-top[data-middle] {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .nt-top[data-middle] > .nt-finding {
+    grid-row: 2;
+    grid-column: 1 / -1;
+    justify-self: center;
+  }
+}
+.nt-top-pill button.nt-icon-only.nt-page-back {
+  border-radius: 50%;
+  background: #f2f2f7;
+  color: var(--nt-text);
+}
+.nt-top-end > button.nt-retake {
+  gap: 0.5rem;
+  padding-inline: 1rem 1.25rem;
+  font-size: 0.9375rem;
+  font-weight: var(--nt-weight-medium);
+}
+p.nt-finding {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  box-sizing: border-box;
+  min-block-size: 3rem;
+  margin: 0;
+  padding: 0 1.375rem 0 0.875rem;
+  border-radius: var(--nt-radius-round);
+  font-size: 0.9375rem;
+  font-weight: var(--nt-weight-bold);
+  white-space: nowrap;
+}
+.nt-top > p.nt-finding > .nt-spin {
+  inline-size: 1.375rem;
+  block-size: 1.375rem;
+  border-color: #e5f0ff;
+  border-block-start-color: var(--nt-accent);
+  border-inline-end-color: var(--nt-accent);
+}
+.nt-page-scan {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  background: rgba(0, 113, 227, 0.03);
+  pointer-events: none;
+}
+.nt-page-scan > span {
+  display: none;
+  position: absolute;
+  inset-inline: 0;
+  inset-block-start: -12%;
+  block-size: 12%;
+  border-block-end: 0.125rem solid rgba(0, 113, 227, 0.7);
+  background: linear-gradient(
+    180deg,
+    rgba(0, 113, 227, 0) 0%,
+    rgba(0, 113, 227, 0.12) 85%,
+    rgba(0, 113, 227, 0) 100%
+  );
+  box-shadow: 0 6px 18px rgba(0, 113, 227, 0.25);
+}
+@keyframes nt-scan {
+  to {
+    inset-block-start: 100%;
+  }
+}
+@keyframes nt-breathe {
+  50% {
+    box-shadow:
+      0 0 0 0.4375rem rgba(0, 113, 227, 0),
+      0 1px 3px rgba(0, 0, 0, 0.06);
+  }
+}
+@keyframes nt-gleam {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+@media (prefers-reduced-motion: no-preference) and (forced-colors: none) {
+  .nt-page-scan > span {
+    display: block;
+    animation: nt-scan 2.4s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate;
+  }
+  p.nt-finding:not(.nt-found) {
+    box-shadow:
+      0 0 0 0 rgba(0, 113, 227, 0.28),
+      0 1px 3px rgba(0, 0, 0, 0.06);
+    animation: nt-breathe 2s ease-in-out infinite;
+  }
+  .nt-finding-words {
+    background:
+      linear-gradient(90deg, var(--nt-text) 40%, var(--nt-accent) 50%, var(--nt-text) 60%) 0 0 /
+      200% 100%;
+    background-clip: text;
+    color: transparent;
+    animation: nt-gleam 2.4s linear infinite;
+  }
+}
+@media (width >= 600px) {
+  .nt-page-row {
+    flex-wrap: nowrap;
+    gap: 1.25rem;
+    white-space: nowrap;
+    padding: 0.5rem 0.5rem 0.5rem 1.5rem;
+  }
+  .nt-page-bar:not(:has(> .nt-page-limit)) {
+    border-radius: var(--nt-radius-round);
+  }
+  /* With the most at its head, the bar of the mockup's 640, its count in the middle. */
+  .nt-page-bar:has(> .nt-page-limit) {
+    inline-size: min(40rem, 100%);
+  }
+  .nt-page-bar:has(> .nt-page-limit) .nt-page-count {
+    flex: 1;
+  }
+}
+.nt-page-row > button.nt-plain:disabled {
+  color: #aeaeb2;
+}
+.nt-page-count > strong {
+  color: var(--nt-text);
+  font-weight: var(--nt-weight-bold);
+}
+/* The most at once: a ring of orange round its number, on a band of warm white. */
+.nt-page-limit {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  padding: 1rem 1.25rem;
+  border-block-end: 1px solid rgba(255, 149, 0, 0.15);
+  background: linear-gradient(180deg, #fff8ec, #fff4e2);
+}
+.nt-limit-ring {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  inline-size: 2.75rem;
+  block-size: 2.75rem;
+  border: 0.28rem solid #ff9500;
+  border-radius: 50%;
+  color: #b25e00;
+  font-size: 0.875rem;
+  font-weight: var(--nt-weight-heading);
+  letter-spacing: -0.02em;
+}
+.nt-limit-words {
+  margin: 0;
+  color: #4a3412;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  text-wrap: pretty;
+}
+.nt-limit-words > strong {
+  color: var(--nt-text);
+  font-size: 0.9375rem;
+  font-weight: var(--nt-weight-bold);
+}
+/* Found: a green circle of 26 with its tick. */
+.nt-top > p.nt-found {
+  gap: 0.625rem;
+  padding-inline: 0.75rem 1.25rem;
+}
+.nt-found-sign {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 1.625rem;
+  block-size: 1.625rem;
+  border-radius: 50%;
+  background: var(--nt-state-mastered);
+  color: var(--nt-on-fill);
+  font-size: 0.875rem;
 }

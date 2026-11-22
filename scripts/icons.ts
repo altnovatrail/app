@@ -110,9 +110,9 @@ export const TABLE: Readonly<Record<string, Value>> = {
   // home screen's card, a frame's cross the close.
   photos: { base: "photo-library", filled: false, mirrored: false },
   resize: { base: "open-in-full", filled: false, mirrored: false },
-  // The field of a request on the page to pick from (R74): Send, a paper plane, and the microphone,
-  // off until voice comes; each beside its caption.
-  send: { base: "send", filled: false, mirrored: false },
+  // The field of a request on the page to pick from (R74): Send, an arrow up in a blue circle, and
+  // the microphone, off until voice comes; each without its caption (R90 spec).
+  send: { base: "arrow-upward", filled: false, mirrored: false },
   microphone: { base: "mic", filled: false, mirrored: false },
   // The side menu of Home, Subjects and the skill map, and the phone's tab bar (R148 spec): Home,
   // four squares, filled while it is the place; Subjects, a book; the cognitive map, a hub, shut;

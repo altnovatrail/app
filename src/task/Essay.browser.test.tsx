@@ -348,7 +348,6 @@ describe("the screen of an essay", () => {
     expect(screen.getAllByRole("status").map((line) => line.textContent)).toContain(
       "The feedback came",
     );
-    expect(panel().getByText("The tutor is an AI, not a person")).toBeVisible();
     const sent = submitted[0];
     expect([...(sent?.crop.slice(0, 4) ?? [])]).toEqual(PNG);
     expect(sent?.clockOffsetMinutes).toBeDefined();
