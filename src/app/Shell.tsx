@@ -63,8 +63,8 @@ function PlaceLink({
 }
 
 /**
- * For grown-ups (R76): whose settings it holds, the profile's hint mode, This device, the section's
- * other pages, and Sign out. A child's profile, which this build has not, would open it behind the
+ * For grown-ups (R76): whose settings it holds, the profile's hint mode, This device and the
+ * section's other pages; Sign out is the profile's menu's alone (R63). A child's profile, which this build has not, would open it behind the
  * PIN (epic E4).
  */
 export function GrownUps() {
@@ -104,14 +104,6 @@ export function GrownUps() {
             onPress={() => {
               close();
               navigate(ADULTS);
-            }}
-          />
-          <MenuRow
-            icon="sign-out"
-            text={words.text("signout.button")}
-            onPress={() => {
-              close();
-              chosen.signOut();
             }}
           />
         </>

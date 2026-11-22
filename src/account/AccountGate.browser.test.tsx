@@ -112,7 +112,10 @@ async function grownUps(language: keyof typeof GROWN_UPS = "en"): Promise<void> 
   const { place, section } = GROWN_UPS[language];
   await userEvent.click(await screen.findByRole("button", { name: place }));
   const pop = within(await screen.findByRole("dialog"));
-  await userEvent.click(await pop.findByRole("button", { name: section }));
+  const row = await pop.findByRole("button", { name: section });
+  // Sign out is the profile's menu's alone, not again here (R79).
+  expect(pop.queryByRole("button", { name: /^(Sign out|Выйти)$/ })).toBeNull();
+  await userEvent.click(row);
 }
 
 /**
