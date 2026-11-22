@@ -2646,7 +2646,8 @@ dialog.nt-pop-legend .nt-legend-items {
     flex-direction: column;
     gap: 0.25rem;
     min-block-size: 3.25rem;
-    padding-block: 0.25rem;
+    /* The whole fifth for the caption: a button's 1rem a side broke "Cognitive" inside the word. */
+    padding: 0.25rem 0;
     border-radius: 0.875rem;
     color: var(--nt-text-muted);
     font-size: 0.6875rem;

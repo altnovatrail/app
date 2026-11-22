@@ -1487,7 +1487,7 @@ const MODE_PILL: Region = {
   differs: { what: ["font-size"], by: NO_TEXT },
 };
 
-/** A screen in the frame of the side menu, as App lays it, for the learner Sam. */
+/** A screen in the frame of the row of places, as App lays it, for the learner Sam. */
 function framed(place: Place, child: ReactNode) {
   return inLanguage(
     <ApiProvider value={QUIET}>
@@ -1516,28 +1516,19 @@ function home() {
 /**
  * Why Home's cards are of other heights than the mockup's: the card of what comes next holds the
  * engine's way, "What's next", which names no lesson before it is pressed (R24), not the mockup's
- * lesson and its picture; a module's card leads to its skill map, as ChooseNext takes no module,
- * where the mockup's says Continue.
+ * lesson begun with its line.
  */
-const HOME_PLACED =
-  "\"What's next\" names no lesson (R24); a module's card leads to its map, ChooseNext takes no module (R79)";
+const HOME_PLACED = "\"What's next\" names no lesson before it is pressed (R24)";
 
-/** The side menu from 600, the tab bar on a phone, and the top right: the frame of Home (R79). */
+/** The row of places from 600, the tab bar on a phone, and the pills at the right: Home's frame (R79). */
 function frameOf(device: Device): readonly Region[] {
   return [
-    device === "ipad"
-      ? {
-          name: "the side menu",
-          mockup: { css: "nav.ph-nav" },
-          app: { css: "nav.nt-nav" },
-          differs: { what: ["font-size"], by: NO_TEXT },
-        }
-      : {
-          name: "the tab bar",
-          mockup: { css: "nav.ph-tabs" },
-          app: { css: "nav.nt-nav" },
-          differs: { what: ["font-size"], by: NO_TEXT },
-        },
+    {
+      name: device === "ipad" ? "the row of places" : "the tab bar",
+      mockup: { css: "nav.nt-nav" },
+      app: { css: "nav.nt-nav" },
+      differs: { what: ["font-size"], by: NO_TEXT },
+    },
     {
       name: "Home, the place shown",
       mockup: { css: 'nav button[aria-current="page"]' },
@@ -1549,9 +1540,9 @@ function frameOf(device: Device): readonly Region[] {
       app: { css: "nav button:has-text('Cognitive map')" },
     },
     {
-      name: "the top right",
-      mockup: { css: ".ph-topend" },
-      app: { css: ".nt-shell-top" },
+      name: "the pills at the right",
+      mockup: { css: ".nt-top-pills" },
+      app: { css: ".nt-top-pills" },
       followsText: "end",
       differs: { what: ["font-size"], by: NO_TEXT },
     },
@@ -1568,26 +1559,26 @@ const HOME: readonly Region[] = [
   },
   {
     name: "the card of what comes next",
-    mockup: { css: ".ph-next" },
+    mockup: { css: ".nt-next-up" },
     app: { css: ".nt-next-up" },
     differs: { what: ["height", "font-size"], by: `${HOME_PLACED}; ${NO_TEXT}` },
   },
   {
     name: "A task from my paper",
-    mockup: { css: ".ph-paper" },
+    mockup: { css: ".nt-paper" },
     app: { css: ".nt-paper" },
-    differs: { what: ["height", "font-size"], by: `${HOME_PLACED}; ${NO_TEXT}` },
-  },
-  {
-    name: "the first module",
-    mockup: { css: ".ph-grid > .mc:first-child" },
-    app: { css: ".nt-module:first-child" },
     differs: { what: ["y", "height", "font-size"], by: `${HOME_PLACED}; ${NO_TEXT}` },
   },
   {
-    name: "its bar",
-    mockup: { css: '.ph-grid > .mc:first-child span[style*="height: 8px"]' },
-    app: { css: ".nt-module:first-child .nt-skills-bar" },
+    name: "the first module",
+    mockup: { css: ".nt-subject:first-child" },
+    app: { css: ".nt-subject:first-child" },
+    differs: { what: ["y", "font-size"], by: `${HOME_PLACED}; ${NO_TEXT}` },
+  },
+  {
+    name: "its squares",
+    mockup: { css: ".nt-subject:first-child .nt-dots" },
+    app: { css: ".nt-subject:first-child .nt-dots" },
     differs: { what: ["y", "font-size"], by: `${HOME_PLACED}; ${NO_TEXT}` },
   },
 ];
@@ -1595,7 +1586,7 @@ const HOME: readonly Region[] = [
 /** The legend standing below the modules, from 600 CSS px. */
 const LEGEND: Region = {
   name: "the legend",
-  mockup: { css: ".ph-legend" },
+  mockup: { css: ".nt-legend" },
   app: { css: ".nt-legend" },
   differs: { what: ["y"], by: HOME_PLACED },
 };
@@ -1624,7 +1615,7 @@ function popOver(name: string, mockup: string, app = mockup): Region {
   };
 }
 
-/** The adult's Help, open from the foot of the side menu. */
+/** The adult's Help, open from the row of places. */
 const HELP: readonly Region[] = [
   {
     name: "Help",
@@ -1643,7 +1634,6 @@ const HELP: readonly Region[] = [
     mockup: { role: "button", name: "Privacy Policy" },
     app: { role: "button", name: "Privacy Policy" },
     followsText: "start",
-    contrast: ACCENT_TEXT,
     differs: { what: ["background"], by: OVER_INERT },
   },
 ];
@@ -1656,36 +1646,22 @@ const MENU: readonly Region[] = [
     name: "Switch learner",
     mockup: { role: "button", name: "Switch learner" },
     app: { role: "button", name: "Switch learner" },
-    contrast: ACCENT_TEXT,
   },
 ];
 
-/**
- * Why For grown-ups is taller than the mockup's: it leads to the section's other pages too, "All
- * settings", which the mockup's pop-over leaves out (R79).
- */
-const ALL_SETTINGS = 'the row "All settings", the way to the section for adults (R79)';
-
-/** For grown-ups, open from the side menu: the hint mode, This device and Sign out. */
+/** For grown-ups, open from the row of places: the hint mode, This device and All settings. */
 const GROWN: readonly Region[] = [
   {
     name: "For grown-ups",
     mockup: { css: 'nav button:has-text("Grown-ups")' },
     app: { css: 'nav button:has-text("Grown-ups")' },
   },
-  {
-    ...popOver("the pop-over For grown-ups", "For grown-ups"),
-    differs: {
-      what: ["y", "height", "background", "border", "font-size"],
-      by: `${ALL_SETTINGS}; ${OVER_INERT}; ${NO_TEXT}`,
-    },
-  },
+  popOver("the pop-over For grown-ups", "For grown-ups"),
   {
     name: "Questions only",
     mockup: { css: 'div.nt-pop span:text-is("Questions only")' },
     app: { css: ".nt-pop-grown .nt-hint-mode-title >> nth=0" },
     followsText: "start",
-    differs: { what: ["y"], by: ALL_SETTINGS },
   },
 ];
 
@@ -2190,7 +2166,12 @@ const SCREENS: readonly Compared[] = [
     settle: () => userEvent.click(screen.getByRole("button", { name: "Notifications" })),
     regions: BELL,
   },
-  { state: "home-tutor", draw: home, regions: HOME_TUTOR },
+  {
+    state: "home-tutor",
+    draw: home,
+    settle: () => userEvent.click(screen.getByRole("button", { name: "Tutor" })),
+    regions: HOME_TUTOR,
+  },
   ...DEVICES.map(
     (device): Compared => ({
       state: "subjects",
