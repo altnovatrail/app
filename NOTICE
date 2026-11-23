@@ -5,10 +5,11 @@ This product is licensed under the Apache License, Version 2.0; see LICENSE.
 
 The build of this app includes the following third-party software, each under its own license.
 A test checks that this list names every package the build takes from npm, at its version in
-package-lock.json, with the NOTICE of each package that holds one, as it is.
+package-lock.json, with the NOTICE of each package that holds one, as it is (R14 and R15 in
+docs/decisions.md).
 
 @altnovatrail/canvas 0.3.39 — Apache-2.0 — Copyright the NovaTrail authors.
-@altnovatrail/contracts 0.19.12 — Apache-2.0 — Copyright the NovaTrail authors.
+@altnovatrail/contracts 0.19.13 — Apache-2.0 — Copyright the NovaTrail authors.
 @altnovatrail/skill-map 0.1.19 — Apache-2.0 — Copyright the NovaTrail authors.
 @altnovatrail/spec 0.18.27 — Apache-2.0 — Copyright the NovaTrail authors.
 @altnovatrail/spec 0.19.9 — Apache-2.0 — Copyright the NovaTrail authors.
@@ -36,7 +37,7 @@ The build of this app includes the "G" logo of Google, src/signin/google-g.svg, 
 "Sign in with Google": Google's artwork and a trademark of Google LLC, taken unchanged from
 Google's pre-approved Sign in with Google button assets, only its white circle left out, and used
 as Google's Sign in with Google branding guidelines allow. It is not under the Apache License, and
-no license to Google's trademarks is granted with this app.
+no license to Google's trademarks is granted with this app (R12 spec; R61).
 
 Notice of @altnovatrail/canvas 0.3.39:
 
