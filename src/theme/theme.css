@@ -3263,7 +3263,7 @@ main.nt-task-screen:has(> .nt-camera) .nt-top-pill.nt-glass {
  * button of the photo's accent; a frame drawn by hand has a dashed line inside, and its cross and
  * corner are targets of 44 on its corners.
  */
-.nt-top-end > button.nt-retake {
+.nt-top-end button.nt-retake {
   display: inline-flex;
   align-items: center;
   gap: 0.375rem;
@@ -6565,33 +6565,74 @@ main.nt-task-screen:has(.nt-page-stage) {
     grid-row: 2;
     grid-column: 1 / -1;
     justify-self: center;
-  }
-}
-/* Where the pill and the buttons at the end do not fit one row, the buttons go below it, at its
-   end, and the finding below them: a squeezed pill would wrap its name a letter a line (1.4.10). */
-@media (width < 25rem) {
-  .nt-top[data-middle] {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .nt-top[data-middle] > :last-child {
-    grid-row: 2;
-  }
-  .nt-top[data-middle] > .nt-finding {
-    grid-row: 3;
     max-inline-size: 100%;
     white-space: normal;
   }
+}
+.nt-top-end button.nt-retake {
+  gap: 0.5rem;
+  padding-inline: 1rem 1.25rem;
+  font-size: 0.9375rem;
+  font-weight: var(--nt-weight-medium);
+}
+/*
+ * The bar keeps one row, as BarFit.tsx fits it: with its words, the title in one line and the
+ * end never wrapped, so that a row too narrow shows as cut; with its icons alone, the title and the
+ * captions hidden to the eye but still the heading and the names, each button round, 48; below,
+ * where even the icons do not fit, the buttons under the title, at the row's end in a bar with no
+ * middle too, and the finding under them, the title wrapping by its words on its own row: a
+ * squeezed pill would wrap its name a letter a line (1.4.10). Below 600 the finding, on a row of
+ * its own, wraps its words rather than pass the window.
+ */
+.nt-top-end[data-fit] {
+  flex-wrap: nowrap;
+  min-inline-size: 0;
+  max-inline-size: 100%;
+}
+.nt-top-end[data-fit] button.nt-retake {
+  flex: none;
+  white-space: nowrap;
+}
+/* biome-ignore lint/style/noDescendingSpecificity: the profiles' screen has no top bar. */
+.nt-top:has(> .nt-top-end:is([data-fit="words"], [data-fit="icons"])) > .nt-top-pill > h1 {
+  white-space: nowrap;
+}
+.nt-top:has(> .nt-top-end[data-fit="icons"]) > .nt-top-pill {
+  padding-inline-end: 0.125rem;
+}
+/* biome-ignore lint/style/noDescendingSpecificity: the profiles' screen has no top bar. */
+.nt-top:has(> .nt-top-end[data-fit="icons"]) > .nt-top-pill > h1,
+.nt-top-end:is([data-fit="icons"], [data-fit="below"]) .nt-retake-words {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.nt-top-end:is([data-fit="icons"], [data-fit="below"]) button.nt-retake {
+  justify-content: center;
+  inline-size: 3rem;
+  padding-inline: 0;
+}
+.nt-top:has(> .nt-top-end[data-fit="below"]) {
+  grid-template-columns: minmax(0, 1fr);
+}
+.nt-top:has(> .nt-top-end[data-fit="below"]) > .nt-top-end {
+  grid-row: 2;
+  justify-self: end;
+  margin-inline-start: auto;
+}
+.nt-top:has(> .nt-top-end[data-fit="below"]) > .nt-finding {
+  grid-row: 3;
+  justify-self: center;
+  max-inline-size: 100%;
+  white-space: normal;
 }
 .nt-top-pill button.nt-icon-only.nt-page-back {
   border-radius: 50%;
   background: #f2f2f7;
   color: var(--nt-text);
-}
-.nt-top-end > button.nt-retake {
-  gap: 0.5rem;
-  padding-inline: 1rem 1.25rem;
-  font-size: 0.9375rem;
-  font-weight: var(--nt-weight-medium);
 }
 p.nt-finding {
   display: flex;

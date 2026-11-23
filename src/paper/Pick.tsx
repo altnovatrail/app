@@ -5,7 +5,7 @@
 // frame it becomes, or by two taps, a corner and then the one opposite. Every frame, the AI's too,
 // moves when dragged by its middle and resizes by its corner; a press that moved it picks nothing.
 // The top bar's pill holds the title alone, and its end "Remove all frames", which clears the
-// photo for frames of the learner's own, and Retake; while the tasks are found, its middle says
+// photo for frames of the learner's own, and Retake, the bar kept to one row by BarFit.tsx; while the tasks are found, its middle says
 // so, by a turning ring, and a line of light runs down the photo and back; once they are, how many
 // were found and framed by hand. At the foot, the note
 // that the photo stays on the device, and the bar of "Select all", the count and Start, with the
@@ -18,6 +18,7 @@ import { Icon } from "../app/Icon.tsx";
 import { IconButton } from "../app/IconButton.tsx";
 import { Screen } from "../app/Screen.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
+import { BarButton, useBarFit } from "./BarFit.tsx";
 import type { Photo } from "./capture.ts";
 import {
   dragFrame,
@@ -167,8 +168,9 @@ export function Pick({
   onHome,
   beside = false,
 }: PickProps) {
-  const { words } = useLanguage();
+  const { language, words } = useLanguage();
   const surface = useRef<HTMLDivElement>(null);
+  const barEnd = useRef<HTMLDivElement>(null);
   // A press on the photo: where it began, where the pointer is, and the farthest corners it reached,
   // by which a press that never left the size of a tap is a tap.
   const stroke = useRef<
@@ -265,6 +267,8 @@ export function Pick({
   const to = picks.indexOf("{total}") + "{total}".length;
   const fill = (part: string) =>
     part.replace("{count}", String(count.picked)).replace("{total}", String(count.all));
+  const clearable = count.all > 0 && !finding;
+  useBarFit(barEnd, [language, finding, clearable, count.found, count.drawn].join(" "));
 
   return (
     <Screen
@@ -301,21 +305,15 @@ export function Pick({
               }
             : {}),
         end: (
-          <div className="nt-top-end">
-            {count.all === 0 || finding ? null : (
-              <button
-                type="button"
-                className="nt-glass nt-retake"
+          <div ref={barEnd} className="nt-top-end">
+            {clearable ? (
+              <BarButton
+                icon="close"
+                caption={words.text("paper.remove-all")}
                 onClick={() => onTasks(() => [])}
-              >
-                <Icon value="close" />
-                {words.text("paper.remove-all")}
-              </button>
-            )}
-            <button type="button" className="nt-glass nt-retake" onClick={onRetake}>
-              <Icon value="camera" />
-              {words.text("paper.retake")}
-            </button>
+              />
+            ) : null}
+            <BarButton icon="camera" caption={words.text("paper.retake")} onClick={onRetake} />
           </div>
         ),
       }}
