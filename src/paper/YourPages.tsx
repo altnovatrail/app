@@ -11,7 +11,7 @@ import { Sk } from "../app/Skeleton.tsx";
 import { dateTimeFormat } from "../i18n/intl.ts";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import type { Device } from "../storage/device.ts";
-import { type KeptPhoto, openProfile, type PageSummary } from "../storage/profile.ts";
+import { type KeptPhoto, MAX_PAGES, openProfile, type PageSummary } from "../storage/profile.ts";
 import { thumbnailOf } from "./capture.ts";
 import { usePaper } from "./PaperContext.tsx";
 
@@ -200,7 +200,7 @@ export function YourPages({
             <span className="nt-pages-lock">
               <Icon value="state-locked" />
             </span>
-            {words.text("paper.pages-kept")}
+            {words.text("paper.pages-kept", { count: MAX_PAGES })}
           </p>
         </>
       )}

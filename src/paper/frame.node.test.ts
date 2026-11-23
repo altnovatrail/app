@@ -1,49 +1,65 @@
-// The geometry of a frame the learner draws (R71): a loop's box with its margin, a tap that is no
-// loop, two taps, the corner that resizes it, the photo's edge, and the crop's rectangle in pixels.
+// The geometry of a frame the learner draws (R71): a rectangle dragged corner to corner, a tap that
+// is no drag, two taps, the corner that resizes it, a frame moved by its middle, the photo's edge,
+// and the crop's rectangle in pixels; and a frame on the photo turned upright (R162 spec).
 import { describe, expect, it } from "vitest";
 import {
   cropRect,
+  dragFrame,
   isFrame,
+  isMove,
   isTap,
-  loopFrame,
-  MARGIN,
   MIN_HEIGHT,
   MIN_WIDTH,
+  MOVE_SLOP,
+  movedFrame,
   pageOrder,
   resizedFrame,
   type Scale,
   sameFrame,
+  spanned,
   tapsFrame,
+  turnedFrame,
 } from "./frame.ts";
 
 // A photo drawn 500 × 700 CSS px: a thousandth is 0.5 px across and 0.7 px down.
 const scale: Scale = { x: 0.5, y: 0.7 };
 
-describe("a loop", () => {
-  it("is its box with the margin", () => {
-    const loop = [
-      { x: 200, y: 300 },
-      { x: 600, y: 310 },
-      { x: 590, y: 500 },
-      { x: 210, y: 490 },
-    ];
-    expect(loopFrame(loop, scale)).toEqual({
-      xmin: 200 - MARGIN / scale.x,
-      ymin: Math.floor(300 - MARGIN / scale.y),
-      xmax: 600 + MARGIN / scale.x,
-      ymax: Math.ceil(500 + MARGIN / scale.y),
+describe("a drag", () => {
+  it("is the rectangle of its two corners, with no margin, in whichever direction", () => {
+    const frame = { xmin: 200, ymin: 300, xmax: 600, ymax: 500 };
+    expect(dragFrame({ x: 200, y: 300 }, { x: 600, y: 500 }, scale)).toEqual(frame);
+    expect(dragFrame({ x: 600, y: 500 }, { x: 200, y: 300 }, scale)).toEqual(frame);
+    expect(dragFrame({ x: 600, y: 300 }, { x: 200, y: 500 }, scale)).toEqual(frame);
+  });
+
+  it("rounds out to whole thousandths and stays in the photo", () => {
+    expect(spanned({ x: 200.6, y: 300.2 }, { x: 599.4, y: 499.9 })).toEqual({
+      xmin: 200,
+      ymin: 300,
+      xmax: 600,
+      ymax: 500,
+    });
+    expect(dragFrame({ x: -40, y: -3 }, { x: 1200, y: 1001 }, scale)).toEqual({
+      xmin: 0,
+      ymin: 0,
+      xmax: 1000,
+      ymax: 1000,
     });
   });
 
-  it("stays in the photo", () => {
-    const loop = [
-      { x: 1, y: 2 },
-      { x: 999, y: 998 },
-    ];
-    expect(loopFrame(loop, scale)).toEqual({ xmin: 0, ymin: 0, xmax: 1000, ymax: 1000 });
+  it("smaller than the least frame is none: the pointer came back near where it was pressed", () => {
+    const w = MIN_WIDTH / scale.x;
+    const h = MIN_HEIGHT / scale.y;
+    expect(dragFrame({ x: 100, y: 100 }, { x: 100 + w - 1, y: 400 }, scale)).toBeUndefined();
+    expect(dragFrame({ x: 100, y: 100 }, { x: 400, y: 100 + h - 1 }, scale)).toBeUndefined();
+    expect(dragFrame({ x: 100, y: 100 }, { x: 100 + w, y: 100 + h }, scale)).toBeDefined();
+    // Cut by the photo's edge below the least frame.
+    expect(dragFrame({ x: 990, y: 100 }, { x: 1200, y: 400 }, scale)).toBeUndefined();
   });
+});
 
-  it("smaller than the least frame is a tap", () => {
+describe("a tap", () => {
+  it("is a stroke smaller than the least frame", () => {
     const narrow = [
       { x: 100, y: 100 },
       { x: 100 + MIN_WIDTH / scale.x - 1, y: 400 },
@@ -55,8 +71,6 @@ describe("a loop", () => {
     expect(isTap(narrow, scale)).toBe(true);
     expect(isTap(low, scale)).toBe(true);
     expect(isTap([], scale)).toBe(true);
-    expect(loopFrame(narrow, scale)).toBeUndefined();
-    expect(loopFrame(low, scale)).toBeUndefined();
     expect(
       isTap(
         [
@@ -123,6 +137,35 @@ describe("the corner", () => {
   });
 });
 
+describe("a move", () => {
+  const frame = { xmin: 100, ymin: 100, xmax: 300, ymax: 300 };
+
+  it("is a press gone farther than the slop on the screen, across or down", () => {
+    const from = { x: 100, y: 100 };
+    // 5 px across is a tap; past 6 down, at 0.7 px a thousandth, a move.
+    expect(isMove(from, { x: 110, y: 100 }, scale)).toBe(false);
+    expect(isMove(from, { x: 100, y: 100 + (MOVE_SLOP + 0.01) / scale.y }, scale)).toBe(true);
+  });
+
+  it("shifts the frame, its size kept, rounded to whole thousandths", () => {
+    expect(movedFrame(frame, { x: 50.4, y: -20.6 })).toEqual({
+      xmin: 150,
+      ymin: 79,
+      xmax: 350,
+      ymax: 279,
+    });
+  });
+
+  it("keeps the frame wholly in the photo", () => {
+    expect(movedFrame(frame, { x: -500, y: 900 })).toEqual({
+      xmin: 0,
+      ymin: 800,
+      xmax: 200,
+      ymax: 1000,
+    });
+  });
+});
+
 it("orders the page top to bottom, the left first", () => {
   const a = { xmin: 500, ymin: 100, xmax: 600, ymax: 200 };
   const b = { xmin: 100, ymin: 100, xmax: 200, ymax: 200 };
@@ -165,5 +208,55 @@ describe("the crop's rectangle", () => {
       sw: 1,
       sh: 1,
     });
+  });
+});
+
+describe("a frame on the photo turned", () => {
+  const tall = { width: 1000, height: 2000 };
+  const wide = { width: 2000, height: 1000 };
+  const frame = { xmin: 100, ymin: 200, xmax: 400, ymax: 300 };
+
+  it("turns exactly by a multiple of 90°", () => {
+    // Clockwise, the top-left corner goes to the top-right.
+    expect(turnedFrame(frame, 90, tall, wide)).toEqual({
+      xmin: 700,
+      ymin: 100,
+      xmax: 800,
+      ymax: 400,
+    });
+    expect(turnedFrame(frame, -90, tall, wide)).toEqual({
+      xmin: 200,
+      ymin: 600,
+      xmax: 300,
+      ymax: 900,
+    });
+    expect(turnedFrame(frame, 180, tall, tall)).toEqual({
+      xmin: 600,
+      ymin: 700,
+      xmax: 900,
+      ymax: 800,
+    });
+    expect(turnedFrame(frame, 0, tall, tall)).toEqual(frame);
+  });
+
+  it("turned back by a multiple of 90° is the frame again", () => {
+    const there = turnedFrame(frame, 90, tall, wide);
+    expect(there && turnedFrame(there, -90, wide, tall)).toEqual(frame);
+  });
+
+  it("by another angle is the rectangle that holds its corners turned", () => {
+    // The centre of a square photo stays where it is, and a square round it grows by √2 at 45°.
+    const square = { width: 1000, height: 1000 };
+    const upright = { width: 1414, height: 1414 };
+    const turned = turnedFrame({ xmin: 400, ymin: 400, xmax: 600, ymax: 600 }, 45, square, upright);
+    expect(turned).toEqual({ xmin: 399, ymin: 399, xmax: 601, ymax: 601 });
+  });
+
+  it("is none with nothing of it left on the photo", () => {
+    // A corner of the photo turned 45° falls past the photo of the size before.
+    const square = { width: 1000, height: 1000 };
+    expect(
+      turnedFrame({ xmin: 0, ymin: 0, xmax: 50, ymax: 50 }, 45, square, square),
+    ).toBeUndefined();
   });
 });

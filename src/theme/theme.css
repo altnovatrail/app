@@ -351,7 +351,8 @@ button[aria-pressed="true"] {
  * puts it, 16rem to 27.5rem wide, the panel's glass, radius 20, and grows from its button's corner
  * in 0.2 s. Below 600 it is a sheet from the bottom, the whole width: white — the mockup's 0.98 over
  * the page it dims by 0.22 —, radius 28 above, "Close" at its top right, rising in 0.3 s. Either
- * scrolls inside where it does not fit the window.
+ * scrolls inside where it does not fit the window. Opened by a tap, it draws no focus ring until a key
+ * is pressed.
  */
 dialog.nt-pop {
   box-sizing: border-box;
@@ -367,6 +368,9 @@ dialog.nt-pop {
   padding: 0.75rem;
 }
 .nt-pop-content:focus:not(:focus-visible) {
+  outline: none;
+}
+:where(dialog.nt-pop[data-tapped]) :focus-visible {
   outline: none;
 }
 @media (width >= 600px) {
@@ -1981,10 +1985,12 @@ button.nt-row > svg {
 .nt-next-step .nt-buttons {
   margin: 0;
 }
+/* No wider than its words: on a card of the whole width, in portrait, it does not stretch across. */
 .nt-quota {
   display: flex;
   flex: 1 1 auto;
   min-inline-size: 0;
+  max-inline-size: 20rem;
   flex-direction: column;
   gap: 0.75rem;
   margin: 0;
@@ -3266,13 +3272,6 @@ main.nt-task-screen:has(> .nt-camera) .nt-top-pill.nt-glass {
   color: var(--nt-accent-text);
   font-size: var(--nt-size-caption);
 }
-main .nt-page-lines > p {
-  margin: 0 0 0.375rem;
-  font-size: var(--nt-size-body);
-}
-.nt-page-lines button.nt-secondary {
-  margin-inline-start: 0.5rem;
-}
 .nt-page-stage {
   display: grid;
   flex: 1 1 0;
@@ -3308,6 +3307,8 @@ main .nt-page-lines > p {
   border-radius: 0.625rem;
   background: rgba(0, 113, 227, 0.035);
   box-shadow: inset 0 0 0 0.125rem rgba(0, 113, 227, 0.4);
+  cursor: grab;
+  touch-action: none;
   transition:
     background var(--nt-quick),
     box-shadow var(--nt-quick);
@@ -3371,11 +3372,17 @@ main .nt-page-lines > p {
     0 2px 6px rgba(0, 0, 0, 0.18),
     0 0 0 0.5px rgba(0, 0, 0, 0.08);
 }
+/* The corner is a dot of 15 in a white ring, as the mockup's, small enough on a dense page to leave
+   the next frame's mark in sight; its target is still 44. */
 .nt-frame-control button.nt-icon-only.nt-frame-corner::before {
+  inset: calc(50% - 0.46875rem);
   background: var(--nt-accent);
+  box-shadow:
+    0 0 0 0.15625rem var(--nt-card),
+    0 1px 4px rgba(0, 0, 0, 0.18);
 }
 .nt-frame-control button.nt-icon-only.nt-frame-corner {
-  color: var(--nt-on-fill);
+  color: transparent;
   cursor: nwse-resize;
   touch-action: none;
 }
@@ -3389,21 +3396,20 @@ main .nt-page-lines > p {
   translate: -50% -50%;
   pointer-events: none;
 }
+/* The frame being dragged looks as the learner's frame it becomes, picked. */
 .nt-page-live {
   position: absolute;
-  inset: 0;
-  inline-size: 100%;
-  block-size: 100%;
+  border-radius: 0.625rem;
+  background: rgba(0, 113, 227, 0.08);
+  box-shadow: inset 0 0 0 0.125rem var(--nt-accent);
   pointer-events: none;
 }
-.nt-page-live > polyline {
-  fill: none;
-  stroke: var(--nt-accent);
-  stroke-width: 4px;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  opacity: 0.85;
-  vector-effect: non-scaling-stroke;
+.nt-page-live::after {
+  content: "";
+  position: absolute;
+  inset: 0.1875rem;
+  border: 0.125rem dashed rgba(255, 255, 255, 0.9);
+  border-radius: 0.5rem;
 }
 p.nt-page-note {
   display: flex;
@@ -5429,7 +5435,8 @@ form.nt-ask > textarea.nt-ask-input:focus-visible {
 }
 /* The open panel lies over the page, which stays where it is; on a phone its sheet hides the bar. */
 @media (width < 600px) {
-  .nt-page-bar[data-beside="panel"] {
+  .nt-page-bar[data-beside="panel"],
+  .nt-page-says[data-beside="panel"] {
     display: none;
   }
 }
@@ -5447,6 +5454,10 @@ form.nt-ask > textarea.nt-ask-input:focus-visible {
 @media (width < 600px) {
   .nt-tutor-call {
     inset-block: auto 10.75rem;
+  }
+  /* A card of what the page says lifts the note: the button goes up by as much (the mockup's `pick-none`). */
+  body:has(.nt-page-say) .nt-tutor-call {
+    inset-block: auto 16rem;
   }
 }
 button.nt-icon-only.nt-tutor-button,
@@ -5775,6 +5786,9 @@ main.nt-sheet .nt-column .nt-sheet-note > button.nt-link {
 .nt-hint-mode:has(:focus-visible) {
   outline: 0.125rem solid var(--nt-accent);
   outline-offset: 0.125rem;
+}
+:where(dialog.nt-pop[data-tapped]) .nt-hint-mode:has(:focus-visible) {
+  outline: none;
 }
 @media (forced-colors: active) {
   .nt-hint-mode:has(:checked) {
@@ -6300,6 +6314,7 @@ dialog.nt-legal-sheet .nt-legal-body .nt-legal-foot > button.nt-link {
 }
 .nt-next-loading > .nt-next-foot > .nt-loading {
   flex: 1 1 auto;
+  max-inline-size: 20rem;
 }
 /* A shape in a line of text: a count in a heading. */
 .nt-sk-inline {
@@ -6606,24 +6621,33 @@ p.nt-finding {
   background: rgba(0, 113, 227, 0.03);
   pointer-events: none;
 }
+/* The line runs through the middle of its glow, so the glow is the same above and below it, as the
+   mockup draws it; the band starts and ends half out of the page, so the line sweeps it edge to edge. */
 .nt-page-scan > span {
   display: none;
   position: absolute;
   inset-inline: 0;
   inset-block-start: -12%;
-  block-size: 12%;
-  border-block-end: 0.125rem solid rgba(0, 113, 227, 0.7);
+  block-size: 24%;
   background: linear-gradient(
     180deg,
     rgba(0, 113, 227, 0) 0%,
-    rgba(0, 113, 227, 0.12) 85%,
+    rgba(0, 113, 227, 0.12) 50%,
     rgba(0, 113, 227, 0) 100%
   );
-  box-shadow: 0 6px 18px rgba(0, 113, 227, 0.25);
+}
+.nt-page-scan > span::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  inset-block-start: calc(50% - 0.0625rem);
+  block-size: 0.125rem;
+  background: rgba(0, 113, 227, 0.7);
+  box-shadow: 0 0 0.75rem rgba(0, 113, 227, 0.35);
 }
 @keyframes nt-scan {
   to {
-    inset-block-start: 100%;
+    inset-block-start: 88%;
   }
 }
 @keyframes nt-breathe {
@@ -6668,15 +6692,8 @@ p.nt-finding {
     white-space: nowrap;
     padding: 0.5rem 0.5rem 0.5rem 1.5rem;
   }
-  .nt-page-bar:not(:has(> .nt-page-limit)) {
+  .nt-page-bar {
     border-radius: var(--nt-radius-round);
-  }
-  /* With the most at its head, the bar of the mockup's 640, its count in the middle. */
-  .nt-page-bar:has(> .nt-page-limit) {
-    inline-size: min(40rem, 100%);
-  }
-  .nt-page-bar:has(> .nt-page-limit) .nt-page-count {
-    flex: 1;
   }
 }
 .nt-page-row > button.nt-plain:disabled {
@@ -6686,16 +6703,47 @@ p.nt-finding {
   color: var(--nt-text);
   font-weight: var(--nt-weight-bold);
 }
-/* The most at once: a ring of orange round its number, on a band of warm white. */
-.nt-page-limit {
+/*
+ * What the page says, each a card of its own just above the bar, which keeps its size (the
+ * mockup's `pick-none` and the states after it): radius 22, a sign of 44 at its start — a dashed
+ * blue ring for a hint on cool white, an orange ring for a warning on warm white, a red disc for a
+ * failure on a red tint —, the title in bold, and a failure's way on at its end.
+ */
+.nt-page-says {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.625rem;
+}
+.nt-page-says:not(:empty) {
+  margin-block-end: 0.625rem;
+}
+.nt-page-say {
   display: flex;
   align-items: center;
   gap: 0.875rem;
-  padding: 1rem 1.25rem;
-  border-block-end: 1px solid rgba(255, 149, 0, 0.15);
-  background: linear-gradient(180deg, #fff8ec, #fff4e2);
+  box-sizing: border-box;
+  max-inline-size: min(40rem, 100%);
+  padding: 0.875rem 1.25rem 0.875rem 0.875rem;
+  border: 1px solid rgba(0, 113, 227, 0.14);
+  border-radius: 1.375rem;
+  background: linear-gradient(180deg, #f3f8ff, #eaf2fe);
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.04),
+    0 10px 28px rgba(17, 24, 39, 0.1);
+  color: #1f3350;
 }
-.nt-limit-ring {
+.nt-page-say[data-kind="warn"] {
+  border-color: rgba(255, 149, 0, 0.15);
+  background: linear-gradient(180deg, #fff8ec, #fff4e2);
+  color: #4a3412;
+}
+.nt-page-say[data-kind="fail"] {
+  border-color: rgba(255, 59, 48, 0.16);
+  background: linear-gradient(180deg, #fff5f4, #ffecea);
+  color: #4d1a16;
+}
+.nt-say-sign {
   display: flex;
   flex: none;
   align-items: center;
@@ -6703,24 +6751,51 @@ p.nt-finding {
   box-sizing: border-box;
   inline-size: 2.75rem;
   block-size: 2.75rem;
-  border: 0.28rem solid #ff9500;
+  border: 0.156rem dashed var(--nt-accent);
   border-radius: 50%;
-  color: #b25e00;
+  color: var(--nt-accent);
   font-size: 0.875rem;
   font-weight: var(--nt-weight-heading);
   letter-spacing: -0.02em;
 }
-.nt-limit-words {
+.nt-page-say[data-kind="warn"] > .nt-say-sign {
+  border: 0.156rem solid #ff9500;
+  color: #b25e00;
+}
+.nt-page-say[data-kind="fail"] > .nt-say-sign {
+  border: 0.156rem solid #ff3b30;
+  background: #ff3b30;
+  color: var(--nt-on-fill);
+}
+.nt-say-words {
+  flex: 1;
   margin: 0;
-  color: #4a3412;
   font-size: 0.875rem;
   line-height: 1.45;
   text-wrap: pretty;
 }
-.nt-limit-words > strong {
+.nt-say-words > strong {
   color: var(--nt-text);
   font-size: 0.9375rem;
   font-weight: var(--nt-weight-bold);
+}
+.nt-page-say > button.nt-say-action {
+  flex: none;
+  min-block-size: 2.75rem;
+  padding-inline: 0.875rem;
+  border-radius: var(--nt-radius-round);
+  background: #ffffff;
+  box-shadow: 0 0 0 1px rgba(60, 60, 67, 0.14);
+  color: var(--nt-accent-text);
+  font-size: 0.8125rem;
+  font-weight: var(--nt-weight-bold);
+  white-space: nowrap;
+}
+@media (width < 600px) {
+  .nt-page-say {
+    gap: 0.75rem;
+    padding: 0.75rem 0.875rem 0.75rem 0.75rem;
+  }
 }
 /* Found: a green circle of 26 with its tick. */
 .nt-top > p.nt-found {

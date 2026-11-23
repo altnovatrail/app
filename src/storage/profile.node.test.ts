@@ -11,6 +11,7 @@ import { DAY, memoryDevice } from "../test/device.ts";
 import {
   addProfile,
   type KeptPaperTask,
+  MAX_PAGES,
   openProfile,
   openProfileDatabase,
   type Profile,
@@ -628,6 +629,38 @@ describe("the pages from paper", () => {
       { pageId: "new", takenAt: 5000, tasks: 2 },
       { pageId: "old", takenAt: 1000, tasks: 1 },
     ]);
+  });
+
+  it("keeps the MAX_PAGES newest: a new page takes the oldest with its photo and its tasks", async () => {
+    const { profile } = await setUp();
+    for (let n = 1; n <= MAX_PAGES; n++)
+      await profile.keepPage(page(`g${n}`, 1000 * n, [n]), photo, [task(n)]);
+    // A page kept again is no new one, and takes none.
+    await profile.keepPage(page("g1", 1000, [1, 2]), photo, [task(9, "found-2")]);
+    expect(await profile.pages()).toHaveLength(MAX_PAGES);
+    await profile.keepPage(page("new", 1000 * (MAX_PAGES + 1), [7]), photo, [task(7)]);
+    const ids = (await profile.pages()).map((each) => each.pageId);
+    expect(ids).toHaveLength(MAX_PAGES);
+    expect(ids[0]).toBe("new");
+    expect(ids).not.toContain("g1");
+    expect(await profile.page("g1")).toBeUndefined();
+    expect(await profile.photo("g1")).toBeUndefined();
+    // The work of a task of the page gone is no longer kept.
+    expect(await profile.keepPaperWork("pa1", { history: [], sent: [], over: true })).toBe(
+      "unsaved",
+    );
+    expect((await profile.page("g2"))?.tasks).toHaveLength(1);
+  });
+
+  it("never takes the page kept now, though another is newer", async () => {
+    const { profile } = await setUp();
+    for (let n = 1; n <= MAX_PAGES; n++)
+      await profile.keepPage(page(`g${n}`, 1000 * n, [n]), photo, [task(n)]);
+    await profile.keepPage(page("early", 10, [7]), photo, [task(7)]);
+    const ids = (await profile.pages()).map((each) => each.pageId);
+    expect(ids).toHaveLength(MAX_PAGES);
+    expect(ids).toContain("early");
+    expect(ids).not.toContain("g1");
   });
 
   it("reads a page, a photo or a task of another form as none, and leaves the task out", async () => {

@@ -1,7 +1,9 @@
 // The page photographed, its tasks to pick (R71), as the mockup's pick screen: the photo, each
 // task's frame over it a button that is picked or left out, every one picked at first, and its
-// cross removes it; a task the AI missed the learner frames by hand, by a loop drawn round it with a
-// finger or a pen or by two taps, a corner and then the one opposite, and its corner resizes it.
+// cross removes it; a task the AI missed the learner frames by hand, by a rectangle dragged from one
+// corner of it to the opposite with a finger or a pen, which follows the pointer and looks as the
+// frame it becomes, or by two taps, a corner and then the one opposite. Every frame, the AI's too,
+// moves when dragged by its middle and resizes by its corner; a press that moved it picks nothing.
 // The top bar's pill holds the title alone, and its end "Remove all frames", which clears the
 // photo for frames of the learner's own, and Retake; while the tasks are found, its middle says
 // so, by a turning ring, and a line of light runs down the photo and back; once they are, how many
@@ -18,12 +20,15 @@ import { Screen } from "../app/Screen.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import type { Photo } from "./capture.ts";
 import {
+  dragFrame,
   type Frame,
+  isMove,
   isTap,
-  loopFrame,
+  movedFrame,
   type Point,
   resizedFrame,
   type Scale,
+  spanned,
   tapsFrame,
 } from "./frame.ts";
 import {
@@ -40,9 +45,6 @@ import {
   without,
 } from "./page.ts";
 
-/** A pointer moves at least this many CSS px before the loop takes another point. */
-const STEP_PX = 2;
-
 /** Where a frame stands over the photo, in percent of it. */
 function placed(frame: Frame): CSSProperties {
   return {
@@ -56,6 +58,65 @@ function placed(frame: Frame): CSSProperties {
 /** A point of the photo in percent, where the tap of a frame's first corner stands. */
 function at(x: number, y: number): CSSProperties {
   return { left: `${x / 10}%`, top: `${y / 10}%` };
+}
+
+/**
+ * What the page to pick from says: a card of its own just above the bar, which keeps its size — a
+ * hint in cool white, a warning in warm white, a failure in a red tint with its way on at its end
+ * (the mockup's `pick-none`, `pick-corner`, `pick-failed`, `pick-outcome` and `pick-closed`).
+ */
+export interface PageSay {
+  readonly kind: "hint" | "warn" | "fail";
+  readonly title: string;
+  readonly line?: string | undefined;
+  readonly action?: { readonly label: string; readonly onClick: () => void } | undefined;
+}
+
+/** The signs of the cards: a frame dragged from its corner, two opposite corners of one, and "!". */
+const DRAG = "M4 5h12v10H4zM16 15l4.5 4.5";
+const CORNERS = "M4 10V4h6M20 14v6h-6";
+const BANG = "M12 7v6M12 17h.01";
+
+function Drawn({ path, bold = false }: { readonly path: string; readonly bold?: boolean }) {
+  return (
+    <svg
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={bold ? 2.8 : 2.2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d={path} />
+    </svg>
+  );
+}
+
+/** A sentence ends with its stop: the title is in bold, and the line, when there is one, after it. */
+function stopped(title: string): string {
+  return /[.!?…]$/.test(title) ? title : `${title}.`;
+}
+
+function Say({ kind, title, line, action, sign }: PageSay & { readonly sign: ReactNode }) {
+  return (
+    <div className="nt-page-say" data-kind={kind} role={kind === "fail" ? "alert" : "status"}>
+      <span className="nt-say-sign" aria-hidden="true">
+        {sign}
+      </span>
+      <p className="nt-say-words">
+        <strong>{stopped(title)}</strong>
+        {line === undefined ? null : ` ${line}`}
+      </p>
+      {action === undefined ? null : (
+        <button type="button" className="nt-say-action" onClick={action.onClick}>
+          {action.label}
+        </button>
+      )}
+    </div>
+  );
 }
 
 /**
@@ -74,8 +135,10 @@ export interface PickProps {
   readonly onTasks: (update: (tasks: readonly PageTask[]) => readonly PageTask[]) => void;
   /** The keys of the tasks begun on the page, their frames on it or gone: a frame drawn takes none. */
   readonly begun?: readonly string[] | undefined;
-  /** The line under the top bar's: finding, none found, or what finding or Start came to. */
-  readonly lines?: ReactNode;
+  /** What finding or Start came to, and whether Start is shut, each a card above the bar. */
+  readonly says?: readonly PageSay[];
+  /** The finding found no task: with none framed, a card above the bar says to drag a frame round each. */
+  readonly none?: boolean;
   /** The tasks are being found: the frames wait. */
   readonly finding: boolean;
   /** Start is shut: AI is closed to the learner, and a task from paper can't be checked. */
@@ -94,7 +157,8 @@ export function Pick({
   tasks,
   onTasks,
   begun,
-  lines,
+  says = [],
+  none = false,
   finding,
   closed,
   starting,
@@ -105,11 +169,33 @@ export function Pick({
 }: PickProps) {
   const { words } = useLanguage();
   const surface = useRef<HTMLDivElement>(null);
-  const stroke = useRef<{ readonly pointer: number; readonly points: Point[] } | undefined>(
-    undefined,
-  );
+  // A press on the photo: where it began, where the pointer is, and the farthest corners it reached,
+  // by which a press that never left the size of a tap is a tap.
+  const stroke = useRef<
+    | {
+        readonly pointer: number;
+        readonly from: Point;
+        to: Point;
+        low: Point;
+        high: Point;
+      }
+    | undefined
+  >(undefined);
   const resizing = useRef<{ readonly pointer: number; readonly id: string } | undefined>(undefined);
-  const [live, setLive] = useState<readonly Point[] | undefined>(undefined);
+  // A press on a frame: the frame as it was, where the press began, and whether it moved the frame,
+  // so that the click after a move picks nothing.
+  const moving = useRef<
+    | {
+        readonly pointer: number;
+        readonly id: string;
+        readonly frame: Frame;
+        readonly from: Point;
+        moved: boolean;
+      }
+    | undefined
+  >(undefined);
+  const movedId = useRef<string | undefined>(undefined);
+  const [live, setLive] = useState<Frame | undefined>(undefined);
   const [corner, setCorner] = useState<Point | undefined>(undefined);
 
   /** A pointer's place on the photo, in thousandths, and the scale the photo is drawn at. */
@@ -129,22 +215,18 @@ export function Pick({
   const down = (event: PointerEvent<HTMLDivElement>) => {
     if (finding || event.button !== 0) return;
     event.currentTarget.setPointerCapture?.(event.pointerId);
-    stroke.current = { pointer: event.pointerId, points: [where(event).point] };
-    setLive(stroke.current.points);
+    const { point } = where(event);
+    stroke.current = { pointer: event.pointerId, from: point, to: point, low: point, high: point };
   };
   const move = (event: PointerEvent<HTMLDivElement>) => {
     const now = stroke.current;
     if (now === undefined || now.pointer !== event.pointerId) return;
     const { point, scale } = where(event);
-    const last = now.points[now.points.length - 1];
-    if (
-      last !== undefined &&
-      Math.hypot((point.x - last.x) * scale.x, (point.y - last.y) * scale.y) < STEP_PX
-    ) {
-      return;
-    }
-    now.points.push(point);
-    setLive([...now.points]);
+    now.to = point;
+    now.low = { x: Math.min(now.low.x, point.x), y: Math.min(now.low.y, point.y) };
+    now.high = { x: Math.max(now.high.x, point.x), y: Math.max(now.high.y, point.y) };
+    // A press still the size of a tap draws nothing, so that a tap shows no rectangle.
+    if (!isTap([now.low, now.high], scale)) setLive(spanned(now.from, now.to));
   };
   const up = (event: PointerEvent<HTMLDivElement>) => {
     const now = stroke.current;
@@ -152,9 +234,8 @@ export function Pick({
     stroke.current = undefined;
     setLive(undefined);
     const { scale } = where(event);
-    if (isTap(now.points, scale)) {
-      const tap = now.points[0];
-      if (tap === undefined) return;
+    if (isTap([now.low, now.high], scale)) {
+      const tap = now.from;
       // The first tap is a corner; the second makes the frame.
       if (corner === undefined) setCorner(tap);
       else {
@@ -165,7 +246,7 @@ export function Pick({
       return;
     }
     setCorner(undefined);
-    const frame = loopFrame(now.points, scale);
+    const frame = dragFrame(now.from, now.to, scale);
     if (frame !== undefined) onTasks((was) => withDrawn(was, frame, begun));
   };
   const cancel = () => {
@@ -239,10 +320,6 @@ export function Pick({
         ),
       }}
     >
-      <div className="nt-page-lines">
-        {lines}
-        {corner === undefined ? null : <p role="status">{words.text("paper.corner")}</p>}
-      </div>
       <div className="nt-page-stage">
         <div
           ref={surface}
@@ -276,7 +353,44 @@ export function Pick({
                 aria-pressed={task.picked}
                 aria-label={words.text(key, { n })}
                 style={placed(task.frame)}
-                onClick={() => onTasks((was) => toggled(was, task.id))}
+                onClick={() => {
+                  if (movedId.current === task.id) {
+                    movedId.current = undefined;
+                    return;
+                  }
+                  onTasks((was) => toggled(was, task.id));
+                }}
+                onPointerDown={(event) => {
+                  if (finding || event.button !== 0) return;
+                  event.currentTarget.setPointerCapture?.(event.pointerId);
+                  const { point } = where(event);
+                  movedId.current = undefined;
+                  moving.current = {
+                    pointer: event.pointerId,
+                    id: task.id,
+                    frame: task.frame,
+                    from: point,
+                    moved: false,
+                  };
+                }}
+                onPointerMove={(event) => {
+                  const now = moving.current;
+                  if (now === undefined || now.pointer !== event.pointerId) return;
+                  const { point, scale } = where(event);
+                  if (!now.moved && !isMove(now.from, point, scale)) return;
+                  now.moved = true;
+                  const by = { x: point.x - now.from.x, y: point.y - now.from.y };
+                  onTasks((was) => withFrame(was, now.id, movedFrame(now.frame, by)));
+                }}
+                onPointerUp={(event) => {
+                  const now = moving.current;
+                  if (now === undefined || now.pointer !== event.pointerId) return;
+                  moving.current = undefined;
+                  if (now.moved) movedId.current = now.id;
+                }}
+                onPointerCancel={() => {
+                  moving.current = undefined;
+                }}
               >
                 <span className="nt-page-mark" aria-hidden="true">
                   {task.picked ? <Icon value="ticked" /> : n}
@@ -292,38 +406,33 @@ export function Pick({
                   onClick={() => onTasks((was) => without(was, task.id))}
                 />
               </span>
-              {task.drawn ? (
-                <span
-                  className="nt-frame-control"
-                  style={control(task.frame.xmax, task.frame.ymax)}
-                >
-                  <IconButton
-                    value="resize-frame"
-                    className="nt-frame-corner"
-                    onPointerDown={(event) => {
-                      event.currentTarget.setPointerCapture?.(event.pointerId);
-                      resizing.current = { pointer: event.pointerId, id: task.id };
-                    }}
-                    onPointerMove={(event) => {
-                      const now = resizing.current;
-                      if (now === undefined || now.pointer !== event.pointerId) return;
-                      const { point, scale } = where(event);
-                      onTasks((was) => {
-                        const frame = was.find((t) => t.id === now.id)?.frame;
-                        return frame === undefined
-                          ? was
-                          : withFrame(was, now.id, resizedFrame(frame, point, scale));
-                      });
-                    }}
-                    onPointerUp={() => {
-                      resizing.current = undefined;
-                    }}
-                    onPointerCancel={() => {
-                      resizing.current = undefined;
-                    }}
-                  />
-                </span>
-              ) : null}
+              <span className="nt-frame-control" style={control(task.frame.xmax, task.frame.ymax)}>
+                <IconButton
+                  value="resize-frame"
+                  className="nt-frame-corner"
+                  onPointerDown={(event) => {
+                    event.currentTarget.setPointerCapture?.(event.pointerId);
+                    resizing.current = { pointer: event.pointerId, id: task.id };
+                  }}
+                  onPointerMove={(event) => {
+                    const now = resizing.current;
+                    if (now === undefined || now.pointer !== event.pointerId) return;
+                    const { point, scale } = where(event);
+                    onTasks((was) => {
+                      const frame = was.find((t) => t.id === now.id)?.frame;
+                      return frame === undefined
+                        ? was
+                        : withFrame(was, now.id, resizedFrame(frame, point, scale));
+                    });
+                  }}
+                  onPointerUp={() => {
+                    resizing.current = undefined;
+                  }}
+                  onPointerCancel={() => {
+                    resizing.current = undefined;
+                  }}
+                />
+              </span>
             </span>
           ))}
           {corner === undefined ? null : (
@@ -334,15 +443,8 @@ export function Pick({
               <span />
             </span>
           ) : null}
-          {live === undefined || live.length < 2 ? null : (
-            <svg
-              className="nt-page-live"
-              viewBox="0 0 1000 1000"
-              preserveAspectRatio="none"
-              aria-hidden="true"
-            >
-              <polyline points={live.map((p) => `${p.x},${p.y}`).join(" ")} />
-            </svg>
+          {live === undefined ? null : (
+            <span className="nt-page-live" style={placed(live)} aria-hidden="true" />
           )}
         </div>
       </div>
@@ -350,18 +452,30 @@ export function Pick({
         <Icon value="state-locked" />
         {words.text("paper.note")}
       </p>
-      <div className="nt-page-bar nt-glass" {...besideIt}>
+      <div className="nt-page-says" {...besideIt}>
+        {says.map((say) => (
+          <Say key={`${say.kind}-${say.title}`} {...say} sign={<Drawn path={BANG} bold />} />
+        ))}
         {over === undefined ? null : (
-          <div className="nt-page-limit" role="status">
-            <span className="nt-limit-ring" aria-hidden="true">
-              {MAX_TASKS}
-            </span>
-            <p className="nt-limit-words">
-              <strong>{words.text(`paper.${over}`, { max: MAX_TASKS })}.</strong>{" "}
-              {words.text(`paper.${over}-how`)}
-            </p>
-          </div>
+          <Say
+            kind="warn"
+            title={words.text(`paper.${over}`, { max: MAX_TASKS })}
+            line={words.text(`paper.${over}-how`)}
+            sign={MAX_TASKS}
+          />
         )}
+        {corner !== undefined ? (
+          <Say kind="hint" title={words.text("paper.corner")} sign={<Drawn path={CORNERS} />} />
+        ) : none && tasks.length === 0 ? (
+          <Say
+            kind="hint"
+            title={words.text("paper.none-found")}
+            line={words.text("paper.none-found-how")}
+            sign={<Drawn path={DRAG} />}
+          />
+        ) : null}
+      </div>
+      <div className="nt-page-bar nt-glass" {...besideIt}>
         <div className="nt-page-row">
           <button
             type="button"

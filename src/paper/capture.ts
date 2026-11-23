@@ -2,10 +2,12 @@
 // picked, drawn upright on a canvas and encoded anew as a JPEG of at most 4 MiB — the metadata of
 // its file, its place and its time among them, stay behind —, and the crops of the
 // tasks picked cut from that same photo as PNGs. The photo and its crops stay in the tab's memory.
+// A photo whose tasks were found on it turned upright is turned so too, and encoded by the same
+// rules (R162 spec).
 // A kept page's thumbnail, for "Your pages", is made from its photo in memory too, and never kept:
 // the device's records go into the profile's export as they are (R77; R135 spec).
 import { cropRect, type Frame } from "./frame.ts";
-import { MAX_PHOTO, QUALITY, tries } from "./photo.ts";
+import { MAX_PHOTO, QUALITY, tries, turnedSize } from "./photo.ts";
 
 /** The photo of a page as app sent it: its bytes, its size, and a URL of them for the screen. */
 export interface Photo {
@@ -35,8 +37,17 @@ function blobOf(canvas: HTMLCanvasElement, type: string, quality?: number): Prom
   });
 }
 
+/** How a picture is drawn onto a context at a size, in px. */
+type Draw = (context: CanvasRenderingContext2D, width: number, height: number) => void;
+
+/** The source drawn whole over the context. */
+const whole =
+  (source: CanvasImageSource): Draw =>
+  (context, width, height) =>
+    context.drawImage(source, 0, 0, width, height);
+
 /** A picture of `width` × `height` px drawn at each try's size until its JPEG fits. */
-async function encoded(source: CanvasImageSource, width: number, height: number): Promise<Photo> {
+async function encoded(draw: Draw, width: number, height: number): Promise<Photo> {
   if (width === 0 || height === 0) throw new PhotoError("the picture has no size");
   const canvas = document.createElement("canvas");
   for (const size of tries(width, height)) {
@@ -44,7 +55,7 @@ async function encoded(source: CanvasImageSource, width: number, height: number)
     canvas.height = size.height;
     const context = canvas.getContext("2d");
     if (context === null) throw new PhotoError("no canvas to draw on");
-    context.drawImage(source, 0, 0, size.width, size.height);
+    draw(context, size.width, size.height);
     const blob = await blobOf(canvas, "image/jpeg", QUALITY);
     if (blob.size <= MAX_PHOTO) {
       return {
@@ -60,7 +71,7 @@ async function encoded(source: CanvasImageSource, width: number, height: number)
 
 /** The frame the camera's video shows now. */
 export function photoOfVideo(video: HTMLVideoElement): Promise<Photo> {
-  return encoded(video, video.videoWidth, video.videoHeight);
+  return encoded(whole(video), video.videoWidth, video.videoHeight);
 }
 
 /**
@@ -75,7 +86,47 @@ export async function photoOfFile(file: Blob): Promise<Photo> {
     throw new PhotoError("the picture could not be read", { cause: reason });
   }
   try {
-    return await encoded(bitmap, bitmap.width, bitmap.height);
+    return await encoded(whole(bitmap), bitmap.width, bitmap.height);
+  } finally {
+    bitmap.close();
+  }
+}
+
+/**
+ * The photo turned by `degrees` clockwise about its centre (R162 spec): onto the smallest upright
+ * rectangle that holds it, its corners white, as the server turned it to find the tasks, then fitted
+ * and encoded as any photo of a page. It is decoded before it comes back, so that the page takes it
+ * in the place of the photo before with no moment of neither. One the browser cannot read, or too
+ * large, is a PhotoError.
+ */
+export async function turnedPhoto(photo: Photo, degrees: number): Promise<Photo> {
+  let bitmap: ImageBitmap;
+  try {
+    bitmap = await createImageBitmap(new Blob([photo.bytes as BlobPart], { type: "image/jpeg" }));
+  } catch (reason) {
+    throw new PhotoError("the photo could not be read", { cause: reason });
+  }
+  try {
+    const { width, height } = bitmap;
+    const upright = turnedSize(width, height, degrees);
+    const turned = await encoded(
+      (context, w, h) => {
+        // A JPEG has no transparency: the corners the turn leaves would come out black.
+        context.fillStyle = "#fff";
+        context.fillRect(0, 0, w, h);
+        context.scale(w / upright.width, h / upright.height);
+        context.translate(upright.width / 2, upright.height / 2);
+        context.rotate((degrees * Math.PI) / 180);
+        context.drawImage(bitmap, -width / 2, -height / 2);
+      },
+      upright.width,
+      upright.height,
+    );
+    const image = new Image();
+    image.src = turned.url;
+    // Only a head start: the page shows the photo by its URL either way.
+    await image.decode().catch(() => {});
+    return turned;
   } finally {
     bitmap.close();
   }

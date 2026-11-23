@@ -102,7 +102,9 @@ it("shows each page's thumbnail beside when it was taken and how many tasks it b
     expect([img.naturalWidth, img.naturalHeight]).toEqual([132, 176]);
   }
   expect(one.querySelector(".nt-sk")).toBeNull();
-  expect(screen.getByText(/Kept on this device until the profile is deleted/)).toBeVisible();
+  expect(
+    screen.getByText(/The latest 5 pages are kept on this device until the profile is deleted/),
+  ).toBeVisible();
   // Closed and opened again: made once, then revoked with the list.
   await userEvent.keyboard("{Escape}");
   await userEvent.click(screen.getByRole("button", { name: "Your pages" }));

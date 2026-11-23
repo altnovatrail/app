@@ -270,14 +270,14 @@ export const en = {
   "accessibility.moving-when":
     "There is no date: buttons that move the sheet come back only if the platform decides so",
   "accessibility.print": "Print in the lines of a workbook",
-  "accessibility.print-criteria": "1.4.4 Resize Text, level AA; 1.4.12 Text Spacing, level AA",
-  /** The page is the task's, 1000 CSS px wide at most, fitted to the sheet's width (R11). */
+  "accessibility.print-criteria": "1.4.12 Text Spacing, level AA",
+  /** Zoom in and Zoom out are the words of the sheet's bar (architecture 6 spec). */
   "accessibility.print-why":
-    "The printed numbers, words and values in the lines of a workbook lie on the task's page, which fits the width of the sheet. The browser's zoom makes them larger only until the page fills the sheet's width, and on a sheet narrower than 1000 pixels, as on a tablet or a phone, not at all. The place of each piece is fixed on the page too, so the spacing you set for text does not reach them",
+    "The printed numbers, words and values in the lines of a workbook lie on the task's page, each in a place fixed on it, so the spacing you set for text does not reach them",
   "accessibility.print-instead":
-    "The task's statement above the workbook and the rest of the app grow with the browser's zoom and take your spacing. On a sheet wider than the page, the zoom makes the print larger too, until the page fills it",
+    "The task's statement above the workbook and the rest of the app take your spacing, and Zoom in on the sheet's bar makes the print up to twice as large",
   "accessibility.print-when":
-    "There is no date: a way to enlarge the print comes only if the platform decides so, and wider spacing only once the layout of the page leaves the lines room for it",
+    "There is no date: wider spacing comes only once the layout of the page leaves the lines room for it",
   /** Check and Not yet are the words of the task screen, Can't read this its reading's. */
   "accessibility.check": "Sending an answer with Check",
   "accessibility.check-criteria": "3.3.4 Error Prevention (Legal, Financial, Data), level AA",
@@ -399,7 +399,7 @@ export const en = {
   "icon.choose-photos": "Choose from photos",
   /** The cross and the corner of a frame the learner drew round a task the AI missed. */
   "icon.remove-frame": "Remove the frame",
-  "icon.resize-frame": "Resize your frame",
+  "icon.resize-frame": "Resize the frame",
   /**
    * The row of places of Home, Subjects and the skill map, and the phone's tab bar (R148 spec): its
    * name, its places, the cognitive map shut until it comes with its "Soon" and its tooltip, and
@@ -1186,7 +1186,8 @@ export const en = {
   /** While FindTasks is under way. */
   "paper.finding": "Finding the tasks on the page…",
   /** FindTasks gave no frames: the learner draws them. */
-  "paper.none-found": "No tasks were found. Draw round each task you want to solve",
+  "paper.none-found": "No tasks were found",
+  "paper.none-found-how": "Drag a frame round each task you want to solve",
   "paper.find-again": "Find the tasks again",
   /**
    * At the head of the bar: FindTasks gave the most tasks one page begins, {max}, and the page may
@@ -1195,7 +1196,7 @@ export const en = {
    */
   "paper.at-most": "{max} tasks is the most at once",
   "paper.at-most-how":
-    "To take another, remove one of these with its cross and draw round the one you want. You can also draw one frame round several tasks, or ask the tutor to",
+    "To take another, remove one of these with its cross and drag a frame round the one you want. You can also drag one frame round several tasks, or ask the tutor to",
   "paper.too-many": "At most {max} tasks start at once",
   "paper.too-many-how": "Leave some out",
   /** In the middle of the top bar once the tasks are found. */
@@ -1213,7 +1214,7 @@ export const en = {
   "paper.corner": "Now tap the opposite corner of the task",
   /** The note above the bar, beside a lock. */
   "paper.note":
-    "The AI looked at the whole page to find the tasks. The photo stays on this device. Draw round a task it missed.",
+    "The AI looked at the whole page to find the tasks. The photo stays on this device. Drag a frame round a task it missed.",
   "paper.select-all": "Select all",
   "paper.select-none": "Select none",
   "paper.picked": "{count} of {total} selected",
@@ -1265,8 +1266,12 @@ export const en = {
   "paper.pages-none": "No pages yet",
   /** A page that would not open: the device keeps it no more. */
   "paper.page-gone": "This page isn't on this device any more",
-  /** Under the list: where the pages live and until when (R77). */
-  "paper.pages-kept": "Kept on this device until the profile is deleted, and in its export.",
+  /** Under the list: how many pages live, where and until when (R77). */
+  "paper.pages-kept": plural({
+    one: "The latest {count} page is kept on this device until the profile is deleted, and is in its export.",
+    other:
+      "The latest {count} pages are kept on this device until the profile is deleted, and are in its export.",
+  }),
   /** Check pressed with nothing written, on the sheet or on the task. */
   "paper.write-first": "Write your solution first",
   "paper.write-first-line": "Write it with the pen on the sheet or on the task, then Check.",

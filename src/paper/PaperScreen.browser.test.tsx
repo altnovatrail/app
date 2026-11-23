@@ -8,7 +8,8 @@
 // the tutor's panel opens by its button and by Hint, with the verdict and the hint in it, the
 // rung's words after Not yet, with the wavy line, and "Explain differently" once on a rung, and on a
 // phone hides the canvas's bar of tools; a task api closed is only to be looked at; a repeat of
-// FindTasks finds again, and a Start that failed says why; a camera that answers too late is
+// FindTasks finds again, and a Start that failed says why; a photo whose tasks were found on it
+// turned upright is turned so on the page, and the page goes on with it; a camera that answers too late is
 // stopped; with the device, the page and its work are the profile's history, which "Your pages"
 // opens again — with api on connect-es's router.
 import { AccountService } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
@@ -384,6 +385,18 @@ it("opens the device's photos by its button, and says a picture it cannot read c
 });
 
 /** The bar's count, its numbers in bold: "{count} of {total} selected" whole. */
+/** The card of what the page says above the bar, by its words whole. */
+function card(text: string) {
+  return screen.findByText(
+    (_, element) =>
+      element?.classList.contains("nt-page-say") === true && element.textContent === text,
+  );
+}
+
+function noneCard() {
+  return card("No tasks were found. Drag a frame round each task you want to solve");
+}
+
 function picks(text: string) {
   return screen.getByText(
     (_, element) =>
@@ -880,39 +893,66 @@ it("hides the canvas's bar of tools on a phone while the panel is open", async (
 
 it("frames a task the AI missed by two taps, and removes it by its cross", async () => {
   await renderPaper({ found: () => ({ frames: [] }) });
-  expect(
-    await screen.findByText("No tasks were found. Draw round each task you want to solve"),
-  ).toBeVisible();
+  const none = await noneCard();
+  expect(none).toBeVisible();
+  // A card of its own just above the bar, which keeps its size.
+  const bar = document.querySelector(".nt-page-bar");
+  expect(none.parentElement?.nextElementSibling).toBe(bar);
+  expect(bar?.querySelector(".nt-page-say")).toBeNull();
+  expect(none.getBoundingClientRect().bottom).toBeLessThan(bar?.getBoundingClientRect().top ?? 0);
   expect(screen.getByRole("button", { name: "Start" })).toBeDisabled();
   tap(100, 100);
-  expect(await screen.findByText("Now tap the opposite corner of the task")).toBeVisible();
+  // The corner's card takes the place of no task found's.
+  expect(await card("Now tap the opposite corner of the task.")).toBeVisible();
+  expect(document.querySelectorAll(".nt-page-say")).toHaveLength(1);
   tap(800, 300);
   const drawn = await screen.findByRole("button", { name: "Deselect your frame, task 1" });
   expect(drawn).toHaveAttribute("aria-pressed", "true");
   expect(screen.getByText("0 tasks found · 1 framed by you")).toBeVisible();
   expect(screen.getByRole("button", { name: "Start" })).toBeEnabled();
+  expect(document.querySelector(".nt-page-say")).toBeNull();
   await userEvent.click(screen.getByRole("button", { name: "Remove the frame" }));
   await waitFor(() => expect(screen.queryByRole("button", { name: /your frame/ })).toBeNull());
+  expect(await noneCard()).toBeVisible();
 });
 
-it("frames a task by a loop drawn round it, after a tap, and resizes it by its corner", async () => {
+it("lifts the tutor's button on a phone over a card of what the page says", async () => {
+  await page.viewport(390, 844);
   await renderPaper({ found: () => ({ frames: [] }) });
-  await screen.findByText("No tasks were found. Draw round each task you want to solve");
+  const band = await noneCard();
+  const call = document.querySelector(".nt-tutor-call");
+  if (call === null) throw new Error("no tutor's button");
+  const note = document.querySelector(".nt-page-note");
+  if (note === null) throw new Error("no note");
+  expect(call.getBoundingClientRect().bottom).toBeLessThanOrEqual(note.getBoundingClientRect().top);
+  expect(band.getBoundingClientRect().top).toBeGreaterThanOrEqual(
+    note.getBoundingClientRect().bottom,
+  );
+});
+
+it("frames a task by a rectangle dragged corner to corner, after a tap, and resizes it by its corner", async () => {
+  await renderPaper({ found: () => ({ frames: [] }) });
+  await noneCard();
   tap(100, 100);
-  await screen.findByText("Now tap the opposite corner of the task");
+  await screen.findByText("Now tap the opposite corner of the task.");
+  // Past the corner and back: the frame is where the pointer is lifted, not the farthest it went.
   stroke(drawing(), [
     [200, 200],
     [200.5, 200],
-    [600, 200],
+    [800, 700],
     [600, 500],
-    [200, 500],
-    [200, 210],
   ]);
   const drawn = await screen.findByRole("button", { name: "Deselect your frame, task 1" });
-  expect(screen.queryByText("Now tap the opposite corner of the task")).toBeNull();
-  const width = drawn.getBoundingClientRect().width;
+  expect(screen.queryByText("Now tap the opposite corner of the task.")).toBeNull();
+  const photo = drawing().getBoundingClientRect();
+  const box = drawn.getBoundingClientRect();
+  expect(box.left - photo.left).toBeCloseTo(photo.width * 0.2, 0);
+  expect(box.top - photo.top).toBeCloseTo(photo.height * 0.2, 0);
+  expect(box.width).toBeCloseTo(photo.width * 0.4, 0);
+  expect(box.height).toBeCloseTo(photo.height * 0.3, 0);
+  const width = box.width;
 
-  const corner = screen.getByRole("button", { name: "Resize your frame" });
+  const corner = screen.getByRole("button", { name: "Resize the frame" });
   // Another pointer's moves are not the corner's.
   corner.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, pointerId: 7 }));
   stroke(corner, [
@@ -921,6 +961,47 @@ it("frames a task by a loop drawn round it, after a tap, and resizes it by its c
   ]);
   await waitFor(() => expect(drawn.getBoundingClientRect().width).toBeGreaterThan(width + 10));
   corner.dispatchEvent(new PointerEvent("pointercancel", { bubbles: true, pointerId: 1 }));
+});
+
+it("moves a frame the AI found by its middle and resizes it by its corner, and a tap still picks it", async () => {
+  await renderPaper({
+    found: () => ({ frames: [{ box: { ymin: 100, xmin: 100, ymax: 300, xmax: 500 } }] }),
+  });
+  const frame = await screen.findByRole("button", { name: "Deselect task 1" });
+  const photo = drawing().getBoundingClientRect();
+  const before = frame.getBoundingClientRect();
+  // A press that stays within the slop moves nothing.
+  stroke(frame, [
+    [300, 200],
+    [300.5, 200.5],
+  ]);
+  expect(frame.getBoundingClientRect().left).toBeCloseTo(before.left, 1);
+  // Dragged by its middle it moves, its size kept, and the click after the drag picks nothing.
+  stroke(frame, [
+    [300, 200],
+    [310, 200],
+    [400, 250],
+  ]);
+  await waitFor(() =>
+    expect(frame.getBoundingClientRect().left - before.left).toBeCloseTo(photo.width * 0.1, 0),
+  );
+  expect(frame.getBoundingClientRect().top - before.top).toBeCloseTo(photo.height * 0.05, 0);
+  expect(frame.getBoundingClientRect().width).toBeCloseTo(before.width, 0);
+  frame.click();
+  expect(frame).toHaveAttribute("aria-pressed", "true");
+  // Its corner resizes it, as a frame drawn by hand.
+  const corner = screen.getByRole("button", { name: "Resize the frame" });
+  stroke(corner, [
+    [600, 350],
+    [800, 500],
+  ]);
+  await waitFor(() =>
+    expect(frame.getBoundingClientRect().width).toBeCloseTo(photo.width * 0.6, 0),
+  );
+  expect(frame.getBoundingClientRect().height).toBeCloseTo(photo.height * 0.35, 0);
+  // A tap picks it or leaves it out, as before.
+  await userEvent.click(frame);
+  expect(await screen.findByRole("button", { name: "Select task 1" })).toBe(frame);
 });
 
 it("finds the page anew by the learner's request, its own frame staying, and Undo brings the frames back", async () => {
@@ -935,7 +1016,7 @@ it("finds the page anew by the learner's request, its own frame staying, and Und
   });
   await screen.findByRole("button", { name: "Deselect task 1" });
   tap(500, 100);
-  await screen.findByText("Now tap the opposite corner of the task");
+  await screen.findByText("Now tap the opposite corner of the task.");
   tap(900, 300);
   await screen.findByRole("button", { name: /^Deselect your frame/ });
   await userEvent.click(screen.getByRole("button", { name: "Tutor" }));
@@ -958,6 +1039,36 @@ it("finds the page anew by the learner's request, its own frame staying, and Und
   expect(screen.queryByRole("button", { name: "Undo" })).toBeNull();
 });
 
+it("turns the photo upright as its tasks were found, and goes on with it turned", async () => {
+  const half = { box: { ymin: 0, xmin: 0, ymax: 500, xmax: 500 } };
+  const { finds } = await renderPaper({
+    found: (request) =>
+      request.request === "" ? { frames: [half], turnDegrees: 30 } : { frames: [half] },
+  });
+  await screen.findByRole("button", { name: "Deselect task 1" }, SLOW);
+  // 600 × 800 px turned 30°: 600·cos 30° + 800·sin 30° = 919.6, 600·sin 30° + 800·cos 30° = 992.8.
+  const sizeOf = async (picture: Blob) => {
+    const bitmap = await createImageBitmap(picture);
+    return [bitmap.width, bitmap.height];
+  };
+  const shown = document.querySelector<HTMLImageElement>(".nt-page-photo img");
+  await waitFor(() => expect([shown?.naturalWidth, shown?.naturalHeight]).toEqual([920, 993]));
+  await userEvent.click(screen.getByRole("button", { name: "Tutor" }));
+  const field = await screen.findByRole("textbox", { name: "Your request about the page" });
+  await userEvent.type(field, "the first task{Enter}");
+  expect(await screen.findByText("Found 1 task")).toBeVisible();
+  const sent = new Blob([(finds[1]?.photo ?? new Uint8Array()) as BlobPart], {
+    type: "image/jpeg",
+  });
+  expect(await sizeOf(sent)).toEqual([920, 993]);
+  await userEvent.click(tutorPanel().getByRole("button", { name: "Close" }));
+  // The crop is cut from the photo turned: half of it across and down.
+  await userEvent.click(screen.getByRole("button", { name: "Start" }));
+  await screen.findByRole("heading", { name: "Task 1" }, SLOW);
+  const crop = sheet().paper?.statement;
+  expect(crop && (await sizeOf(crop))).toEqual([460, 497]);
+});
+
 it("finds the page again after a repeat that held no frames, a frame drawn meanwhile staying", async () => {
   let n = 0;
   const { finds } = await renderPaper({
@@ -968,10 +1079,13 @@ it("finds the page again after a repeat that held no frames, a frame drawn meanw
         : { frames: [{ box: { ymin: 500, xmin: 50, ymax: 650, xmax: 950 } }] };
     },
   });
-  await screen.findByRole("button", { name: "Find the tasks again" });
+  const again = await screen.findByRole("button", { name: "Find the tasks again" });
   expect(screen.getByRole("alert").textContent).toMatch(/^No connection/);
+  // A card in red above the bar, its way on at its end.
+  expect(screen.getByRole("alert")).toHaveClass("nt-page-say");
+  expect(screen.getByRole("alert")).toContainElement(again);
   tap(100, 100);
-  await screen.findByText("Now tap the opposite corner of the task");
+  await screen.findByText("Now tap the opposite corner of the task.");
   tap(800, 300);
   await screen.findByRole("button", { name: /^Deselect your frame/ });
   await userEvent.click(screen.getByRole("button", { name: "Find the tasks again" }));
@@ -984,12 +1098,13 @@ it("finds the page again after a repeat that held no frames, a frame drawn meanw
 
 it("says what AI came to when it found nothing, and that no tasks were found", async () => {
   await renderPaper({ found: () => ({ outcome: { cause: Cause.AI_FAILURE } }) });
+  // One card in red: what AI came to, and the way on.
   expect(
-    await screen.findByText(
-      "The tutor can't answer right now No tasks were found. Draw round each task you want to solve",
-    ),
+    await card("The tutor can't answer right now. Drag a frame round each task you want to solve"),
   ).toBeVisible();
-  expect(screen.queryByText("Without the AI a task from paper can't be checked")).toBeNull();
+  expect(screen.getByRole("alert")).toHaveClass("nt-page-say");
+  expect(document.querySelectorAll(".nt-page-say")).toHaveLength(1);
+  expect(screen.queryByText("Without the AI a task from paper can't be checked.")).toBeNull();
 });
 
 it("leaves the frames, and no Undo, when the learner's request finds nothing; the panel closes", async () => {
@@ -1027,11 +1142,11 @@ it("says why Start failed, repeats it with its key, and shuts it on a refusal th
   await userEvent.click(screen.getByRole("button", { name: "Start" }));
   // api began one attempt of the two tasks picked.
   expect(await screen.findByRole("alert", {}, SLOW)).toHaveTextContent(
-    "This version of the app doesn't know this yet",
+    "This version of the app doesn't know this yet.",
   );
   await userEvent.click(screen.getByRole("button", { name: "Start" }));
   expect(
-    await screen.findByText("Without the AI a task from paper can't be checked", {}, SLOW),
+    await screen.findByText("Without the AI a task from paper can't be checked.", {}, SLOW),
   ).toBeVisible();
   expect(screen.getByRole("button", { name: "Start" })).toBeDisabled();
   expect(begins.map((begin) => begin.idempotencyKey)).toEqual([
@@ -1047,8 +1162,10 @@ it("says a page found as many tasks as start at once may hold more, and when too
   await renderPaper({ found: () => ({ frames }) });
   const most = new RegExp(`^${MAX_TASKS} tasks is the most at once`);
   expect(await screen.findByText(most)).toBeVisible();
+  // A card above the bar, which keeps its size.
+  expect(document.querySelector(".nt-page-bar .nt-page-say")).toBeNull();
   tap(600, 100);
-  await screen.findByText("Now tap the opposite corner of the task");
+  await screen.findByText("Now tap the opposite corner of the task.");
   tap(900, 300);
   expect(await screen.findByText(`At most ${MAX_TASKS} tasks start at once.`)).toBeVisible();
   expect(screen.getByRole("button", { name: "Start" })).toBeDisabled();
@@ -1059,9 +1176,9 @@ it("says a page found as many tasks as start at once may hold more, and when too
   expect(picks(`${MAX_TASKS + 1} of ${MAX_TASKS + 1} selected`)).toBeVisible();
 });
 
-it("draws the loop as it goes, and drops it when the pointer is cancelled", async () => {
+it("draws the frame as it is dragged, none for a tap, and drops it when the pointer is cancelled", async () => {
   await renderPaper({ found: () => ({ frames: [] }) });
-  await screen.findByText("No tasks were found. Draw round each task you want to solve");
+  await noneCard();
   const surface = drawing();
   surface.setPointerCapture = () => {};
   const box = surface.getBoundingClientRect();
@@ -1073,9 +1190,21 @@ it("draws the loop as it goes, and drops it when the pointer is cancelled", asyn
     clientY: box.top + (box.height * y) / 1000,
   });
   surface.dispatchEvent(new PointerEvent("pointerdown", at(200, 200)));
-  surface.dispatchEvent(new PointerEvent("pointermove", at(600, 200)));
-  await waitFor(() => expect(document.querySelector(".nt-page-live polyline")).not.toBeNull());
-  surface.dispatchEvent(new PointerEvent("pointercancel", at(600, 200)));
+  // Still the size of a tap: no rectangle yet.
+  surface.dispatchEvent(new PointerEvent("pointermove", at(201, 201)));
+  expect(document.querySelector(".nt-page-live")).toBeNull();
+  surface.dispatchEvent(new PointerEvent("pointermove", at(600, 500)));
+  const live = await waitFor(() => {
+    const found = document.querySelector<HTMLElement>(".nt-page-live");
+    if (found === null) throw new Error("no frame being dragged");
+    return found;
+  });
+  expect(live.style.left).toBe("20%");
+  expect(live.style.width).toBe("40%");
+  // It follows the pointer back.
+  surface.dispatchEvent(new PointerEvent("pointermove", at(400, 400)));
+  await waitFor(() => expect(live.style.width).toBe("20%"));
+  surface.dispatchEvent(new PointerEvent("pointercancel", at(400, 400)));
   await waitFor(() => expect(document.querySelector(".nt-page-live")).toBeNull());
   // A lift after the cancel makes no frame.
   surface.dispatchEvent(new PointerEvent("pointerup", at(600, 500)));
@@ -1099,7 +1228,7 @@ it("shuts Start when the quota is spent", async () => {
     },
   });
   expect(
-    await screen.findByText("Without the AI a task from paper can't be checked"),
+    await screen.findByText("Without the AI a task from paper can't be checked."),
   ).toBeVisible();
   expect(screen.getByRole("button", { name: "Start" })).toBeDisabled();
   expect(screen.queryByRole("button", { name: "Find the tasks again" })).toBeNull();

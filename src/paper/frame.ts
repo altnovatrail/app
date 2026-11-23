@@ -1,9 +1,12 @@
 // The geometry of a task frame on the photo of a page (R71): a rectangle in whole thousandths of
 // the photo's width and height, as a crop box is written. A frame the learner
-// draws comes of a loop round a task — its box, with a margin — or of two taps, a corner and then
-// the one opposite; its corner resizes it. Each is at least the size of a target on the screen and
+// draws comes of a rectangle dragged from one corner of a task to the opposite — the rectangle the
+// learner sees is the frame — or of two taps, a corner and then the one opposite. Every frame, the
+// AI's too, moves when dragged by its middle and resizes by its corner. Each is at least the size
+// of a target on the screen and
 // never past the photo's edge. The sizes on the screen come in CSS px, by the scale the screen
-// draws the photo at. No DOM.
+// draws the photo at. A frame on a photo turned upright turns with it (R162 spec). No DOM.
+import type { Size } from "./photo.ts";
 
 /** A frame, in whole thousandths of the photo: `ymin` and `xmin` its top-left, the rest bottom-right. */
 export interface Frame {
@@ -25,9 +28,7 @@ export interface Scale {
   readonly y: number;
 }
 
-/** The margin round a loop's box, in CSS px: the loop drawn tight round a task still holds it. */
-export const MARGIN = 6;
-/** The least frame, in CSS px: a stroke whose box is smaller is a tap, not a loop. */
+/** The least frame, in CSS px: a stroke whose box is smaller is a tap, not a drag. */
 export const MIN_WIDTH = 40;
 export const MIN_HEIGHT = 30;
 
@@ -49,7 +50,7 @@ function rounded(x0: number, y0: number, x1: number, y1: number): Frame {
 }
 
 /**
- * Whether a stroke is a tap: its box smaller than the least frame, across or down. A tap is no loop,
+ * Whether a stroke is a tap: its box smaller than the least frame, across or down. A tap is no drag,
  * and stands for a corner of two taps.
  */
 export function isTap(points: readonly Point[], scale: Scale): boolean {
@@ -60,23 +61,23 @@ export function isTap(points: readonly Point[], scale: Scale): boolean {
   return Math.max(...xs) - Math.min(...xs) < w || Math.max(...ys) - Math.min(...ys) < h;
 }
 
-/**
- * The frame of a loop drawn round a task: its box, with the margin, in the photo; none when the
- * stroke is a tap, or its box with the margin is smaller than the least frame where the photo's
- * edge cuts it.
- */
-export function loopFrame(points: readonly Point[], scale: Scale): Frame | undefined {
-  if (isTap(points, scale)) return undefined;
-  const xs = points.map((p) => p.x);
-  const ys = points.map((p) => p.y);
-  const mx = MARGIN / scale.x;
-  const my = MARGIN / scale.y;
-  const frame = rounded(
-    Math.min(...xs) - mx,
-    Math.min(...ys) - my,
-    Math.max(...xs) + mx,
-    Math.max(...ys) + my,
+/** The rectangle of two opposite corners, in whichever direction, kept in the photo. */
+export function spanned(from: Point, to: Point): Frame {
+  return rounded(
+    Math.min(from.x, to.x),
+    Math.min(from.y, to.y),
+    Math.max(from.x, to.x),
+    Math.max(from.y, to.y),
   );
+}
+
+/**
+ * The frame of a rectangle dragged from one corner to the opposite: the rectangle itself; none when
+ * it is smaller than the least frame, as when the pointer came back near where it was pressed, or
+ * where the photo's edge cuts it.
+ */
+export function dragFrame(from: Point, to: Point, scale: Scale): Frame | undefined {
+  const frame = spanned(from, to);
   const { w, h } = least(scale);
   return frame.xmax - frame.xmin < w || frame.ymax - frame.ymin < h ? undefined : frame;
 }
@@ -113,6 +114,23 @@ export function resizedFrame(frame: Frame, to: Point, scale: Scale): Frame {
     xmax: clamp(Math.round(to.x), Math.min(1000, Math.ceil(frame.xmin + w)), 1000),
     ymax: clamp(Math.round(to.y), Math.min(1000, Math.ceil(frame.ymin + h)), 1000),
   };
+}
+
+/** How far a press on a frame moves, in CSS px, before it is a drag that moves the frame, not a tap. */
+export const MOVE_SLOP = 6;
+
+/** Whether a press on a frame from `from` to `to` has gone past a tap: farther than MOVE_SLOP. */
+export function isMove(from: Point, to: Point, scale: Scale): boolean {
+  return Math.hypot((to.x - from.x) * scale.x, (to.y - from.y) * scale.y) >= MOVE_SLOP;
+}
+
+/** The frame moved by `by`, its size as it was, kept wholly in the photo. */
+export function movedFrame(frame: Frame, by: Point): Frame {
+  const width = frame.xmax - frame.xmin;
+  const height = frame.ymax - frame.ymin;
+  const xmin = clamp(Math.round(frame.xmin + by.x), 0, 1000 - width);
+  const ymin = clamp(Math.round(frame.ymin + by.y), 0, 1000 - height);
+  return { xmin, ymin, xmax: xmin + width, ymax: ymin + height };
 }
 
 /** Whether a value is a frame: four numbers, its edges in order and within the photo. */
@@ -160,4 +178,43 @@ export function cropRect(
   const ex = clamp(Math.ceil((frame.xmax * width) / 1000), sx + 1, Math.max(sx + 1, width));
   const ey = clamp(Math.ceil((frame.ymax * height) / 1000), sy + 1, Math.max(sy + 1, height));
   return { sx, sy, sw: ex - sx, sh: ey - sy };
+}
+
+/**
+ * The frame on a photo of `from` px turned by `degrees` clockwise about its centre onto one of `to`
+ * px (R162 spec): the upright rectangle that holds its corners turned, rounded out to whole
+ * thousandths and kept in the photo, which a turn by a multiple of 90° gives exactly; none when
+ * nothing of it is left on the photo.
+ */
+export function turnedFrame(
+  frame: Frame,
+  degrees: number,
+  from: Size,
+  to: Size,
+): Frame | undefined {
+  const angle = (degrees * Math.PI) / 180;
+  const cos = Math.cos(angle);
+  const sin = Math.sin(angle);
+  // To a millionth, so that the error of floats never rounds an exact edge out by one.
+  const snapped = (value: number) => Math.round(value * 1e6) / 1e6;
+  const corners = [
+    { x: frame.xmin, y: frame.ymin },
+    { x: frame.xmax, y: frame.ymin },
+    { x: frame.xmin, y: frame.ymax },
+    { x: frame.xmax, y: frame.ymax },
+  ].map(({ x, y }) => {
+    const u = (x * from.width) / 1000 - from.width / 2;
+    const v = (y * from.height) / 1000 - from.height / 2;
+    return {
+      x: snapped(((u * cos - v * sin + to.width / 2) * 1000) / to.width),
+      y: snapped(((u * sin + v * cos + to.height / 2) * 1000) / to.height),
+    };
+  });
+  const turned = rounded(
+    Math.min(...corners.map((p) => p.x)),
+    Math.min(...corners.map((p) => p.y)),
+    Math.max(...corners.map((p) => p.x)),
+    Math.max(...corners.map((p) => p.y)),
+  );
+  return isFrame(turned) ? turned : undefined;
 }

@@ -8,7 +8,10 @@
 // can't be checked. Retake throws the page away, and the tasks begun with it. The tutor's panel on
 // the page takes the learner's request about it, which finds the tasks anew with the frames on the
 // page now (R74; R165 spec): the frames it gave take the place of those found, the learner's own
-// staying, and Undo puts back the frames before until the learner changes any.
+// staying, and Undo puts back the frames before until the learner changes any. Frames found on the
+// photo turned upright turn the page's photo the same way before they show, the finding going on
+// meanwhile, and the page goes on with the photo turned: its crops, a request and the history take
+// it (R162 spec).
 import { Cause } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import { useCallback, useRef, useState } from "react";
 import { useApi } from "../api/ApiContext.tsx";
@@ -24,11 +27,11 @@ import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { useKeyHolder } from "../ownkey/OwnKeyContext.tsx";
 import { TutorButton, usePanelFocus } from "../task/TutorPanel.tsx";
 import { Camera } from "./Camera.tsx";
-import { cropsOf, type Photo } from "./capture.ts";
+import { cropsOf, type Photo, turnedPhoto } from "./capture.ts";
 import { PageTutor } from "./PageTutor.tsx";
 import { type BegunTask, type PaperPage, usePaper } from "./PaperContext.tsx";
-import { Pick } from "./Pick.tsx";
-import { asked, foundTasks, framesOf, type PageTask, picked } from "./page.ts";
+import { type PageSay, Pick } from "./Pick.tsx";
+import { asked, foundTasks, framesOf, type PageTask, picked, unturned } from "./page.ts";
 import { Solve } from "./Solve.tsx";
 import { notBegun } from "./solve.ts";
 
@@ -66,6 +69,10 @@ export function PaperScreen({
   // again repeats it.
   const startKey = useRef<{ readonly of: string; readonly key: string } | undefined>(undefined);
   const change = paper?.change;
+  const turn = paper?.turn;
+  // The tasks begun on the page as it is now, which an answer that comes later reads.
+  const begunNow = useRef(paper?.begun);
+  begunNow.current = paper?.begun;
   // The tutor's panel on the page is open.
   const [talking, setTalking] = useState(false);
   const { heading, call } = usePanelFocus(talking);
@@ -73,7 +80,7 @@ export function PaperScreen({
   /** FindTasks on the photo; with the learner's request, with the frames of these tasks too. */
   const find = useCallback(
     (photo: Photo, request?: string, tasks: readonly PageTask[] = []) => {
-      if (change === undefined) return;
+      if (change === undefined || turn === undefined) return;
       const ai = holder.aiFields(profileId);
       const failed = (failure: Failure) =>
         change(photo, (page) => ({ ...page, finding: { status: "failed", failure, request } }));
@@ -110,36 +117,55 @@ export function PaperScreen({
             failed({ kind: "offline" });
             return;
           }
+          const updated =
+            (found: readonly PageTask[]) =>
+            (page: PaperPage): PaperPage => {
+              const finding =
+                read !== undefined && found.length === 0
+                  ? ({ status: "outcome", outcome: read } as const)
+                  : ({ status: "found" } as const);
+              if (request !== undefined) {
+                // None found leaves the page, and Undo, as they were.
+                return {
+                  ...page,
+                  finding,
+                  tasks: asked(page.tasks, found, key),
+                  before: found.length === 0 ? page.before : page.tasks,
+                  talk: [
+                    ...page.talk,
+                    found.length === 0 ? { kind: "none" } : { kind: "found", count: found.length },
+                  ],
+                };
+              }
+              return {
+                ...page,
+                finding,
+                // The frames drawn while it was under way stay.
+                tasks: [...found, ...page.tasks.filter((task) => task.drawn)],
+              };
+            };
           const found = foundTasks(answer);
-          const finding =
-            read !== undefined && found.length === 0
-              ? ({ status: "outcome", outcome: read } as const)
-              : ({ status: "found" } as const);
-          if (request !== undefined) {
-            // None found leaves the page, and Undo, as they were.
-            change(photo, (page) => ({
-              ...page,
-              finding,
-              tasks: asked(page.tasks, found, key),
-              before: found.length === 0 ? page.before : page.tasks,
-              talk: [
-                ...page.talk,
-                found.length === 0 ? { kind: "none" } : { kind: "found", count: found.length },
-              ],
-            }));
+          const degrees = found.length === 0 ? 0 : answer.turnDegrees;
+          if (degrees === 0) {
+            change(photo, updated(found));
             return;
           }
-          change(photo, (page) => ({
-            ...page,
-            finding,
-            // The frames drawn while it was under way stay.
-            tasks: [...found, ...page.tasks.filter((task) => task.drawn)],
-          }));
+          // The photo stays as it is, its frames turned back, where tasks begun on it hold it, in
+          // their crops and the history, or where it could not be turned.
+          const asIs = () => change(photo, updated(unturned(found, degrees, photo)));
+          if (begunNow.current !== undefined) {
+            asIs();
+            return;
+          }
+          void turnedPhoto(photo, degrees).then(
+            (turned) => turn(photo, turned, degrees, updated(found)),
+            asIs,
+          );
         },
         (reason: unknown) => failed(parseFailure(reason)),
       );
     },
-    [api, change, holder, profileId],
+    [api, change, turn, holder, profileId],
   );
 
   const page = paper?.page;
@@ -230,43 +256,38 @@ export function PaperScreen({
       .finally(() => setStarting(false));
   };
 
-  const lines = (
-    <>
-      {/* While the tasks are found, the top bar's middle says so. */}
-      {finding.status === "found" && page.tasks.length === 0 ? (
-        <p role="status">{words.text("paper.none-found")}</p>
-      ) : finding.status === "outcome" ? (
-        <p role="status">
-          {outcomeText(finding.outcome, words)}
-          {closesAI(finding.outcome) || page.tasks.length > 0
-            ? null
-            : ` ${words.text("paper.none-found")}`}
-        </p>
-      ) : finding.status === "failed" ? (
-        <p role="alert" className="nt-error">
-          {failureText(finding.failure, words)}
-          {shuts(finding.failure) ? null : (
-            <>
-              {" "}
-              <button
-                type="button"
-                className="nt-secondary"
-                onClick={() => find(page.photo, finding.request, page.tasks)}
-              >
-                {words.text("paper.find-again")}
-              </button>
-            </>
-          )}
-        </p>
-      ) : null}
-      {startFailure === undefined ? null : (
-        <p role="alert" className="nt-error">
-          {failureText(startFailure, words)}
-        </p>
-      )}
-      {closed ? <p className="nt-hint">{words.text("paper.no-ai")}</p> : null}
-    </>
-  );
+  const says: PageSay[] = [
+    ...(finding.status === "outcome"
+      ? [
+          {
+            kind: "fail" as const,
+            title: outcomeText(finding.outcome, words),
+            // Found nothing, and AI is still open: the way on is a frame by hand.
+            line:
+              closesAI(finding.outcome) || page.tasks.length > 0
+                ? undefined
+                : words.text("paper.none-found-how"),
+          },
+        ]
+      : finding.status === "failed"
+        ? [
+            {
+              kind: "fail" as const,
+              title: failureText(finding.failure, words),
+              action: shuts(finding.failure)
+                ? undefined
+                : {
+                    label: words.text("paper.find-again"),
+                    onClick: () => find(page.photo, finding.request, page.tasks),
+                  },
+            },
+          ]
+        : []),
+    ...(startFailure === undefined
+      ? []
+      : [{ kind: "fail" as const, title: failureText(startFailure, words) }]),
+    ...(closed ? [{ kind: "warn" as const, title: words.text("paper.no-ai") }] : []),
+  ];
 
   const ask = (request: string) => {
     paper.change(page.photo, (now) => ({
@@ -296,7 +317,8 @@ export function PaperScreen({
             before: undefined,
           }))
         }
-        lines={lines}
+        says={says}
+        none={finding.status === "found"}
         finding={finding.status === "finding"}
         closed={closed}
         starting={starting}

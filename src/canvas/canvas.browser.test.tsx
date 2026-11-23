@@ -134,7 +134,7 @@ async function fitOf(element: CanvasElement) {
 // rather than taken from canvas's documents (R11). A later canvas that changes any of it fails
 // here, and the page's list is to be read again.
 describe("what canvas declares for app's Accessibility page", () => {
-  it("does not grow a workbook's print past the page's fit to the width: 1.4.4 is not met", async () => {
+  it("grows a workbook's print to twice the page's fit by the bar's Zoom in: 1.4.4 is met", async () => {
     const ref = createRef<CanvasElement>();
     const { rerender } = render(
       <div style={{ inlineSize: "20rem" }}>
@@ -143,10 +143,19 @@ describe("what canvas declares for app's Accessibility page", () => {
     );
     const element = ref.current as CanvasElement;
     await rowButton(element, "Перо");
-    // Nothing on the bar enlarges the sheet (R73 canvas).
-    for (const gone of ["Крупнее", "Мельче"]) expect(buttonLabels(element)).not.toContain(gone);
     await waitFor(() => expect(printWidths(element).length).toBeGreaterThan(0));
     const narrow = await fitOf(element);
+    // Zoom in on the bar steps the page's zoom by quarters to twice the fit, and the print with
+    // it, by the technique G178 (R73 canvas); Zoom out takes it back.
+    const larger = await rowButton(element, "Крупнее");
+    for (let step = 0; step < 4; step++) larger.click();
+    await settled();
+    expect(printSpan(element) / narrow.print).toBeCloseTo(2, 1);
+    expect(larger.getAttribute("aria-disabled")).toBe("true");
+    const smaller = await rowButton(element, "Мельче");
+    for (let step = 0; step < 4; step++) smaller.click();
+    await settled();
+    expect(printSpan(element) / narrow.print).toBeCloseTo(1, 1);
     // The page fits the element's width, below 1000 CSS px: the browser's zoom, which narrows
     // the element in CSS px, narrows the page with it, and the print stays a share of the page.
     expect(narrow.page).toBeLessThanOrEqual(element.clientWidth);
