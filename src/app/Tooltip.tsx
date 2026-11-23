@@ -1,6 +1,6 @@
-// The tooltip of a control whose words do not show (R60; R90 spec): a button of the closed list,
+// The tooltip of a control whose words do not show: a button of the closed list,
 // and a place of the row of places while it shows its icon alone. The tooltip is app's own, white
-// on an opaque #1d1d1f (R148 spec), and holds WCAG 1.4.13: it comes on pointer hover and on
+// on an opaque #1d1d1f, and holds WCAG 1.4.13: it comes on pointer hover and on
 // keyboard focus, stays while the pointer is over it, and Escape dismisses it without moving the
 // pointer or the focus. It sits in the top layer, so that no box or dialog around the control
 // clips it, and it hides no content but while it is wanted.

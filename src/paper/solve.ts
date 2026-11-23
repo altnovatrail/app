@@ -1,11 +1,11 @@
-// The tasks begun on a photographed page as the screen of solving holds them (R71): each its own
+// The tasks begun on a photographed page as the screen of solving holds them: each its own
 // sheet under its crop, the tracing paper, in the order of the page; those the learner left out on
 // the page again are not on the list, and come back with their work when picked once more. "Add"
 // goes back to the page, and Start then begins only the tasks not begun yet. A frame may hold several
 // tasks, up to 20, each with an answer of its own: a Check gives the verdict of each task's answer
 // slot by its key, and a tick or a cross by each answer on the crop of the work; none when no task
-// has a key (R162 spec); after Not yet, in the mode "Show where", the tutor's wavy line under the
-// first mistake (R82 spec). No DOM.
+// has a key; after Not yet, in the mode "Show where", the tutor's wavy line under the
+// first mistake. No DOM.
 import {
   type AnswerSlotVerdict,
   type Mark as ContractMark,
@@ -135,7 +135,7 @@ export function changed(
 }
 
 /**
- * One task of a frame as a Check judged it (R162 spec): the verdict of its answer slot, and where
+ * One task of a frame as a Check judged it: the verdict of its answer slot, and where
  * its answer was read on the crop of the work, [ymin, xmin, ymax, xmax] in thousandths, when the
  * reading gave a value.
  */
@@ -145,7 +145,7 @@ export interface PaperPart {
 }
 
 /**
- * What a Check of a task from paper came to, as its card shows it (R162 spec): correct when every
+ * What a Check of a task from paper came to, as its card shows it: correct when every
  * task of the frame that has a key is, or not yet, with what was read of a frame of one task and
  * each task's part; not read, with why, when no answer was; not checked, with the outcome of the
  * call that left it so; or no key, when no task has one answer a program can compare.
@@ -165,7 +165,7 @@ export type PaperVerdict =
  * frame; a verdict the build knows not is none. A task with no key is unchecked and counts for
  * neither. Correct is whether api closed the attempt solved: a task with a key whose answer it could
  * not judge keeps it open, though no other is wrong. A repeat of the Check that solved it holds no
- * verdict of a task, which api erased with the close (R101 api): it is correct all the same.
+ * verdict of a task, which api erased with the close: it is correct all the same.
  */
 export function paperVerdictOf(
   items: readonly ItemVerdict[],
@@ -221,7 +221,7 @@ export function viewOnly(task: Pick<BegunTask, "verdict" | "over">): boolean {
 
 /**
  * The buttons of the screen of solving and at the foot of the tutor's panel, by the task's last
- * Check (R75): Hint while the task is not solved, a task with no key too, whose hints still work;
+ * Check: Hint while the task is not solved, a task with no key too, whose hints still work;
  * and the way to the next task once its Check is over. A task only to be looked at has neither.
  */
 export function tutorActs(task: Pick<BegunTask, "verdict" | "over">): {
@@ -252,10 +252,10 @@ export function wavyOf(marks: readonly ContractMark[]): Box | undefined {
 }
 
 /**
- * The ticks and crosses of a task's last Check on the crop of its work (R162 spec): one by each
+ * The ticks and crosses of a task's last Check on the crop of its work: one by each
  * answer that was correct or not yet and whose place the reading gave, named for a screen reader
  * by its task's number in the frame; and the tutor's wavy line under the first mistake, `wavy`,
- * which stands on the same work (R82 spec). None without a Check that judged one, or its context.
+ * which stands on the same work. None without a Check that judged one, or its context.
  */
 export function verdictMarks(
   task: Pick<BegunTask, "verdict" | "checked">,
@@ -279,7 +279,7 @@ export function verdictMarks(
   return all.length === 0 ? undefined : { submission: checked, marks: all };
 }
 
-/** The words of each reason a work on paper was not read for that are its own (R162 spec). */
+/** The words of each reason a work on paper was not read for that are its own. */
 const PAPER_REASONS: Readonly<Record<string, "paper.no-answer" | "paper.several">> = {
   no_final_answer: "paper.no-answer",
   several_final_answers: "paper.several",

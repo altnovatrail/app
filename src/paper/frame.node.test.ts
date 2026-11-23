@@ -1,6 +1,6 @@
-// The geometry of a frame the learner draws (R71): a rectangle dragged corner to corner, a tap that
+// The geometry of a frame the learner draws: a rectangle dragged corner to corner, a tap that
 // is no drag, two taps, the corner that resizes it, a frame moved by its middle, the photo's edge,
-// and the crop's rectangle in pixels; and a frame on the photo turned upright (R162 spec).
+// and the crop's rectangle in pixels; and a frame on the photo turned upright.
 import { describe, expect, it } from "vitest";
 import {
   cropRect,

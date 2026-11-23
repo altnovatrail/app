@@ -1,4 +1,4 @@
-// The reading of the deployment configuration, /deployment.json, format 1 (R09): by spec's text of
+// The reading of the deployment configuration, /deployment.json, format 1: by spec's text of
 // deployment/, in two steps. The schema step is written in code, with the schema's own patterns,
 // and the tests hold it to the schema, its examples and the part's vectors of reading. No DOM.
 import type { Deployment } from "@altnovatrail/spec/deploymentv1";

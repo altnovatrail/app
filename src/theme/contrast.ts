@@ -1,4 +1,4 @@
-// The contrast of two colours by WCAG 2.2's formula (R17): the relative luminance of each, and
+// The contrast of two colours by WCAG 2.2's formula: the relative luminance of each, and
 // (lighter + 0.05) / (darker + 0.05); a translucent colour laid over what it stands on first, as
 // the mockup's README, «Contrast», reads its pairs. No DOM.
 

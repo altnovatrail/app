@@ -1,6 +1,6 @@
 // The probe of the contracts' code: app imports it by the path of its file of code, as the package
 // exports it, and the client of connect-es calls a service of it. The browser's transport and its
-// settings are tested with the client (R18).
+// settings are tested with the client.
 
 import {
   AttemptService,

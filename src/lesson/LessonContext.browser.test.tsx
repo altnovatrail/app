@@ -1,4 +1,4 @@
-// The lessons open in memory (R23): what GetAccount named, a run begun in its place, a run ended,
+// The lessons open in memory: what GetAccount named, a run begun in its place, a run ended,
 // and what a remount of the same profile finds — the screens' own tests go through App.
 import { ProfileSchema } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import { create } from "@bufbuild/protobuf";

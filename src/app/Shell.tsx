@@ -1,4 +1,4 @@
-// The frame of Home, Subjects and the skill map, as the mockup's `home` (R148 spec; R79): from 600
+// The frame of Home, Subjects and the skill map, as the mockup's `home`: from 600
 // CSS px a row at the top — at its left a pill of the places, Home and Subjects, the cognitive map
 // shut with "Soon" until it comes, and after a rule For grown-ups and Help; at its right a pill of
 // the tutor, the notifications and the profile's menu —, on a phone the five places as a tab bar at
@@ -69,7 +69,7 @@ function PlaceLink({
 
 /**
  * The cognitive map, shut until it comes: in the order of the keyboard still, so that its "Soon" is
- * read, and named at every width by a tooltip of why it waits (R90 spec).
+ * read, and named at every width by a tooltip of why it waits.
  */
 function ShutPlace() {
   const { words } = useLanguage();
@@ -90,8 +90,8 @@ function ShutPlace() {
 }
 
 /**
- * For grown-ups (R76): whose settings it holds, the profile's hint mode, This device and the
- * section's other pages; Sign out is the profile's menu's alone (R63). A child's profile, which
+ * For grown-ups: whose settings it holds, the profile's hint mode, This device and the
+ * section's other pages; Sign out is the profile's menu's alone. A child's profile, which
  * this build has not, would open it behind the PIN (epic E4).
  */
 export function GrownUps() {
@@ -140,7 +140,10 @@ export function GrownUps() {
   );
 }
 
-/** The notifications: the place for them, a bell of R90 spec's list; nothing sends one yet. */
+/**
+ * The notifications: the place for them, a bell of spec's closed list of icon buttons; nothing sends
+ * one yet.
+ */
 export function Bell() {
   const { words } = useLanguage();
   return (
@@ -164,7 +167,7 @@ export function Bell() {
 }
 
 /**
- * The tutor's button at the top right and its panel (R67): where there is no work, the panel says
+ * The tutor's button at the top right and its panel: where there is no work, the panel says
  * that the tutor is an AI and where it helps, and leads to the work — the attempt open, and a task
  * from paper. To an adult the tutor is neutral, its gradient sign; Pip is the children's (epic E4).
  */

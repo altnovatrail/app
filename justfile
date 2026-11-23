@@ -1,8 +1,8 @@
 # app's own recipes: the build of the app, and the five checks .github's typescript.yml runs in CI
 # with its input engines, one job each, in a new container of a stage of .devcontainer/Dockerfile:
 # ci-lint, ci-vuln and ci-licenses in toolchain-core, ci-test and ci-engines in toolchain, with the
-# browsers (R51). Each runs as the runner's user, with HOME=/tmp and with CI from the step's
-# environment (R14, R45). Of the five only ci-licenses reads spec/: it runs spec's recipes
+# browsers. Each runs as the runner's user, with HOME=/tmp and with CI from the step's
+# environment. Of the five only ci-licenses reads spec/: it runs spec's recipes
 # licenses-check-repo and release-verify-npm, and the licenses job alone gets the submodule;
 # site-check, by hand and not in CI, runs spec's release-verify too. The documents are checked by
 # spec's own recipe, just -f spec/justfile docs-check-repo.
@@ -15,7 +15,7 @@ bin := "node_modules/.bin"
 
 # The tag of the spec submodule, whose release the file in parts/ comes from: it moves with the
 # submodule, by the task that moves to a new tag.
-spec_tag := "v0.19.9"
+spec_tag := "v0.19.11"
 
 # Run the five checks CI runs, before a pull request.
 ci: ci-lint ci-test ci-engines ci-vuln ci-licenses
@@ -31,30 +31,30 @@ ci-lint: _install
     node scripts/icons.ts --check
 
 # The tests in Node and in Chromium, with the coverage report coverage/lcov.info, which the shared
-# typescript.yml sends to Codecov; the screens in WebKit and Firefox are ci-engines' (R45). The build
-# comes first: typescript.yml runs no build of its own, so a build that fails fails this check
-# (R14). Then the release's archive of that build and of a second build of the same tree, in a
-# folder of its own: the same bytes, in the layout infra's rollout reads (R25).
+# typescript.yml sends to Codecov; the screens in WebKit and Firefox are ci-engines'. The build
+# comes first: typescript.yml runs no build of its own, so a build that fails fails this check.
+# Then the release's archive of that build and of a second build of the same tree, in a
+# folder of its own: the same bytes, in the layout infra's rollout reads.
 ci-test: build
     {{ bin }}/vitest run --coverage --project node --project '*(chromium)'
     again="$(mktemp -d)"; trap 'rm -rf "$again"' EXIT; {{ bin }}/vite build --outDir "$again" --emptyOutDir --logLevel warn && node scripts/release.ts --check "$again"
 
 # The screens in WebKit and Firefox, without the coverage: Vitest's v8 coverage works in Chromium
 # alone. typescript.yml runs this as the check "TypeScript / engines", beside ci-test, so that the
-# two take their time side by side (R45). No build: no test in a browser reads build/.
+# two take their time side by side. No build: no test in a browser reads build/.
 ci-engines: _install
     {{ bin }}/vitest run --project '*(webkit)' --project '*(firefox)'
 
 # npm audit reads the lock file and asks the registry, so nothing is installed first. Only what
-# ships: the tools of development do not reach a learner (R39 spec).
+# ships: the tools of development do not reach a learner.
 ci-vuln:
     npm audit --omit=dev --audit-level=high
 
-# The licenses of package-lock.json, against spec's list and the exceptions of licenses.json
-# (R39 spec), and the signatures of the packages of @altnovatrail in it (R77 spec); and a
+# The licenses of package-lock.json, against spec's list and the exceptions of licenses.json,
+# and the signatures of the packages of @altnovatrail in it; and a
 # NOTICE that names every package the build ships, with their own NOTICE files, read from
 # node_modules; and the file of spec's release the build and the tests take the part deployment/
-# from, which the code reads instead of spec/ (R21 and R85 spec).
+# from, which the code reads instead of spec/.
 ci-licenses: _install
     {{ quote(just_executable()) }} -f spec/justfile licenses-check-repo package-lock.json licenses.json
     {{ quote(just_executable()) }} -f spec/justfile release-verify-npm package-lock.json
@@ -68,7 +68,7 @@ build: _install
 # The files of a release, for .github's release.yml, which runs this in the stage toolchain-core,
 # without the browsers, on the tree of the commit alone — no git, no spec submodule, no token —
 # with the version as v0.1.0: the archive of the build, app_<version>.tar.gz, the one file of
-# dist/, with NOTICE and LICENSE at its root, checked before it is written (R25, R51). The build
+# dist/, with NOTICE and LICENSE at its root, checked before it is written. The build
 # reads spec's part from parts/, which git holds.
 release-files version: (_release-version version) build
     rm -rf dist
@@ -83,7 +83,7 @@ dev: _install
     env -u NOVATRAIL_CANVAS {{ bin }}/vite
 
 # The development server with a working copy of canvas, built into its lib/, in place of the
-# package from npm; package.json and the lock file stay as they are (R15).
+# package from npm; package.json and the lock file stay as they are.
 # The folder is taken from where the command is typed.
 dev-canvas folder: _install
     NOVATRAIL_CANVAS={{ quote(join(invocation_directory(), folder)) }} {{ bin }}/vite
@@ -92,11 +92,10 @@ dev-canvas folder: _install
 preview: build
     {{ bin }}/vite preview
 
-# Check a deployed site against the release of app it serves (R42): the archive and its signature
+# Check a deployed site against the release of app it serves: the archive and its signature
 # from the release, the archive accepted by spec's release-verify, then scripts/site.ts — every file
 # of the build at its path, /deployment.json as app reads it, the headers, and the page in
-# Chromium, WebKit and Firefox up to the sign-in window, which it closes with nobody signed in
-# (R45).
+# Chromium, WebKit and Firefox up to the sign-in window, which it closes with nobody signed in.
 # For the platform: just site-check https://novatrail.web.app <the release in infra's list>.
 site-check origin version: _install (_release-version version)
     #!/usr/bin/env bash
@@ -110,11 +109,11 @@ site-check origin version: _install (_release-version version)
     {{ quote(just_executable()) }} -f spec/justfile release-verify app {{ quote(version) }} "$work/$name"
     node scripts/site.ts {{ quote(origin) }} "$work/$name"
 
-# The path of the first slice in a browser, without the author (R44): walk/path.test.ts on the
+# The path of the first slice in a browser, without the author: walk/path.test.ts on the
 # development server, against the api of api's just dev-app at http://api:8080, signed in by its
 # development token, in each engine named — all three unless given, e.g. just walk webkit. Not in
 # CI: it needs api's container. Its AI calls go to api's stub and spend the quota of the day of
-# dev-app's profile (R55 and R67 api).
+# dev-app's profile.
 walk *engines="chromium webkit firefox": _install
     #!/usr/bin/env bash
     set -euo pipefail
@@ -124,7 +123,7 @@ walk *engines="chromium webkit firefox": _install
     fi
     NOVATRAIL_WALK_ENGINES={{ quote(engines) }} {{ bin }}/vitest run --config walk/vitest.config.ts
 
-# The comparison with the interface mockup (R58): mockup/vitest.config.ts in Chromium, WebKit and
+# The comparison with the interface mockup: mockup/vitest.config.ts in Chromium, WebKit and
 # Firefox — every state of the mockup's first slice, on the iPad and the phone, against the other
 # engines, and app's screens against their states, region by region —, with the snapshots and the
 # reports in mockup/out/, which it empties first. It opens the mockup of the spec folder given:

@@ -1,4 +1,4 @@
-// The debug button and its window in the browser (R72), with api's DebugService on connect-es's
+// The debug button and its window in the browser, with api's DebugService on connect-es's
 // router: nothing until GetDebug answers; the window by the button, Escape and Close, the focus
 // back on the button; the tab Models — "As admitted", a model chosen with its effort and thinking,
 // thinking that stays on, the second reader, and a choice api refuses —; and the tab Log — each

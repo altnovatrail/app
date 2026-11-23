@@ -1,4 +1,4 @@
-// The counts of the skills on the cards (R62): each map asked once for a profile, module and
+// The counts of the skills on the cards: each map asked once for a profile, module and
 // version; a map that failed asked again with the next cards; and another profile's counts never
 // shown on a card of the same module.
 import { GetSkillMapResponseSchema } from "@altnovatrail/contracts/novatrail/api/v1/progress_pb.js";

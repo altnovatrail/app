@@ -1,5 +1,5 @@
-// The states of a module's skills on its card (R148 spec; R62): the state or mark of each skill is
-// what the function ./states of skill-map gives — the very rule its map draws by (R03 skill-map) —,
+// The states of a module's skills on its card: the state or mark of each skill is
+// what the function ./states of skill-map gives — the very rule its map draws by —,
 // so that the card and the map never part, and the card counts them: the five states of a skill
 // with a verdict on its bar, in the order of the mockup's legend, and the two marks of the rest
 // beside it. No DOM.
@@ -52,7 +52,7 @@ export function judged(counts: SkillCounts): number {
 }
 
 /**
- * Where the learner stands in a module whose skills go in a chain (R06): the skill to work on —
+ * Where the learner stands in a module whose skills go in a chain: the skill to work on —
  * the first not mastered in the order of the tiers — by its place from 1 and its title, the one
  * after it, and how many are mastered of all; past the last, no skill to work on.
  */

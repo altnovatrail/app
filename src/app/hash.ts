@@ -1,4 +1,4 @@
-// The screens of the app live in the hash of its address: /#/<screen>/<part>/… (R14). Any hosting
+// The screens of the app live in the hash of its address: /#/<screen>/<part>/…. Any hosting
 // serves the one index.html at the root, with no rule of its own, and the browser sends no fragment
 // to the server, so no hosting log learns which screen a learner is on. A route names a screen and
 // the IDs of content it shows, never the ID of a profile, an account, an attempt or a lesson run.
@@ -12,53 +12,53 @@ export interface Route {
 /** The screen that an empty or unknown hash shows. */
 export const HOME: Route = { screen: "home", parts: [] };
 
-/** The task screen: the attempt open, which the hash never names (R14). */
+/** The task screen: the attempt open, which the hash never names. */
 export const TASK: Route = { screen: "task", parts: [] };
 
-/** The lesson player: the lesson run open, which the hash never names either (R23). */
+/** The lesson player: the lesson run open, which the hash never names either. */
 export const LESSON: Route = { screen: "lesson", parts: [] };
 
 /**
  * The section for adults, its first page; `#/adults/<page>` is each of its other pages, a profile's
- * among them for the profile chosen in the section, which the hash never names either (R29).
+ * among them for the profile chosen in the section, which the hash never names either.
  */
 export const ADULTS: Route = { screen: "adults", parts: [] };
 
 /**
  * The legal pages, their list first; `#/legal/<page>` is each page — a legal text by its ID, the
- * page Accessibility and the notices of third-party code (R31). They show before signing in too.
+ * page Accessibility and the notices of third-party code. They show before signing in too.
  */
 export const LEGAL: Route = { screen: "legal", parts: [] };
 
 /**
  * The license of a module: `#/license/<digest>`, LICENSE and NOTICE of a version by the digest of
- * its package, an ID of content, opened from a module's card on Home (R32). It shows at any step,
+ * its package, an ID of content, opened from a module's card on Home. It shows at any step,
  * as the legal pages do; the section for adults shows the same page as one of its own.
  */
 export const MODULE_LICENSE: Route = { screen: "license", parts: [] };
 
 /**
- * The page on the AI tutor and how to use it safely, the learning material of R123 spec:
- * `#/tutor`, opened from Home (R33). It shows at any step, as the license of a module does,
+ * The page on the AI tutor and how to use it safely, the learning material spec requires:
+ * `#/tutor`, opened from Home. It shows at any step, as the license of a module does,
  * in the language of the learner's screens while a learner is chosen.
  */
 export const TUTOR: Route = { screen: "tutor", parts: [] };
 
 /**
- * Subjects, a place of the row of places (R148 spec): the catalog of the server, the modules
+ * Subjects, a place of the row of places: the catalog of the server, the modules
  * connected with the way to each one's map and the others with Connect.
  */
 export const SUBJECTS: Route = { screen: "subjects", parts: [] };
 
 /**
- * The skill map, the learner's second way in beside Home (R34): `#/skill-map/<module>` is a
+ * The skill map, the learner's second way in beside Home: `#/skill-map/<module>` is a
  * module's map, by the module's ID — an ID of content, never the learner's —, opened from Subjects;
  * `#/skill-map` alone goes to Subjects in place of itself.
  */
 export const SKILL_MAP: Route = { screen: "skill-map", parts: [] };
 
 /**
- * A task from the learner's paper (R71): `#/paper`, the camera, the tasks found on the page
+ * A task from the learner's paper: `#/paper`, the camera, the tasks found on the page
  * photographed, and the tasks begun, from memory, as the hash names no page and no attempt.
  */
 export const PAPER: Route = { screen: "paper", parts: [] };

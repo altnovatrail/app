@@ -1,4 +1,4 @@
-// The hint mode in the profile's menu (R76; R162 spec), as the mockup's `home-switch`:
+// The hint mode in the profile's menu, as the mockup's `home-switch`:
 // a group of two radio buttons under "Hints" — "Questions only", and "Show where", whose wavy line after
 // "Not yet" underlines the place of the mistake on a task from paper. A learner of the category
 // adult sets their own by `SetHintMode`, a learning request, and the session takes the profile it

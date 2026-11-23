@@ -53,7 +53,7 @@ export function tappedChoices(
   return tapped;
 }
 
-/** The words of each verdict an item or a slot gets (R17). */
+/** The words of each verdict an item or a slot gets. */
 export const VERDICT_KEYS = {
   correct: "task.correct",
   not_yet: "task.not-yet",
@@ -66,7 +66,7 @@ export function verdictKey(verdict: string) {
   return keyFor(VERDICT_KEYS, verdict);
 }
 
-/** The words of each reason a slot could not be read for (R56, R86 spec). */
+/** The words of each reason a slot could not be read for. */
 export const REASON_KEYS = {
   blank: "task.reason-blank",
   notation: "task.reason-notation",
@@ -224,7 +224,7 @@ export function solutionOf(views: OpenViews, solved: SolvedTask): readonly open.
 
 /**
  * The work the contract carries, of the work the canvas gave: PNG bytes, and a box's place; a task
- * from paper's, its statement's crop beside its work's (R162 spec).
+ * from paper's, its statement's crop beside its work's.
  */
 export async function workOf(work: ExportedWork): Promise<MessageInitShape<typeof WorkSchema>> {
   const bytes = async (png: Blob) => new Uint8Array(await png.arrayBuffer());
@@ -247,7 +247,7 @@ export async function workOf(work: ExportedWork): Promise<MessageInitShape<typeo
 /** How a mark is named by its number, the count, and on a workbook its line and box. */
 export type MarkName = (n: number, total: number, cell?: { item: number; slot: number }) => string;
 
-/** The names of marks in a screen's words (R17): on a workbook, with the line and the box. */
+/** The names of marks in a screen's words: on a workbook, with the line and the box. */
 export function markNames(words: Words): MarkName {
   return (n, total, cell) =>
     cell === undefined
@@ -257,7 +257,7 @@ export function markNames(words: Words): MarkName {
 
 /**
  * A mark of the contract where the canvas puts it: on a workbook a cell alone, on a sheet a box of
- * the crop alone (R53 spec); none for a kind or a place the build knows not, or for this canvas.
+ * the crop alone; none for a kind or a place the build knows not, or for this canvas.
  */
 function anchorOf(mark: ContractMark, workbook: boolean): Mark["at"] | undefined {
   if (mark.kind !== MarkKind.FRAME) return undefined;
@@ -272,8 +272,8 @@ function anchorOf(mark: ContractMark, workbook: boolean): Mark["at"] | undefined
 }
 
 /**
- * The tutor's marks as the canvas takes them, with the context of the submission they are of (R74
- * spec), each named by its number among the marks placed — "Tutor's mark 1 of 2", and on a
+ * The tutor's marks as the canvas takes them, with the context of the submission they are of, each
+ * named by its number among the marks placed — "Tutor's mark 1 of 2", and on a
  * workbook with its line and box. None when no mark has a place the build knows.
  */
 export function marksOf(

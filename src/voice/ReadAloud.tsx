@@ -1,4 +1,4 @@
-// "Read aloud" beside a text (R07, R36, R60): the speaker button, its icon alone, reads the text by
+// "Read aloud" beside a text: the speaker button, its icon alone, reads the text by
 // the voice of its language, the voicing off too, and a second press while it reads stops it. Where
 // the text cannot be said — no voice for its language on this device, or on Android and Linux
 // before an adult's leave — the button stays, not active, and the line beside it, which describes

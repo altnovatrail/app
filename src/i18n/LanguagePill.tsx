@@ -1,4 +1,4 @@
-// The sign-in's language (R17): a pill of glass that shows the device's language by its own name and
+// The sign-in's language: a pill of glass that shows the device's language by its own name and
 // opens, in a pop-over under its name, a button for each language, the chosen one pressed, tinted
 // and ticked. A press
 // changes the screen at once and closes the pop-over: the choice is a button's, not a list's that

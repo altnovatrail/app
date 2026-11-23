@@ -1,6 +1,6 @@
-// "Your pages" in the browser (R77): each row a thumbnail of its page's photo beside when it was
+// "Your pages" in the browser: each row a thumbnail of its page's photo beside when it was
 // taken and how many tasks it began, named by both; a skeleton of the thumbnail's size while the
-// photo is read and made small (R168 spec), a blank sheet where it cannot be shown, and the
+// photo is read and made small, a blank sheet where it cannot be shown, and the
 // thumbnails' URLs revoked when the list goes.
 import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";

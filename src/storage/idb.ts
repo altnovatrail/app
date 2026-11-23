@@ -2,7 +2,7 @@
 // deletion or a newer build in another tab does not wait for it; a database that is not there is
 // made only when asked, so that a tab whose database another tab erased does not make it again,
 // empty; and a removal another's connection holds is "blocked" at once, not awaited — Firebase
-// Auth's connection closes only on pagehide (R16).
+// Auth's connection closes only on pagehide.
 import {
   type Backend,
   type Connection,

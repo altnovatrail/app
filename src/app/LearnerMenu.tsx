@@ -1,4 +1,4 @@
-// The profile's menu (R148 spec; R63, R79): the pill of the learner chosen — the avatar, the
+// The profile's menu: the pill of the learner chosen — the avatar, the
 // pseudonym and a chevron — at the top right of Home, Subjects and the skill map, the avatar alone
 // on a phone, and behind it, as a pop-over, who is learning now, "Switch learner" and "Sign out":
 // the hint mode and This device are For grown-ups' there (Shell.tsx). In a lesson and on the task
@@ -123,8 +123,8 @@ export function LearnerMenu({ short = false }: { readonly short?: boolean }) {
 
 /**
  * The profile's pill on a screen of a lesson or a task that has no top bar of its own — a lesson's
- * end, a lesson or a task not read, a task already over —, as on every screen of the profile
- * (R63, R64, R65); none with no learner.
+ * end, a lesson or a task not read, a task already over —, as on every screen of the profile;
+ * none with no learner.
  */
 export function ProfilePill({ className }: { readonly className: string }) {
   const chosen = useLearner();

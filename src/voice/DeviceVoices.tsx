@@ -1,4 +1,4 @@
-// The section Voicing of the page This device (R07, R36): on Android and Linux, why the voicing
+// The section Voicing of the page This device: on Android and Linux, why the voicing
 // waits for an adult here and the leave to give or take back; and for each language a text may be
 // in — the languages of the build, which every profile's screens and the device's are in, and the
 // explanation languages of the modules the cache holds — the voice that says it, chosen among its

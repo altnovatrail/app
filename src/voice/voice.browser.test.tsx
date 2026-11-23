@@ -1,4 +1,4 @@
-// Voicing in the three engines (R07, R36, R45): the speaker button and its line where a text cannot
+// Voicing in the three engines: the speaker button and its line where a text cannot
 // be said, the section Voicing of the page This device with the voices of each language and the
 // adult's leave kept in the registry, and the path "no voice" on the engine's own speechSynthesis:
 // in the container Chromium's and Firefox's have no voice at all, and WebKit's only the four

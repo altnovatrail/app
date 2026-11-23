@@ -1,4 +1,4 @@
-// Where the tooltip of a button that shows an icon alone goes (R60): below the button and centred
+// Where the tooltip of a button that shows an icon alone goes: below the button and centred
 // on it, above it where only above has room, and moved along to stay inside the window's margin.
 import { describe, expect, it } from "vitest";
 import { MARGIN, tipAt } from "./tip.ts";

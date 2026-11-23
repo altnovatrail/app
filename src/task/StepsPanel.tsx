@@ -1,11 +1,11 @@
-// The solving steps in the tutor's panel (R05, R67; R148 spec), as the mockup's `task` and
+// The solving steps in the tutor's panel, as the mockup's `task` and
 // `task-steps`: a white card at the panel's top — "Step 2 of 4" with a chevron, which opens the
 // list of the steps, each with its place — passed, now or later — in a word, not in colour alone;
 // the step's title and "Read aloud" of the step, its chips and its cards; its description in the
 // module's language, the chips to tick and the cards of techniques it gives, and the line of what
 // opens "Step done". A step passed is a touch away; forward goes only "Step done", which reads no
 // work. The last step has no "Step done": it ends with Check. While the panel is closed the step
-// stands as a pill above the row, which opens the panel, with its "Step done" (R07; StepPill).
+// stands as a pill above the row, which opens the panel, with its "Step done" (StepPill).
 import type * as open from "@altnovatrail/spec/formatv0/open";
 import { useEffect, useId, useRef, useState } from "react";
 import { Icon } from "../app/Icon.tsx";
@@ -24,7 +24,7 @@ const EXIT_LINES = {
 
 /**
  * The line of an exit condition, by its own entry alone: a newer format's condition has none. On a
- * workbook the slots are its boxes, as Check names them (R54).
+ * workbook the slots are its boxes, as Check names them.
  */
 function exitLine(
   condition: string,
@@ -248,7 +248,7 @@ export function StepsPanel({
 
 /**
  * The step while the tutor's panel is closed, the mockup's `task-pill`: a pill of glass above the
- * row — "Step 1 of 4" and the step's title, a press on which opens the panel (R148 spec),
+ * row — "Step 1 of 4" and the step's title, a press on which opens the panel,
  * and its "Step done".
  */
 export function StepPill({

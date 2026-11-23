@@ -1,11 +1,11 @@
-// The tutor's button and its panel (R67; R148 spec), as the mockup's: those of the task screen and
-// of an essay, and of the page to pick from, where the learner asks how to find its tasks (R74).
+// The tutor's button and its panel, as the mockup's: those of the task screen and
+// of an essay, and of the page to pick from, where the learner asks how to find its tasks.
 // Closed, it is the button at the window's right edge; open, glass of 400 at the right, from under
 // the top bar to 16 above the window's foot, and on a phone a sheet from the bottom, at half the
 // height or by its grabber over the whole screen. Its head — the tutor's sign, its name, a line
 // under it, the switch of voicing and × —; what stands above the conversation, the step's card by
 // steps; the conversation, which scrolls; the buttons at its foot; and under them what the screen
-// puts there, the field of a request. The screen of solving a task from paper has them too (R75).
+// puts there, the field of a request. The screen of solving a task from paper has them too.
 import { Action } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
 import type { ReactNode, Ref } from "react";
 import { useEffect, useRef, useState } from "react";
@@ -19,7 +19,7 @@ import { useLanguage } from "../i18n/LanguageContext.tsx";
 /**
  * The tutor's button, the mockup's: 56 round, of glass, its sign in the tutor's gradient, at the
  * window's right edge in the middle of its height, and on a phone above the row; it opens the panel
- * (R60: its caption is its name and its tooltip).
+ * (its caption is its name and its tooltip).
  */
 export function TutorButton({
   onOpen,
@@ -64,8 +64,7 @@ export function usePanelFocus(shown: boolean) {
 /**
  * The line of the panel's head: the learner's share of the quota, read anew at each opening and,
  * while it is open, at each change of `spent` — a token the screen makes anew with each answer that
- * spends the quota. None while closed, from an api that has no share, nor from one that failed
- * (R98 spec).
+ * spends the quota. None while closed, from an api that has no share, nor from one that failed.
  */
 export function useQuotaLine(profileId: string, open: boolean, spent: unknown): string | undefined {
   const api = useApi();
@@ -100,7 +99,7 @@ export function TutorPanel({
 }: {
   /** The panel's heading, where the focus goes as it opens. */
   readonly headingRef?: Ref<HTMLHeadingElement>;
-  /** The line under its name: the learner's share of the quota (R98 spec). */
+  /** The line under its name: the learner's share of the quota. */
   readonly status?: string | undefined;
   /** The switch of voicing in its head. */
   readonly voicing?: ReactNode;

@@ -1,5 +1,5 @@
-// The value of `aria-describedby` for a field: the IDs of its hint and error that are shown (R11;
-// WCAG 3.3.1).
+// The value of `aria-describedby` for a field: the IDs of its hint and error that are shown
+// (WCAG 3.3.1).
 
 /** The IDs given, those not `false`, as `aria-describedby` names them; none — no attribute. */
 export function described(...ids: (string | false)[]): string | undefined {

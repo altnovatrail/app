@@ -1,8 +1,8 @@
-// app's own plugin of Vite for the deployment configuration and the CSP (R09):
+// app's own plugin of Vite for the deployment configuration and the CSP:
 // - at the build, the lower layer of the CSP goes into <head> right after <meta charset>, and the
 //   build stops if anything else stands before it; csp.json and spec's deployment.schema.json, from
 //   the file of spec's release in parts/, go into the build beside index.html, as infra's rollout
-//   reads them (R17 infra);
+//   reads them;
 // - on the development server and in `vite preview`, /deployment.json is deployment.local.json,
 //   whose api has to be the origin of the server that serves it; `vite preview` also sends the
 //   header the rollout would build from csp.json, so that a local run holds both layers.

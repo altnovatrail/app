@@ -1,16 +1,15 @@
-// A module's card on Home (R79; the mockup's `home`, R148 spec): each module connected a card of
+// A module's card on Home (the mockup's `home`): each module connected a card of
 // its own — its tile, its title in its own explanation language, its kind, how many of its skills
 // are mastered, the skills due for review, the way to its skill map — and under them a square for
-// each skill in the colour of its state. The kind is "Sequential" where its skills go in a chain
-// (R06), "Feedback by criteria" where no skill has a verdict, and "Adaptive" otherwise; the line
+// each skill in the colour of its state. The kind is "Sequential" where its skills go in a chain,
+// "Feedback by criteria" where no skill has a verdict, and "Adaptive" otherwise; the line
 // under the title names the explanation language when it is not the screen's, and a module not
-// available (R92 spec). Its Continue goes on with the module's lesson begun, else its task open,
+// available. Its Continue goes on with the module's lesson begun, else its task open,
 // else asks ChooseNext for the skill to work on, which its map names (ChooseNext takes no module),
 // and opens the task the engine gives; with no such skill, or another task open, it opens the map.
 // Under a chain, the skill to work on by its place and the next; under an adaptive module, that the
 // tutor chooses, from any module — what it gives is known only once it is asked, ChooseNext being
-// an action. While its map is on its way, the card's kind, counts, squares and foot are shapes
-// (R168 spec).
+// an action. While its map is on its way, the card's kind, counts, squares and foot are shapes.
 import { type ReactNode, useId } from "react";
 import { Icon } from "../app/Icon.tsx";
 import { IconButton } from "../app/IconButton.tsx";

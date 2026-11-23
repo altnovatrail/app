@@ -1,4 +1,4 @@
-// The comparison with the interface mockup (R58): `just mockup-compare` runs both projects, in
+// The comparison with the interface mockup: `just mockup-compare` runs both projects, in
 // Chromium, WebKit and Firefox, whose browsers draw system-ui by mockup/fonts.conf. "mockup
 // engines", in Node, opens every state of the mockup's first slice in the three engines and holds
 // them to each other; "mockup", in the browser, draws app's screens as the screen tests do — the

@@ -1,4 +1,4 @@
-// The fetch of /deployment.json at every start, before any other request (R09): what the answer has
+// The fetch of /deployment.json at every start, before any other request: what the answer has
 // to be, and what the learner sees when it is not. No DOM beyond fetch and its Response.
 import { type Deployment, readDeployment } from "./deployment.ts";
 
@@ -43,7 +43,7 @@ async function bodyOf(response: Response): Promise<Uint8Array | undefined> {
   return body;
 }
 
-/** The line for whoever deployed the copy, in English (R09). */
+/** The line for whoever deployed the copy, in English. */
 function unconfigured(detail: string): Loaded {
   return { kind: "unconfigured", detail };
 }

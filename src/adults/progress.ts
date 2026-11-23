@@ -1,8 +1,8 @@
-// What the progress of a profile in the section for adults reads (R35; GetProgress of the
+// What the progress of a profile in the section for adults reads (GetProgress of the
 // contract): its pages, the module and the local ID of an entry named by its full ID, how an
 // attempt came out by its close reason and its wrong answers, the skills a solved attempt's task
 // trains, and the words of the reason code of the engine's choice. The reason code is the adult's
-// alone (R100 spec): no answer to a learning request carries it, and only this module of the
+// alone: no answer to a learning request carries it, and only this module of the
 // section gives it words — a test holds every other file of app away from it. No DOM.
 import { CloseReason, ReasonCode } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import type {
@@ -91,7 +91,7 @@ export function skillTitlesOf(record: AttemptRecord): readonly string[] {
 }
 
 /**
- * The words of each reason code for the adult, the nine of the contract (R100 and R107 spec).
+ * The words of each reason code for the adult, the nine of the contract.
  * `REASON_CODE_OPEN_RUN` is never in the progress — an attempt of a lesson run has the code of the
  * choice that began the run —, and has its words all the same. A code this build does not know, and
  * none beside a time of choice, gets the common words, which name no reason.

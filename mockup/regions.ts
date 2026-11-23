@@ -1,4 +1,4 @@
-// What a compared state of the interface mockup is made of (R58): its regions, each a pair of
+// What a compared state of the interface mockup is made of: its regions, each a pair of
 // places — one in the mockup, one in app's screen —, the sizes of the mockup and the differences
 // the comparison reports. Types and constants alone, which both the screen test in the browser and
 // scripts/mockup.ts in Node take.

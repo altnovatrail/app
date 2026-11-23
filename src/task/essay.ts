@@ -1,7 +1,7 @@
-// What the task screen knows of an essay (R75 and R87 spec; R53): a task is an essay when its
+// What the task screen knows of an essay: a task is an essay when its
 // answer slot is bound `sheet`, which the open view gives with no check; and how a submission of
 // an essay ended, as the screen says it while the attempt is open: the device keeps none of it, and
-// the server neither the text read nor the words (R87 spec). No DOM.
+// the server neither the text read nor the words. No DOM.
 import {
   SubmissionEnd,
   type SubmitEssayResponse,
@@ -17,7 +17,7 @@ export function isEssay(task: open.Task): boolean {
   return task.items.some((item) => item.answer_slots?.some((slot) => slot.binding === "sheet"));
 }
 
-/** How a submission of an essay ended (R87 spec): feedback, unreadable or unchecked. */
+/** How a submission of an essay ended: feedback, unreadable or unchecked. */
 export type EssayEnd = "feedback" | "unreadable" | "unchecked";
 
 /** What the answer to a submission of an essay brought. */

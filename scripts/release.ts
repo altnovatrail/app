@@ -1,6 +1,6 @@
-// The archive of a release of app's build (R25): build/ as it is, with NOTICE and LICENSE beside it
+// The archive of a release of app's build: build/ as it is, with NOTICE and LICENSE beside it
 // at the root — the bundle keeps no licence comment of the packages it takes, so the notices travel
-// with the code. The layout is the one infra's rollout reads (R17 infra; R85 spec): index.html,
+// with the code. The layout is the one infra's rollout reads: index.html,
 // assets/, deployment.schema.json and csp.json at the root, no deployment.json of its own. The
 // archive is packed here, not by a tar of the system: a ustar of the files sorted by name
 // (./archive.ts), gzipped with no name, no time and an unknown system, so that the same build gives

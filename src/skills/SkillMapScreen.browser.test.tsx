@@ -1,4 +1,4 @@
-// The skill map in the browser (R34): the element of skill-map in JSX, a route of no module going
+// The skill map in the browser: the element of skill-map in JSX, a route of no module going
 // to Subjects, a module's map with the learner's view in the learner's language, Practise to
 // ChooseNext with the skill and to what the engine gives, the question while an attempt is open,
 // nothing to give, the modules that teach an anchor skill whose holding is unknown with Connect, a

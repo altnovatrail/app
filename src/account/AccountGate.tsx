@@ -1,17 +1,17 @@
-// The way into the app (R16, R19, R61): the sign-in, the invite code of a user with no account with
-// the legal texts it accepts (R27), the owner's own profile and the choice of the learner, each a
-// screen of its own in the language of the device; the sign-out asks nothing and erases nothing
-// (R04). The app below it opens only once a learner is chosen, so that nothing of it opens before
+// The way into the app: the sign-in, the invite code of a user with no account with
+// the legal texts it accepts, the owner's own profile and the choice of the learner, each a
+// screen of its own in the language of the device; the sign-out asks nothing and erases nothing.
+// The app below it opens only once a learner is chosen, so that nothing of it opens before
 // the device has erased what an account other than the one api names left there. The section for
 // adults opens from the choice of the learner and from the bar above the learner's screens, in
-// place of either, while the account is open (R29); a profile it changes, the other tabs hear of by
+// place of either, while the account is open; a profile it changes, the other tabs hear of by
 // BroadcastChannel, and a change they tell of comes here. The legal pages show at any step, before
 // signing in too, from the sign-in screen and from the section's first page, and their bar goes
-// back to where they were opened from (R31); the section's first page tells of a text's next version
-// and opens its page (R46). So does the license of a module's version,
+// back to where they were opened from; the section's first page tells of a text's next version
+// and opens its page. So does the license of a module's version,
 // opened from a module's card on Home, in the language of the learner's screens while a learner is
-// chosen, and closed home (R32); and so does the page on the AI tutor, opened from Home too
-// (R33), which opens the page of who runs this copy, whose bar comes back to it (R46).
+// chosen, and closed home; and so does the page on the AI tutor, opened from Home too,
+// which opens the page of who runs this copy, whose bar comes back to it.
 import type { Profile } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import {
   createContext,
@@ -63,9 +63,9 @@ export interface Learner {
   readonly learner: Profile;
   readonly switchLearner: () => void;
   readonly signOut: () => void;
-  /** Opens a legal page, whose bar goes back home: the adult's Help leads to three (R63). */
+  /** Opens a legal page, whose bar goes back home: the adult's Help leads to three. */
   readonly openLegal: (page: Route) => void;
-  /** api changed the profile on a learner's screen — its voicing (R36): the session takes it. */
+  /** api changed the profile on a learner's screen — its voicing: the session takes it. */
   readonly onSaved: (profile: Profile) => void;
   /** A request of a learner's screen about the profile did not go through. */
   readonly onFailed: (failure: Failure) => void;
@@ -97,7 +97,7 @@ export function AccountGate({ children }: { readonly children: ReactNode }) {
   }, [session]);
   const state = useSyncExternalStore(session.subscribe, session.snapshot);
   // The own key is in memory while the owner profile of the category adult is the learner chosen,
-  // and leaves it with that profile: "Switch learner", the sign-out, another account (R47).
+  // and leaves it with that profile: "Switch learner", the sign-out, another account.
   const holder = useTabHolder(device);
   const owner = state.step === "learning" && keyed(state.learner) ? state.learner.profileId : "";
   // Only whether the holder is open for the owner profile: a refusal noted renders nothing here.
@@ -178,7 +178,7 @@ export function AccountGate({ children }: { readonly children: ReactNode }) {
           onSaved={onSaved}
           onFailed={onFailed}
           // The own key is the owner profile's: the page opens it, with no PIN while the account
-          // has no child (R08).
+          // has no child.
           {...(state.step === "choose" ? { onOpenOwner: () => session.choose() } : {})}
           onEraseAll={async () => {
             const done = await session.eraseEverything();

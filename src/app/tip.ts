@@ -1,4 +1,4 @@
-// Where the tooltip of a button that shows an icon alone goes (R60): below the button and centred
+// Where the tooltip of a button that shows an icon alone goes: below the button and centred
 // on it, as the mockup's `.tip-b` has it, or above it where only above has room; moved along so
 // that it stays 8 CSS px inside the window. The gap to the button is the tooltip's own padding, so
 // that the pointer crosses no gap on its way onto it (WCAG 1.4.13, Hoverable). No DOM.

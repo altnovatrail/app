@@ -1,4 +1,4 @@
-// The owner's own key on this device (R08, R47): in the store `ownKey` of the owner profile's
+// The owner's own key on this device: in the store `ownKey` of the owner profile's
 // database, and only while the adult keeps it there. Every erasure of that database takes it with
 // it — the profile's data erased, everything on this device, another account, the account gone,
 // the profile deleted (erase.ts); the sign-out leaves it. No DOM.

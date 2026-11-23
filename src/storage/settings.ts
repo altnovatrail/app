@@ -1,4 +1,4 @@
-// The device's settings (R04, R17): the language a grown-up chose on this device. Neither a
+// The device's settings: the language a grown-up chose on this device. Neither a
 // learner's data nor the account's: sign-out and another account leave it, and only "Erase
 // everything on this device" and the browser erase it.
 import type { Device } from "./device.ts";

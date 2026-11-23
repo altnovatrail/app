@@ -1,11 +1,11 @@
-// The screen of solving the tasks from the learner's paper (R71), as the mockup's `solve`: the top
+// The screen of solving the tasks from the learner's paper, as the mockup's `solve`: the top
 // bar's pill — Back to Home and the task's name —, and at its other end ‹, the counter that
 // opens the list of the tasks begun with "Add", and ›. Each task is a sheet in dots of its own
-// under its crop, the tracing paper, which canvas draws and the learner moves and hides (R87
-// canvas); its history and the paper's place stay with the page, so that a task left and come back
-// to is as it was, and the page's history keeps them (R77). At the foot the row of glass: Hint ·
-// Check, Hint till the task is solved. Check sends the task's crop with the crop of the work (R162
-// spec), and the page keeps the context of the work of each Check answered, but no verdict: its
+// under its crop, the tracing paper, which canvas draws and the learner moves and hides; its
+// history and the paper's place stay with the page, so that a task left and come back
+// to is as it was, and the page's history keeps them. At the foot the row of glass: Hint ·
+// Check, Hint till the task is solved. Check sends the task's crop with the crop of the work,
+// and the page keeps the context of the work of each Check answered, but no verdict: its
 // verdict is that of each task of the frame by the key api derived — Correct with Next task, Not
 // yet with Hint, of several tasks with how many are correct, the work not read with why, not
 // checked with the outcome —, with a tick or a cross by each answer on the sheet; or "Couldn't
@@ -13,11 +13,11 @@
 // takes no Check again, and the list marks the one solved. A task whose attempt is over — solved,
 // or closed by api, as a page of the history opened again may hold — is only to be looked at: its
 // sheet takes no writing, no Hint stands, and its Check says "This task is already over". The
-// tutor's button at the right edge opens its panel, and so does Hint; a verdict does not (R75; R148
-// spec). While the panel is open the verdict is a line in it, the hint a bubble there, said by
+// tutor's button at the right edge opens its panel, and so does Hint; a verdict does not.
+// While the panel is open the verdict is a line in it, the hint a bubble there, said by
 // itself while the voicing is on, and on a phone its sheet hides the row and the canvas's bar of
 // tools; while it is closed the verdict is a card above the row, with the panel's buttons. The
-// tutor's words are of AI (R82 spec): Hint before the first wrong answer asks the opening question
+// tutor's words are of AI: Hint before the first wrong answer asks the opening question
 // from the task's crop as printed, once on the attempt; after Not yet, with the panel open — or
 // once it opens — the words of the rung come with the work of the Check, and in the mode "Show
 // where" with the wavy line under the first mistake, which goes with other work or the paper moved;
@@ -25,7 +25,7 @@
 // words. The words stand till another task or Check, and what is said of them stops with another
 // task or the panel closed. "Recognise" on the tracing paper reads the task's crop into its text by
 // AI, which api keeps on the attempt for its first Check; the page keeps the reading while it is
-// open, and the paper shows the photo again each time it is mounted (R169 spec).
+// open, and the paper shows the photo again each time it is mounted.
 import {
   TutorReply,
   type WorkSchema,
@@ -117,7 +117,7 @@ export function Solve({
   onHome,
 }: {
   readonly profileId: string;
-  /** The learner is of the category adult: "Report a problem" stands below the tutor's words (R33). */
+  /** The learner is of the category adult: "Report a problem" stands below the tutor's words. */
   readonly adult: boolean;
   /** The page's tasks, by which the tasks begun are named and listed. */
   readonly tasks: readonly PageTask[];
@@ -136,10 +136,10 @@ export function Solve({
   const [pending, setPending] = useState(false);
   const [checking, setChecking] = useState(false);
   // The sheet's grid the learner turned, kept from task to task of the page while the screen is
-  // open: it is the interface's, not the work's, and no store holds it (R88 canvas).
+  // open: it is the interface's, not the work's, and no store holds it.
   const [grid, setGrid] = useState<PaperGrid | undefined>(undefined);
   const [failure, setFailure] = useState<Failure | undefined>(undefined);
-  // The tutor's words in its panel, with the reply that brought them (R123 spec).
+  // The tutor's words in its panel, with the reply that brought them.
   const [said, setSaid] = useState<Said | undefined>(undefined);
   const [wordsWaiting, setWordsWaiting] = useState(false);
   // What a request of words came to when it gave none, or why platform AI gave none of its own.
@@ -223,7 +223,7 @@ export function Solve({
       setWritten(sheet.filled?.[0]?.[0] === true);
       setUnwritten(false);
       setTold("");
-      // The wavy line stood under the work as it was (R82 spec).
+      // The wavy line stood under the work as it was.
       setWavy(undefined);
     },
     [attemptId, onKeep],
@@ -273,7 +273,7 @@ export function Solve({
     else setTold(next.text);
   };
 
-  /** The words of the rung of a wrong answer, by AI with the work of its Check (R82 spec). */
+  /** The words of the rung of a wrong answer, by AI with the work of its Check. */
   const rungWords = (ask: RungAsk) => {
     unasked.current = undefined;
     const asked = epoch.current;
@@ -300,7 +300,7 @@ export function Solve({
             setWavy(wavyOf(answer.marks));
           }
           // The fallback text comes with an outcome: beside it stands why, when platform AI is
-          // closed beyond this call (R37).
+          // closed beyond this call.
           if (read !== undefined && (answer.words === "" || closesAI(read)))
             setWordsNote(outcomeText(read, words));
         },
@@ -339,7 +339,7 @@ export function Solve({
     if (closesAI(read)) setWordsNote(outcomeText(read, words));
   };
 
-  /** The task's statement read by AI into its text, on the learner's Recognise (R169 spec). */
+  /** The task's statement read by AI into its text, on the learner's Recognise. */
   const recognise = () => {
     const of = attemptId;
     if (readings.get(of)?.state === "busy") return;
@@ -386,12 +386,12 @@ export function Solve({
   const hint = () => {
     // The rung's words on their way are the hint: a Hint meanwhile would show the fallback text.
     if (pending || wordsWaiting) return;
-    // Within the press: the words that come may be said (WebKit; R07).
+    // Within the press: the words that come may be said (WebKit).
     prime();
     setOpen(true);
     setFailure(undefined);
     setTold("");
-    // The rung's words of a wrong answer the closed panel left unasked are the hint (R82 spec).
+    // The rung's words of a wrong answer the closed panel left unasked are the hint.
     const ask = unasked.current;
     if (ask?.attemptId === attemptId) return rungWords(ask);
     const asked = epoch.current;
@@ -572,8 +572,7 @@ export function Solve({
           // A new rung: "Explain differently" is its own once more, with a key of its own.
           setExplained(false);
           explainKey.current = undefined;
-          // The words of the rung are asked at once while the panel is open, else once it opens
-          // (R148 spec).
+          // The words of the rung are asked at once while the panel is open, else once it opens.
           const ask = {
             attemptId,
             wrongAnswers: answer.wrongAnswers,
@@ -659,7 +658,7 @@ export function Solve({
     hush();
     setOpen(false);
   };
-  // Beside the open panel the sheet and the foot end where it begins (R148 spec).
+  // Beside the open panel the sheet and the foot end where it begins.
   const beside = open ? { "data-beside": "panel" } : {};
   return (
     <Screen
@@ -688,7 +687,7 @@ export function Solve({
     >
       <div className="nt-task nt-task-paper" {...beside}>
         <div className="nt-task-work" inert={only}>
-          {/* The order of the properties is the order React gives them: the paper first (R74 spec). */}
+          {/* The order of the properties is the order React gives them: the paper first. */}
           <novatrail-canvas
             key={attemptId}
             ref={element}
@@ -823,7 +822,7 @@ export function Solve({
             setOpen(true);
             const ask = unasked.current;
             if (ask?.attemptId !== attemptId) return;
-            // Within the press: the words that come may be said (WebKit; R07).
+            // Within the press: the words that come may be said (WebKit).
             prime();
             rungWords(ask);
           }}

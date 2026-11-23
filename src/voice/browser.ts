@@ -1,4 +1,4 @@
-// The browser's one synthesis (R36): speech.ts made of the globals `navigator`, `speechSynthesis`,
+// The browser's one synthesis: speech.ts made of the globals `navigator`, `speechSynthesis`,
 // `SpeechSynthesisUtterance` and `document`, on first use. Apart from speech.ts, so that Node's
 // tests of it see no DOM.
 import { type Speech, type SynthLike, speechOf, type UtteranceLike } from "./speech.ts";

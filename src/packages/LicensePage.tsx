@@ -1,9 +1,9 @@
-// The page of a module's license (R32; R62 spec): LICENSE and NOTICE of the device part of a
+// The page of a module's license: LICENSE and NOTICE of the device part of a
 // version, as they are, each in `<pre lang="en">`, and the module by its manifest — its title in
 // its explanation language, its version and its license by name. The files come from api by the
 // digest of the package (files.ts), and nothing on the page leads out of app. The page shows at
 // `#/license/<digest>` at any step, as the legal pages do, opened from a module's card on Home, a
-// sheet of the mockup's legal text that closes home (R69); and in the section for adults as one of
+// sheet of the mockup's legal text that closes home; and in the section for adults as one of
 // its pages (ModulesPage.tsx).
 import type * as open from "@altnovatrail/spec/formatv0/open";
 import { type ReactNode, useCallback, useEffect, useState } from "react";
@@ -95,8 +95,8 @@ export type LicenseFrame = (props: { title: string; children?: ReactNode }) => R
 
 /**
  * The page itself, for the version of a digest, read each time it opens: through the HTTP cache,
- * which keeps the files (R04). `back` is what the page leads back to below its heading, and
- * `frame` the screen it stands in: a page of the section for adults in the section (R68).
+ * which keeps the files. `back` is what the page leads back to below its heading, and
+ * `frame` the screen it stands in: a page of the section for adults in the section.
  */
 export function ModuleLicense({
   digest,
@@ -141,7 +141,7 @@ export function ModuleLicense({
   );
 }
 
-/** The sheet the license stands in outside the section, whose close goes home (R69). */
+/** The sheet the license stands in outside the section, whose close goes home. */
 function LicenseSheet({
   title,
   children,

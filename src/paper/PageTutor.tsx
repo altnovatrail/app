@@ -1,8 +1,8 @@
-// The tutor's panel on the page to pick from (R74; R165 spec), as the mockup's `pick-ask` and
+// The tutor's panel on the page to pick from, as the mockup's `pick-ask` and
 // `pick-asked`: the line of what it takes — which tasks of the page and how they split —, each
 // request of the learner's and the program's line of what it came to, Undo while the frames before
 // can come back, and the field of a request, with no reminder of names above it, its Send and its
-// microphone, off until voice comes (R165 spec). No word of the AI comes back: its answer is
+// microphone, off until voice comes. No word of the AI comes back: its answer is
 // frames. The field is off while the finding runs and while AI is shut to the learner.
 import { type Ref, useLayoutEffect, useRef, useState } from "react";
 import { IconButton } from "../app/IconButton.tsx";

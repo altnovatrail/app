@@ -1,4 +1,4 @@
-// Which voice of the device speaks a text, and where the device must ask an adult first (R07, R36):
+// Which voice of the device speaks a text, and where the device must ask an adult first:
 // app names the voice of every utterance itself and leaves the browser no choice. The candidates
 // for a language are the voices the browser says are local, with no "Online" in their name — Edge's
 // voices that Azure speaks —, whose `lang` the language matches by RFC 4647's Basic Filtering, the
@@ -69,7 +69,7 @@ export function voiceFor<V extends VoiceLike>(
   return marked.length === 1 ? marked[0] : found[0];
 }
 
-/** The system as app tells it apart for voicing; ChromeOS is no Linux (R36). */
+/** The system as app tells it apart for voicing; ChromeOS is no Linux. */
 export type Platform = "android" | "chromeos" | "linux" | "other";
 
 /** What app reads of `navigator` to tell the system. */
@@ -98,7 +98,7 @@ export function platformOf(navigator: NavigatorLike): Platform {
   return "other";
 }
 
-/** Whether voicing waits for an adult's leave on this device: on Android and Linux (R07). */
+/** Whether voicing waits for an adult's leave on this device: on Android and Linux. */
 export function needsLeave(platform: Platform): boolean {
   return platform === "android" || platform === "linux";
 }

@@ -1,4 +1,4 @@
-// The cards of modules as the skill map and the section for adults list them (R32, R34 and R35):
+// The cards of modules as the skill map and the section for adults list them:
 // each card named by CardHeading, with one button described by its title, in the order of the
 // screen's language, the mark "in order" coming when its graph has, and a retry when some names did
 // not come. Home keeps cards of its own: two lists, a button that moves its card between
@@ -67,7 +67,7 @@ export function ModuleCardItem({
   );
 }
 
-/** Two cards of modules while they are read, in the cards' own frame (R168 spec). */
+/** Two cards of modules while they are read, in the cards' own frame. */
 export function ModuleCardsLoading({ action = true }: { readonly action?: boolean }) {
   return (
     <Loading>

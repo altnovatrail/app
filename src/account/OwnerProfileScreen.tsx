@@ -1,9 +1,9 @@
-// The owner's own profile as a learner, as the mockup's `owner` (R19, R61; R98 and R148 spec), a
+// The owner's own profile as a learner, as the mockup's `owner`, a
 // dark card on the sky of "Who is learning?": a pseudonym, the country and an avatar of the set, of
 // the category `adult`. The avatar may stay
-// unchosen, and the profile then shows the set's own (R98 spec keeps the field optional); the
-// avatars and the countries are each a choice in a pop-over (R59). "Continue" looks off until a
-// pseudonym and a country are given but keeps the focus (R20): pressed, it says what is missing and
+// unchosen, and the profile then shows the set's own (the contract keeps the field optional); the
+// avatars and the countries are each a choice in a pop-over. "Continue" looks off until a
+// pseudonym and a country are given but keeps the focus: pressed, it says what is missing and
 // focuses it.
 import { type FormEvent, useId, useMemo, useRef, useState } from "react";
 import type { Failure } from "../api/failure.ts";

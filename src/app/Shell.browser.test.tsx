@@ -1,6 +1,6 @@
-// The frame of Home (R79): For grown-ups leads to This device, the tutor's panel to the attempt
+// The frame of Home: For grown-ups leads to This device, the tutor's panel to the attempt
 // open and to a task from paper, the bell says that nothing is new, and a place that shows its icon
-// alone, from 600 CSS px to 72em, is named by a tooltip of its words (R90 spec).
+// alone, from 600 CSS px to 72em, is named by a tooltip of its words.
 
 import { ProfileSchema } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import { create } from "@bufbuild/protobuf";

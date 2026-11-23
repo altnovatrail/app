@@ -1,4 +1,4 @@
-// The erasures that reach past one database, as app has their events (R04, R16). Those within one
+// The erasures that reach past one database, as app has their events. Those within one
 // profile — an attempt ended, a lesson ended — are the profile's own (profile.ts). Each takes the
 // registry as it is now; a database the browser did not delete stays named, to be erased again at
 // the next start (start.ts). The device's settings stay through all of them.
@@ -25,7 +25,7 @@ function accountDatabases(registry: Registry): string[] {
 /**
  * "Erase everything on this device", and an account that is no more: every profile's database, the
  * cache, the origin's localStorage and sessionStorage, and last the registry. The sign-out alone
- * erases none of it (R04). Firebase Auth's own `signOut()` comes first, from the sign-in (R19).
+ * erases none of it. Firebase Auth's own `signOut()` comes first, from the sign-in.
  * Gives whether all of it is gone; what is not, the next start erases.
  */
 export async function eraseAccount(device: Device): Promise<boolean> {
@@ -41,7 +41,7 @@ export async function eraseAccount(device: Device): Promise<boolean> {
 }
 
 /**
- * "Erase the profile's data on this device", on the page This device (R04): its database, marked in
+ * "Erase the profile's data on this device", on the page This device: its database, marked in
  * the registry first, as every erasure; one the browser did not delete the next start erases.
  */
 export function eraseProfile(device: Device, profileId: string): Promise<boolean> {
@@ -49,10 +49,10 @@ export function eraseProfile(device: Device, profileId: string): Promise<boolean
 }
 
 /**
- * What "Erase everything on this device" erases past the account's data (R04): the device's
+ * What "Erase everything on this device" erases past the account's data: the device's
  * settings, and the heartbeats of @firebase/app. The SDK holds its own connection to those and does
  * not close it on versionchange, so their removal is "blocked" while the tab is open: IndexedDB
- * does not cancel it for that, and it goes once that connection closes (R16). Gives whether the
+ * does not cancel it for that, and it goes once that connection closes. Gives whether the
  * settings are gone and the heartbeats' removal did not fail.
  */
 export async function eraseDevice(device: Device): Promise<boolean> {
@@ -63,8 +63,8 @@ export async function eraseDevice(device: Device): Promise<boolean> {
 
 /**
  * An account signed in: if the registry names another, what is left of it goes before anything
- * opens (R04), and the registry names this one. The session is the new account's and stays. The
- * voicing of the device goes too: the new account's adult decides anew (R36).
+ * opens, and the registry names this one. The session is the new account's and stays. The
+ * voicing of the device goes too: the new account's adult decides anew.
  */
 export async function accountSeen(device: Device, accountId: string): Promise<boolean> {
   const registry = await readRegistry(device);
@@ -80,8 +80,7 @@ export async function accountSeen(device: Device, accountId: string): Promise<bo
 
 /**
  * `CAUSE_NO_ACCESS` while the registry names an account: another account signed in, with no account
- * of NovaTrail, and what is left of the one named goes (R04), the voicing of the device with it
- * (R36).
+ * of NovaTrail, and what is left of the one named goes, the voicing of the device with it.
  */
 export async function noAccess(device: Device): Promise<boolean> {
   const registry = await readRegistry(device);
@@ -95,7 +94,7 @@ export async function noAccess(device: Device): Promise<boolean> {
 
 /**
  * The profiles of the account as `GetAccount` answered: a profile's database it does not list was
- * deleted on another device, and goes. Only for the account the registry names (R98 spec).
+ * deleted on another device, and goes. Only for the account the registry names.
  */
 export async function profilesListed(
   device: Device,
@@ -117,7 +116,7 @@ export type SignInCheck = "same" | "erased" | "blocked" | "failed";
 /**
  * The project of the sign-in service in /deployment.json, before `initializeAuth`. If the registry
  * has another, Firebase Auth's database and the origin's web storage go, the learners' data stays,
- * and the registry forgets the project until the next sign-in (R19). `"blocked"`: another tab's
+ * and the registry forgets the project until the next sign-in. `"blocked"`: another tab's
  * Firebase Auth holds its database, nothing is erased, and the next start tries again.
  */
 export async function signInProject(device: Device, signIn: SignIn): Promise<SignInCheck> {
@@ -132,7 +131,7 @@ export async function signInProject(device: Device, signIn: SignIn): Promise<Sig
 }
 
 /**
- * Versions withdrawn, as `CheckPackages` told (R63 spec): their open views go from the cache and
+ * Versions withdrawn, as `CheckPackages` told: their open views go from the cache and
  * from every profile's database, and the lessons on them.
  */
 export async function versionsWithdrawn(device: Device, digests: readonly string[]): Promise<void> {

@@ -1,4 +1,4 @@
-// The local build's reading of the development token (R44): what the development server answers and
+// The local build's reading of the development token: what the development server answers and
 // what of it is a token.
 import { afterEach, describe, expect, it, vi } from "vitest";
 

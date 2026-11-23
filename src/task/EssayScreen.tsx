@@ -1,10 +1,10 @@
-// The screen of an essay, laid out as the task screen is (R20, R53, R66), as the mockup's `essay`
+// The screen of an essay, laid out as the task screen is, as the mockup's `essay`
 // and `essay-feedback`: the canvas with what was read under it, the row of glass below them — Hint,
-// Done and Check (R65) —, and the tutor's panel of R67, open by steps and with a hint, and closed
+// Done and Check —, and the tutor's panel, open by steps and with a hint, and closed
 // by its × till the next hint; the essay being read and its feedback do not open it, as a verdict
-// does not (R67). An essay has no verdict (R75, R87 spec): the panel's block "Tutor" holds the
+// does not. An essay has no verdict: the panel's block "Tutor" holds the
 // feedback of the last submission, or why it gave none — no feedback this time, an essay that
-// cannot be read, no check —, with "Report a problem" for a learner of the category adult (R33).
+// cannot be read, no check —, with "Report a problem" for a learner of the category adult.
 // Above the row stands the card: the essay being read; "Feedback", which says where the feedback is, with Done; why Check or
 // Done does not open, once it is pressed so. Done opens once the essay was sent; there is no "Show
 // the solution". Done gives way to the result: "Essay finished", the last feedback, the criteria of
@@ -41,7 +41,7 @@ export interface EssayScreenProps extends TaskParts {
   readonly note?: string;
   /** The feedback came at the last check: a screen reader is told. */
   readonly came: boolean;
-  /** Done is open: the essay was sent at least once (R87 spec). */
+  /** Done is open: the essay was sent at least once. */
   readonly mayFinish: boolean;
   /** The essay was finished by Done; none while it is not. */
   readonly finished?: Finished;
@@ -76,7 +76,7 @@ export function EssayScreen(props: EssayScreenProps) {
   // submission to be kept on the device, and a press says nothing of writing it.
   const unsent = props.feedback === undefined && props.note === undefined;
   // The panel opens by steps and with a hint; the learner's × or the tutor's button holds over that,
-  // till the next hint comes (R67).
+  // till the next hint comes.
   const [chosen, setChosen] = useState<boolean | undefined>(undefined);
   // biome-ignore lint/correctness/useExhaustiveDependencies: each hint that comes opens it again.
   useEffect(() => {
@@ -118,7 +118,7 @@ export function EssayScreen(props: EssayScreenProps) {
       </button>
     </VerdictCard>
   ) : props.feedback !== undefined && props.note === undefined ? (
-    // Where the feedback is, not its words, which the panel holds (R53).
+    // Where the feedback is, not its words, which the panel holds.
     <VerdictCard
       kind="feedback"
       title={words.text("task.feedback")}
@@ -198,7 +198,7 @@ export function EssayScreen(props: EssayScreenProps) {
         ended ? null : (
           <>
             <HintButton parts={{ pending, onHint: hint }} />
-            {/* The accent's words once it opens, the muted text's while it does not (R66). */}
+            {/* The accent's words once it opens, the muted text's while it does not. */}
             <button
               type="button"
               className="nt-row-button nt-done"

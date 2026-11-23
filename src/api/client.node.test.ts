@@ -1,4 +1,4 @@
-// The client of the contract on connect-es's router, with no network (R18): every branch of a
+// The client of the contract on connect-es's router, with no network: every branch of a
 // refusal, the repeat, the token, and the open views without one.
 import {
   AccountService,

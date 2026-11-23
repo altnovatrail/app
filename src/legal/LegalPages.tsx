@@ -1,10 +1,10 @@
-// The legal pages (R31, R46): their list, `#/legal`, and each page, `#/legal/<page>` — the privacy
+// The legal pages: their list, `#/legal`, and each page, `#/legal/<page>` — the privacy
 // policy, the terms of use and the consent to keeping works, as GetLegalTexts gives them in force,
 // and the next version of each, `#/legal/<text>/next`, before the day it applies from; who runs
 // this copy, `#/legal/operator` — the section Who we are of the privacy policy in force; the page
-// Accessibility; and the notices of third-party code, NOTICE and LICENSE of the build (R25). They
-// show before signing in as well as after, in the language of the device (R10), each a sheet of the
-// mockup's legal text (R69) whose head leads back to their list and closes them back to where they
+// Accessibility; and the notices of third-party code, NOTICE and LICENSE of the build. They
+// show before signing in as well as after, in the language of the device, each a sheet of the
+// mockup's legal text whose head leads back to their list and closes them back to where they
 // were opened from. Nothing on them leads out of app: a text's own words lead nowhere (R27), and
 // the operator of the copy, whom a page names, is reached as the section Who we are says.
 import {
@@ -36,13 +36,13 @@ import {
   versionsOf,
 } from "./texts.ts";
 
-/** The page Accessibility (R11). */
+/** The page Accessibility. */
 export const ACCESSIBILITY = "accessibility";
-/** The page of the notices of third-party code (R25). */
+/** The page of the notices of third-party code. */
 export const NOTICES = "notices";
-/** The page of who runs this copy: the section Who we are of the privacy policy in force (R46). */
+/** The page of who runs this copy: the section Who we are of the privacy policy in force. */
 export const OPERATOR = "operator";
-/** The part of the hash after a text's ID that names its next version (R46). */
+/** The part of the hash after a text's ID that names its next version. */
 const NEXT = "next";
 
 /** A legal page: a text's by its ID, or one of the three above. */
@@ -61,7 +61,7 @@ export function nextPage(id: PageText): Route {
   return { screen: LEGAL.screen, parts: [id, NEXT] };
 }
 
-/** The policy whose section Who we are names the operator of the copy (R115 spec). */
+/** The policy whose section Who we are names the operator of the copy. */
 const POLICY: PageText = "privacy-policy";
 
 /** The places where the app does not meet its standard yet, as R11 declares them. */
@@ -107,7 +107,7 @@ function LegalScreen({
   );
 }
 
-/** The list: a button for each page, as the links of the adult's Help (R69). */
+/** The list: a button for each page, as the links of the adult's Help. */
 export function LegalHome() {
   const { words } = useLanguage();
   return (
@@ -128,7 +128,7 @@ export function LegalHome() {
 
 /**
  * The versions of a text, read in the language of the screen each time its page opens, past the
- * HTTP cache (R27); a failure is its words and Try again.
+ * HTTP cache; a failure is its words and Try again.
  */
 export function useVersions(id: PageText) {
   const { language } = useLanguage();
@@ -248,7 +248,7 @@ export function NextTextPage({ id }: { readonly id: PageText }) {
 }
 
 /**
- * Who runs this copy (R46; R115 spec): the section Who we are of the
+ * Who runs this copy: the section Who we are of the
  * privacy policy in force, in English as it is — the contract has no field for the operator —,
  * with the version it comes from and the way to the whole policy. A policy with no such section,
  * and a copy with no policy in force, say so.
@@ -295,10 +295,10 @@ export function OperatorPage() {
 }
 
 /**
- * The page Accessibility (R11): the standard, each place where the app does not meet it yet — its
- * criteria, why, what there is instead and when it goes — in the set R11 declares, how it is
+ * The page Accessibility: the standard, each place where the app does not meet it yet — its
+ * criteria, why, what there is instead and when it goes — in the set declared, how it is
  * checked, and whom to write to: the operator of this copy, whose contacts the section Who we are
- * of its privacy policy gives (R115 spec, R131 spec; R46).
+ * of its privacy policy gives.
  */
 export function AccessibilityPage() {
   const { words } = useLanguage();

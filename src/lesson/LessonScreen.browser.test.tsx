@@ -1,4 +1,4 @@
-// The lesson's screen (R06, R23, R64 and R06): its top bar — Back that leaves the lesson, the
+// The lesson's screen: its top bar — Back that leaves the lesson, the
 // lesson's title and the line of the segment shown, which opens the segments in a pop-over hung
 // from the bar's pill —, the row with "Continue", enabled at once, in the slot of a worked
 // example's canvas when it is given one, and only aria-disabled while "lesson done" is under way,

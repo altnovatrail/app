@@ -1,10 +1,10 @@
 // The items of a task on a handwriting sheet, beside the sheet: what each asks, and the options of
 // each answer slot bound `choice`, which the sheet does not show, in the pop-over of "Choose an
-// answer" (R65). A tap only chooses; Check sends. The verdict stands beside the option tapped and
-// beside the item, in a word and a sign, not in colour alone (R11), and below an item answered on
-// the sheet what was read, "Read: 6", or why it could not be (R21). A workbook's lines the canvas
+// answer". A tap only chooses; Check sends. The verdict stands beside the option tapped and
+// beside the item, in a word and a sign, not in colour alone, and below an item answered on
+// the sheet what was read, "Read: 6", or why it could not be. A workbook's lines the canvas
 // shows: once checked, a list below the canvas gives each line's verdict and what was read in its
-// boxes, and each box's verdict (R54).
+// boxes, and each box's verdict.
 import type * as open from "@altnovatrail/spec/formatv0/open";
 import { type ReactNode, useId } from "react";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
@@ -49,7 +49,7 @@ export function readingsOf(verdicts: Verdicts, item: number, slots: number): Rea
 
 /**
  * A workbook's lines once checked: each line's verdict, which its boxes' make up, and what was read
- * in its boxes; a line of more boxes than one gives each box's verdict too (R56 spec; R54).
+ * in its boxes; a line of more boxes than one gives each box's verdict too.
  */
 function Lines({ task, verdicts }: { readonly task: open.Task; readonly verdicts: Verdicts }) {
   const { words } = useLanguage();
@@ -225,7 +225,7 @@ export function hasChoices(task: open.Task): boolean {
 
 /**
  * Whether the verdict's card holds what was read in the task: a sheet's task of one item, with one
- * answer slot on the sheet (R65).
+ * answer slot on the sheet.
  */
 export function readInCard(task: open.Task): boolean {
   const [item] = task.items;
@@ -249,7 +249,7 @@ export function onlyChoice(task: open.Task): string | undefined {
  * Under the canvas: what each item answered on the sheet asks, and what was read in it; a
  * workbook's lines once checked. The options of a choice stand in the pop-over of "Choose an answer"
  * (`ChoiceGroups`), and what the one item of a task asks with no text of its own, and what was read
- * in it, in the verdict's card (R65).
+ * in it, in the verdict's card.
  */
 export function Items({
   task,

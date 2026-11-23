@@ -1,7 +1,7 @@
-// The theme as the browser computes it (R17): the mockup's pill and primary button, a field with
+// The theme as the browser computes it: the mockup's pill and primary button, a field with
 // its edge, a card, the glass and its panel, the page and the weights, a group of the section for
-// adults (R68), in CSS px at the root's 16; and the canvas's bar of tools in the same glass and
-// accent, from the top of the window (R84 canvas).
+// adults, in CSS px at the root's 16; and the canvas's bar of tools in the same glass and
+// accent, from the top of the window.
 import "@altnovatrail/canvas";
 import type { CanvasElement } from "@altnovatrail/spec/canvas";
 import type * as open from "@altnovatrail/spec/formatv0/open";
@@ -70,7 +70,7 @@ describe("the theme", () => {
       "rgb(142, 142, 147)",
     ]);
     // A segment that does not open is a row of the pop-over as the mockup's, with no fill, its kind
-    // grey (R64).
+    // grey.
     expect(closed?.backgroundColor).toBe("rgba(0, 0, 0, 0)");
     expect(styleOf(container.querySelector(".nt-segment-kind")).color).toBe("rgb(110, 110, 115)");
   });

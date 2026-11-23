@@ -1,4 +1,4 @@
-// What a test sees of a part of a screen being read (R168 spec): the part busy, with the shapes of
+// What a test sees of a part of a screen being read: the part busy, with the shapes of
 // what is to come and the one status that says "Loading"; and once it came, neither.
 import { expect } from "vitest";
 

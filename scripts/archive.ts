@@ -1,8 +1,8 @@
 // The tar archives of app (R25), read and written by its own code, with no dependency. Read: spec's
 // part deployment/, from the file of spec's release that holds it, parts/deployment-1.tar.gz, which
-// ci-licenses has release-verify accept (R77 and R85 spec) — the code and its tests read spec's
+// ci-licenses has release-verify accept — the code and its tests read spec's
 // files from its releases, not from the spec submodule, which CI checks out for the licenses job
-// alone (R21 spec); that archive is git's, a tar gzipped under one folder — and the archive of a
+// alone; that archive is git's, a tar gzipped under one folder — and the archive of a
 // release, which scripts/release.ts checks. Written: ustar, every time and owner 0, a file of the
 // mode 0644 and a folder of 0755.
 import { readFileSync } from "node:fs";

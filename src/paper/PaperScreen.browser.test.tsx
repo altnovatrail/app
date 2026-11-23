@@ -1,4 +1,4 @@
-// The screen of a task from paper in the browser (R71): with no camera the photos are the way in;
+// The screen of a task from paper in the browser: with no camera the photos are the way in;
 // the photo goes to FindTasks once, a JPEG encoded anew; its frames come picked, a tap leaves one
 // out, and Start begins the picked ones with BeginPaperAttempts; two taps frame a task the AI
 // missed; a refusal that shuts AI shuts Start; each task begun is a sheet under its crop, the list
@@ -458,7 +458,7 @@ it("begins the tasks picked, each a sheet under its crop", async () => {
   expect(begins[0]?.tasks).toBe(1);
   expect(begins[0]?.profileId).toBe("p1");
   expect(begins[0]?.ownKeyProvider).toBe("");
-  // The page's ID, by which api closes the open tasks of another page alone (R77).
+  // The page's ID, by which api closes the open tasks of another page alone.
   expect(begins[0]?.pageId).toMatch(/^[A-Za-z0-9_-][A-Za-z0-9._-]{0,199}$/);
   expect(sheet().paper?.statement).toBeInstanceOf(Blob);
   expect(sheet().tracing).toEqual({ at: [180, 60], hidden: false, scale: 1 });

@@ -1,6 +1,6 @@
-// The profile's menu (R63): the pill shows the avatar and the pseudonym and is named by what it
+// The profile's menu: the pill shows the avatar and the pseudonym and is named by what it
 // opens; the menu names who is learning now, the hint mode — set by an adult learner by
-// SetHintMode, read only for a child (R76) —, and holds the buttons of the profile's header, each
+// SetHintMode, read only for a child —, and holds the buttons of the profile's header, each
 // closing it first; none with no learner. And the bar that holds it on each learner's screen.
 
 import {
@@ -204,15 +204,15 @@ describe("the learner's bar", () => {
   }
 
   it("is none on Home, Subjects, the skill map, the lesson, the task and a task from paper, the buttons on the others", () => {
-    // Home, Subjects and the skill map have the profile's menu in the frame's top bar (R79), the
-    // lesson and the task the pill in their own top bar (R63, R64, R65), and a task from paper a
-    // top bar of its own (R71).
+    // Home, Subjects and the skill map have the profile's menu in the frame's top bar, the
+    // lesson and the task the pill in their own top bar, and a task from paper a
+    // top bar of its own.
     for (const own of ["home", "subjects", "skill-map", "lesson", "task", "paper"]) {
       renderBar(own);
       expect(screen.queryByRole("banner")).toBeNull();
       cleanup();
     }
-    // Any other screen, as one yet to come, keeps a way to switch (R63).
+    // Any other screen, as one yet to come, keeps a way to switch.
     renderBar("adults");
     expect(screen.getByRole("button", { name: "Switch learner" })).toBeVisible();
     expect(screen.queryByRole("button", { name: "Help" })).toBeNull();

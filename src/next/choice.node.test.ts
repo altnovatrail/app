@@ -1,4 +1,4 @@
-// What an engine's choice gives (R24): a lesson, a task or nothing, and a kind this build does not
+// What an engine's choice gives: a lesson, a task or nothing, and a kind this build does not
 // know, or a choice without its ID, as nothing.
 import {
   ChoiceKind,

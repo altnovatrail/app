@@ -1,4 +1,4 @@
-// The works on the server, in Node (R30): the form of `StoredWork`, the limit of 4 MiB, each answer
+// The works on the server, in Node: the form of `StoredWork`, the limit of 4 MiB, each answer
 // of `PutWork` and what the device's marks say after it, the order of the sends, a work put once, a
 // put the switch-off overtook, and the works the storage sends once on. The picture is a stand-in:
 // the browser's test draws the canvas's own.

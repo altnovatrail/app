@@ -1,10 +1,10 @@
-// The progress of a profile in the section for adults in the browser (R35): the way to it from the
+// The progress of a profile in the section for adults in the browser: the way to it from the
 // profile's page, the skill maps of the modules connected with the adult's view of a module's map,
 // the traps that repeat from the first page alone, the attempts page by page with "Show more" and
 // the focus, each with how it came out and the words of its reason code — an unknown code with the
 // common words —, its lesson's title or ID and a solved attempt's skills in the module's language,
 // a page that did not come and its retry, the pages with no profile chosen, and "Easier" and
-// "Harder" at a module's level on its map (R56) — with api on connect-es's router and the open
+// "Harder" at a module's level on its map — with api on connect-es's router and the open
 // views on the device's memory.
 import "@altnovatrail/skill-map";
 import { ProfileSchema } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";

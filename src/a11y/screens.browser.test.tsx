@@ -1,5 +1,5 @@
 // Every screen of app, in English, in Russian and in the pseudo-language, at a plain width and at
-// 320 CSS px (R11): no violation of WCAG 2.2 A and AA that axe-core finds, every target at least
+// 320 CSS px: no violation of WCAG 2.2 A and AA that axe-core finds, every target at least
 // 44 × 44 CSS px, no sideways scroll and no text cut. Each screen is found by its role and name.
 import "@altnovatrail/canvas";
 import "@altnovatrail/skill-map";
@@ -329,7 +329,7 @@ const TEXTS: TextsRead = {
 
 /**
  * A whole invite code of api's form, synthetic, typed, and its step left for the statement and the
- * texts (R34 api).
+ * texts.
  */
 async function agreeStep(): Promise<void> {
   await userEvent.type(document.querySelector("input") as HTMLElement, "N7VA-K2QM-9XB4-ZD3H");
@@ -510,7 +510,7 @@ const MAPPED = {
               version: "1.0.0",
               title: digest === D1 ? "Fair shares" : "Таблица умножения",
               languages: { explanation: digest === D1 ? "en" : "ru" },
-              // The bands of the level, which the adult's map corrects (R56).
+              // The bands of the level, which the adult's map corrects.
               ...(digest === D1
                 ? {
                     bands: [
@@ -1478,7 +1478,7 @@ describe.each(LANGUAGES)("the screens in %s", (_, language, words) => {
       for (const width of [1024, 320]) {
         await page.viewport(width, 640);
         // Two frames for what measures itself on a resize: the canvas's row of a worked example
-        // takes its width from the element by a ResizeObserver (R84 canvas).
+        // takes its width from the element by a ResizeObserver.
         for (let frame = 0; frame < 2; frame++) await new Promise(requestAnimationFrame);
         expect(await axeViolations(), `axe at ${width} px`).toEqual([]);
         expect(smallTargets(), `targets at ${width} px`).toEqual([]);
@@ -1487,7 +1487,7 @@ describe.each(LANGUAGES)("the screens in %s", (_, language, words) => {
       await expect.element(page.getByRole("heading", { level: 1 })).toBeVisible();
       expect(captionlessOffList(words), "buttons without a caption").toEqual([]);
       for (const button of page.getByRole("button").elements()) {
-        // A button of the closed list is named by its caption, which it does not show (R60); one
+        // A button of the closed list is named by its caption, which it does not show; one
         // named beside its words, as the profile's pill, has its words in its name (2.5.3).
         const label = button.getAttribute("aria-label");
         const text = button.textContent ?? "";

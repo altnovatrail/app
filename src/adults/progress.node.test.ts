@@ -1,8 +1,8 @@
-// What the progress of a profile reads, in Node (R35): the pages of GetProgress by their tokens,
+// What the progress of a profile reads, in Node: the pages of GetProgress by their tokens,
 // the module and local ID of a full ID, how an attempt came out, the words of the nine reason codes
 // and of one this build does not know — and that the reason code stays the section's: no file of
 // app outside the progress of the section for adults reads it or gives it words, so no learner's
-// screen can show it (R100 spec).
+// screen can show it.
 import { readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { CloseReason, ReasonCode } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";

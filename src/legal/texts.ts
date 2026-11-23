@@ -1,4 +1,4 @@
-// The legal texts app shows, from api (the contract; R27, R46): `GetLegalTexts` in the language of
+// The legal texts app shows, from api (the contract): `GetLegalTexts` in the language of
 // the screen, by Connect GET with no token — the current version of each text and its next one,
 // which app shows before its day —, and the versions a consent names: the current ones alone. A
 // text with no current version is absent, and a request names it not; an older api with no
@@ -10,7 +10,7 @@ import { parseFailure } from "../api/failure.ts";
 import { dateTimeFormat } from "../i18n/intl.ts";
 import type { Language } from "../i18n/language.ts";
 
-/** The texts `CreateAccount` names: the owner accepts both (R131 spec). */
+/** The texts `CreateAccount` names: the owner accepts both. */
 export const ACCOUNT_TEXTS = ["privacy-policy", "terms-of-use"] as const;
 
 /** The texts of the place `app`: the current version of each, and the next version of some. */
@@ -51,11 +51,11 @@ export function versionsOf(legal: Legal, id: string): Versions {
   return { current: legal.texts.find((text) => text.id === id), next: nextOf(legal.next, id) };
 }
 
-/** The text `SetWorkStorage` names when it switches the storage of works on (R113, R131 spec). */
+/** The text `SetWorkStorage` names when it switches the storage of works on. */
 export const STORAGE_TEXT = "storage-consent";
 
 /**
- * The texts that are legal pages of their own (R31): the account's two and the consent to the
+ * The texts that are legal pages of their own: the account's two and the consent to the
  * storage of works. A family's text has none: the build has no screens of a child's consent.
  */
 export const PAGE_TEXTS = [...ACCOUNT_TEXTS, STORAGE_TEXT] as const;

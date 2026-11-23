@@ -1,4 +1,4 @@
-// The legal texts from api on connect-es's router (the contract; R27, R46): asked in the language
+// The legal texts from api on connect-es's router (the contract): asked in the language
 // of the screen, those of the account in their order, the versions a consent names, the next
 // versions, an api with no LegalService as no text in force, and the title, tokens and the section
 // Who we are of a body.

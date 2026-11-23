@@ -1,10 +1,10 @@
-# The release of app's build by .github's shared release.yml (R18 .github), pinned to a release
+# The release of app's build by .github's shared release.yml, pinned to a release
 # of .github by SHA with its version beside it; Dependabot moves both. It builds the files with
-# `just release-files <version>` in the stage toolchain-core, without the browsers (R47
-# .github; R51), on the tree of the commit alone — the archive of the build, app_<version>.tar.gz,
-# with NOTICE and LICENSE at its root (R25) —, signs them and checks the signatures. The version
+# `just release-files <version>` in the stage toolchain-core, without the browsers, on the
+# tree of the commit alone — the archive of the build, app_<version>.tar.gz,
+# with NOTICE and LICENSE at its root —, signs them and checks the signatures. The version
 # is the next patch of RELEASE_LINE. infra's rollout takes the archive by its name and its sum,
-# once release-verify has accepted it (R17 infra; R77 spec).
+# once release-verify has accepted it.
 #
 # A run after a green CI on main, and the button on main, publish the release; a pull request tries
 # it, publishing nothing: it builds the files, signs them and checks the signatures. The repository

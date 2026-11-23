@@ -1,4 +1,4 @@
-// The contrast of the theme's colours as theme.css has them (WCAG 1.4.3 and 1.4.11; R17): the pairs
+// The contrast of the theme's colours as theme.css has them (WCAG 1.4.3 and 1.4.11): the pairs
 // of the interface mockup's README, «Contrast», in app's tokens, with its replacements — text 4.5:1
 // on what it stands on, an edge, the focus ring and a mark 3:1, a translucent colour laid over what
 // it stands on. A colour changed in theme.css that misses its ratio fails this test, and so does a
@@ -23,11 +23,11 @@ const GROUPS: readonly [number, string, string][] = [
   [TEXT, "text-muted-on-grey", "grey-08/page grey-10/page grey-12/page grey-12/card grey-16/card"],
   // The tutor's words and marks on the sheet among them.
   [TEXT, "segmented next tutor-words", "card"],
-  // The note of a text's next version on its sheet, in the owner's grey (R69).
+  // The note of a text's next version on its sheet, in the owner's grey.
   [TEXT, "segmented", "page-owner"],
-  // The chip of a text's version on its sheet (R69).
+  // The chip of a text's version on its sheet.
   [TEXT, "correct", "correct-tint/card"],
-  // The rubric's purple: the sign of an essay's feedback, its glyph on the card (R66).
+  // The rubric's purple: the sign of an essay's feedback, its glyph on the card.
   [EDGE, "rubric", "card"],
   // The accent as text, #0066cc, where #0071e3 misses on the page and on its own tint.
   [TEXT, "accent-text", "card page page-owner accent-tint/card glass/page"],
@@ -43,13 +43,13 @@ const GROUPS: readonly [number, string, string][] = [
   // The edge of a field against its own fill, white; the segments of a module's bar and the
   // legend's swatches, on a card.
   [EDGE, "edge state-mastered state-review state-progress state-ready state-locked", "card"],
-  // A button's icon alone (R60), grey or in the accent, under the pointer's wash; a switch that is
+  // A button's icon alone, grey or in the accent, under the pointer's wash; a switch that is
   // on, the accent on its tint, on a card and on the tutor's panel.
   [EDGE, "text-muted accent", "grey-08/card grey-08/page"],
-  // The close of a sheet, on the page's grey, under the pointer's wash (R69).
+  // The close of a sheet, on the page's grey, under the pointer's wash.
   [EDGE, "text-muted", "grey-16/card"],
   [EDGE, "accent", "accent-tint/card accent-tint/glass-panel/page"],
-  // The way in (R61): the card of a step on the sky — its text, a field and the note on it —, the
+  // The way in: the card of a step on the sky — its text, a field and the note on it —, the
   // name and the language's pill over the brightest glow, the accent and a field's edge, the tick;
   // Google's button, white on the card, its words and its edge.
   [
@@ -60,7 +60,7 @@ const GROUPS: readonly [number, string, string][] = [
   [TEXT, "on-fill", "sky sky-glow sky-pill/sky-glow"],
   [EDGE, "accent sky-edge sky-correct on-fill", "sky-card"],
   [EDGE, "sky-edge sky-ring", "sky-fill"],
-  // "Who is learning?" (R61): "Sign out" on its glass and the line under the heading where the sky
+  // "Who is learning?": "Sign out" on its glass and the line under the heading where the sky
   // is brightest under them, a profile's card and "Start", the line of "Add a learner" on its
   // glass, and the white focus ring, each over the brightest sky it meets.
   [TEXT, "on-fill", "who-glass/who-under-bar"],
@@ -69,7 +69,7 @@ const GROUPS: readonly [number, string, string][] = [
   [TEXT, "on-fill", "who-start"],
   [TEXT, "who-why", "who-glass/who-under-glass"],
   [EDGE, "on-fill", "who-under-ring"],
-  // The owner's profile (R61): the labels, a value, "Choose" and an error on its rows, the avatar's
+  // The owner's profile: the labels, a value, "Choose" and an error on its rows, the avatar's
   // button and the hint on its card, and the field's edge and the chevron on the rows.
   [TEXT, "on-fill own-value own-link sky-error", "own-rows/sky-card"],
   [TEXT, "own-link own-hint", "sky-card"],

@@ -1,7 +1,7 @@
-// What the attempt open outside a lesson is, as Home names it in "Next up" (R79): the module of its
+// What the attempt open outside a lesson is, as Home names it in "Next up": the module of its
 // task and the first paragraph of the task's statement, by `GetOpenAttempt`, which only reads; or a
 // task from paper, which that call refuses, since only the device that holds its page goes on with
-// it (R162 spec). No DOM.
+// it. No DOM.
 
 import type * as open from "@altnovatrail/spec/formatv0/open";
 import { Code, ConnectError } from "@connectrpc/connect";

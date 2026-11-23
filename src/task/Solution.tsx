@@ -1,4 +1,4 @@
-// The solution of a task solved (R05 spec): its paragraphs and pictures, as its statement's, in the
+// The solution of a task solved: its paragraphs and pictures, as its statement's, in the
 // module's explanation language; a picture as ../packages/Picture.tsx shows it.
 import type { Media } from "@altnovatrail/spec/canvas";
 import type * as open from "@altnovatrail/spec/formatv0/open";

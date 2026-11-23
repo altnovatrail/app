@@ -1,4 +1,4 @@
-// The task screen in the browser, with the canvas element itself (R05, R20): the steps, the chips
+// The task screen in the browser, with the canvas element itself: the steps, the chips
 // and the technique api gives once, the mode, the options tapped and Check from the keyboard, "Not
 // yet" and "Correct" with the solution, one idempotency key for a check and its repeat, an attempt
 // api closed meanwhile, the history of writing in the profile's database, and a write that did not
@@ -79,8 +79,8 @@ import { SpeechProvider, VoicingProvider } from "../voice/VoicingContext.tsx";
 import { forgetPuts } from "../works/stored.ts";
 import { Task } from "./Task.tsx";
 
-// The tablet's layout, where the row stands beside the open panel: on a phone its sheet hides the row
-// (R67), which the tests of the sheet show.
+// The tablet's layout, where the row stands beside the open panel: on a phone its sheet hides the row,
+// which the tests of the sheet show.
 beforeEach(async () => {
   await page.viewport(1194, 834);
 });
@@ -209,9 +209,9 @@ interface Setup {
    */
   voicing?: { speech: ReturnType<typeof fakeSpeech>; on: boolean };
   voicingFails?: boolean;
-  /** The owner's own key is held for the learner, p1: its holder, opened with it (R47). */
+  /** The owner's own key is held for the learner, p1: its holder, opened with it. */
   ownKey?: boolean;
-  /** The screen among a learner's screens, the profile's storage of works on the server on (R30). */
+  /** The screen among a learner's screens, the profile's storage of works on the server on. */
   storage?: boolean;
   /** On my own, the learner opens the tutor's panel once the screen is up: its words come at Check. */
   tutor?: boolean;
@@ -541,7 +541,7 @@ const check = () => screen.getByRole("button", { name: "Check" });
 const rowButton = (name: string) =>
   within(document.querySelector(".nt-task-row") as HTMLElement).getByRole("button", { name });
 
-/** The pop-over of the options, opened from "Choose an answer" in the row if it is not open (R65). */
+/** The pop-over of the options, opened from "Choose an answer" in the row if it is not open. */
 async function answers() {
   const open = screen.queryByRole("dialog", { name: "Choose an answer" });
   if (open !== null) return within(open);
@@ -644,7 +644,7 @@ describe("the task screen", () => {
     await screen.findByRole("button", { name: "Choose an answer" });
     expect(check()).toHaveAttribute("aria-disabled", "true");
     expect(check()).toHaveAccessibleDescription("Choose an answer in each item");
-    // Check pressed while it does not open: the card says why, and OK puts it away (R65).
+    // Check pressed while it does not open: the card says why, and OK puts it away.
     // Forced: a button that says it is disabled takes no click of Playwright's own.
     await userEvent.click(check(), { force: true });
     const card = () => document.querySelector(".nt-card-verdict");
@@ -1036,7 +1036,7 @@ describe("the task screen", () => {
     await choose("5", "Yes");
     await userEvent.click(check());
     await panel().findByRole("button", { name: "Try it again" });
-    // Once the attempt is over, the way back is still the bar's, and the result has none (R65).
+    // Once the attempt is over, the way back is still the bar's, and the result has none.
     expect(screen.getAllByRole("button", { name: "Back to Home" })).toHaveLength(1);
     await userEvent.click(screen.getByRole("button", { name: "Back to Home" }));
     expect(window.location.hash).toBe("#/home");
@@ -1715,7 +1715,7 @@ describe("the task screen with handwriting", () => {
 
 describe("the tutor's words only while its panel is open (R67)", () => {
   const tutorButton = () => screen.getByRole("button", { name: "Tutor" });
-  /** The panel's ×: the tutor's button, which opens it, stands only while it is closed (R67). */
+  /** The panel's ×: the tutor's button, which opens it, stands only while it is closed. */
   const closePanel = () => userEvent.click(panel().getByRole("button", { name: "Close" }));
   const solvedSheet = () => ({
     ...sheetAnswer("correct", { value: "7" }),
@@ -2745,7 +2745,7 @@ describe("the task screen on the owner's own key", () => {
   });
 
   it("says when access comes back beside the tier's ceiling of the key, and none beside the owner's limit", async () => {
-    // The ceiling of the tier, back at 00:00 UTC on the first of a month three months on (R80 api).
+    // The ceiling of the tier, back at 00:00 UTC on the first of a month three months on.
     const now = new Date();
     const returns = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 3, 1));
     const date = dateTimeFormat("en", { day: "numeric", month: "long" }).format(returns);

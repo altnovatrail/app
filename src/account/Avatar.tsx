@@ -1,4 +1,4 @@
-// A profile's avatar (R61; R148 spec): the picture of its code from the set of app, white on its
+// A profile's avatar: the picture of its code from the set of app, white on its
 // gradient in a circle, or the set's own where the profile has none of the set. The picture says
 // nothing the name beside it does not: it is hidden from assistive technology.
 import type { CSSProperties } from "react";
@@ -10,7 +10,7 @@ export interface AvatarProps {
   readonly code: string | undefined;
   /**
    * Its diameter: the profile's on "Who is learning?" 140, on the owner's profile 112, a choice 48,
-   * in the profile's pill 36 and in its menu 30 (R63).
+   * in the profile's pill 36 and in its menu 30.
    */
   readonly size: "large" | "profile" | "choice" | "pill" | "menu";
 }

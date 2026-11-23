@@ -1,4 +1,4 @@
-// The page of a module's license in the browser (R32): LICENSE and NOTICE of a version as they
+// The page of a module's license in the browser: LICENSE and NOTICE of a version as they
 // come, in English, with the module named by its manifest; a module with no NOTICE; a version api
 // no longer gives; a read that failed and its retry; a route that names no digest; and the
 // profile's modules in the section for adults, each with the way to its license. api is
@@ -144,7 +144,7 @@ describe("the page of a module's license", () => {
       LICENSE: [text(LICENSE)],
       NOTICE: [text(NOTICE)],
     });
-    // A sheet of the mockup's legal text (R69): its heading, and its close at the other end.
+    // A sheet of the mockup's legal text: its heading, and its close at the other end.
     expect(screen.queryByRole("banner")).toBeNull();
     const head = document.querySelector<HTMLElement>("main.nt-sheet .nt-sheet-head");
     expect(head).not.toBeNull();

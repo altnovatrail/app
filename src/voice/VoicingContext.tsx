@@ -1,4 +1,4 @@
-// The voicing of the learner's screens (R07, R36): the one synthesis of the app, and what the
+// The voicing of the learner's screens: the one synthesis of the app, and what the
 // profile and this device say of it — whether the voicing is on and its speed, a field of the
 // profile on the server that goes with the learner to every device; the voice an adult chose for a
 // language and, on Android and Linux, the adult's leave, in the device's registry. The tutor's

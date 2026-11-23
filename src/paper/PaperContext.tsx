@@ -1,10 +1,10 @@
-// The page the learner photographed (R71): the photo, the tasks found on it and those drawn, what
+// The page the learner photographed: the photo, the tasks found on it and those drawn, what
 // finding them came to, and once Start has begun them the attempts, the crops and the work on each,
-// and whether the screen of solving is shown or the page, by "Add". The address names none of them
-// (R14): `#/paper` takes them from here, and they go with the learner chosen, on a new photo, or at
-// a reload. So does the conversation with the tutor about the page, the learner's requests among it
-// (R74). Each photo replaced has its URLs revoked; so is the photo before once the tasks found on it
-// turned upright turn the page's photo too (R162 spec). From Start on, the page is the profile's history
+// and whether the screen of solving is shown or the page, by "Add". The address names none of them:
+// `#/paper` takes them from here, and they go with the learner chosen, on a new photo, or at
+// a reload. So does the conversation with the tutor about the page, the learner's requests among it.
+// Each photo replaced has its URLs revoked; so is the photo before once the tasks found on it
+// turned upright turn the page's photo too. From Start on, the page is the profile's history
 // too, in its database (R77): the photo and the frames, and each task begun with its crop and its
 // work — the history, the tracing paper's place, the contexts of its submissions and whether it is
 // over —, the work written a moment after it changes, not on every stroke, and at once when the

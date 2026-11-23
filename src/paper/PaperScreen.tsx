@@ -1,4 +1,4 @@
-// The screen `#/paper`, a task from the learner's paper (R71): the camera; once a photo is taken,
+// The screen `#/paper`, a task from the learner's paper: the camera; once a photo is taken,
 // `FindTasks` on it and the tasks to pick; and once Start has begun them, the screen of solving,
 // from which "Add" goes back to the page, and Start begins only the tasks not begun yet. The photo
 // goes to api once, to find the tasks, and stays in the tab's memory with the crops cut from it on
@@ -7,11 +7,11 @@
 // no model admitted, or the own key's limit or refusal — shuts Start: without AI a task from paper
 // can't be checked. Retake throws the page away, and the tasks begun with it. The tutor's panel on
 // the page takes the learner's request about it, which finds the tasks anew with the frames on the
-// page now (R74; R165 spec): the frames it gave take the place of those found, the learner's own
+// page now: the frames it gave take the place of those found, the learner's own
 // staying, and Undo puts back the frames before until the learner changes any. Frames found on the
 // photo turned upright turn the page's photo the same way before they show, the finding going on
 // meanwhile, and the page goes on with the photo turned: its crops, a request and the history take
-// it (R162 spec).
+// it.
 import { Cause } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import { useCallback, useRef, useState } from "react";
 import { useApi } from "../api/ApiContext.tsx";
@@ -53,7 +53,7 @@ export function PaperScreen({
   adult,
 }: {
   readonly profileId: string;
-  /** The learner is of the category adult: the tutor's words of a task offer a report (R33). */
+  /** The learner is of the category adult: the tutor's words of a task offer a report. */
   readonly adult: boolean;
 }) {
   const paper = usePaper();
@@ -228,7 +228,7 @@ export function PaperScreen({
         const answer = await api.paper.beginPaperAttempts({
           profileId,
           idempotencyKey: key,
-          // The same page after "Add": api closes none of its tasks begun before (R77).
+          // The same page after "Add": api closes none of its tasks begun before.
           pageId: page.pageId,
           tasks: chosen.length,
           ...holder.routeFields(profileId),

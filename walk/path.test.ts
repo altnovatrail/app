@@ -1,19 +1,19 @@
-// The path of the first slice in a browser, without the author (R44; R146 spec): the development
+// The path of the first slice in a browser, without the author (R44): the development
 // server of vite.config.ts on port 5173, with deployment.local.json, its proxy to the local api —
 // `http://api:8080` unless NOVATRAIL_API names another —, and api's development token, which the
-// local build's sign-in takes instead of Google's window (R67 api). The path runs in each engine
+// local build's sign-in takes instead of Google's window. The path runs in each engine
 // NOVATRAIL_WALK_ENGINES names, each in a new context: the sign-in, the choice of the learner with
-// the next versions of the legal texts api gives and the page of each (R46), the learner, My
+// the next versions of the legal texts api gives and the page of each, the learner, My
 // subjects with the line of the tutor's time, a lesson with a reload in it and its task answered in
 // handwriting — a square, a column and a row of strokes, which api's stub of tutor reads as can't
-// read this, wrong and right (R66 api) — with the tutor's words, an own key api's stub checks by
-// its ending (R73 api), refused and then accepted and kept on this device, a task outside a lesson
+// read this, wrong and right — with the tutor's words, an own key api's stub checks by
+// its ending, refused and then accepted and kept on this device, a task outside a lesson
 // on that key and continued after a reload, the section for adults with the key removed on This
 // device, a key the stub refuses at the ceiling of its tier, with when access comes back on the
 // task and beside the key, the storage of works on the server switched on, its PutWork kept and
 // This device with no warning of loss, and off again, the sign-out that keeps the account's data,
 // and the erasure of everything. The key goes with no request but those that call AI and its check,
-// and the provider alone with those that may give a choice (R47). It asks no host but the origin
+// and the provider alone with those that may give a choice. It asks no host but the origin
 // and those of the sign-in, and nothing on the way logs an error. A response of 4xx of the origin
 // is an error in every engine unless it is api's refusal with its cause, which the app reads as the
 // contract says; the line an engine logs for it is left to it. A lesson an earlier walk left open
@@ -65,27 +65,27 @@ const SIGN_IN_HOSTS = new Set([
   "novatrail-api-dev.firebaseapp.com",
   "www.googleapis.com",
 ]);
-/** The questions api's stub of tutor words a step with, in English (R66 api). */
+/** The questions api's stub of tutor words a step with, in English. */
 const STUB_WORDS =
   /Which step of your work would you check first\?|What does the task ask you to find\?|What is given in the task, in your own words\?/;
 /** The databases of the account that Erase everything erases and the sign-out keeps. */
 const ACCOUNT_DATABASES = /^novatrail-(profile-.+|registry|cache)$/;
 /** The line Chromium and WebKit log for a response of 4xx, at the resource's address; Firefox none. */
 const FAILED_LOAD = /^Failed to load resource: the server responded with a status of 4\d\d\b/;
-/** Why the walk stops when the profile's quota of the day is spent (R55 and R59 api). */
+/** Why the walk stops when the profile's quota of the day is spent. */
 const QUOTA_SPENT =
   "walk: the profile of dev-app has spent its tutor time of today: wait for the next day, or run api's just dev-app with API_DEV_APP_UID set to an account of its own (R67 api)";
-/** A synthetic own key, which api's stub accepts by its ending; with `-invalid`, refuses (R73 api). */
+/** A synthetic own key, which api's stub accepts by its ending; with `-invalid`, refuses. */
 const OWN_KEY = "sk-ant-walk-synthetic-wxyz";
 /**
  * A synthetic own key on which api's stub reads nothing: the ceiling of its tier, with access back
- * at 00:00 UTC on the first day of the next month (R66 and R80 api).
+ * at 00:00 UTC on the first day of the next month.
  */
 const TIER_KEY = "sk-ant-walk-synthetic-limit-tier";
 /** The line of the tier's ceiling and when access comes back, today, tomorrow or on its date. */
 const TIER_LINE =
   /^Your AI key has reached the limit of its usage tier at the provider\. Access comes back (today|tomorrow|on .+) at /;
-/** The requests that may carry the own key: those that call AI, and its check (R47). */
+/** The requests that may carry the own key: those that call AI, and its check. */
 const KEYED = new Set([
   "SubmitWork",
   "GetRungWords",
@@ -93,7 +93,7 @@ const KEYED = new Set([
   "ExplainDifferently",
   "CheckOwnKey",
 ]);
-/** Why the walk stops when api's dev-app opens no provider to an own key (R72 api). */
+/** Why the walk stops when api's dev-app opens no provider to an own key. */
 const NO_PROVIDER =
   "walk: api's dev-app lists no provider of an own key: run api v0.1.41 or newer, whose dev-app lists Anthropic (R72 api)";
 /** The address of api's GetAccount, through the development server's proxy. */
@@ -258,7 +258,7 @@ async function chooseDev(page: Page) {
   await page.getByRole("button", { name: "Dev", exact: true }).click();
 }
 
-/** Presses a button of the profile's header, in the menu of the learner's pill (R63). */
+/** Presses a button of the profile's header, in the menu of the learner's pill. */
 async function fromMenu(page: Page, name: string) {
   await page.getByRole("button", { name: /, profile menu$/ }).click();
   await page.getByRole("dialog").getByRole("button", { name, exact: true }).click();
@@ -280,7 +280,7 @@ async function sheet(page: Page) {
 /**
  * Short upright strokes of 25 units each, which the crop takes for writing, not lines: one is a
  * square crop, eight under one another a crop taller than wide, eight side by side one wider than
- * tall (the crop's rule, @altnovatrail/canvas lib/core/crop.js; R66 api).
+ * tall (the crop's rule, @altnovatrail/canvas lib/core/crop.js).
  */
 async function write(page: Page, shape: "square" | "column" | "row") {
   const { box, unit } = await sheet(page);
@@ -414,7 +414,7 @@ async function answer(page: Page): Promise<"tap" | "handwriting"> {
 
 /**
  * A task ended by its solution, which an adult learner may see at once and which calls no AI: the
- * walk spends the profile's quota of the day (R55 api) on the stub's three readings alone.
+ * walk spends the profile's quota of the day on the stub's three readings alone.
  */
 async function showSolution(page: Page) {
   await attemptBegun(page);
@@ -473,7 +473,7 @@ describe.each(NAMED)("the path in %s", (name) => {
     await chooseDev(page);
     await home(page);
     // The section's first page, from the profile's menu, reads the legal texts: what api gives, the
-    // page tells of (R46).
+    // page tells of.
     const legal = page.waitForResponse((response) => response.url().includes("/GetLegalTexts"));
     await fromMenu(page, "For grown-ups");
     const given = fromBinary(GetLegalTextsResponseSchema, await (await legal).body());
@@ -504,13 +504,13 @@ describe.each(NAMED)("the path in %s", (name) => {
     }
     await page.getByRole("button", { name: "Close the section" }).click();
     await home(page);
-    // The platform AI quota share of the profile today (R40).
+    // The platform AI quota share of the profile today.
     const share = page.getByText(/Tutor time today: \d+\s?% used|Today's tutor time is used up/);
     await share.waitFor({ timeout: 30_000 });
     const used = (await share.textContent()) ?? "";
     quotaLine = used;
     note(used);
-    // With the day's quota spent, api gives no lesson and begins no task in handwriting (R59 api).
+    // With the day's quota spent, api gives no lesson and begins no task in handwriting.
     expect(used, QUOTA_SPENT).toMatch(/Tutor time today: \d+\s?% used/);
     const connected = page.getByRole("region", { name: "Connected" });
     if ((await connected.getByRole("article").count()) === 0) {
@@ -705,14 +705,14 @@ describe.each(NAMED)("the path in %s", (name) => {
     await fromMenu(page, "For grown-ups");
     await page.getByRole("button", { name: "Profile: Dev" }).click();
     await page.getByRole("heading", { level: 1, name: "Profile: Dev" }).waitFor();
-    // The quota share of the profile and of the account (R40).
+    // The quota share of the profile and of the account.
     const time = page.getByRole("region", { name: "Tutor time" });
     await time
       .getByText(/This profile: \d+\s?% used|The platform's AI has no tutor time/)
       .waitFor({ timeout: 30_000 });
     await page.getByRole("button", { name: "See the progress" }).click();
     await page.getByRole("heading", { level: 1, name: "Progress: Dev" }).waitFor();
-    // The lesson's attempt by the lesson's name, not its local ID (R40).
+    // The lesson's attempt by the lesson's name, not its local ID.
     const lesson = page.getByRole("definition").filter({ hasText: lessonTitle });
     await lesson.first().waitFor();
     expect(await lesson.count()).toBeGreaterThan(0);
@@ -721,7 +721,7 @@ describe.each(NAMED)("the path in %s", (name) => {
     await page.getByRole("button", { name: "See what is on this device" }).click();
     const dev = page.getByRole("region", { name: "Profile: Dev" });
     await dev.getByText(/1 unfinished task/).waitFor();
-    // The own key kept here, by its last four alone, and its removal, asked first (R47).
+    // The own key kept here, by its last four alone, and its removal, asked first.
     await dev
       .getByText(
         `Its own AI key is kept on this device: a key of Anthropic ending in ${OWN_KEY.slice(-4)}`,

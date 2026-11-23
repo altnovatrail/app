@@ -1,4 +1,4 @@
-// Where a pop-over hangs from its button in the tablet's layout (R59): below the button, or above
+// Where a pop-over hangs from its button in the tablet's layout: below the button, or above
 // it where below has no room and above has, or more of it where neither has; at the button's left
 // edge, or at its right where the left would leave the window — or, centred, below the button's
 // middle, as the mockup hangs the avatars from their button in the middle of the owner's column —;
@@ -22,14 +22,14 @@ export interface Hung {
 
 /** Between the button and the pop-over, CSS px: the mockup's 12 under its top bar. */
 export const GAP = 12;
-/** Between the home's bar and a pop-over hung from it, CSS px: the mockup's 6 (R63). */
+/** Between the home's bar and a pop-over hung from it, CSS px: the mockup's 6. */
 export const BELOW_BAR = 6;
 /** Between the pop-over and the edge of the window, CSS px: the mockup's 16. */
 export const MARGIN = 16;
 
 /**
  * The place of a pop-over of `width` × `height` hung from `button` in a window of `view`, `gap`
- * from it: GAP, or the home's 6 below its bar (R63).
+ * from it: GAP, or the home's 6 below its bar.
  */
 export function hang(
   button: Box,

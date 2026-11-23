@@ -1,7 +1,7 @@
 // The file of a page from paper in the export, by paper.schema.json of the part export/ spec,
 // version 4: its fields, the frames in the order of the page, each task's frame by its place, and
 // the images in base64. The schema itself is not read here: it comes into the tests with the part's
-// release file, as deployment/'s does, once the whole export is written (R77).
+// release file, as deployment/'s does, once the whole export is written.
 import type { HistoryEvent, PaperSubmission } from "@altnovatrail/spec/canvas";
 import { describe, expect, it } from "vitest";
 import type { KeptPaperTask } from "../storage/profile.ts";
@@ -93,7 +93,7 @@ describe("the file of a page from paper", () => {
     expect(first?.statement.data).toMatch(BASE64);
     expect(first?.history).toEqual([write]);
     expect(first?.submissions).toEqual([{ context, history_length: 1 }]);
-    // Never moved: where canvas starts it (R87 canvas).
+    // Never moved: where canvas starts it.
     expect(second?.tracing).toEqual({ at: [180, 60], hidden: false });
     for (const box of file.frames.map((each) => each.box)) {
       expect(box.every((n) => Number.isInteger(n) && n >= 0 && n <= 1000)).toBe(true);

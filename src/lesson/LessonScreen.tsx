@@ -1,8 +1,8 @@
-// The lesson's screen (R06, R23 and R64), as the mockup's `lesson`: the whole window, the top bar's
+// The lesson's screen, as the mockup's `lesson`: the whole window, the top bar's
 // glass pill at the top — Back, which leaves the lesson, the lesson's title, the module's text with
 // its own `lang`, and under it the line of the segment shown, which opens the segments in a
-// pop-over —, the profile's pill at the bar's other end (R63) — a task's pill of its mode after it
-// (R65) —, the segment itself, and at the bottom the row of glass with "Continue" — a worked
+// pop-over —, the profile's pill at the bar's other end — a task's pill of its mode after it
+// —, the segment itself, and at the bottom the row of glass with "Continue" — a worked
 // example's in the canvas's own row. An explanation is a card that scrolls inside, its heading its
 // caption; a worked example and a task fill the rest of the window, their heading out of sight, the
 // bar's line showing the same. A segment that takes another's place takes the focus on its heading,
@@ -68,7 +68,7 @@ export function LessonScreen(props: LessonScreenProps) {
     total: course.kinds.length,
   });
   const buttons = props.onAgain !== undefined || props.onContinue !== undefined;
-  // The end of the bar, where a task segment puts the pill of its mode (R65).
+  // The end of the bar, where a task segment puts the pill of its mode.
   const [end, setEnd] = useState<HTMLElement | null>(null);
   return (
     <Screen
@@ -141,7 +141,7 @@ export function LessonScreen(props: LessonScreenProps) {
 }
 
 /**
- * The lesson while its run is read (R168 spec): the bar as it will stand, the shapes of the title
+ * The lesson while its run is read: the bar as it will stand, the shapes of the title
  * and of the segment's line in its pill, and of an explanation in its card.
  */
 export function LessonLoading({ onLeave }: { readonly onLeave: () => void }) {
@@ -175,8 +175,8 @@ export function LessonLoading({ onLeave }: { readonly onLeave: () => void }) {
 
 /**
  * "Continue", its icon after its word, as the mockup's: in the row under the segment shown, or, on
- * a worked example, a child of the canvas in its slot `actions`, after its Next and Demo
- * (R84 canvas; R36 spec). Not disabled while "lesson done" is under way: a disabled button would
+ * a worked example, a child of the canvas in its slot `actions`, after its Next and Demo.
+ * Not disabled while "lesson done" is under way: a disabled button would
  * drop the focus.
  */
 export function ContinueButton({

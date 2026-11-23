@@ -1,7 +1,7 @@
-// The probe of the element in JSX: the package registers it on import, before the first render
-// (R42 canvas), React gives it its properties and listens for its events, and the types of its
-// contract are spec's (R15). Then what canvas declares against WCAG for app's Accessibility page,
-// held on the element itself (R11).
+// The probe of the element in JSX: the package registers it on import, before the first render,
+// React gives it its properties and listens for its events, and the types of its
+// contract are spec's. Then what canvas declares against WCAG for app's Accessibility page,
+// held on the element itself.
 import "@altnovatrail/canvas";
 import type { CanvasElement, HistoryChangeEvent, Media } from "@altnovatrail/spec/canvas";
 import type * as open from "@altnovatrail/spec/formatv0/open";
@@ -131,7 +131,7 @@ async function fitOf(element: CanvasElement) {
 }
 
 // What canvas declares, or does not, for app's Accessibility page, held on the element itself
-// rather than taken from canvas's documents (R11). A later canvas that changes any of it fails
+// rather than taken from canvas's documents. A later canvas that changes any of it fails
 // here, and the page's list is to be read again.
 describe("what canvas declares for app's Accessibility page", () => {
   it("grows a workbook's print to twice the page's fit by the bar's Zoom in: 1.4.4 is met", async () => {
@@ -146,7 +146,7 @@ describe("what canvas declares for app's Accessibility page", () => {
     await waitFor(() => expect(printWidths(element).length).toBeGreaterThan(0));
     const narrow = await fitOf(element);
     // Zoom in on the bar steps the page's zoom by quarters to twice the fit, and the print with
-    // it, by the technique G178 (R73 canvas); Zoom out takes it back.
+    // it, by the technique G178; Zoom out takes it back.
     const larger = await rowButton(element, "Крупнее");
     for (let step = 0; step < 4; step++) larger.click();
     await settled();
@@ -181,8 +181,7 @@ describe("what canvas declares for app's Accessibility page", () => {
       const ref = createRef<CanvasElement>();
       const { unmount } = render(<novatrail-canvas ref={ref} lang="ru" task={task} />);
       const element = ref.current as CanvasElement;
-      // The bar of glass holds the tools, the hand among them, and no button that scrolls
-      // (R90 spec; R88 canvas).
+      // The bar of glass holds the tools, the hand among them, and no button that scrolls.
       await rowButton(element, "Рука");
       const labels = buttonLabels(element);
       expect(labels).toEqual(expect.arrayContaining(["Перо", "Рука", "Отменить"]));

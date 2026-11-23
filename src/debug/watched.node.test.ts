@@ -1,4 +1,4 @@
-// The debug mode through app's own client (R72): an api beside the stub of tutor answers GetDebug
+// The debug mode through app's own client: an api beside the stub of tutor answers GetDebug
 // `unimplemented`, and an account without the right `permission_denied`, either of which turns the
 // mode off and is no sign of a stale build; with it, a request of a task from paper watched by the
 // slot takes what its calls returned once it ends, one made while GetDebug is asked waits for it, and

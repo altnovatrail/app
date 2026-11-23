@@ -1,12 +1,12 @@
-// The words of what a call came to, in the language of the screen (R05, R17, R18): the outcomes and
+// The words of what a call came to, in the language of the screen: the outcomes and
 // the refusals that every screen shows alike — a failure of AI is a neutral phrase, never "not yet"
-// (R04 spec) — and the common string for a cause with no words here: a screen whose own causes they
-// are words them itself (R19, R22, R23, R27). The quota says when the tutor comes back by the
-// device's clock: today, tomorrow, or on the date of a family day that begins later (R37), and so
+// — and the common string for a cause with no words here: a screen whose own causes they
+// are words them itself. The quota says when the tutor comes back by the
+// device's clock: today, tomorrow, or on the date of a family day that begins later, and so
 // does any other line of when the next family day begins, by phrases of its own. The limit of the
 // own key reached says which limit, when the provider named it, and when access comes back, when
 // api gives `access_returns` — the ceiling of the provider's tier —, and the checks of an own key
-// exhausted say when the next check opens, each by phrases of their own (R47). No DOM.
+// exhausted say when the next check opens, each by phrases of their own. No DOM.
 import { Cause, LimitCause } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import { timestampDate } from "@bufbuild/protobuf/wkt";
 import { keyFor } from "../i18n/codes.ts";
@@ -30,23 +30,23 @@ export const CAUSE_KEYS = {
   [Cause.NOT_FOUND]: "api.not-found",
   [Cause.NO_PROFILE]: "api.not-found",
   [Cause.ATTEMPT_CLOSED]: "api.attempt-closed",
-  // The causes of the hint and the solution (R22): the same words wherever they come.
+  // The causes of the hint and the solution: the same words wherever they come.
   [Cause.NO_OTHER_WORDS]: "task.no-other-words",
-  // A task from paper with no key (R162 spec).
+  // A task from paper with no key.
   [Cause.NO_KEY]: "paper.no-key-line",
   [Cause.ADULT_NEEDED]: "boot.grown-up",
   [Cause.LADDER_NOT_PASSED]: "task.ladder-not-passed",
   [Cause.NO_SHOWING]: "task.no-showing",
-  // The causes of a lesson run (R23): a run ended, a segment not open yet, a task left.
+  // The causes of a lesson run: a run ended, a segment not open yet, a task left.
   [Cause.RUN_ENDED]: "lesson.ended",
   [Cause.SEGMENT_UNAVAILABLE]: "lesson.not-open",
   [Cause.SEGMENTS_NOT_ENDED]: "lesson.task-left",
-  // The causes of the consent and its texts (R27): a screen of its own words them more.
+  // The causes of the consent and its texts: a screen of its own words them more.
   [Cause.TOO_MANY_CONSENTS]: "api.too-many-consents",
   [Cause.AGE_NEEDED]: "api.age-needed",
   [Cause.TEXT_NOT_CURRENT]: "api.text-not-current",
   [Cause.LEARNER_DECIDES]: "api.learner-decides",
-  // The checks of an own key beyond the account's (R47): with when the next one opens, below.
+  // The checks of an own key beyond the account's: with when the next one opens, below.
   [Cause.KEY_CHECKS_EXHAUSTED]: "api.key-checks",
 } as const;
 
@@ -63,7 +63,7 @@ type KeyWith<P extends string> = {
 
 /**
  * The three phrases of a line that says when a moment comes — the next family day, or the next
- * check of an own key —, each a whole phrase of the dictionary, not glued from pieces (R37): today
+ * check of an own key —, each a whole phrase of the dictionary, not glued from pieces: today
  * at its time, tomorrow at it, or on its date.
  */
 export interface DayPhrases {
@@ -79,14 +79,14 @@ const QUOTA_PHRASES = {
   later: "api.quota",
 } as const satisfies DayPhrases;
 
-/** The checks of an own key exhausted, and when the next one opens (R47). */
+/** The checks of an own key exhausted, and when the next one opens. */
 const KEY_CHECK_PHRASES = {
   today: "api.key-checks-today",
   tomorrow: "api.key-checks-tomorrow",
   later: "api.key-checks-later",
 } as const satisfies DayPhrases;
 
-/** The limit of the own key reached, and when access comes back (R47). */
+/** The limit of the own key reached, and when access comes back. */
 const ACCESS_PHRASES = {
   today: "api.access-returns-today",
   tomorrow: "api.access-returns-tomorrow",
@@ -96,7 +96,7 @@ const ACCESS_PHRASES = {
 /**
  * A line of when a moment of api comes, on the device's clock: today — a time of today the clock
  * has passed, too, when it runs ahead of api's —, tomorrow, or on its date: later, as when a change
- * of the clock's offset made the family day longer than the device's (R56 api), and when a clock
+ * of the clock's offset made the family day longer than the device's, and when a clock
  * far off puts it on a day before today.
  */
 export function dayText(
@@ -132,7 +132,7 @@ const LIMIT_KEYS = {
 /**
  * The limit of the own key reached: which one, and when access comes back on the device's clock if
  * the provider said — api names it beside the ceiling of the tier alone, 00:00 UTC on the first day
- * of the next month, and never beside the owner's own limit (R80 api) —; with no time, or one
+ * of the next month, and never beside the owner's own limit —; with no time, or one
  * already past — a repeat of an earlier answer, or a refusal kept beside the key —, none.
  */
 function limitText(outcome: ReadOutcome, words: Words, now: Date): string {
@@ -156,7 +156,7 @@ export function failureText(failure: Failure, words: Words, now: Date = new Date
     case "refused": {
       const { data } = failure;
       // The moment comes beside this cause alone, so a refusal that carries it is this one, even
-      // when the cause says less (contract; R47).
+      // when the cause says less (contract).
       if (data.case === "nextKeyCheck") {
         return dayText(KEY_CHECK_PHRASES, timestampDate(data.value), words, now);
       }

@@ -1,10 +1,9 @@
-// The frame of the way in before the account (the mockup's `signin`, `invite` and `agree`; R11,
-// R61): the sky over the whole window — the app's name at its top, the trail of maths to the spark,
+// The frame of the way in before the account (the mockup's `signin`, `invite` and `agree`): the
+// sky over the whole window — the app's name at its top, the trail of maths to the spark,
 // and what the step puts in the corner at its top right —, and the step on a dark card. From 600
 // CSS px the trail and the card stand where the mockup's iPad has them, in a middle of 1194 × 834,
 // on a computer too; below 600 the trail drawn small above the card of the first step alone, and
-// the card of a later step right under the name. At the card's foot, the way to the legal pages
-// (R31).
+// the card of a later step right under the name. At the card's foot, the way to the legal pages.
 import type { ReactNode } from "react";
 import { Brand } from "../app/Brand.tsx";
 import { Screen } from "../app/Screen.tsx";

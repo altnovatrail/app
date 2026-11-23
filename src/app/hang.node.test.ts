@@ -1,4 +1,4 @@
-// Where a pop-over hangs from its button (R59): below it and at its left, or centred below its
+// Where a pop-over hangs from its button: below it and at its left, or centred below its
 // middle, above it where below has no room, at its right where the left would leave the window,
 // and inside the window's margin whatever the button's place.
 import { describe, expect, it } from "vitest";

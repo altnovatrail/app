@@ -1,5 +1,5 @@
 // The skill map of a module as app reads it, with no network: api is connect-es's router, the open
-// views on the device's memory (R99 spec; the contract).
+// views on the device's memory (the contract).
 import { Action } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
 import { Cause, RefusalSchema } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import { PackageService } from "@altnovatrail/contracts/novatrail/api/v1/package_pb.js";

@@ -1,6 +1,6 @@
-// The page This device in the browser (R04): what each profile keeps here and about how much, the
+// The page This device in the browser: what each profile keeps here and about how much, the
 // profile with nothing here and the one that cannot be read, the warning of loss on every profile
-// while api keeps no copy (R113 spec), with the storage on the server switched on too (R30), the
+// while api keeps no copy, with the storage on the server switched on too, the
 // browser's estimate, persistent storage asked for and refused, Safari's seven days, and both
 // erasures, each asked first, with the focus where it belongs.
 import {
@@ -75,7 +75,7 @@ const section = (name: string) => screen.getByRole("region", { name });
 describe("the page This device", () => {
   it("names what each profile keeps here, the owner's first, and warns of its loss on each", async () => {
     const { device } = await deviceWithWork();
-    // The storage on the server switched on is no copy there until the work's PutWork went (R30).
+    // The storage on the server switched on is no copy there until the work's PutWork went.
     renderPage(device, { profiles: [OTHER, { ...OWNER, workStorage: true }] });
     expect(screen.getByRole("heading", { level: 1, name: "This device" })).toBeTruthy();
     expect(await screen.findByText("1 unfinished task")).toBeTruthy();

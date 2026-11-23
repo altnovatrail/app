@@ -1,10 +1,10 @@
-// The tasks of a photographed page as the pick screen holds them (R71): the frames `FindTasks` gave,
+// The tasks of a photographed page as the pick screen holds them: the frames `FindTasks` gave,
 // each picked at first, and those the learner draws, each picked as it comes; a tap on one leaves
 // it out or takes it back, and "Start" begins an attempt for each picked, in the order of the page.
-// The learner may ask in words to find them anew (R165 spec): the request goes with the frames on
+// The learner may ask in words to find them anew: the request goes with the frames on
 // the page, and the frames it gave take the place of those found, the learner's own staying. Frames
-// found on the photo turned upright turn the page's photo, and the frames on it, with them (R162
-// spec). No DOM.
+// found on the photo turned upright turn the page's photo, and the frames on it, with them. No
+// DOM.
 import type { FindTasksResponse } from "@altnovatrail/contracts/novatrail/api/v1/paper_pb.js";
 import { type Frame, isFrame, pageOrder, turnedFrame } from "./frame.ts";
 import { type Size, turnedSize } from "./photo.ts";
@@ -66,7 +66,7 @@ export function turnedTasks(
 }
 
 /**
- * The page on `turned`, its photo turned upright by `degrees` (R162 spec): the frames on it before —
+ * The page on `turned`, its photo turned upright by `degrees`: the frames on it before —
  * those drawn, and those Undo puts back — turned with the photo, so that each stays round its task.
  * None when the page holds another photo than `photo`, the one the answer was for: it came too late.
  */
@@ -156,7 +156,7 @@ export function asked(
 /**
  * The tasks of a page of the history: its frames as its last Start left them, each picked whose task
  * was begun, and the frame of each task begun whose frame the learner removed before that Start, so
- * that every task the history keeps is on the list again (R77).
+ * that every task the history keeps is on the list again.
  */
 export function keptTasks(
   frames: readonly Pick<PageTask, "id" | "frame" | "drawn">[],

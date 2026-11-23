@@ -1,9 +1,9 @@
-// A legal text as app shows it, in place (the contract; R27): its title, which opens it; its gist
+// A legal text as app shows it, in place (the contract): its title, which opens it; its gist
 // in the language api found, with that `lang`; on a screen in another language than English, the
 // line that the English text is the one in force and the version's translation, when it has one,
-// which has no force of its own (R141 spec); and the English body, `lang="en"`. Nothing in it leads
-// out of app. The legal pages show the same, open (R31). A text's next version, which does not
-// apply yet, shows in place below it, closed too, with the day it applies from (R46).
+// which has no force of its own; and the English body, `lang="en"`. Nothing in it leads
+// out of app. The legal pages show the same, open. A text's next version, which does not
+// apply yet, shows in place below it, closed too, with the day it applies from.
 import type { LegalText as Text } from "@altnovatrail/contracts/novatrail/api/v1/legal_pb.js";
 import { type ReactNode, useId, useMemo } from "react";
 import { Loading, Sk } from "../app/Skeleton.tsx";
@@ -13,7 +13,7 @@ import { Markdown } from "./Markdown.tsx";
 import { dayText } from "./texts.ts";
 
 /**
- * A legal text open on its page while it is read (R168 spec): the caption and the lines of its
+ * A legal text open on its page while it is read: the caption and the lines of its
  * gist, and with `body` the heading and the first lines of the text below.
  */
 export function LegalLoading({ body = true }: { readonly body?: boolean }) {
@@ -87,8 +87,8 @@ export function NextLegalText({
 /**
  * What a text holds, below its title: the gist, the line that the English text is in force, the
  * translation and the English body, whose own headings begin at `level`. The legal pages show it
- * open, as a page of its own (R31): the gist below its caption, as the mockup's legal text has it,
- * and their `note` below the gist — the next version's (R69).
+ * open, as a page of its own: the gist below its caption, as the mockup's legal text has it,
+ * and their `note` below the gist — the next version's.
  */
 export function LegalContent({
   text,
@@ -137,7 +137,7 @@ export function LegalContent({
 
 /**
  * A body in English, the text in force, whose own headings begin at `level`; below a translation,
- * it says that this is the original. The page of who runs the copy shows its section so (R46).
+ * it says that this is the original. The page of who runs the copy shows its section so.
  */
 export function LegalOriginal({
   body,

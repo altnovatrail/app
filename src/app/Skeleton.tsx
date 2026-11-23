@@ -1,5 +1,5 @@
 // What stands while a part of a screen is read: the shapes of what will stand there, grey, a light
-// sweeping across them (the mockup's `Glavnaya-zagruzka`; R168 spec). The screen's own words,
+// sweeping across them (the mockup's `Glavnaya-zagruzka`). The screen's own words,
 // headings and pictures stand as they will; only what the read brings is a shape. A screen reader
 // hears "Loading" once for the part, and the part is busy; under "Reduce motion" the light stands
 // still.

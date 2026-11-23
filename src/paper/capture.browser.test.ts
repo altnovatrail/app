@@ -1,4 +1,4 @@
-// The photo of a page in the browser (R71): a picture the browser cannot read, a frame of no size, a
+// The photo of a page in the browser: a picture the browser cannot read, a frame of no size, a
 // canvas that gives no picture or none to draw on, and a photo too large at every try are each a
 // PhotoError; a picture that fits is a JPEG, and its crops PNGs.
 import { afterEach, expect, it, vi } from "vitest";

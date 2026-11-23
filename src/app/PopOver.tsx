@@ -1,6 +1,6 @@
-// A pop-over (R59): a list or a choice behind a small button, opened over the screen. From 600 CSS
+// A pop-over: a list or a choice behind a small button, opened over the screen. From 600 CSS
 // px it hangs from its button and grows from the button's corner; below 600 it is a sheet from the
-// bottom with a button "Close", ×, which shows its icon alone (R60). It is a modal <dialog>: the
+// bottom with a button "Close", ×, which shows its icon alone. It is a modal <dialog>: the
 // rest of the page is inert while it is open, Escape and a tap outside it close it, the focus goes
 // into it, and comes back to its button when it closes.
 import {
@@ -33,13 +33,13 @@ export interface PopOverProps {
    */
   readonly buttonLabel?: string;
   /**
-   * A button of the closed list in place of the words (R60): its icon alone, filled while the
+   * A button of the closed list in place of the words: its icon alone, filled while the
    * pop-over is open, and its caption its name — Help.
    */
   readonly icon?: Captionless;
   /**
    * A tooltip of these words on the button where `needed` says its caption does not show: a place
-   * of the row of places, from 600 CSS px to 72em (R90 spec).
+   * of the row of places, from 600 CSS px to 72em.
    */
   readonly tip?: {
     readonly words: string;
@@ -55,12 +55,12 @@ export interface PopOverProps {
   readonly centred?: boolean;
   /**
    * Between the button and the pop-over hung from it, CSS px, where it is not GAP of hang.ts: the
-   * home's pop-overs hang 6 below its bar, as the mockup's do (R63).
+   * home's pop-overs hang 6 below its bar, as the mockup's do.
    */
   readonly gap?: number;
   /**
    * What it hangs from in place of its button, from 600 CSS px: the closest ancestor of the button
-   * this selector finds — a lesson's segments hang from the bar's pill, as the mockup's (R64).
+   * this selector finds — a lesson's segments hang from the bar's pill, as the mockup's.
    */
   readonly anchor?: string;
   /** The pop-over's own class, beside `nt-pop`: a look of its own, as the avatars'. */

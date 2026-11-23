@@ -1,4 +1,4 @@
-// What a speaker button reads (R07): the open texts of a synthetic module in the order the learner
+// What a speaker button reads: the open texts of a synthetic module in the order the learner
 // sees them, the pictures and the empty texts left out.
 import type * as open from "@altnovatrail/spec/formatv0/open";
 import { describe, expect, it } from "vitest";

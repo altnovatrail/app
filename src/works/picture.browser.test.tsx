@@ -1,4 +1,4 @@
-// The picture of a work, drawn by the canvas itself from the history the device keeps (R83 canvas):
+// The picture of a work, drawn by the canvas itself from the history the device keeps:
 // it begins with the signature of PNG and stands the size of the surface, and the stored work with
 // it has the form api checks before it keeps one — the history a JSON array and each context a JSON
 // object, in UTF-8, no history length below zero, and the picture a PNG by its signature

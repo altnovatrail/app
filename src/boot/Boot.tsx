@@ -1,16 +1,16 @@
 // The start of the app (R09): in a frame of another page, a static screen, no request and no
 // storage; otherwise /deployment.json first, before any other request, then the start of the
-// storage on the device (R16), and the app only once both are done. A failed preload after a
+// storage on the device, and the app only once both are done. A failed preload after a
 // rollout, or a database a newer build has opened, offers a reload over whatever is shown; storage
 // erased or unreadable while app is open is a screen of its own. Below it the app has the client of
-// api for the file's api (R18): an account that is gone it signs out of and erases, on no access it
+// api for the file's api: an account that is gone it signs out of and erases, on no access it
 // erases what is left of the account before, and when api no longer has a method it offers the
 // reload. The sign-in service is made only once the storage's start has compared its project with
-// the registry's, and never while another tab holds the previous project's session (R19); its
+// the registry's, and never while another tab holds the previous project's session; its
 // window is in the language of the screens. The language of the screens is the device's: the choice
 // kept in the device's settings, which are no part of the account's storage and are read beside the
-// request for the file, before the first screen and for a second at most, else navigator.languages
-// (R10, R17); a choice made in another tab comes by BroadcastChannel. In a frame,
+// request for the file, before the first screen and for a second at most, else navigator.languages;
+// a choice made in another tab comes by BroadcastChannel. In a frame,
 // navigator.languages alone.
 import "../theme/theme.css";
 import {
@@ -192,7 +192,7 @@ export function Boot({
     [device],
   );
 
-  // The client of api, once the file names it (R18): its refusals reach the device here.
+  // The client of api, once the file names it: its refusals reach the device here.
   // The checks of packages, which the client's refusals reach before the packages are made.
   const checking = useRef<PackageChecks | undefined>(undefined);
   // The client is made once for the file's api: the sign-in service and fetch are read at each call,
@@ -231,14 +231,14 @@ export function Boot({
         noAccess: async () => {
           await noAccess(device);
         },
-        // CAUSE_VERSION_NOT_GIVEN from any service asks CheckPackages (R18).
+        // CAUSE_VERSION_NOT_GIVEN from any service asks CheckPackages.
         withdrawn: () => void checking.current?.check(),
       },
     });
   }, [apiOrigin, device]);
 
   // The packages, once the client is there: their open views, the files of their device parts and
-  // the check of what api no longer gives (R18).
+  // the check of what api no longer gives.
   const packages = useMemo<Packages | undefined>(() => {
     if (api === undefined || apiOrigin === undefined) return undefined;
     const checks = new PackageChecks(api, device);
@@ -266,7 +266,7 @@ export function Boot({
   );
 
   useEffect(() => {
-    // Vite tells of a module of the build that is not on the hosting any more (R09).
+    // Vite tells of a module of the build that is not on the hosting any more.
     const onPreloadError = (event: Event) => {
       event.preventDefault();
       setStale(true);
@@ -303,7 +303,7 @@ export function Boot({
       if (!current) return;
       setStorage({ device, signIn: check });
       // Only once the project is compared, and never over another tab's session of the previous
-      // one: initializeAuth would read it as this project's (R19).
+      // one: initializeAuth would read it as this project's.
       if (check !== "same" && check !== "erased") return;
       let made = services.get(device);
       if (made === undefined) {
@@ -322,7 +322,7 @@ export function Boot({
     service?.setLanguage(language);
   }, [service, language]);
 
-  // The debug right is the account's: another account signed in asks GetDebug again (R72).
+  // The debug right is the account's: another account signed in asks GetDebug again.
   useEffect(() => {
     if (service === undefined) return;
     signedIn(service.user());

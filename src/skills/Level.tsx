@@ -1,4 +1,4 @@
-// A module's level beside its map (R157 spec; R56): on every learner's map and in the adult's, "The
+// A module's level beside its map: on every learner's map and in the adult's, "The
 // level was set by an adult" with the day of the last correction, by `level_set_at`; and on the
 // adult's map in the section for adults, the band of the level, by `level_band`, with "Easier" and
 // "Harder", each naming the band next to it by the order of the manifest's bands, which

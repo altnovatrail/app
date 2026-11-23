@@ -1,5 +1,5 @@
 /*
- * The theme of app (R17): light, the roles and colours of the interface mockup's README, «The
+ * The theme of app: light, the roles and colours of the interface mockup's README, «The
  * style», with the replacements of its «Contrast», whose pairs the test of
  * src/theme/contrast.node.test.ts reads from the tokens below — text 4.5:1, an edge, the focus ring
  * and a mark 3:1, a translucent colour laid over what it stands on. Sizes in rem, so that the
@@ -29,7 +29,7 @@
   --nt-on-fill: #ffffff;
 
   /*
-   * The way in (R61): the sky under the trail, its brightest glow, and the dark card of a step,
+   * The way in: the sky under the trail, its brightest glow, and the dark card of a step,
    * each colour on it opaque, as the mockup's white at 0.8, 0.72 and 0.6, a field's fill at 0.08
    * and the note's at 0.1, a field's edge at 0.5, the note's words at 0.88 on it; its link, its
    * error and its tick; an unticked checkbox's ring, white at 0.55; a disabled button, white at 0.5
@@ -53,7 +53,7 @@
   --nt-sky-correct: #30d158;
   --nt-sky-off: rgba(255, 255, 255, 0.5);
   --nt-sky-off-fill: rgba(255, 255, 255, 0.12);
-  /* "Who is learning?" on the sky (R61): the line under the heading, whose profile, "Start", the
+  /* "Who is learning?" on the sky: the line under the heading, whose profile, "Start", the
      glass of "Sign out" and of "Add a learner", its line, and its name while disabled. */
   --nt-who-lead: rgba(255, 255, 255, 0.7);
   --nt-who-line: rgba(255, 255, 255, 0.6);
@@ -67,7 +67,7 @@
   --nt-who-under-lead: #292c71;
   --nt-who-under-glass: #6d4927;
   --nt-who-under-ring: #926024;
-  /* The owner's profile on that sky (R61): the avatar's button and "Choose", the rows' fill, their
+  /* The owner's profile on that sky: the avatar's button and "Choose", the rows' fill, their
      ring and the line between them, a value, the hint, the field's edge and the chevron. */
   --nt-own-link: #8fb8ff;
   --nt-own-rows: rgba(255, 255, 255, 0.07);
@@ -85,7 +85,7 @@
    * words and marks on the sheet.
    */
   --nt-correct: #1e7a35;
-  /* The chip of a text's version on its sheet (R69): "Correct" on its tint, 4.86:1. */
+  /* The chip of a text's version on its sheet: "Correct" on its tint, 4.86:1. */
   --nt-correct-tint: rgba(36, 138, 61, 0.12);
   --nt-not-yet: #c93400;
   --nt-error: #c93400;
@@ -170,7 +170,7 @@
   --nt-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
 
   /*
-   * The canvas in the same colours (its custom properties, R28 canvas, R84 canvas): the tutor's
+   * The canvas in the same colours (its custom properties): the tutor's
    * marks in the colour of its words on the sheet; the accent and the glass of its bar of tools.
    * The bar stands in the middle of the band below --novatrail-canvas-top, the height of a sticky
    * header: app has none, and the mockup centres the bar in the whole screen, so the band starts at
@@ -184,7 +184,7 @@
   --novatrail-canvas-top: 0px;
 
   /*
-   * The skill map in the same colours (its custom properties, R10 skill-map): the accent on the
+   * The skill map in the same colours (its custom properties): the accent on the
    * paper and white on the accent, 4.70:1 either way.
    */
   --novatrail-skill-map-paper: var(--nt-card);
@@ -220,7 +220,7 @@ h3 {
 }
 
 /*
- * The width rule (R148 spec; R59): below 600 CSS px the phone's layout, one column that scrolls,
+ * The width rule: below 600 CSS px the phone's layout, one column that scrolls,
  * the whole width; from 600 the tablet's — a phone in landscape, a tablet, a computer —, by the
  * width alone, not by the kind of device. A media query reads no custom property, so 600px is
  * written in each query of the rule. From 600 a screen is a column of reading, 40rem; the home
@@ -571,7 +571,7 @@ button.nt-secondary {
   font-weight: var(--nt-weight-bold);
 }
 /*
- * NOTICE and LICENSE on the page of notices, as they are (R31): their lines and spaces kept, and
+ * NOTICE and LICENSE on the page of notices, as they are: their lines and spaces kept, and
  * wrapped where the screen is narrower than a line, so that the page never scrolls sideways.
  */
 .nt-notice {
@@ -611,7 +611,7 @@ button.nt-secondary {
 }
 /*
  * In the mockup's frame — Subjects' catalog —, a grid: one column on the phone, 12 apart; from 600
- * two in a row at any width, as the mockup's `subjects` has them, 16 apart (R59, R79).
+ * two in a row at any width, as the mockup's `subjects` has them, 16 apart.
  */
 .nt-reference .nt-cards {
   display: grid;
@@ -670,7 +670,7 @@ novatrail-canvas {
   margin: 0;
   accent-color: var(--nt-accent);
 }
-/* A group of a page of the section for adults (R68): a card, its heading at 17 bold. */
+/* A group of a page of the section for adults: a card, its heading at 17 bold. */
 .nt-group {
   box-sizing: border-box;
   min-inline-size: 0;
@@ -745,14 +745,14 @@ novatrail-canvas {
     color: var(--nt-accent-text);
   }
 }
-/* What was read in a slot written by hand, or why not, below the item (R21). */
+/* What was read in a slot written by hand, or why not, below the item. */
 .nt-reading {
   margin: 0.25rem 0 0;
 }
 .nt-item-text {
   margin: 0;
 }
-/* "Report a problem" below the tutor's words, and its form in a pop-over (R33; R67). */
+/* "Report a problem" below the tutor's words, and its form in a pop-over. */
 .nt-report h3 {
   margin-block: 0 0.5rem;
   font-size: var(--nt-size-emphasis);
@@ -762,8 +762,8 @@ novatrail-canvas {
 }
 /*
  * A workbook's lines once checked, below the canvas, each one row that wraps, as the mockup's
- * `workbook-not-yet` ends each line: its verdict, then each box's with what was read, at 13 (R54;
- * R66), so that six lines leave the page in sight.
+ * `workbook-not-yet` ends each line: its verdict, then each box's with what was read, at 13, so
+ * that six lines leave the page in sight.
  */
 .nt-lines {
   margin: 0.5rem 0;
@@ -793,7 +793,7 @@ novatrail-canvas {
 .nt-lines .nt-reading {
   margin: 0;
 }
-/* The hint asked for: what the task gives and asks, its techniques and its question (R22). */
+/* The hint asked for: what the task gives and asks, its techniques and its question. */
 .nt-hint-label {
   margin: 0;
   font-weight: var(--nt-weight-bold);
@@ -813,7 +813,7 @@ button.nt-icon-button {
   gap: 0.5rem;
 }
 /*
- * A button that shows its icon alone, the mockup's `.ib` (R60): 44 round, no fill, the icon 20 in
+ * A button that shows its icon alone, the mockup's `.ib`: 44 round, no fill, the icon 20 in
  * the text's colour, grey for close and back, the accent for a speaker; a grey wash on hover. Its
  * border has no colour of its own, so that forced colours draw its edge.
  */
@@ -901,7 +901,7 @@ button.nt-icon-only:where(.nt-grabber) {
   line-height: 1.2;
 }
 /*
- * The way in (R61): the sign-in, the invite code and the statement in the frame of the mockup's
+ * The way in: the sign-in, the invite code and the statement in the frame of the mockup's
  * `signin` — the sky over the whole window; from 600 the name and the language 24 below the
  * window's top, at the edges of a middle of 1194 × 834, and in that middle the trail and the
  * step's card of 440 where the reference has them, the trail left out below 900; below 600 the
@@ -1366,7 +1366,7 @@ button.nt-link.nt-back {
   inline-size: 1.125rem;
   block-size: 1.125rem;
 }
-/* Google's own button, its light theme (R12 spec): white, its edge and its text, and its "G". */
+/* Google's own button, its light theme: white, its edge and its text, and its "G". */
 .nt-welcome button.nt-google,
 .nt-welcome button.nt-google:disabled {
   display: flex;
@@ -1700,7 +1700,7 @@ button.nt-row > svg {
   margin-block-start: 1.375rem;
 }
 /*
- * The section for adults (R68): a choice in its card, its legend the card's heading, the profiles'
+ * The section for adults: a choice in its card, its legend the card's heading, the profiles'
  * rows, and a profile's pseudonym a row of a card.
  */
 .nt-group > .nt-choices > legend {
@@ -1865,7 +1865,7 @@ button.nt-row > svg {
 }
 
 /*
- * The home screen, Home, as the mockup's `home` (R62): the line under its heading; at the
+ * The home screen, Home, as the mockup's `home`: the line under its heading; at the
  * top a card of what comes next, its heading the mockup's "Next up" with its dot, the tutor time at
  * its foot, and beside it from 600 "Tasks from my paper"; each module a card of the mockup's, its
  * tile, its title, its kind, its counts and the squares of its skills, 22 round; the legend of the marks
@@ -1877,7 +1877,7 @@ button.nt-row > svg {
   font-size: 0.9375rem;
 }
 /*
- * Home's top (R79; the mockup's `home`): one card, white at 0.85, of two halves side by side where
+ * Home's top (the mockup's `home`): one card, white at 0.85, of two halves side by side where
  * each is 500 wide, a rule between them — what comes next, with a sheet in squares at its right,
  * and tasks from paper under "Camera", with a page of a book at a slant at its right. The words
  * stand clear of the pictures, which are dropped on a phone and in forced colours.
@@ -2046,7 +2046,7 @@ main .nt-paper > p.nt-paper-sub {
   color: var(--nt-accent-text);
 }
 /*
- * Its pop-over (R77; the author's mockup `Vashi-stranicy-1a`): 400 wide from 600, the heading with
+ * Its pop-over (the author's mockup `Vashi-stranicy-1a`): 400 wide from 600, the heading with
  * "on this device" at its end, the rows 6 apart, each a sheet of 44 × 56 — the photo's thumbnail,
  * white, radius 6, a shadow, straight where the mockup tilts it, by the author's word — 14 from the
  * date at 15 semibold and the count at 13 below it, a chevron at the end; under them the line of where the pages live, beside a lock in a
@@ -2206,7 +2206,7 @@ p.nt-pages-kept {
   }
 }
 /* A card's drawing stands in a frame of the card's size that clips it, past the card's edge on
-   purpose: the card itself takes in nothing wider than it is (1.4.10; R79). */
+   purpose: the card itself takes in nothing wider than it is (1.4.10). */
 .nt-deco {
   position: absolute;
   inset: 0;
@@ -2461,7 +2461,7 @@ dialog.nt-pop-legend .nt-legend-items {
   }
 }
 /*
- * The frame of Home, Subjects and the skill map (R79; the mockup's `home`, `subjects` and `map`): a
+ * The frame of Home, Subjects and the skill map (the mockup's `home`, `subjects` and `map`): a
  * column of 1120 at most in the window's middle, 32 from its edges, on the page's colour with a
  * blue glow at its top. From 600 CSS px a row above the screen: at its start a pill of the places,
  * white at 0.75 — each 44 high with its icon and its word, the one shown dark, the cognitive map
@@ -2703,7 +2703,7 @@ dialog.nt-pop-legend .nt-legend-items {
   gap: 0.375rem;
 }
 /*
- * A module's card on Home (R79): white, 24 round; its tile of 48, its title and the chip of its
+ * A module's card on Home: white, 24 round; its tile of 48, its title and the chip of its
  * kind, its counts in grey, the skills due for review an orange chip, and the way to the map a grey
  * pill; under them a square of 8 for each skill, 2 apart, in its state's colour — "Ready to start"
  * an edge of dashes.
@@ -2882,7 +2882,7 @@ p.nt-subject-stat {
 .nt-engine-foot .nt-foot-eyebrow {
   color: #0058b8;
 }
-/* A skill's name wraps rather than ending in an ellipsis: no text is cut (R11). */
+/* A skill's name wraps rather than ending in an ellipsis: no text is cut. */
 .nt-foot-main {
   font-size: 0.9375rem;
   font-weight: var(--nt-weight-bold);
@@ -3187,7 +3187,7 @@ button.nt-module-row > span[lang] {
   font-weight: 400;
 }
 /*
- * A task from paper (R71). The camera: the task screen's frame on near-black, the viewfinder filling
+ * A task from paper. The camera: the task screen's frame on near-black, the viewfinder filling
  * what the top bar leaves, the line to keep names out under it, and at its foot the row of the
  * photos and the shutter, the mockup's white ring of 72.
  */
@@ -3736,7 +3736,7 @@ button.nt-menu-row {
   }
 }
 /*
- * A screen with a top bar (R63): the glass pill of 48 — its way back, and its heading, the title
+ * A screen with a top bar: the glass pill of 48 — its way back, and its heading, the title
  * at 14 semibold and a line under it at 11.5 — and what stands at the bar's other end.
  */
 .nt-top {
@@ -3776,7 +3776,7 @@ button.nt-menu-row {
   font-weight: 400;
 }
 /*
- * The skill map's screen (R63; the mockup's `map`): the whole window, the top bar 14 from the top
+ * The skill map's screen (the mockup's `map`): the whole window, the top bar 14 from the top
  * and 16 from the sides, and below it, 76 from the top to 16 from the bottom, the white frame of
  * radius 26 that the map stands in and that scrolls inside. The frame takes what the bar leaves of
  * the window, a bar that wraps into two rows too, and 20rem at least, where the page scrolls then.
@@ -3805,7 +3805,7 @@ main.nt-map {
   margin-block-start: -0.75rem;
 }
 /*
- * A lesson (R64; the mockup's `lesson`, `example` and `lesson-end`): the whole window, the top bar
+ * A lesson (the mockup's `lesson`, `example` and `lesson-end`): the whole window, the top bar
  * 14 from the top and 16 from the sides, the segment between it and the row of glass, 16 from the
  * bottom. The bar's heading is the lesson's title at 14 semibold, and under it the line of the
  * segment shown at 11.5 with a chevron, a button whose target is the whole heading, 44 high; its
@@ -3898,7 +3898,7 @@ main.nt-lesson .nt-lesson-lines > p:not(:empty) {
 }
 /*
  * A worked example's canvas from edge to edge and down to the window's bottom, as the mockup's
- * sheet: its bar of tools 16 from the left, its row 16 from the bottom (R84 canvas).
+ * sheet: its bar of tools 16 from the left, its row 16 from the bottom.
  */
 main.nt-lesson:has(> .nt-segment-body[data-kind="example"]) {
   padding-block-end: 0;
@@ -4266,14 +4266,14 @@ main.nt-end .nt-result > svg {
   white-space: nowrap;
 }
 /*
- * The task screen (R20, R65; the mockup's `task-pill` and `solve`): the canvas fills the whole
+ * The task screen (the mockup's `task-pill` and `solve`): the canvas fills the whole
  * window, from edge to edge, and over it float the top bar, 14 from the top and 16 from the sides —
  * at its end the profile's pill and the pill of the mode —, the lines of the voicing and of "Read
  * aloud" under it, and the foot, 16 from the bottom: the screen's lines, the verdict's card and
  * the row of glass, in the middle. Between their pills a pointer reaches the sheet. The canvas's
  * statement starts below the top bar, 68 down, and its sheet scrolls up past the foot, 80 high,
  * so that neither covers a target of the other at the scroll's ends (2.4.11, 2.5.8); its bar of
- * tools stands between them (--novatrail-canvas-pad-*; R73 canvas). In a lesson the canvas stands
+ * tools stands between them (--novatrail-canvas-pad-*). In a lesson the canvas stands
  * under the lesson's bar, between what stands above and below it.
  */
 main.nt-task-screen {
@@ -4339,7 +4339,7 @@ main.nt-lesson:has(> .nt-segment-body > .nt-lesson-task > .nt-task) {
 /*
  * The canvas takes what the window leaves, but never less than 20rem or half of it: what stands
  * under it — a workbook's lines, what an essay was read as — scrolls with it, in the task's one
- * scroll, instead (R66).
+ * scroll, instead.
  */
 .nt-task-work {
   display: grid;
@@ -4359,7 +4359,7 @@ main.nt-lesson:has(> .nt-segment-body > .nt-lesson-task > .nt-task) {
   margin: 0.5rem 1rem 0;
 }
 /*
- * Beside the open panel (R67): the panel opens over the canvas, as the debug panel, and moves no
+ * Beside the open panel: the panel opens over the canvas, as the debug panel, and moves no
  * part of it; the lines above it and the foot end where the panel begins, 400 + 16 from the
  * window's right edge, so that they stay in view; the foot's middle is the middle between the
  * canvas's bar of tools, 16 + 52, and the panel, as the mockup's `task-rung`.
@@ -4372,7 +4372,7 @@ main.nt-lesson:has(> .nt-segment-body > .nt-lesson-task > .nt-task) {
     padding-inline: 3.25rem 25rem;
   }
 }
-/* On a phone the open sheet hides the row (R148 spec). */
+/* On a phone the open sheet hides the row. */
 @media (width < 600px) {
   .nt-task-foot[data-beside="panel"] > .nt-task-row {
     display: none;
@@ -4399,7 +4399,7 @@ main.nt-task-screen:has(> .nt-task) {
   --novatrail-canvas-pad-bottom: 5rem;
 }
 /* A task from paper has no statement to keep clear of the top bar: its sheet runs up under the bar,
-   to be written on between its pills and to take the tracing paper there (R71). */
+   to be written on between its pills and to take the tracing paper there. */
 main.nt-task-screen:has(> .nt-task-paper) {
   --novatrail-canvas-pad-top: 0px;
 }
@@ -4462,7 +4462,7 @@ main.nt-task-screen > .nt-task-foot {
 .nt-task-row button.nt-row-button.nt-row-accent {
   color: var(--nt-accent-text);
 }
-/* An essay's Done, semibold: the accent's words once it opens, the muted text's till then (R66). */
+/* An essay's Done, semibold: the accent's words once it opens, the muted text's till then. */
 .nt-task-row button.nt-row-button.nt-done {
   color: var(--nt-accent-text);
   font-weight: var(--nt-weight-bold);
@@ -4658,7 +4658,7 @@ p.nt-mode-note {
   background: rgba(118, 118, 128, 0.14);
   color: var(--nt-segmented);
 }
-/* An essay's feedback, the rubric's purple of the skill map (R66). */
+/* An essay's feedback, the rubric's purple of the skill map. */
 .nt-card-verdict[data-kind="feedback"] > .nt-card-sign {
   background: rgba(175, 82, 222, 0.14);
   color: var(--nt-rubric);
@@ -4695,7 +4695,7 @@ button.nt-card-button {
   padding: 0 1rem;
   background: var(--nt-accent-tint);
 }
-/* On a phone from the row's edge to 72 before the other, where the tutor's button stands (R67). */
+/* On a phone from the row's edge to 72 before the other, where the tutor's button stands. */
 @media (width < 600px) {
   .nt-task-foot > .nt-card-verdict {
     inline-size: auto;
@@ -4772,7 +4772,7 @@ button.nt-confirm-yes {
   padding: 0 1.125rem;
 }
 /*
- * The tutor's panel (R67; the mockup's `task`): glass of 0.86, 400 wide at the window's right, as
+ * The tutor's panel (the mockup's `task`): glass of 0.86, 400 wide at the window's right, as
  * the debug panel, from 74 below its top — under the top bar — to 16 above its foot, as it too,
  * radius 28; on a phone a sheet from
  * the bottom of the whole width, glass of 0.96, radius 28 at its top, at half the window's height,
@@ -5275,7 +5275,7 @@ p.nt-report {
 /*
  * Its form, the mockup's `task-report`: 440 wide, 40 below the window's top in its middle, whatever
  * part of the panel the words stood in; the title at 17 bold, the words on grey at 13.5, the hints
- * at 11.5, all 8 apart. Its options keep app's radio buttons of 44 (R11).
+ * at 11.5, all 8 apart. Its options keep app's radio buttons of 44.
  */
 @media (width >= 600px) {
   dialog.nt-pop.nt-pop-report {
@@ -5362,7 +5362,7 @@ button.nt-act[aria-disabled="true"] {
   color: var(--nt-text-muted);
 }
 /*
- * The tutor's panel on the page to pick from (R74), the mockup's `pick-ask`: the learner's request a
+ * The tutor's panel on the page to pick from, the mockup's `pick-ask`: the learner's request a
  * bubble at the right on the accent, its corner of 6 at the bottom right; the program's line with
  * the pencil on the accent's tint. Under the conversation the reminder at 11.5 in the muted grey, the
  * field a grey pill of 52, radius 26, at 14.5, and under it the microphone, off, and Send on the
@@ -5379,7 +5379,7 @@ button.nt-act[aria-disabled="true"] {
   color: var(--nt-accent);
 }
 /*
- * The field of a request (R74): one rounded box of grey in a blue edge of 2, the text at its top,
+ * The field of a request: one rounded box of grey in a blue edge of 2, the text at its top,
  * growing down with its lines up to 7.5rem and then scrolling, and under it at the right the
  * microphone, shut, and Send, a blue circle with its arrow, each a target of 44.
  */
@@ -5524,7 +5524,7 @@ button.nt-step-pill-open {
   }
 }
 /*
- * The section for adults (R68), which the mockup does not draw, by its rules of style: a column of
+ * The section for adults, which the mockup does not draw, by its rules of style: a column of
  * reading under the top bar, 14 from the top, the pill holding the page's heading and "For grown-ups"
  * under it, and "Close the section" a glass circle of 48 at the bar's other end, as Help is. Each
  * group of a page is a card of radius 16 on the page's colour — its heading at 17 bold, its line of
@@ -5543,7 +5543,7 @@ main.nt-adults .nt-top-pill > h1:first-child {
   inline-size: 100%;
 }
 /*
- * A failure screen (R69), which the mockup does not draw, by its rules of style: a white card of 460
+ * A failure screen, which the mockup does not draw, by its rules of style: a white card of 460
  * in the window's middle, radius 28, as the end of a lesson; its heading at 22 bold, its lines in the
  * middle, and what to do the primary button of its width, the way home below it. Below a bar, the
  * card stands under it, not in the middle of the whole window.
@@ -5600,7 +5600,7 @@ main.nt-failure .nt-column .nt-buttons > button.nt-secondary {
   border-radius: var(--nt-radius-main);
 }
 /*
- * A sheet, the mockup's legal text (R69), for the legal pages, a module's license and the page on
+ * A sheet, the mockup's legal text, for the legal pages, a module's license and the page on
  * the tutor, which app shows as screens of their own: from 600 a white card of 560, radius 28, its
  * top where the mockup's card of 580 in the window's middle has it, and the page's colour around it
  * in place of the mockup's dimmed screen; below 600 the whole screen, its text 52 from the top. The
@@ -5797,7 +5797,7 @@ main.nt-sheet .nt-column .nt-sheet-note > button.nt-link {
 }
 
 /*
- * "Who is learning?" on the sign-in's sky (R61; the mockup's `who`): stars of its own, the name
+ * "Who is learning?" on the sign-in's sky (the mockup's `who`): stars of its own, the name
  * in the middle of the bar and "Sign out" a pill of glass at its end, each profile a dark card of
  * 300 × 380 whose one button is the whole card, and "Add a learner" a card of glass; the focus ring
  * white, which the sky's glows leave at 3:1.
@@ -6044,7 +6044,7 @@ main.nt-who .nt-avatar.nt-avatar-add > svg {
 }
 
 /*
- * The owner's profile on the sky of "Who is learning?" (R61; the mockup's `owner`): the name alone
+ * The owner's profile on the sky of "Who is learning?" (the mockup's `owner`): the name alone
  * in the bar, and a dark card of 520, radius 36. The design's ring of the rows at 0.1 misses 3:1 for
  * the field's edge, so the field has one of its own at 0.5, as the sign-in's. The pop-overs stay
  * light, their focus ring the accent.
@@ -6168,7 +6168,7 @@ main.nt-profiles.nt-own form > button.nt-main:not(:disabled, [aria-disabled="tru
   }
 }
 /*
- * A legal text's sheet over the screen, `LegalSheet` (the mockup's `.ph-legal`; R69): from 600 a
+ * A legal text's sheet over the screen, `LegalSheet` (the mockup's `.ph-legal`): from 600 a
  * white card of 560, radius 28, its top where the mockup's card of 580 in the window's middle has
  * it, over the window dimmed by 0.28, as tall as its text down to 16 above the window's foot, and
  * the whole card scrolling beyond — the gist no box of its own, which would take the focus (О-24) —;
@@ -6267,7 +6267,7 @@ dialog.nt-legal-sheet .nt-legal-body .nt-legal-foot > button.nt-link {
   }
 }
 /*
- * Loading, `Sk` and `Loading` (R168 spec; the mockup's `Glavnaya-zagruzka`): a shape of what is read
+ * Loading, `Sk` and `Loading` (the mockup's `Glavnaya-zagruzka`): a shape of what is read
  * is grey, #ececef, and a lighter band, #f7f7f9, sweeps across it from right to left in 1.5 s, the
  * band twice and a fifth the shape's width; it stands still under "Reduce motion", and with forced
  * colours the shape is an outline in GrayText.
@@ -6436,7 +6436,7 @@ main.nt-wait-page .nt-wait-spark {
 }
 
 /*
- * The frame's own look over the shared rules of the bars and the legend, after them (R79): the
+ * The frame's own look over the shared rules of the bars and the legend, after them: the
  * profile's pill in the pill of the top right, clear, and below 72em the avatar alone; Home's
  * legend a row of small squares, a state's icon left to the map.
  */
@@ -6449,7 +6449,7 @@ main.nt-wait-page .nt-wait-spark {
   box-shadow: none;
 }
 @media (width < 72em) {
-  /* The avatar alone, named by the pseudonym, as R90 spec's list has it. */
+  /* The avatar alone, named by the pseudonym, as spec's closed list has it. */
   .nt-shell-top button.nt-learner-pill {
     padding: 0 0.25rem;
   }
@@ -6538,7 +6538,7 @@ nav.nt-nav button.nt-nav-item[aria-disabled="true"] {
   margin-block-end: 0;
 }
 /*
- * The page's screen as the mockup's finding (R71): the sky of Home behind it; the way back a grey
+ * The page's screen as the mockup's finding: the sky of Home behind it; the way back a grey
  * circle in the pill, Retake a pill of 48; while the tasks are found, in the bar's middle a pill
  * of 48 that breathes, a ring turning and its words in a gleam running through them, and over the
  * photo a blue tint with a line of light that runs down and back. The bar at the foot one row.

@@ -1,7 +1,7 @@
-// The size of the photo of a page that app sends to find its tasks (R71): a JPEG of at most 4 MiB,
+// The size of the photo of a page that app sends to find its tasks: a JPEG of at most 4 MiB,
 // as the contract takes it, its long side no more than LONG_SIDE, and each try that comes out too
-// large again smaller by STEP; and the size of the photo turned upright by the turn FindTasks gave
-// (R162 spec). No DOM: capture.ts draws and encodes.
+// large again smaller by STEP; and the size of the photo turned upright by the turn FindTasks gave.
+// No DOM: capture.ts draws and encodes.
 
 /** The most bytes `FindTasks` takes of a photo (the contract). */
 export const MAX_PHOTO = 4 << 20;

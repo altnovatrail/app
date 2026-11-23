@@ -1,4 +1,4 @@
-// The one synthesis (R36), on a synthesis of the test: what it is asked to say and to cancel,
+// The one synthesis, on a synthesis of the test: what it is asked to say and to cancel,
 // sentence by sentence, by the voice of each phrase's language.
 import { describe, expect, it, vi } from "vitest";
 import { fakeSpeech, voice } from "../test/speech.ts";

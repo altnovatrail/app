@@ -1,5 +1,5 @@
-// The phone's layout, a width below 600 CSS px (R59), for what CSS alone cannot say: the canvas's
-// attribute `tools-hidden` while the tutor's sheet is open (R148 spec), and the grabber of that
+// The phone's layout, a width below 600 CSS px, for what CSS alone cannot say: the canvas's
+// attribute `tools-hidden` while the tutor's sheet is open, and the grabber of that
 // sheet.
 import { useSyncExternalStore } from "react";
 

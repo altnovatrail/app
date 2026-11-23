@@ -1,8 +1,8 @@
 // A module's skill map on a screen of app: the element <novatrail-skill-map> of skill-map with the
-// map read (R34), in the screen's language — the learner's on the learner's screen, the device's in
+// map read, in the screen's language — the learner's on the learner's screen, the device's in
 // the section for adults —, its bands' headings at the level the screen gives. The view is the
 // screen's: the learner's, whose Practise sends the skill chosen, or the adult's, which shows more
-// and chooses nothing (R03 and R04 skill-map). The element loads nothing and keeps nothing beyond
+// and chooses nothing. The element loads nothing and keeps nothing beyond
 // its memory; a module with no skill graph has no map, and the screen says so. The heading of a
 // map's screen is the module's title, here too.
 import type { SkillMapView } from "@altnovatrail/skill-map";
@@ -85,7 +85,7 @@ export function MapLoading() {
 }
 
 /**
- * The heading of a module's map in its top bar, as the mockup's title (R63): "Skill map" and, on a
+ * The heading of a module's map in its top bar, as the mockup's title: "Skill map" and, on a
  * line under it, the module's title in its own language. The screen names the heading by its
  * title, "Skill map: {module}", where the eye has the line break.
  */

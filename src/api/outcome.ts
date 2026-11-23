@@ -1,4 +1,4 @@
-// What a call of AI in an answer came to when it gave no reading or no words (R18): the outcome's
+// What a call of AI in an answer came to when it gave no reading or no words: the outcome's
 // cause, and beside it when the next family day begins or which limit of the own key ran out. An
 // outcome the build does not know is a failure of AI. No DOM.
 import {
@@ -28,7 +28,7 @@ export interface ReadOutcome {
   readonly ownKeyLimit?: OwnKeyLimit;
 }
 
-/** The causes that close AI beyond the call: platform AI's quota and limit, the own key's (R47). */
+/** The causes that close AI beyond the call: platform AI's quota and limit, the own key's. */
 const CLOSING: ReadonlySet<Cause> = new Set([
   Cause.QUOTA,
   Cause.PLATFORM_LIMIT,
@@ -40,7 +40,7 @@ const CLOSING: ReadonlySet<Cause> = new Set([
  * Whether an outcome tells that the learner's AI is closed beyond this call — the quota of platform
  * AI for the family day is spent, or its provider's limit ran out; the own key's limit ran out, or
  * its provider refused it —, which the screen says beside words that came without AI, too: the
- * fallback text of a rung, or no words after a correct answer (R37; R47). A failure of AI is a
+ * fallback text of a rung, or no words after a correct answer. A failure of AI is a
  * moment's, and "not admitted" the standing state of a deployment that admits no words yet: beside
  * every fallback text and every correct answer, its line would say nothing new.
  */

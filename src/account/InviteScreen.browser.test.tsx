@@ -1,4 +1,4 @@
-// The invite code's screen with its texts in the browser (R27; R46; R61): the code in its four
+// The invite code's screen with its texts in the browser: the code in its four
 // boxes, whole before it goes on, and "Back" signing out; then the statement and the texts, each
 // name a link that opens its sheet over the step, whose foot leads to its page; an acceptance holds for the versions it was given for and names
 // the current ones, never a next version, which this screen does not show; a refusal of a version

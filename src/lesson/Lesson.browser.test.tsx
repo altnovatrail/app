@@ -1,4 +1,4 @@
-// The lesson player in the browser, with the canvas element itself (R06, R23): the path of the
+// The lesson player in the browser, with the canvas element itself: the path of the
 // lesson of the format's example, gaps-and-posts — an explanation with its picture and list, a
 // worked example and its demo, a task of the run and an explanation —, the place after a restart
 // and on another device, the bar, the task left and begun again, and every end of a run — with api
@@ -53,8 +53,7 @@ import { expectLoaded, expectLoading, held } from "../test/loading.ts";
 import { Lesson } from "./Lesson.tsx";
 import type { LessonOpen, RunRef } from "./LessonContext.tsx";
 
-// The tablet's layout, where the row stands beside the open panel: on a phone its sheet hides the row
-// (R67).
+// The tablet's layout, where the row stands beside the open panel: on a phone its sheet hides the row.
 beforeEach(async () => {
   await page.viewport(1194, 834);
 });
@@ -197,7 +196,7 @@ interface Setup {
   readonly adult?: boolean;
   /** The profile's database does not open. */
   readonly noDatabase?: boolean;
-  /** The owner's own key is held for p1 (R47). */
+  /** The owner's own key is held for p1. */
   readonly ownKey?: boolean;
   /** The package has solving steps, which the pill of the mode stands for. */
   readonly steps?: boolean;
@@ -544,7 +543,7 @@ describe("the lesson player", () => {
     expect((await kept())?.place).toBe(2);
     await waitFor(() => expect(canvas().workedExample).toBeDefined());
     expect(canvas().demoState).toEqual({ opened: 0, hidden: false });
-    // Its Continue is the element's child, in its row after Next and Demo (R84 canvas).
+    // Its Continue is the element's child, in its row after Next and Demo.
     const inRow = await continueButton();
     expect(inRow.parentElement).toBe(canvas());
     expect(inRow.assignedSlot?.name).toBe("actions");

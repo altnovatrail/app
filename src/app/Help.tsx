@@ -1,9 +1,9 @@
-// The adult's Help (R148 spec; R63, R79): behind its place at the end of the row of places, a
+// The adult's Help: behind its place at the end of the row of places, a
 // pop-over that says three things — the tutor is an AI and a program checks every answer, and what
 // to do when the AI read the work wrongly; the name is made up, so no real names go into the work —
 // and leads to three texts of the app itself: Privacy Policy and Terms of Use, each a sheet over the
-// screen whose foot leads to its page (R69), and the page Accessibility. No
-// external link and no helpline: to an adult R127 spec gives Report a problem. A learner under 18,
+// screen whose foot leads to its page, and the page Accessibility. No
+// external link and no helpline: to an adult spec gives Report a problem. A learner under 18,
 // whom the build has no profile for, would need a Help of their own.
 
 import { useState } from "react";

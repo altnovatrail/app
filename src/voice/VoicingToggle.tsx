@@ -1,4 +1,4 @@
-// Voicing on or off on the task screen (R07, R36): `SetVoicing`, a learning request, so that the
+// Voicing on or off on the task screen: `SetVoicing`, a learning request, so that the
 // learner sets it as the adult does on the profile's page, and it holds on every device. The answer
 // is the profile, which the session takes and the other tabs hear of, as a change of the section
 // for adults. Off, speech stops at once. On, where the tutor's words cannot be said on this device,

@@ -1,4 +1,4 @@
-// The solving steps on the device (R05): each exit condition, a step gone back to resets nothing, a
+// The solving steps on the device: each exit condition, a step gone back to resets nothing, a
 // task without chips, a module without steps, and a state the database kept in another shape. The
 // steps are those of the format's example of olympiad maths.
 import type * as open from "@altnovatrail/spec/formatv0/open";

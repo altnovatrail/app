@@ -1,4 +1,4 @@
-// The buttons that show an icon alone, in each engine (R60): only those of the closed list, each
+// The buttons that show an icon alone, in each engine: only those of the closed list, each
 // named by its caption, 44 × 44 — the grabber 88 × 44 —, with a tooltip of the same words on hover
 // and on keyboard focus, which stays while the pointer is over it and which Escape dismisses
 // without moving the focus (WCAG 1.4.13).

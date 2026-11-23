@@ -1,7 +1,7 @@
-// The storage of works on the server on a profile's page, in the browser (R30; R113, R127 and
-// R131 spec), with api on connect-es's router: off by default, the words that the server keeps no
-// work yet, the consent with the text storage-consent and what R127 spec has it say, the version
-// shown named by SetWorkStorage, its next version shown below it and named by none (R46), a version
+// The storage of works on the server on a profile's page, in the browser, with
+// api on connect-es's router: off by default, the words that the server keeps no
+// work yet, the consent with the text storage-consent and what spec has it say, the version
+// shown named by SetWorkStorage, its next version shown below it and named by none, a version
 // no longer current read and agreed to again, no text in force, switching off at once with no
 // question, and the failures said.
 import {
@@ -164,7 +164,7 @@ function renderSection(shown: Profile, routes: Routes = {}) {
 
 const OFF = "Keeping this profile's works on the server is off";
 const ON = "Keeping this profile's works on the server is on";
-/** The line the page no longer shows, as the server keeps the works (R30). */
+/** The line the page no longer shows, as the server keeps the works. */
 const NOT_YET =
   "The server doesn't keep works yet: switching this on records the consent, and the works stay on this device alone";
 

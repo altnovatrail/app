@@ -1,4 +1,4 @@
-// The way to what the engine chose, in the browser (R24): each kind of choice — a lesson, a task,
+// The way to what the engine chose, in the browser: each kind of choice — a lesson, a task,
 // nothing with and without why, one this build does not know —, the choice an answer gave, a task
 // begun already by its choice, "Something else" with its question and the attempt it closes, and
 // one key for each action until a refusal ends it — with api on connect-es's router and the storage
@@ -64,7 +64,7 @@ interface Setup {
   /** The attempt open outside a lesson, which "Something else" and a task begun close. */
   readonly leaving?: string;
   readonly secondary?: boolean;
-  /** The owner's own key is held for p1 (R47). */
+  /** The owner's own key is held for p1. */
   readonly ownKey?: boolean;
 }
 

@@ -1,6 +1,6 @@
-// The ID tokens of the sign-in service, as the client of the contract needs them (R18): one for
+// The ID tokens of the sign-in service, as the client of the contract needs them: one for
 // each request, a fresh one when api says the one sent has expired, and the sign-out when the
-// account is no more. The sign-in by Firebase Auth gives them (R19). No DOM.
+// account is no more. The sign-in by Firebase Auth gives them. No DOM.
 
 export interface Tokens {
   /** The ID token, refreshed when asked; `undefined` when nobody is signed in or it cannot be had. */

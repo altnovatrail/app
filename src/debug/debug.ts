@@ -1,4 +1,4 @@
-// The debug mode of the models of a task from paper (R163 spec; R72): which models check it, what
+// The debug mode of the models of a task from paper: which models check it, what
 // each call returned and what it cost, for an account with api's debug right. app loads this module
 // only once api's `GetDebug` answered (gate.ts). The choice is api's; the calls taken from api and
 // the sum since the session began are the tab's memory alone, and go at a reload or with the
@@ -355,7 +355,7 @@ export function callName(kind: DebugCallKind): string {
   }
 }
 
-/** A call's title: what it did, its reader beside two, and its attempt after the first (R73). */
+/** A call's title: what it did, its reader beside two, and its attempt after the first. */
 export function callTitle(call: DebugCall): string {
   const reader = call.reader > 0 ? ` · reader ${call.reader}` : "";
   const attempt = call.attempt > 1 ? ` · attempt ${call.attempt}` : "";
@@ -527,10 +527,10 @@ function text(value: unknown): string {
 }
 
 /**
- * The truth an export begins from, what the calls gave (R162 spec): the tasks the statement was read
+ * The truth an export begins from, what the calls gave: the tasks the statement was read
  * into, each with its formula, and the solver's key, of this Check or of an earlier one of the
  * attempt, since a later Check keeps the key; the value the first reader read for each task; and the
- * verdict api gave each. Of a call's attempts, the last that answered is what the call gave (R73).
+ * verdict api gave each. Of a call's attempts, the last that answered is what the call gave.
  * A frame whose statement no call read has as many tasks as api gave verdicts, one at least.
  */
 export function truthOf(
@@ -576,7 +576,7 @@ export function truthOf(
 
 /**
  * The file of an exported Check: a case of the set of a task from paper of tutor-eval, the JSON of
- * `DebugCase` (R72; R163 spec), or why the truth makes none.
+ * `DebugCase`, or why the truth makes none.
  */
 export function exportOf(
   action: DebugAction,

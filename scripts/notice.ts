@@ -1,5 +1,5 @@
 // What NOTICE has to say about the packages the build takes from npm — those package-lock.json
-// does not mark `dev`, the transitive ones too (R14, R15):
+// does not mark `dev`, the transitive ones too:
 // - a line `<name> <version> — <license> — <copyright>` for each, its license as the lock file
 //   says it, an SPDX expression too, with a copyright that is not empty, and no such line for a
 //   package or a version the lock file does not ship;

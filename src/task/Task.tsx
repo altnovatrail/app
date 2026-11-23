@@ -1,4 +1,4 @@
-// The task screen of an open attempt (R05, R20; AttemptService and LearningService of the
+// The task screen of an open attempt (AttemptService and LearningService of the
 // contract): `GetOpenAttempt` gives the attempt's start — the open view of its task and its
 // package — and the screen takes the package's manifest, solving steps and technique catalog from
 // the shared cache, and what this device wrote of the attempt from the profile's database: the
@@ -7,29 +7,29 @@
 // tapped and the handwriting, the crop the canvas gives, with one idempotency key for the action
 // and the same with every repeat of it; the submission is kept with its context, for the tutor's
 // marks, and while the profile's storage of works is on the work goes to the server by `PutWork`,
-// as it does once more when the attempt closes (R30). The tutor speaks of the work only while its
-// panel is open (R148 spec; R21): then "Not yet" asks the words of its rung at once, with the same
+// as it does once more when the attempt closes. The tutor speaks of the work only while its
+// panel is open: then "Not yet" asks the words of its rung at once, with the same
 // work, and the marks that come with them go on the canvas, and "Correct" the words after it; with
 // the panel closed the check ends at the verdict, and the panel's opening asks, once, the words of
 // the last submission that gave "not yet" or "correct", with its work, which the screen holds in
 // memory until then. "Correct" closes the attempt: its work on the device goes but the correct
 // one's, which goes with the request of the words after a correct answer and is erased once it
 // ends, or once the screen is left with them unasked, and the solution comes. An attempt api closed
-// meanwhile is a screen of its own, and one closed unchecked asks CheckPackages (R20). Hint asks
+// meanwhile is a screen of its own, and one closed unchecked asks CheckPackages. Hint asks
 // api, with no work and no AI: before the first wrong answer the task's techniques and its leading
 // question, after it the words of the current rung again; "Explain differently" asks the same rung
 // in other words, once on a rung; "Show the solution" — the learner's from the start of the attempt
-// if an adult, from the fourth wrong answer if a child — ends the attempt with its solution
-// (R82 spec; R22). A task of a lesson is a segment of its run: under the lesson's header, with no
-// "Try it again", and what api says comes next after it goes up to the player (R23). The tutor's
+// if an adult, from the fourth wrong answer if a child — ends the attempt with its solution.
+// A task of a lesson is a segment of its run: under the lesson's header, with no
+// "Try it again", and what api says comes next after it goes up to the player. The tutor's
 // words are kept with the reply that brought them and its rung, so that the adult of the account
-// can report a problem with them as they are shown (R123 spec; R33). While the voicing is on, what
+// can report a problem with them as they are shown. While the voicing is on, what
 // comes after a press is said by itself — the verdict and the outcome of a check in the screen's
 // language, then the tutor's words and a hint in the module's —, and the press itself, Check, Hint
-// or "Explain differently", marks the synthesis at once for WebKit (R07). While platform AI is
+// or "Explain differently", marks the synthesis at once for WebKit. While platform AI is
 // closed beyond a call — its quota for the family day is spent, or its limit ran out —, the block
 // "Tutor" says why beside the fallback text of a rung, and in place of the words after a correct
-// answer (R37).
+// answer.
 import { Mode as ProfileMode } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import {
   Action,
@@ -136,7 +136,7 @@ export interface Opened {
   readonly hint?: HintGiven;
   /** "Explain differently" was asked for on the current rung. */
   readonly explained: boolean;
-  /** Of an essay: how many submissions api counts (R53). */
+  /** Of an essay: how many submissions api counts. */
   readonly essay?: { readonly submissions: number };
 }
 
@@ -345,7 +345,7 @@ export function Task({
     );
   }
   if (read.status === "closed") {
-    // The task screen has no bar of the learner: the profile's pill stands above (R65).
+    // The task screen has no bar of the learner: the profile's pill stands above.
     return (
       <>
         <ProfilePill className="nt-home-bar" />
@@ -468,7 +468,7 @@ function OpenTask({
   onClosed,
 }: OpenTaskProps) {
   const api = useApi();
-  // The own key, or on platform AI the clock's offset, for each request that calls AI (R47).
+  // The own key, or on platform AI the clock's offset, for each request that calls AI.
   const holder = useKeyHolder();
   const works = useWorks(profileId);
   const { views, files } = usePackages();
@@ -499,12 +499,12 @@ function OpenTask({
   const [explainNote, setExplainNote] = useState<string | undefined>(undefined);
   const [showNote, setShowNote] = useState<string | undefined>(undefined);
   const [shown, setShown] = useState(false);
-  // What the engine chose, when the answer that closed the attempt outside a lesson said (R24).
+  // What the engine chose, when the answer that closed the attempt outside a lesson said.
   const [choice, setChoice] = useState<EngineChoice | undefined>(undefined);
   // The keys of "Explain differently" and "Show the solution": each the same with its repeats.
   const explainKey = useRef<string | undefined>(undefined);
   const showKey = useRef<string | undefined>(undefined);
-  // One key for a check of this work, the same with every repeat of it (R18): a new
+  // One key for a check of this work, the same with every repeat of it: a new
   // stroke or a new option is a new action.
   const sent = useRef<Sent | undefined>(undefined);
   // The checks begun: an answer of words that belongs to an earlier check is dropped.
@@ -535,7 +535,7 @@ function OpenTask({
   const handwriting = !choicesOnly(task);
   // The tutor's panel: open from the start by steps, whose steps stand in it, and on my own by what
   // the attempt kept of it; then as the learner leaves it — opened by the tutor's button, the step's
-  // pill, Hint or the choice of "by steps", closed by its × (R67).
+  // pill, Hint or the choice of "by steps", closed by its ×.
   const [open, setPanel] = useState(
     mode === "steps" || opened.hint !== undefined || opened.rung !== undefined,
   );
@@ -571,7 +571,7 @@ function OpenTask({
   useEffect(() => () => pause.stop(), [pause]);
 
   // The tutor's marks go to the canvas after its task and its history, which React gave it in the
-  // render (R36 spec). Marks it refuses — a box it cannot place — are dropped, not a broken screen.
+  // render. Marks it refuses — a box it cannot place — are dropped, not a broken screen.
   // They are the tutor's: out of sight while its panel is closed, and back once it opens.
   useEffect(() => {
     const canvas = element.current;
@@ -640,7 +640,7 @@ function OpenTask({
 
   const markName = useMemo(() => markNames(words), [words]);
 
-  /** The words of the rung of a wrong answer, asked at once with the same work (R82 spec). */
+  /** The words of the rung of a wrong answer, asked at once with the same work. */
   const rungWords = useCallback(
     (wrongAnswers: number, of: Sent) => {
       setWordsFailure(undefined);
@@ -666,7 +666,7 @@ function OpenTask({
             if (answer.words !== "") {
               // The fallback text of the rung comes with an outcome: words all the same. Beside it
               // stands why, when platform AI is closed beyond this call — the quota, with when it
-              // comes back, or its limit (R37).
+              // comes back, or its limit.
               const why =
                 closesAI(read) && !closedAtCheck.current ? outcomeText(read, words) : undefined;
               setSaid({ text: answer.words, reply: TutorReply.RUNG, rung: answer.rung });
@@ -726,7 +726,7 @@ function OpenTask({
 
   /**
    * The words after a correct answer, with its work: once they came or their request ended, it
-   * goes. None came, and platform AI is closed beyond this call: the block says why (R37).
+   * goes. None came, and platform AI is closed beyond this call: the block says why.
    */
   const correctWords = useCallback(
     (of: Sent) => {
@@ -775,7 +775,7 @@ function OpenTask({
 
   /** The panel opens — the button "Tutor", Hint, the choice of "by steps" —, and asks what it must. */
   const openPanel = useCallback(() => {
-    // Within the press: the words the opening asks may be said (WebKit; R07).
+    // Within the press: the words the opening asks may be said (WebKit).
     if (unasked.current !== undefined) prime();
     setPanel(true);
     askUnasked();
@@ -818,7 +818,7 @@ function OpenTask({
   }, [handwriting, profile, attemptId, drawn, unsavedNow, works]);
 
   const check = useCallback(() => {
-    // Within the press: the words that come after it may be said (WebKit; R07).
+    // Within the press: the words that come after it may be said (WebKit).
     prime();
     verdictSaid.current = undefined;
     setPending(true);
@@ -927,7 +927,7 @@ function OpenTask({
     prime();
     setFailure(undefined);
     // The rung's words of a wrong answer the closed panel left unasked: the opening asks them, by AI
-    // and with the work, and they are the hint (R82 spec).
+    // and with the work, and they are the hint.
     const rungUnasked = unasked.current?.reply === "rung";
     openPanel();
     if (rungUnasked) return;
@@ -1032,7 +1032,7 @@ function OpenTask({
       .finally(() => setExplaining(false));
   }, [api, holder, profileId, attemptId, words, prime, explanation, close, tutorSays]);
 
-  /** "Show the solution": the attempt ends with the solution shown (R82 spec). */
+  /** "Show the solution": the attempt ends with the solution shown. */
   const showSolution = useCallback(() => {
     showKey.current ??= idempotencyKey();
     setPending(true);
@@ -1083,7 +1083,7 @@ function OpenTask({
   }, [api, holder, views, profileId, attemptId, profile, words, pause, onEnded, comesNext, close]);
 
   // An adult may ask for the solution from the start of the attempt, a child from the fourth wrong
-  // answer, once the ladder of hints is passed (R82 spec).
+  // answer, once the ladder of hints is passed.
   const mayShow = adult || state.wrongAnswers >= 4;
   // Not while the words of the rung are still asked: the right would go on the words before them.
   const mayExplain =

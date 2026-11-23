@@ -1,5 +1,5 @@
-// The lesson player (R06, R23; LearningService in the contract): `GetLessonRun` gives an open run
-// again, `OpenLesson` a run by an engine's choice of a lesson (R24), each with the lesson's open
+// The lesson player (LearningService in the contract): `GetLessonRun` gives an open run
+// again, `OpenLesson` a run by an engine's choice of a lesson, each with the lesson's open
 // view, its package and the task segments that ended. The lesson opens at the later of the place
 // the device keeps and the one after the last task that ended, its examples' demos as they were —
 // the state of this run alone, by the lesson's full ID, the package and the run's ID. "Continue"
@@ -114,7 +114,7 @@ export interface LessonProps {
 export function Lesson(props: LessonProps) {
   const { profileId, open: what, device, onBegan, onEnded } = props;
   const api = useApi();
-  // On the owner's own key, each request that may give a choice names its provider (R47).
+  // On the owner's own key, each request that may give a choice names its provider.
   const holder = useKeyHolder();
   const { views, checks } = usePackages();
   const [read, setRead] = useState<Read>({ status: "loading" });
@@ -229,11 +229,11 @@ function nextStep(profileId: string, device: Device, choice: EngineChoice | unde
 }
 
 /**
- * The end of a run, a card in the window's middle as the mockup's `lesson-end` (R64): the module's
+ * The end of a run, a card in the window's middle as the mockup's `lesson-end`: the module's
  * tile and title if known, the lesson's title if known, how it ended — "Lesson complete" after a
  * star —, the way to what the engine chose — the choice the end gave, or else a press that asks for
- * it (R24) —, and the way to Home. No score, grade or comparison. The profile's pill stands
- * at the top, as on every screen of the profile (R63).
+ * it —, and the way to Home. No score, grade or comparison. The profile's pill stands
+ * at the top, as on every screen of the profile.
  */
 export function LessonEnd({
   reason,
