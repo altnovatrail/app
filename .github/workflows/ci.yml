@@ -48,8 +48,8 @@ jobs:
 
   # The comparison with the interface mockup: `just mockup-compare` in the toolchain stage,
   # with the browsers. The mockup is in the spec submodule, which no job of typescript.yml but the
-  # licenses' checks out, so the job is the repository's own, with the image of the stage by.
-  # github's action toolchain — from the cache typescript.yml fills, or built — and
+  # licenses' checks out, so the job is the repository's own, with the image of the stage by
+  # .github's action toolchain — from the cache typescript.yml fills, or built — and
   # without its Go caches, which nothing here has. Its snapshots and reports are an artifact of the
   # run, kept a week, whatever its end.
   mockup:

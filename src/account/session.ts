@@ -282,7 +282,8 @@ export class Session {
   /**
    * `CreateAccount` with the invite code — the form sends it trimmed at its ends, and api ignores
    * dashes and spaces within it —, the statement of being 18 or older, and the versions of the
-   * privacy policy and the terms of use the owner accepted, as `GetLegalTexts` gave them: none while none is in force. A version no longer current is the form's to show anew.
+   * privacy policy and the terms of use the owner accepted, as `GetLegalTexts` gave them: none while none is in force. A version no
+   * longer current is the form's to show anew.
    */
   async createAccount(
     inviteCode: string,

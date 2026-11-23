@@ -6,8 +6,8 @@
 /dist/
 # What `just ci-test` writes: the coverage report the shared typescript.yml sends to Codecov.
 /coverage/
-# What tsc keeps between runs..
-* tsbuildinfo
+# What tsc keeps between runs.
+*.tsbuildinfo
 # The screenshots Vitest takes of a failed test in the browser: Vitest 5 puts them under .vitest/.
 __screenshots__/
 /.vitest/

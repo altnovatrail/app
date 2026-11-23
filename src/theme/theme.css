@@ -762,8 +762,8 @@ novatrail-canvas {
 }
 /*
  * A workbook's lines once checked, below the canvas, each one row that wraps, as the mockup's
- * `workbook-not-yet` ends each line: its verdict, then each box's with what was read, at 13, so that
- * six lines leave the page in sight.
+ * `workbook-not-yet` ends each line: its verdict, then each box's with what was read, at 13, so
+ * that six lines leave the page in sight.
  */
 .nt-lines {
   margin: 0.5rem 0;
@@ -3531,8 +3531,8 @@ button.nt-tasks-row[aria-current="true"] > .nt-tasks-n {
 }
 /*
  * A disabled button: grey on a grey fill, as an inactive control may be (1.4.3); last, so that it
- * holds over each kind of button above. In forced colours GrayText, which the browser gives only to:
- * disabled, marks one that is aria-disabled too.
+ * holds over each kind of button above. In forced colours GrayText, which the browser gives only to
+ * :disabled, marks one that is aria-disabled too.
  */
 button:disabled,
 button[aria-disabled="true"] {

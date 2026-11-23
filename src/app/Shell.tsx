@@ -140,7 +140,10 @@ export function GrownUps() {
   );
 }
 
-/** The notifications: the place for them, a bell of spec's closed list of icon buttons; nothing sends one yet. */
+/**
+ * The notifications: the place for them, a bell of spec's closed list of icon buttons; nothing sends
+ * one yet.
+ */
 export function Bell() {
   const { words } = useLanguage();
   return (

@@ -9,7 +9,7 @@
 # nothing of whoever opens this repository.
 #
 # The container is on two networks: its own, and api's, so that the development server reaches a
-# local api in its own container. Both are made here with the same MTU,
+# local api in its own container (R19). Both are made here with the same MTU,
 # so that app starts without api, and api's own script finds its network already made, as it
 # would make it.
 

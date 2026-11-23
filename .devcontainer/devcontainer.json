@@ -11,7 +11,7 @@
     },
     "remoteUser": "vscode",
     // Closing the window leaves the container running, and docker stop ends it: the orchestrator's
-    // executor runs in it by docker exec, with no window.
+    // executor runs in it by docker exec, with no window (R156 spec).
     "shutdownAction": "none",
     // Runs on the host before the container starts, in this folder: gives it its networks, whose
     // MTU is the host's own, so a tunnel on the host does not silently truncate large downloads
@@ -19,7 +19,7 @@
     // Docker refuses a bind whose source is missing.
     "initializeCommand": "bash .devcontainer/host-network.sh && mkdir -p ../.epics",
     // Its own network, and api's, where the development server's proxy finds a local api by the
-    // address of api's container: api's container is on that network
+    // address of api's container (R19): api's container is on that network
     // alone, publishes no port, and listens on every interface.
     "runArgs": [
         "--network=novatrail-app",
@@ -50,11 +50,11 @@
         "source=novatrail-vscode-extensions-${devcontainerId},target=/home/vscode/.vscode-server/extensions,type=volume",
         // The clones of the tasks across repositories, .epics/<epic>/<repo> beside the host's clones:
         // every NovaTrail container mounts this one folder of the host, at one path, and nothing
-        // else beside the clones.
+        // else beside the clones (R166 spec).
         "source=${localWorkspaceFolder}/../.epics,target=/workspaces/.epics,type=bind",
         // The custom token of api's development account, which api's just dev-app writes into
-        // this volume, shared with api's container, every half hour, and removes when it stops.
-        // The development server hands it to the local build's sign-in; here
+        // this volume, shared with api's container, every half hour, and removes when it stops
+        // (R67 api). The development server hands it to the local build's sign-in (R43); here
         // it is only read.
         "source=novatrail-dev-token,target=/home/vscode/.novatrail-token,type=volume,readonly"
     ],

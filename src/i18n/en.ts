@@ -271,7 +271,7 @@ export const en = {
     "There is no date: buttons that move the sheet come back only if the platform decides so",
   "accessibility.print": "Print in the lines of a workbook",
   "accessibility.print-criteria": "1.4.12 Text Spacing, level AA",
-  /** Zoom in and Zoom out are the words of the sheet's bar (architecture 6 spec). */
+  /** Zoom in and Zoom out are the words of the sheet's bar. */
   "accessibility.print-why":
     "The printed numbers, words and values in the lines of a workbook lie on the task's page, each in a place fixed on it, so the spacing you set for text does not reach them",
   "accessibility.print-instead":
