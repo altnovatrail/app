@@ -15,14 +15,6 @@ Open tasks outside the current epic, each as its body, in Russian. Each also has
 - **Как проверить:** `just -f spec/justfile docs-check-repo`.
 - **Разделы:** R145 spec, R143 spec; measurements 1.9 spec; [docs/measurements.md](../docs/measurements.md), разделы 8 и 10.
 
-#### T118. Ссылки по R171 spec: архитектура, разделы 3.5–3.8
-
-- **Цель:** в разделах 3.5–3.8 [docs/architecture.md](../docs/architecture.md) ссылки стоят по R171 spec.
-- **Почему:** часть T111 по её шагу 9.
-- **Сделать:** как T117, для этих разделов.
-- **Как проверить:** как T117, по строкам этих разделов.
-- **Разделы:** R171 spec, R160 spec; T111, T117.
-
 #### T119. Ссылки по R171 spec: архитектура, разделы 3.9, 3.10 и 4
 
 - **Цель:** в разделах 3.9, 3.10 и 4 [docs/architecture.md](../docs/architecture.md) ссылки стоят по R171 spec.
