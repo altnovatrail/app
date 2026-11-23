@@ -1,5 +1,5 @@
 // The countries the owner chooses theirs from: every code of ISO 3166-1 alpha-2 officially
-// assigned, 249 of them, as the Wikipedia article "ISO 3166-1 alpha-2" lists them
+// assigned, 249 of them, as the Wikipedia article "ISO 3166-1 alpha-2" lists them (sources 7.5)
 // — ISO's Online Browsing Platform, the primary source, refused a reading. They are the codes
 // `Country` of spec's table of the age of digital consent too, which api takes as well:
 // the type holds the list to them, none left out and none more. Which of them a deployment takes

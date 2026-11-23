@@ -71,6 +71,7 @@ Read 2026-11-10, for the platform's packages `app` takes from npm:
 - unplugin-icons 24.0.0, [README](https://github.com/unplugin/unplugin-icons/blob/v24.0.0/README.md), React: "Icons({ compiler: 'jsx', jsx: 'react' })", "npm i -D @svgr/core @svgr/plugin-jsx"; the type `CustomCompiler` is in `dist/types.d.mts`, and the README gives no such way.
 - The README of `@altnovatrail/canvas` 0.3.4, Install: "spec's npm package, whose types the element's contract is in, at the version the package has in its `dependencies`"; `spec` — `git diff --stat v0.12.0 v0.13.0`: `types/canvas` and `types/formatv0` did not change. `canvas`, `scripts/icons.ts` on `main`: the module of paths, `--check` in `ci-lint`, the rule `<path fill="currentColor" d="…"/>`.
 - Apache License 2.0, clause 4(d): "If the Work includes a "NOTICE" text file as part of its distribution, then any Derivative Works that You distribute must include a readable copy of the attribution notices contained within such NOTICE file"; `@altnovatrail/canvas` 0.3.4 has a `NOTICE`, and the other packages that ship do not. `@bufbuild/protobuf` 2.16.0 is `(Apache-2.0 AND BSD-3-Clause)`; the text of BSD-3-Clause and "Copyright 2008 Google Inc." are in the header of `dist/esm/wire/varint.js`.
+- Read again 2026-11-23, for serving the license beside a module: [Apache License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0.txt), "4. Redistribution": "You may reproduce and distribute copies of the Work or Derivative Works thereof in any medium, with or without modifications, and in Source or Object form, provided that You meet the following conditions: (a) You must give any other recipients of the Work or Derivative Works a copy of this License; and …".
 
 ### 2.4. Canvas 0.3.15, 2026-11-12
 
@@ -440,11 +441,3 @@ Read 2026-11-12, for telling the learner that the tutor is an AI and for the lea
 ### 11.2. The share of the tutor's words in the money, 2026-11-23
 
 Read 2026-11-23, for asking the tutor's words only while its panel is open: `tutor`, branch `main`, commit df62bab, `docs/measurements.md`, the measurement "Reading a sheet on the site against eval, and the price of a check", 3.20 there: "by the pair, Haiku $0.000400 and Opus $0.008276 — $0.0087, Opus 95 %; since the mode `single`, an hour of the author's lessons: Haiku $0.000373–0.000647 a reading, Opus $0.016536–0.021752 a call of the words (`GetRungWords`, `GetCorrectAnswerWords`, `GetHint`) — the words ≈ 97 % of the money."
-
-## 12. Licenses
-
-For what the licenses of what `app` ships and serves require.
-
-### 12.1. Apache-2.0 on a copy of the license, 2026-11-23
-
-Read 2026-11-23, for serving the license beside a module: the Apache Software Foundation, [Apache License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0.txt), "4. Redistribution": "You may reproduce and distribute copies of the Work or Derivative Works thereof in any medium, with or without modifications, and in Source or Object form, provided that You meet the following conditions: (a) You must give any other recipients of the Work or Derivative Works a copy of this License; and …".
