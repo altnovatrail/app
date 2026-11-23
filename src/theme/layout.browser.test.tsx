@@ -1,6 +1,6 @@
-// The layout from the width (R59): below 600 CSS px one column of the whole width; from 600 a
+// The layout from the width: below 600 CSS px one column of the whole width; from 600 a
 // column of reading, the mockup's frame of 1194 at most, centred, for the home screen and the
-// sign-in, with the cards two in a row at any width (R79), and the whole window for a screen with a
+// sign-in, with the cards two in a row at any width, and the whole window for a screen with a
 // canvas; the bar above a screen at the screen's own width.
 import { render } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";

@@ -1,4 +1,4 @@
-// "Back to Home" (R57): home by default, what the screen gives otherwise, and nothing while
+// "Back to Home": home by default, what the screen gives otherwise, and nothing while
 // a request of the screen is under way.
 import { render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";

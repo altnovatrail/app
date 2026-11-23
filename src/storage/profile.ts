@@ -1,14 +1,14 @@
-// The database of one learner's profile (R04, R16): attempts with their history of writing and
-// submissions, an essay's among them (R53), the work of a correct submission until the words after
+// The database of one learner's profile: attempts with their history of writing and
+// submissions, an essay's among them, the work of a correct submission until the words after
 // it, and the state of lessons. History and contexts are kept as the canvas gave them, unchanged;
 // the pictures of the work as bytes with their type, not Blobs, which WebKit does not write in an
-// ephemeral session (R16), and a Blob that schema version 1 kept before is read as it is. Every
+// ephemeral session, and a Blob that schema version 1 kept before is read as it is. Every
 // write says whether it was saved, so that the task screen can tell the learner the work is not
 // saved on this device. Each attempt holds the mark of its work on the server: how long a history
-// and how many submissions the last `PutWork` that went through carried (R16, R30). The pages from
+// and how many submissions the last `PutWork` that went through carried. The pages from
 // paper are the profile's history, apart from its attempts: neither an attempt's end nor the 30
 // days take them; a page kept beyond the MAX_PAGES newest takes the oldest, and the profile's
-// erasure takes them all (R77; R162 spec).
+// erasure takes them all.
 import type {
   CellPlace,
   DemoState,
@@ -40,7 +40,7 @@ export interface Stored {
   readonly submissions: number;
 }
 
-/** An attempt: its package, the open view of its task, the state of its steps (R05). */
+/** An attempt: its package, the open view of its task, the state of its steps. */
 export interface Attempt {
   readonly attemptId: string;
   /** The digest of the attempt's package. */
@@ -102,7 +102,7 @@ export interface DeviceWork {
   }[];
 }
 
-/** What a profile keeps on this device, for the page This device (R04). */
+/** What a profile keeps on this device, for the page This device. */
 export interface Usage {
   /** The attempts kept unfinished, counted. */
   readonly unfinished: number;
@@ -127,7 +127,7 @@ export interface KeptFrame {
 }
 
 /**
- * A page from paper of the profile's history (R77): when the photo was taken, and the frames on it
+ * A page from paper of the profile's history: when the photo was taken, and the frames on it
  * in the order of the page. Its photo is a record of its own, so that the list of pages reads none.
  */
 export interface KeptPage {
@@ -302,7 +302,7 @@ export function sizeOf(value: unknown): number {
   return 1;
 }
 
-/** The state of a lesson on one package, in one passage (R06). */
+/** The state of a lesson on one package, in one passage. */
 export interface LessonState {
   readonly lessonId: string;
   readonly digest: string;
@@ -456,7 +456,7 @@ export class Profile {
   /**
    * A submission, with its context and work from `exportWork()` and the history's length: its
    * number among the attempt's submissions, from 0, which `attemptEnded` takes for the correct one.
-   * A task from paper's work is none of an attempt's here: the device keeps it apart (R71).
+   * A task from paper's work is none of an attempt's here: the device keeps it apart.
    */
   async addSubmission(
     attemptId: string,
@@ -478,7 +478,7 @@ export class Profile {
 
   /**
    * A submission of an essay: its context and the history's length, for the work on the server,
-   * without its crop, which nothing on the device reads again (R53).
+   * without its crop, which nothing on the device reads again.
    */
   addEssaySubmission(
     attemptId: string,
@@ -494,7 +494,7 @@ export class Profile {
   }
 
   /**
-   * The attempt ended (R04): its history, submissions, steps and the open view of its task go. The
+   * The attempt ended: its history, submissions, steps and the open view of its task go. The
    * work of a correct submission, by its number from 0, stays until the words after it.
    */
   async attemptEnded(attemptId: string, correct?: number): Promise<void> {
@@ -541,7 +541,7 @@ export class Profile {
 
   /**
    * The state of a lesson on this package and in this passage. One kept on another package or of
-   * another passage is over, and goes (R06).
+   * another passage is over, and goes.
    */
   async readLesson(
     lessonId: string,
@@ -692,7 +692,7 @@ export class Profile {
     );
   }
 
-  /** Keeps the own key on this device, in place of the one kept before (R47). */
+  /** Keeps the own key on this device, in place of the one kept before. */
   keepOwnKey(kept: KeptKey): Promise<Saved> {
     return this.save([OWN_KEY_STORE], async (tx) => {
       await tx.put(OWN_KEY_STORE, OWN_KEY, { ...kept });
@@ -708,7 +708,7 @@ export class Profile {
   /**
    * Attempts and lessons last changed at a time or before go, with all of an attempt's work, and
    * so does a history whose attempt the device keeps no more: an essay's, which the store `essays`
-   * of schema versions 3 and 4 kept past its attempt (R53).
+   * of schema versions 3 and 4 kept past its attempt.
    */
   async expire(cutoff: number): Promise<void> {
     const range = { upper: cutoff };
@@ -731,7 +731,7 @@ export class Profile {
   }
 
   /**
-   * A page from paper and the tasks Start began on it now (R77): the page with its frames as they
+   * A page from paper and the tasks Start began on it now: the page with its frames as they
    * are, its photo the first time, and each task with its crop, after those begun on it before. A
    * task begun anew, its frame resized, takes the place of its earlier attempt. A new page past
    * MAX_PAGES takes the oldest with its photo and its tasks, never the page kept now.
@@ -911,7 +911,7 @@ export interface Closing {
 }
 
 /**
- * An attempt is over, by whatever way it closed: its work on this device goes (R04), in the
+ * An attempt is over, by whatever way it closed: its work on this device goes, in the
  * database the screen holds or else in the profile's, opened for it, and with `works` it goes to
  * the server first, as it was at the end — read before the erasure, sent after it, so that the
  * screen waits for no network. A database that does not open or a write that fails leaves the work

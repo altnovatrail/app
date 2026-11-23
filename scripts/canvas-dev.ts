@@ -1,4 +1,4 @@
-// A working copy of canvas on the development server, in place of the package from npm (R15): `just
+// A working copy of canvas on the development server, in place of the package from npm: `just
 // dev-canvas <folder>` sets NOVATRAIL_CANVAS to the folder, and vite.config.ts, serving and only
 // then, points each entry point the copy's package.json exports at the copy's built files and lets
 // the server read the folder. package.json and the lock file stay as they are, so nothing of the

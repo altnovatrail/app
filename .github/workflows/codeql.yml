@@ -1,5 +1,5 @@
-# CodeQL over the repository's workflows and its languages (R09 .github), pinned to a release of
-# .github. The job gives the shared workflow what it needs to upload its results.
+# CodeQL over the repository's workflows and its languages, pinned to a release of.
+# github. The job gives the shared workflow what it needs to upload its results.
 name: CodeQL
 
 on:

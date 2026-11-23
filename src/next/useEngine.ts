@@ -1,13 +1,13 @@
-// The way to what the engine chooses, for every screen that asks it (R24 and R34; LearningService
+// The way to what the engine chooses, for every screen that asks it (LearningService
 // in the contract): `choose` asks `ChooseNext` — with the full ID of a skill the learner chose on
-// the skill map, or with none, which gives the lead back to the engine (R107 spec) — and `act` goes
+// the skill map, or with none, which gives the lead back to the engine — and `act` goes
 // to what a choice gives: a lesson opens in the player by `OpenLesson`, a task begins by
 // `BeginAttempt` on the task screen, and nothing stays with the screen. Both `ChooseNext` and the
 // beginning of a task close the attempt open outside a lesson for good, and once closed its work on
 // the device goes: the screen asks first. Each action has one idempotency key, the same with its
 // repeats, and only a refusal ends it; a skill other than the one asked for last is another action,
 // with a key of its own. On the owner's own key both name its provider, so that api chooses by the
-// key's route and not by platform AI's quota (R47; the contract).
+// key's route and not by platform AI's quota (the contract).
 import { Cause, type EngineChoice } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import { Code } from "@connectrpc/connect";
 import { useCallback, useRef } from "react";

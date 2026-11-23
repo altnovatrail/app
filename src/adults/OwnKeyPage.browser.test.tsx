@@ -1,4 +1,4 @@
-// The page Own AI key in the browser (R08 and R47), with api on connect-es's router and the storage
+// The page Own AI key in the browser, with api on connect-es's router and the storage
 // on the engine's own IndexedDB: the words before the field, the providers api gives and none, the
 // five answers of the check and one this build does not know, a key not accepted that leaves the
 // former one, the key shown by its last four alone, the mark that keeps it on the device and the
@@ -379,7 +379,7 @@ describe("the page Own AI key", () => {
         ...(at === undefined ? {} : { accessReturns: timestampFromDate(at) }),
       }),
     });
-    // The ceiling of the tier, back at 00:00 UTC on the first of a month (R80 api) three months on,
+    // The ceiling of the tier, back at 00:00 UTC on the first of a month three months on,
     // so that the line names its date whatever the day of the run.
     const now = new Date();
     const returns = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 3, 1));

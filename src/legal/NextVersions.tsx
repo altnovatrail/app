@@ -1,4 +1,4 @@
-// The next versions of the legal texts after signing in (the contract; R46): on the first page of
+// The next versions of the legal texts after signing in (the contract): on the first page of
 // the section for adults, each next version of a text that is a legal page with the day it applies
 // from and the way to its page, and, while a profile keeps its works on the server, that this can be
 // switched off before then. An api that gives no next version, and a read that failed, show

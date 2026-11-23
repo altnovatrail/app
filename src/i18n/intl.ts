@@ -1,5 +1,5 @@
 // What app writes of numbers, shares, sizes, dates, lists, names of languages and orders: Intl in
-// the screen's language, English after it for what that language lacks (R17). The numbers of a
+// the screen's language, English after it for what that language lacks. The numbers of a
 // module and what a learner might copy into an answer Intl does not touch. No DOM.
 import type { Language } from "./language.ts";
 

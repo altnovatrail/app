@@ -1,4 +1,4 @@
-// The voicing of this device in its registry (R04, R07, R36): the voice an adult chose for a
+// The voicing of this device in its registry: the voice an adult chose for a
 // language, and on Android and Linux the adult's leave for voicing on this device. Not a learner's
 // data: "Erase everything on this device" erases it with the registry, and another account that
 // signs in erases it, to decide anew (erase.ts); the sign-out leaves it. A registry that cannot be

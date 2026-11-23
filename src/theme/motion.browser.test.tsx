@@ -1,5 +1,5 @@
 // Without a wish for less motion, a button's colours change in a short transition, and Check on a
-// pause blinks once: three flashes of a second, shorter than 5 s (R11).
+// pause blinks once: three flashes of a second, shorter than 5 s.
 import { render } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { page } from "vitest/browser";

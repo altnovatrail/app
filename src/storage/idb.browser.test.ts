@@ -1,6 +1,6 @@
 // The backend on the engine's own IndexedDB: what the store in memory stands in for in Node; and
 // the work kept as bytes, with a Blob that schema version 1 kept read after it, and the store
-// `essays` of version 4 taken off by version 5 (R16, R53).
+// `essays` of version 4 taken off by version 5.
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { server } from "vitest/browser";
 import { type Connection, NewerSchemaError, type Schema, within } from "./backend.ts";

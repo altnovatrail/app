@@ -1,4 +1,4 @@
-// The stored works of the learner chosen, for the screens that write a work to the device (R30):
+// The stored works of the learner chosen, for the screens that write a work to the device:
 // the task screens and the way to what the engine chooses. The storage is on as the profile the tab
 // holds says, read at each send, and api's word that it is off reads the profile again for the
 // session and the other tabs. Outside the gate — a screen's own test — no learner is chosen, and

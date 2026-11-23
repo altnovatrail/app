@@ -1,4 +1,4 @@
-// The sign-in and the account on connect-es's router, with no network (R04, R19; the contract):
+// The sign-in and the account on connect-es's router, with no network (the contract):
 // every refusal and every erasure.
 import {
   AccountService,

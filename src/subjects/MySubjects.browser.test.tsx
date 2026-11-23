@@ -1,4 +1,4 @@
-// Home and Subjects in the browser (R99 spec): on Home what comes next, the lessons open, a card
+// Home and Subjects in the browser: on Home what comes next, the lessons open, a card
 // for each module connected with the states of its skills, the legend, the task from paper and the
 // line of the tutor time — the profile's share, the cap reached, and none with no share or no
 // GetQuota or a share that did not come —; on Subjects the cards by role and name, connecting and
@@ -263,7 +263,7 @@ describe("Home", () => {
     ).toBeVisible();
     const button = next.getByRole("button", { name: "Continue the task" });
     expect(button).toHaveAccessibleDescription("There is a task in progress");
-    // Beside the attempt, no way to what the engine chooses, which would close it (R24).
+    // Beside the attempt, no way to what the engine chooses, which would close it.
     expect(next.queryByRole("button", { name: "What's next" })).toBeNull();
     expect(next.queryByRole("button", { name: "Something else" })).toBeNull();
     await userEvent.click(button);

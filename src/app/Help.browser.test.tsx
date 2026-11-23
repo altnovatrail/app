@@ -1,6 +1,6 @@
-// The adult's Help (R63; R148 spec): behind its button, filled while open, the three things and
+// The adult's Help: behind its button, filled while open, the three things and
 // the three texts of the app itself — no link out of it —: the policy and the terms each a sheet
-// over the screen whose foot opens its page home's way back (R69), and the page Accessibility; none
+// over the screen whose foot opens its page home's way back, and the page Accessibility; none
 // for a learner of another category, nor with no learner.
 
 import { ProfileSchema } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";

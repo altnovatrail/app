@@ -1,16 +1,16 @@
-// The screen of an open attempt of an essay, a task whose answer slot is bound `sheet` (R53;
-// R75, R87 and R127 spec): what Task.tsx read of it, and what the learner does on it, written as it
-// is done. The steps, the history of writing and Hint go as on any task (R05, R20, R22). Check
+// The screen of an open attempt of an essay, a task whose answer slot is bound `sheet`: what
+// Task.tsx read of it, and what the learner does on it, written as it
+// is done. The steps, the history of writing and Hint go as on any task. Check
 // sends the crop the canvas gives by `SubmitEssay`, with one idempotency key for this work and the
 // same with every repeat of it, and the own key or the clock's offset; how the submission ended —
 // feedback, unreadable or unchecked —, the text read and the words of the feedback the screen holds
 // in memory alone, and the attempt keeps the context of the submission, as any task's work, till
-// its end (R04); while the profile's storage of works is on, the essay goes to the server as every
-// work does, its history, the contexts of its submissions and its picture (R30). The attempt stays
+// its end; while the profile's storage of works is on, the essay goes to the server as every
+// work does, its history, the contexts of its submissions and its picture. The attempt stays
 // open: the learner writes the sheet again and sends it again, and closes it by Done, open after
 // the first submission, and then the task is solved. An attempt api closed is the screen of
 // Task.tsx. The feedback is said by the voicing in the module's language, and "Report a problem"
-// stands at it for a learner of the category adult (R33).
+// stands at it for a learner of the category adult.
 import { TutorReply } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
 import {
   CloseReason,
@@ -76,7 +76,7 @@ export function OpenEssay({
   const { views, files } = usePackages();
   const { language, words } = useLanguage();
   const { auto, prime } = useOwnVoicing();
-  // The tutor's panel, as the screen last told: the feedback is said only while it is open (R67).
+  // The tutor's panel, as the screen last told: the feedback is said only while it is open.
   const panelOpen = useRef(false);
   const onPanelChange = useCallback((open: boolean) => {
     panelOpen.current = open;
@@ -91,7 +91,7 @@ export function OpenEssay({
   const [blink, setBlink] = useState(false);
   const [hint, setHint] = useState<HintGiven | undefined>(opened.hint);
   // What the last submission sent from this screen came to; none after a reload, as the server
-  // keeps neither the text read nor the words (R87 spec).
+  // keeps neither the text read nor the words.
   const [shown, setShown] = useState<Shown | undefined>(undefined);
   const [came, setCame] = useState(false);
   // How many submissions the attempt has, by api's count and those sent here since.
@@ -186,7 +186,7 @@ export function OpenEssay({
   }, [drawn]);
 
   const check = useCallback(() => {
-    // Within the press: the words that come after it may be said (WebKit; R07).
+    // Within the press: the words that come after it may be said (WebKit).
     prime();
     setPending(true);
     setFailure(undefined);
@@ -252,7 +252,7 @@ export function OpenEssay({
     works,
   ]);
 
-  /** "Hint": api gives the task's techniques and its leading question (R82 spec). */
+  /** "Hint": api gives the task's techniques and its leading question. */
   const askHint = useCallback(() => {
     prime();
     setFailure(undefined);
@@ -272,7 +272,7 @@ export function OpenEssay({
       .finally(() => setPending(false));
   }, [api, profileId, attemptId, closed, prime, auto, task, opened.catalog, explanation]);
 
-  /** Done: the learner ends the attempt, and the task is solved (R87 spec). */
+  /** Done: the learner ends the attempt, and the task is solved. */
   const finish = useCallback(() => {
     setFailure(undefined);
     setPending(true);

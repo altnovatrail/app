@@ -1,4 +1,4 @@
-// The screens in forced colours (R11), a mode of the browser's context from the start, as canvas
+// The screens in forced colours, a mode of the browser's context from the start, as canvas
 // has it: the system's colours take the theme's, nothing of app turns them off, a button keeps its
 // border and the focus its ring.
 import { render } from "@testing-library/react";

@@ -1,6 +1,6 @@
-// The sign-in of the local build by api's development account (R44): when the development server
+// The sign-in of the local build by api's development account: when the development server
 // hands out the Firebase custom token that api's `just dev-app` keeps in a volume of app's
-// container (R67 api), the sign-in takes it by signInWithCustomToken instead of opening Google's
+// container, the sign-in takes it by signInWithCustomToken instead of opening Google's
 // window, so that the path of the first slice runs in a browser without the author. Only
 // firebase.ts loads this module, under import.meta.env.DEV, which a release's build replaces with
 // false: the build holds none of it.

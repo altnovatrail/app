@@ -1,14 +1,14 @@
-// The progress of a profile in the section for adults (R35), a page of the profile chosen,
+// The progress of a profile in the section for adults, a page of the profile chosen,
 // `#/adults/progress`: the skill maps of the modules connected, each the adult's view of
 // skill-map's element on a page of its own, `#/adults/progress/<module>`, with "Easier" and
-// "Harder" at the module's level (R56); the traps that repeat, from the first page of GetProgress
+// "Harder" at the module's level; the traps that repeat, from the first page of GetProgress
 // alone; and the attempts, newest first, a page at a time, each with how it came out, its wrong
 // answers, its times and why the engine gave its task or its lesson — the reason code, which the
-// adult alone sees (R100 spec). The progress names a task by its full ID alone, and the screen
+// adult alone sees. The progress names a task by its full ID alone, and the screen
 // shows its local ID; a lesson by its title, or by its local ID when api no longer reads the
 // package the attempt went on; and a solved attempt the skills its task trains, by their titles. A
 // module is named by the manifest of its current version, or of the one the cache keeps, or else by
-// its ID. In the device's language, as the section is (R10); a module's texts — a lesson's title,
+// its ID. In the device's language, as the section is; a module's texts — a lesson's title,
 // the skills', a trap's — in the module's explanation language.
 import type { Profile } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import { Action } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
@@ -286,7 +286,7 @@ function Attempt({
           )}
         </dl>
         {/* The submissions of an essay, each with its end and the marks of its rubric, come here
-            with the module of essays (R53; R87 spec). */}
+            with the module of essays. */}
       </article>
     </li>
   );
@@ -492,8 +492,8 @@ export function ProgressPage({ profile }: { readonly profile: Profile }) {
 
 /**
  * `#/adults/progress/<module>`: the adult's view of a module's map, `GetSkillMap` by an adult's
- * action; it chooses nothing (R03 and R04 skill-map), and leads back to the progress. Above it,
- * the adult's correction of the module's level, "Easier" and "Harder" (R56).
+ * action; it chooses nothing, and leads back to the progress. Above it,
+ * the adult's correction of the module's level, "Easier" and "Harder".
  */
 export function ProgressMap({
   profile,

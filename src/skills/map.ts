@@ -1,4 +1,4 @@
-// The skill map of a module, as the element of skill-map takes it (R99 spec; R34): the state of its
+// The skill map of a module, as the element of skill-map takes it: the state of its
 // skills from `GetSkillMap` — by the learner's action on the learner's screen, by an adult's in the
 // section for adults — and, by the digest of that answer, the open views of its skill graph with
 // its tiers and of its manifest, from the shared cache or api. And the modules the answer offers

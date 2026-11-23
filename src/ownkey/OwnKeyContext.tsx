@@ -1,4 +1,4 @@
-// The own key's holder for the screens (R08, R47): one for the tab, made by the account's gate,
+// The own key's holder for the screens (R08): one for the tab, made by the account's gate,
 // which opens it while the owner profile of the category `adult` is the learner chosen and closes
 // it otherwise. The tabs tell each other of a key changed on the channel `novatrail-own-key`.
 // Outside the gate — a screen's own test — the holder holds nothing, and every request goes on
@@ -31,7 +31,7 @@ export function keyMessageOf(data: unknown): string | undefined {
   return typeof profileId === "string" && profileId !== "" ? profileId : undefined;
 }
 
-/** Whether a profile may have an own key: the owner's, of the category `adult` (R122 spec). */
+/** Whether a profile may have an own key: the owner's, of the category `adult`. */
 export function keyed(profile: Profile): boolean {
   return profile.owner && profile.ageCategory === "adult";
 }

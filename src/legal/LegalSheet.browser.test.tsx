@@ -1,4 +1,4 @@
-// The sheet of a legal text in the browser (R69): a long gist makes the whole card scroll, which
+// The sheet of a legal text in the browser: a long gist makes the whole card scroll, which
 // holds what takes the focus, so that Safari scrolls it from the keyboard (О-24); the gist is no box
 // that scrolls and no stop of Tab.
 import {

@@ -1,8 +1,8 @@
-// The legal pages in the browser (R31, R46, R69), with api on connect-es's router: their list and
+// The legal pages in the browser, with api on connect-es's router: their list and
 // the head of their sheet, a text as a page in the language of the screen — its version, its gist,
 // the line that the English text is in force, its translation and its body —, a text with no
 // version in force, its next version and the page of it, who runs this copy, a read that failed,
-// the page Accessibility with the places R11 declares, the notices of the build as they are, a page
+// the page Accessibility with the places the app declares, the notices of the build as they are, a page
 // this build does not know, and no link on any of them.
 import {
   LegalService,
@@ -381,16 +381,16 @@ describe("the legal pages", () => {
     expect(criteria[0]).toContain("2.1.1");
     expect(criteria[0]).toContain("2.5.1");
     expect(criteria[0]).toContain("2.5.7");
-    // 2.5.7 twice: the canvas moves the sheet by dragging alone (R11).
+    // 2.5.7 twice: the canvas moves the sheet by dragging alone.
     expect(criteria[1]).toBe("2.5.7 Dragging Movements, level AA");
-    // The print fits the page to the sheet's width and keeps its own spacing (R11).
+    // The print fits the page to the sheet's width and keeps its own spacing.
     expect(criteria[2]).toBe("1.4.12 Text Spacing, level AA");
     expect(criteria[3]).toContain("3.3.4");
-    // A frame drawn by hand: two taps meet 2.5.1 and 2.5.7, the keyboard none (R71).
+    // A frame drawn by hand: two taps meet 2.5.1 and 2.5.7, the keyboard none.
     expect(criteria[4]).toBe("2.1.1 Keyboard, level A");
-    // A task from paper is solved in handwriting alone, with no options to choose among (R71).
+    // A task from paper is solved in handwriting alone, with no options to choose among.
     expect(criteria[5]).toBe("2.1.1 Keyboard, level A");
-    // The app always gives the canvas its language, so it meets 3.1.2 and no place declares it (R11).
+    // The app always gives the canvas its language, so it meets 3.1.2 and no place declares it.
     expect(document.body.textContent).not.toContain("3.1.2");
     for (const place of places) {
       expect(

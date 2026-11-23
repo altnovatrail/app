@@ -1,4 +1,4 @@
-// The works of a profile on the server (R16, R30; R113 spec; `WorkService` of the contract), with
+// The works of a profile on the server (R30; `WorkService` of the contract), with
 // no DOM: while the profile's storage of works is on, `PutWork` keeps each work as the device holds
 // it — the history of writing, the contexts of its submissions and the picture the canvas draws of
 // it — at each submission, when its attempt closes, and when the storage is switched on. A work
@@ -17,7 +17,7 @@ import type { Api } from "../api/client.ts";
 import { parseFailure, refusedWith } from "../api/failure.ts";
 import type { DeviceWork, Profile } from "../storage/profile.ts";
 
-/** The largest work the server keeps, as `StoredWork` counts it: 4 MiB (R113 spec). */
+/** The largest work the server keeps, as `StoredWork` counts it: 4 MiB. */
 export const MAX_WORK = 4_194_304;
 
 /**
@@ -61,7 +61,7 @@ export interface SenderOptions {
   readonly draw: Draw;
   /** Whether the profile's storage of works is on, as the tab knows it now. */
   readonly storageOn: () => boolean;
-  /** api said the storage is off: the profile read again, as after `SetWorkStorage` (R30). */
+  /** api said the storage is off: the profile read again, as after `SetWorkStorage`. */
   readonly onProfile: (profile: Learner) => void;
 }
 

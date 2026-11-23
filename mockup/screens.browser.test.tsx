@@ -1,4 +1,4 @@
-// app's screens against the interface mockup (R58): each entry draws a screen as the screen tests
+// app's screens against the interface mockup: each entry draws a screen as the screen tests
 // do, synthetic and with no api, at each size of the mockup, and compares its regions with the
 // mockup's state of the same name in the same engine. An entry with `until` is a screen not brought
 // to the mockup yet: its differences are reported in mockup/out/ and not held. Without it, every
@@ -512,14 +512,14 @@ async function barDrawn() {
 /**
  * Why the canvas's bar stands lower than the mockup has it, the sheet scrolled to the top: the line
  * of "Read aloud" and the voicing stands above the element, where the mockup has the statement's card
- * and its speaker (R65; В74 in run/QUESTIONS.md).
+ * and its speaker (В74 in run/QUESTIONS.md).
  */
 const PLACED = 'the line of "Read aloud" above the canvas, R65';
 
 /** A button the bar shows by its icon alone: the font of its caption, out of sight, is not drawn. */
 const ICON_ALONE = "the caption is out of sight (R60; R84 canvas)";
 
-/** The canvas's bar of glass, its first tool and the hand (R84, R88 canvas). */
+/** The canvas's bar of glass, its first tool and the hand. */
 const BAR: readonly Region[] = [
   {
     name: "the tool bar",
@@ -594,7 +594,7 @@ function owner() {
 
 /** api by the routing transport: no legal text has a next version. */
 
-/** The mockup's code, synthetic, of api's form (R34 api), pasted as its boxes take it. */
+/** The mockup's code, synthetic, of api's form, pasted as its boxes take it. */
 async function codeTyped() {
   await userEvent.fill(screen.getByRole("textbox", { name: "Invite code" }), "N7VA-K2QM-9XB4-ZD3H");
 }
@@ -609,11 +609,11 @@ async function agreeing() {
 /**
  * Why a part of a step's card stands lower or higher than the mockup's: the card stands where the
  * mockup's does, but its words are app's own, without the mockup's full stops, so what follows
- * them moves (R61).
+ * them moves.
  */
 const SHIFTED = "app's own words, without the mockup's full stops (R61)";
 
-/** The way to the legal pages, at the card's foot: one button that names them all (R31). */
+/** The way to the legal pages, at the card's foot: one button that names them all. */
 const LEGAL_WAY: Region = {
   name: "the way to the legal texts",
   mockup: { role: "button", name: "Privacy and legal information" },
@@ -823,7 +823,7 @@ const OWNER: readonly Region[] = [
   },
 ];
 
-/** Why the avatars stand lower: 12 below their button, and the phone's sheet with its × (R59; R60). */
+/** Why the avatars stand lower: 12 below their button, and the phone's sheet with its ×. */
 const AVATARS_HUNG = "the pop-over 12 below its button, the phone's sheet with its × (R59; R60)";
 
 /** The policy and the terms in force, synthetic, and the policy's next version, as api gives them. */
@@ -885,7 +885,7 @@ function sheetOver(link: string) {
 /**
  * Why the page Accessibility differs from the mockup's sheet: the way back to the list of the legal
  * pages, which the mockup has no list for, before the heading; the whole page open, as it is one of
- * its own (R31; R69). The texts' sheets give the texts api gives, where the mockup's are a sample.
+ * its own. The texts' sheets give the texts api gives, where the mockup's are a sample.
  */
 const LISTED = "the way back to the list of the legal pages before the heading (R31; R69)";
 const OPEN = 'the whole page open, not behind "Read the full text" (R31; R69)';
@@ -1292,15 +1292,15 @@ const NO_TEXT = "no text of its own: the body's 14 px (R11)";
 /**
  * Why the row is in sight under the options on a phone: the mockup's tutor's sheet is open and hides
  * it, where app's sheet hides the row while it is open, so that its options open with the sheet
- * closed (R67).
+ * closed.
  */
 const UNDER_SHEET =
   "the mockup's tutor's sheet open over the row of the phone; app's row, and its options, with the sheet closed (R67)";
 
-/** Why Check is grey while the work is read: it takes no press till the verdict comes (R65). */
+/** Why Check is grey while the work is read: it takes no press till the verdict comes. */
 const READING = "Check takes no press while the work is read, and looks so (R65)";
 
-/** Why the way on after "Correct" is not in the card: a lesson's Continue is its row's (R23). */
+/** Why the way on after "Correct" is not in the card: a lesson's Continue is its row's. */
 const WAY_ON =
   'the way on after "Correct": the lesson\'s row, or the result in the panel (R23; R65)';
 
@@ -1409,7 +1409,7 @@ const EXPLAIN_ACT: Region = {
 
 /**
  * Why "Explain differently" is not in sight once said: app shows it only while it takes a press,
- * where the mockup greys it (R67).
+ * where the mockup greys it.
  */
 const EXPLAINED =
   'app hides "Explain differently" while it takes no press, where the mockup greys it (R67)';
@@ -1515,12 +1515,12 @@ function home() {
 
 /**
  * Why Home's cards are of other heights than the mockup's: the card of what comes next holds the
- * engine's way, "What's next", which names no lesson before it is pressed (R24), not the mockup's
+ * engine's way, "What's next", which names no lesson before it is pressed, not the mockup's
  * lesson begun with its line.
  */
 const HOME_PLACED = '"What\'s next" names no lesson before it is pressed (R24)';
 
-/** The row of places from 600, the tab bar on a phone, and the pills at the right: Home's frame (R79). */
+/** The row of places from 600, the tab bar on a phone, and the pills at the right: Home's frame. */
 function frameOf(device: Device): readonly Region[] {
   return [
     {
@@ -1591,7 +1591,7 @@ const LEGEND: Region = {
   differs: { what: ["y"], by: HOME_PLACED },
 };
 
-/** The profile's pill, whose width follows the pseudonym; on a phone its avatar alone (R79). */
+/** The profile's pill, whose width follows the pseudonym; on a phone its avatar alone. */
 const PILL: Region = {
   name: "the profile's pill",
   mockup: { role: "button", name: "Sam, profile menu" },
@@ -1710,7 +1710,7 @@ function subjects() {
 
 /**
  * Why a card of Subjects is shorter than the mockup's: a module's manifest has no words of what it
- * teaches and no tags, so the card holds its title, its mark and its buttons (R79).
+ * teaches and no tags, so the card holds its title, its mark and its buttons.
  */
 const NO_ABOUT = "a manifest has no words of what a module teaches, nor tags (R79)";
 
@@ -1875,7 +1875,7 @@ const SEGMENTS: readonly Region[] = [
 /**
  * Why the canvas's row is wider on a phone: it keeps the line between Demo and the lesson's
  * Continue, which the mockup's phone hides; and why Next is paler with every part open: canvas pales
- * a button that does not act by its colour, the mockup by its opacity (R84 canvas).
+ * a button that does not act by its colour, the mockup by its opacity.
  */
 const ROW_LINE = "the canvas's row keeps its line on a phone (R84 canvas)";
 const PALE = "canvas pales a button that does not act by its colour, not its opacity (R84 canvas)";
@@ -1898,7 +1898,7 @@ function exampleRow(device: Device, open = false): readonly Region[] {
   });
 }
 
-/** The canvas's row of a worked example: Next, Demo and the lesson's Continue (R84 canvas). */
+/** The canvas's row of a worked example: Next, Demo and the lesson's Continue. */
 const EXAMPLE_ROW: readonly Region[] = [
   {
     name: "the row of Next, Demo and Continue",
@@ -1997,7 +1997,7 @@ function besidePanel(device: Device, regions: readonly Region[]): readonly Regio
 
 /**
  * Why the row's glass is whiter on a workbook: canvas draws the page on its own white paper over
- * the whole window (R84 canvas), where the mockup lays a white page on the page's `#F2F2F7`,
+ * the whole window, where the mockup lays a white page on the page's `#F2F2F7`,
  * which its glass lets through.
  */
 const WORKBOOK_PAPER = "canvas draws the workbook on its white paper (R84 canvas)";
@@ -2016,8 +2016,8 @@ const CRITERIA = [
 
 /**
  * Why no row stands under a finished essay: the way on is the lesson's row, or the result in the
- * panel (R23; R53), which names the criteria without the marks — those are the adult's, in the
- * progress (R87 spec) —, where the mockup's panel shows them.
+ * panel, which names the criteria without the marks — those are the adult's, in the
+ * progress —, where the mockup's panel shows them.
  */
 const DONE_ON =
   "the way on after Done: the lesson's row, or the result in the panel (R23; R53; R87 spec)";

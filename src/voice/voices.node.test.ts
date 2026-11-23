@@ -1,4 +1,4 @@
-// The voice of a language, by tables of the lists that browsers give (R07): names and flags as the
+// The voice of a language, by tables of the lists that browsers give: names and flags as the
 // records of docs/sources.md report them. The voices are synthetic stand-ins with the names that
 // matter — a network voice of Chrome, an "Online" voice of Edge, WebKit's every voice marked
 // default, Android's `en_US`.

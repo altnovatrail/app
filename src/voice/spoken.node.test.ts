@@ -1,4 +1,4 @@
-// The table of signs in words (R36), on texts of the first slice's modules — grade-3-math,
+// The table of signs in words, on texts of the first slice's modules — grade-3-math,
 // olympiad-math and english-essays of modules v0.2.5, whose explanation language is `en` — and, for
 // `ru`, on texts of the same kinds written for the test.
 import { describe, expect, it } from "vitest";

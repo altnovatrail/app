@@ -1,23 +1,23 @@
-// The task screen (R20, R21, R22, R65, R67), as the mockup's `task-pill` and `task`, laid out by
+// The task screen, as the mockup's `task-pill` and `task`, laid out by
 // TaskLayout: the canvas over the window, and at its foot the row of glass — "Choose an answer"
 // where the task has options, which opens them in a pop-over, Hint, "Show the solution" when the
 // learner may ask for it, which asks first in a pop-over of its own, and after a line Check. The
 // tutor's panel opens by the tutor's button, by the step's pill and by Hint, and closes by its × —
-// a verdict does not open it, and with it closed the tutor says nothing of the work (R148 spec;
-// R21). In the open panel stand the verdict's line, the hint
+// a verdict does not open it, and with it closed the tutor says nothing of the work. In
+// the open panel stand the verdict's line, the hint
 // asked for and the tutor's words, and at its foot Hint and "Explain differently". Above the row
 // stands the verdict's card while the panel is closed: the work being read, "Not yet" with what was
 // read, Hint and "Try again", which puts it away; why Check does not open, once it is pressed so,
 // open or closed; "Correct" or "Solution shown" once the task is over. Then the panel gives way to
 // the result: the button "Tutor" while the panel was closed, the words after a correct answer once
-// it is open — or why none came while platform AI is closed (R37) —, the solution, the way to what
-// the engine chose (R24) and "Try it again"; the options take no tap, the row goes, and the canvas
+// it is open — or why none came while platform AI is closed —, the solution, the way to what
+// the engine chose and "Try it again"; the options take no tap, the row goes, and the canvas
 // stays as it was. Under a lesson's header it is no screen of its own, and its result ends with the
-// lesson's Continue in place of "Try it again" (R23). What it shows it takes from its container,
+// lesson's Continue in place of "Try it again". What it shows it takes from its container,
 // Task.tsx, which also gives the canvas the tutor's marks and "Report a problem" with the tutor's
-// words, for a learner of the category adult (R33). Above the canvas, "Read aloud" of the statement
+// words, for a learner of the category adult. Above the canvas, "Read aloud" of the statement
 // with its items, and the voicing of the profile switched on and off while the panel, whose head
-// has it then, is closed (R07).
+// has it then, is closed.
 import type * as open from "@altnovatrail/spec/formatv0/open";
 import { useEffect, useId, useState } from "react";
 import { Icon } from "../app/Icon.tsx";
@@ -55,7 +55,7 @@ export interface TaskScreenProps extends TaskParts {
   readonly tutorWords?: string;
   /**
    * What the request of the tutor's words came to: when it gave none, or why they are the fallback
-   * text of the rung, or none came after the correct answer, while platform AI is closed (R37).
+   * text of the rung, or none came after the correct answer, while platform AI is closed.
    */
   readonly wordsFailure?: string;
   /** The words of a rung are asked and have not come yet. */
@@ -68,7 +68,7 @@ export interface TaskScreenProps extends TaskParts {
   readonly panelOpen: boolean;
   /** The tutor's button, the step's pill and the panel's ×, which open the panel and close it. */
   readonly onPanel?: () => void;
-  /** The learner's share of the quota, the line of the panel's head (R98 spec). */
+  /** The learner's share of the quota, the line of the panel's head. */
   readonly quota?: string;
   /** "Explain differently", while the rung has the right to it. */
   readonly onExplain?: () => void;
@@ -273,7 +273,7 @@ export function TaskScreen(props: TaskScreenProps) {
       card={card}
       row={
         solved ? (
-          // The options chosen and their verdicts stay in sight, and take no tap (R65).
+          // The options chosen and their verdicts stay in sight, and take no tap.
           hasChoices(task) ? (
             <ChooseButton {...props} pending />
           ) : null
@@ -330,7 +330,7 @@ function ChooseButton(props: TaskScreenProps) {
   const verdict = only === undefined ? undefined : verdicts.slots.get(only);
   const label = words.text("task.choose");
   const language = manifest?.languages.explanation;
-  // Its name says the verdict in a word, which its sign alone does not (R11).
+  // Its name says the verdict in a word, which its sign alone does not.
   const named =
     chosen === undefined
       ? undefined
@@ -383,7 +383,7 @@ function ChooseButton(props: TaskScreenProps) {
 
 /**
  * "Show the solution", the mockup's `solution-ask`: it asks first, in a pop-over hung 14 above the
- * row, that once the solution is shown the task is over — Cancel, or "Show it" (R22).
+ * row, that once the solution is shown the task is over — Cancel, or "Show it".
  */
 function ShowButton({
   pending,

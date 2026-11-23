@@ -1,4 +1,4 @@
-// The comparison with the interface mockup (R58): the colours laid over what they stand on, the
+// The comparison with the interface mockup: the colours laid over what they stand on, the
 // thresholds of a region and of the engines, and what is read in a page — here in Chromium, on
 // synthetic pages: CI's job of the tests has no spec/, whose mockup `just mockup-compare` opens in
 // the three engines.

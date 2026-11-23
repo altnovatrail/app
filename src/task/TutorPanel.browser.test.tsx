@@ -1,4 +1,4 @@
-// The tutor's panel of the task screen and of an essay (R67): over the canvas on a tablet, a
+// The tutor's panel of the task screen and of an essay: over the canvas on a tablet, a
 // sheet over the row and the canvas's bar of tools on a phone, its grabber, its ×, the tutor's
 // button and the step's pill that open it, its head with the share of the quota, and the verdict a
 // line in it.

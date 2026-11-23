@@ -1,5 +1,5 @@
-// The sizes the photo of a page is encoded at (R71): its long side fitted, then smaller each try;
-// and the size of the photo turned upright (R162 spec).
+// The sizes the photo of a page is encoded at: its long side fitted, then smaller each try;
+// and the size of the photo turned upright.
 import { expect, it } from "vitest";
 import { fitted, LONG_SIDE, STEP, TRIES, tries, turnedSize } from "./photo.ts";
 

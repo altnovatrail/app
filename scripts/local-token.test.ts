@@ -1,4 +1,4 @@
-// The development server's route to api's development token (R44): the token from its file, read at
+// The development server's route to api's development token: the token from its file, read at
 // each request, 404 without it, and nothing of it in `vite preview`.
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";

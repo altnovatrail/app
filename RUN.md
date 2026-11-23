@@ -25,8 +25,8 @@ A task starts with «Выполни задачу T01 из RUN.md» in a new sess
 8. End with a short report in Russian: what was done, files, how to check, what the review found or why there was none, what is open and what goes «в реестр spec».
 9. When done: table 1 `[ ]` → `[x]`; append to the body «Сделано (дата)» — one line, what was done and its pull request, which says how it was checked; where the author commits after review, the report says it. What stays open is rows, not text: a question for the author, of [run/QUESTIONS.md](run/QUESTIONS.md); what is put off, of [run/DEBT.md](run/DEBT.md) (R160 spec).
    - Then move the body verbatim, relative links fixed, to the epic archive `docs/plan/<epic>.md`, with a gist sentence — an unheaded list item at the start of the receiving section: «T01 — сделана <дата>: <итог одной фразой>». Neither stays here, and a search by heading finds one body, in the archive (R153 spec).
-   - A task outside an epic leaves `run/TASKS.md` for the current epic's archive, section «Задачи вне эпика, сделанные за его время»; with no current epic, to the last done epic's archive, section «Задачи вне эпика, сделанные после него» (R19 spec and its 2026-11-13 amendment). Its row of table 1 stays (R13).
-10. Language (R14 spec, R42 spec, R143 spec, R154 spec): this plan and `run/` in English, the bodies of tasks, the epic archives `docs/plan/` and the reports in Russian; `docs/` in English; README, CLAUDE.md, AGENTS.md, code, comments, schema descriptions, prompts and normative texts for authors in English; commit messages and a pull request's title and description in English and terse, for the session, never a copy of the report.
+   - A task outside an epic leaves `run/TASKS.md` for the current epic's archive, section «Задачи вне эпика, сделанные за его время»; with no current epic, to the last done epic's archive, section «Задачи вне эпика, сделанные после него» (R19 spec). Its row of table 1 stays (R13).
+10. Language (RULES.md spec, Hard rules; R154 spec): this plan and `run/` in English, the bodies of tasks, the epic archives `docs/plan/` and the reports in Russian; `docs/` in English; README, CLAUDE.md, AGENTS.md, code, comments, schema descriptions, prompts and normative texts for authors in English; commit messages and a pull request's title and description in English and terse, for the session, never a copy of the report.
 11. A task larger than one review (≈ 30–60 minutes of reading): propose a split before starting.
 12. Before a new task, close the findings on the previous one, once SonarCloud, CodeQL and Scorecard run here (R30 spec); an allowed departure from rule 1. SonarCloud sees merged code: its verdict on the previous task is in [New Code](https://sonarcloud.io/summary/new_code?id=altnovatrail_app); CodeQL and Scorecard — the Security tab, `gh api 'repos/altnovatrail/app/code-scanning/alerts?state=open'`. Fix in code first; "false positive" is the last resort, with the reason in words; what a change cannot close stays open — shared reasons in R33 spec, own ones in the log, like R51 canvas-api. Never skip silently. Report these fixes in a separate paragraph: the author commits them apart from the task.
 
@@ -38,7 +38,7 @@ A task starts with «Выполни задачу T01 из RUN.md» in a new sess
 
 **Task body** (Russian): «Цель», «Сделать», «Как проверить», «Разделы»; as needed «Не делать», «Решить при планировании», «Мой шаг», «Стоимость», «Риски», «Ждёт»; from planning «Почему», «Решено автором (дата)», «Выяснилось при планировании»; when done «Сделано (дата)» (rule 9).
 
-**Citations.** Own sections — `architecture 2`, own decisions — `R03`; spec's sections and decisions — «architecture 3.5 spec», «R18 spec», its open questions — «Т-22», «П-7», «О-2»: the repository keeps no registers; other NovaTrail repositories' decisions — «R03 api»; MathTrail's — «R44 canvas-api», «R163 standalone», in a list «canvas-api: R44, R59». Each log numbers its own: «R19 spec» and `R19` of this log differ. A task — «T03», from another repository «T03 app»; one not here is in `run/TASKS.md` or an archive: `grep -n '^#### T03\.' RUN.md run/TASKS.md docs/plan/*.md`. Task numbers are global and never reused: take the one free when writing it down.
+**Citations** — RULES.md spec, Citations: a task's number stands only here, in `run/` and in `docs/plan/` (R171 spec). Own sections — `architecture 2`, own decisions — `R03`; spec's sections and decisions — «architecture 3.5 spec», «R18 spec», its open questions — «Т-22», «П-7», «О-2»: the repository keeps no registers; other NovaTrail repositories' decisions — «R03 api»; MathTrail's — «R44 canvas-api», «R163 standalone», in a list «canvas-api: R44, R59». Each log numbers its own: «R19 spec» and `R19` of this log differ. A task — «T03», from another repository «T03 app»; one not here is in `run/TASKS.md` or an archive: `grep -n '^#### T03\.' RUN.md run/TASKS.md docs/plan/*.md`. Task numbers are global and never reused: take the one free when writing it down.
 
 ## Epics
 
@@ -69,6 +69,16 @@ No current epic. The last done one is E5 «Интерфейс по эталон�
 | [x] | T107 | Комментарии кода по R160 spec: словари, правовые тексты, пакеты и тема | Claude | — | T98 |
 | [x] | T108 | Переход на тег `spec` v0.19.4 | Claude | — | — |
 | [x] | T110 | Переход на тег `spec` v0.19.11 | Claude | — | — |
+| [x] | T111 | Ссылки по правилу R171 spec | Claude | да | — |
+| [ ] | T112 | Ссылки по R171 spec: журнал, R01–R11 | Claude | — | T111 |
+| [ ] | T113 | Ссылки по R171 spec: журнал, R12–R28 | Claude | — | T111 |
+| [ ] | T114 | Ссылки по R171 spec: журнал, R29–R43 | Claude | — | T111 |
+| [ ] | T115 | Ссылки по R171 spec: журнал, R44–R57 | Claude | — | T111 |
+| [ ] | T116 | Ссылки по R171 spec: журнал, R58–R79 | Claude | — | T111 |
+| [ ] | T117 | Ссылки по R171 spec: архитектура, разделы 1–3.4 | Claude | — | T111 |
+| [ ] | T118 | Ссылки по R171 spec: архитектура, разделы 3.5–3.8 | Claude | — | T111 |
+| [ ] | T119 | Ссылки по R171 spec: архитектура, разделы 3.9, 3.10 и 4 | Claude | — | T111 |
+| [ ] | T120 | Ссылки по R171 spec: источники, замеры и ключ проверки | Claude | — | T112–T119 |
 
 «Зависит от» names only tasks of this plan. What a task waits for from other repositories is its body's «Ждёт»: it is taken once the neighbour has done that, and until then the queue goes on.
 

@@ -1,4 +1,4 @@
-// The screen `#/task` (R14): the attempt the learner has open, from memory. It shows the last
+// The screen `#/task`: the attempt the learner has open, from memory. It shows the last
 // attempt open until the learner leaves it — an attempt ended stays on the screen with its result,
 // while Home no longer offers to continue it — and a new one once "Try it again" or the
 // engine's next task has begun it. With no attempt open it goes home in place of itself, so that

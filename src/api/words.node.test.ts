@@ -119,7 +119,7 @@ describe("the words of what a call came to", () => {
     expect(outcomeText({ cause: Cause.QUOTA, nextFamilyDay: late }, WORDS.en, midnight)).toBe(
       `Today's tutor time is used up. It comes back on November 12 at ${time("en", late)}`,
     );
-    // A family day of up to 44 hours after a change of the offset: the date of its end (R56 api).
+    // A family day of up to 44 hours after a change of the offset: the date of its end.
     const after = new Date(2026, 10, 14, 6, 0);
     expect(outcomeText({ cause: Cause.QUOTA, nextFamilyDay: after }, WORDS.ru, evening)).toBe(
       `Время наставника на сегодня кончилось. Оно вернётся 14 ноября в ${time("ru", after)}`,
@@ -185,7 +185,7 @@ describe("the words of what a call came to", () => {
   });
 
   it("says when access comes back beside the tier's ceiling by the device's clock, and none beside the owner's limit", () => {
-    // The ceiling of the tier comes back at 00:00 UTC on the first day of the next month (R80 api).
+    // The ceiling of the tier comes back at 00:00 UTC on the first day of the next month.
     const returns = new Date(Date.UTC(2026, 11, 1));
     const tier = (at: Date | undefined) =>
       create(OwnKeyLimitSchema, {

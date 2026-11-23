@@ -1,4 +1,4 @@
-// The sky's stars of the mockup's `who` and `owner` (R61; R148 spec), over the whole window of
+// The sky's stars of the mockup's `who` and `owner`, over the whole window of
 // "Who is learning?" and of the owner's profile.
 
 /** The stars of the mockup's `who`, on its iPad of 1180 × 820: x, y, the diameter and the opacity. */

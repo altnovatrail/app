@@ -1,11 +1,11 @@
-// The geometry of a task frame on the photo of a page (R71): a rectangle in whole thousandths of
+// The geometry of a task frame on the photo of a page: a rectangle in whole thousandths of
 // the photo's width and height, as a crop box is written. A frame the learner
 // draws comes of a rectangle dragged from one corner of a task to the opposite — the rectangle the
 // learner sees is the frame — or of two taps, a corner and then the one opposite. Every frame, the
 // AI's too, moves when dragged by its middle and resizes by its corner. Each is at least the size
 // of a target on the screen and
 // never past the photo's edge. The sizes on the screen come in CSS px, by the scale the screen
-// draws the photo at. A frame on a photo turned upright turns with it (R162 spec). No DOM.
+// draws the photo at. A frame on a photo turned upright turns with it. No DOM.
 import type { Size } from "./photo.ts";
 
 /** A frame, in whole thousandths of the photo: `ymin` and `xmin` its top-left, the rest bottom-right. */
@@ -182,7 +182,7 @@ export function cropRect(
 
 /**
  * The frame on a photo of `from` px turned by `degrees` clockwise about its centre onto one of `to`
- * px (R162 spec): the upright rectangle that holds its corners turned, rounded out to whole
+ * px: the upright rectangle that holds its corners turned, rounded out to whole
  * thousandths and kept in the photo, which a turn by a multiple of 90° gives exactly; none when
  * nothing of it is left on the photo.
  */

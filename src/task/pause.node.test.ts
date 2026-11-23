@@ -1,4 +1,4 @@
-// The pause on the task screen (R05): one blink for a pause of 6 s, only while Check is open, again
+// The pause on the task screen: one blink for a pause of 6 s, only while Check is open, again
 // only after a new action, and none once the screen has gone.
 import { describe, expect, it } from "vitest";
 import { BLINK_MS, PAUSE_MS, Pause, type PauseTimer } from "./pause.ts";

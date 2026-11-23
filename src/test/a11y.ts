@@ -1,8 +1,8 @@
-// The checks of accessibility every screen's test runs in each engine (R11): axe-core by the rules
+// The checks of accessibility every screen's test runs in each engine: axe-core by the rules
 // of WCAG 2.2 A and AA, outside the canvas element, whose own CI checks it, but for app's own
 // buttons in its slot; each target at least 44 × 44 CSS px; and a page that does not scroll
 // sideways, with no text cut or spilling out of its box; and a button that shows no caption only
-// from the closed list, named by its caption (R60).
+// from the closed list, named by its caption.
 import axe from "axe-core";
 import { CAPTIONLESS, INSTEAD, type Instead } from "../app/IconButton.tsx";
 import { ICONS, VALUES } from "../app/icons.ts";
@@ -10,7 +10,7 @@ import type { Words } from "../i18n/words.ts";
 
 /**
  * Whether an element is app's to check: outside the canvas element, or app's own child of it in a
- * slot, as "Continue" in a worked example's row (R84 canvas).
+ * slot, as "Continue" in a worked example's row.
  */
 function ours(element: Element): boolean {
   const canvas = element.closest("novatrail-canvas");
@@ -54,7 +54,7 @@ export const TARGET_PX = 44;
 
 /**
  * Whether a target is a frame over the photo of a page: its place and size are those of the task it
- * frames, and the task is what it shows (2.5.5's exception Essential; R71).
+ * frames, and the task is what it shows (2.5.5's exception Essential).
  */
 function aFrame(target: Element): boolean {
   return target.matches("button.nt-page-frame");
@@ -97,7 +97,7 @@ export function overflows(root: Element = document.body): string[] {
     if (!ours(element) || element.clientWidth === 0) continue;
     if (getComputedStyle(element).clipPath === "inset(50%)") continue;
     // A card's drawing past its edge, clipped by its frame on purpose and hidden from assistive
-    // technology: no text in it to cut (R79).
+    // technology: no text in it to cut.
     if (element.classList.contains("nt-deco")) continue;
     if (element.scrollWidth > element.clientWidth + 1) {
       found.push(
@@ -109,7 +109,7 @@ export function overflows(root: Element = document.body): string[] {
 }
 
 /**
- * The buttons that show no text but are not of the closed list (R60), by their names: a button of
+ * The buttons that show no text but are not of the closed list, by their names: a button of
  * the list is an IconButton, named by its caption in the screen's words, and every other button
  * shows its caption, but for a frame over the photo of a page, which shows the task it frames.
  */

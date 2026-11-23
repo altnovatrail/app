@@ -1,11 +1,11 @@
-// The photo of a page on the device (R71): a frame of the camera's video, or a picture the learner
+// The photo of a page on the device: a frame of the camera's video, or a picture the learner
 // picked, drawn upright on a canvas and encoded anew as a JPEG of at most 4 MiB — the metadata of
 // its file, its place and its time among them, stay behind —, and the crops of the
 // tasks picked cut from that same photo as PNGs. The photo and its crops stay in the tab's memory.
 // A photo whose tasks were found on it turned upright is turned so too, and encoded by the same
-// rules (R162 spec).
+// rules.
 // A kept page's thumbnail, for "Your pages", is made from its photo in memory too, and never kept:
-// the device's records go into the profile's export as they are (R77; R135 spec).
+// the device's records go into the profile's export as they are.
 import { cropRect, type Frame } from "./frame.ts";
 import { MAX_PHOTO, QUALITY, tries, turnedSize } from "./photo.ts";
 
@@ -93,7 +93,7 @@ export async function photoOfFile(file: Blob): Promise<Photo> {
 }
 
 /**
- * The photo turned by `degrees` clockwise about its centre (R162 spec): onto the smallest upright
+ * The photo turned by `degrees` clockwise about its centre: onto the smallest upright
  * rectangle that holds it, its corners white, as the server turned it to find the tasks, then fitted
  * and encoded as any photo of a page. It is decoded before it comes back, so that the page takes it
  * in the place of the photo before with no moment of neither. One the browser cannot read, or too

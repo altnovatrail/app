@@ -1,21 +1,21 @@
 // The tests of the app: logic in Node, screens in Chromium, WebKit and Firefox, and the screens
 // once more in two modes of the browser's context — forced colours and reduced motion — each in a
-// project of its own, its mode there from the start, as canvas has it (R03, R17, R45). The three
+// project of its own, its mode there from the start, as canvas has it (R45). The three
 // engines come from the toolchain stage of .devcontainer/Dockerfile, which names them in
-// PLAYWRIGHT_BROWSERS_PATH (R79 spec). Each project has an instance per engine, named "<project>
+// PLAYWRIGHT_BROWSERS_PATH. Each project has an instance per engine, named "<project>
 // (<engine>)": ci-test runs Node and Chromium with the coverage, and ci-engines WebKit and Firefox
 // without it, since Vitest's v8 coverage works in Chromium only.
 import react from "@vitejs/plugin-react";
 import { playwright } from "@vitest/browser-playwright";
 import { defaultExclude, defineConfig } from "vitest/config";
 
-/** The files of the two modes of the browser's context, each in a project of its own (R17). */
+/** The files of the two modes of the browser's context, each in a project of its own. */
 const FORCED_COLORS = "src/a11y/forced-colors.browser.test.tsx";
 const REDUCED_MOTION = "src/a11y/reduced-motion.browser.test.tsx";
 
 type Engine = "chromium" | "webkit" | "firefox";
 
-/** Every engine the screens are tested in (R45). */
+/** Every engine the screens are tested in. */
 const ENGINES: Engine[] = ["chromium", "webkit", "firefox"];
 
 /**

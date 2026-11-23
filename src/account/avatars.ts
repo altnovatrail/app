@@ -1,4 +1,4 @@
-// The set of avatars of app (R61; R98 and R148 spec): a profile keeps the code of one, and no
+// The set of avatars of app: a profile keeps the code of one, and no
 // picture is uploaded. Each is a picture of Material Symbols Rounded, in outline, white on a
 // gradient of the mockup's. A profile with no avatar, or with a code this build does not know — one
 // a newer build gave —, shows the set's own, the first. No DOM.

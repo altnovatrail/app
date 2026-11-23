@@ -1,4 +1,4 @@
-// What the device asks api about the packages whose open views it keeps (R63 spec; R16):
+// What the device asks api about the packages whose open views it keeps:
 // CheckPackages when app starts and after a sign of a withdrawal — CAUSE_VERSION_NOT_GIVEN, an
 // answer 410, a lesson run ended or an attempt closed unchecked. Of a digest no longer given it
 // erases the open views, in the cache and in the profiles' databases, and the lessons on it; about

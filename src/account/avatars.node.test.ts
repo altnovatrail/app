@@ -1,4 +1,4 @@
-// The set of avatars (R61): each code once, of ASCII up to 64 characters as api keeps it, each with
+// The set of avatars: each code once, of ASCII up to 64 characters as api keeps it, each with
 // its own picture, and the set's own for a profile with no avatar or a code this build does not
 // know.
 import { describe, expect, it } from "vitest";

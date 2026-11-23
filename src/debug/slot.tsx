@@ -1,4 +1,4 @@
-// The debug button, where the screens of a task from paper put it (R72): in every build, for an
+// The debug button, where the screens of a task from paper put it: in every build, for an
 // account with api's debug right. The slot asks `GetDebug` itself and loads the window's code, a
 // chunk of its own, only once it answered; a refusal shows nothing.
 import { lazy, Suspense, useEffect, useSyncExternalStore } from "react";

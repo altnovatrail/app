@@ -1,4 +1,4 @@
-// The counts of a module's skills on its card (R62): by the function ./states of skill-map, the
+// The counts of a module's skills on its card: by the function ./states of skill-map, the
 // five states with a verdict and the two marks, a status the build does not know left out.
 import { GetSkillMapResponseSchema } from "@altnovatrail/contracts/novatrail/api/v1/progress_pb.js";
 import { create } from "@bufbuild/protobuf";

@@ -1,12 +1,11 @@
 // The test of the built page: `vite preview` serves build/ — ci-test builds it first — with app's
 // own plugin, and Chrome Headless Shell, WebKit and Firefox, from the image the toolchain stage
-// takes them from, open it, each in turn (R45). A violation of either layer of the CSP fails the
+// takes them from, open it, each in turn. A violation of either layer of the CSP fails the
 // test — but in WebKit the header's refusal of gapi's ping, which the site check expects there too
 // —, and so does any request before /deployment.json. The sign-in window goes under the header too,
 // with what Google would answer stubbed, and a request to a host but those of the sign-in fails it.
-// So do a module's license and its files from api (R32), and the skill map's element (R34). No file
-// of the build names the route to api's development token, which the local build's sign-in takes
-// (R44).
+// So do a module's license and its files from api, and the skill map's element. No file
+// of the build names the route to api's development token, which the local build's sign-in takes.
 import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -119,7 +118,7 @@ describe("the build", () => {
   });
 });
 
-/** The three engines the page is opened in, each in turn (R45). */
+/** The three engines the page is opened in, each in turn. */
 const ENGINES: readonly BrowserType[] = [chromium, webkit, firefox];
 
 describe.each(ENGINES.map((type) => [type.name(), type] as const))(
@@ -296,7 +295,7 @@ describe.each(ENGINES.map((type) => [type.name(), type] as const))(
       );
       // The sheet goes past the page, laid out by custom properties the element sets through the
       // CSSOM, which style-src leaves be: wider than the element, and scrolled across in a region
-      // of its own (R73 canvas).
+      // of its own.
       const across = sheet.getByRole("region", { name: "Sheet" });
       await across.waitFor();
       await expect

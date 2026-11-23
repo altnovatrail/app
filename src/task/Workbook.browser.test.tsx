@@ -1,4 +1,4 @@
-// The task screen of a workbook in the browser, with the canvas element itself (R21, R54): the
+// The task screen of a workbook in the browser, with the canvas element itself: the
 // steps of school maths of grade 3, Check closed until each box holds an answer, SubmitWork with
 // the crop of each filled box and its place and nothing of the draft, the verdict of each line and
 // of each of its boxes with what was read, the summary by lines and the tutor's mark on a box —
@@ -33,8 +33,8 @@ import { memoryDevice } from "../test/device.ts";
 import { inLanguage } from "../test/language.tsx";
 import { Task } from "./Task.tsx";
 
-// The tablet's layout, where the row stands beside the open panel: on a phone its sheet hides the row
-// (R67), which the tests of the sheet show.
+// The tablet's layout, where the row stands beside the open panel: on a phone its sheet hides the row,
+// which the tests of the sheet show.
 beforeEach(async () => {
   await page.viewport(1194, 834);
 });
@@ -247,7 +247,7 @@ function boxesOf(request: SubmitWorkRequest | undefined) {
 /** Checks the work the history holds, once Check is open, and gives what went to api. */
 async function checked(history: readonly HistoryEvent[]) {
   const shown = await renderWorkbook({ history });
-  // On my own the rung's words, and their marks, come only while the tutor's panel is open (R67).
+  // On my own the rung's words, and their marks, come only while the tutor's panel is open.
   await userEvent.click(await screen.findByRole("button", { name: "Tutor" }));
   await vi.waitFor(() => expect(check()).toHaveAttribute("aria-disabled", "false"));
   await userEvent.click(check());
@@ -285,7 +285,7 @@ describe("the task screen of a workbook", () => {
     if (lines === undefined) throw new Error("no lines below the canvas");
     const [first, , , , fifth] = within(lines).getAllByRole("listitem", { name: "" });
     expect(first).toHaveTextContent("Line 1 ✓ CorrectRead: 8");
-    // A line of two boxes gives each box's verdict and what was read in it (R56 spec; R54).
+    // A line of two boxes gives each box's verdict and what was read in it.
     expect(fifth?.textContent?.startsWith("Line 5 • Not yet")).toBe(true);
     const boxes = within(fifth as HTMLElement).getAllByRole("listitem");
     expect(boxes.map((box) => box.textContent)).toEqual([
@@ -314,7 +314,7 @@ describe("the task screen of a workbook", () => {
     const done = panel().getByRole("button", { name: "Step done" });
     await vi.waitFor(() => expect(canvas().filled?.[4]).toEqual([true, false]));
     expect(done).toHaveAttribute("aria-disabled", "true");
-    // The step names the boxes, as Check does (R54).
+    // The step names the boxes, as Check does.
     expect(done).toHaveAccessibleDescription("Write an answer in each box");
     cleanup();
     const { asked } = await renderWorkbook({ history: IN_BOXES, mode: Mode.BY_STEPS });

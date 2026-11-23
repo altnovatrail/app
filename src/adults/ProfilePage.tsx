@@ -1,12 +1,12 @@
-// A profile's page in the section for adults (R29; R05, R07 and R10): what an adult sets of the
-// profile — its avatar (R68), its pseudonym, its default mode, the language of its learner's
+// A profile's page in the section for adults: what an adult sets of the
+// profile — its avatar, its pseudonym, its default mode, the language of its learner's
 // screens, its voicing and its hint mode — in one form, saved by its button with `UpdateProfile` and only the
 // fields that changed. The choices are radio buttons, and the avatar a choice in a pop-over, that
 // change nothing until Save (WCAG 3.2.2). What another tab changed meanwhile shows in the fields
 // not edited here; what is edited here stays until it is saved — an edit made while the request was
 // on its way among them. A failure that is the session's own goes to it as well (`onFailed`). Below
-// the form, the storage of the profile's works on the server, a consent of its own (R30), the way
-// to the profile's modules and their licenses (R32) and to its progress (R35), and the share of
+// the form, the storage of the profile's works on the server, a consent of its own, the way
+// to the profile's modules and their licenses and to its progress, and the share of
 // today's tutor time the profile and the account have used (the contract's quota).
 import {
   HintMode,

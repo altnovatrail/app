@@ -1,4 +1,4 @@
-// A button that shows its icon alone (R60): only the buttons of the closed list of R90 spec, each
+// A button that shows its icon alone: only the buttons of spec's closed list, each
 // with its caption as its accessible name and a tooltip of the same words (Tooltip.tsx).
 import { type ComponentProps, type FocusEvent, type Ref, useCallback } from "react";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
@@ -8,9 +8,9 @@ import type { IconValue } from "./icons.ts";
 import { useTooltip } from "./Tooltip.tsx";
 
 /**
- * The closed list (R90 spec): each button that shows no caption, its icon — none for the grabber,
+ * The closed list: each button that shows no caption, its icon — none for the grabber,
  * which draws a bar — and the caption that names it. A button joins the list only by a change of
- * R90 spec, and then of R60.
+ * spec's list, and then of this one.
  */
 export const CAPTIONLESS = {
   back: { icon: "back", word: "icon.back" },
@@ -24,19 +24,19 @@ export const CAPTIONLESS = {
   // The grabber of the tutor's sheet on a phone, 88 × 44, named by what it does next.
   "full-screen": { icon: undefined, word: "icon.full-screen" },
   "half-screen": { icon: undefined, word: "icon.half-screen" },
-  // The buttons of a task from paper (R71): the camera's shutter and its way to the photos, and the
+  // The buttons of a task from paper: the camera's shutter and its way to the photos, and the
   // cross and the corner of a frame drawn by hand.
   "take-photo": { icon: "camera", word: "icon.take-photo" },
   "choose-photos": { icon: "photos", word: "icon.choose-photos" },
   "remove-frame": { icon: "close", word: "icon.remove-frame" },
   "resize-frame": { icon: "resize", word: "icon.resize-frame" },
-  // At the top right of Home, Subjects and the skill map (R79): the notifications, a bell.
+  // At the top right of Home, Subjects and the skill map: the notifications, a bell.
   notifications: { icon: "notifications", word: "bell.title" },
-  // Under the field of a request on the page to pick from (R74): the microphone, off until voice
+  // Under the field of a request on the page to pick from: the microphone, off until voice
   // comes, and Send.
   "ask-voice": { icon: "microphone", word: "paper.ask-voice" },
   "ask-send": { icon: "send", word: "paper.ask-send" },
-  // On a module's card on Home (R79): its skill map, described by the module's title.
+  // On a module's card on Home: its skill map, described by the module's title.
   "skill-map": { icon: "skill-map", word: "skillmap.title" },
 } as const satisfies Record<string, { icon: IconValue | undefined; word: Key }>;
 
@@ -45,10 +45,10 @@ export type Captionless = keyof typeof CAPTIONLESS;
 
 /**
  * The captions a button of the list takes in place of its own, each for its button alone, where they
- * name where it goes: back in a lesson is "Leave the lesson", as the mockup's (R64), back from a
- * task "Back to Home", the one way home of R57 (R65), the section for adults' back and
- * close "Back to the section" and "Close the section" (R68), and a legal page's back "Back to the
- * list" (R69).
+ * name where it goes: back in a lesson is "Leave the lesson", as the mockup's, back from a
+ * task "Back to Home", the one way home, the section for adults' back and
+ * close "Back to the section" and "Close the section", and a legal page's back "Back to the
+ * list".
  */
 export const INSTEAD = {
   "lesson.leave": "back",

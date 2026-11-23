@@ -1,19 +1,19 @@
-// The section for adults (R29): its pages in the hash, `#/adults` the first and `#/adults/<page>`
-// the others, in the language of the device (R10), each below the top bar of SectionScreen, which
+// The section for adults: its pages in the hash, `#/adults` the first and `#/adults/<page>`
+// the others, in the language of the device, each below the top bar of SectionScreen, which
 // leads back to its first page and closes the section, and with its groups as cards, by the
-// mockup's rules of style (R68). The first page holds the profiles of the account, each a page of
+// mockup's rules of style. The first page holds the profiles of the account, each a page of
 // its own, and the buttons of the device's language. The profile chosen in the section lives in
-// memory, as the hash names no profile (R14): a profile's page with none chosen — after a reload —
+// memory, as the hash names no profile: a profile's page with none chosen — after a reload —
 // and a page this build does not know go to the first page in place of themselves. The section
 // opens with no PIN: the account holds the owner's profile of the category `adult` alone. A page of
 // the account or the device — This device, `#/adults/device`, and Own AI key, `#/adults/own-key`
-// (R47) — takes a part of the hash and a button on the first page; a page of one profile — its
+// — takes a part of the hash and a button on the first page; a page of one profile — its
 // modules, `#/adults/modules`, and its progress, `#/adults/progress` with the map of each module
-// below it, `#/adults/progress/<module>` (R35) — a part of the hash and a button on the profile's
+// below it, `#/adults/progress/<module>` — a part of the hash and a button on the profile's
 // page. The license of a module's version, `#/adults/license/<digest>`, is a page of the section by
-// the digest in the hash, opened from the profile's modules (R32). The legal pages are not the
-// section's: they show before signing in too, and the first page leads to them (R31), and to the
-// page of a text's next version, of which it tells (R46).
+// the digest in the hash, opened from the profile's modules. The legal pages are not the
+// section's: they show before signing in too, and the first page leads to them, and to the
+// page of a text's next version, of which it tells.
 import type { Profile } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import { type ReactNode, useEffect, useId, useMemo, useState } from "react";
 import { Avatar } from "../account/Avatar.tsx";
@@ -37,7 +37,7 @@ import { SectionPlaceProvider, SectionScreen } from "./SectionScreen.tsx";
 
 /** A profile's page: the one chosen in the section. */
 export const PROFILE_PAGE: Route = { screen: ADULTS.screen, parts: ["profile"] };
-/** The page This device (R04). */
+/** The page This device. */
 export const DEVICE_PAGE: Route = { screen: ADULTS.screen, parts: ["device"] };
 
 /**
@@ -85,7 +85,7 @@ function Group({
 
 /**
  * The first page: the account's profiles, the owner's first, This device, its language, the way to
- * the legal pages, and the next versions of the texts, before the day they apply from (R46).
+ * the legal pages, and the next versions of the texts, before the day they apply from.
  */
 export function SectionHome({
   profiles,

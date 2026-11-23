@@ -1,4 +1,4 @@
-// A module's card on Home (R79): its kind, how many are mastered, its map and its Continue described
+// A module's card on Home: its kind, how many are mastered, its map and its Continue described
 // by its title, a square for each skill; under an adaptive module the tutor's strip with the skills
 // due, under a chain the place, the share mastered and the next, past the last no next; none under a
 // module of criteria alone, and no buttons for a module with no current version.

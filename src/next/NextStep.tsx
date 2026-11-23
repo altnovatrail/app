@@ -1,12 +1,12 @@
-// The way to what the engine chose (R24; LearningService in the contract): a lesson opens in the
+// The way to what the engine chose (LearningService in the contract): a lesson opens in the
 // player, a task begins on the task screen, and nothing is a line of the screen, with why when the
 // AI that checks the tasks is closed to the learner — useEngine goes there. The choice an answer
 // gave — the end of an attempt outside a lesson, or of a lesson run — is a press away; with none,
 // the press asks `ChooseNext` with no skill, which gives the lead back to the engine from a skill
-// chosen on the map (R107 spec). Both `ChooseNext` and the beginning of a task close the attempt
+// chosen on the map. Both `ChooseNext` and the beginning of a task close the attempt
 // open outside a lesson for good: while one is open, a question says so first. With no choice in
 // hand and an attempt open the button is "Something else". The reason of the choice is never shown
-// here (R100 spec).
+// here.
 import type { EngineChoice } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { type Failure, parseFailure } from "../api/failure.ts";

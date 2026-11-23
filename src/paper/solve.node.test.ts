@@ -1,6 +1,6 @@
-// The tasks begun on a page on the screen of solving (R71): what Start begins once more, the list in
+// The tasks begun on a page on the screen of solving: what Start begins once more, the list in
 // the order of the page and its tasks left out, ‹ and ›, the work each keeps, what a Check came to,
-// the buttons of the tutor's panel (R75), and the tutor's wavy line (R82 spec).
+// the buttons of the tutor's panel, and the tutor's wavy line.
 import {
   type ItemVerdict,
   ItemVerdictSchema,
@@ -204,7 +204,7 @@ describe("what a Check of a task from paper came to", () => {
     expect(paperVerdictOf(items("unreadable", "unchecked"), undefined, false).kind).toBe(
       "unreadable",
     );
-    // The repeat of the Check that solved it: api erased its verdicts with the close (R101 api).
+    // The repeat of the Check that solved it: api erased its verdicts with the close.
     expect(paperVerdictOf([], undefined, true)).toEqual({
       kind: "correct",
       read: undefined,
@@ -351,7 +351,7 @@ describe("the buttons of the tutor's panel", () => {
     expect(tutorActs(solved)).toEqual({ hint: false, next: true });
     // Solved in this tab, it stays so once its attempt is over.
     expect(tutorActs({ ...solved, over: true })).toEqual({ hint: false, next: true });
-    // A task with no key keeps its hints (R162 spec).
+    // A task with no key keeps its hints.
     expect(tutorActs({ verdict: { kind: "nokey" } })).toEqual({ hint: true, next: true });
   });
 

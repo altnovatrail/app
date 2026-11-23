@@ -1,11 +1,11 @@
-// The debug button and its window (R72), as the mockup's states `pick-debug` and `solve-debug-log`:
+// The debug button and its window, as the mockup's states `pick-debug` and `solve-debug-log`:
 // a round button of glass with a graphite disc and an orange bug, at the tutor's place on the page
 // picked and above it on the screen of solving; its window at the right, 400 wide, and on a phone a
 // sheet from the bottom with a grabber. Two tabs: Models — the first model of every call, its
 // effort and thinking, and a second reader of the work — and Log, the calls by action, each opening
 // to its figures and what the model returned, with the session's total. The slot loads it only once
 // api's `GetDebug` answered, for an account with the debug right. Its words are English alone: it
-// is the developer's, never a learner's (R72).
+// is the developer's, never a learner's.
 import "./debug.css";
 import type {
   DebugAction,
@@ -475,7 +475,7 @@ export default function DebugButton({ above = false }: { readonly above?: boolea
   const count = modelCalls(actions);
   const choose_ = (first: Pick | undefined, second: Pick, secondOn: boolean) =>
     void choose(api.debug, first, second, secondOn);
-  // A call of a task from paper has its models in the order of its attempts (R73).
+  // A call of a task from paper has its models in the order of its attempts.
   const admitted = [...new Set(debug.admitted.map((a) => a.kind))].map((kind) => ({
     call: callName(kind),
     model: debug.admitted

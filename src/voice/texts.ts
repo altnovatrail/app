@@ -1,5 +1,5 @@
-// What a speaker button reads (R07): the open texts of a module that the learner reads anyway (R05
-// spec), each a phrase in the module's explanation language — a task's statement with its items,
+// What a speaker button reads: the open texts of a module that the learner reads anyway, each
+// a phrase in the module's explanation language — a task's statement with its items,
 // its workbook's lines and the options of its `choice` slots; what a hint gives; the step shown,
 // with its chips and the cards of its techniques; a lesson's explanation; and a worked example's
 // statement, lines and the parts of its demo that are open. Pictures are not read, nor their `alt`:
@@ -7,7 +7,7 @@
 import type * as open from "@altnovatrail/spec/formatv0/open";
 import { BOX } from "./spoken.ts";
 
-/** A text spoken in a language of its own: the voice is the language's (R07). */
+/** A text spoken in a language of its own: the voice is the language's. */
 export interface Phrase {
   readonly text: string;
   /** A tag of BCP 47; none when the module does not say, and then nothing speaks it. */

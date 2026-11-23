@@ -1,10 +1,10 @@
-// The sign-in screen (R17, R19, R61): the mockup's `signin`, in the frame of the way in, in the
+// The sign-in screen: the mockup's `signin`, in the frame of the way in, in the
 // language of the device, whose pill is in its corner, and Google's window on a press, the button
-// Google's own — its light theme and its "G", as Google's rules ask (R12 spec) — saying so while
+// Google's own — its light theme and its "G", as Google's rules ask — saying so while
 // the window is open. What came of the last window is a line below its button; a project that does
 // not take this copy has the line for whoever deployed it. Below, the line that accounts are for
 // grown-ups alone, and at the card's foot the way to the legal texts, by a button that holds the
-// word "privacy" (R31): the privacy policy's sheet over the screen, as the mockup's, whose foot leads
+// word "privacy": the privacy policy's sheet over the screen, as the mockup's, whose foot leads
 // to its page and from there to the rest.
 import { useState } from "react";
 import { Spark } from "../app/Brand.tsx";

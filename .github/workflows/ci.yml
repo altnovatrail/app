@@ -1,4 +1,4 @@
-# NovaTrail's shared checks (R03 .github), pinned to a release of .github by SHA with its version
+# NovaTrail's shared checks, pinned to a release of .github by SHA with its version
 # beside it; Dependabot moves both. The repository's own jobs go beside them.
 name: CI
 
@@ -31,12 +31,12 @@ jobs:
     uses: altnovatrail/.github/.github/workflows/documents.yml@1704f782e76cee50ea5392cc0ea0d4b76c4b3672 # v0.1.32
 
   # The app's TypeScript code, by its own ci- recipes, and the coverage of its tests, which the
-  # shared workflow sends to Codecov (R19 .github). lint, vuln and licenses run in the stage
-  # toolchain-core, test and engines in toolchain, with the browsers (R47 .github; R51).
+  # shared workflow sends to Codecov. lint, vuln and licenses run in the stage
+  # toolchain-core, test and engines in toolchain, with the browsers.
   # id-token: write is for its coverage job alone, which asks for an OIDC token: a called workflow
   # can only lower what this job gives it. With engines, the tests in WebKit and Firefox are the
   # check "TypeScript / engines", by the recipe ci-engines, beside "TypeScript / test" in Node and
-  # Chromium (R45).
+  # Chromium.
   typescript:
     name: TypeScript
     permissions:
@@ -46,10 +46,10 @@ jobs:
     with:
       engines: true
 
-  # The comparison with the interface mockup (R58): `just mockup-compare` in the toolchain stage,
+  # The comparison with the interface mockup: `just mockup-compare` in the toolchain stage,
   # with the browsers. The mockup is in the spec submodule, which no job of typescript.yml but the
-  # licenses' checks out, so the job is the repository's own, with the image of the stage by
-  # .github's action toolchain (R49 .github) — from the cache typescript.yml fills, or built — and
+  # licenses' checks out, so the job is the repository's own, with the image of the stage by.
+  # github's action toolchain — from the cache typescript.yml fills, or built — and
   # without its Go caches, which nothing here has. Its snapshots and reports are an artifact of the
   # run, kept a week, whatever its end.
   mockup:

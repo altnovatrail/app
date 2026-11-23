@@ -1,4 +1,4 @@
-// The legend of a module's skills (R62; the mockup's `home` and `home-legend`; R148 spec): each
+// The legend of a module's skills (the mockup's `home` and `home-legend`): each
 // state its colour, its icon and its word, and each mark its icon and its word, the words and icons
 // the skill map shows too: below the modules from 600 CSS px, and on a phone behind a button, as a
 // sheet.

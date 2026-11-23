@@ -269,7 +269,7 @@ describe("an attempt on the screen", () => {
         place: { case: "answerSlot", value: { item: 3, slot: 2 } },
       }),
     ];
-    // On a sheet, a box of the crop alone; on a workbook, a cell alone (R53 spec).
+    // On a sheet, a box of the crop alone; on a workbook, a cell alone.
     expect(marksOf(given, submission, name, false)).toEqual({
       submission,
       marks: [{ kind: "frame", at: { box: [10, 20, 300, 400] }, name: "1/1" }],

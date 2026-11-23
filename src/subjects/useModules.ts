@@ -1,4 +1,4 @@
-// The modules of a profile as Home and Subjects show them (R99 spec): the ones connected, each a
+// The modules of a profile as Home and Subjects show them: the ones connected, each a
 // card — on Home with the states of its skills —, and — on Subjects — the catalog of the server, read together
 // and each module's manifest once. Connecting and disconnecting are a press away; api's answer is
 // the list of connected modules, the catalog stays, and the focus goes with the card to its new

@@ -1,5 +1,5 @@
 // The language of the screen and its words, for every screen below Boot, and what changes the
-// device's language (R17).
+// device's language.
 import { createContext, useContext } from "react";
 import type { Language } from "./language.ts";
 import type { Words } from "./words.ts";

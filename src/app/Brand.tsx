@@ -1,4 +1,4 @@
-// The name of the app with its mark, a four-pointed spark (R61): in the sign-in's sky, above the
+// The name of the app with its mark, a four-pointed spark: in the sign-in's sky, above the
 // owner's profile and "Who is learning?".
 // The mark is drawn, hidden from assistive technology; the name is text.
 import { APP_NAME } from "./Screen.tsx";

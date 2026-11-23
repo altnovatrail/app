@@ -1,4 +1,4 @@
-// The shape of a dictionary (R17): the English one is the source, and every other is checked
+// The shape of a dictionary: the English one is the source, and every other is checked
 // against it by tsc — every key and no other, a string where the source has a string, with the same
 // places, and the forms of its own language where the source has forms of a number. No DOM.
 import type { Language } from "./language.ts";

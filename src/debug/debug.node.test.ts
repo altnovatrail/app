@@ -1,4 +1,4 @@
-// The debug mode (R72): what the window writes of the models and the calls, and the
+// The debug mode: what the window writes of the models and the calls, and the
 // tab's memory of them — the choice as api holds it, the calls taken after each request of a task
 // from paper, and the session's sum.
 import { Cause } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";

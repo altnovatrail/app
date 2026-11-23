@@ -1,4 +1,4 @@
-// The segments of a lesson (R23 and R64): a pop-over behind the line under the lesson's title in
+// The segments of a lesson: a pop-over behind the line under the lesson's title in
 // the top bar, as the mockup's `lesson-segments` — the lesson's title and its module, the list of
 // segments by place, and "Leave the lesson". Each row is a button with its number — a tick in its
 // place for a segment passed —, its kind, and how far it is, or why it does not open, its words its

@@ -1,4 +1,4 @@
-// The languages of the screens (R10): the device's, for the screens no learner is on yet — the
+// The languages of the screens: the device's, for the screens no learner is on yet — the
 // failure screens, sign-in and the screens before a learner — which is the choice an adult made on
 // this device, else the first tag of navigator.languages that RFC 4647's "Lookup" finds among the
 // build's languages, else English; and the learner's, the field of the profile, else the device's.
@@ -37,7 +37,7 @@ export function deviceLanguage(languages: readonly string[]): Language {
 /**
  * The language of a learner's screens: the field of the profile as the build finds it — a tag it
  * does not know, written by a newer build or another copy, cut from the right — else the device's.
- * The field is never written back (R10).
+ * The field is never written back.
  */
 export function learnerLanguage(field: string | undefined, device: Language): Language {
   return (field === undefined ? undefined : lookup(field)) ?? device;

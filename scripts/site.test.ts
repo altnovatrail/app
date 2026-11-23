@@ -1,4 +1,4 @@
-// The test of the site check (scripts/site.ts; R42): each rule on answers made up here, and the
+// The test of the site check (scripts/site.ts): each rule on answers made up here, and the
 // whole check, with no network, against a server of the test's own that serves the archive of
 // build/ — ci-test builds it first — with the headers infra's rollout sets, and Google's answers as
 // stand-ins, as the built page test has them.
@@ -277,7 +277,7 @@ describe("the whole check", () => {
 
   beforeAll(async () => {
     writeFileSync(archivePath, archive);
-    // As infra's rollout serves the build (R06 infra): outside /assets/ the CSP header and
+    // As infra's rollout serves the build: outside /assets/ the CSP header and
     // no-cache, under it immutable; deployment.json the rollout's own; nosniff on all.
     server = createServer((request, response) => {
       const path = new URL(request.url ?? "/", ORIGIN).pathname;

@@ -1,17 +1,17 @@
-// Home (R99 spec; R62, R79): the learner's home, in the frame of the row of places. Under
+// Home: the learner's home, in the frame of the row of places. Under
 // its heading, "Home" — the pseudonym is the profile's menu's —, the learner begins their work:
 // what comes next and the tutor time on a card at the top — an attempt open outside a lesson a
-// press away (R20), else the engine's way, "What's next" (R24): no "Something else" beside the
+// press away, else the engine's way, "What's next": no "Something else" beside the
 // attempt, which it would close; a module's Continue or its map goes elsewhere —,
 // with how much of today's tutor time the profile has used, or, once it is used up, when it comes
-// back (the contract's quota; R37); "A task from my paper" beside it, which opens the camera of a
-// new page (R71), and its pages (R77); each lesson run open, by the lesson's title as this device
-// keeps it, or else its module's name (R23); and the modules connected, each a card with its title
+// back (the contract's quota); "A task from my paper" beside it, which opens the camera of a
+// new page, and its pages; each lesson run open, by the lesson's title as this device
+// keeps it, or else its module's name; and the modules connected, each a card with its title
 // in its own explanation language, the states of its skills counted by the rule of skill-map's map,
-// the mark "in order" of a chain (R06), and the way to its map (R34). The catalog, connecting and
+// the mark "in order" of a chain, and the way to its map. The catalog, connecting and
 // the licenses are Subjects' (SubjectsPage.tsx), which "All subjects" opens. The legend of the
 // marks stands below the cards, on a phone behind a button; that the tutor is an AI is Help's and
-// the tutor's panel's of the top right (Shell.tsx). It is drawn as the mockup's `home` (R148 spec).
+// the tutor's panel's of the top right (Shell.tsx). It is drawn as the mockup's `home`.
 import type { QuotaShare } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 // Whose action a request is; the cards have actions of their own.
 import { Action as Actor } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
@@ -105,7 +105,7 @@ export interface HomeScreenProps {
    * the task open is not its own: the engine's task of that skill on the task screen.
    */
   readonly onPractise?: (skill: string, moduleId: string) => void;
-  /** The share is on its way: its line is a shape meanwhile (R168 spec). */
+  /** The share is on its way: its line is a shape meanwhile. */
   readonly quotaLoading?: boolean;
   /** "Your pages", the history of pages from paper, beside "Open camera". */
   readonly pages?: ReactNode;
@@ -235,8 +235,8 @@ export function HomeScreen({
             <div className="nt-next-step">{next}</div>
           </div>
         </section>
-        {/* A new page each time: the camera, whose screen says to keep names out (R71); and
-            beside it the pages of the history (R77). A sheet with a task marked is drawn at the
+        {/* A new page each time: the camera, whose screen says to keep names out; and
+            beside it the pages of the history. A sheet with a task marked is drawn at the
             right from 600, as the mockup's. */}
         <section aria-labelledby={paperId} className="nt-paper">
           <PaperSheet />
@@ -289,7 +289,7 @@ export function HomeScreen({
                 card={card}
                 onContinue={() => {
                   // The lesson begun of the module, else its task open, else a task of its skill
-                  // to work on (R107 spec), else its map, where a skill is chosen.
+                  // to work on, else its map, where a skill is chosen.
                   const run = runs.find((each) => each.moduleId === card.moduleId);
                   if (run !== undefined) onLesson?.(run.lessonRunId);
                   else if (
@@ -523,7 +523,7 @@ export function MySubjects({
   }, [api, views, profileId, open]);
 
   // The share of the quota, by the learner's action: the profile's alone. It holds nothing back:
-  // a share that did not come is no line, nor is one from an api that has none yet (R27), and the
+  // a share that did not come is no line, nor is one from an api that has none yet, and the
   // lists stand as they are. A child's profile gets the same: never the account's.
   const readShare = useCallback((of: Api) => readQuota(of, profileId, Actor.LEARNING), [profileId]);
   const share = useRequest(readShare);

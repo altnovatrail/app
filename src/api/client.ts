@@ -1,8 +1,8 @@
-// The one client of api the screens call (R18): connect-es over Connect, the wire binary protobuf,
+// The one client of api the screens call: connect-es over Connect, the wire binary protobuf,
 // each call with api's own limit of 30 s, behind the interceptors of the contract's rules. The four
 // open views of a package and the legal texts go by a transport of their own, Connect GET with no
 // token, no deadline and no header, so that a request is simple, needs no preflight and an HTTP
-// cache may keep its answer (R18, R27). A call that does not answer throws an ApiError that says
+// cache may keep its answer. A call that does not answer throws an ApiError that says
 // what it came to. No DOM beyond fetch.
 import { AccountService } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import { AttemptService } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
@@ -28,7 +28,7 @@ import { ApiError, parseFailure } from "./failure.ts";
 import { type ApiEvents, effects, repeat, signIn } from "./interceptors.ts";
 import type { Tokens } from "./tokens.ts";
 
-/** api's own limit of a request (R33 api): no call of app waits longer. */
+/** api's own limit of a request: no call of app waits longer. */
 export const TIMEOUT_MS = 30_000;
 
 export interface ApiOptions {
@@ -52,13 +52,13 @@ export interface Api {
   /** The four open views, by Connect GET with no token: `GetManifest` and the others. */
   readonly views: Client<typeof PackageService>;
   readonly progress: Client<typeof ProgressService>;
-  /** A task from paper: `FindTasks` and `BeginPaperAttempts` (R71). */
+  /** A task from paper: `FindTasks` and `BeginPaperAttempts`. */
   readonly paper: Client<typeof PaperService>;
   /** `GetLegalTexts`, by Connect GET with no token, as the open views, but past the HTTP cache. */
   readonly legal: Client<typeof LegalService>;
-  /** The works kept on the server: `PutWork` (R30). */
+  /** The works kept on the server: `PutWork`. */
   readonly work: Client<typeof WorkService>;
-  /** The debug mode, which answers an account with api's debug right alone (R72). */
+  /** The debug mode, which answers an account with api's debug right alone. */
   readonly debug: Client<typeof DebugService>;
 }
 
@@ -129,7 +129,7 @@ export function createApi(options: ApiOptions): Api {
       interceptors: open,
     });
   // The legal texts the same way, but past the HTTP cache: a consent names the version shown, and
-  // a version that came out of a cache after a newer came into force api refuses (R27).
+  // a version that came out of a cache after a newer came into force api refuses.
   const legalTransport =
     options.transport?.(open, "GET") ??
     createConnectTransport({

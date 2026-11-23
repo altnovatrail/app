@@ -1,15 +1,15 @@
-// The skill map, the learner's second way in beside Home (R34), in the language of the learner's
+// The skill map, the learner's second way in beside Home, in the language of the learner's
 // screens. `#/skill-map/<module>` is the map of a module's current version, the learner's view of
 // skill-map's element, by `GetSkillMap` and the open views of its graph and manifest. Practise on
 // the map asks `ChooseNext` with the skill chosen, and goes to what the engine gives; the skill
 // holds while the learner works, until they ask for something else — `ChooseNext` without a skill,
-// "What's next" on Home (R107 spec). Choosing closes the attempt open outside a lesson for good:
+// "What's next" on Home. Choosing closes the attempt open outside a lesson for good:
 // while one is open, a question says so first. Beside an anchor skill whose holding is unknown, the
 // modules of the catalog that teach it are offered with Connect, `ConnectModule`, above the map, as
 // the element shows no `teaching_modules`; once one is connected, the map's state is read again in
 // place. Above the map, "The level was set by an adult" with its day, when an adult set the
-// module's level (R157 spec; R56): every learner sees it. Each screen of the map is the mockup's
-// `map` (R148 spec; R79), in the frame of the row of places, a place of Subjects: "Subjects" back
+// module's level: every learner sees it. Each screen of the map is the mockup's
+// `map`, in the frame of the row of places, a place of Subjects: "Subjects" back
 // above the heading, the module chosen beside it, which opens the modules connected to choose
 // another, and below them a white frame, which scrolls inside, with the map in it. `#/skill-map`
 // alone goes to Subjects in place of itself, whose cards lead to each map.

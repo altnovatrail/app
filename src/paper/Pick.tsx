@@ -1,4 +1,4 @@
-// The page photographed, its tasks to pick (R71), as the mockup's pick screen: the photo, each
+// The page photographed, its tasks to pick, as the mockup's pick screen: the photo, each
 // task's frame over it a button that is picked or left out, every one picked at first, and its
 // cross removes it; a task the AI missed the learner frames by hand, by a rectangle dragged from one
 // corner of it to the opposite with a finger or a pen, which follows the pointer and looks as the
@@ -12,7 +12,7 @@
 // most tasks at once at its head, in a ring, once the page holds as many or more are picked.
 // Drawing a frame takes a pointer: a learner on the keyboard picks among the AI's frames alone.
 // The tutor's open panel lies over the page, as the debug panel does, and moves none of it; on a
-// phone its sheet hides the bar (R74).
+// phone its sheet hides the bar.
 import { type CSSProperties, type PointerEvent, type ReactNode, useRef, useState } from "react";
 import { Icon } from "../app/Icon.tsx";
 import { IconButton } from "../app/IconButton.tsx";

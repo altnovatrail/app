@@ -1,4 +1,4 @@
-// What a request carries in its message, by the contract's rules (R18): the idempotency key of an
+// What a request carries in its message, by the contract's rules: the idempotency key of an
 // action that must not be done twice, and, with a request on platform AI alone, the offset of the
 // device's clock from UTC for the family day of the quota; with the learner's own key, the key and
 // not the offset. No DOM.

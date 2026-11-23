@@ -1,5 +1,5 @@
-// The comparison of app's screens with the interface mockup of spec's draft/mockup/ (R58; R146 and
-// R148 spec): the mockup's own server and page, a state of it opened in a browser, and what is
+// The comparison of app's screens with the interface mockup of spec's draft/mockup/: the
+// mockup's own server and page, a state of it opened in a browser, and what is
 // measured of each region on either side — its box and its computed style — and compared here, in
 // Node. A state of the mockup is also held across the three engines: each reaches data-ready="true"
 // with no error, and the shapes it draws agree. Nothing here reads spec/ by itself: the folder of
@@ -22,13 +22,13 @@ import {
 } from "../mockup/regions.ts";
 
 /**
- * The thresholds of a difference (R58): a box within 4 CSS px on either side, a colour within 2 of
+ * The thresholds of a difference: a box within 4 CSS px on either side, a colour within 2 of
  * 255 in each channel, a radius and a font size within half a pixel, a weight equal; across engines
  * the mockup's boxes within 2 CSS px, read to a tenth of a pixel, and its styles equal.
  */
 export const THRESHOLDS = { box: 4, colour: 2, length: 0.5, engines: 2 } as const;
 
-/** The fontconfig file the browsers of the comparison draw by: system-ui is FreeSans (R58). */
+/** The fontconfig file the browsers of the comparison draw by: system-ui is FreeSans. */
 export const FONTS = fileURLToPath(new URL("../mockup/fonts.conf", import.meta.url));
 
 /** Where a run writes its snapshots and reports: an artifact of the run, never committed. */

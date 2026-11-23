@@ -1,5 +1,5 @@
 // The history of writing and a submission's context, kept in the browser's IndexedDB and read back,
-// go through the element as they came out of it (R21): the sheet opens as it was, and the tutor's
+// go through the element as they came out of it: the sheet opens as it was, and the tutor's
 // marks with that context take hold. A synthetic task of the module format 0.4: no task of a module
 // is in the packages.
 import "@altnovatrail/canvas";

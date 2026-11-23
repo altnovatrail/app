@@ -1,4 +1,4 @@
-// The place in a lesson and the way along its bar (R06, R23). The place is the segment the learner
+// The place in a lesson and the way along its bar. The place is the segment the learner
 // has reached: "Continue" moves it, and so does api's word that the task on it ended. A lesson
 // opens at the later of the place the device keeps and the one after the last task segment that
 // ended, and never on a task that ended but the last. Back is a touch of the bar, to any
@@ -60,7 +60,7 @@ export function continueFrom(course: Course, place: number, shown: number): numb
   return shown >= course.kinds.length ? "complete" : shown + 1;
 }
 
-/** Whether "Continue" stands under a segment shown: on a task only once it ended (R06). */
+/** Whether "Continue" stands under a segment shown: on a task only once it ended. */
 export function mayContinue(course: Course, place: number, shown: number): boolean {
   return course.kinds[shown - 1] !== "task" || shown < place || course.ended.has(shown);
 }

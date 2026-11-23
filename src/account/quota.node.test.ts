@@ -169,7 +169,7 @@ describe("the adult's lines", () => {
     expect(adultQuotaTexts(at(late), WORDS.en, EVENING).at(-1)).toBe(
       `Tutor time renews today at ${time("en", late)}`,
     );
-    // A family day of up to 44 hours after a change of the offset: the date of its end (R56 api).
+    // A family day of up to 44 hours after a change of the offset: the date of its end.
     const after = new Date(2026, 10, 14, 6, 0);
     expect(adultQuotaTexts(at(after), WORDS.en, EVENING).at(-1)).toBe(
       `Tutor time renews on November 14 at ${time("en", after)}`,

@@ -1,4 +1,4 @@
-// What a call of api that did not answer comes to, for the screens (R18): a refusal with its cause
+// What a call of api that did not answer comes to, for the screens: a refusal with its cause
 // and what it tells, or what the client itself makes of the code — no connection, a sign-in needed,
 // a build that no longer understands api. A cause the build does not know it reads by the code of
 // the error. No DOM.

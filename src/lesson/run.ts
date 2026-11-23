@@ -1,4 +1,4 @@
-// What app reads of a lesson run (R06, R23; LearningService in the contract): the lesson's full ID,
+// What app reads of a lesson run (LearningService in the contract): the lesson's full ID,
 // which keys its state on the device; the kind of each segment; how a run ended, in words; and the
 // places of the task segments that ended, from a refusal that carries them. None of it needs the
 // DOM.
@@ -86,7 +86,7 @@ export function endedOf(failure: Failure): readonly number[] | "unsaid" | undefi
 /**
  * The demo state kept of an example, if the element would take it: `opened` a whole number from 0
  * to the count of the demo's parts and `hidden` true or false. A record that fails it is a broken
- * database, and the demo starts from the beginning (R06).
+ * database, and the demo starts from the beginning.
  */
 export function demoOf(kept: unknown, parts: number): DemoState | undefined {
   if (typeof kept !== "object" || kept === null) return undefined;

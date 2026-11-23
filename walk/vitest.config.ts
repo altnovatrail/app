@@ -1,4 +1,4 @@
-// The path of the first slice in a browser, without the author (R44): `just walk` runs
+// The path of the first slice in a browser, without the author: `just walk` runs
 // walk/path.test.ts on the development server against a local api, in each engine
 // NOVATRAIL_WALK_ENGINES names. It is not a part of ci-test or of its coverage: it needs api's
 // `just dev-app` running, which CI does not have.

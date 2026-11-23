@@ -1,8 +1,8 @@
-// The failure screens (R09, R16): static, from the build itself, in the language of the device,
-// before any profile or sign-in. Each is a screen of its own, with its heading (R11); their words
-// are the dictionaries' (R17), and the line for whoever deployed the copy is English on every
-// screen (R09). A read of a learner's screen that did not answer is one of them too: no connection,
-// or what it came to. The mockup draws none, so they are drawn by its rules of style (R69): a white
+// The failure screens: static, from the build itself, in the language of the device,
+// before any profile or sign-in. Each is a screen of its own, with its heading; their words
+// are the dictionaries', and the line for whoever deployed the copy is English on every
+// screen. A read of a learner's screen that did not answer is one of them too: no connection,
+// or what it came to. The mockup draws none, so they are drawn by its rules of style: a white
 // card in the window's middle, its heading at 22 bold, and what to do the primary button of its
 // width.
 import type { Failure } from "../api/failure.ts";
@@ -22,7 +22,7 @@ export function Framed() {
   return <Screen title={words.text("boot.framed")} layout="failure" />;
 }
 
-/** Try again, and on a learner's screen that is not the home the way back to it (R57). */
+/** Try again, and on a learner's screen that is not the home the way back to it. */
 function Retry({ onRetry, home }: { readonly onRetry: () => void; readonly home: boolean }) {
   const { words } = useLanguage();
   return (
@@ -97,7 +97,7 @@ export function Unconfigured({ detail }: { readonly detail: string }) {
 }
 
 /**
- * The storage taken away while app was open (R16): the browser erased this origin's data,
+ * The storage taken away while app was open: the browser erased this origin's data,
  * or the data is there but could not be read, and nothing of it was erased.
  */
 export function StorageGone({ trouble }: { readonly trouble: "erased" | "unreadable" }) {
@@ -139,7 +139,7 @@ export function ReloadOffer() {
 
 /**
  * Another tab holds Firebase Auth's database of the copy's previous project, which this start could
- * not erase: no sign-in starts in this tab until that tab is closed (R19).
+ * not erase: no sign-in starts in this tab until that tab is closed.
  */
 export function OtherTab() {
   const { words } = useLanguage();

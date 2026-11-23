@@ -1,4 +1,4 @@
-// Whether the account signed in has the debug mode (R72): api's `GetDebug` asked once an account,
+// Whether the account signed in has the debug mode: api's `GetDebug` asked once an account,
 // in every build. This module is in the app's main chunk and the window's code is not: the slot
 // loads that only once `GetDebug` answered. Any refusal shows nothing and is no error to the
 // learner: `permission_denied`, an account without the right, and `unimplemented`, a run beside the

@@ -6,13 +6,13 @@
 /dist/
 # What `just ci-test` writes: the coverage report the shared typescript.yml sends to Codecov.
 /coverage/
-# What tsc keeps between runs.
-*.tsbuildinfo
+# What tsc keeps between runs..
+* tsbuildinfo
 # The screenshots Vitest takes of a failed test in the browser: Vitest 5 puts them under .vitest/.
 __screenshots__/
 /.vitest/
 # What `just mockup-compare` writes: the snapshots and the reports of the comparison with the
-# interface mockup, an artifact of the run (R58).
+# interface mockup, an artifact of the run.
 /mockup/out/
 # The deployment configuration of a local run: the parameters of a Firebase project of the
 # author's own, which stay on the machine.

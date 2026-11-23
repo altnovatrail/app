@@ -1,4 +1,4 @@
-// The adapter of Firebase Auth on mocks of its packages (R19): the parameters of the file
+// The adapter of Firebase Auth on mocks of its packages: the parameters of the file
 // explicitly, indexedDBLocalPersistence alone and the popup resolver, Google's window, the language
 // of the window, the tokens, and what each error of the window comes to; and, as Vitest runs it
 // with import.meta.env.DEV, the local build's sign-in by the development token.

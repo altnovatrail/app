@@ -1,4 +1,4 @@
-// The archive of a release (R25): packed from a build of synthetic files, the same bytes twice, in
+// The archive of a release: packed from a build of synthetic files, the same bytes twice, in
 // the layout infra's rollout reads, and refused for each way out of it.
 import { spawnSync } from "node:child_process";
 import {

@@ -1,4 +1,4 @@
-// The icons of the app's buttons (R03, R15; R78 spec): Material Symbols, in the style Rounded, from
+// The icons of the app's buttons: Material Symbols, in the style Rounded, from
 // the npm package of the set at the version package-lock.json pins, and of it only the icons the
 // app shows. It writes the module src/app/Icon.tsx draws them from, as canvas's script writes the
 // module of its row:
@@ -34,28 +34,28 @@ export interface Value {
 
 /**
  * The values of the app, each by the key its buttons name it with. A value the platform's table of
- * icons names takes that table's icons (R78 spec); a value of the app's own has an icon the table
- * does not hold (R60).
+ * icons names takes that table's icons; a value of the app's own has an icon the table
+ * does not hold.
  */
 export const TABLE: Readonly<Record<string, Value>> = {
-  // "Continue" of the lesson player, to the next link (R06).
+  // "Continue" of the lesson player, to the next link.
   continue: { base: "arrow-circle-right", filled: false, mirrored: true },
-  // The buttons that show an icon alone, the closed list of R90 spec (R60): back, a chevron
+  // The buttons that show an icon alone, a closed list: back, a chevron
   // that points the way back; close; the previous and the next task, ‹ ›, chevrons rather than
   // the arrow of canvas's "next".
   back: { base: "arrow-back-ios-new", filled: false, mirrored: true },
   close: { base: "close", filled: false, mirrored: false },
   "previous-task": { base: "chevron-left", filled: false, mirrored: true },
   "next-task": { base: "chevron-right", filled: false, mirrored: true },
-  // "Read aloud" by the voice of the device beside a text (R36): a speaker, no fill, as it is in a
+  // "Read aloud" by the voice of the device beside a text: a speaker, no fill, as it is in a
   // line that runs right to left — a speaker is no direction.
   "read-aloud": { base: "volume-up", filled: false, mirrored: false },
-  // The switch of voicing: the same speaker, filled while voicing is on (R90 spec).
+  // The switch of voicing: the same speaker, filled while voicing is on.
   voicing: { base: "volume-up", filled: true, mirrored: false },
   // Help, filled while its pop-over is open; the tutor's button, a bubble of words.
   help: { base: "help", filled: true, mirrored: false },
   tutor: { base: "sms", filled: false, mirrored: false },
-  // The way into the app (R61): the group of "For grown-ups" in the profile's menu; "Signed in
+  // The way into the app: the group of "For grown-ups" in the profile's menu; "Signed in
   // with Google" and the country chosen, a tick; the row that opens the countries, a chevron that
   // points on; "Add a learner", a plus; the pill of the sign-in's language, a globe.
   grown: { base: "group", filled: false, mirrored: false },
@@ -64,7 +64,7 @@ export const TABLE: Readonly<Record<string, Value>> = {
   more: { base: "chevron-right", filled: false, mirrored: true },
   add: { base: "add", filled: false, mirrored: false },
   // The pictures of the set of avatars, each in outline, white on its gradient
-  // (src/account/avatars.ts; R61): a mountain, a rocket, a leaf, a star, the moon, waves, the sun
+  // (src/account/avatars.ts): a mountain, a rocket, a leaf, a star, the moon, waves, the sun
   // and a bolt.
   "avatar-peak": { base: "landscape", filled: false, mirrored: false },
   "avatar-rocket": { base: "rocket-launch", filled: false, mirrored: false },
@@ -75,7 +75,7 @@ export const TABLE: Readonly<Record<string, Value>> = {
   "avatar-sun": { base: "sunny", filled: false, mirrored: false },
   "avatar-bolt": { base: "bolt", filled: false, mirrored: false },
   // The states of a skill and the marks of one with a rubric and of one not assessed, on a module's
-  // card and in its legend, the table's, as the skill map shows them (R62).
+  // card and in its legend, the table's, as the skill map shows them.
   "state-mastered": { base: "check-circle", filled: false, mirrored: false },
   "state-time-to-review": { base: "update", filled: false, mirrored: false },
   "state-in-progress": { base: "timelapse", filled: false, mirrored: false },
@@ -83,19 +83,19 @@ export const TABLE: Readonly<Record<string, Value>> = {
   "state-locked": { base: "lock", filled: false, mirrored: false },
   "state-feedback-by-criteria": { base: "rate-review", filled: false, mirrored: false },
   "state-not-assessed": { base: "remove-done", filled: false, mirrored: false },
-  // The home screen's own (R62): the camera of "A task from my paper", shown disabled; the button
+  // The home screen's own: the camera of "A task from my paper", shown disabled; the button
   // of the phone that opens what the marks mean, an "i".
   camera: { base: "photo-camera", filled: false, mirrored: false },
   legend: { base: "info", filled: false, mirrored: false },
-  // The profile's menu (R63): the chevron down of its pill; "Switch learner", two arrows that swap;
+  // The profile's menu: the chevron down of its pill; "Switch learner", two arrows that swap;
   // "Sign out", a door with an arrow out. "For grown-ups" is the group of the way in.
   "menu-open": { base: "keyboard-arrow-down", filled: false, mirrored: false },
   "switch-learner": { base: "swap-horiz", filled: false, mirrored: false },
   "sign-out": { base: "logout", filled: false, mirrored: true },
-  // The end of a lesson (R64): a star, filled, before "Lesson complete". The chevron of the
+  // The end of a lesson: a star, filled, before "Lesson complete". The chevron of the
   // lesson's line under its title is the menu's, and the tick of a segment passed the sign-in's.
   "lesson-complete": { base: "star", filled: true, mirrored: false },
-  // The task screen (R65): Hint in the row, a bulb; and the signs of the verdict's card — "Not
+  // The task screen: Hint in the row, a bulb; and the signs of the verdict's card — "Not
   // yet", an exclamation mark; a line that asks for the work, a pencil; the solution shown, a page.
   // "Correct" is the tick of the way in, and the chevron of the mode's pill and of "Choose an
   // answer" the menu's.
@@ -103,18 +103,18 @@ export const TABLE: Readonly<Record<string, Value>> = {
   "not-yet": { base: "priority-high", filled: false, mirrored: false },
   write: { base: "edit", filled: false, mirrored: false },
   shown: { base: "description", filled: false, mirrored: false },
-  // The card of an essay's feedback (R66): a speech bubble, as the mockup's `essay-feedback`.
+  // The card of an essay's feedback: a speech bubble, as the mockup's `essay-feedback`.
   feedback: { base: "chat-bubble", filled: false, mirrored: false },
-  // A task from paper (R71): the camera's way to the device's photos, a stack of pictures; the
+  // A task from paper: the camera's way to the device's photos, a stack of pictures; the
   // corner that resizes a frame drawn by hand, two arrows apart. The shutter is the camera of the
   // home screen's card, a frame's cross the close.
   photos: { base: "photo-library", filled: false, mirrored: false },
   resize: { base: "open-in-full", filled: false, mirrored: false },
-  // The field of a request on the page to pick from (R74): Send, an arrow up in a blue circle, and
-  // the microphone, off until voice comes; each without its caption (R90 spec).
+  // The field of a request on the page to pick from: Send, an arrow up in a blue circle, and
+  // the microphone, off until voice comes; each without its caption.
   send: { base: "arrow-upward", filled: false, mirrored: false },
   microphone: { base: "mic", filled: false, mirrored: false },
-  // The row of places of Home, Subjects and the skill map, and the phone's tab bar (R148 spec): Home,
+  // The row of places of Home, Subjects and the skill map, and the phone's tab bar: Home,
   // four squares, filled while it is the place; Subjects, a book; the cognitive map, a hub, shut;
   // For grown-ups, a padlock. Help is the bar's. At the top right the notifications, a bell; in
   // For grown-ups This device and the section's other settings; on Subjects a module's skill map,
@@ -127,7 +127,7 @@ export const TABLE: Readonly<Record<string, Value>> = {
   device: { base: "tablet-android", filled: false, mirrored: false },
   settings: { base: "settings", filled: false, mirrored: false },
   "skill-map": { base: "account-tree", filled: false, mirrored: false },
-  // A module's card on Home (R79): Continue, the engine that chooses, and the next skill.
+  // A module's card on Home: Continue, the engine that chooses, and the next skill.
   play: { base: "play-arrow", filled: false, mirrored: true },
   engine: { base: "autorenew", filled: false, mirrored: false },
   "next-skill": { base: "arrow-forward", filled: false, mirrored: true },
@@ -190,7 +190,7 @@ export function module(set: IconSet, version: string, table = TABLE): string {
     ([name, icon]) => `${JSON.stringify(name)}: ${JSON.stringify(icon)},`,
   );
   return `// Written by scripts/icons.ts — \`just icons\` — from ${SET} ${version}:
-// Material Symbols by Google, under the Apache License 2.0 (R15; R78 spec).
+// Material Symbols by Google, under the Apache License 2.0.
 // ci-lint fails unless it is what the script writes, so it is never edited by hand.
 
 /** The icons of the app's buttons, by their names in the set, as the app draws them. */
@@ -204,7 +204,7 @@ export type IconName = keyof typeof ICONS;
 /**
  * Each value of the app, by its key: the icon in outline, the one its button shows while chosen —
  * the same for a value without a fill — and whether the icon is mirrored in a line that runs right
- * to left (R78 spec).
+ * to left.
  */
 export const VALUES = {
 ${values.join("\n")}

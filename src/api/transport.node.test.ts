@@ -1,4 +1,4 @@
-// The client on the browser's transport, with a fetch of the test's own (R18): a request carries no
+// The client on the browser's transport, with a fetch of the test's own: a request carries no
 // header but Authorization, Content-Type, Connect-Protocol-Version and Connect-Timeout-Ms, its body
 // is binary protobuf, and a network that fails is no connection once the repeats are over.
 import {

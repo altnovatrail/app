@@ -1,4 +1,4 @@
-// The screen of an essay in the browser, with the canvas element itself (R53): no reminder of names
+// The screen of an essay in the browser, with the canvas element itself: no reminder of names
 // before a submission, SubmitEssay with the crop and one key for a check and its
 // repeat, each way a submission ends, what was read and the feedback while the attempt is open, the
 // context of each submission kept with the attempt and put on the server, Done once it was sent,
@@ -60,8 +60,8 @@ import { EssayScreen } from "./EssayScreen.tsx";
 import { initialState } from "./steps.ts";
 import { Task } from "./Task.tsx";
 
-// The tablet's layout, where the row stands beside the open panel: on a phone its sheet hides the row
-// (R67), which the tests of the sheet show.
+// The tablet's layout, where the row stands beside the open panel: on a phone its sheet hides the row,
+// which the tests of the sheet show.
 beforeEach(async () => {
   await page.viewport(1194, 834);
 });
@@ -135,7 +135,7 @@ interface Setup {
   hint?: () => MessageInitShape<typeof GetHintResponseSchema>;
   adult?: boolean;
   lesson?: boolean;
-  /** Among a learner's screens, the profile's storage of works on the server on (R30). */
+  /** Among a learner's screens, the profile's storage of works on the server on. */
   storage?: boolean;
   /** The synthesis the screen speaks by, the profile's voicing on. */
   speech?: ReturnType<typeof fakeSpeech>;
@@ -317,7 +317,7 @@ async function chooseMode(mode: "Step by step" | "On my own") {
 const panel = () => within(screen.getByRole("complementary", { name: "Tutor" }));
 /** The panel, shown: by steps, with a hint, or with the result. */
 const shown = async () => within(await screen.findByRole("complementary", { name: "Tutor" }));
-/** The panel, opened by the tutor's button where it is closed: feedback does not open it (R67). */
+/** The panel, opened by the tutor's button where it is closed: feedback does not open it. */
 const found = async () => {
   if (screen.queryByRole("complementary", { name: "Tutor" }) === null) {
     await userEvent.click(await screen.findByRole("button", { name: "Tutor" }));
@@ -360,7 +360,7 @@ describe("the screen of an essay", () => {
     // No report for a learner who is not of the category adult.
     expect(panel().queryByRole("button", { name: "Report a problem" })).toBeNull();
     // The device keeps the context of the submission and the history's length, for the work on the
-    // server, and neither the crop nor the words: the screen holds those (R53).
+    // server, and neither the crop nor the words: the screen holds those.
     await vi.waitFor(async () => expect((await keptOf(device))?.submissions).toHaveLength(1));
     const [kept] = (await keptOf(device))?.submissions ?? [];
     expect(kept).toEqual({

@@ -1,4 +1,4 @@
-// The solving steps of an attempt as app leads them on the device (R05): the mode, the step the
+// The solving steps of an attempt as app leads them on the device: the mode, the step the
 // learner is on and the furthest reached, the chips ticked, the techniques api gave at a step, the
 // options tapped and the count of wrong answers — kept with the attempt in the profile's database,
 // read back after a restart. A step's exit condition opens its "Step done", which leads on and
@@ -21,7 +21,7 @@ export interface StepsState {
   readonly techniques: Readonly<Record<number, readonly string[]>>;
   /** The option tapped in each answer slot bound `choice`, by `slotKey`. */
   readonly choices: Readonly<Record<string, string>>;
-  /** How many submissions had a slot "not yet" (R82 spec). */
+  /** How many submissions had a slot "not yet". */
   readonly wrongAnswers: number;
 }
 
@@ -118,7 +118,7 @@ export function choicesOnly(task: open.Task): boolean {
 /**
  * Whether every answer slot holds something (`answer_slots_filled`): an option tapped in a slot
  * bound `choice`, and for the others the canvas's `filled` — a workbook's box by its item and slot,
- * a sheet's one answer anywhere on it by its first (R36 spec).
+ * a sheet's one answer anywhere on it by its first.
  */
 export function slotsFilled(
   task: open.Task,
@@ -150,7 +150,7 @@ function everySlot(
 
 /**
  * Whether a slot written by hand holds something, by the canvas's `filled`: a workbook's box by
- * its item and slot, a sheet's one answer anywhere on it by its first (R36 spec).
+ * its item and slot, a sheet's one answer anywhere on it by its first.
  * The canvas takes no zone: a slot in one is never filled.
  */
 function writtenIn(

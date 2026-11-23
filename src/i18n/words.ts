@@ -1,4 +1,4 @@
-// The words of a screen, from its language's dictionary (R17): a key's string with its places
+// The words of a screen, from its language's dictionary: a key's string with its places
 // filled by name, never glued from pieces, and the form of a number that Intl.PluralRules chooses —
 // `other` when the dictionary has not the category it gives. No DOM.
 import { en } from "./en.ts";

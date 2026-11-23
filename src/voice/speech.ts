@@ -1,4 +1,4 @@
-// The one synthesis of the whole app (R36 spec; R07, R36): `speechSynthesis` behind a narrow
+// The one synthesis of the whole app: `speechSynthesis` behind a narrow
 // interface, so that Node's tests give it lists of voices. Every utterance names its voice, by
 // voices.ts; a new text cuts the one before short — `cancel()` — rather than queueing behind it,
 // and each sentence is an utterance of its own, queued after the one before, since Chrome cuts a
@@ -173,7 +173,7 @@ export class Speech {
     return token;
   }
 
-  /** Marks a press after which a text will come, so that WebKit lets it be said (R36). */
+  /** Marks a press after which a text will come, so that WebKit lets it be said. */
   prime(): void {
     const synth = this.#synth;
     if (synth === undefined) return;

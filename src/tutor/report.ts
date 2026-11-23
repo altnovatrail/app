@@ -1,4 +1,4 @@
-// What a report of a problem with the tutor's words names (R123 spec; R33): which reply of the
+// What a report of a problem with the tutor's words names: which reply of the
 // tutor the words came by and beside a rung its number, the words as the screen shows them, one
 // word of the closed set, and the person's text. No DOM.
 import {

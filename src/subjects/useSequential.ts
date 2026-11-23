@@ -1,4 +1,4 @@
-// The mark "in order" on the cards of a screen (R06 and R34): the cards show at once, and each of a
+// The mark "in order" on the cards of a screen: the cards show at once, and each of a
 // module whose current version's skill graph is a chain takes the mark when its graph has come,
 // from the shared cache or from api. A graph that does not come leaves its card as it is.
 import { useEffect, useMemo, useState } from "react";

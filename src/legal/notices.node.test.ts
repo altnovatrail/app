@@ -1,5 +1,5 @@
 // The notices the page of notices shows are the repository's NOTICE and LICENSE as they are: the
-// same bytes the release check holds the archive's two files to (R25, R31).
+// same bytes the release check holds the archive's two files to.
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { LICENSE, NOTICE } from "./notices.ts";

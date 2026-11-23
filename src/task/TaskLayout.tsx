@@ -1,4 +1,4 @@
-// What the task screen and the screen of an essay share (R20, R53, R65, R67), as the mockup's
+// What the task screen and the screen of an essay share, as the mockup's
 // `task-pill` and `task`: the whole window, the top bar's glass pill at the top — Back, which goes
 // to Home, and the heading — with the profile's pill and the pill of the mode at its other
 // end, or, in a lesson, the lesson's bar with the pill of the mode in it; the voicing switched on
@@ -10,7 +10,7 @@
 // it is glass of 400 at the right, from under the top bar to 16 above the window's foot, the
 // canvas, its lines and the foot ending where it begins; on a phone it is a sheet from the bottom,
 // at half the height or by its grabber over the whole screen, which hides the row and the canvas's
-// bar of tools (R148 spec). Its head — the tutor's sign, its name, the learner's share of the
+// bar of tools. Its head — the tutor's sign, its name, the learner's share of the
 // quota, the switch of voicing and ×; the step's card by steps; the conversation, which scrolls —
 // the verdict's line, the hint and the tutor's words, or the
 // attempt's result once it is over —; and at its foot Hint and "Explain differently". Each screen
@@ -44,7 +44,7 @@ import type { Mode, StepsState } from "./steps.ts";
 import { TutorButton, TutorPanel, usePanelFocus } from "./TutorPanel.tsx";
 
 /**
- * The screen of the task — the top bar's pill with Back to Home (R57) and the heading, the
+ * The screen of the task — the top bar's pill with Back to Home and the heading, the
  * profile's pill and the mode's at the bar's other end —, or, in a lesson, the lesson's screen around
  * it, the mode's pill at the end of the lesson's bar.
  */
@@ -59,7 +59,7 @@ export function Frame({
   readonly inLesson: boolean;
   readonly title: string;
   readonly onHome: () => void;
-  /** A request is under way, whose answer the learner would not see: Back waits for it (R57). */
+  /** A request is under way, whose answer the learner would not see: Back waits for it. */
   readonly pending?: boolean;
   /** The pill of the mode, where the task has one. */
   readonly mode?: ReactNode;
@@ -102,7 +102,7 @@ export function Frame({
 }
 
 /**
- * The task while its attempt is read (R168 spec): its frame as it will stand, the shapes of its
+ * The task while its attempt is read: its frame as it will stand, the shapes of its
  * statement below the bar and of the row of glass at its foot.
  */
 export function TaskLoading({
@@ -151,9 +151,9 @@ export interface TaskParts {
   readonly failure?: Failure;
   /** What "Try it again" came to, when it did not answer. */
   readonly againFailure?: Failure;
-  /** Check blinks once on a pause (R05). */
+  /** Check blinks once on a pause. */
   readonly blink: boolean;
-  /** "Report a problem" with the tutor's words shown, for a learner of the category adult (R33). */
+  /** "Report a problem" with the tutor's words shown, for a learner of the category adult. */
   readonly report?: ReactNode;
   /** The hint api gave before the first wrong answer; none while none was asked for. */
   readonly hint?: HintGiven;
@@ -168,13 +168,13 @@ export interface TaskParts {
   readonly onHome: () => void;
   /** The task is a segment of a lesson, under its header: no screen of its own, no "Try it again". */
   readonly inLesson?: boolean;
-  /** The way to what the engine chose once the attempt is over, outside a lesson (R24). */
+  /** The way to what the engine chose once the attempt is over, outside a lesson. */
   readonly next?: ReactNode;
 }
 
 /**
  * The result's end: what "Try it again" came to, the way on and "Try it again"; the way back is the
- * top bar's (R57).
+ * top bar's.
  */
 export function ResultEnd({ parts }: { readonly parts: TaskParts }) {
   const { words } = useLanguage();
@@ -185,7 +185,7 @@ export function ResultEnd({ parts }: { readonly parts: TaskParts }) {
         {failureText(parts.againFailure, words)}
       </p>
     );
-  // In a lesson the way on is its Continue, below the task (R23).
+  // In a lesson the way on is its Continue, below the task.
   if (parts.inLesson === true) return failure;
   return (
     <>
@@ -207,7 +207,7 @@ export function ResultEnd({ parts }: { readonly parts: TaskParts }) {
   );
 }
 
-/** "Hint", in the row beside Check always, a bulb before its word: it does not send the work (R22). */
+/** "Hint", in the row beside Check always, a bulb before its word: it does not send the work. */
 export function HintButton({
   parts,
   className = "nt-row-button",
@@ -296,7 +296,7 @@ export function ModePill({
   );
 }
 
-/** What the verdict's card tells: its sign, which `IconValue` draws, or the turning of a reading; an essay's feedback has a card of the same kind (R66), and a task from paper with no key one of its own. */
+/** What the verdict's card tells: its sign, which `IconValue` draws, or the turning of a reading; an essay's feedback has a card of the same kind, and a task from paper with no key one of its own. */
 export type CardKind = "correct" | "not-yet" | "write" | "reading" | "shown" | "feedback" | "nokey";
 
 const CARD_SIGNS: Readonly<Record<Exclude<CardKind, "reading">, IconValue>> = {
@@ -392,7 +392,7 @@ export function TaskLayout({
   readonly onOpen?: () => void;
   /** The panel's ×; none, and it has none. */
   readonly onClose?: () => void;
-  /** The line of the panel's head: the learner's share of the quota (R98 spec). */
+  /** The line of the panel's head: the learner's share of the quota. */
   readonly quota?: string | undefined;
   /** What the tutor and the program said in the panel: the verdict's line, the hint, the words. */
   readonly tutor: ReactNode;
@@ -416,7 +416,7 @@ export function TaskLayout({
   // The step's pill goes with its press too (2.4.3).
   const { heading, call } = usePanelFocus(shown);
   // The open panel stands over the canvas, and its lines and the foot end where it begins; on a
-  // phone its sheet hides the row and the canvas's bar of tools (R67; R148 spec).
+  // phone its sheet hides the row and the canvas's bar of tools.
   const beside = shown ? { "data-beside": "panel" } : {};
   const stepsShown = !over && mode === "steps";
   return (
@@ -440,7 +440,7 @@ export function TaskLayout({
       </div>
       <div className="nt-task" {...beside}>
         <div className="nt-task-work">
-          {/* The order of the properties is the order React gives them (R36 spec). */}
+          {/* The order of the properties is the order React gives them. */}
           <novatrail-canvas
             ref={parts.canvasRef}
             lang={language}

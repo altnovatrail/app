@@ -1,7 +1,7 @@
-// "Your pages" on the card "A task from my paper" (R77), as the author's mockup `Vashi-stranicy-1a`:
+// "Your pages" on the card "A task from my paper", as the author's mockup `Vashi-stranicy-1a`:
 // the profile's pages from paper this device keeps, the newest first, each a row with a thumbnail of
 // its photo, when it was taken and how many tasks it began, behind a small button that opens a
-// pop-over (R59). A page opens on the screen of solving with its tasks and their work. The button
+// pop-over. A page opens on the screen of solving with its tasks and their work. The button
 // stands while the device keeps no page too, as the mockup's: its pop-over says there is none yet.
 import { useEffect, useState } from "react";
 import { Icon } from "../app/Icon.tsx";
@@ -16,10 +16,10 @@ import { thumbnailOf } from "./capture.ts";
 import { usePaper } from "./PaperContext.tsx";
 
 /**
- * The pages' thumbnails, each made once from its photo, read apart from the list, which reads none
- * (R77): one after another, so that a long list holds one whole photo in memory at a time, and all
+ * The pages' thumbnails, each made once from its photo, read apart from the list, which reads none:
+ * one after another, so that a long list holds one whole photo in memory at a time, and all
  * revoked when the list goes. A thumbnail is never kept: the device's records go into the profile's
- * export as they are (R135 spec).
+ * export as they are.
  */
 class Thumbnails {
   readonly #made = new Map<string, Promise<string | undefined>>();
@@ -60,7 +60,7 @@ class Thumbnails {
 }
 
 /**
- * A page's thumbnail: a skeleton of its size while it is made (R168 spec), then the photo, or a
+ * A page's thumbnail: a skeleton of its size while it is made, then the photo, or a
  * blank sheet where the photo cannot be shown. It is decorative, as the row's name is when and how
  * many: its skeleton says no "Loading" inside the row's name either.
  */

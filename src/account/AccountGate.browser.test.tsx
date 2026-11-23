@@ -1,6 +1,6 @@
-// The way in, through Boot, in the browser (R16, R19, R61): the sign-in, the invite code, the
+// The way in, through Boot, in the browser: the sign-in, the invite code, the
 // owner's profile, the choice of the learner, which asks the browser to keep the site's data on the
-// first sign-in (R04), the top bar of the learner's screens and the sign-out, each screen by its role and name, with api
+// first sign-in, the top bar of the learner's screens and the sign-out, each screen by its role and name, with api
 // answering by the test's fetch and the sign-in service the test's own.
 import {
   CheckOwnKeyRequestSchema,
@@ -87,7 +87,7 @@ const FILE = {
 const OWNER = { profileId: "p1", owner: true, pseudonym: "Ёжик", ageCategory: "adult" };
 
 /**
- * A button of the profile's header, in the menu of the learner's pill (R63): the pill is pressed,
+ * A button of the profile's header, in the menu of the learner's pill: the pill is pressed,
  * and the button found in the menu it opens.
  */
 async function inMenu(name: string): Promise<HTMLElement> {
@@ -104,7 +104,7 @@ const GROWN_UPS = {
 } as const;
 
 /**
- * The section for adults from the top bar of Home, Subjects and the skill map (R76): the place
+ * The section for adults from the top bar of Home, Subjects and the skill map: the place
  * For grown-ups is pressed, and the section's row in the pop-over it opens, in the profile's
  * language.
  */
@@ -113,14 +113,14 @@ async function grownUps(language: keyof typeof GROWN_UPS = "en"): Promise<void> 
   await userEvent.click(await screen.findByRole("button", { name: place }));
   const pop = within(await screen.findByRole("dialog"));
   const row = await pop.findByRole("button", { name: section });
-  // Sign out is the profile's menu's alone, not again here (R79).
+  // Sign out is the profile's menu's alone, not again here.
   expect(pop.queryByRole("button", { name: /^(Sign out|Выйти)$/ })).toBeNull();
   await userEvent.click(row);
 }
 
 /**
  * Opens the section for adults as the adult does since the choice of the learner has no way to it:
- * the first profile chosen, then the section from For grown-ups, in the profile's language (R29).
+ * the first profile chosen, then the section from For grown-ups, in the profile's language.
  */
 async function toAdults(language: keyof typeof GROWN_UPS = "en"): Promise<void> {
   await vi.waitFor(() => expect(document.querySelector(".nt-learners button")).not.toBeNull());
@@ -259,7 +259,7 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-/** Invite codes of api's form, synthetic: one api takes, and one it refuses (R34 api). */
+/** Invite codes of api's form, synthetic: one api takes, and one it refuses. */
 const CODE = "N7VA-K2QM-9XB4-ZD3H";
 const WRONG = "W0RN-G7CD-5EFX-Q2TT";
 
@@ -415,8 +415,8 @@ describe("the way in", () => {
     // Shown again, it asks the browser no more.
     expect(persist).toHaveBeenCalledOnce();
     // Each request of the way in, then the learner's home — the modules connected and the share of
-    // the quota —, and no other: the catalog is Subjects', the choice of the learner reads no text
-    // (R46), and CheckPackages has no package to ask about.
+    // the quota —, and no other: the catalog is Subjects', the choice of the learner reads no text,
+    // and CheckPackages has no package to ask about.
     expect(asked).toEqual([
       "GetAccount",
       "GetLegalTexts",
@@ -1195,7 +1195,7 @@ describe("the page This device in the section", () => {
       await screen.findByRole("button", { name: "See what is on this device" }),
     );
     expect(await screen.findByRole("heading", { level: 1, name: "This device" })).toBeTruthy();
-    // The device keeps no work of the profile that the server lacks: once read, no warning (R30).
+    // The device keeps no work of the profile that the server lacks: once read, no warning.
     expect(await screen.findByText("Nothing of this profile is kept on this device")).toBeTruthy();
     expect(
       screen.queryByText(
@@ -1245,7 +1245,7 @@ describe("the page This device in the section", () => {
       level: 1,
       name: "Another account's data on this device can't be erased yet. Close the app's other tabs and try again",
     });
-    // A failure screen's card, its Try again the primary button (R69).
+    // A failure screen's card, its Try again the primary button.
     expect(held.closest("main")).toHaveClass("nt-failure");
     const retry = screen.getByRole("button", { name: "Try again" });
     expect(retry).toHaveClass("nt-main");

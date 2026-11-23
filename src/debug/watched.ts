@@ -1,4 +1,4 @@
-// Each call of AI the screens of a task from paper make, as the debug mode sees it (R72): only for
+// Each call of AI the screens of a task from paper make, as the debug mode sees it: only for
 // an account whose `GetDebug` answered, which alone loads the module of the mode.
 import type { Api } from "../api/client.ts";
 import * as gate from "./gate.ts";

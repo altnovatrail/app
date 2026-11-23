@@ -1,4 +1,4 @@
-// The lessons the learner chosen has open, and the one the player shows, in memory alone (R23): no
+// The lessons the learner chosen has open, and the one the player shows, in memory alone: no
 // address names a lesson run, so the player `#/lesson` takes it from here. The runs start as
 // `open_lesson_runs` of GetAccount — one at most for each lesson — and change when a run begins or
 // ends in the player. What changed is kept by the learner's profile as GetAccount gave it, as the
@@ -17,7 +17,7 @@ export interface RunRef {
 }
 
 /**
- * What the player opens: an open run again, or a new one by an engine's choice of a lesson (R24).
+ * What the player opens: an open run again, or a new one by an engine's choice of a lesson.
  */
 export type LessonOpen =
   | { readonly kind: "run"; readonly run: RunRef }

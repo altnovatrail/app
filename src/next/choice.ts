@@ -1,4 +1,4 @@
-// What an engine's choice gives (R24; `EngineChoice` in the contract): a lesson, a task outside a
+// What an engine's choice gives (`EngineChoice` in the contract): a lesson, a task outside a
 // lesson, or nothing — and a kind this build does not know is nothing too. No DOM.
 import {
   ChoiceKind,

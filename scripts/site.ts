@@ -1,10 +1,10 @@
 // The check of a deployed site against the release of app it serves (R42). `just site-check
 // <origin> <version>` downloads the release's archive, has spec's release-verify accept it, and
-// runs this on it. infra's rollout checks its own release of the site (R06 infra); this is app's
+// runs this on it. infra's rollout checks its own release of the site; this is app's
 // own look, the same for the platform and for a self-hosted copy, and it reads only what the site
 // serves to anyone:
 // - every file of the archive at its path, byte for byte: the build, its csp.json and schema, and
-//   NOTICE and LICENSE (R25);
+//   NOTICE and LICENSE;
 // - /deployment.json, as app's own code reads it at the start;
 // - the headers app asks of the hosting: at the page, the CSP header that csp.json of the build
 //   gives with the file's values, frame-ancestors 'none' with it, and no-cache; nowhere
@@ -14,7 +14,7 @@
 //   Google" — but in WebKit, which the SDK takes for Safari, what it loads at every start, and the
 //   refusal of gapi's ping —, after it no host but those of the sign-in, and the window opened on
 //   the sign-in pages of authDomain, whose project lets the site's host sign in. The window is then
-//   closed: nobody signs in (R45).
+//   closed: nobody signs in.
 import { readFileSync } from "node:fs";
 import { gunzipSync } from "node:zlib";
 import type { Deployment } from "@altnovatrail/spec/deploymentv1";
@@ -151,7 +151,7 @@ const REFUSALS = [
  * Whether a line of a violation is the one refusal of the CSP the page test and the site check
  * expect: in WebKit, which the SDK takes for Safari and so loads gapi at every start, connect-src
  * refusing gapi's ping, whatever its query. Sent now and then, it is no violation there; in any
- * other engine, and any other refusal, is (R45).
+ * other engine, and any other refusal, is.
  */
 export function expectedRefusal(engine: string | undefined, line: string): boolean {
   if (engine !== "webkit") return false;

@@ -1,4 +1,4 @@
-// The debug slot in every build (R72): the window's chunk loaded only once GetDebug answered, and
+// The debug slot in every build: the window's chunk loaded only once GetDebug answered, and
 // no button, no chunk and no stale build when GetDebug refuses — `permission_denied` for an
 // account without the right, `unimplemented` beside the stub of tutor; another account asks again.
 import { DebugService } from "@altnovatrail/contracts/novatrail/api/v1/debug_pb.js";

@@ -1,9 +1,9 @@
 // A legal text's gist over the screen it is opened from, as the mockup's legal text (`legal-terms`,
-// `legal-privacy`; R69): its heading, the chip of its version, the gist below its caption, the next
-// version in a note with the way to its page (R46), and at its foot the line that the English text
-// is in force, on a screen in another language (R27), and "Read the full text", which opens the
-// text's page (R31) — or, with no version in force, the list of the legal pages. It opens at once,
-// the shapes of its chip and its gist standing while its text is read (R168 spec), and is a modal
+// `legal-privacy`): its heading, the chip of its version, the gist below its caption, the next
+// version in a note with the way to its page, and at its foot the line that the English text
+// is in force, on a screen in another language, and "Read the full text", which opens the
+// text's page — or, with no version in force, the list of the legal pages. It opens at once,
+// the shapes of its chip and its gist standing while its text is read, and is a modal
 // <dialog>: the screen under it is inert, Escape, × and a tap outside close it, and the focus comes
 // back to what opened it. The way in opens it from its steps, the adult's Help from its pop-over; it
 // stands in the page's body, not in the screen, whose own colours, as the sky's, are not its.
@@ -46,7 +46,7 @@ export function LegalSheet({ id, versions, onClose, onPage }: LegalSheetProps) {
     const shown = dialog.current;
     if (shown === null) return;
     shown.showModal();
-    // A tap outside is a press and a release both on the backdrop, as a pop-over's (R59).
+    // A tap outside is a press and a release both on the backdrop, as a pop-over's.
     const beyond = (event: MouseEvent) => {
       const box = shown.getBoundingClientRect();
       return (

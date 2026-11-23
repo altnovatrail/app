@@ -1,6 +1,6 @@
-// A picture of a module, by its path from media/ (R05, R06): of a task's solution or of a lesson's
+// A picture of a module, by its path from media/: of a task's solution or of a lesson's
 // explanation, which app draws itself, without the canvas. Its file comes by the canvas's own
-// `media`, and shows at an address `blob:`, which the CSP lets <img> take (R09); until it comes, or
+// `media`, and shows at an address `blob:`, which the CSP lets <img> take; until it comes, or
 // if it never does, its `alt` stands in its place.
 import type { Media } from "@altnovatrail/spec/canvas";
 import { useEffect, useState } from "react";

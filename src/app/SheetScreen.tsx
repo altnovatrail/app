@@ -1,4 +1,4 @@
-// A screen drawn as the mockup's legal text (R69), for the pages of that kind, which the mockup
+// A screen drawn as the mockup's legal text, for the pages of that kind, which the mockup
 // draws as one sheet over the screen they were opened from and app as screens of their own: the
 // legal pages, a module's license and the page on the tutor. A white card, the whole screen on a
 // phone, whose head is the page's heading at 24 bold with a chip under it — a text's version —, a

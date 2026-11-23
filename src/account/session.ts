@@ -1,4 +1,4 @@
-// The sign-in and the account of this tab (R04, R19; the contract), with no DOM: who is signed in,
+// The sign-in and the account of this tab (the contract), with no DOM: who is signed in,
 // the account `GetAccount` gives at the start and after each sign-in, and what the device erases on
 // each. An account in the registry other than the one api names goes before anything of the app
 // opens; a profile the list does not hold goes; a failure of the network erases nothing. A user
@@ -48,13 +48,13 @@ export type SessionState =
       readonly owner: Profile;
       readonly first: boolean;
     }
-  /** A learner chosen, in memory alone (R04). */
+  /** A learner chosen, in memory alone. */
   | { readonly step: "learning"; readonly account: Account; readonly learner: Profile };
 
 /** What came of a form that asks api: done, the form's own refusal, or a failure to show. */
 export type FormResult<Own extends string> = "done" | Own | Failure;
 
-/** The pseudonym api takes: trimmed at its ends, from 1 to 30 Unicode code points (R98 spec). */
+/** The pseudonym api takes: trimmed at its ends, from 1 to 30 Unicode code points. */
 export function pseudonymOf(text: string): string | undefined {
   const trimmed = text.trim();
   const length = [...trimmed].length;
@@ -63,8 +63,8 @@ export function pseudonymOf(text: string): string | undefined {
 
 /**
  * The marks of the works on the server go from each profile whose storage of works is off, as
- * `GetAccount` names it: switched off on another device or in a closed tab, it erased the copies
- * (R30). A database that does not open keeps its marks until the next start.
+ * `GetAccount` names it: switched off on another device or in a closed tab, it erased the copies.
+ * A database that does not open keeps its marks until the next start.
  */
 export async function marksFollow(device: Device, profiles: readonly Profile[]): Promise<void> {
   const registry = await readRegistry(device);
@@ -197,7 +197,7 @@ export class Session {
         this.fresh = account.accountId;
       }
       await accountSeen(device, account.accountId);
-      // Whatever is still to be erased goes before anything opens, as at the start (R16): a
+      // Whatever is still to be erased goes before anything opens, as at the start: a
       // database another tab holds keeps this account shut until it is gone.
       const left = [...((await readRegistry(device))?.databases ?? [])]
         .filter(([, entry]) => entry.erase)
@@ -230,7 +230,7 @@ export class Session {
   private failed(failure: Failure): void {
     switch (failure.kind) {
       case "no-access":
-        // What was left of an account the registry named, the client erased already (R04).
+        // What was left of an account the registry named, the client erased already.
         this.set({ step: "invite" });
         return;
       case "offline":
@@ -248,7 +248,7 @@ export class Session {
   /**
    * A failure of a change of a profile in the section for adults: one that is the session's own
    * moves it, and a profile api no longer has — deleted on another device — asks for the account
-   * again, which erases it here (R04). The page shows the rest.
+   * again, which erases it here. The page shows the rest.
    */
   profileFailed(failure: Failure): void {
     if (refusedWith(failure, Cause.NO_PROFILE)) void this.load();
@@ -282,8 +282,7 @@ export class Session {
   /**
    * `CreateAccount` with the invite code — the form sends it trimmed at its ends, and api ignores
    * dashes and spaces within it —, the statement of being 18 or older, and the versions of the
-   * privacy policy and the terms of use the owner accepted, as `GetLegalTexts` gave them (R131
-   * spec; R27): none while none is in force. A version no longer current is the form's to show anew.
+   * privacy policy and the terms of use the owner accepted, as `GetLegalTexts` gave them: none while none is in force. A version no longer current is the form's to show anew.
    */
   async createAccount(
     inviteCode: string,
@@ -313,7 +312,7 @@ export class Session {
   /**
    * `CreateOwnerProfile`, of the category `adult`, with the owner's country and pseudonym, and the
    * language of the screen as the language of the learner's screens, as the contract has a new
-   * profile take the language of the section for adults (R10).
+   * profile take the language of the section for adults.
    */
   async createOwnerProfile(
     pseudonym: string,
@@ -322,7 +321,7 @@ export class Session {
     avatar?: string,
   ): Promise<FormResult<"country-not-accepted">> {
     try {
-      // An avatar left unchosen is no field: the profile shows the set's own (R98 spec).
+      // An avatar left unchosen is no field: the profile shows the set's own.
       await this.options.api.account.createOwnerProfile({
         country,
         settings: {
@@ -349,7 +348,7 @@ export class Session {
 
   /**
    * A profile api changed — in this tab, or in another that told of it —: the account's profile of
-   * its ID takes its settings, the learner chosen too (R29). An account that holds no such profile
+   * its ID takes its settings, the learner chosen too. An account that holds no such profile
    * is another's, and stays as it is.
    */
   profileChanged(changed: Profile): void {
@@ -378,7 +377,7 @@ export class Session {
 
   /**
    * The sign-out: of the sign-in service alone. Everything of the account stays on this device, for
-   * its next sign-in, until another account signs in here (R04). `false` when the service did not
+   * its next sign-in, until another account signs in here. `false` when the service did not
    * sign out: the session stays where it was.
    */
   async signOut(): Promise<boolean> {
@@ -393,7 +392,7 @@ export class Session {
 
   /**
    * "Erase everything on this device": the sign-out, then everything of the account on this device,
-   * the device's settings and the heartbeats of @firebase/app (R04). `"erased"` when all of it is
+   * the device's settings and the heartbeats of @firebase/app. `"erased"` when all of it is
    * gone, `"left"` when some is, which the next start erases of the account, and `"failed"` when
    * the service did not sign out: then nothing is erased, since the same user would open the
    * account again over its data gone.

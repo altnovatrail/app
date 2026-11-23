@@ -1,4 +1,4 @@
-// Whether the account has the debug mode (R72): GetDebug asked once an account, the asking under
+// Whether the account has the debug mode: GetDebug asked once an account, the asking under
 // way joined; `permission_denied` and `unimplemented` turn it off, any other failure leaves it to
 // be asked again; another account signed in forgets the answer, and one that comes after.
 import {

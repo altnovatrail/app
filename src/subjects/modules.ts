@@ -1,9 +1,9 @@
-// The cards of Home's modules (R99 spec; ModuleService in the contract): each module by the title
+// The cards of Home's modules (ModuleService in the contract): each module by the title
 // and explanation language of the open view of its current version's manifest. A module with no
 // current version for the learner is named by the manifest the cache keeps of an earlier version,
 // or else by its ID, and shown unavailable; a manifest that cannot be had names the module by its
 // ID too, and says so, so that the screen can ask again. A module whose skill graph is a chain is
-// marked "in order", by the tiers of the open view of its current version's graph (R58 spec; R06):
+// marked "in order", by the tiers of the open view of its current version's graph:
 // the mark comes apart from the card, when the graph has come, so a graph slow to come holds no
 // card back, and one that cannot be had marks nothing. No DOM.
 import type * as open from "@altnovatrail/spec/formatv0/open";
@@ -20,15 +20,15 @@ export interface ModuleCard {
   readonly language?: string;
   /** The manifest of its current version did not come: the ID stands in until a retry. */
   readonly unnamed?: true;
-  /** Its current version's skill graph is a chain: the mark "in order" (R06), once it is known. */
+  /** Its current version's skill graph is a chain: the mark "in order", once it is known. */
   readonly sequential?: true;
-  /** How many of its skills have each state and mark, once its map has come (R62). */
+  /** How many of its skills have each state and mark, once its map has come. */
   readonly skills?: SkillCounts;
   /** The full ID of the skill its Continue works on, once its map has come. */
   readonly skill?: string;
-  /** Its map is on its way: the card shows the shapes of its counts meanwhile (R168 spec). */
+  /** Its map is on its way: the card shows the shapes of its counts meanwhile. */
   readonly counting?: true;
-  /** Where the learner stands in its chain of skills, once its map has come: a chain's alone (R06). */
+  /** Where the learner stands in its chain of skills, once its map has come: a chain's alone. */
   readonly chain?: ChainPlace;
 }
 
@@ -40,7 +40,7 @@ export interface ModuleRef {
 
 /**
  * Whether the tiers of a skill graph make it a chain: two skills or more, each in a tier of its own
- * — anchor skills have no tier (R58 spec). The tiers are those module-kit computed and api gives
+ * — anchor skills have no tier. The tiers are those module-kit computed and api gives
  * with the graph, so the mark and the map's tiers never part.
  */
 export function isSequential(tiers: Readonly<Record<string, number>>): boolean {
@@ -104,7 +104,7 @@ export async function cardsOf(
   return Promise.all(modules.map((module) => cardOf(views, module, kept)));
 }
 
-/** Cards by their titles in the order of the screen's language, then by ID (R17). */
+/** Cards by their titles in the order of the screen's language, then by ID. */
 export function byTitle(
   cards: readonly ModuleCard[],
   compare: (a: string, b: string) => number,

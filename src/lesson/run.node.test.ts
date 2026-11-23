@@ -1,4 +1,4 @@
-// What app reads of a lesson run (R06, R23): the full ID, the kinds of segments, the words of each
+// What app reads of a lesson run: the full ID, the kinds of segments, the words of each
 // end of a run, the places a refusal carries, and the check of a demo state kept.
 import {
   Cause,

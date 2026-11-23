@@ -1,7 +1,7 @@
-// The tasks of a page on the pick screen (R71): the frames FindTasks gave, picked and in the order of
+// The tasks of a page on the pick screen: the frames FindTasks gave, picked and in the order of
 // the page; a tap, "Select all" and "Select none"; the frames the learner draws; what Start begins;
-// and a request about the page, its frames and what its answer leaves on the page (R74); and the
-// page on its photo turned upright (R162 spec).
+// and a request about the page, its frames and what its answer leaves on the page; and the
+// page on its photo turned upright.
 import { FindTasksResponseSchema } from "@altnovatrail/contracts/novatrail/api/v1/paper_pb.js";
 import { create } from "@bufbuild/protobuf";
 import { describe, expect, it } from "vitest";

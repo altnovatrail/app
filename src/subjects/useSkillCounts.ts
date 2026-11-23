@@ -1,10 +1,10 @@
-// The states of the skills on the cards of the modules connected (R62): the cards show at once, and
+// The states of the skills on the cards of the modules connected: the cards show at once, and
 // each of a module with a current version takes its counts when its map has come — GetSkillMap by
 // the learner's action, and the open view of the skill graph of the version that answer names, as
-// the skill map reads them (R34) —, counted by the function ./states of skill-map at the time of
+// the skill map reads them —, counted by the function ./states of skill-map at the time of
 // the device. A map that does not come, or a module with no skill graph, leaves its card with no
-// bar; a map on its way gives its card the mark that it is being counted, for the card's skeleton
-// (R168 spec). The next lists read — a retry, a connection — ask again for a map that failed, and never
+// bar; a map on its way gives its card the mark that it is being counted, for the card's skeleton.
+// The next lists read — a retry, a connection — ask again for a map that failed, and never
 // again for one that came.
 import { Action } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
 import { skillStates } from "@altnovatrail/skill-map/states";
@@ -40,7 +40,7 @@ export async function countsOfModule(
   return {
     counts: countsOf(statuses),
     ...(chain ? { chain: chainPlace(map.graph.view, statuses, tiers) } : {}),
-    // The full ID, as skill-map's fullSkillId joins it (R04 skill-map).
+    // The full ID, as skill-map's fullSkillId joins it.
     ...(skill === undefined ? {} : { skill: `${moduleId}/skill/${skill}` }),
   };
 }

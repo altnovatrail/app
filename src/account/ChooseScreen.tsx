@@ -1,11 +1,11 @@
-// The choice of the learner, as the mockup's `who` (R08, R61; R148 spec): on the sign-in's sky with
+// The choice of the learner, as the mockup's `who`: on the sign-in's sky with
 // stars of its own, each profile a dark card — its avatar and pseudonym, whose profile it is, and
 // "Start" — the owner's with no PIN while the account has no child; "Add a learner" a card of
 // glass, shown but not open, with the line why, until a child's profile comes with a parent's
 // consent. Above, the name, and the sign-out a pill of glass; the section for adults opens from the
-// profile's menu once a learner is chosen (R29). On the first sign-in it asks the browser to keep
+// profile's menu once a learner is chosen. On the first sign-in it asks the browser to keep
 // the site's data, with no line of its own: the adult who just signed in is the one who sees
-// Firefox's prompt (R04).
+// Firefox's prompt.
 import type { Profile } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import { useEffect, useId } from "react";
 import { Brand } from "../app/Brand.tsx";

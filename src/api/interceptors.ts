@@ -1,4 +1,4 @@
-// The interceptors of the contract's rules (R18), outermost first:
+// The interceptors of the contract's rules, outermost first:
 // - what the device does on a refusal: the account gone — erased and signed out; no access — what is
 //   left of the account before erased; a method api no longer has — a reload offered;
 // - the sign-in: the ID token in `Authorization` on every request but the open views and the legal
@@ -14,13 +14,13 @@ import type { Tokens } from "./tokens.ts";
 
 /** What the device does on the refusals that touch it. */
 export interface ApiEvents {
-  /** api no longer has a method: the build is older, and a reload is offered (R18). */
+  /** api no longer has a method: the build is older, and a reload is offered. */
   readonly stale: () => void;
   /** The account is no more: everything of it is erased, and the device signs out. */
   readonly accountGone: () => Promise<void>;
-  /** The user has no account: what is left of the one the registry names is erased (R04). */
+  /** The user has no account: what is left of the one the registry names is erased. */
   readonly noAccess: () => Promise<void>;
-  /** api no longer gives a package's version: CheckPackages is asked (R18). */
+  /** api no longer gives a package's version: CheckPackages is asked. */
   readonly withdrawn?: () => void;
 }
 
@@ -35,9 +35,9 @@ const OPEN = new Set([
 
 /**
  * The methods whose absence is no build older than api: an api on an older tag of spec has no
- * legal texts in force and answers them `unimplemented` (R27), nor a share of the quota to give;
- * an api with no `WorkService` keeps no work, which then stays on the device alone (R30); and an
- * api beside the stub of tutor has no debug mode, which every build asks of it (R72).
+ * legal texts in force and answers them `unimplemented`, nor a share of the quota to give;
+ * an api with no `WorkService` keeps no work, which then stays on the device alone; and an
+ * api beside the stub of tutor has no debug mode, which every build asks of it.
  */
 const MAY_BE_ABSENT = new Set([
   "novatrail.api.v1.LegalService/GetLegalTexts",
@@ -50,15 +50,15 @@ const MAY_BE_ABSENT = new Set([
 export const PAUSES = [500, 1000, 2000, 4000] as const;
 
 /**
- * How long a repeat waits for a first request still going, ms: as long as api lets a request go
- * (R33 api), at the pause `Retry-After` asks, else at the last of PAUSES.
+ * How long a repeat waits for a first request still going, ms: as long as api lets a request go,
+ * at the pause `Retry-After` asks, else at the last of PAUSES.
  */
 export const STILL_GOING_MS = 30_000;
 
 /**
  * api's limit of FindTasks and SubmitWork, whose calls of a task from paper ask up to three models
- * in turn (R98 api): a call of either names it as its deadline, since a shorter Connect-Timeout-Ms
- * would cut api short, and a repeat waits for a first one still going as long (R73).
+ * in turn: a call of either names it as its deadline, since a shorter Connect-Timeout-Ms
+ * would cut api short, and a repeat waits for a first one still going as long.
  */
 export const PAPER_TIMEOUT_MS = 90_000;
 
@@ -80,7 +80,7 @@ export function retryAfter(headers: Pick<Headers, "get">): number | undefined {
 
 /**
  * The methods whose `CAUSE_VERSION_NOT_GIVEN` is no withdrawal: `PutWork` gets it for a version out
- * of the window of formats that api reads, with no work of the attempt kept before (R30).
+ * of the window of formats that api reads, with no work of the attempt kept before.
  */
 const NOT_WITHDRAWN = new Set(["novatrail.api.v1.WorkService/PutWork"]);
 

@@ -1,4 +1,4 @@
-// What an adult sets of a profile in the section for adults (R05, R07, R10, R29; the contract): the
+// What an adult sets of a profile in the section for adults (the contract): the
 // form of the profile's page as the profile gives it, and the settings `UpdateProfile` sends — only
 // those that changed, so that a value the build does not know is never written back; the profile
 // api gave after a change, with what the tab learnt itself of its open attempt and lesson runs,
@@ -29,7 +29,7 @@ export interface ProfileForm {
   readonly hintMode: HintMode.QUESTIONS_ONLY | HintMode.SHOW_WHERE;
 }
 
-/** The hint mode a profile has: "Show where" for one that names none, as a new profile's (R162 spec). */
+/** The hint mode a profile has: "Show where" for one that names none, as a new profile's. */
 export function hintModeOf(
   profile: Pick<Profile, "hintMode">,
 ): HintMode.QUESTIONS_ONLY | HintMode.SHOW_WHERE {
@@ -40,7 +40,7 @@ export function hintModeOf(
 
 /**
  * The form as the profile gives it: a mode or a speed the build does not know is "by steps" or
- * normal, as the contract's enums say, a hint mode "Show where", a new profile's (R162 spec), and
+ * normal, as the contract's enums say, a hint mode "Show where", a new profile's, and
  * voicing not said is off.
  */
 export function formOf(profile: Profile): ProfileForm {
@@ -96,7 +96,7 @@ export function asGiven(profile: Profile): Profile {
 
 /**
  * The profile as api gave it after a change, `from`, with the open attempt and the lesson runs the
- * tab has: those the tab learns itself, as they begin and end on its screens (R20, R23), and an
+ * tab has: those the tab learns itself, as they begin and end on its screens, and an
  * answer about settings neither brings back one that ended nor loses one begun. Whatever else api
  * gave — every setting, a field the contract adds to them among them — is api's. The profile
  * GetAccount gave stays the same.

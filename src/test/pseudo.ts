@@ -1,4 +1,4 @@
-// The pseudo-language of the tests (R17): English with accents and
+// The pseudo-language of the tests: English with accents and
 // half as long again, its places as they are, so that a screen shows where a longer language would
 // wrap, overflow or be cut. It never ships.
 import { en } from "../i18n/en.ts";
