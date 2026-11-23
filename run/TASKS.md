@@ -15,14 +15,6 @@ Open tasks outside the current epic, each as its body, in Russian. Each also has
 - **Как проверить:** `just -f spec/justfile docs-check-repo`.
 - **Разделы:** R145 spec, R143 spec; measurements 1.9 spec; [docs/measurements.md](../docs/measurements.md), разделы 8 и 10.
 
-#### T112. Ссылки по R171 spec: журнал, R01–R11
-
-- **Цель:** в шапке журнала [docs/decisions.md](../docs/decisions.md) и в его разделах `##` от «The `spec` tag» до «Accessibility», записи R01–R11, ссылки стоят по R171 spec, а датированные поправки свёрнуты в действующий текст записей.
-- **Почему:** часть T111 по её шагу 9 — журнал решений идёт отдельными частями по своим разделам `##`; план, CLAUDE.md, `.claude/rules/` и комментарии кода сделала T111 (тело — в архиве [docs/plan/E5.md](../docs/plan/E5.md)).
-- **Сделать:** шаги 4, 6 и 7 T111 для этих записей; шапка журнала — по `spec/repo-template/files/docs/decisions.md`. Механические места называет `just -f spec/justfile docs-check-repo` с ключом `"citations": true` в `docs-budgets.json`, включённым только на время проверки, — строки этих разделов; остальное — `grep -nE` по шаблону measurements 1.18 spec. Противоречие, найденное при свёртке, — строка таблицы 3, не правка наугад.
-- **Как проверить:** `docs-check-repo` без ключа — зелёный, с ключом — ни одного места в строках этих разделов; `/code-review high`, один круг; в описании pull request — таблица «поправка → место в новом тексте»; в отчёте — ссылок было и стало по виду.
-- **Разделы:** R171 spec, R160 spec; RULES.md spec — The bar и Citations; T111.
-
 #### T113. Ссылки по R171 spec: журнал, R12–R28
 
 - **Цель:** в разделах `##` журнала [docs/decisions.md](../docs/decisions.md) от «The move to `spec` v0.6.6» до «The move to `spec` v0.15.0», записи R12–R28, ссылки стоят по R171 spec, а датированные поправки свёрнуты в действующий текст записей.
