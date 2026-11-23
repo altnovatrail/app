@@ -142,6 +142,29 @@ it("puts the buttons below the title only where even their icons do not fit", ()
   expect(width(screen.getByRole("button", { name: "Retake" }))).toBe(48);
 });
 
+it("puts the buttons at the row's end below a title that wraps, in a bar with no middle too", () => {
+  render(
+    inLanguage(
+      <div className="nt-top" style={{ inlineSize: "7rem" }}>
+        <div className="nt-top-pill">
+          <h1>Задачи на странице</h1>
+        </div>
+        <div className="nt-top-end">
+          <BarButton icon="close" caption="Убрать все рамки" onClick={() => {}} />
+          <BarButton icon="camera" caption="Переснять" onClick={() => {}} />
+        </div>
+      </div>,
+    ),
+  );
+  const end = barEnd();
+  expect(fitBar(end)).toBe("below");
+  const bar = end.parentElement as HTMLElement;
+  const pill = bar.firstElementChild as HTMLElement;
+  expect(pill.scrollWidth).toBeLessThanOrEqual(pill.clientWidth + 1);
+  expect(bar.scrollWidth).toBeLessThanOrEqual(bar.clientWidth + 1);
+  expect(end.getBoundingClientRect().right).toBeCloseTo(bar.getBoundingClientRect().right, 0);
+});
+
 it("leaves a bar's end alone with no bar round it as with its words", () => {
   expect(fitBar(document.createElement("div"))).toBe("words");
 });

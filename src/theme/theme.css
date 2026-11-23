@@ -6579,9 +6579,10 @@ main.nt-task-screen:has(.nt-page-stage) {
  * The bar keeps one row, as BarFit.tsx fits it: with its words, the title in one line and the
  * end never wrapped, so that a row too narrow shows as cut; with its icons alone, the title and the
  * captions hidden to the eye but still the heading and the names, each button round, 48; below,
- * where even the icons do not fit, the buttons under the title, at its end, and the finding under
- * them: a squeezed pill would wrap its name a letter a line (1.4.10). Below 600 the finding, on a
- * row of its own, wraps its words rather than pass the window.
+ * where even the icons do not fit, the buttons under the title, at the row's end in a bar with no
+ * middle too, and the finding under them, the title wrapping by its words on its own row: a
+ * squeezed pill would wrap its name a letter a line (1.4.10). Below 600 the finding, on a row of
+ * its own, wraps its words rather than pass the window.
  */
 .nt-top-end[data-fit] {
   flex-wrap: nowrap;
@@ -6593,7 +6594,7 @@ main.nt-task-screen:has(.nt-page-stage) {
   white-space: nowrap;
 }
 /* biome-ignore lint/style/noDescendingSpecificity: the profiles' screen has no top bar. */
-.nt-top:has(> .nt-top-end[data-fit]) > .nt-top-pill > h1 {
+.nt-top:has(> .nt-top-end:is([data-fit="words"], [data-fit="icons"])) > .nt-top-pill > h1 {
   white-space: nowrap;
 }
 .nt-top:has(> .nt-top-end[data-fit="icons"]) > .nt-top-pill {
@@ -6620,6 +6621,7 @@ main.nt-task-screen:has(.nt-page-stage) {
 .nt-top:has(> .nt-top-end[data-fit="below"]) > .nt-top-end {
   grid-row: 2;
   justify-self: end;
+  margin-inline-start: auto;
 }
 .nt-top:has(> .nt-top-end[data-fit="below"]) > .nt-finding {
   grid-row: 3;
