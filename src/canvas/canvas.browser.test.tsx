@@ -43,7 +43,7 @@ describe("<novatrail-canvas> in JSX", () => {
     expect(typeof wrong).toBe("function");
   });
 
-  it("takes no element without its language, nor one the build has not (R11)", () => {
+  it("takes no element without its language, nor one the build has not", () => {
     // Never rendered, as above.
     const none = () => (
       // @ts-expect-error -- lang is no option: without it canvas fails WCAG 3.1.2.

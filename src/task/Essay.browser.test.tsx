@@ -395,7 +395,7 @@ describe("the screen of an essay", () => {
     expect(puts).toHaveLength(1);
   });
 
-  it("goes back to Home before the essay is finished (R57)", async () => {
+  it("goes back to Home before the essay is finished", async () => {
     window.location.hash = "#/task";
     await renderEssay({ history: WRITTEN });
     await vi.waitFor(() => expect(check()).toHaveAttribute("aria-disabled", "false"));

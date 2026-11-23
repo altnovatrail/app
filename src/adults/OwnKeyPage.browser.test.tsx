@@ -185,7 +185,7 @@ describe("the page Own AI key", () => {
     expect(screen.getByText("The key is in this tab's memory alone")).toBeTruthy();
   });
 
-  it("stands with the shapes of its form while the providers are read, busy (R168 spec)", async () => {
+  it("stands with the shapes of its form while the providers are read, busy", async () => {
     const { given, give } = held();
     await renderPage({
       providers: async () => {

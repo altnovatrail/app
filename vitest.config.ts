@@ -1,6 +1,6 @@
 // The tests of the app: logic in Node, screens in Chromium, WebKit and Firefox, and the screens
 // once more in two modes of the browser's context — forced colours and reduced motion — each in a
-// project of its own, its mode there from the start, as canvas has it (R45). The three
+// project of its own, its mode there from the start, as canvas has it. The three
 // engines come from the toolchain stage of .devcontainer/Dockerfile, which names them in
 // PLAYWRIGHT_BROWSERS_PATH. Each project has an instance per engine, named "<project>
 // (<engine>)": ci-test runs Node and Chromium with the coverage, and ci-engines WebKit and Firefox

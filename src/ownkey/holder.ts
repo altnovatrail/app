@@ -1,4 +1,4 @@
-// The holder of the owner's own key (R47; the contract), with no DOM: the one module that
+// The holder of the owner's own key, by the contract, with no DOM: the one module that
 // gives the key out, and only for the owner profile of the category `adult` while it is the learner
 // chosen. The key lives in the tab's memory while that profile is open, and in its database only
 // while the adult keeps it on this device; it is never in the holder's snapshot, which the screens

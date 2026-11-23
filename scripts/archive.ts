@@ -1,4 +1,4 @@
-// The tar archives of app (R25), read and written by its own code, with no dependency. Read: spec's
+// The tar archives of app, read and written by its own code, with no dependency. Read: spec's
 // part deployment/, from the file of spec's release that holds it, parts/deployment-1.tar.gz, which
 // ci-licenses has release-verify accept — the code and its tests read spec's
 // files from its releases, not from the spec submodule, which CI checks out for the licenses job

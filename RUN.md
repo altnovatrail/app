@@ -80,6 +80,7 @@ No current epic. The last done one is E5 «Интерфейс по эталон�
 | [ ] | T119 | Ссылки по R171 spec: архитектура, разделы 3.9, 3.10 и 4 | Claude | — | T111 |
 | [ ] | T120 | Ссылки по R171 spec: источники, замеры и ключ проверки | Claude | — | T112–T119 |
 | [x] | T121 | Переход на тег `spec` v0.19.12 | Claude | — | — |
+| [x] | T122 | Ссылки по строгому правилу R171 spec: проход по первой части | Claude | — | T121 |
 
 «Зависит от» names only tasks of this plan. What a task waits for from other repositories is its body's «Ждёт»: it is taken once the neighbour has done that, and until then the queue goes on.
 

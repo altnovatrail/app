@@ -1,4 +1,4 @@
-// The check of a deployed site against the release of app it serves (R42). `just site-check
+// The check of a deployed site against the release of app it serves. `just site-check
 // <origin> <version>` downloads the release's archive, has spec's release-verify accept it, and
 // runs this on it. infra's rollout checks its own release of the site; this is app's
 // own look, the same for the platform and for a self-hosted copy, and it reads only what the site

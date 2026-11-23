@@ -1,5 +1,5 @@
-// The client of api for every screen below Boot, and the state of a read for a screen to show
-// (R18): loading, the answer, or what the call came to, and a retry. An action with an idempotency
+// The client of api for every screen below Boot, and the state of a read for a screen to show:
+// loading, the answer, or what the call came to, and a retry. An action with an idempotency
 // key a screen calls itself, on a press, keeping its key until it is done.
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import type { Api } from "./client.ts";

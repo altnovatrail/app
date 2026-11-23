@@ -1,6 +1,6 @@
 # The documents of app
 
-What the [README](../README.md) of the repository leaves out, which says only what the component is and where it stands in NovaTrail (R21 spec): the index of the documents, how to run app against a local api, how a release comes out and what it holds, and how to contribute.
+What the [README](../README.md) of the repository leaves out, which says only what the component is and where it stands in NovaTrail: the index of the documents, how to run app against a local api, how a release comes out and what it holds, and how to contribute.
 
 ## Documents
 
@@ -15,7 +15,7 @@ The working rules, for people and coding agents alike, are in [CLAUDE.md](../CLA
 
 ## Run locally with api
 
-The first app runs against a local api, in api's own devcontainer, with the dev project of Firebase (section 3.7 of [architecture.md](architecture.md)):
+The first app runs against a local api, in api's own devcontainer, with the dev project of Firebase:
 
 1. In the dev project of Firebase, register a Web App for app, if there is none yet, and put `127.0.0.1` among the authorized domains of Authentication.
 2. Copy `deployment.example.json` to `deployment.local.json` and fill in the parameters of that Web App's config, `apiKey` included, from the project settings of Firebase; `api` stays `http://127.0.0.1:5173`, app's own origin, whose paths of api the development server sends on.
@@ -26,7 +26,7 @@ The first app runs against a local api, in api's own devcontainer, with the dev 
 
 A release comes out by itself once the checks pass on `main` and a change touches what the build is made from: the next patch of the line that `RELEASE_LINE` of `.github/workflows/release.yml` names, tagged `vX.Y.Z` with the release, and nobody tags by hand. Releases are immutable, and a ruleset keeps every tag `v*` on its commit.
 
-A release holds the archive of the build, `app_<version>.tar.gz`, signed with cosign by NovaTrail's shared release workflow, and beside it its bundle, `app_<version>.tar.gz.sigstore.json`, which the check of the signature reads. At the archive's root are `index.html`, `assets/`, `deployment.schema.json` — the schema of the deployment configuration, `/deployment.json`, which the page reads at every start and the archive does not hold —, `csp.json` — the template of the Content-Security-Policy header the host sends —, and `NOTICE` and `LICENSE`. The same build serves the platform and every self-hosted copy. infra deploys it; whoever hosts it takes it at an exact tag, checks it before serving it with spec's `just -f spec/justfile release-verify app <tag> <file>`, which checks the signature against Sigstore's trust root and everything its certificate names (R77 spec), and writes `deployment.json` of their own by spec's part `deployment/` at the tag the submodule `spec/` pins, [`spec/deployment/`](../spec/deployment/README.md).
+A release holds the archive of the build, `app_<version>.tar.gz`, signed with cosign by NovaTrail's shared release workflow, and beside it its bundle, `app_<version>.tar.gz.sigstore.json`, which the check of the signature reads. At the archive's root are `index.html`, `assets/`, `deployment.schema.json` — the schema of the deployment configuration, `/deployment.json`, which the page reads at every start and the archive does not hold —, `csp.json` — the template of the Content-Security-Policy header the host sends —, and `NOTICE` and `LICENSE`. The same build serves the platform and every self-hosted copy. infra deploys it; whoever hosts it takes it at an exact tag, checks it before serving it with spec's `just -f spec/justfile release-verify app <tag> <file>`, which checks the signature against Sigstore's trust root and everything its certificate names, and writes `deployment.json` of their own by spec's part `deployment/` at the tag the submodule `spec/` pins, [`spec/deployment/`](../spec/deployment/README.md).
 
 ## Contributing
 

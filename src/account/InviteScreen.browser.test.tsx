@@ -72,7 +72,7 @@ const ACCEPT = { name: "I agree to the Terms of Use and the Privacy Policy" };
 const NOTE = "Each text is in English, the one in force, with its gist in your language";
 
 describe("the invite code's screen", () => {
-  it("stands with the shape of the texts' tick while they are first read, the statement's as it is (R168 spec)", async () => {
+  it("stands with the shape of the texts' tick while they are first read, the statement's as it is", async () => {
     const onCreate = vi.fn(async () => "done" as const);
     const { rerender } = render(invite({ status: "loading", retry: () => {} }, onCreate));
     await toAgree();

@@ -27,7 +27,7 @@ function matches(range: string, tag: string): boolean {
   return tag === range || tag.startsWith(`${range}-`);
 }
 
-/** Whether a voice may speak at all: local, and none that Edge speaks by Azure (R07). */
+/** Whether a voice may speak at all: local, and none that Edge speaks by Azure. */
 export function mayUse(voice: VoiceLike): boolean {
   return voice.localService && !/online/i.test(voice.name);
 }

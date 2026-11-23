@@ -108,7 +108,7 @@ describe("the build", () => {
     );
   });
 
-  it("holds nothing of the local build's sign-in by the development token (R44)", () => {
+  it("holds nothing of the local build's sign-in by the development token", () => {
     const files = readdirSync("build", { recursive: true, withFileTypes: true })
       .filter((entry) => entry.isFile())
       .map((entry) => join(entry.parentPath, entry.name));
@@ -359,7 +359,7 @@ describe.each(ENGINES.map((type) => [type.name(), type] as const))(
       await page.context().close();
     }, 120_000);
 
-    it("shows the legal pages before signing in, under the header, reading nothing but api (R31)", async () => {
+    it("shows the legal pages before signing in, under the header, reading nothing but api", async () => {
       writeFileSync(local, JSON.stringify(file(ORIGIN)));
       const { page, violations, requests } = await open();
       await page.goto(`${ORIGIN}/`);
@@ -397,7 +397,7 @@ describe.each(ENGINES.map((type) => [type.name(), type] as const))(
       await page.context().close();
     }, 60_000);
 
-    it("shows a module's license by its address, under the header, asking only api for it (R32)", async () => {
+    it("shows a module's license by its address, under the header, asking only api for it", async () => {
       writeFileSync(local, JSON.stringify(file(ORIGIN)));
       const { page, violations, requests } = await open();
       const hex = "1".repeat(64);
@@ -452,7 +452,7 @@ describe.each(ENGINES.map((type) => [type.name(), type] as const))(
       await page.context().close();
     }, 60_000);
 
-    it("shows the page on the AI tutor by its address, under the header, asking api nothing (R33)", async () => {
+    it("shows the page on the AI tutor by its address, under the header, asking api nothing", async () => {
       writeFileSync(local, JSON.stringify(file(ORIGIN)));
       const { page, violations, requests } = await open();
       await page.goto(`${ORIGIN}/#/tutor`);
@@ -469,7 +469,7 @@ describe.each(ENGINES.map((type) => [type.name(), type] as const))(
       await page.context().close();
     }, 60_000);
 
-    it("takes the skill map's element under the header: its styles, its lines and Practise (R34)", async () => {
+    it("takes the skill map's element under the header: its styles, its lines and Practise", async () => {
       writeFileSync(local, JSON.stringify(file(ORIGIN)));
       const { page, violations, requests } = await open();
       await page.goto(`${ORIGIN}/`);

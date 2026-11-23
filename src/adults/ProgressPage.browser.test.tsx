@@ -559,7 +559,7 @@ describe("the progress of a profile", () => {
     expect(screen.queryByRole("button", { name: "Show more" })).toBeNull();
   });
 
-  it("stands with the shapes of its maps, traps and attempts while they are read, under their headings (R168 spec)", async () => {
+  it("stands with the shapes of its maps, traps and attempts while they are read, under their headings", async () => {
     window.location.hash = "#/adults";
     const { given, give } = held();
     renderSection({ lists: given });
@@ -572,7 +572,7 @@ describe("the progress of a profile", () => {
     await vi.waitFor(() => expectLoaded(document));
   });
 
-  it("stands with the shapes of a map while it is read, its way back as it is (R168 spec)", async () => {
+  it("stands with the shapes of a map while it is read, its way back as it is", async () => {
     window.location.hash = "#/adults";
     const { given, give } = held();
     renderSection({ map: given });

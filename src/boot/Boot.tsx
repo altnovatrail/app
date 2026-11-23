@@ -1,4 +1,4 @@
-// The start of the app (R09): in a frame of another page, a static screen, no request and no
+// The start of the app: in a frame of another page, a static screen, no request and no
 // storage; otherwise /deployment.json first, before any other request, then the start of the
 // storage on the device, and the app only once both are done. A failed preload after a
 // rollout, or a database a newer build has opened, offers a reload over whatever is shown; storage

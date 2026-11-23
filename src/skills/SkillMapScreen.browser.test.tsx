@@ -552,7 +552,7 @@ describe("a module's map", () => {
     expect(screen.queryByText(/Уровень поставил взрослый/)).toBeNull();
   });
 
-  it("stands with the shapes of its bands and tiles while the map is read, in its frame (R168 spec)", async () => {
+  it("stands with the shapes of its bands and tiles while the map is read, in its frame", async () => {
     const { given, give } = held();
     await renderMap(moduleMapRoute(SHARES), { held: { map: given } });
     const frame = await screen.findByRole("region", { name: "Skill map" });
@@ -562,7 +562,7 @@ describe("a module's map", () => {
     expectLoaded(frame);
   });
 
-  it("stands with the shapes of the modules offered and of the modules connected while each is read (R168 spec)", async () => {
+  it("stands with the shapes of the modules offered and of the modules connected while each is read", async () => {
     const catalog = held();
     const list = held();
     await renderMap(moduleMapRoute(SHARES), {

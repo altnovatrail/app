@@ -1,4 +1,4 @@
-// The works of a profile on the server (R30; `WorkService` of the contract), with
+// The works of a profile on the server (`WorkService` of the contract), with
 // no DOM: while the profile's storage of works is on, `PutWork` keeps each work as the device holds
 // it — the history of writing, the contexts of its submissions and the picture the canvas draws of
 // it — at each submission, when its attempt closes, and when the storage is switched on. A work

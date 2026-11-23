@@ -5,7 +5,7 @@
 // Accessibility; and the notices of third-party code, NOTICE and LICENSE of the build. They
 // show before signing in as well as after, in the language of the device, each a sheet of the
 // mockup's legal text whose head leads back to their list and closes them back to where they
-// were opened from. Nothing on them leads out of app: a text's own words lead nowhere (R27), and
+// were opened from. Nothing on them leads out of app: a text's own words lead nowhere, and
 // the operator of the copy, whom a page names, is reached as the section Who we are says.
 import {
   createContext,
@@ -64,7 +64,7 @@ export function nextPage(id: PageText): Route {
 /** The policy whose section Who we are names the operator of the copy. */
 const POLICY: PageText = "privacy-policy";
 
-/** The places where the app does not meet its standard yet, as R11 declares them. */
+/** The places the page Accessibility names, where the app does not meet its standard yet. */
 const GAPS = ["handwriting", "moving", "print", "check", "framing", "paper"] as const;
 
 /** Where a page stands among the legal pages: their list or another, and where they close to. */
@@ -198,7 +198,7 @@ export function TextPage({ id }: { readonly id: PageText }) {
 }
 
 /**
- * A text's next version as a page of its own, before the day it applies from (R46): that day, the
+ * A text's next version as a page of its own, before the day it applies from: that day, the
  * version in force until then and the way back to it, what can be withdrawn before it, and what
  * the version holds, open, as the page of the current one shows it.
  */

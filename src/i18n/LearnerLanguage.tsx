@@ -1,4 +1,4 @@
-// The language of a learner's screens (R10): the field of the profile, which an adult sets in the
+// The language of a learner's screens: the field of the profile, which an adult sets in the
 // section for adults, as the build finds it, else the device's. The page's `<html lang>` is it
 // while the screens are there; the device's language is still chosen by the buttons outside them.
 import { type ReactNode, useEffect, useMemo } from "react";

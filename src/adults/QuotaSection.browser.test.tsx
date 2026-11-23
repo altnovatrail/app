@@ -113,7 +113,7 @@ describe("the tutor time of a profile", () => {
     expect(asked).toEqual([expect.objectContaining({ profileId: "p1", action: Action.ADULT })]);
   });
 
-  it("stands with the shapes of its lines while the share is read, busy, and says Loading (R168 spec)", async () => {
+  it("stands with the shapes of its lines while the share is read, busy, and says Loading", async () => {
     const { given, give } = held();
     renderPage(async () => {
       await given;

@@ -457,7 +457,7 @@ export function joinOf(action: DebugAction): string {
   ).size;
   if (readers < 2) return "";
   return action.readersDiffer
-    ? "The readers read a place differently: it is unreadable (R68)."
+    ? "The readers read a place differently: it is unreadable."
     : "Both readers agree.";
 }
 
