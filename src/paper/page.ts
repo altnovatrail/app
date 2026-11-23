@@ -198,13 +198,13 @@ export function withDrawn(
   return [...tasks, { id: `drawn-${last + 1}`, frame, drawn: true, picked: true }];
 }
 
-/** A frame the learner drew, its corner moved. */
+/** A frame moved or resized by the learner, the AI's or their own. */
 export function withFrame(
   tasks: readonly PageTask[],
   id: string,
   frame: Frame,
 ): readonly PageTask[] {
-  return tasks.map((task) => (task.id === id && task.drawn ? { ...task, frame } : task));
+  return tasks.map((task) => (task.id === id ? { ...task, frame } : task));
 }
 
 /** A frame removed by its cross, the AI's or the learner's. */

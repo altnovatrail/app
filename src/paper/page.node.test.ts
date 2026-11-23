@@ -99,12 +99,19 @@ describe("the pick", () => {
     expect(counts(drawn)).toEqual({ found: 2, drawn: 1, picked: 3, all: 3 });
     const id = drawn.find((t) => t.drawn)?.id ?? "";
     expect(numbers(drawn).get(id)).toBe(2);
-    // Its corner moves, and the AI's frames' does not; its cross removes it, as theirs do.
+    // Its frame changes, as the AI's frames' do, the rest as they were; its cross removes it, as
+    // theirs do.
     const moved = withFrame(drawn, id, { ymin: 200, xmin: 0, ymax: 290, xmax: 500 });
     expect(moved.find((t) => t.id === id)?.frame.xmax).toBe(500);
-    expect(withFrame(drawn, found[0]?.id ?? "", { ymin: 0, xmin: 0, ymax: 1, xmax: 1 })).toEqual(
-      drawn,
-    );
+    const first = found[0]?.id ?? "";
+    const theirs = withFrame(drawn, first, { ymin: 0, xmin: 0, ymax: 1, xmax: 1 });
+    expect(theirs.find((t) => t.id === first)?.frame).toEqual({
+      ymin: 0,
+      xmin: 0,
+      ymax: 1,
+      xmax: 1,
+    });
+    expect(theirs.filter((t) => t.id !== first)).toEqual(drawn.filter((t) => t.id !== first));
     expect(without(drawn, id)).toEqual(found);
     expect(without(drawn, found[0]?.id ?? "").map((t) => t.id)).toEqual([found[1]?.id, id]);
   });

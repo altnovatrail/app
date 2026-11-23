@@ -1,8 +1,9 @@
 // The geometry of a task frame on the photo of a page (R71): a rectangle in whole thousandths of
 // the photo's width and height, as a crop box is written. A frame the learner
 // draws comes of a rectangle dragged from one corner of a task to the opposite — the rectangle the
-// learner sees is the frame — or of two taps, a corner and then the one opposite; its corner
-// resizes it. Each is at least the size of a target on the screen and
+// learner sees is the frame — or of two taps, a corner and then the one opposite. Every frame, the
+// AI's too, moves when dragged by its middle and resizes by its corner. Each is at least the size
+// of a target on the screen and
 // never past the photo's edge. The sizes on the screen come in CSS px, by the scale the screen
 // draws the photo at. A frame on a photo turned upright turns with it (R162 spec). No DOM.
 import type { Size } from "./photo.ts";
@@ -113,6 +114,23 @@ export function resizedFrame(frame: Frame, to: Point, scale: Scale): Frame {
     xmax: clamp(Math.round(to.x), Math.min(1000, Math.ceil(frame.xmin + w)), 1000),
     ymax: clamp(Math.round(to.y), Math.min(1000, Math.ceil(frame.ymin + h)), 1000),
   };
+}
+
+/** How far a press on a frame moves, in CSS px, before it is a drag that moves the frame, not a tap. */
+export const MOVE_SLOP = 6;
+
+/** Whether a press on a frame from `from` to `to` has gone past a tap: farther than MOVE_SLOP. */
+export function isMove(from: Point, to: Point, scale: Scale): boolean {
+  return Math.hypot((to.x - from.x) * scale.x, (to.y - from.y) * scale.y) >= MOVE_SLOP;
+}
+
+/** The frame moved by `by`, its size as it was, kept wholly in the photo. */
+export function movedFrame(frame: Frame, by: Point): Frame {
+  const width = frame.xmax - frame.xmin;
+  const height = frame.ymax - frame.ymin;
+  const xmin = clamp(Math.round(frame.xmin + by.x), 0, 1000 - width);
+  const ymin = clamp(Math.round(frame.ymin + by.y), 0, 1000 - height);
+  return { xmin, ymin, xmax: xmin + width, ymax: ymin + height };
 }
 
 /** Whether a value is a frame: four numbers, its edges in order and within the photo. */

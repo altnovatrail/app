@@ -2,7 +2,8 @@
 // task's frame over it a button that is picked or left out, every one picked at first, and its
 // cross removes it; a task the AI missed the learner frames by hand, by a rectangle dragged from one
 // corner of it to the opposite with a finger or a pen, which follows the pointer and looks as the
-// frame it becomes, or by two taps, a corner and then the one opposite, and its corner resizes it.
+// frame it becomes, or by two taps, a corner and then the one opposite. Every frame, the AI's too,
+// moves when dragged by its middle and resizes by its corner; a press that moved it picks nothing.
 // The top bar's pill holds the title alone, and its end "Remove all frames", which clears the
 // photo for frames of the learner's own, and Retake; while the tasks are found, its middle says
 // so, by a turning ring, and a line of light runs down the photo and back; once they are, how many
@@ -21,7 +22,9 @@ import type { Photo } from "./capture.ts";
 import {
   dragFrame,
   type Frame,
+  isMove,
   isTap,
+  movedFrame,
   type Point,
   resizedFrame,
   type Scale,
@@ -179,6 +182,19 @@ export function Pick({
     | undefined
   >(undefined);
   const resizing = useRef<{ readonly pointer: number; readonly id: string } | undefined>(undefined);
+  // A press on a frame: the frame as it was, where the press began, and whether it moved the frame,
+  // so that the click after a move picks nothing.
+  const moving = useRef<
+    | {
+        readonly pointer: number;
+        readonly id: string;
+        readonly frame: Frame;
+        readonly from: Point;
+        moved: boolean;
+      }
+    | undefined
+  >(undefined);
+  const movedId = useRef<string | undefined>(undefined);
   const [live, setLive] = useState<Frame | undefined>(undefined);
   const [corner, setCorner] = useState<Point | undefined>(undefined);
 
@@ -337,7 +353,44 @@ export function Pick({
                 aria-pressed={task.picked}
                 aria-label={words.text(key, { n })}
                 style={placed(task.frame)}
-                onClick={() => onTasks((was) => toggled(was, task.id))}
+                onClick={() => {
+                  if (movedId.current === task.id) {
+                    movedId.current = undefined;
+                    return;
+                  }
+                  onTasks((was) => toggled(was, task.id));
+                }}
+                onPointerDown={(event) => {
+                  if (finding || event.button !== 0) return;
+                  event.currentTarget.setPointerCapture?.(event.pointerId);
+                  const { point } = where(event);
+                  movedId.current = undefined;
+                  moving.current = {
+                    pointer: event.pointerId,
+                    id: task.id,
+                    frame: task.frame,
+                    from: point,
+                    moved: false,
+                  };
+                }}
+                onPointerMove={(event) => {
+                  const now = moving.current;
+                  if (now === undefined || now.pointer !== event.pointerId) return;
+                  const { point, scale } = where(event);
+                  if (!now.moved && !isMove(now.from, point, scale)) return;
+                  now.moved = true;
+                  const by = { x: point.x - now.from.x, y: point.y - now.from.y };
+                  onTasks((was) => withFrame(was, now.id, movedFrame(now.frame, by)));
+                }}
+                onPointerUp={(event) => {
+                  const now = moving.current;
+                  if (now === undefined || now.pointer !== event.pointerId) return;
+                  moving.current = undefined;
+                  if (now.moved) movedId.current = now.id;
+                }}
+                onPointerCancel={() => {
+                  moving.current = undefined;
+                }}
               >
                 <span className="nt-page-mark" aria-hidden="true">
                   {task.picked ? <Icon value="ticked" /> : n}
@@ -353,38 +406,33 @@ export function Pick({
                   onClick={() => onTasks((was) => without(was, task.id))}
                 />
               </span>
-              {task.drawn ? (
-                <span
-                  className="nt-frame-control"
-                  style={control(task.frame.xmax, task.frame.ymax)}
-                >
-                  <IconButton
-                    value="resize-frame"
-                    className="nt-frame-corner"
-                    onPointerDown={(event) => {
-                      event.currentTarget.setPointerCapture?.(event.pointerId);
-                      resizing.current = { pointer: event.pointerId, id: task.id };
-                    }}
-                    onPointerMove={(event) => {
-                      const now = resizing.current;
-                      if (now === undefined || now.pointer !== event.pointerId) return;
-                      const { point, scale } = where(event);
-                      onTasks((was) => {
-                        const frame = was.find((t) => t.id === now.id)?.frame;
-                        return frame === undefined
-                          ? was
-                          : withFrame(was, now.id, resizedFrame(frame, point, scale));
-                      });
-                    }}
-                    onPointerUp={() => {
-                      resizing.current = undefined;
-                    }}
-                    onPointerCancel={() => {
-                      resizing.current = undefined;
-                    }}
-                  />
-                </span>
-              ) : null}
+              <span className="nt-frame-control" style={control(task.frame.xmax, task.frame.ymax)}>
+                <IconButton
+                  value="resize-frame"
+                  className="nt-frame-corner"
+                  onPointerDown={(event) => {
+                    event.currentTarget.setPointerCapture?.(event.pointerId);
+                    resizing.current = { pointer: event.pointerId, id: task.id };
+                  }}
+                  onPointerMove={(event) => {
+                    const now = resizing.current;
+                    if (now === undefined || now.pointer !== event.pointerId) return;
+                    const { point, scale } = where(event);
+                    onTasks((was) => {
+                      const frame = was.find((t) => t.id === now.id)?.frame;
+                      return frame === undefined
+                        ? was
+                        : withFrame(was, now.id, resizedFrame(frame, point, scale));
+                    });
+                  }}
+                  onPointerUp={() => {
+                    resizing.current = undefined;
+                  }}
+                  onPointerCancel={() => {
+                    resizing.current = undefined;
+                  }}
+                />
+              </span>
             </span>
           ))}
           {corner === undefined ? null : (

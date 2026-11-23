@@ -3307,6 +3307,8 @@ main.nt-task-screen:has(> .nt-camera) .nt-top-pill.nt-glass {
   border-radius: 0.625rem;
   background: rgba(0, 113, 227, 0.035);
   box-shadow: inset 0 0 0 0.125rem rgba(0, 113, 227, 0.4);
+  cursor: grab;
+  touch-action: none;
   transition:
     background var(--nt-quick),
     box-shadow var(--nt-quick);
@@ -3370,11 +3372,17 @@ main.nt-task-screen:has(> .nt-camera) .nt-top-pill.nt-glass {
     0 2px 6px rgba(0, 0, 0, 0.18),
     0 0 0 0.5px rgba(0, 0, 0, 0.08);
 }
+/* The corner is a dot of 15 in a white ring, as the mockup's, small enough on a dense page to leave
+   the next frame's mark in sight; its target is still 44. */
 .nt-frame-control button.nt-icon-only.nt-frame-corner::before {
+  inset: calc(50% - 0.46875rem);
   background: var(--nt-accent);
+  box-shadow:
+    0 0 0 0.15625rem var(--nt-card),
+    0 1px 4px rgba(0, 0, 0, 0.18);
 }
 .nt-frame-control button.nt-icon-only.nt-frame-corner {
-  color: var(--nt-on-fill);
+  color: transparent;
   cursor: nwse-resize;
   touch-action: none;
 }

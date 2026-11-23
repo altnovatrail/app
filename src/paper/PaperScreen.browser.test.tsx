@@ -952,7 +952,7 @@ it("frames a task by a rectangle dragged corner to corner, after a tap, and resi
   expect(box.height).toBeCloseTo(photo.height * 0.3, 0);
   const width = box.width;
 
-  const corner = screen.getByRole("button", { name: "Resize your frame" });
+  const corner = screen.getByRole("button", { name: "Resize the frame" });
   // Another pointer's moves are not the corner's.
   corner.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, pointerId: 7 }));
   stroke(corner, [
@@ -961,6 +961,47 @@ it("frames a task by a rectangle dragged corner to corner, after a tap, and resi
   ]);
   await waitFor(() => expect(drawn.getBoundingClientRect().width).toBeGreaterThan(width + 10));
   corner.dispatchEvent(new PointerEvent("pointercancel", { bubbles: true, pointerId: 1 }));
+});
+
+it("moves a frame the AI found by its middle and resizes it by its corner, and a tap still picks it", async () => {
+  await renderPaper({
+    found: () => ({ frames: [{ box: { ymin: 100, xmin: 100, ymax: 300, xmax: 500 } }] }),
+  });
+  const frame = await screen.findByRole("button", { name: "Deselect task 1" });
+  const photo = drawing().getBoundingClientRect();
+  const before = frame.getBoundingClientRect();
+  // A press that stays within the slop moves nothing.
+  stroke(frame, [
+    [300, 200],
+    [300.5, 200.5],
+  ]);
+  expect(frame.getBoundingClientRect().left).toBeCloseTo(before.left, 1);
+  // Dragged by its middle it moves, its size kept, and the click after the drag picks nothing.
+  stroke(frame, [
+    [300, 200],
+    [310, 200],
+    [400, 250],
+  ]);
+  await waitFor(() =>
+    expect(frame.getBoundingClientRect().left - before.left).toBeCloseTo(photo.width * 0.1, 0),
+  );
+  expect(frame.getBoundingClientRect().top - before.top).toBeCloseTo(photo.height * 0.05, 0);
+  expect(frame.getBoundingClientRect().width).toBeCloseTo(before.width, 0);
+  frame.click();
+  expect(frame).toHaveAttribute("aria-pressed", "true");
+  // Its corner resizes it, as a frame drawn by hand.
+  const corner = screen.getByRole("button", { name: "Resize the frame" });
+  stroke(corner, [
+    [600, 350],
+    [800, 500],
+  ]);
+  await waitFor(() =>
+    expect(frame.getBoundingClientRect().width).toBeCloseTo(photo.width * 0.6, 0),
+  );
+  expect(frame.getBoundingClientRect().height).toBeCloseTo(photo.height * 0.35, 0);
+  // A tap picks it or leaves it out, as before.
+  await userEvent.click(frame);
+  expect(await screen.findByRole("button", { name: "Select task 1" })).toBe(frame);
 });
 
 it("finds the page anew by the learner's request, its own frame staying, and Undo brings the frames back", async () => {

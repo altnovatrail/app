@@ -399,7 +399,7 @@ export const en = {
   "icon.choose-photos": "Choose from photos",
   /** The cross and the corner of a frame the learner drew round a task the AI missed. */
   "icon.remove-frame": "Remove the frame",
-  "icon.resize-frame": "Resize your frame",
+  "icon.resize-frame": "Resize the frame",
   /**
    * The row of places of Home, Subjects and the skill map, and the phone's tab bar (R148 spec): its
    * name, its places, the cognitive map shut until it comes with its "Soon" and its tooltip, and

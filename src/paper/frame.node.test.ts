@@ -1,14 +1,17 @@
 // The geometry of a frame the learner draws (R71): a rectangle dragged corner to corner, a tap that
-// is no drag, two taps, the corner that resizes it, the photo's edge, and the crop's rectangle in
-// pixels; and a frame on the photo turned upright (R162 spec).
+// is no drag, two taps, the corner that resizes it, a frame moved by its middle, the photo's edge,
+// and the crop's rectangle in pixels; and a frame on the photo turned upright (R162 spec).
 import { describe, expect, it } from "vitest";
 import {
   cropRect,
   dragFrame,
   isFrame,
+  isMove,
   isTap,
   MIN_HEIGHT,
   MIN_WIDTH,
+  MOVE_SLOP,
+  movedFrame,
   pageOrder,
   resizedFrame,
   type Scale,
@@ -129,6 +132,35 @@ describe("the corner", () => {
     expect(resizedFrame(frame, { x: 2000, y: 1500 }, scale)).toEqual({
       ...frame,
       xmax: 1000,
+      ymax: 1000,
+    });
+  });
+});
+
+describe("a move", () => {
+  const frame = { xmin: 100, ymin: 100, xmax: 300, ymax: 300 };
+
+  it("is a press gone farther than the slop on the screen, across or down", () => {
+    const from = { x: 100, y: 100 };
+    // 5 px across is a tap; past 6 down, at 0.7 px a thousandth, a move.
+    expect(isMove(from, { x: 110, y: 100 }, scale)).toBe(false);
+    expect(isMove(from, { x: 100, y: 100 + (MOVE_SLOP + 0.01) / scale.y }, scale)).toBe(true);
+  });
+
+  it("shifts the frame, its size kept, rounded to whole thousandths", () => {
+    expect(movedFrame(frame, { x: 50.4, y: -20.6 })).toEqual({
+      xmin: 150,
+      ymin: 79,
+      xmax: 350,
+      ymax: 279,
+    });
+  });
+
+  it("keeps the frame wholly in the photo", () => {
+    expect(movedFrame(frame, { x: -500, y: 900 })).toEqual({
+      xmin: 0,
+      ymin: 800,
+      xmax: 200,
       ymax: 1000,
     });
   });
