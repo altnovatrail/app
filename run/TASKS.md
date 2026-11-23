@@ -15,14 +15,6 @@ Open tasks outside the current epic, each as its body, in Russian. Each also has
 - **Как проверить:** `just -f spec/justfile docs-check-repo`.
 - **Разделы:** R145 spec, R143 spec; measurements 1.9 spec; [docs/measurements.md](../docs/measurements.md), разделы 8 и 10.
 
-#### T116. Ссылки по R171 spec: журнал, R59–R79
-
-- **Цель:** в разделах `##` журнала [docs/decisions.md](../docs/decisions.md) от «The layout from the width and the pop-over» до конца, записи R59–R79 — R58 стоит в разделе «The way back to Home» и сделана T115 —, ссылки стоят по R171 spec, а датированные поправки свёрнуты в действующий текст записей.
-- **Почему:** часть T111 по её шагу 9; строка Д48 таблицы 4 называет R64 и R68.
-- **Сделать:** как T112, для этих записей; R64 и R68 — по Д48; когда T113 и T115 уже сделаны, Д48 закрывается.
-- **Как проверить:** как T112, по строкам этих разделов.
-- **Разделы:** R171 spec, R160 spec; T111, T112.
-
 #### T117. Ссылки по R171 spec: архитектура, разделы 1–3.4
 
 - **Цель:** в заголовке и разделах 1, 2 и 3.1–3.4 [docs/architecture.md](../docs/architecture.md) ссылки стоят по R171 spec: без номеров задач, без поправок — ссылкой на запись, не больше двух в скобке, без цепочек и без ссылок, которые только описывают.
