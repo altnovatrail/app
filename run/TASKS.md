@@ -15,14 +15,6 @@ Open tasks outside the current epic, each as its body, in Russian. Each also has
 - **Как проверить:** `just -f spec/justfile docs-check-repo`.
 - **Разделы:** R145 spec, R143 spec; measurements 1.9 spec; [docs/measurements.md](../docs/measurements.md), разделы 8 и 10.
 
-#### T117. Ссылки по R171 spec: архитектура, разделы 1–3.4
-
-- **Цель:** в заголовке и разделах 1, 2 и 3.1–3.4 [docs/architecture.md](../docs/architecture.md) ссылки стоят по R171 spec: без номеров задач, без поправок — ссылкой на запись, не больше двух в скобке, без цепочек и без ссылок, которые только описывают.
-- **Почему:** часть T111 по её шагу 9: архитектура — около 70 тыс. слов и 1 458 ссылок, больше одного ревью, — тремя частями по её разделам.
-- **Сделать:** шаги 4 и 7 T111 для этих разделов; места — `docs-check-repo` с ключом `"citations": true`, включённым на время проверки, и `grep -nE` по шаблону measurements 1.18 spec.
-- **Как проверить:** `docs-check-repo` без ключа — зелёный, с ключом — ни одного места в строках этих разделов; `/code-review high`, один круг; в отчёте — ссылок было и стало по виду.
-- **Разделы:** R171 spec, R160 spec; RULES.md spec — The bar и Citations; T111.
-
 #### T118. Ссылки по R171 spec: архитектура, разделы 3.5–3.8
 
 - **Цель:** в разделах 3.5–3.8 [docs/architecture.md](../docs/architecture.md) ссылки стоят по R171 spec.
