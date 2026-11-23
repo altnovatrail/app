@@ -1,6 +1,6 @@
 # EPICS.md — epics for later of `app`
 
-Table 2 of [RUN.md](../RUN.md) (R153 spec, R154 spec).
+Table 2 of [RUN.md](../RUN.md).
 
 - A row has a result and a basis, no tasks yet. Row order is the order epics are taken, until the author decides otherwise. T08 proposed the order of the code epics; what each takes of E1's decisions is in [docs/architecture.md](../docs/architecture.md), section 3.10.
 - The author's word of 2026-11-16, at T52: after E3 come row 6.29 of [COORDINATION.md](../spec/COORDINATION.md), a task outside an epic, then the epic of row 6.18, «Interface by the mockup» — E5, done 2026-11-18 (T91) —, and E4 after it: E4 is next.
