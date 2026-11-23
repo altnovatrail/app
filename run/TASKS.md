@@ -15,10 +15,3 @@ Open tasks outside the current epic, each as its body, in Russian. Each also has
 - **Как проверить:** `just -f spec/justfile docs-check-repo`.
 - **Разделы:** R145 spec, R143 spec; measurements 1.9 spec; [docs/measurements.md](../docs/measurements.md), разделы 8 и 10.
 
-#### T120. Ссылки по R171 spec: источники, замеры и ключ проверки
-
-- **Цель:** [docs/sources.md](../docs/sources.md), [docs/measurements.md](../docs/measurements.md) и [docs/README.md](../docs/README.md) — со ссылками по R171 spec; в `docs-budgets.json` — `"citations": true`, и `just -f spec/justfile docs-check-repo` с ним зелёный.
-- **Почему:** последняя часть T111 по её шагу 9 включает ключ; записи источников и замеров держат дату и теряют номер задачи, в заголовке тоже (R171 spec).
-- **Сделать:** шаги 3, 4 и 7 T111 для этих файлов; шапки `docs/sources.md` и `docs/README.md` — по `spec/repo-template/files/docs/`; заголовок записи называет тему и дату, не задачу, а номер записи не меняется. Затем ключ — как в `spec/repo-template/files/docs-budgets.json`; что ещё называет проверка — поправить.
-- **Как проверить:** `docs-check-repo` с ключом — зелёный; `/code-review high`, один круг; в отчёте — ссылок было и стало по виду, командами measurements 1.18 spec, против замера «до» T111.
-- **Разделы:** R171 spec, R160 spec, R32 spec; `spec/repo-template/files/` — `docs/sources.md`, `docs/README.md`, `docs-budgets.json`; T111.
