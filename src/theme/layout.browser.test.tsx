@@ -111,7 +111,7 @@ describe("the layout from the width", () => {
     [1194, 834],
     [390, 844],
   ])(
-    "keeps the canvas 20rem high at %i × %i, however long the list under it (R66)",
+    "keeps the canvas 20rem high at %i × %i, however long the list under it",
     async (width, height) => {
       await page.viewport(width, height);
       render(

@@ -3,7 +3,7 @@
 // their own profile alone —, and by an adult's, in the section for adults — the account's beside
 // it, so that a child never sees what the family spends. A share is of a cap, in whole percent:
 // never a sum in dollars, and never the cap. When the next family day begins, the screens say by
-// the device's calendar, as the refusals of the quota do (R37). An api with no `GetQuota` answers
+// the device's calendar, as the refusals of the quota do. An api with no `GetQuota` answers
 // `unimplemented`, which is no share, with no reload offered, as the legal texts' is. No DOM.
 import type { QuotaShare } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import type { Action } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";

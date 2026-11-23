@@ -38,7 +38,7 @@ function sheet(summary: string) {
 }
 
 describe("a legal text's sheet while its text is read", () => {
-  it("opens at once, its heading and close as they will stand, the chip and the gist as shapes (R168 spec)", () => {
+  it("opens at once, its heading and close as they will stand, the chip and the gist as shapes", () => {
     const sheet = (versions: LegalSheetProps["versions"]) =>
       inLanguage(
         <LegalSheet id="privacy-policy" versions={versions} onClose={() => {}} onPage={() => {}} />,

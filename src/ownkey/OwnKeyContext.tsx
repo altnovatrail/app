@@ -1,4 +1,4 @@
-// The own key's holder for the screens (R08): one for the tab, made by the account's gate,
+// The own key's holder for the screens: one for the tab, made by the account's gate,
 // which opens it while the owner profile of the category `adult` is the learner chosen and closes
 // it otherwise. The tabs tell each other of a key changed on the channel `novatrail-own-key`.
 // Outside the gate — a screen's own test — the holder holds nothing, and every request goes on

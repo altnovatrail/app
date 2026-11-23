@@ -293,12 +293,18 @@ describe("a region", () => {
     expect(
       reportLines("signin", "ipad", "firefox", [
         { region: "the art", what: "missing", mockup: "found", app: "not found" },
-        { region: "the heading", what: "font-size", mockup: "32px", app: "28px", by: "R17" },
+        {
+          region: "the heading",
+          what: "font-size",
+          mockup: "32px",
+          app: "28px",
+          by: "the type scale",
+        },
       ]),
     ).toEqual([
       "signin on ipad in firefox: 2 differences",
       "  the art — missing: mockup found; app not found",
-      "  the heading — font-size: mockup 32px; app 28px (by R17)",
+      "  the heading — font-size: mockup 32px; app 28px (by the type scale)",
     ]);
   });
 });

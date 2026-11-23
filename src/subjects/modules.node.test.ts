@@ -90,7 +90,7 @@ describe("the cards of modules", () => {
 });
 
 describe('the mark "in order"', () => {
-  it("is a chain's: two skills or more, each in a tier of its own (R58 spec)", () => {
+  it("is a chain's: two skills or more, each in a tier of its own", () => {
     expect(isSequential({ "counting-gaps": 1, "time-calendar": 2 })).toBe(true);
     expect(isSequential({ c: 3, a: 1, b: 2 })).toBe(true);
     expect(isSequential({ a: 1, b: 1, c: 2 })).toBe(false);

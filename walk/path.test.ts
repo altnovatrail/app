@@ -1,4 +1,4 @@
-// The path of the first slice in a browser, without the author (R44): the development
+// The path of the first slice in a browser, without the author: the development
 // server of vite.config.ts on port 5173, with deployment.local.json, its proxy to the local api —
 // `http://api:8080` unless NOVATRAIL_API names another —, and api's development token, which the
 // local build's sign-in takes instead of Google's window. The path runs in each engine
@@ -74,7 +74,7 @@ const ACCOUNT_DATABASES = /^novatrail-(profile-.+|registry|cache)$/;
 const FAILED_LOAD = /^Failed to load resource: the server responded with a status of 4\d\d\b/;
 /** Why the walk stops when the profile's quota of the day is spent. */
 const QUOTA_SPENT =
-  "walk: the profile of dev-app has spent its tutor time of today: wait for the next day, or run api's just dev-app with API_DEV_APP_UID set to an account of its own (R67 api)";
+  "walk: the profile of dev-app has spent its tutor time of today: wait for the next day, or run api's just dev-app with API_DEV_APP_UID set to an account of its own";
 /** A synthetic own key, which api's stub accepts by its ending; with `-invalid`, refuses. */
 const OWN_KEY = "sk-ant-walk-synthetic-wxyz";
 /**
@@ -95,7 +95,7 @@ const KEYED = new Set([
 ]);
 /** Why the walk stops when api's dev-app opens no provider to an own key. */
 const NO_PROVIDER =
-  "walk: api's dev-app lists no provider of an own key: run api v0.1.41 or newer, whose dev-app lists Anthropic (R72 api)";
+  "walk: api's dev-app lists no provider of an own key: run api v0.1.41 or newer, whose dev-app lists Anthropic";
 /** The address of api's GetAccount, through the development server's proxy. */
 const GET_ACCOUNT = `${ORIGIN}/novatrail.api.v1.AccountService/GetAccount`;
 /** The address of api's PutWork, the same way. */

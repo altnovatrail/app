@@ -595,7 +595,7 @@ describe("the lesson player", () => {
     expect(screen.getByRole("button", { name: "Back to Home" })).toBeVisible();
   });
 
-  it("stands with its bar and the shapes of its title, its line and a segment while the run is read (R168 spec)", async () => {
+  it("stands with its bar and the shapes of its title, its line and a segment while the run is read", async () => {
     const { given, give } = held();
     await renderLesson({ runHeld: given });
     expect(screen.getByRole("heading", { level: 1, name: "Lesson" })).toBeTruthy();
@@ -606,7 +606,7 @@ describe("the lesson player", () => {
     expectLoaded(document);
   });
 
-  it("stands with the shapes of a task segment while its attempt is read, under the lesson's bar (R168 spec)", async () => {
+  it("stands with the shapes of a task segment while its attempt is read, under the lesson's bar", async () => {
     const { given, give } = held();
     await renderLesson({ openAttempt: { attemptId: "a7", segment: 3 }, taskHeld: given });
     expect(await screen.findByRole("heading", { level: 1, name: "Gaps and posts" })).toBeTruthy();
@@ -766,7 +766,7 @@ describe("the lesson player", () => {
     expect(kept.left).toHaveBeenCalledOnce();
   });
 
-  it("says when the tutor comes back once the quota refuses the task segment, and keeps the run (R37)", async () => {
+  it("says when the tutor comes back once the quota refuses the task segment, and keeps the run", async () => {
     const midnight = new Date();
     midnight.setHours(24, 0, 0, 0);
     const kept = await renderLesson({
@@ -893,7 +893,7 @@ describe("the lesson player", () => {
     await screen.findByText("A fence has posts and gaps between them.");
   });
 
-  it("goes back to Home from a run that did not come (R57)", async () => {
+  it("goes back to Home from a run that did not come", async () => {
     window.location.hash = "#/lesson";
     await renderLesson({
       run: () => {
@@ -976,7 +976,7 @@ describe("the lesson player", () => {
     await screen.findByRole("button", { name: "Choose an answer" });
   });
 
-  it("puts the pill of the task's mode at the end of the lesson's bar, beside the profile's (R65)", async () => {
+  it("puts the pill of the task's mode at the end of the lesson's bar, beside the profile's", async () => {
     await renderLesson({
       kept: { place: 3 },
       openAttempt: { attemptId: "a7", segment: 3 },
@@ -988,7 +988,7 @@ describe("the lesson player", () => {
     expect(await screen.findByRole("dialog", { name: "Mode" })).toBeVisible();
   });
 
-  it("names the answer chosen with its verdict, walks the options by the arrows, and keeps them once solved (R65)", async () => {
+  it("names the answer chosen with its verdict, walks the options by the arrows, and keeps them once solved", async () => {
     await renderLesson({ kept: { place: 3 }, openAttempt: { attemptId: "a7", segment: 3 } });
     await userEvent.click(await screen.findByRole("button", { name: "Choose an answer" }));
     const options = () => screen.queryByRole("dialog", { name: "Choose an answer" });

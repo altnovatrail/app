@@ -27,4 +27,4 @@ It runs on the learner's device and stands between the learner and the platform'
 - canvas and skill-map — UI packages it builds in: the canvas the learner writes on, and the skill map;
 - infra — hosts and deploys its signed build, and a self-hosted copy runs the same build.
 
-Its card is architecture 3.1 spec, among the documents of [spec](https://github.com/altnovatrail/spec); its own documents, its decisions and its plan are in [docs/](docs/README.md).
+Its card is in the architecture of [spec](https://github.com/altnovatrail/spec); its own documents, its decisions and its plan are in [docs/](docs/README.md).

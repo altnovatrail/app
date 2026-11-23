@@ -170,7 +170,7 @@ describe("the page of a module's license", () => {
     expect(window.location.hash).toBe("#/home");
   });
 
-  it("stands with the shapes of the files while they are read, under its heading, busy (R168 spec)", async () => {
+  it("stands with the shapes of the files while they are read, under its heading, busy", async () => {
     const { given, give } = held();
     renderWith(<LicensePages route={licenseRoute(D1)} />, {
       LICENSE: [
@@ -324,7 +324,7 @@ describe("the modules of a profile in the section for adults", () => {
     expect(screen.getByRole("button", { name: "Back to the section" })).toBeTruthy();
   });
 
-  it("stand as the shapes of their cards while they are read, under the page's heading (R168 spec)", async () => {
+  it("stand as the shapes of their cards while they are read, under the page's heading", async () => {
     window.location.hash = "#/adults";
     const { given, give } = held();
     renderWith(<Section />, {}, "en", connected, given);

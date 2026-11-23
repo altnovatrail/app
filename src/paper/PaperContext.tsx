@@ -5,7 +5,7 @@
 // a reload. So does the conversation with the tutor about the page, the learner's requests among it.
 // Each photo replaced has its URLs revoked; so is the photo before once the tasks found on it
 // turned upright turn the page's photo too. From Start on, the page is the profile's history
-// too, in its database (R77): the photo and the frames, and each task begun with its crop and its
+// too, in its database: the photo and the frames, and each task begun with its crop and its
 // work — the history, the tracing paper's place, the contexts of its submissions and whether it is
 // over —, the work written a moment after it changes, not on every stroke, and at once when the
 // page goes or the tab is hidden. A page of the history opens again on the screen of solving with

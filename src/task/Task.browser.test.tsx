@@ -589,7 +589,7 @@ afterEach(() => {
 });
 
 describe("the task screen", () => {
-  it("stands with its bar and the shapes of its statement and row while the attempt is read (R168 spec)", async () => {
+  it("stands with its bar and the shapes of its statement and row while the attempt is read", async () => {
     const { given, give } = held();
     await renderTask({ held: given });
     expect(screen.getByRole("heading", { level: 1, name: "Task" })).toBeTruthy();
@@ -954,7 +954,7 @@ describe("the task screen", () => {
     window.location.hash = "";
   });
 
-  it("goes back to Home during the attempt, from above the task (R57)", async () => {
+  it("goes back to Home during the attempt, from above the task", async () => {
     window.location.hash = "#/task";
     await renderTask({ mode: Mode.SELF });
     await screen.findByRole("button", { name: "Choose an answer" });
@@ -1205,7 +1205,7 @@ describe("the task screen with handwriting", () => {
     expect(screen.getAllByText("Not checked").length).toBeGreaterThan(0);
   });
 
-  it("says when the tutor comes back once the quota left a check unchecked (R37)", async () => {
+  it("says when the tutor comes back once the quota left a check unchecked", async () => {
     const midnight = tomorrow();
     const { rungs } = await renderTask({
       task: SHEET_TASK,
@@ -1328,7 +1328,7 @@ describe("the task screen with handwriting", () => {
     expect(screen.queryByText(line)).toBeNull();
   });
 
-  it("says why no words came after a correct answer while platform AI is closed (R37)", async () => {
+  it("says why no words came after a correct answer while platform AI is closed", async () => {
     let outcome: { cause: Cause } = { cause: Cause.PLATFORM_LIMIT };
     const solved = () => ({
       ...sheetAnswer("correct", { value: "7" }),
@@ -1713,7 +1713,7 @@ describe("the task screen with handwriting", () => {
   });
 });
 
-describe("the tutor's words only while its panel is open (R67)", () => {
+describe("the tutor's words only while its panel is open", () => {
   const tutorButton = () => screen.getByRole("button", { name: "Tutor" });
   /** The panel's ×: the tutor's button, which opens it, stands only while it is closed. */
   const closePanel = () => userEvent.click(panel().getByRole("button", { name: "Close" }));
@@ -2236,7 +2236,7 @@ describe("the hint and the solution on their edges", () => {
   });
 });
 
-describe("Report a problem with the tutor's words (R33)", () => {
+describe("Report a problem with the tutor's words", () => {
   /** A wrong answer on my own: the words of its rung come. */
   async function notYet(): Promise<void> {
     await choose("4", "No");

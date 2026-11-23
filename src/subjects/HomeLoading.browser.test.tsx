@@ -5,7 +5,7 @@ import { inLanguage } from "../test/language.tsx";
 import { HomeScreen } from "./MySubjects.tsx";
 
 describe("Home while its subjects are read", () => {
-  it("shows the shapes of Next up and of two cards, busy, and says Loading; then the content in their place (R168 spec)", async () => {
+  it("shows the shapes of Next up and of two cards, busy, and says Loading; then the content in their place", async () => {
     const { rerender } = render(inLanguage(<HomeScreen connected={undefined} />));
     const busy = document.querySelectorAll('[aria-busy="true"]');
     expect(busy.length).toBeGreaterThan(0);
@@ -41,7 +41,7 @@ describe("Home while its subjects are read", () => {
     expect(width(".nt-next-loading > .nt-next-foot > .nt-loading")).toBeLessThanOrEqual(320);
   });
 
-  it("shows a card's kind, counts, squares and foot as shapes while its map comes (R168 spec)", async () => {
+  it("shows a card's kind, counts, squares and foot as shapes while its map comes", async () => {
     const card = { moduleId: "m", digest: "d", title: "M" };
     const { rerender } = render(
       inLanguage(<HomeScreen connected={[{ ...card, counting: true }]} />),

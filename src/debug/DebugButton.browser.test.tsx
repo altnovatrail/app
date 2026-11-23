@@ -235,7 +235,7 @@ describe("the debug button", () => {
     await userEvent.click(models.getByRole("switch", { name: "Second reader" }));
     expect(
       await models.findByText(
-        "Two readers of the work: a place they read differently is unreadable (R68).",
+        "Two readers of the work: a place they read differently is unreadable.",
       ),
     ).toBeVisible();
     await waitFor(() => expect(asked.at(-1)?.choice?.second?.effort).toBe(DebugEffort.LOW));
@@ -282,9 +282,7 @@ describe("the debug button", () => {
     await userEvent.click(window_.getByRole("tab", { name: /Log/ }));
     const log = within(window_.getByRole("region", { name: "Log of the models" }));
     expect(log.getByText("Request: “only the first column”")).toBeVisible();
-    expect(
-      log.getByText("The readers read a place differently: it is unreadable (R68)."),
-    ).toBeVisible();
+    expect(log.getByText("The readers read a place differently: it is unreadable.")).toBeVisible();
     expect(log.getByText("Read the work · reader 2 · attempt 2")).toBeVisible();
     expect(log.getByText("module-kit · no AI")).toBeVisible();
 

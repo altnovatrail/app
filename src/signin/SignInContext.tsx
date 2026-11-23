@@ -1,4 +1,4 @@
-// The sign-in service for every screen below Boot (R19): Boot makes it once the storage's start has
+// The sign-in service for every screen below Boot: Boot makes it once the storage's start has
 // compared the project of the sign-in service, and only then.
 import { createContext, useContext } from "react";
 import type { SignInService } from "./service.ts";

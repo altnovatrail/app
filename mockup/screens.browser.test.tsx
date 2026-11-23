@@ -514,10 +514,10 @@ async function barDrawn() {
  * of "Read aloud" and the voicing stands above the element, where the mockup has the statement's card
  * and its speaker (В74 in run/QUESTIONS.md).
  */
-const PLACED = 'the line of "Read aloud" above the canvas, R65';
+const PLACED = 'the line of "Read aloud" above the canvas';
 
 /** A button the bar shows by its icon alone: the font of its caption, out of sight, is not drawn. */
-const ICON_ALONE = "the caption is out of sight (R60; R84 canvas)";
+const ICON_ALONE = "the caption is out of sight";
 
 /** The canvas's bar of glass, its first tool and the hand. */
 const BAR: readonly Region[] = [
@@ -611,7 +611,7 @@ async function agreeing() {
  * mockup's does, but its words are app's own, without the mockup's full stops, so what follows
  * them moves.
  */
-const SHIFTED = "app's own words, without the mockup's full stops (R61)";
+const SHIFTED = "app's own words, without the mockup's full stops";
 
 /** The way to the legal pages, at the card's foot: one button that names them all. */
 const LEGAL_WAY: Region = {
@@ -749,7 +749,7 @@ const CODE_ACCEPTED: Region = {
   app: { text: "Code accepted" },
   differs: {
     what: ["missing"],
-    by: "api alone takes a code, on Create account: app keeps its hint until then (R27)",
+    by: "api alone takes a code, on Create account: app keeps its hint until then",
   },
 };
 
@@ -824,7 +824,7 @@ const OWNER: readonly Region[] = [
 ];
 
 /** Why the avatars stand lower: 12 below their button, and the phone's sheet with its ×. */
-const AVATARS_HUNG = "the pop-over 12 below its button, the phone's sheet with its × (R59; R60)";
+const AVATARS_HUNG = "the pop-over 12 below its button, the phone's sheet with its ×";
 
 /** The policy and the terms in force, synthetic, and the policy's next version, as api gives them. */
 const LEGAL_API = routedApi((router) =>
@@ -887,8 +887,8 @@ function sheetOver(link: string) {
  * pages, which the mockup has no list for, before the heading; the whole page open, as it is one of
  * its own. The texts' sheets give the texts api gives, where the mockup's are a sample.
  */
-const LISTED = "the way back to the list of the legal pages before the heading (R31; R69)";
-const OPEN = 'the whole page open, not behind "Read the full text" (R31; R69)';
+const LISTED = "the way back to the list of the legal pages before the heading";
+const OPEN = 'the whole page open, not behind "Read the full text"';
 const FROM_API = "the texts come from api, the mockup's are a sample (its «Where it differs»)";
 
 /** The sheet, its heading, the chip under it and its close, of a legal page of that heading. */
@@ -973,7 +973,7 @@ function textSheet(title: string): readonly Region[] {
       name: "the English text in force",
       mockup: { text: "The English text is the one in force" },
       app: { css: ".nt-in-force" },
-      differs: { what: ["missing"], by: "the line is on a screen in another language alone (R27)" },
+      differs: { what: ["missing"], by: "the line is on a screen in another language alone" },
     },
     {
       name: "Read the full text",
@@ -999,7 +999,7 @@ const LEGAL_TEXTS: readonly Compared[] = [
         app: { css: ".nt-legal-sheet .nt-sheet-note" },
         differs: {
           what: ["y", "height"],
-          by: `${FROM_API}; the way to the next version's page in it (R46)`,
+          by: `${FROM_API}; the way to the next version's page in it`,
         },
       },
     ],
@@ -1025,7 +1025,7 @@ const LEGAL_TEXTS: readonly Compared[] = [
         name: "the standard",
         mockup: { css: ".ph-gist" },
         app: { css: "h2.nt-sheet-caption:first-of-type + p" },
-        differs: { what: ["height"], by: "the words of the standard of R11" },
+        differs: { what: ["height"], by: "the words of the accessibility standard" },
       },
     ],
   },
@@ -1287,7 +1287,7 @@ const SAM = {
 };
 
 /** A card or a bar, whose words are its own regions': the size of its own text is not drawn. */
-const NO_TEXT = "no text of its own: the body's 14 px (R11)";
+const NO_TEXT = "no text of its own: the body's 14 px";
 
 /**
  * Why the row is in sight under the options on a phone: the mockup's tutor's sheet is open and hides
@@ -1295,14 +1295,13 @@ const NO_TEXT = "no text of its own: the body's 14 px (R11)";
  * closed.
  */
 const UNDER_SHEET =
-  "the mockup's tutor's sheet open over the row of the phone; app's row, and its options, with the sheet closed (R67)";
+  "the mockup's tutor's sheet open over the row of the phone; app's row, and its options, with the sheet closed";
 
 /** Why Check is grey while the work is read: it takes no press till the verdict comes. */
-const READING = "Check takes no press while the work is read, and looks so (R65)";
+const READING = "Check takes no press while the work is read, and looks so";
 
 /** Why the way on after "Correct" is not in the card: a lesson's Continue is its row's. */
-const WAY_ON =
-  'the way on after "Correct": the lesson\'s row, or the result in the panel (R23; R65)';
+const WAY_ON = 'the way on after "Correct": the lesson\'s row, or the result in the panel';
 
 /** The row of glass and its buttons, on a task with no options. */
 const ROW: readonly Region[] = [
@@ -1412,7 +1411,7 @@ const EXPLAIN_ACT: Region = {
  * where the mockup greys it.
  */
 const EXPLAINED =
-  'app hides "Explain differently" while it takes no press, where the mockup greys it (R67)';
+  'app hides "Explain differently" while it takes no press, where the mockup greys it';
 
 /** "Report a problem" under the tutor's newest words. */
 const REPORT_OPEN: Region = {
@@ -1429,7 +1428,7 @@ const GRABBER: Region = {
   app: { css: ".nt-tutor-grab" },
   differs: {
     what: ["colour", "radius", "font-size", "font-weight"],
-    by: "app's grabber shows the icon of what it does, Full screen or Half screen, of the closed list of buttons without a caption, where the mockup draws a bar (R60; R67)",
+    by: "app's grabber shows the icon of what it does, Full screen or Half screen, of the closed list of buttons without a caption, where the mockup draws a bar",
   },
 };
 
@@ -1440,7 +1439,7 @@ const TUTOR_BUTTON: Region = {
   app: { css: ".nt-tutor-button" },
   differs: {
     what: ["border", "colour", "font-size", "font-weight"],
-    by: `the button is its sign, the tutor's gradient in an edge of glass, where the mockup's sign is a span in it (R67); ${ICON_ALONE}`,
+    by: `the button is its sign, the tutor's gradient in an edge of glass, where the mockup's sign is a span in it; ${ICON_ALONE}`,
   },
 };
 
@@ -1518,7 +1517,7 @@ function home() {
  * engine's way, "What's next", which names no lesson before it is pressed, not the mockup's
  * lesson begun with its line.
  */
-const HOME_PLACED = '"What\'s next" names no lesson before it is pressed (R24)';
+const HOME_PLACED = '"What\'s next" names no lesson before it is pressed';
 
 /** The row of places from 600, the tab bar on a phone, and the pills at the right: Home's frame. */
 function frameOf(device: Device): readonly Region[] {
@@ -1603,7 +1602,7 @@ const PILL: Region = {
  * Why a colour of a pop-over is read lighter: it is a modal dialog, which makes what it stands on
  * inert, out of the reading's reach, so its glass is read over white.
  */
-const OVER_INERT = "a modal dialog, over nothing the reading takes (R59)";
+const OVER_INERT = "a modal dialog, over nothing the reading takes";
 
 /** A pop-over of the frame, by its name on either side. */
 function popOver(name: string, mockup: string, app = mockup): Region {
@@ -1684,7 +1683,7 @@ const HOME_TUTOR: readonly Region[] = [
     app: { role: "button", name: "Tutor" },
     differs: {
       what: ["border", "colour", "font-size", "font-weight"],
-      by: `the button is its sign, where the mockup's sign is a span in it (R67); ${ICON_ALONE}`,
+      by: `the button is its sign, where the mockup's sign is a span in it; ${ICON_ALONE}`,
     },
   },
 ];
@@ -1712,7 +1711,7 @@ function subjects() {
  * Why a card of Subjects is shorter than the mockup's: a module's manifest has no words of what it
  * teaches and no tags, so the card holds its title, its mark and its buttons.
  */
-const NO_ABOUT = "a manifest has no words of what a module teaches, nor tags (R79)";
+const NO_ABOUT = "a manifest has no words of what a module teaches, nor tags";
 
 const SUBJECTS_REGIONS: readonly Region[] = [
   {
@@ -1770,7 +1769,7 @@ const MAP: readonly Region[] = [
     app: { css: ".nt-map-frame" },
     differs: {
       what: ["y", "height", "font-size"],
-      by: `the legend above the frame is skill-map's, inside it (R79); ${NO_TEXT}`,
+      by: `the legend above the frame is skill-map's, inside it; ${NO_TEXT}`,
     },
   },
 ];
@@ -1822,8 +1821,8 @@ const LESSON_ROW: readonly Region[] = [
   },
 ];
 
-/** The format gives a segment no title of its own (format 21 in spec): the caption is its kind. */
-const NO_SEGMENT_TITLE = "a segment has no title in the format (format 21 in spec)";
+/** The format gives a segment no title of its own: the caption is its kind. */
+const NO_SEGMENT_TITLE = "a segment has no title in the format";
 
 /** The explanation's card of reading, its caption and Read aloud. */
 const EXPLANATION: readonly Region[] = [
@@ -1877,8 +1876,8 @@ const SEGMENTS: readonly Region[] = [
  * Continue, which the mockup's phone hides; and why Next is paler with every part open: canvas pales
  * a button that does not act by its colour, the mockup by its opacity.
  */
-const ROW_LINE = "the canvas's row keeps its line on a phone (R84 canvas)";
-const PALE = "canvas pales a button that does not act by its colour, not its opacity (R84 canvas)";
+const ROW_LINE = "the canvas's row keeps its line on a phone";
+const PALE = "canvas pales a button that does not act by its colour, not its opacity";
 
 /** The canvas's row of a worked example on a device, all its parts open or not. */
 function exampleRow(device: Device, open = false): readonly Region[] {
@@ -1906,7 +1905,7 @@ const EXAMPLE_ROW: readonly Region[] = [
     app: { css: ".tools.row" },
     followsText: "centre",
     // Its words are its buttons', compared below.
-    differs: { what: ["font-size"], by: "no text of its own (R84 canvas)" },
+    differs: { what: ["font-size"], by: "no text of its own" },
   },
   {
     name: "Next",
@@ -1934,7 +1933,7 @@ const LESSON_END: readonly Region[] = [
     name: "the module's tile",
     mockup: { css: ".ph-endcard > span:first-child" },
     app: { css: ".nt-end-tile" },
-    differs: { what: ["font-size", "font-weight"], by: "the letter is drawn by CSS (R62)" },
+    differs: { what: ["font-size", "font-weight"], by: "the letter is drawn by CSS" },
   },
   {
     name: "the lesson's title",
@@ -2000,7 +1999,7 @@ function besidePanel(device: Device, regions: readonly Region[]): readonly Regio
  * the whole window, where the mockup lays a white page on the page's `#F2F2F7`,
  * which its glass lets through.
  */
-const WORKBOOK_PAPER = "canvas draws the workbook on its white paper (R84 canvas)";
+const WORKBOOK_PAPER = "canvas draws the workbook on its white paper";
 
 /** The row on a workbook, its glass over canvas's paper. */
 const WORKBOOK_ROW: readonly Region[] = ROW.map((region) =>
@@ -2019,8 +2018,7 @@ const CRITERIA = [
  * panel, which names the criteria without the marks — those are the adult's, in the
  * progress —, where the mockup's panel shows them.
  */
-const DONE_ON =
-  "the way on after Done: the lesson's row, or the result in the panel (R23; R53; R87 spec)";
+const DONE_ON = "the way on after Done: the lesson's row, or the result in the panel";
 
 /** "Try again" in the card of "Not yet". */
 const TRY_AGAIN: Region = {
@@ -2262,7 +2260,7 @@ const SCREENS: readonly Compared[] = [
           app: { css: ".nt-pop-report" },
           differs: {
             what: ["y", "height", "font-size"],
-            by: `its options are app's radio buttons of 44 (R11), where the mockup's are rows of 44 with a circle of 20: the form is taller, and on a phone its sheet rises higher; ${NO_TEXT}`,
+            by: `its options are app's radio buttons of 44, where the mockup's are rows of 44 with a circle of 20: the form is taller, and on a phone its sheet rises higher; ${NO_TEXT}`,
           },
         },
       ],

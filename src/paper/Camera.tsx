@@ -1,4 +1,4 @@
-// The camera of a task from paper (R71): app's own, the device's camera at the back in a video,
+// The camera of a task from paper: app's own, the device's camera at the back in a video,
 // "Take photo" its shutter and "Choose from photos" a picture the device keeps, with the line to
 // keep names out of the photo; no finding of the page while it is held, no flash. With no camera,
 // or none the browser may use, the photos are the way in. The camera stops once the screen goes.

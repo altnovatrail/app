@@ -240,7 +240,7 @@ function Slot({
       {second === undefined ? null : (
         <span className="nt-debug-foot">
           {second.on
-            ? "Two readers of the work: a place they read differently is unreadable (R68)."
+            ? "Two readers of the work: a place they read differently is unreadable."
             : "Off: one reader, the first model."}
         </span>
       )}

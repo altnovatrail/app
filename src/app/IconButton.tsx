@@ -9,8 +9,8 @@ import { useTooltip } from "./Tooltip.tsx";
 
 /**
  * The closed list: each button that shows no caption, its icon — none for the grabber,
- * which draws a bar — and the caption that names it. A button joins the list only by a change of
- * R90 spec, and then of R60.
+ * which draws a bar — and the caption that names it. A button joins the list only once spec's
+ * closed list holds it, and then app's own decision on the buttons without a caption.
  */
 export const CAPTIONLESS = {
   back: { icon: "back", word: "icon.back" },

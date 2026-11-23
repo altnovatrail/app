@@ -1,4 +1,4 @@
-// "Report a problem" beside a reply of the tutor (R33): a button, and in its place a
+// "Report a problem" beside a reply of the tutor: a button, and in its place a
 // form — one of the six kinds of a problem, a text of up to 1000 characters with the plea to write
 // no name in it, the words that go with it and what to do when someone is in danger now. "Send" is
 // `ReportProblem` with one idempotency key for the report, the same with every repeat of it, so

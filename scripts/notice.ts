@@ -6,8 +6,8 @@
 // - for each license among them, every identifier of an expression on its own, a line that begins
 //   `Text of <license>`, with its text below;
 // - for each of them that holds a NOTICE file of its own, a line `Notice of <name> <version>:`, a
-//   blank line and that file's text as it is, as the Apache License 2.0, section 4(d), asks of a
-//   work that redistributes it; and no such section for a package that holds none.
+//   blank line and that file's text as it is, as the Apache License 2.0 asks of a
+//   work that redistributes it (sources 2.3); and no such section for a package that holds none.
 // Run as `node scripts/notice.ts` it prints what is wrong, and ci-licenses fails on it.
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 

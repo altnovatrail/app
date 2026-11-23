@@ -1,4 +1,4 @@
-// The narrow interface app keeps its data on the device behind (R04, R16): the operations of
+// The narrow interface app keeps its data on the device behind: the operations of
 // IndexedDB it uses and nothing more, so that the rules above it run the same on the browser's
 // IndexedDB (idb.ts) and on the store in memory the tests in Node give it (memory.ts). No DOM here.
 

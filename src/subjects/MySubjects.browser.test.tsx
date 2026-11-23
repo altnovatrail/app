@@ -919,7 +919,7 @@ describe("the legend and the task from paper", () => {
 });
 
 describe("Subjects while its lists are read", () => {
-  it("stands with the shapes of the cards and of the count under their headings (R168 spec)", () => {
+  it("stands with the shapes of the cards and of the count under their headings", () => {
     const screenOf = (lists: { connected?: []; catalog?: [] }) =>
       inLanguage(
         <CatalogScreen

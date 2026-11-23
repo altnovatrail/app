@@ -155,7 +155,7 @@ describe("the legal pages", () => {
     expect(screen.getByRole("button", { name: "Назад к списку" })).toBeTruthy();
   });
 
-  it("stand with the shapes of a text while it is read, under its heading, busy (R168 spec)", async () => {
+  it("stand with the shapes of a text while it is read, under its heading, busy", async () => {
     const { given, give } = held();
     renderPages(legal("privacy-policy"), async () => {
       await given;
@@ -353,7 +353,7 @@ describe("the legal pages", () => {
     }
   });
 
-  it("show Accessibility: the standard, the places R11 declares, how it is checked, and whom to write to", async () => {
+  it("show Accessibility: the standard, the places it declares, how it is checked, and whom to write to", async () => {
     window.location.hash = "#/legal/accessibility";
     renderPages(legal("accessibility"));
     expect(screen.getByRole("heading", { level: 1, name: "Accessibility" })).toBeTruthy();

@@ -244,7 +244,7 @@ describe("the storage of works on the server", () => {
     expect(screen.queryByRole("checkbox")).toBeNull();
   });
 
-  it("stands with the shape of the text while it is read, the consent's words as they are (R168 spec)", async () => {
+  it("stands with the shape of the text while it is read, the consent's words as they are", async () => {
     const { given, give } = held();
     renderSection(OWNER, {
       texts: async () => {
