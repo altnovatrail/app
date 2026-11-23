@@ -47,12 +47,18 @@ export function useBarFit(end: RefObject<HTMLElement | null>, content: string): 
     let width = bar.clientWidth;
     let frame = 0;
     let live = true;
-    // On the next frame, outside the observer's callback: the fit changes the bar's height.
-    const watch = new ResizeObserver(() => {
+    const refit = () => {
       if (bar.clientWidth === width) return;
       width = bar.clientWidth;
+      fitBar(node);
+    };
+    // The window's resize comes before the frame is drawn, so no frame shows the old fit; the
+    // observer, for a width the window does not change, fits on the next frame, outside its
+    // callback, since the fit changes the bar's height.
+    window.addEventListener("resize", refit);
+    const watch = new ResizeObserver(() => {
       cancelAnimationFrame(frame);
-      frame = requestAnimationFrame(() => fitBar(node));
+      frame = requestAnimationFrame(refit);
     });
     watch.observe(bar);
     void document.fonts?.ready.then(() => {
@@ -60,6 +66,7 @@ export function useBarFit(end: RefObject<HTMLElement | null>, content: string): 
     });
     return () => {
       live = false;
+      window.removeEventListener("resize", refit);
       watch.disconnect();
       cancelAnimationFrame(frame);
     };
