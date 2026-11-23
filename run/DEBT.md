@@ -8,7 +8,7 @@ Table 4 of [RUN.md](../RUN.md): what was put off on purpose, its risk, when to r
 
 ## Table 4. Technical debt
 
-Numbers are not reused: next — Д51.
+Numbers are not reused: next — Д52.
 
 | ID | Debt | From | Risk while open | When to return |
 |---|---|---|---|---|
@@ -42,3 +42,4 @@ Numbers are not reused: next — Д51.
 | Д48 | R54, R55, R64 and R68 cite amendments of R06, R21, R23 and R35 that T253 spec folded into their entries: "the second" and "the third 2026-11-17 amendment to R21", "the 2026-11-17 amendments to R06, R23…", "the 2026-11-18 amendments to R35…"; each should cite the entry alone. Each of the five has dated amendments of its own: rewrite it whole (R160 spec) | T253 spec | A session looks for an amendment that is no longer there | The next task touching any of them |
 | Д49 | The storage entry of [docs/decisions.md](../docs/decisions.md) rejects erasing by the header Clear-Site-Data because it clears the storage of the response's origin alone, and [docs/sources.md](../docs/sources.md) has no record of it: the quote read when the storage was decided was not carried into a record. | T112 | A claim about the outside world without its source: a change of the header's rules would go unnoticed. | T120, the sources part of the citations: read the header's specification and add the quote to the record of the storage on the device. |
 | Д50 | Two claims about the outside world in [docs/decisions.md](../docs/decisions.md) have no record of their own: R21 says the tutor's words take about 97 % of the money spent on AI, by the measurements of `tutor`, and R25 says a run of a fork or of Dependabot gets no OIDC token, without which keyless signing does not go; their old citation led to a measurement of `tutor` that neither this repository nor `spec` records, or to none. | T113 | A claim without its source: a change of the price or of GitHub's rules would go unnoticed. | T120, the sources part of the citations: take each into a record of `docs/sources.md` or `docs/measurements.md`, from its primary source, or say it without the figure. |
+| Д51 | R33 of [docs/decisions.md](../docs/decisions.md) quotes the AI providers' terms on telling learners that the tutor is an AI and on learning materials for minors — Anthropic's guidelines for organizations serving minors, its Usage Policy and its child safety guidance for developers, OpenAI's under-18 API guidance — with their addresses and the date read in the entry itself, and [docs/sources.md](../docs/sources.md) has no record of them. | T114 | A claim about the outside world without its record: a change of the providers' terms would go unnoticed. | T120, the sources part of the citations: carry the quotes into a record of `docs/sources.md`, from the primary sources, and cite it. |
