@@ -190,7 +190,8 @@ export function Solve({
   const [overTold, setOverTold] = useState(false);
   // The keys of the Checks whose work the page keeps: a repeat's answer is none of a new one.
   const kept = useRef(new Set<string>());
-  // The key of a check, kept while the work it sent is the same, so that a press again repeats it.
+  // The key of a check, kept while the work it sent is the same, so that a press again repeats it;
+  // dropped after a failure of AI, which a press again asks anew.
   const sent = useRef<{ readonly of: string; readonly key: string } | undefined>(undefined);
 
   const list = onList(begun, tasks);
@@ -593,6 +594,9 @@ export function Solve({
         );
         const read = outcomeOf(answer.outcome);
         holder.noteOutcome(profileId, read, ai);
+        // A failure of AI is a moment's: api keeps it under the key, so a press again with the same
+        // work would get it back with no call; the next press is a new action.
+        if (read?.cause === Cause.AI_FAILURE) sent.current = undefined;
         const verdict = paperVerdictOf(answer.items, read, answer.solved !== undefined);
         const context =
           "cells" in work || work.statement === undefined ? undefined : work.submission;

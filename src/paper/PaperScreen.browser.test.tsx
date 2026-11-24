@@ -662,6 +662,37 @@ it("says nothing could be read to check, with Hint, Next task and Check again", 
   expect(await screen.findByRole("heading", { name: "Task 2" })).toBeVisible();
 });
 
+it("checks the same work anew after a failure of AI, with a new key, and again with a verdict", async () => {
+  const { submits } = await solving({
+    checked: (n) =>
+      n === 0
+        ? { outcome: { cause: Cause.AI_FAILURE } }
+        : {
+            items: [
+              {
+                verdict: "not_yet",
+                answerSlots: [
+                  { answerSlot: { item: 1, slot: 1 }, verdict: "not_yet", value: "84" },
+                ],
+              },
+            ],
+            wrongAnswers: 1,
+          },
+  });
+  writeOn(sheet());
+  await userEvent.click(screen.getByRole("button", { name: "Check" }));
+  expect(await screen.findByText("Not checked")).toBeVisible();
+  await userEvent.click(screen.getByRole("button", { name: "Check" }));
+  expect(await screen.findByText("Not yet")).toBeVisible();
+  // A verdict is kept: the same work pressed again repeats it.
+  await userEvent.click(screen.getByRole("button", { name: "Try again" }));
+  await userEvent.click(screen.getByRole("button", { name: "Check" }));
+  await waitFor(() => expect(submits).toHaveLength(3));
+  const keys = submits.map((each) => each.idempotencyKey);
+  expect(keys[1]).not.toBe(keys[0]);
+  expect(keys[2]).toBe(keys[1]);
+});
+
 it("opens the tutor's panel by its button: the verdict a line in it, and a card again once it closes", async () => {
   await solving({
     checked: () => ({
