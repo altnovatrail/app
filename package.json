@@ -19,7 +19,7 @@
     "@firebase/app": "0.16.6",
     "@firebase/auth": "1.13.10",
     "@iconify-json/material-symbols": "1.2.99",
-    "marked": "18.2.0",
+    "marked": "18.2.1",
     "react": "19.3.1",
     "react-dom": "19.3.1"
   },
