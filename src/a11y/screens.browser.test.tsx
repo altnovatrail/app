@@ -44,6 +44,7 @@ import { ProgressMap, ProgressPage } from "../adults/ProgressPage.tsx";
 import { ApiProvider } from "../api/ApiContext.tsx";
 import type { Api } from "../api/client.ts";
 import { App } from "../app/App.tsx";
+import { IconButton } from "../app/IconButton.tsx";
 import { HOME, LEGAL, TUTOR } from "../app/router.ts";
 import { ShellBar } from "../app/Shell.tsx";
 import {
@@ -802,7 +803,7 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
   ],
   ["the camera of a task from paper", () => <Camera onPhoto={() => {}} onClose={() => {}} />],
   [
-    "the pick of a task from paper, a frame found and one drawn",
+    "the pick of a task from paper, a frame found and one drawn, the tutor's button in its bar",
     () => (
       <Pick
         photo={{ bytes: new Uint8Array(), width: 600, height: 800, url: PAGE_PHOTO }}
@@ -827,6 +828,14 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
         onStart={() => {}}
         onRetake={() => {}}
         onHome={() => {}}
+        calls={
+          <IconButton
+            value="tutor"
+            className="nt-call-tutor"
+            aria-expanded={false}
+            onClick={() => {}}
+          />
+        }
       />
     ),
   ],

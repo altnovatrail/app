@@ -182,6 +182,9 @@ describe("the debug button", () => {
     renderDebug();
     const window_ = await opened();
     expect(window_.getByText(/· 0 calls this session$/)).toBeVisible();
+    // The button stays in its bar, expanded, so that the row does not move; a press closes the window.
+    const bug = screen.getByRole("button", { name: "Debug: the models and their answers" });
+    expect(bug).toHaveAttribute("aria-expanded", "true");
     expect(document.activeElement).toBe(window_.getByRole("button", { name: "Close" }));
     await userEvent.click(window_.getByRole("button", { name: "Full screen" }));
     expect(screen.getByRole("dialog", { name: "Debug" })).toHaveAttribute("data-size", "full");
@@ -191,6 +194,10 @@ describe("the debug button", () => {
     await userEvent.click(button);
     await userEvent.click(screen.getByRole("button", { name: "Close" }));
     expect(screen.queryByRole("dialog")).toBeNull();
+    await userEvent.click(button);
+    await userEvent.click(button);
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(button).toHaveAttribute("aria-expanded", "false");
   });
 
   it("shows the models as admitted, and sets a model, its effort and thinking, and the second reader", async () => {

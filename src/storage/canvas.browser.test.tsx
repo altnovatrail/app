@@ -1,16 +1,13 @@
 // The history of writing and a submission's context, kept in the browser's IndexedDB and read back,
 // go through the element as they came out of it: the sheet opens as it was, and the tutor's
-// marks with that context take hold. A synthetic task of the module format 0.4: no task of a module
-// is in the packages.
+// marks with that context take hold — each stroke with its style, a cut with its pieces, and a
+// history written before strokes had a style as it was, its crop in grey. A synthetic task of the
+// module format 0.4: no task of a module is in the packages.
 import "@altnovatrail/canvas";
-import type {
-  CanvasElement,
-  HistoryChange,
-  HistoryEvent,
-  SheetSubmission,
-} from "@altnovatrail/spec/canvas";
+import type { CanvasElement, HistoryChange, SheetSubmission } from "@altnovatrail/spec/canvas";
 import type * as open from "@altnovatrail/spec/formatv0/open";
 import { afterEach, describe, expect, it } from "vitest";
+import { stroke, styledHistory } from "../test/ink.ts";
 import { browserDevice } from "./browser.ts";
 import { eraseAccount } from "./erase.ts";
 import { addProfile } from "./profile.ts";
@@ -35,15 +32,13 @@ const TASK: open.Task = {
   items: [{ answer_slots: [{ binding: "anywhere" }] }],
 };
 
-/** A stroke the sheet could have written: points apart, in time, a third of a unit off the grid. */
-function stroke(id: number, x: number, t: number): HistoryEvent {
-  const points = [0, 1, 2, 3].map((i) => ({
-    x: x + i * 7.3333,
-    y: 100 + i * 3.1111,
-    t: t + i * 16,
-    p: 0.5,
-  }));
-  return { kind: "write", t: t + 48, stroke: { id, kind: "mouse", points } };
+/** The colour types of a PNG's header that a crop takes: grey with no style, RGB with one. */
+const GREY = 0;
+const RGB = 2;
+
+/** The colour type a PNG's header names. */
+function colourType(png: ArrayBuffer): number {
+  return new DataView(png).getUint8(25);
 }
 
 function element(): CanvasElement {
@@ -97,6 +92,39 @@ describe("the history and the context through IndexedDB", () => {
     const kept = stored?.submissions?.[0]?.work;
     if (kept === undefined || !("png" in kept)) throw new Error("no crop kept");
     expect(await kept.png.arrayBuffer()).toEqual(await work.png.arrayBuffer());
+    // A history written before strokes had a style opens as it was, and takes none.
+    for (const event of second.history)
+      if (event.kind === "write") expect(event.stroke).not.toHaveProperty("style");
+    expect(colourType(await work.png.arrayBuffer())).toBe(GREY);
+  });
+
+  it("keep each stroke's style and a cut's pieces as the element gave them, and open them again", async () => {
+    const device = browserDevice();
+    await setAccount(device, "account-1");
+    const profile = await addProfile(device, "p1");
+    await profile?.beginAttempt({ attemptId: "a1", digest: "d1", task: TASK });
+
+    const first = element();
+    first.history = styledHistory();
+    expect(first.history).toEqual(styledHistory());
+    const changes: HistoryChange[] = [];
+    first.addEventListener("historychange", (event) => changes.push(event.detail));
+    // The undo of a cut takes its pieces off and puts the stroke back.
+    (first as CanvasElement & { undo(): void }).undo();
+    expect(changes[0]?.events).toEqual([
+      expect.objectContaining({ kind: "undo", removed: [3, 4], restored: [1] }),
+    ]);
+    expect(await profile?.replaceHistory("a1", first.history.slice(0, 3))).toBe("saved");
+    expect(await profile?.appendHistory("a1", changes[0] as HistoryChange)).toBe("saved");
+
+    const stored = await profile?.readAttempt("a1");
+    expect(stored?.history).toEqual(first.history);
+    const second = element();
+    second.history = stored?.history ?? [];
+    expect(second.history).toEqual(first.history);
+    const work = await second.exportWork();
+    if (work === null || !("png" in work)) throw new Error("no work of a sheet");
+    expect(colourType(await work.png.arrayBuffer())).toBe(RGB);
   });
 
   it("refuse marks whose context lost a digit on the way, which is why it is kept unchanged", async () => {

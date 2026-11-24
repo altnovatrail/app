@@ -1,13 +1,14 @@
-// The picture of a work, drawn by the canvas itself from the history the device keeps:
-// it begins with the signature of PNG and stands the size of the surface, and the stored work with
-// it has the form api checks before it keeps one — the history a JSON array and each context a JSON
-// object, in UTF-8, no history length below zero, and the picture a PNG by its signature
-// (`WorkMalformed` of api's internal/learning/works.go). A synthetic task of the module format 0.4:
-// no task of a module is in the packages.
+// The picture of a work, drawn by the canvas itself from the history the device keeps, each stroke
+// in its style: it begins with the signature of PNG and stands the size of the surface, and the
+// stored work with it has the form api checks before it keeps one — the history a JSON array and
+// each context a JSON object, in UTF-8, no history length below zero, and the picture a PNG by its
+// signature (`WorkMalformed` of api's internal/learning/works.go). A synthetic task of the module
+// format 0.4: no task of a module is in the packages.
 import "@altnovatrail/canvas";
-import type { CanvasElement, HistoryEvent } from "@altnovatrail/spec/canvas";
+import type { CanvasElement } from "@altnovatrail/spec/canvas";
 import type * as open from "@altnovatrail/spec/formatv0/open";
 import { afterEach, describe, expect, it } from "vitest";
+import { stroke, styledHistory } from "../test/ink.ts";
 import { drawPicture } from "./picture.ts";
 import { storedWork } from "./stored.ts";
 
@@ -17,17 +18,6 @@ const TASK: open.Task = {
   canvas: { kind: "handwriting_sheet", grid: "squares" },
   items: [{ answer_slots: [{ binding: "anywhere" }] }],
 };
-
-/** A stroke the sheet could have written: points apart, in time, a third of a unit off the grid. */
-function stroke(id: number, x: number, t: number): HistoryEvent {
-  const points = [0, 1, 2, 3].map((i) => ({
-    x: x + i * 7.3333,
-    y: 100 + i * 3.1111,
-    t: t + i * 16,
-    p: 0.5,
-  }));
-  return { kind: "write", t: t + 48, stroke: { id, kind: "mouse", points } };
-}
 
 const SIGNATURE = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
 const decoder = new TextDecoder("utf-8", { fatal: true });
@@ -56,6 +46,20 @@ function malformed(work: NonNullable<ReturnType<typeof storedWork>>): string {
 function size(png: Uint8Array): [number, number] {
   const view = new DataView(png.buffer, png.byteOffset);
   return [view.getUint32(16), view.getUint32(20)];
+}
+
+/** The colour of each pixel of a picture, red, green and blue. */
+async function pixels(png: Blob): Promise<[number, number, number][]> {
+  const image = await createImageBitmap(png);
+  const surface = new OffscreenCanvas(image.width, image.height);
+  const context = surface.getContext("2d");
+  if (context === null) throw new Error("no 2d context");
+  context.drawImage(image, 0, 0);
+  const { data } = context.getImageData(0, 0, image.width, image.height);
+  const all: [number, number, number][] = [];
+  for (let at = 0; at < data.length; at += 4)
+    all.push([data[at] ?? 0, data[at + 1] ?? 0, data[at + 2] ?? 0]);
+  return all;
 }
 
 afterEach(() => {
@@ -88,6 +92,15 @@ describe("the picture of a work", () => {
     // A history drawn anew is the same picture: the strokes, not the screen, make it.
     const again = new Uint8Array(await (await drawPicture(history)).arrayBuffer());
     expect(again).toEqual(picture);
+  });
+
+  it("draws each stroke in its style, and a stroke written before strokes had one in grey", async () => {
+    const styled = await pixels(await drawPicture(styledHistory()));
+    expect(styled.some(([r, g, b]) => r > g + 64 && r > b + 32)).toBe(true);
+    expect(styled.some(([r, g, b]) => b > r + 64 && b > g + 32)).toBe(true);
+    const plain = await pixels(await drawPicture([stroke(1, 100, 0)]));
+    expect(plain.some(([r]) => r < 128)).toBe(true);
+    expect(plain.every(([r, g, b]) => r === g && g === b)).toBe(true);
   });
 
   it("is a white surface, a PNG still, of a work with no stroke", async () => {

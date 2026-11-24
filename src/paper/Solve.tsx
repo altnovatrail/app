@@ -1,25 +1,26 @@
-// The screen of solving the tasks from the learner's paper, as the mockup's `solve`: the top
-// bar's pill — Back to Home and the task's name —, and at its other end ‹, the counter that
-// opens the list of the tasks begun with "Add", and ›. Each task is a sheet in dots of its own
-// under its crop, the tracing paper, which canvas draws and the learner moves and hides; its
-// history and the paper's place stay with the page, so that a task left and come back
-// to is as it was, and the page's history keeps them. At the foot the row of glass: Hint ·
-// Check, Hint till the task is solved. Check sends the task's crop with the crop of the work,
-// and the page keeps the context of the work of each Check answered, but no verdict: its
-// verdict is that of each task of the frame by the key api derived — Correct with Next task, Not
-// yet with Hint, of several tasks with how many are correct, the work not read with why, not
-// checked with the outcome —, with a tick or a cross by each answer on the sheet; or "Couldn't
+// The screen of solving the tasks from the learner's paper, as the mockup's `solve`: the top bar's
+// pill — Back to Home and the task's name —, and at its other end ‹, the counter that opens the
+// list of the tasks begun with "Add", and ›. Each task is a sheet in dots of its own under its
+// crop, the tracing paper, which canvas draws and the learner moves and hides; its history and the
+// paper's place stay with the page, so that a task left and come back to is as it was, and the
+// page's history keeps them. At the foot the row of glass: the debug button and a line, for an
+// account with debug, Ask, Hint till the task is solved, a line and Check, kept to one row by
+// BarFit.tsx — Ask its icon alone first, and only then wrapped. Check sends the task's crop with
+// the crop of the work, and the page keeps the context of the work of each Check answered, but no
+// verdict: its verdict is that of each task of the frame by the key api derived — Correct with Next
+// task, Not yet with Hint, of several tasks with how many are correct, the work not read with why,
+// not checked with the outcome —, with a tick or a cross by each answer on the sheet; or "Couldn't
 // check this one" when no task has a key, with Hint and Next task. A frame solved or with no key
 // takes no Check again, and the list marks the one solved. A task whose attempt is over — solved,
 // or closed by api, as a page of the history opened again may hold — is only to be looked at: its
-// sheet takes no writing, no Hint stands, and its Check says "This task is already over". The
-// tutor's button at the right edge opens its panel, and so does Hint; a verdict does not.
-// While the panel is open the verdict is a line in it, the hint a bubble there, said by
-// itself while the voicing is on, and on a phone its sheet hides the row and the canvas's bar of
-// tools; while it is closed the verdict is a card above the row, with the panel's buttons. The
-// tutor's words are of AI: Hint before the first wrong answer asks the opening question
-// from the task's crop as printed, once on the attempt; after Not yet, with the panel open — or
-// once it opens — the words of the rung come with the work of the Check, and in the mode "Show
+// sheet takes no writing, no Hint stands, and its Check says "This task is already over". Ask opens
+// the tutor's panel, and so does Hint; a verdict does not; Ask and the debug button leave the row
+// while the panel is open. While the panel is open the verdict is a line in it, the hint a bubble
+// there, said by itself while the voicing is on, and on a phone its sheet hides the row and the
+// canvas's bar of tools; while it is closed the verdict is a card above the row, with the panel's
+// buttons. The tutor's words are of AI: Hint before the first wrong answer asks the opening
+// question from the task's crop as printed, once on the attempt; after Not yet, with the panel open
+// — or once it opens — the words of the rung come with the work of the Check, and in the mode "Show
 // where" with the wavy line under the first mistake, which goes with other work or the paper moved;
 // "Explain differently" words the rung anew, once on it; and an adult may report a problem with the
 // words. The words stand till another task or Check, and what is said of them stops with another
@@ -53,14 +54,17 @@ import { IconButton } from "../app/IconButton.tsx";
 import { useNarrow } from "../app/narrow.ts";
 import { PopOver } from "../app/PopOver.tsx";
 import { Screen } from "../app/Screen.tsx";
+import { usePens } from "../canvas/pens.ts";
+import { DebugSlot } from "../debug/slot.tsx";
 import { watched } from "../debug/watched.ts";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { useKeyHolder } from "../ownkey/OwnKeyContext.tsx";
 import { workOf } from "../task/attempt.ts";
 import { closedBy, useOwnVoicing } from "../task/shared.ts";
 import { HintButton, RowLine, VerdictCard } from "../task/TaskLayout.tsx";
-import { TutorButton, usePanelFocus, useQuotaLine } from "../task/TutorPanel.tsx";
+import { usePanelFocus, useQuotaLine } from "../task/TutorPanel.tsx";
 import type { Said } from "../tutor/report.ts";
+import { BarButton, fitRow, useBarFit } from "./BarFit.tsx";
 import { numbers, type PageTask } from "./page.ts";
 import { SolveTutor } from "./SolveTutor.tsx";
 import {
@@ -131,6 +135,7 @@ export function Solve({
   const { language, words } = useLanguage();
   const narrow = useNarrow();
   const writeId = useId();
+  const pens = usePens();
   const element = useRef<CanvasElement>(null);
   const [asked, setAsked] = useState<string | undefined>(undefined);
   const [pending, setPending] = useState(false);
@@ -168,6 +173,7 @@ export function Solve({
   const isOpen = useRef(open);
   isOpen.current = open;
   const { heading, call } = usePanelFocus(open);
+  const row = useRef<HTMLDivElement>(null);
   // Each answer to a call of AI reads the share of the quota again.
   const [spent, setSpent] = useState(0);
   const quota = useQuotaLine(profileId, open, spent);
@@ -251,6 +257,9 @@ export function Solve({
     [verdict, checked, words, line],
   );
 
+  // The row is fitted once it is drawn, and again with the words; a button that comes or goes in it
+  // fits it anew by itself.
+  useBarFit(row, [language, task === undefined].join(" "), fitRow);
   if (task === undefined || attemptId === undefined) return null;
   const order = numbers(tasks);
   const nameOf = (each: BegunTask) =>
@@ -703,6 +712,7 @@ export function Solve({
             ontracingchange={onTracingChange}
             {...(only ? {} : { ontracingread: recognise })}
             ongridchange={onGridChange}
+            {...pens}
           />
         </div>
       </div>
@@ -774,13 +784,30 @@ export function Solve({
             </button>
           </VerdictCard>
         ) : null}
-        <div className="nt-task-row nt-glass">
-          {acts.hint ? (
+        <div ref={row} className="nt-task-row nt-glass">
+          {/* Debug's button leaves with Ask, so that its window never opens over the panel. */}
+          {open ? null : (
             <>
-              <HintButton parts={{ pending: busy, onHint: hint }} />
-              <RowLine />
+              <DebugSlot line />
+              <BarButton
+                icon="tutor"
+                caption={words.text("paper.ask")}
+                className="nt-icon-button nt-ask"
+                expanded={false}
+                buttonRef={call}
+                onClick={() => {
+                  setOpen(true);
+                  const ask = unasked.current;
+                  if (ask?.attemptId !== attemptId) return;
+                  // Within the press: the words that come may be said (WebKit).
+                  prime();
+                  rungWords(ask);
+                }}
+              />
             </>
-          ) : null}
+          )}
+          {acts.hint ? <HintButton parts={{ pending: busy, onHint: hint }} /> : null}
+          {acts.hint || !open ? <RowLine /> : null}
           {/* Not disabled while nothing is written: a disabled button would drop the focus. */}
           <button
             type="button"
@@ -816,19 +843,7 @@ export function Solve({
           onClose={close}
           headingRef={heading}
         />
-      ) : (
-        <TutorButton
-          onOpen={() => {
-            setOpen(true);
-            const ask = unasked.current;
-            if (ask?.attemptId !== attemptId) return;
-            // Within the press: the words that come may be said (WebKit).
-            prime();
-            rungWords(ask);
-          }}
-          buttonRef={call}
-        />
-      )}
+      ) : null}
     </Screen>
   );
 }

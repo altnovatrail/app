@@ -1219,6 +1219,8 @@ export const en = {
   "paper.select-none": "Select none",
   "paper.picked": "{count} of {total} selected",
   "paper.start": "Start",
+  /** The row's button of the screen of solving that opens the tutor's panel. */
+  "paper.ask": "Ask",
   /**
    * The tutor's chat on the page to pick from: its line of what it takes, the field of a
    * request and its buttons, and the program's line of what the request came to.

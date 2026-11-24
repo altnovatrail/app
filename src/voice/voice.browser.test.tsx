@@ -70,7 +70,10 @@ describe("Read aloud", () => {
     );
     const [first, second] = screen.getAllByRole("button", { name: "Read aloud" });
     await userEvent.click(first as HTMLElement);
-    await userEvent.click(second as HTMLElement);
+    // By the keyboard: the first button's tooltip, which its focus brings, may stand over the second.
+    await userEvent.tab();
+    expect(document.activeElement).toBe(second);
+    await userEvent.keyboard("{Enter}");
     expect(speech.texts()).toEqual(["8 times box equals 40", "Count up in eights."]);
     expect(speech.speech.speaking()).toBeDefined();
   });

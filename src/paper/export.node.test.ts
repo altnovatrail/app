@@ -1,10 +1,12 @@
 // The file of a page from paper in the export, by paper.schema.json of the part export/ spec,
-// version 4: its fields, the frames in the order of the page, each task's frame by its place, and
+// version 4: its fields, the frames in the order of the page, each task's frame by its place, its
+// history as the canvas gave it, each stroke's style and a cut's pieces too, and
 // the images in base64. The schema itself is not read here: it comes into the tests with the part's
 // release file, as deployment/'s does, once the whole export is written.
 import type { HistoryEvent, PaperSubmission } from "@altnovatrail/spec/canvas";
 import { describe, expect, it } from "vitest";
 import type { KeptPaperTask } from "../storage/profile.ts";
+import { styledHistory } from "../test/ink.ts";
 import { base64, PAPER_FORMAT, paperFile } from "./export.ts";
 
 /** The patterns of common.schema.json: an image's base64, and a time in UTC. */
@@ -60,7 +62,7 @@ describe("the file of a page from paper", () => {
           tracing: { at: [200, 90], hidden: false },
           sent: [{ context, historyLength: 1 }],
         }),
-        task(3, "drawn-1", { drawn: true }),
+        task(3, "drawn-1", { drawn: true, history: styledHistory() }),
         // Begun before its frame was resized: its own frame comes after the page's.
         task(4, "found-2"),
       ],
@@ -92,6 +94,8 @@ describe("the file of a page from paper", () => {
     expect(first?.statement.media_type).toBe("image/png");
     expect(first?.statement.data).toMatch(BASE64);
     expect(first?.history).toEqual([write]);
+    // Each stroke's style and a cut's pieces, as the canvas gave them.
+    expect(second?.history).toEqual(styledHistory());
     expect(first?.submissions).toEqual([{ context, history_length: 1 }]);
     // Never moved: where canvas starts it.
     expect(second?.tracing).toEqual({ at: [180, 60], hidden: false });

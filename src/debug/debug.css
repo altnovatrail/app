@@ -1,50 +1,23 @@
 /*
- * The debug mode, as the mockup's `ph-dbgbtn` and `ph-dbg`: the button, 56 round, glass
- * round a graphite disc of 44 with an orange bug, at the tutor's place — 16 from the window's right
- * in the middle of its height —, or 72 above it on the page and the screen of solving, and none
- * while the tutor's panel is open; on a phone 172 above the foot, or 240, or 324 over a card of
- * what the page says. The window is the tutor's panel's size, over the canvas as it: glass of 0.94, 400
- * wide at the right from 74 below the top to 16 above the foot, radius 28; on a phone a sheet of
- * the whole width at half the window's height, or by its grabber from 70. The window's chunk alone holds this file, loaded once
- * `GetDebug` answered.
+ * The debug mode: the button, 44 round in the bottom bar, the bug of 20 in orange on a light
+ * orange, 4.2:1 against it (WCAG 1.4.11, sources 8.1), where the mockup's lighter orange has
+ * 2.8:1. The window, as the mockup's `ph-dbg`, is the tutor's panel's size, over the canvas as
+ * it: glass of 0.94, 400 wide at the right from 74 below the top to 16 above the foot, radius 28;
+ * on a phone a sheet of the whole width at half the window's height, or by its grabber from 70.
+ * The window's chunk alone holds this file, loaded once `GetDebug` answered.
  */
-.nt-debug-call {
-  position: fixed;
-  inset-block-start: calc(50% - 1.75rem);
-  inset-inline-end: 1rem;
-  z-index: 6;
-}
-.nt-debug-call[data-above="true"] {
-  inset-block-start: calc(50% - 6.25rem);
-}
-body:has(.nt-tutor-panel) .nt-debug-call {
-  display: none;
-}
-@media (width < 600px) {
-  .nt-debug-call {
-    inset-block: auto 10.75rem;
-  }
-  .nt-debug-call[data-above="true"] {
-    inset-block: auto 15rem;
-  }
-  /* A card of what the page says lifts the tutor's button, and this one with it. */
-  body:has(.nt-page-say) .nt-debug-call[data-above="true"] {
-    inset-block: auto 20.25rem;
-  }
-}
 button.nt-debug-button {
   display: flex;
+  flex: none;
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
-  inline-size: 3.5rem;
-  block-size: 3.5rem;
+  inline-size: var(--nt-target);
+  block-size: var(--nt-target);
   padding: 0;
-  border: 0.375rem solid var(--nt-glass);
   border-radius: 50%;
-  background: linear-gradient(135deg, #48484a 0%, #1c1c1e 100%) padding-box;
-  box-shadow: var(--nt-glass-shadow);
-  color: #ff9f0a;
+  background: #fff3e0;
+  color: #c25400;
   cursor: pointer;
 }
 @media (prefers-reduced-motion: no-preference) {
@@ -168,10 +141,6 @@ button.nt-debug-grab {
 }
 .nt-debug-strong {
   font-weight: var(--nt-weight-bold);
-}
-.nt-debug-disc-in {
-  display: flex;
-  border-radius: 50%;
 }
 .nt-debug-knob {
   position: absolute;

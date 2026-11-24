@@ -9,7 +9,8 @@
 // so, by a turning ring, and a line of light runs down the photo and back; once they are, how many
 // were found and framed by hand. At the foot, the note
 // that the photo stays on the device, and the bar of "Select all", the count and Start, with the
-// most tasks at once at its head, in a ring, once the page holds as many or more are picked.
+// most tasks at once at its head, in a ring, once the page holds as many or more are picked; at the
+// bar's start, before a line, the round buttons of the tutor and of debug, which the screen gives.
 // Drawing a frame takes a pointer: a learner on the keyboard picks among the AI's frames alone.
 // The tutor's open panel lies over the page, as the debug panel does, and moves none of it; on a
 // phone its sheet hides the bar.
@@ -18,6 +19,7 @@ import { Icon } from "../app/Icon.tsx";
 import { IconButton } from "../app/IconButton.tsx";
 import { Screen } from "../app/Screen.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
+import { RowLine } from "../task/TaskLayout.tsx";
 import { BarButton, useBarFit } from "./BarFit.tsx";
 import type { Photo } from "./capture.ts";
 import {
@@ -151,6 +153,8 @@ export interface PickProps {
   readonly onHome: () => void;
   /** The tutor's panel is open. */
   readonly beside?: boolean;
+  /** The round buttons at the bottom bar's start, before a line: none, and no line. */
+  readonly calls?: ReactNode;
 }
 
 export function Pick({
@@ -167,6 +171,7 @@ export function Pick({
   onRetake,
   onHome,
   beside = false,
+  calls,
 }: PickProps) {
   const { language, words } = useLanguage();
   const surface = useRef<HTMLDivElement>(null);
@@ -475,6 +480,12 @@ export function Pick({
       </div>
       <div className="nt-page-bar nt-glass" {...besideIt}>
         <div className="nt-page-row">
+          {calls === undefined ? null : (
+            <>
+              <span className="nt-page-calls">{calls}</span>
+              <RowLine />
+            </>
+          )}
           <button
             type="button"
             className="nt-plain"

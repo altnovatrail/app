@@ -20,12 +20,13 @@ import { PAPER_TIMEOUT_MS } from "../api/interceptors.ts";
 import { idempotencyKey } from "../api/keys.ts";
 import { closesAI, outcomeOf } from "../api/outcome.ts";
 import { failureText, outcomeText } from "../api/words.ts";
+import { IconButton } from "../app/IconButton.tsx";
 import { HOME, navigate } from "../app/router.ts";
 import { DebugSlot } from "../debug/slot.tsx";
 import { watched } from "../debug/watched.ts";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { useKeyHolder } from "../ownkey/OwnKeyContext.tsx";
-import { TutorButton, usePanelFocus } from "../task/TutorPanel.tsx";
+import { usePanelFocus } from "../task/TutorPanel.tsx";
 import { Camera } from "./Camera.tsx";
 import { cropsOf, type Photo, turnedPhoto } from "./capture.ts";
 import { PageTutor } from "./PageTutor.tsx";
@@ -174,18 +175,15 @@ export function PaperScreen({
 
   if (paper.begun !== undefined && paper.solving && page !== undefined) {
     return (
-      <>
-        <Solve
-          profileId={profileId}
-          adult={adult}
-          tasks={page.tasks}
-          begun={paper.begun}
-          onKeep={paper.keep}
-          onAdd={paper.add}
-          onHome={home}
-        />
-        <DebugSlot above />
-      </>
+      <Solve
+        profileId={profileId}
+        adult={adult}
+        tasks={page.tasks}
+        begun={paper.begun}
+        onKeep={paper.keep}
+        onAdd={paper.add}
+        onHome={home}
+      />
     );
   }
   if (page === undefined) {
@@ -330,6 +328,22 @@ export function PaperScreen({
           home();
         }}
         beside={talking}
+        // The tutor's button and debug's leave the bar while the panel is open, so that the debug
+        // window never opens over it.
+        calls={
+          talking ? undefined : (
+            <>
+              <IconButton
+                ref={call}
+                value="tutor"
+                className="nt-call-tutor"
+                aria-expanded={false}
+                onClick={() => setTalking(true)}
+              />
+              <DebugSlot />
+            </>
+          )
+        }
       />
       {talking ? (
         <PageTutor
@@ -341,10 +355,7 @@ export function PaperScreen({
           onClose={() => setTalking(false)}
           headingRef={heading}
         />
-      ) : (
-        <TutorButton onOpen={() => setTalking(true)} buttonRef={call} />
-      )}
-      <DebugSlot above />
+      ) : null}
     </>
   );
 }
