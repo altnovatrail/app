@@ -363,7 +363,10 @@ export function Solve({
     const work = await workNow();
     const ai = holder.aiFields(profileId);
     const answer = await watched(api, () =>
-      api.attempt.getOpeningWords({ profileId, attemptId, idempotencyKey: key, work, ...ai }),
+      api.attempt.getOpeningWords(
+        { profileId, attemptId, idempotencyKey: key, work, ...ai },
+        { timeoutMs: PAPER_TIMEOUT_MS },
+      ),
     );
     openingKey.current = undefined;
     const read = outcomeOf(answer.outcome);
