@@ -54,9 +54,9 @@ Read 2026-11-23, for the trial of the release, which signs keylessly by GitHub's
 
 ## 3. Storage on the device
 
-For how `app` keeps data on the device: the browser's storages, their quotas and clearing, IndexedDB and the sign-in session on the device.
+For how `app` keeps data on the device: the browser's storages, their quotas and clearing, IndexedDB and the sign-in session on the device. The sign-in SDK's code at its version and the files of the other NovaTrail repositories and of MathTrail at a commit are a link beside the claim, and what a test checks is its evidence.
 
-### 3.1. Storage on the device, 2026-11-02
+### 3.1. Storage on the device
 
 Read 2026-11-02. The quotes were checked with `curl` against the text of the pages:
 - WHATWG, [Storage Standard](https://storage.spec.whatwg.org/), "Last Updated 19 October 2026": "The user agent cannot clear storage marked as persistent without involvement from the origin or user"; "A user agent that comes under storage pressure should clear network state and local storage buckets whose mode is "best-effort""; "Whenever a storage bucket is cleared by the user agent, it must be cleared in its entirety"; the quota "must not be a function of the available storage space on the device".
@@ -69,45 +69,16 @@ Read 2026-11-02. The quotes were checked with `curl` against the text of the pag
 - WebKit, [Full Third-Party Cookie Blocking and More](https://webkit.org/blog/10218/full-third-party-cookie-blocking-and-more/), 2020-03-24: ITP erases "all of a website's script-writable storage after seven days of Safari use without user interaction on the site"; "Web applications added to the home screen are not part of Safari and thus have their own counter of days of use". [Tracking Prevention in WebKit](https://webkit.org/tracking-prevention/), changed 2023-04-27: "The first-party domain of home screen web applications is exempt from ITP's 7-day cap on all script-writeable storage"; "the website data of home screen web applications is kept isolated from Safari". Whether `persist()` saves a Safari tab from the seven days, the primary source does not say.
 - web.dev, [Storage for the web](https://web.dev/articles/storage-for-the-web), updated 2024-09-23: "In incognito mode, Chrome reduces the amount of storage an origin can use to approximately 5% of the total disk space"; with "Clear cookies and site data when you close all windows" — "a maximum of approximately 300MB". Its figures for Firefox and Safari are older than MDN's and WebKit's, and `app` does not rely on them. [Persistent storage](https://web.dev/articles/persistent-storage), updated 2020-05-12: in Chrome "if a site is considered important, the persistent storage permission is automatically granted, otherwise it is silently denied" — by engagement, by installation or a bookmark, and by the permission for notifications; "Firefox delegates the permission request to the user"; "Do not ask for persistent storage on page load".
 - W3C, [Indexed Database API 3.0](https://w3c.github.io/IndexedDB/), Editor's Draft 30 October 2026: "Record values are stored and retrieved by value rather than by reference"; "Web applications are encouraged to use "relaxed" for ephemeral data such as caches or quickly changing records"; "The close event only fires if the connection closes abnormally, e.g. if the storage key's storage is cleared, or there is corruption or an I/O error"; "The blocked event fires if other clients still hold a connection to the database after their versionchange events have fired"; `"strict"` — "in cases where reducing the risk of data loss outweighs the impact to performance and power".
-- W3C, [Clear Site Data](https://w3c.github.io/webappsec-clear-site-data/), Editor's Draft 10 November 2023: `"storage"` "indicates that the server wishes to remove locally stored data associated with the origin of a particular response's url".
-- Firebase, [JavaScript API reference, auth](https://firebase.google.com/docs/reference/js/auth), updated 2026-08-28: `indexedDBLocalPersistence` — "An implementation of Persistence of type LOCAL using indexedDB for the underlying storage", `browserLocalPersistence` — "… using localStorage for the underlying storage"; `getAuth` "initializes an Auth instance with platform-specific default dependencies", and `initializeAuth` — "with fine-grained control over Dependencies". [Authentication State Persistence](https://firebase.google.com/docs/auth/web/auth-state-persistence), updated 2026-10-21: for LOCAL "An explicit sign out is needed to clear that state".
-- `canvas`, [docs/architecture.md](https://github.com/altnovatrail/canvas/blob/e90e210/docs/architecture.md), commit e90e210: its part on the joining with the app — `app` holds the submission context «пока могут прийти пометки; хранить ли его на устройстве дольше, решает `app`», and «хранилище, у которого `from` не равен его длине, пропустило события и перечитывает `history`»; its part on the drawing engine and its layers — «точка ближе 0,1 единицы к прошлой записанной не пишется».
-- canvas-api, commit 0901af0: `docs/spec.md`, its part on the stroke and its points — «черновик не менялся 30 дней — это SPA проверяет при запуске»; `docs/privacy.md`, its part on the parent's rights and deletion — «уведомление советует выйти из аккаунта на устройстве, которое отдают или продают: выход стирает листы сразу».
-- `api`, [docs/decisions.md](https://github.com/altnovatrail/api/blob/e1f7e23/docs/decisions.md), commit e1f7e23, its decision on the sign-in service: «без токена `api` отдаёт файлы части пакета для устройства — медиафайлы, `LICENSE` и `NOTICE` — и открытые виды пакета по его дайджесту: паспорт, граф навыков, каталог приёмов, шаги решения»; «Это содержание модулей, а не данные ученика»; «Картинку модуля `app` грузит простым `<img>`, а браузер не шлёт с ним заголовок с токеном, и файлы кешируются по HTTP».
+- Firebase, [Authentication State Persistence](https://firebase.google.com/docs/auth/web/auth-state-persistence), updated 2026-10-21: for LOCAL "An explicit sign out is needed to clear that state".
 
-### 3.2. The store on the device, 2026-11-10
-
-Read 2026-11-10. The code was read in `node_modules` of the installed version:
-- **`@firebase/auth` 1.13.9**, `dist/esm/index-Bz2J43nW.js`, `IndexedDBLocalPersistence`: the database `firebaseLocalStorageDb`; `_openDatabase` attaches `error`, `upgradeneeded` and `success` to the open request, but not `versionchange` to the connection; the connection is closed by `onPageHide` — "`this.dbPromise.then(db => db.close())`" — on the event `pagehide`, and `_POLLING_INTERVAL_MS = 800` is the polling of the database. That `deleteDatabase` from another tab therefore gets `blocked` is inferred from the code and checked in Chromium on a connection that does not listen to `versionchange`, not on the SDK itself.
-### 3.3. Clear-Site-Data, 2026-11-23
+### 3.3. Clear-Site-Data
 
 Read 2026-11-23, for erasing the account's data on the device:
 - W3C, [Clear Site Data](https://w3c.github.io/webappsec-clear-site-data/), Editor's Draft, 10 November 2023, the type "storage": "The "storage" type indicates that the server wishes to remove locally stored data associated with the origin of a particular response’s url. This includes storage mechanisms such as (localStorage, sessionStorage, [INDEXEDDB], [WEBDATABASE], etc), as well as tangentially related mechanism such as service worker registrations."; and in the algorithm of clearing site data for a response: "Let origin be response’s url's origin."
 
 ## 4. Solving steps and the lesson player
 
-For how `app` leads the solving steps and runs a lesson on the device.
-
-### 4.1. Solving steps, 2026-11-02
-
-Read 2026-11-02. The quotes were checked against the files at the named commits, through `gh api`:
-- `canvas`, branch `main`, commit 7401439:
-  - [docs/architecture.md](https://github.com/altnovatrail/canvas/blob/7401439/docs/architecture.md), its part on the task's fields, the filled cells and the worked example: the task's fields `givens` and `unknown` «элемент берёт и проверяет строго, как схема, а не показывает: фишки показывает и отмечает `app`»;
-  - [docs/decisions.md](https://github.com/altnovatrail/canvas/blob/7401439/docs/decisions.md), its decision on `filled` and the worked example: «у ячейки `anywhere` или `sheet` — `[[true]]`, если на листе есть штрих, который взял бы `exportWork()`, иначе `[[false]]`»; «лист только с ячейками `choice`, лист без задачи и пример — `null`: элементу сказать нечего, а выбор варианта видит только `app`»; «действие меняет `filled` до `historychange`, а присвоение `task` и `history` — без события».
-- `api`, [docs/architecture.md](https://github.com/altnovatrail/api/blob/d563af3/docs/architecture.md), branch `main`, commit d563af3, its part on the purpose and boundaries: `api` «отдаёт приём задачи и «что известно и что найти» — на шаге решения, который их даёт, и по просьбе ученика до первой отправки, без ИИ и без чтения работы — и записывает, что ученик их видел» (О-21), and in the attempt it stores «видел ли ученик приём и «что известно и что найти»».
-- `tutor`, branch `main`, commit be607e5:
-  - [docs/architecture.md](https://github.com/altnovatrail/tutor/blob/be607e5/docs/architecture.md), its part «Типы запросов»: the calls are sheet reading, workbook reading, essay reading, analysis and hint, assessment by a rubric, text reading and voice. There is no call for words at a step;
-  - [docs/decisions.md](https://github.com/altnovatrail/tutor/blob/be607e5/docs/decisions.md), its decision on what a measurement gives the model: «Порог долгой паузы в логе — 6 с: это единственный порог с прецедентом в проекте». On the same — О-8 of spec's product document: «canvas-api считал строку законченной после 6 с без касания».
-
-### 4.2. The lesson player, 2026-11-02
-
-Read 2026-11-02. The quotes were checked against the files at the named commits, through `gh api`:
-- `canvas`, branch `main`, commit 3b36020:
-  - [docs/decisions.md](https://github.com/altnovatrail/canvas/blob/3b36020/docs/decisions.md), its decision on `filled` and the worked example: «Состояние — объект только с `opened`, целым от 0 до числа частей, и `hidden`, `true` или `false`; иное — `TypeError` с путём поля. Новый или другой пример возвращает состояние к началу»; «`app` хранит состояние и возвращает его, а может вести части и сам»; «Точки входа отдают тип `WorkedExample`, а проверку — нет»; in «Пересмотреть» — «свои кнопки показа — отключаемыми, если плеер урока `app` захочет одну кнопку «Дальше» на части и звенья»;
-  - [docs/architecture.md](https://github.com/altnovatrail/canvas/blob/3b36020/docs/architecture.md), its part on the joining with the app: `demoState` «его дают после `workedExample`: оно сверяется с числом частей примера»; «Ученик части по одной не закрывает, а `app` может дать и меньше открытых: пункты уходят с конца»; `app` «хранит состояние показа, как его рассказывает `demochange`, и отдаёт его элементу звена после примера, а может и не давать вовсе».
-- `api`, branch `main`, commit 6f89ccf:
-  - [docs/decisions.md](https://github.com/altnovatrail/api/blob/6f89ccf/docs/decisions.md), its decision on the module version a new attempt gets: «Задача урока — попытка на пакете, на котором урок начат: урок держит его дайджест»; what is recorded about it, an open task of `api` decides; «На снятом пакете или пакете вне окна урок новой попытки не начинает, а кончается «без проверки», как попытка»;
-  - [RUN.md](https://github.com/altnovatrail/api/blob/6f89ccf/RUN.md), its task on the lesson, still open: «что `api` записывает о пройденном уроке и когда урок пройден: последняя задача кончилась, ученик ушёл посреди урока, вернулся к нему на другой версии модуля»; «состояние показа примера с разбором хранит `app`», and «нужно ли `api` знать о нём что-то».
+For how `app` leads the solving steps and runs a lesson on the device. What it takes from `canvas`, `api` and `tutor` for them is git: a link to the repository at a commit, beside the claim.
 
 ## 5. Voicing
 
