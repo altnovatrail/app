@@ -149,7 +149,8 @@ describe("Intl in the screen's language", () => {
   it("writes a language's name in a Russian sentence in lower case, whatever the engine gives", () => {
     expect(languageName("ru", "en")).toBe("английский");
     expect(languageName("en", "ru")).toBe("Russian");
-    // JavaScriptCore's Intl writes it with a capital.
+    // V8's own Intl writes it in lower case, JavaScriptCore's with a capital.
+    expect(new Intl.DisplayNames("ru", { type: "language" }).of("en")).toBe("английский");
     const of = vi.spyOn(Intl.DisplayNames.prototype, "of").mockReturnValue("Английский");
     try {
       expect(languageName("ru", "en")).toBe("английский");
