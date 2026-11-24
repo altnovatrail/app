@@ -20,10 +20,9 @@ import {
   DebugModelChoiceSchema,
   DebugOutcome,
   type DebugService,
-  type DebugTask,
   DebugTaskSchema,
 } from "@altnovatrail/contracts/novatrail/api/v1/debug_pb.js";
-import { create, fromJsonString, toJsonString } from "@bufbuild/protobuf";
+import { create, toJsonString } from "@bufbuild/protobuf";
 import { timestampDate } from "@bufbuild/protobuf/wkt";
 import type { Client } from "@connectrpc/connect";
 import * as gate from "./gate.ts";
@@ -38,13 +37,15 @@ export interface Pick {
 }
 
 /**
- * What a Check sent, and the verdict api gave each task of its frame, in the frame's order, which
- * the export of its action holds.
+ * What a Check sent — the task's crop, the work's and the instruction's, when it had one —, and the
+ * verdict api gave each task of its frame, in the frame's order, which the export of its action
+ * holds.
  */
 export interface Sent {
   readonly attemptId: string;
   readonly statement: Uint8Array;
   readonly crop: Uint8Array;
+  readonly instruction?: Uint8Array;
   readonly outcomes: readonly DebugOutcome[];
 }
 
@@ -53,11 +54,8 @@ export interface DebugState {
   readonly status: "unknown" | "loading" | "on" | "off";
   readonly models: readonly DebugModel[];
   readonly admitted: readonly DebugAdmitted[];
-  /** The first model, none as admitted. */
+  /** The model of every call, none as admitted. */
   readonly first: Pick | undefined;
-  /** The second reader, and whether it reads: the window keeps the model while it is off. */
-  readonly second: Pick;
-  readonly secondOn: boolean;
   /** The actions taken from api since the session began, oldest first. */
   readonly actions: readonly DebugAction[];
   /** What each Check of the log sent, by the key of its action. */
@@ -69,9 +67,6 @@ export interface DebugState {
   /** What the last change of the choice came to, when api refused it. */
   readonly refused: string | undefined;
 }
-
-/** The second reader before one is chosen: Sonnet at low, as the mockup's window has it. */
-const SECOND: Pick = { model: "claude-sonnet-5-5", effort: DebugEffort.LOW, thinking: true };
 
 export const EFFORTS: readonly DebugEffort[] = [
   DebugEffort.LOW,
@@ -101,8 +96,6 @@ const initial: DebugState = {
   models: [],
   admitted: [],
   first: undefined,
-  second: SECOND,
-  secondOn: false,
   actions: [],
   sent: new Map(),
   asked: new Map(),
@@ -160,13 +153,7 @@ function choiceOf(p: Pick | undefined): DebugModelChoice | undefined {
 }
 
 function held(now: DebugState, choice: DebugChoice | undefined): DebugState {
-  const second = pickOf(choice?.second);
-  return {
-    ...now,
-    first: pickOf(choice?.first),
-    second: second ?? now.second,
-    secondOn: second !== undefined,
-  };
+  return { ...now, first: pickOf(choice?.first) };
 }
 
 /**
@@ -222,29 +209,15 @@ export function fitted(models: readonly DebugModel[], p: Pick): Pick {
 }
 
 /**
- * Sets the choice at api; the window shows what api holds after the last change, or why it refused
- * it and the choice api still holds.
+ * Sets the choice at api, one model of every call or none as admitted; the window shows what api
+ * holds after the last change, or why it refused it and the choice api still holds.
  */
-export function choose(
-  client: DebugClient | undefined,
-  first: Pick | undefined,
-  second: Pick,
-  secondOn: boolean,
-): Promise<void> {
+export function choose(client: DebugClient | undefined, first: Pick | undefined): Promise<void> {
   if (client === undefined) return Promise.resolve();
-  const held_ = (p: Pick) => fitted(state.models, p);
+  const pick = first === undefined ? undefined : fitted(state.models, first);
   // The window shows the change at once, and api's answer after.
-  set((now) => ({
-    ...now,
-    first: first === undefined ? undefined : held_(first),
-    second: held_(second),
-    secondOn,
-    refused: undefined,
-  }));
-  const choice = create(DebugChoiceSchema, {
-    first: choiceOf(first === undefined ? undefined : held_(first)),
-    second: choiceOf(secondOn ? held_(second) : undefined),
-  });
+  set((now) => ({ ...now, first: pick, refused: undefined }));
+  const choice = create(DebugChoiceSchema, { first: choiceOf(pick) });
   const change = ++changes;
   sending = sending.then(async () => {
     try {
@@ -331,23 +304,15 @@ export function callsOf(actions: readonly DebugAction[]): readonly DebugCall[] {
   return actions.flatMap((a) => a.calls);
 }
 
-/** The calls of a model, the solver's left out. */
-export function modelCalls(actions: readonly DebugAction[]): number {
-  return callsOf(actions).filter((c) => c.kind !== DebugCallKind.SOLVER).length;
-}
-
+/** The name of a call by its kind; one api no longer records is a call. */
 export function callName(kind: DebugCallKind): string {
   switch (kind) {
     case DebugCallKind.TASK_FINDING:
       return "Find tasks";
     case DebugCallKind.STATEMENT_READING:
       return "Statement";
-    case DebugCallKind.SOLVER:
-      return "Solver";
-    case DebugCallKind.TASK_SOLVING:
-      return "Solution";
-    case DebugCallKind.WORK_READING:
-      return "Read the work";
+    case DebugCallKind.TASK_CHECKING:
+      return "Check";
     case DebugCallKind.TUTOR_WORDS:
       return "Tutor's words";
     default:
@@ -355,11 +320,10 @@ export function callName(kind: DebugCallKind): string {
   }
 }
 
-/** A call's title: what it did, its reader beside two, and its attempt after the first. */
+/** A call's title: what it did, and its attempt after the first. */
 export function callTitle(call: DebugCall): string {
-  const reader = call.reader > 0 ? ` · reader ${call.reader}` : "";
   const attempt = call.attempt > 1 ? ` · attempt ${call.attempt}` : "";
-  return `${callName(call.kind)}${reader}${attempt}`;
+  return `${callName(call.kind)}${attempt}`;
 }
 
 /** The name of a model by the catalog, or its ID as the provider gave it back. */
@@ -370,7 +334,6 @@ export function modelName(models: readonly DebugModel[], id: string): string {
 
 /** The line under a call's title: the model, its effort and whether it thought. */
 export function callLine(models: readonly DebugModel[], call: DebugCall): string {
-  if (call.kind === DebugCallKind.SOLVER) return "module-kit · no AI";
   return `${modelName(models, call.model)} · ${effortName(call.effort)} · ${call.thinking ? "thinking" : "no thinking"}`;
 }
 
@@ -403,12 +366,6 @@ export function took(ms: bigint): string {
 /** The figures of a call that opens. */
 export function statsOf(call: DebugCall): readonly { readonly k: string; readonly v: string }[] {
   const n = (v: bigint | number) => Number(v).toLocaleString("en-US");
-  if (call.kind === DebugCallKind.SOLVER) {
-    return [
-      { k: "Time", v: took(call.durationMs) },
-      { k: "Cost", v: "$0" },
-    ];
-  }
   return [
     { k: "Input", v: n(call.inputTokens) },
     { k: "Cache read", v: n(call.cacheReadTokens) },
@@ -450,17 +407,6 @@ export function failureOf(call: DebugCall): string {
   }
 }
 
-/** How the two readers of an action came out, beside a second reader. */
-export function joinOf(action: DebugAction): string {
-  const readers = new Set(
-    action.calls.filter((c) => c.kind === DebugCallKind.WORK_READING).map((c) => c.reader),
-  ).size;
-  if (readers < 2) return "";
-  return action.readersDiffer
-    ? "The readers read a place differently: it is unreadable."
-    : "Both readers agree.";
-}
-
 /** The verdict of a slot as api gives it, as a case of the debug mode names it. */
 export function outcomeOf(verdict: string | undefined): DebugOutcome {
   switch (verdict) {
@@ -472,6 +418,8 @@ export function outcomeOf(verdict: string | undefined): DebugOutcome {
       return DebugOutcome.UNREADABLE;
     case "unchecked":
       return DebugOutcome.UNCHECKED;
+    case "so_far_correct":
+      return DebugOutcome.SO_FAR_CORRECT;
     default:
       return DebugOutcome.UNSPECIFIED;
   }
@@ -481,19 +429,22 @@ export const OUTCOMES: readonly { readonly outcome: DebugOutcome; readonly name:
   { outcome: DebugOutcome.CORRECT, name: "correct" },
   { outcome: DebugOutcome.NOT_YET, name: "not yet" },
   { outcome: DebugOutcome.UNREADABLE, name: "unreadable" },
+  { outcome: DebugOutcome.SO_FAR_CORRECT, name: "so far" },
   { outcome: DebugOutcome.UNCHECKED, name: "unchecked" },
 ];
 
 /**
- * The truth of one task of an exported Check, as the developer edits it: the key as the JSON of its
- * Answer.
+ * The truth of one task of an exported Check, as the developer edits it, beside what the Check
+ * answered for the task's slot, which the developer does not edit.
  */
 export interface TaskTruth {
   readonly statement: string;
-  readonly formula: string;
-  readonly key: string;
   readonly read: string;
   readonly outcome: DebugOutcome;
+  /** The model's verdict of the slot, as it wrote it; empty when no Check answered. */
+  readonly checkVerdict: string;
+  /** What the Check read as the task's answer; empty when it read none. */
+  readonly checkRead: string;
 }
 
 /** The truth of an exported Check: each task of its frame, in the frame's order, and a note. */
@@ -527,11 +478,11 @@ function text(value: unknown): string {
 }
 
 /**
- * The truth an export begins from, what the calls gave: the tasks the statement was read
- * into, each with its formula, and the solver's key, of this Check or of an earlier one of the
- * attempt, since a later Check keeps the key; the value the first reader read for each task; and the
- * verdict api gave each. Of a call's attempts, the last that answered is what the call gave.
- * A frame whose statement no call read has as many tasks as api gave verdicts, one at least.
+ * The truth an export begins from, what the calls gave: each task of the Check's answer, by its
+ * number, its verdict and what it read as the Check wrote them, the value read the truth's too; the
+ * verdict api gave each; and the statement the attempt's Recognise read, when it did. Of a call's
+ * attempts, the last that answered is what the call gave. A frame has as many tasks as the Check
+ * or api gave, one at least.
  */
 export function truthOf(
   actions: readonly DebugAction[],
@@ -539,35 +490,36 @@ export function truthOf(
   sent: Sent | undefined,
 ): Truth {
   const upTo = actions.indexOf(action);
-  const ofAttempt = (upTo < 0 ? [action] : actions.slice(0, upTo + 1))
-    .filter((a) => a.kind === DebugActionKind.CHECK && a.attemptId === action.attemptId)
-    .reverse();
+  const before = (upTo < 0 ? [action] : actions.slice(0, upTo + 1)).filter(
+    (a) => a.attemptId === action.attemptId,
+  );
   const gave = (c: DebugCall) => c.answer !== "" && c.failure === Cause.UNSPECIFIED;
-  const last = (kind: DebugCallKind) =>
-    ofAttempt.flatMap((a) => [...a.calls].reverse()).find((c) => c.kind === kind && gave(c));
-  const read = listOf(parsed(last(DebugCallKind.STATEMENT_READING)?.answer ?? ""), "tasks");
-  // The solver's call answers with the key, a paper.v1.Key: a task it solved has its answer.
-  const keys = listOf(parsed(last(DebugCallKind.SOLVER)?.answer ?? ""), "tasks");
-  const results = listOf(
+  const lastOf = (calls: readonly DebugCall[], kind: DebugCallKind) =>
+    [...calls].reverse().find((c) => c.kind === kind && gave(c));
+  const read = listOf(
     parsed(
-      [...action.calls]
-        .reverse()
-        .find((c) => c.kind === DebugCallKind.WORK_READING && c.reader <= 1 && gave(c))?.answer ??
-        "",
+      lastOf(
+        before.flatMap((a) => a.calls),
+        DebugCallKind.STATEMENT_READING,
+      )?.answer ?? "",
     ),
-    "results",
+    "tasks",
+  );
+  const checked = listOf(
+    parsed(lastOf(action.calls, DebugCallKind.TASK_CHECKING)?.answer ?? ""),
+    "tasks",
   );
   const outcomes = sent?.outcomes ?? [];
-  const count = Math.max(read.length, outcomes.length, 1);
+  const count = Math.max(checked.length, outcomes.length, 1);
   return {
     tasks: Array.from({ length: count }, (_, n) => {
-      const answer = keys[n]?.answer;
+      const slot = checked.find((t) => t.task === n + 1) ?? checked[n];
       return {
-        statement: text(read[n]?.statement ?? keys[n]?.statement),
-        formula: text(read[n]?.formula),
-        key: typeof answer === "object" && answer !== null ? JSON.stringify(answer) : "",
-        read: text(results.find((r) => r.task === n + 1)?.value),
+        statement: text(read[n]?.statement),
+        read: text(slot?.read),
         outcome: outcomes[n] ?? DebugOutcome.UNSPECIFIED,
+        checkVerdict: text(slot?.verdict),
+        checkRead: text(slot?.read),
       };
     }),
     note: "",
@@ -586,32 +538,21 @@ export function exportOf(
   if (truth.tasks.length === 0) return { error: "A case has one task at least." };
   if (truth.tasks.some((t) => t.outcome === DebugOutcome.UNSPECIFIED))
     return { error: "Choose the verdict each task should get." };
-  if (truth.tasks.some((t) => t.statement.trim() === ""))
-    return { error: "Give each task its statement as printed." };
-  const tasks: DebugTask[] = [];
-  for (const [n, t] of truth.tasks.entries()) {
-    let key: DebugTask["key"];
-    if (t.key.trim() !== "") {
-      try {
-        key = fromJsonString(DebugTaskSchema, `{"key":${t.key}}`).key;
-      } catch (reason) {
-        return {
-          error: `The key of task ${n + 1} is no paper.v1.Answer: ${reason instanceof Error ? reason.message : String(reason)}`,
-        };
-      }
-    }
-    tasks.push(
-      create(DebugTaskSchema, {
-        statement: t.statement.trim(),
-        formula: t.formula.trim(),
-        key,
-        read: t.read.trim(),
-        outcome: t.outcome,
-      }),
-    );
-  }
+  const tasks = truth.tasks.map((t) =>
+    create(DebugTaskSchema, {
+      statement: t.statement.trim(),
+      read: t.read.trim(),
+      outcome: t.outcome,
+      checkVerdict: t.checkVerdict,
+      checkRead: t.checkRead,
+    }),
+  );
   const c = create(DebugCaseSchema, {
-    work: { statement: sent.statement, crop: sent.crop },
+    work: {
+      statement: sent.statement,
+      crop: sent.crop,
+      ...(sent.instruction === undefined ? {} : { instruction: sent.instruction }),
+    },
     tasks,
     note: truth.note.trim(),
     action,

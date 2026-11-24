@@ -1,9 +1,10 @@
 // The tutor's panel on the screen of solving a task from paper, the shell of the
 // task screen's: in its head the learner's share of the quota and the switch of voicing; in the
-// conversation, first its line on what comes here, then the program's verdict of the last Check as
-// a line — the reading while it runs —, the tutor's words, marked a hint — the opening question,
-// the rung's, or the rung's put another way —, with "Report a problem" below them for a
-// learner of the category adult, and what a Check or a Hint failed with, which the phone's
+// conversation, first its line on what comes here, then the verdict of the last Check as a line —
+// the reading while it runs —, the tutor's words of that Check, and the tutor's words marked a
+// hint — the opening question, the rung's, or the rung's put another way —, each with "Report a
+// problem" below them for a learner of the category adult, and what a Check or a Hint failed with,
+// which the phone's
 // sheet would hide at the screen's foot; at its foot Hint while the task is not solved, "Explain
 // differently" once on a rung, and the next task once its Check is over. No text field and no
 // microphone. A task from paper is in no module: its words are in the language of the
@@ -28,6 +29,7 @@ export function SolveTutor({
   profileId,
   attemptId,
   said,
+  checkSaid,
   adult,
   wordsWaiting,
   wordsNote,
@@ -50,8 +52,10 @@ export function SolveTutor({
   readonly acts: { readonly hint: boolean; readonly next: boolean };
   readonly profileId: string;
   readonly attemptId: string;
-  /** The tutor's words, while they stand, with the reply that brought them. */
+  /** The tutor's words of a hint, while they stand, with the reply that brought them. */
   readonly said: Said | undefined;
+  /** The tutor's words of the last Check, while they stand. */
+  readonly checkSaid?: Said | undefined;
   /** The learner is of the category adult: "Report a problem" stands below the words. */
   readonly adult: boolean;
   /** The words of a rung are asked and have not come yet. */
@@ -71,6 +75,21 @@ export function SolveTutor({
   readonly headingRef?: Ref<HTMLHeadingElement>;
 }) {
   const { language, words } = useLanguage();
+  // Other words are another report: the form begins anew with them.
+  const report = (shown: Said | undefined) =>
+    adult && shown !== undefined && shown.text !== ""
+      ? {
+          report: (
+            <ReportProblem
+              key={`${shown.reply} ${shown.rung} ${shown.text}`}
+              profileId={profileId}
+              attemptId={attemptId}
+              said={shown}
+              language={language}
+            />
+          ),
+        }
+      : {};
   return (
     <TutorPanel
       headingRef={headingRef}
@@ -90,6 +109,9 @@ export function SolveTutor({
           ) : verdict === undefined ? null : (
             <VerdictLine {...paperCard(verdict, words)} />
           )}
+          {checkSaid === undefined ? null : (
+            <TutorWords words={checkSaid.text} language={language} {...report(checkSaid)} />
+          )}
           <TutorWords
             words={said?.text}
             rung
@@ -97,20 +119,7 @@ export function SolveTutor({
             waiting={wordsWaiting}
             explaining={explaining}
             {...(wordsNote === undefined ? {} : { note: wordsNote })}
-            {...(adult && said !== undefined && said.text !== ""
-              ? {
-                  report: (
-                    // Other words are another report: the form begins anew with them.
-                    <ReportProblem
-                      key={`${said.reply} ${said.rung} ${said.text}`}
-                      profileId={profileId}
-                      attemptId={attemptId}
-                      said={said}
-                      language={language}
-                    />
-                  ),
-                }
-              : {})}
+            {...report(said)}
           />
           {failure === undefined ? null : (
             <p role="alert" className="nt-error">

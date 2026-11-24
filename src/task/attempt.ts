@@ -224,9 +224,13 @@ export function solutionOf(views: OpenViews, solved: SolvedTask): readonly open.
 
 /**
  * The work the contract carries, of the work the canvas gave: PNG bytes, and a box's place; a task
- * from paper's, its statement's crop beside its work's.
+ * from paper's, its statement's crop beside its work's, and the crop of its instruction when it has
+ * one.
  */
-export async function workOf(work: ExportedWork): Promise<MessageInitShape<typeof WorkSchema>> {
+export async function workOf(
+  work: ExportedWork,
+  instruction?: Blob,
+): Promise<MessageInitShape<typeof WorkSchema>> {
   const bytes = async (png: Blob) => new Uint8Array(await png.arrayBuffer());
   if ("cells" in work) {
     const boxes = await Promise.all(
@@ -240,8 +244,17 @@ export async function workOf(work: ExportedWork): Promise<MessageInitShape<typeo
   if (work.statement === undefined) {
     return { surface: { case: "sheet", value: { crop: await bytes(work.png) } } };
   }
-  const [statement, crop] = await Promise.all([bytes(work.statement), bytes(work.png)]);
-  return { surface: { case: "paper", value: { statement, crop } } };
+  const [statement, crop, above] = await Promise.all([
+    bytes(work.statement),
+    bytes(work.png),
+    instruction === undefined ? undefined : bytes(instruction),
+  ]);
+  return {
+    surface: {
+      case: "paper",
+      value: { statement, crop, ...(above === undefined ? {} : { instruction: above }) },
+    },
+  };
 }
 
 /** How a mark is named by its number, the count, and on a workbook its line and box. */

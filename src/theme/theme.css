@@ -4713,7 +4713,8 @@ p.nt-mode-note {
   background: var(--nt-not-yet);
   color: var(--nt-on-fill);
 }
-.nt-card-verdict[data-kind="write"] > .nt-card-sign {
+.nt-card-verdict[data-kind="write"] > .nt-card-sign,
+.nt-card-verdict[data-kind="so-far"] > .nt-card-sign {
   background: rgba(0, 113, 227, 0.12);
   color: var(--nt-accent);
 }
@@ -5438,7 +5439,8 @@ button.nt-act[aria-disabled="true"] {
   background: var(--nt-accent);
   color: var(--nt-on-fill);
 }
-.nt-verdict-line[data-kind="write"] > .nt-card-sign {
+.nt-verdict-line[data-kind="write"] > .nt-card-sign,
+.nt-verdict-line[data-kind="so-far"] > .nt-card-sign {
   background: rgba(0, 113, 227, 0.12);
   color: var(--nt-accent);
 }

@@ -6,6 +6,7 @@ import {
   ItemVerdictSchema,
   MarkKind,
   MarkSchema,
+  TutorReply,
 } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
 import { Cause } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import type { HistoryEvent } from "@altnovatrail/spec/canvas";
@@ -19,6 +20,7 @@ import {
   besideTask,
   changed,
   checkOver,
+  checkReply,
   notBegun,
   onList,
   paperCard,
@@ -309,7 +311,7 @@ describe("what a Check of a task from paper came to", () => {
     expect(paperCard(noKey, en)).toEqual({
       kind: "nokey",
       title: "Couldn't check this one",
-      line: "This task has no answer that can be checked. Hints still work.",
+      line: "No solution could be read here. Write it out, then Check again. Hints still work.",
     });
     const failed = paperVerdictOf(slot("unchecked"), { cause: Cause.AI_FAILURE }, false);
     expect(paperCard(failed, en).title).toBe("Not checked");
@@ -324,15 +326,91 @@ describe("what a Check of a task from paper came to", () => {
     );
   });
 
-  it("is over once the task is solved or has no key", () => {
+  it("is over once the task is solved, and open to a Check again after one that read nothing", () => {
     expect(checkOver(begun(1))).toBe(false);
     expect(checkOver({ ...begun(1), verdict: { kind: "correct", read: "85", parts: [] } })).toBe(
       true,
     );
-    expect(checkOver({ ...begun(1), verdict: { kind: "nokey" } })).toBe(true);
+    expect(checkOver({ ...begun(1), verdict: { kind: "nokey" } })).toBe(false);
+    expect(checkOver({ ...begun(1), verdict: { kind: "so-far", read: "3", parts: [] } })).toBe(
+      false,
+    );
     expect(checkOver({ ...begun(1), verdict: { kind: "not-yet", read: "84", parts: [] } })).toBe(
       false,
     );
+  });
+});
+
+describe("a task with no answer yet and no mistake", () => {
+  const en = WORDS.en;
+  const items = (...verdicts: string[]): ItemVerdict[] =>
+    verdicts.map((verdict, n) =>
+      create(ItemVerdictSchema, {
+        verdict,
+        answerSlots: [
+          {
+            answerSlot: { item: n + 1, slot: 1 },
+            verdict,
+            value: "3 + 4",
+            ...(verdict === "correct" || verdict === "not_yet"
+              ? { cropBox: { ymin: n * 250, xmin: 600, ymax: n * 250 + 200, xmax: 900 } }
+              : {}),
+          },
+        ],
+      }),
+    );
+  const checked = {
+    crop: {},
+    groups: [],
+    tracing: { at: [0, 0], hidden: false },
+    digest: "0",
+  } as never;
+
+  it("is so far correct, a quiet card with no mark, in both languages", () => {
+    const one = paperVerdictOf(items("so_far_correct"), undefined, false);
+    expect(one).toEqual({ kind: "so-far", read: "3 + 4", parts: [{ verdict: "so-far" }] });
+    expect(paperCard(one, en)).toEqual({
+      kind: "so-far",
+      title: "So far correct",
+      line: "No mistake yet. Go on to the answer, then Check.",
+    });
+    expect(paperCard(one, WORDS.ru).title).toBe("Пока верно");
+    expect(verdictMarks({ verdict: one, checked }, en)).toBeUndefined();
+  });
+
+  it("gives way to a task not yet, and counts the frame's tasks correct beside it", () => {
+    expect(paperVerdictOf(items("so_far_correct", "not_yet"), undefined, false).kind).toBe(
+      "not-yet",
+    );
+    const mixed = paperVerdictOf(
+      items("correct", "so_far_correct", "unreadable"),
+      undefined,
+      false,
+    );
+    expect(mixed.kind).toBe("so-far");
+    expect(paperCard(mixed, en)).toEqual({
+      kind: "so-far",
+      title: "So far correct · 1 of 3 done",
+      line: "No answer was read in tasks 3",
+    });
+    expect(paperCard(mixed, WORDS.ru).title).toBe("Пока верно · готово 1 из 3");
+    // The tick of the task correct stands; the one so far correct has none.
+    expect(verdictMarks({ verdict: mixed, checked }, en)?.marks).toEqual([
+      { kind: "verdict", at: { box: [0, 600, 200, 900] }, correct: true, name: "Task 1: correct" },
+    ]);
+    // A wavy line underlines a mistake alone.
+    expect(verdictMarks({ verdict: mixed, checked }, en, [0, 0, 10, 10])?.marks).toHaveLength(1);
+  });
+
+  it("is the reply a report names the Check's words by", () => {
+    const correct = { kind: "correct", read: undefined, parts: [] } as const;
+    const notYet = { kind: "not-yet", read: undefined, parts: [] } as const;
+    const soFar = { kind: "so-far", read: undefined, parts: [] } as const;
+    expect(checkReply(correct, 2)).toEqual({ reply: TutorReply.CORRECT_ANSWER, rung: 0 });
+    expect(checkReply(notYet, 1)).toEqual({ reply: TutorReply.RUNG, rung: 1 });
+    expect(checkReply(notYet, 5)).toEqual({ reply: TutorReply.RUNG, rung: 3 });
+    expect(checkReply(soFar, 0)).toEqual({ reply: TutorReply.OPENING, rung: 0 });
+    expect(checkReply({ kind: "nokey" }, 0)).toEqual({ reply: TutorReply.OPENING, rung: 0 });
   });
 });
 
@@ -351,8 +429,12 @@ describe("the buttons of the tutor's panel", () => {
     expect(tutorActs(solved)).toEqual({ hint: false, next: true });
     // Solved in this tab, it stays so once its attempt is over.
     expect(tutorActs({ ...solved, over: true })).toEqual({ hint: false, next: true });
-    // A task with no key keeps its hints.
+    // A Check that read nothing keeps the hints.
     expect(tutorActs({ verdict: { kind: "nokey" } })).toEqual({ hint: true, next: true });
+    expect(tutorActs({ verdict: { kind: "so-far", read: "3", parts: [] } })).toEqual({
+      hint: true,
+      next: false,
+    });
   });
 
   it("gives neither on a task only to be looked at, whose attempt is over", () => {

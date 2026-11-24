@@ -2,11 +2,13 @@
 // the photo goes to FindTasks once, a JPEG encoded anew; its frames come picked, a tap leaves one
 // out, and Start begins the picked ones with BeginPaperAttempts; two taps frame a task the AI
 // missed; a refusal that shuts AI shuts Start; each task begun is a sheet under its crop, the list
-// goes from one to another and back to the page, and Check sends the two crops and shows the
-// verdict by the task's key, or "Couldn't check this one" with none; the tutor's panel on the page
-// finds it anew by the learner's request, and Undo brings the frames back; on the screen of solving
-// the tutor's panel opens by its button and by Hint, with the verdict and the hint in it, the
-// rung's words after Not yet, with the wavy line, and "Explain differently" once on a rung, and on a
+// goes from one to another and back to the page, and Check sends the crops, the instruction's with
+// a found task that has one, and shows the Check's verdict — So far correct with no answer yet, or
+// "Couldn't check this one" when nothing was read — and its words a bubble an adult may report; the
+// tutor's panel on the page finds it anew by the learner's request, and Undo brings the frames back;
+// on the screen of solving the tutor's panel opens by its button and by Hint, whose opening question
+// goes with the work, with the verdict and the hint in it, the rung's words after Not yet, with no
+// work and the wavy line, and "Explain differently" once on a rung, and on a
 // phone hides the canvas's bar of tools; a task api closed is only to be looked at; a repeat of
 // FindTasks finds again, and a Start that failed says why; a photo whose tasks were found on it
 // turned upright is turned so on the page, and the page goes on with it; a camera that answers too late is
@@ -19,13 +21,16 @@ import {
   AttemptService,
   type ExplainDifferentlyResponseSchema,
   type GetHintResponseSchema,
+  type GetOpeningWordsRequest,
   type GetRungWordsRequest,
   type GetRungWordsResponseSchema,
   MarkKind,
   type ReadStatementRequest,
   type ReadStatementResponseSchema,
+  type ReportProblemRequest,
   type SubmitWorkRequest,
   type SubmitWorkResponseSchema,
+  TutorReply,
 } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
 import { Cause, RefusalSchema } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import { DebugService } from "@altnovatrail/contracts/novatrail/api/v1/debug_pb.js";
@@ -38,6 +43,7 @@ import {
 } from "@altnovatrail/contracts/novatrail/api/v1/paper_pb.js";
 import type { CanvasElement, HistoryEvent } from "@altnovatrail/spec/canvas";
 import { create, type MessageInitShape } from "@bufbuild/protobuf";
+import { timestampFromDate } from "@bufbuild/protobuf/wkt";
 import { Code, ConnectError } from "@connectrpc/connect";
 import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
@@ -117,6 +123,8 @@ async function renderCamera(setup: Setup = {}) {
   const submits: SubmitWorkRequest[] = [];
   const rungs: GetRungWordsRequest[] = [];
   const reads: ReadStatementRequest[] = [];
+  const opens: GetOpeningWordsRequest[] = [];
+  const reports: ReportProblemRequest[] = [];
   let explains = 0;
   let attempts = 0;
   const api = routedApi((router) => {
@@ -137,8 +145,13 @@ async function renderCamera(setup: Setup = {}) {
         if (answer === undefined) throw new ConnectError("a refusal", Code.InvalidArgument);
         return answer;
       },
-      getOpeningWords() {
+      getOpeningWords(request) {
+        opens.push(request);
         return { words: setup.hinted ?? "" };
+      },
+      reportProblem(request) {
+        reports.push(request);
+        return { reportId: "r1", reviewBy: timestampFromDate(new Date("2026-11-20T12:00:00Z")) };
       },
       ...(setup.rung === undefined
         ? {}
@@ -173,7 +186,10 @@ async function renderCamera(setup: Setup = {}) {
           setup.found?.(request) ?? {
             frames: [
               { box: { ymin: 500, xmin: 50, ymax: 650, xmax: 950 } },
-              { box: { ymin: 75, xmin: 50, ymax: 225, xmax: 950 } },
+              {
+                box: { ymin: 75, xmin: 50, ymax: 225, xmax: 950 },
+                instruction: { ymin: 20, xmin: 50, ymax: 70, xmax: 950 },
+              },
             ],
           }
         );
@@ -210,7 +226,7 @@ async function renderCamera(setup: Setup = {}) {
   );
   if (setup.camera === undefined)
     await screen.findByText(WORDS[setup.language ?? "en"].text("paper.no-camera"));
-  return { finds, begins, submits, rungs, reads };
+  return { finds, begins, submits, rungs, reads, opens, reports };
 }
 
 /** A refusal of api for a cause. */
@@ -523,7 +539,7 @@ it("goes back to the page by Add, and Start begins only the tasks not begun", as
   expect(sheet().history).toHaveLength(1);
 });
 
-it("asks for a solution before Check, then sends the task's crop and the work's", async () => {
+it("asks for a solution before Check, then sends the task's crop, the instruction's and the work's", async () => {
   const { submits } = await solving();
   // Only marked disabled while nothing is written, and Playwright would wait for it to be enabled.
   await userEvent.click(screen.getByRole("button", { name: "Check" }), { force: true });
@@ -539,10 +555,21 @@ it("asks for a solution before Check, then sends the task's crop and the work's"
   const work = submits[0]?.work?.surface;
   if (work?.case !== "paper") throw new Error("no work of a task from paper");
   expect([work.value.statement[1], work.value.crop[1]]).toEqual([0x50, 0x50]);
+  // The instruction found above the task, a crop of its own.
+  expect(work.value.instruction?.[1]).toBe(0x50);
   expect(submits[0]?.attemptId).toBe("a1");
+  // The second task, found with no instruction, sends none.
+  await userEvent.click(screen.getByRole("button", { name: "Next task" }));
+  await screen.findByRole("heading", { name: "Task 2" });
+  writeOn(sheet());
+  await userEvent.click(screen.getByRole("button", { name: "Check" }));
+  await waitFor(() => expect(submits).toHaveLength(2));
+  const second = submits[1]?.work?.surface;
+  if (second?.case !== "paper") throw new Error("no work of a task from paper");
+  expect(second.value.instruction).toHaveLength(0);
 });
 
-it("shows the verdict by the key: Not yet, then Correct, which takes no Check again", async () => {
+it("shows the Check's verdict: Not yet, then Correct, which takes no Check again", async () => {
   const verdict = (v: string, value: string) => ({
     items: [{ verdict: v, answerSlots: [{ answerSlot: { item: 1, slot: 1 }, verdict: v, value }] }],
   });
@@ -606,7 +633,7 @@ it("checks a frame of several tasks each, with the count and a tick or a cross b
   expect(sheet().shadowRoot?.querySelectorAll(".marks g[role=img]")).toHaveLength(0);
 });
 
-it("says a task with no key could not be checked, with Hint and Next task", async () => {
+it("says nothing could be read to check, with Hint, Next task and Check again", async () => {
   await solving({
     checked: () => ({
       items: [
@@ -621,6 +648,13 @@ it("says a task with no key could not be checked, with Hint and Next task", asyn
   writeOn(sheet());
   await userEvent.click(screen.getByRole("button", { name: "Check" }));
   expect(await screen.findByText("Couldn't check this one")).toBeVisible();
+  expect(
+    screen.getByText(
+      "No solution could be read here. Write it out, then Check again. Hints still work.",
+    ),
+  ).toBeVisible();
+  // Only this Check's outcome: the next one checks again.
+  expect(screen.getByRole("button", { name: "Check" })).toHaveAttribute("aria-disabled", "false");
   // The card's Hint, beside the row's.
   expect(screen.getAllByRole("button", { name: "Hint" })).toHaveLength(2);
   const next = screen.getAllByRole("button", { name: "Next task" });
@@ -660,9 +694,17 @@ it("opens the tutor's panel by its button: the verdict a line in it, and a card 
 });
 
 it("opens the panel by the row's Hint, its words a bubble there that strokes do not take away", async () => {
-  await solving({ hinted: "What is left to find?" });
+  const { opens } = await solving({ hinted: "What is left to find?" });
   await userEvent.click(screen.getByRole("button", { name: "Hint" }));
   expect(await tutorPanel().findByText("What is left to find?")).toBeVisible();
+  // The opening question asks the Check with the work as it stands: with nothing written, the crop.
+  expect(opens).toHaveLength(1);
+  expect(opens[0]?.attemptId).toBe("a1");
+  const asked = opens[0]?.work?.surface;
+  if (asked?.case !== "paper") throw new Error("no work of a task from paper");
+  expect([asked.value.statement[1], asked.value.crop[1], asked.value.instruction?.[1]]).toEqual([
+    0x50, 0x50, 0x50,
+  ]);
   expect(tutorPanel().getByText("Hint", { selector: ".nt-bubble-label" })).toBeVisible();
   writeOn(sheet());
   // Once the stroke is drawn again, Check opens, and the hint stands.
@@ -674,6 +716,62 @@ it("opens the panel by the row's Hint, its words a bubble there that strokes do 
   await userEvent.click(screen.getByRole("button", { name: "Next task" }));
   await screen.findByRole("heading", { name: "Task 2" });
   expect(tutorPanel().queryByText("What is left to find?")).toBeNull();
+});
+
+it("shows a task with no answer yet and no mistake as So far correct, with no answer read", async () => {
+  await solving({
+    checked: () => ({
+      items: [
+        {
+          verdict: "so_far_correct",
+          answerSlots: [{ answerSlot: { item: 1, slot: 1 }, verdict: "so_far_correct" }],
+        },
+      ],
+    }),
+  });
+  writeOn(sheet());
+  await userEvent.click(screen.getByRole("button", { name: "Check" }));
+  await waitFor(() => {
+    const card = document.querySelector<HTMLElement>(".nt-card-verdict");
+    if (card === null) throw new Error("no card");
+    expect(card).toHaveAttribute("data-kind", "so-far");
+    expect(within(card).getByText("So far correct")).toBeVisible();
+  });
+  expect(screen.getByText("No mistake yet. Go on to the answer, then Check.")).toBeVisible();
+  expect(screen.queryByText(/^Read:/)).toBeNull();
+  expect(sheet().marks).toBeUndefined();
+  // Not over: the next Check checks again.
+  expect(screen.getByRole("button", { name: "Check" })).toHaveAttribute("aria-disabled", "false");
+});
+
+it("brings the Check's words as a bubble of the open panel, which an adult may report", async () => {
+  const { reports } = await solving({
+    checked: () => ({ ...notYet(2), tutorWords: "Count the tens once more." }),
+  });
+  await userEvent.click(screen.getByRole("button", { name: "Ask" }));
+  writeOn(sheet());
+  await userEvent.click(screen.getByRole("button", { name: "Check" }));
+  expect(await tutorPanel().findByText("Count the tens once more.")).toBeVisible();
+  await userEvent.click(tutorPanel().getByRole("button", { name: "Report a problem" }));
+  await userEvent.click(screen.getByRole("radio", { name: /Wrong/ }));
+  await userEvent.click(screen.getByRole("button", { name: "Send" }));
+  await waitFor(() => expect(reports).toHaveLength(1));
+  expect(reports[0]?.reply).toBe(TutorReply.RUNG);
+  expect(reports[0]?.rung).toBe(2);
+  expect(reports[0]?.words).toBe("Count the tens once more.");
+  // Another task is another conversation: its words go.
+  await userEvent.click(screen.getByRole("button", { name: "Next task" }));
+  await screen.findByRole("heading", { name: "Task 2" });
+  expect(tutorPanel().queryByText("Count the tens once more.")).toBeNull();
+});
+
+it("shows no bubble for a Check that has no words", async () => {
+  await solving({ checked: () => notYet() });
+  await userEvent.click(screen.getByRole("button", { name: "Ask" }));
+  writeOn(sheet());
+  await userEvent.click(screen.getByRole("button", { name: "Check" }));
+  expect(await tutorPanel().findByText("Read: 84")).toBeVisible();
+  expect(tutorPanel().queryByRole("button", { name: "Report a problem" })).toBeNull();
 });
 
 it("brings the rung's words with the wavy line in the open panel, which the paper moved takes away", async () => {
@@ -696,7 +794,8 @@ it("brings the rung's words with the wavy line in the open panel, which the pape
   expect(await tutorPanel().findByText("Look at the tens.")).toBeVisible();
   expect(rungs).toHaveLength(1);
   expect(rungs[0]?.wrongAnswers).toBe(1);
-  expect(rungs[0]?.work?.surface.case).toBe("paper");
+  // A rung of the ladder the Check kept: no work goes with it.
+  expect(rungs[0]?.work).toBeUndefined();
   const kinds = () => sheet().marks?.marks.map((mark) => mark.kind);
   await waitFor(() => expect(kinds()).toContain("wavy_line"));
   sheet().dispatchEvent(

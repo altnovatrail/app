@@ -11,7 +11,8 @@
 // staying, and Undo puts back the frames before until the learner changes any. Frames found on the
 // photo turned upright turn the page's photo the same way before they show, the finding going on
 // meanwhile, and the page goes on with the photo turned: its crops, a request and the history take
-// it.
+// it. Start cuts each task's crop, and the crop of the instruction above it where the finding gave
+// one, from the same photo.
 import { Cause } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import { useCallback, useRef, useState } from "react";
 import { useApi } from "../api/ApiContext.tsx";
@@ -218,11 +219,17 @@ export function PaperScreen({
     setStarting(true);
     setStarted(undefined);
     const photo = page.photo;
-    void cropsOf(
-      photo,
-      chosen.map((task) => task.frame),
-    )
-      .then(async (crops) => {
+    // The instructions' crops after the tasks', in one decoding of the photo.
+    const above = chosen.flatMap((task) =>
+      task.instruction === undefined ? [] : [task.instruction],
+    );
+    void cropsOf(photo, [...chosen.map((task) => task.frame), ...above])
+      .then(async (cut) => {
+        const crops = cut.slice(0, chosen.length);
+        let next = chosen.length;
+        const instructions = chosen.map((task) =>
+          task.instruction === undefined ? undefined : cut[next++],
+        );
         const answer = await api.paper.beginPaperAttempts({
           profileId,
           idempotencyKey: key,
@@ -234,6 +241,7 @@ export function PaperScreen({
         const begun: BegunTask[] = chosen.flatMap((task, i) => {
           const attemptId = answer.attemptIds[i];
           const crop = crops[i];
+          const instruction = instructions[i];
           return attemptId === undefined || crop === undefined
             ? []
             : [
@@ -243,6 +251,7 @@ export function PaperScreen({
                   frame: task.frame,
                   drawn: task.drawn,
                   crop,
+                  ...(instruction === undefined ? {} : { instruction }),
                   history: [],
                 },
               ];

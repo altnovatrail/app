@@ -94,7 +94,7 @@ describe("the adult's Help", () => {
     const help = within(screen.getByRole("dialog", { name: "Help" }));
     expect(help.getByRole("heading", { level: 2, name: "Help" })).toBeVisible();
     expect(help.getByText("The tutor is an AI")).toBeVisible();
-    expect(help.getByText(/a program checks every answer/)).toBeVisible();
+    expect(help.getByText(/The AI checks a task from paper, a program the rest/)).toBeVisible();
     expect(help.getByText(/Report a problem/)).toBeVisible();
     expect(help.getByText("Your name is made up")).toBeVisible();
     // No link out of the app, and no helpline: buttons of the app's own pages alone.

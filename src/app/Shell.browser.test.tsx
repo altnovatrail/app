@@ -72,6 +72,8 @@ describe("the frame of Home", () => {
     const tutor = screen.getByRole("button", { name: "Tutor" });
     await userEvent.click(tutor);
     const panel = within(screen.getByRole("dialog", { name: "Tutor" }));
+    // It says that the tutor is an AI, and what the AI checks.
+    expect(panel.getByText(/The AI checks a task from paper, a program the rest/)).toBeVisible();
     await userEvent.click(panel.getByRole("button", { name: "Continue the task" }));
     expect(window.location.hash).toBe(formatHash(TASK));
     expect(screen.queryByRole("dialog")).toBeNull();

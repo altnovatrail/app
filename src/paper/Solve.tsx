@@ -6,27 +6,30 @@
 // is as it was, and the page's history keeps them. At the foot the row of glass: the debug button
 // and a line, for an account with debug, Ask, Hint till the task is solved, a line and Check, kept
 // to one row by BarFit.tsx — Ask its icon alone first, and only then wrapped. Check sends the
-// task's crop with the crop of the work, and the page keeps the context of the work of each Check
-// answered, but no verdict: its verdict is that of each task of the frame by the key api derived —
-// Correct with Next task, Not yet with Hint, of several tasks with how many are correct, the work
+// task's crop with the crop of the work and the crop of its instruction, and the page keeps the
+// context of the work of each Check answered, but no verdict: its verdict is that of each task of
+// the frame as the model of the Check judged it — Correct with Next task, Not yet with Hint, So far
+// correct with no answer yet and no mistake, of several tasks with how many are correct, the work
 // not read with why, not checked with the outcome —, with a tick or a cross by each answer on the
-// sheet; or "Couldn't check this one" when no task has a key, with Hint and Next task. A frame
-// solved or with no key takes no Check again, and the list marks the one solved. A task whose
+// sheet; or "Couldn't check this one" when the Check read nothing of a solution, with Hint and Next
+// task, and the next Check checks again. A frame solved takes no Check again, and the list marks
+// it. A task whose
 // attempt is over — solved, or closed by api, as a page of the history opened again may hold — is
 // only to be looked at: its sheet takes no writing, no Hint stands, and its Check says "This task
 // is already over". Ask opens the tutor's panel, and so does Hint; a verdict does not; Ask and the
 // debug button leave the row while the panel is open. While the panel is open the verdict is a line
 // in it, the hint a bubble there, said by itself while the voicing is on, and on a phone its sheet
 // hides the row and the canvas's bar of tools; while it is closed the verdict is a card above the
-// row, with the panel's buttons. The tutor's words are of AI: Hint before the first wrong answer
-// asks the opening question from the task's crop as printed, once on the attempt; after Not yet,
-// with the panel open — or once it opens — the words of the rung come with the work of the Check,
-// and in the mode "Show where" with the wavy line under the first mistake, which goes with other
-// work or the paper moved; "Explain differently" words the rung anew, once on it; and an adult may
-// report a problem with the words. The words stand till another task or Check, and what is said of
-// them stops with another task or the panel closed. "Recognise" on the tracing paper reads the
-// task's crop into its text by AI, which api keeps on the attempt for its first Check; the page
-// keeps the reading while it is open, and the paper shows the photo again each time it is mounted.
+// row, with the panel's buttons. The tutor's words are of AI: the Check's own words on the work
+// come with its verdict, in a bubble of the panel; Hint before the first Check sends the work as it
+// stands to the Check for the opening question, once on the attempt; after Not yet, with the panel
+// open — or once it opens — the words of the rung come from the hints the Check gave, and in the
+// mode "Show where" with the wavy line under the first mistake, which goes with other work or the
+// paper moved; "Explain differently" words the rung anew, once on it; and an adult may report a
+// problem with either words. The words stand till another task or Check, and what is said of them
+// stops with another task or the panel closed. "Recognise" on the tracing paper reads the task's
+// crop into its text by AI; the page keeps the reading while it is open, and the paper shows the
+// photo again each time it is mounted.
 import {
   TutorReply,
   type WorkSchema,
@@ -72,6 +75,7 @@ import {
   type Box,
   besideTask,
   checkOver,
+  checkReply,
   onList,
   paperCard,
   paperVerdictOf,
@@ -98,13 +102,12 @@ function paperOf(crop: Blob): PaperTask {
 }
 
 /**
- * A wrong answer whose rung's words are to be asked, with the work its Check sent and the key of
- * the request, the same when it goes again after a failure.
+ * A wrong answer whose rung's words are to be asked, and the key of the request, the same when it
+ * goes again after a failure. The rung comes from the hints of the attempt's Check: no work goes.
  */
 interface RungAsk {
   readonly attemptId: string;
   readonly wrongAnswers: number;
-  readonly work: MessageInitShape<typeof WorkSchema>;
   readonly key: string;
 }
 
@@ -144,8 +147,9 @@ export function Solve({
   // open: it is the interface's, not the work's, and no store holds it.
   const [grid, setGrid] = useState<PaperGrid | undefined>(undefined);
   const [failure, setFailure] = useState<Failure | undefined>(undefined);
-  // The tutor's words in its panel, with the reply that brought them.
+  // The tutor's words in its panel, with the reply that brought them: the hint's, and the Check's.
   const [said, setSaid] = useState<Said | undefined>(undefined);
+  const [checkSaid, setCheckSaid] = useState<Said | undefined>(undefined);
   const [wordsWaiting, setWordsWaiting] = useState(false);
   // What a request of words came to when it gave none, or why platform AI gave none of its own.
   const [wordsNote, setWordsNote] = useState<string | undefined>(undefined);
@@ -205,6 +209,7 @@ export function Solve({
     setFailure(undefined);
     setReadNote(undefined);
     setSaid(undefined);
+    setCheckSaid(undefined);
     setWordsNote(undefined);
     setExplained(false);
     setWavy(undefined);
@@ -295,7 +300,6 @@ export function Solve({
         attemptId: ask.attemptId,
         idempotencyKey: ask.key,
         wrongAnswers: ask.wrongAnswers,
-        work: ask.work,
         ...ai,
       }),
     )
@@ -329,15 +333,37 @@ export function Solve({
       });
   };
 
-  /** The opening question of a task with no wrong answer, by AI from its crop as printed. */
+  /**
+   * The work as it stands, for the opening question: the sheet's, or with nothing written the task's
+   * crop as printed in the place of the work's, which holds no stroke.
+   */
+  const workNow = async (): Promise<MessageInitShape<typeof WorkSchema>> => {
+    const work = await element.current?.exportWork();
+    if (work !== undefined && work !== null) return workOf(work, task.instruction);
+    const crop = new Uint8Array(await task.crop.arrayBuffer());
+    const above =
+      task.instruction === undefined
+        ? undefined
+        : new Uint8Array(await task.instruction.arrayBuffer());
+    return {
+      surface: {
+        case: "paper",
+        value: { statement: crop, crop, ...(above === undefined ? {} : { instruction: above }) },
+      },
+    };
+  };
+
+  /** The opening question of a task before its first Check, by AI from the work as it stands. */
   const openingWords = async (asked: number) => {
-    if (openingKey.current?.of !== attemptId)
-      openingKey.current = { of: attemptId, key: idempotencyKey() };
+    // Other work is another action, with a key of its own, as a Check's.
+    const sheet = element.current;
+    const of = JSON.stringify([attemptId, sheet?.history.length ?? 0, sheet?.tracing]);
+    if (openingKey.current?.of !== of) openingKey.current = { of, key: idempotencyKey() };
     const key = openingKey.current.key;
-    const statement = new Uint8Array(await task.crop.arrayBuffer());
+    const work = await workNow();
     const ai = holder.aiFields(profileId);
     const answer = await watched(api, () =>
-      api.attempt.getOpeningWords({ profileId, attemptId, idempotencyKey: key, statement, ...ai }),
+      api.attempt.getOpeningWords({ profileId, attemptId, idempotencyKey: key, work, ...ai }),
     );
     openingKey.current = undefined;
     const read = outcomeOf(answer.outcome);
@@ -511,6 +537,7 @@ export function Solve({
     setChecking(true);
     setFailure(undefined);
     setSaid(undefined);
+    setCheckSaid(undefined);
     setWordsNote(undefined);
     setWavy(undefined);
     setWordsWaiting(false);
@@ -533,7 +560,7 @@ export function Solve({
         if (sent.current?.of !== of) sent.current = { of, key: idempotencyKey() };
         const ai = holder.aiFields(profileId);
         const key = sent.current.key;
-        const paperWork = await workOf(work);
+        const paperWork = await workOf(work, task.instruction);
         const surface = paperWork.surface;
         const sentWork = surface?.case === "paper" ? surface.value : undefined;
         const answer = await watched(
@@ -554,6 +581,9 @@ export function Solve({
                 attemptId,
                 statement: sentWork.statement,
                 crop: sentWork.crop,
+                ...(sentWork.instruction instanceof Uint8Array
+                  ? { instruction: sentWork.instruction }
+                  : {}),
                 verdicts: (a) => a.items.map((item) => item.answerSlots[0]?.verdict),
               }
             : undefined,
@@ -577,17 +607,16 @@ export function Solve({
         }));
         const card = paperCard(verdict, words);
         setTold(card.line === undefined ? card.title : `${card.title}. ${card.line}`);
+        if (answer.tutorWords !== "") {
+          setCheckSaid({ text: answer.tutorWords, ...checkReply(verdict, answer.wrongAnswers) });
+          if (isOpen.current) auto([{ text: answer.tutorWords, language }]);
+        }
         if (verdict.kind === "not-yet" && answer.wrongAnswers > 0) {
           // A new rung: "Explain differently" is its own once more, with a key of its own.
           setExplained(false);
           explainKey.current = undefined;
           // The words of the rung are asked at once while the panel is open, else once it opens.
-          const ask = {
-            attemptId,
-            wrongAnswers: answer.wrongAnswers,
-            work: paperWork,
-            key: idempotencyKey(),
-          };
+          const ask = { attemptId, wrongAnswers: answer.wrongAnswers, key: idempotencyKey() };
           if (isOpen.current) rungWords(ask);
           else unasked.current = ask;
         }
@@ -830,6 +859,7 @@ export function Solve({
           profileId={profileId}
           attemptId={attemptId}
           said={said}
+          checkSaid={checkSaid}
           adult={adult}
           wordsWaiting={wordsWaiting}
           wordsNote={wordsNote}

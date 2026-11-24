@@ -2,8 +2,8 @@
 // a round button, an orange bug on a light orange, in the bottom bar of the page picked and of the
 // screen of solving, with a line after it where `line` says so; its window at the right, 400 wide,
 // and on a phone a sheet from the bottom with a grabber, drawn in the body, since the bar's glass
-// would hold a fixed window inside it. Two tabs: Models — the first model of every call, its
-// effort and thinking, and a second reader of the work — and Log, the calls by action, each opening
+// would hold a fixed window inside it. Two tabs: Models — the model of every call, its effort and
+// thinking, one for the Check and every other call — and Log, the calls by action, each opening
 // to its figures and what the model returned, with the session's total. The slot loads it only once
 // api's `GetDebug` answered, for an account with the debug right. Its words are English alone: it
 // is the developer's, never a learner's.
@@ -13,11 +13,7 @@ import type {
   DebugCall,
   DebugModel,
 } from "@altnovatrail/contracts/novatrail/api/v1/debug_pb.js";
-import {
-  DebugActionKind,
-  DebugCallKind,
-  DebugEffort,
-} from "@altnovatrail/contracts/novatrail/api/v1/debug_pb.js";
+import { DebugActionKind, DebugEffort } from "@altnovatrail/contracts/novatrail/api/v1/debug_pb.js";
 import {
   type KeyboardEvent,
   useEffect,
@@ -45,9 +41,7 @@ import {
   effortName,
   exportOf,
   failureOf,
-  joinOf,
   load,
-  modelCalls,
   modelName,
   modelOf,
   OUTCOMES,
@@ -88,7 +82,7 @@ function Switch({ on, dim = false }: { readonly on: boolean; readonly dim?: bool
   );
 }
 
-/** One model's slot of the tab Models: the first, or the second reader. */
+/** The slot of the tab Models: the model of every call, or as admitted. */
 function Slot({
   title,
   sub,
@@ -96,22 +90,18 @@ function Slot({
   admitted,
   pick,
   onPick,
-  second,
 }: {
   readonly title: string;
   readonly sub: string;
   readonly models: readonly DebugModel[];
-  /** The first slot's "As admitted": each call its model of the list, by api. */
-  readonly admitted?: readonly { readonly call: string; readonly model: string }[];
+  /** "As admitted": each call its model of the list, by api. */
+  readonly admitted: readonly { readonly call: string; readonly model: string }[];
   /** The model chosen; none as admitted. */
   readonly pick: Pick | undefined;
   readonly onPick: (pick: Pick | undefined) => void;
-  /** The second slot: whether it reads, and its switch. */
-  readonly second?: { readonly on: boolean; readonly toggle: () => void };
 }) {
   const [menu, setMenu] = useState(false);
   const effortId = useId();
-  const rows = second === undefined || second.on;
   const model = pick === undefined ? undefined : modelOf(models, pick.model);
   const fixed = pick === undefined || thinkingFixed(model, pick.effort);
   return (
@@ -121,132 +111,103 @@ function Slot({
         <span className="nt-debug-sub">{sub}</span>
       </div>
       <div className="nt-debug-card">
-        {second === undefined ? null : (
-          <button
-            type="button"
-            role="switch"
-            aria-checked={second.on}
-            className="nt-debug-row"
-            onClick={second.toggle}
-          >
-            <span className="nt-debug-grow">Second reader</span>
-            <Switch on={second.on} />
-          </button>
-        )}
-        {rows ? (
+        <button
+          type="button"
+          className="nt-debug-row"
+          aria-haspopup="menu"
+          aria-expanded={menu}
+          onClick={() => setMenu(!menu)}
+        >
+          <span className="nt-debug-grow">Model</span>
+          <span className="nt-debug-value">{model === undefined ? "As admitted" : model.name}</span>
+        </button>
+        {menu ? (
+          <div className="nt-debug-menu" role="menu" aria-label="Model">
+            {[
+              { id: "", name: "As admitted", sub: "Each call its model of tutor's list" },
+              ...models.map((m) => ({
+                id: m.id,
+                name: m.name,
+                sub: `${m.id} · ${perMtok(m.inputMicroUsd)} / ${perMtok(m.outputMicroUsd)} per Mtok`,
+              })),
+            ].map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                role="menuitemradio"
+                aria-checked={(pick?.model ?? "") === item.id}
+                onClick={() => {
+                  setMenu(false);
+                  onPick(
+                    item.id === ""
+                      ? undefined
+                      : {
+                          model: item.id,
+                          effort: pick?.effort ?? DebugEffort.MEDIUM,
+                          thinking: pick?.thinking ?? true,
+                        },
+                  );
+                }}
+              >
+                <span className="nt-debug-main">{item.name}</span>
+                <span className="nt-debug-sub">{item.sub}</span>
+              </button>
+            ))}
+          </div>
+        ) : null}
+        {pick === undefined ? (
+          <div className="nt-debug-admitted">
+            {admitted.map((a) => (
+              <div key={a.call}>
+                <span className="nt-debug-main">{a.call}</span>
+                <span className="nt-debug-strong">{a.model}</span>
+              </div>
+            ))}
+          </div>
+        ) : (
           <>
+            <div className="nt-debug-effort">
+              <span id={effortId}>Effort</span>
+              <fieldset aria-labelledby={effortId} className="nt-debug-plain">
+                <div className="nt-debug-segments">
+                  {EFFORTS.map((e) => (
+                    <button
+                      key={e}
+                      type="button"
+                      aria-pressed={pick.effort === e}
+                      onClick={() => onPick({ ...pick, effort: e })}
+                    >
+                      {effortName(e)}
+                    </button>
+                  ))}
+                </div>
+              </fieldset>
+            </div>
             <button
               type="button"
+              role="switch"
               className="nt-debug-row"
-              aria-haspopup="menu"
-              aria-expanded={menu}
-              onClick={() => setMenu(!menu)}
+              aria-checked={fixed || pick.thinking}
+              aria-disabled={fixed}
+              onClick={() => {
+                if (!fixed) onPick({ ...pick, thinking: !pick.thinking });
+              }}
             >
-              <span className="nt-debug-grow">Model</span>
-              <span className="nt-debug-value">
-                {model === undefined ? "As admitted" : model.name}
-              </span>
-            </button>
-            {menu ? (
-              <div className="nt-debug-menu" role="menu" aria-label="Model">
-                {[
-                  ...(admitted === undefined
-                    ? []
-                    : [
-                        { id: "", name: "As admitted", sub: "Each call its model of tutor's list" },
-                      ]),
-                  ...models.map((m) => ({
-                    id: m.id,
-                    name: m.name,
-                    sub: `${m.id} · ${perMtok(m.inputMicroUsd)} / ${perMtok(m.outputMicroUsd)} per Mtok`,
-                  })),
-                ].map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    role="menuitemradio"
-                    aria-checked={(pick?.model ?? "") === item.id}
-                    onClick={() => {
-                      setMenu(false);
-                      onPick(
-                        item.id === ""
-                          ? undefined
-                          : {
-                              model: item.id,
-                              effort: pick?.effort ?? DebugEffort.MEDIUM,
-                              thinking: pick?.thinking ?? true,
-                            },
-                      );
-                    }}
-                  >
-                    <span className="nt-debug-main">{item.name}</span>
-                    <span className="nt-debug-sub">{item.sub}</span>
-                  </button>
-                ))}
-              </div>
-            ) : null}
-            {pick === undefined ? (
-              <div className="nt-debug-admitted">
-                {(admitted ?? []).map((a) => (
-                  <div key={a.call}>
-                    <span className="nt-debug-main">{a.call}</span>
-                    <span className="nt-debug-strong">{a.model}</span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <>
-                <div className="nt-debug-effort">
-                  <span id={effortId}>Effort</span>
-                  <fieldset aria-labelledby={effortId} className="nt-debug-plain">
-                    <div className="nt-debug-segments">
-                      {EFFORTS.map((e) => (
-                        <button
-                          key={e}
-                          type="button"
-                          aria-pressed={pick.effort === e}
-                          onClick={() => onPick({ ...pick, effort: e })}
-                        >
-                          {effortName(e)}
-                        </button>
-                      ))}
-                    </div>
-                  </fieldset>
-                </div>
-                <button
-                  type="button"
-                  role="switch"
-                  className="nt-debug-row"
-                  aria-checked={fixed || pick.thinking}
-                  aria-disabled={fixed}
-                  onClick={() => {
-                    if (!fixed) onPick({ ...pick, thinking: !pick.thinking });
-                  }}
-                >
-                  <span className="nt-debug-two nt-debug-grow">
-                    <span className="nt-debug-main">Thinking</span>
-                    {fixed ? (
-                      <span className="nt-debug-sub">
-                        {model !== undefined && model.thinkingOffEfforts.length > 0
-                          ? `Always on at ${effortName(pick.effort)}`
-                          : `Always on for ${model?.name ?? pick.model}`}
-                      </span>
-                    ) : null}
+              <span className="nt-debug-two nt-debug-grow">
+                <span className="nt-debug-main">Thinking</span>
+                {fixed ? (
+                  <span className="nt-debug-sub">
+                    {model !== undefined && model.thinkingOffEfforts.length > 0
+                      ? `Always on at ${effortName(pick.effort)}`
+                      : `Always on for ${model?.name ?? pick.model}`}
                   </span>
-                  <Switch on={fixed || pick.thinking} dim={fixed} />
-                </button>
-              </>
-            )}
+                ) : null}
+              </span>
+              <Switch on={fixed || pick.thinking} dim={fixed} />
+            </button>
           </>
-        ) : null}
+        )}
       </div>
-      {second === undefined ? null : (
-        <span className="nt-debug-foot">
-          {second.on
-            ? "Two readers of the work: a place they read differently is unreadable."
-            : "Off: one reader, the first model."}
-        </span>
-      )}
     </>
   );
 }
@@ -262,7 +223,6 @@ function Call({
   const [copied, setCopied] = useState(false);
   const failure = failureOf(call);
   const answer = answerOf(call);
-  const solver = call.kind === DebugCallKind.SOLVER;
   return (
     <>
       <button
@@ -271,16 +231,13 @@ function Call({
         aria-expanded={open}
         onClick={() => setOpen(!open)}
       >
-        <span
-          className="nt-debug-dot"
-          data-of={failure !== "" ? "failed" : solver ? "solver" : "ai"}
-        />
+        <span className="nt-debug-dot" data-of={failure !== "" ? "failed" : "ai"} />
         <span className="nt-debug-two">
           <span className="nt-debug-main">{callTitle(call)}</span>
           <span className="nt-debug-sub">{callLine(models, call)}</span>
         </span>
         <span className="nt-debug-two nt-debug-end">
-          <span className="nt-debug-main">{solver ? "$0" : usd(call.costMicroUsd)}</span>
+          <span className="nt-debug-main">{usd(call.costMicroUsd)}</span>
           <span className="nt-debug-sub">{took(call.durationMs)}</span>
         </span>
       </button>
@@ -298,8 +255,7 @@ function Call({
             <>
               <div className="nt-debug-json-head">
                 <span className="nt-debug-grow">
-                  {solver ? "The key" : "What the model returned"}
-                  {solver ? null : <code> · {call.model}</code>}
+                  What the model returned<code> · {call.model}</code>
                 </span>
                 <button
                   type="button"
@@ -385,18 +341,12 @@ function Export({
         // biome-ignore lint/suspicious/noArrayIndexKey: the number of a task in its frame
         <fieldset key={n} className="nt-debug-plain nt-debug-task">
           <legend className="nt-debug-sub">Task {n + 1}</legend>
+          <span className="nt-debug-sub">
+            The Check: {t.checkVerdict === "" ? "no answer" : t.checkVerdict}
+            {t.checkRead === "" ? "" : ` · read “${t.checkRead}”`}
+          </span>
           {field(`statement-${n}`, "Statement", "as printed: 37 + 48 =", t.statement, (v) =>
             task(n, { statement: v }),
-          )}
-          {field(`formula-${n}`, "Formula", "none: a word problem, a choice", t.formula, (v) =>
-            task(n, { formula: v }),
-          )}
-          {field(
-            `key-${n}`,
-            "Key · JSON of paper.v1.Answer",
-            '{"number":{"value":"85"}}',
-            t.key,
-            (v) => task(n, { key: v }),
           )}
           {field(`read-${n}`, "Read · the answer the work holds", "none: no answer", t.read, (v) =>
             task(n, { read: v }),
@@ -475,9 +425,7 @@ export default function DebugButton({ line = false }: { readonly line?: boolean 
   if (debug.status !== "on") return null;
   const { models, actions } = debug;
   const total = usd(costOf(callsOf(actions)));
-  const count = modelCalls(actions);
-  const choose_ = (first: Pick | undefined, second: Pick, secondOn: boolean) =>
-    void choose(api.debug, first, second, secondOn);
+  const count = callsOf(actions).length;
   // A call of a task from paper has its models in the order of its attempts.
   const admitted = [...new Set(debug.admitted.map((a) => a.kind))].map((kind) => ({
     call: callName(kind),
@@ -564,25 +512,12 @@ export default function DebugButton({ line = false }: { readonly line?: boolean 
               {tab === "models" ? (
                 <section className="nt-debug-body" aria-label="Models">
                   <Slot
-                    title="First model — every call"
-                    sub="Find tasks, the statement, the solution and reading the work"
+                    title="Model — every call"
+                    sub="Find tasks, the statement, the Check and Explain differently"
                     models={models}
                     admitted={admitted}
                     pick={debug.first}
-                    onPick={(first) => choose_(first, debug.second, debug.secondOn)}
-                  />
-                  <Slot
-                    title="Second model — reading the work"
-                    sub="A second reader of the crop with the strokes"
-                    models={models}
-                    pick={debug.second}
-                    onPick={(second) =>
-                      choose_(debug.first, second ?? debug.second, debug.secondOn)
-                    }
-                    second={{
-                      on: debug.secondOn,
-                      toggle: () => choose_(debug.first, debug.second, !debug.secondOn),
-                    }}
+                    onPick={(first) => void choose(api.debug, first)}
                   />
                   {debug.refused === undefined ? null : (
                     <p role="alert" className="nt-debug-failed">
@@ -626,7 +561,7 @@ export default function DebugButton({ line = false }: { readonly line?: boolean 
                             <div className="nt-debug-card">
                               {action.calls.map((call) => (
                                 <Call
-                                  key={`${call.kind}-${call.reader}-${call.attempt}`}
+                                  key={`${call.kind}-${call.attempt}`}
                                   call={call}
                                   models={models}
                                 />
@@ -634,9 +569,6 @@ export default function DebugButton({ line = false }: { readonly line?: boolean 
                             </div>
                             {request === undefined ? null : (
                               <span className="nt-debug-foot">Request: “{request}”</span>
-                            )}
-                            {joinOf(action) === "" ? null : (
-                              <span className="nt-debug-foot">{joinOf(action)}</span>
                             )}
                             {exporting === key && sent !== undefined ? (
                               <Export

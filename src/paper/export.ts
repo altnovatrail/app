@@ -1,14 +1,14 @@
 // The file of a page from paper in the profile's export, `paper/<profile>/<page>.json`: the
 // page of the history as the device keeps it — its photo, its frames in the order of the page, and
 // each task begun on it with its crop, its history, where its tracing paper lay and the context of
-// each Check answered —, by `@altnovatrail/spec/exportv4`. Of the export, only this file is written
+// each Check answered —, by `@altnovatrail/spec/exportv5`. Of the export, only this file is written
 // here: not its manifest or the device's other files. No DOM.
-import type { Paper, Task, TaskFrame } from "@altnovatrail/spec/exportv4";
+import type { Paper, Task, TaskFrame } from "@altnovatrail/spec/exportv5";
 import type { KeptFrame, KeptPage, KeptPaperTask, KeptPhoto } from "../storage/profile.ts";
 import { pageOrder, sameFrame } from "./frame.ts";
 
 /** The version of the part export/ this file is of. */
-export const PAPER_FORMAT = 4;
+export const PAPER_FORMAT = 5;
 
 /** Where canvas starts the tracing paper, shown, when the learner has not moved it. */
 const TRACING_START = { at: [180, 60], hidden: false } as const;
