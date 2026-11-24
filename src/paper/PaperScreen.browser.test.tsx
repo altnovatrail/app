@@ -12,7 +12,8 @@
 // turned upright is turned so on the page, and the page goes on with it; a camera that answers too late is
 // stopped; with the device, the page and its work are the profile's history, which "Your pages"
 // opens again; the tutor's button and debug's stand in the bottom bars of both screens, debug's only
-// for an account with the debug right — with api on connect-es's router.
+// for an account with the debug right; the top bar of each holds Back alone, the screen's name its
+// heading unseen, clear of the sheet's popovers — with api on connect-es's router.
 import { AccountService } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import {
   AttemptService,
@@ -833,7 +834,7 @@ it("gives the paper Recognise again when api refuses the reading, and says why",
   const { reads } = await solving();
   const key = () => reads.map((each) => each.idempotencyKey);
   // A round trip to the browser: the screen has settled on the task it shows.
-  await userEvent.hover(screen.getByRole("heading", { name: "Task 1" }));
+  await userEvent.hover(screen.getByRole("button", { name: "Tasks, 1 / 2" }));
   sheet().dispatchEvent(new CustomEvent("tracingread", { detail: null, bubbles: true }));
   expect(await screen.findByRole("alert")).toBeVisible();
   await waitFor(() => expect(sheet().reading).toEqual({ state: "ready" }));
@@ -1424,6 +1425,87 @@ it("goes back to Home from the page, and the page goes with it", async () => {
   expect(await screen.findByRole("heading", { name: "Photo of a page" })).toBeVisible();
   history.replaceState(null, "", location.pathname);
 });
+
+/**
+ * The top bar's way back on a screen of a task from paper: its icon alone, 44 at least, named and
+ * with a tooltip of its name, its pill no wider than its glass round it, and the screen's name the
+ * heading unseen and the document's title.
+ */
+async function backAlone(title: string) {
+  const back = screen.getByRole("button", { name: "Back to Home" });
+  expect(back.textContent?.trim()).toBe("");
+  const box = back.getBoundingClientRect();
+  expect(box.width).toBeGreaterThanOrEqual(44);
+  expect(box.height).toBeGreaterThanOrEqual(44);
+  const pill = back.closest(".nt-top-pill") as HTMLElement;
+  expect(pill.getBoundingClientRect().width).toBeLessThanOrEqual(48.5);
+  const heading = screen.getByRole("heading", { level: 1, name: title });
+  expect(heading.getBoundingClientRect().width).toBeLessThanOrEqual(1);
+  await waitFor(() => expect(document.title).toBe(`${title} — NovaTrail`));
+  // The pointer may stand there already, from a press on the way back of the test before.
+  await userEvent.unhover(back);
+  await userEvent.hover(back);
+  await waitFor(() =>
+    expect(document.querySelector(".nt-tooltip")?.textContent).toBe("Back to Home"),
+  );
+  await userEvent.unhover(back);
+}
+
+for (const [device, w, h] of [
+  ["an iPad in landscape", 1194, 834],
+  ["an iPad in portrait", 820, 1180],
+  ["a phone", 390, 844],
+] as const) {
+  it(`shows Back alone on the page and on the screen of solving, the name unseen, on ${device}`, async () => {
+    await page.viewport(w, h);
+    await renderPaper();
+    await screen.findByRole("button", { name: "Deselect task 1" });
+    await backAlone("Your page");
+    await userEvent.click(screen.getByRole("button", { name: "Start" }));
+    await screen.findByRole("heading", { name: "Task 1" }, SLOW);
+    await backAlone("Task 1");
+  });
+}
+
+/** The sheet's own button, by its name, once the sheet has drawn its bar. */
+async function sheetButton(name: string): Promise<HTMLButtonElement> {
+  let found: HTMLButtonElement | undefined;
+  await waitFor(() => {
+    found = [...(sheet().shadowRoot?.querySelectorAll("button") ?? [])].find(
+      (button) => (button.getAttribute("aria-label") ?? button.textContent?.trim()) === name,
+    );
+    expect(found).toBeDefined();
+  });
+  return found as HTMLButtonElement;
+}
+
+for (const [device, w, h] of [
+  ["landscape", 1180, 820],
+  ["portrait", 820, 1180],
+] as const) {
+  it(`keeps Back clear of the popovers of the pen and the eraser on an iPad in ${device}`, async () => {
+    await page.viewport(w, h);
+    await solving();
+    const back = (
+      screen.getByRole("button", { name: "Back to Home" }).closest(".nt-top-pill") as HTMLElement
+    ).getBoundingClientRect();
+    for (const tool of ["Pen", "Eraser"]) {
+      const button = await sheetButton(tool);
+      const shown = () => sheet().shadowRoot?.querySelector<HTMLElement>(".pop:not([hidden])");
+      await userEvent.click(button);
+      if (shown() == null) await userEvent.click(button);
+      await waitFor(() => expect(shown()).toBeTruthy());
+      const pop = (shown() as HTMLElement).getBoundingClientRect();
+      const apart =
+        pop.left >= back.right ||
+        pop.right <= back.left ||
+        pop.top >= back.bottom ||
+        pop.bottom <= back.top;
+      expect(apart).toBe(true);
+      await userEvent.keyboard("{Escape}");
+    }
+  });
+}
 
 it("shuts Start when the quota is spent", async () => {
   await renderPaper({

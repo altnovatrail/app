@@ -1,7 +1,7 @@
-// The top bar of the page to pick from keeps one row: its words where they fit, its icons alone
-// where they do not, the title then hidden to the eye but still the heading and the captions still
-// the names, a tooltip only then, and the buttons below the title only where even the icons do not
-// fit; measured again as the window changes. The row of the screen of solving the same way: Ask its
+// The top bar of the page to pick from keeps one row: Back alone in its pill and the title the
+// heading unseen at every width; the end's words where they fit, its icons alone where they do not,
+// the captions still the names, a tooltip only then, and the buttons below Back only where even the
+// icons do not fit; measured again as the window changes. The row of the screen of solving the same way: Ask its
 // icon alone first, and only then a wrap.
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, expect, it } from "vitest";
@@ -67,7 +67,7 @@ afterEach(async () => {
   await page.viewport(1024, 768);
 });
 
-it("keeps its words on an iPad in landscape, and shows no tooltip", async () => {
+it("keeps its words on an iPad in landscape, the title unseen, and shows no tooltip", async () => {
   await page.viewport(1194, 834);
   renderPick("ru");
   await waitFor(() => expect(barEnd().dataset.fit).toBe("words"));
@@ -76,7 +76,7 @@ it("keeps its words on an iPad in landscape, and shows no tooltip", async () => 
   expect(width(screen.getByRole("button", { name: "Убрать все рамки" }))).toBeGreaterThan(48);
   expect(
     width(screen.getByRole("heading", { level: 1, name: "Задачи на странице" })),
-  ).toBeGreaterThan(1);
+  ).toBeLessThanOrEqual(1);
   await userEvent.hover(retake);
   await new Promise((done) => setTimeout(done, 600));
   expect(tooltip()).toBeUndefined();
@@ -84,15 +84,16 @@ it("keeps its words on an iPad in landscape, and shows no tooltip", async () => 
 
 for (const [device, w, h] of [
   ["an iPad in portrait", 820, 1180],
-  ["a phone", 390, 844],
+  ["a phone", 360, 780],
 ] as const) {
-  it(`drops the title and the captions together on ${device}, each still a name, with a tooltip`, async () => {
+  it(`drops the captions on ${device}, each still a name, with a tooltip, beside Back`, async () => {
     await page.viewport(w, h);
     renderPick("ru");
     await waitFor(() => expect(barEnd().dataset.fit).toBe("icons"));
     const heading = screen.getByRole("heading", { level: 1, name: "Задачи на странице" });
     expect(width(heading)).toBeLessThanOrEqual(1);
     const pill = heading.parentElement as HTMLElement;
+    expect(width(pill)).toBeLessThanOrEqual(48.5);
     const end = barEnd();
     const middle = (element: Element) => {
       const at = element.getBoundingClientRect();
@@ -118,12 +119,13 @@ it("fits again as the window narrows and widens", async () => {
   await waitFor(() => expect(barEnd().dataset.fit).toBe("words"));
 });
 
-it("puts the buttons below the title only where even their icons do not fit", () => {
+it("puts the buttons below Back only where even their icons do not fit", () => {
   render(
     inLanguage(
       <div className="nt-top" data-middle="" style={{ inlineSize: "7.5rem" }}>
-        <div className="nt-top-pill">
-          <h1>Your page</h1>
+        <div className="nt-top-pill nt-top-back">
+          <button type="button" className="nt-icon-only" aria-label="Back to Home" />
+          <h1 className="nt-hidden-label">Your page</h1>
         </div>
         <p className="nt-finding">10 tasks found</p>
         <div className="nt-top-end">
@@ -135,20 +137,20 @@ it("puts the buttons below the title only where even their icons do not fit", ()
   );
   const end = barEnd();
   expect(fitBar(end)).toBe("below");
-  const pill = screen.getByRole("heading", { level: 1, name: "Your page" })
-    .parentElement as HTMLElement;
+  const pill = screen.getByRole("button", { name: "Back to Home" }).parentElement as HTMLElement;
   expect(end.getBoundingClientRect().top).toBeGreaterThanOrEqual(
     pill.getBoundingClientRect().bottom,
   );
   expect(width(screen.getByRole("button", { name: "Retake" }))).toBe(48);
 });
 
-it("puts the buttons at the row's end below a title that wraps, in a bar with no middle too", () => {
+it("puts the buttons at the row's end below Back in a bar with no middle too", () => {
   render(
     inLanguage(
       <div className="nt-top" style={{ inlineSize: "7rem" }}>
-        <div className="nt-top-pill">
-          <h1>Задачи на странице</h1>
+        <div className="nt-top-pill nt-top-back">
+          <button type="button" className="nt-icon-only" aria-label="На главную" />
+          <h1 className="nt-hidden-label">Задачи на странице</h1>
         </div>
         <div className="nt-top-end">
           <BarButton icon="close" caption="Убрать все рамки" onClick={() => {}} />
@@ -161,7 +163,9 @@ it("puts the buttons at the row's end below a title that wraps, in a bar with no
   expect(fitBar(end)).toBe("below");
   const bar = end.parentElement as HTMLElement;
   const pill = bar.firstElementChild as HTMLElement;
-  expect(pill.scrollWidth).toBeLessThanOrEqual(pill.clientWidth + 1);
+  expect(end.getBoundingClientRect().top).toBeGreaterThanOrEqual(
+    pill.getBoundingClientRect().bottom,
+  );
   expect(bar.scrollWidth).toBeLessThanOrEqual(bar.clientWidth + 1);
   expect(end.getBoundingClientRect().right).toBeCloseTo(bar.getBoundingClientRect().right, 0);
 });

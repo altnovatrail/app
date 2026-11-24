@@ -1,5 +1,5 @@
 // The screen of solving the tasks from the learner's paper, as the mockup's `solve`: the top bar's
-// pill — Back to Home and the task's name —, and at its other end ‹, the counter that opens the
+// pill — Back to Home alone, the task's name the screen's heading unseen —, and at its other end ‹, the counter that opens the
 // list of the tasks begun with "Add", and ›. Each task is a sheet in dots of its own under its
 // crop, the tracing paper, which canvas draws and the learner moves and hides; its history and the
 // paper's place stay with the page, so that a task left and come back to is as it was, and the
@@ -673,6 +673,7 @@ export function Solve({
     <Screen
       title={nameOf(task)}
       layout="task"
+      unseen
       bar={{
         back: <IconButton value="back" caption="task.home" onClick={onHome} />,
         end: (

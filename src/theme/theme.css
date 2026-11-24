@@ -3789,6 +3789,10 @@ button.nt-menu-row {
   padding: 0.125rem 1rem 0.125rem 0.125rem;
   border-radius: var(--nt-radius-top-bar);
 }
+/* A pill of Back alone, its heading unseen: a round glass of 48 round the target of 44. */
+.nt-top-pill.nt-top-back {
+  padding: 0.125rem;
+}
 .nt-top > .nt-top-pill > h1 {
   display: flex;
   flex-direction: column;
@@ -6628,13 +6632,11 @@ main.nt-task-screen:has(.nt-page-stage) {
   font-weight: var(--nt-weight-medium);
 }
 /*
- * The bar keeps one row, as BarFit.tsx fits it: with its words, the title in one line and the
- * end never wrapped, so that a row too narrow shows as cut; with its icons alone, the title and the
- * captions hidden to the eye but still the heading and the names, each button round, 48; below,
- * where even the icons do not fit, the buttons under the title, at the row's end in a bar with no
- * middle too, and the finding under them, the title wrapping by its words on its own row: a
- * squeezed pill would wrap its name a letter a line (1.4.10). Below 600 the finding, on a row of
- * its own, wraps its words rather than pass the window.
+ * The bar keeps one row, as BarFit.tsx fits it: with its words, the end never wrapped, so that a
+ * row too narrow shows as cut; with its icons alone, the captions hidden to the eye but still the
+ * names, each button round, 48; below, where even the icons do not fit, the buttons under Back, at
+ * the row's end in a bar with no middle too, and the finding under them. Below 600 the finding, on
+ * a row of its own, wraps its words rather than pass the window.
  */
 .nt-top-end[data-fit] {
   flex-wrap: nowrap;
@@ -6645,15 +6647,6 @@ main.nt-task-screen:has(.nt-page-stage) {
   flex: none;
   white-space: nowrap;
 }
-/* biome-ignore lint/style/noDescendingSpecificity: the profiles' screen has no top bar. */
-.nt-top:has(> .nt-top-end:is([data-fit="words"], [data-fit="icons"])) > .nt-top-pill > h1 {
-  white-space: nowrap;
-}
-.nt-top:has(> .nt-top-end[data-fit="icons"]) > .nt-top-pill {
-  padding-inline-end: 0.125rem;
-}
-/* biome-ignore lint/style/noDescendingSpecificity: the profiles' screen has no top bar. */
-.nt-top:has(> .nt-top-end[data-fit="icons"]) > .nt-top-pill > h1,
 .nt-top-end:is([data-fit="icons"], [data-fit="below"]) .nt-retake-words,
 .nt-task-row:is([data-fit="icons"], [data-fit="below"]) .nt-retake-words {
   position: absolute;

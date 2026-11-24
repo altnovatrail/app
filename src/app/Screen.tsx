@@ -4,8 +4,9 @@
 // is the screen's language (3.1.1). A heading that is a module's text — a lesson's title — comes as
 // a node of its own, with its `lang`, and the title stays its words. A screen with a top bar has
 // its heading in the bar's glass pill, beside its way back, as the mockup's top bar has its title,
-// named by the title, whose words the pill shows on two lines. A screen drawn as the mockup's
-// legal text has its heading in the sheet's head instead, between its way back and its close.
+// named by the title, whose words the pill shows on two lines; a screen whose heading is unseen
+// keeps it there for assistive technology alone, the pill its way back alone. A screen drawn as
+// the mockup's legal text has its heading in the sheet's head instead, between its way back and its close.
 // A screen in the frame of the row of places may have a way back above its heading and what stands
 // beside it, as a module's skill map its way back to Subjects and the module chosen.
 import { type ReactNode, useEffect, useRef } from "react";
@@ -111,7 +112,10 @@ export interface ScreenProps {
   readonly above?: ReactNode;
   /** What stands beside the heading, in its line: the module of a map. */
   readonly beside?: ReactNode;
-  /** The heading for assistive technology alone, where the frame shows the place: Home. */
+  /**
+   * The heading for assistive technology alone, where the frame shows the place — Home — or where
+   * the top bar's pill holds its way back alone: the two screens of a task from paper.
+   */
   readonly unseen?: boolean;
 }
 
@@ -182,7 +186,7 @@ export function Screen({
         top
       ) : (
         <div className="nt-top" data-middle={bar.middle === undefined ? undefined : ""}>
-          <div className="nt-top-pill nt-glass">
+          <div className={unseen ? "nt-top-pill nt-top-back nt-glass" : "nt-top-pill nt-glass"}>
             {bar.back}
             {bar.under === undefined ? (
               h1

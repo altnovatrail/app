@@ -4,9 +4,9 @@
 // corner of it to the opposite with a finger or a pen, which follows the pointer and looks as the
 // frame it becomes, or by two taps, a corner and then the one opposite. Every frame, the AI's too,
 // moves when dragged by its middle and resizes by its corner; a press that moved it picks nothing.
-// The top bar's pill holds the title alone, and its end "Remove all frames", which clears the
-// photo for frames of the learner's own, and Retake, the bar kept to one row by BarFit.tsx; while the tasks are found, its middle says
-// so, by a turning ring, and a line of light runs down the photo and back; once they are, how many
+// The top bar's pill holds Back alone, the title the screen's heading unseen, and its end "Remove
+// all frames", which clears the photo for frames of the learner's own, and Retake, the bar kept to
+// one row by BarFit.tsx; while the tasks are found, its middle says so, by a turning ring, and a line of light runs down the photo and back; once they are, how many
 // were found and framed by hand. At the foot, the note
 // that the photo stays on the device, and the bar of "Select all", the count and Start, with the
 // most tasks at once at its head, in a ring, once the page holds as many or more are picked; at the
@@ -279,6 +279,7 @@ export function Pick({
     <Screen
       title={words.text("paper.title")}
       layout="task"
+      unseen
       bar={{
         back: (
           <IconButton value="back" caption="task.home" className="nt-page-back" onClick={onHome} />
