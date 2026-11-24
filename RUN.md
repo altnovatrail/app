@@ -91,7 +91,7 @@ No current epic. The last done one is E5 «Интерфейс по эталон�
 | [x] | T130 | Источники по правилу записей: тема 2, сборка, пакеты и тесты | Claude | — | T129 |
 | [x] | T131 | Источники по правилу записей: темы 3 и 4, хранилище и шаги решения | Claude | — | T129 |
 | [x] | T132 | Источники по правилу записей: темы 5 и 6, озвучка и свой ключ | Claude | — | T129 |
-| [ ] | T133 | Источники по правилу записей: тема 7, выкладка, вход и контракт | Claude | — | T129 |
+| [x] | T133 | Источники по правилу записей: тема 7, выкладка, вход и контракт | Claude | — | T129 |
 | [ ] | T134 | Источники по правилу записей: тема 8, языки и доступность | Claude | — | T129 |
 
 «Зависит от» names only tasks of this plan. What a task waits for from other repositories is its body's «Ждёт»: it is taken once the neighbour has done that, and until then the queue goes on.
