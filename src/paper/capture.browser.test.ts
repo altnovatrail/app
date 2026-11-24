@@ -1,6 +1,6 @@
 // The photo of a page in the browser: a picture the browser cannot read, a frame of no size, a
 // canvas that gives no picture or none to draw on, and a photo too large at every try are each a
-// PhotoError; a picture that fits is a JPEG, and its crops PNGs.
+// PhotoError; a picture that fits is a JPEG, and its crops PNGs, drawn smaller until each fits.
 import { afterEach, expect, it, vi } from "vitest";
 import { cropsOf, PhotoError, photoOfFile, photoOfVideo, release } from "./capture.ts";
 import { MAX_PHOTO } from "./photo.ts";
@@ -61,6 +61,32 @@ it("says a canvas that gives no picture, or none to draw on, gave none", async (
   expect(await failure(cropsOf(photo, [{ ymin: 0, xmin: 0, ymax: 500, xmax: 500 }]))).toBe(
     "no canvas to draw on",
   );
+});
+
+it("draws a crop smaller until it fits, and gives it up when it never does", async () => {
+  const blob = await picture();
+  const photo = await photoOfFile(blob);
+  const large = new Blob([new Uint8Array(MAX_PHOTO + 1)], { type: "image/png" });
+  const real = HTMLCanvasElement.prototype.toBlob;
+  const sizes: number[] = [];
+  const spy = vi.spyOn(HTMLCanvasElement.prototype, "toBlob").mockImplementation(function (
+    this: HTMLCanvasElement,
+    done,
+    type,
+    quality,
+  ) {
+    sizes.push(this.width);
+    if (sizes.length === 1) done(large);
+    else real.call(this, done, type, quality);
+  });
+  const [crop] = await cropsOf(photo, [{ ymin: 0, xmin: 0, ymax: 1000, xmax: 1000 }]);
+  expect(crop?.type).toBe("image/png");
+  expect(sizes).toEqual([60, 48]);
+  spy.mockImplementation((done) => done(large));
+  expect(await failure(cropsOf(photo, [{ ymin: 0, xmin: 0, ymax: 1000, xmax: 1000 }]))).toBe(
+    "the crop is too large",
+  );
+  release(photo);
 });
 
 it("gives the photo up when it is too large at every try", async () => {

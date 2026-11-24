@@ -7,7 +7,7 @@
 // A kept page's thumbnail, for "Your pages", is made from its photo in memory too, and never kept:
 // the device's records go into the profile's export as they are.
 import { cropRect, type Frame } from "./frame.ts";
-import { MAX_PHOTO, QUALITY, tries, turnedSize } from "./photo.ts";
+import { cropFitted, MAX_PHOTO, QUALITY, tries, turnedSize } from "./photo.ts";
 
 /** The photo of a page as app sent it: its bytes, its size, and a URL of them for the screen. */
 export interface Photo {
@@ -132,7 +132,12 @@ export async function turnedPhoto(photo: Photo, degrees: number): Promise<Photo>
   }
 }
 
-/** The crop of each frame on the photo, as a PNG, in the order of the frames. */
+/**
+ * The crop of each frame on the photo, as a PNG, in the order of the frames: drawn within the
+ * bounds of a crop (cropFitted), so that a large frame costs a Check no more tokens than the work,
+ * then smaller, try after try, until it fits the bytes api takes of a picture — a PNG of a
+ * camera's frame is several times the JPEG it was cut from.
+ */
 export async function cropsOf(photo: Photo, frames: readonly Frame[]): Promise<readonly Blob[]> {
   const bitmap = await createImageBitmap(
     new Blob([photo.bytes as BlobPart], { type: "image/jpeg" }),
@@ -142,17 +147,34 @@ export async function cropsOf(photo: Photo, frames: readonly Frame[]): Promise<r
     const crops: Blob[] = [];
     for (const frame of frames) {
       const { sx, sy, sw, sh } = cropRect(frame, bitmap.width, bitmap.height);
-      canvas.width = sw;
-      canvas.height = sh;
-      const context = canvas.getContext("2d");
-      if (context === null) throw new PhotoError("no canvas to draw on");
-      context.drawImage(bitmap, sx, sy, sw, sh, 0, 0, sw, sh);
-      crops.push(await blobOf(canvas, "image/png"));
+      crops.push(await croppedPng(canvas, bitmap, sx, sy, sw, sh));
     }
     return crops;
   } finally {
     bitmap.close();
   }
+}
+
+/** The region of the bitmap as a PNG within the bounds of a crop, then at each try's size until it fits MAX_PHOTO. */
+async function croppedPng(
+  canvas: HTMLCanvasElement,
+  bitmap: ImageBitmap,
+  sx: number,
+  sy: number,
+  sw: number,
+  sh: number,
+): Promise<Blob> {
+  const first = cropFitted(sw, sh);
+  for (const size of tries(first.width, first.height)) {
+    canvas.width = size.width;
+    canvas.height = size.height;
+    const context = canvas.getContext("2d");
+    if (context === null) throw new PhotoError("no canvas to draw on");
+    context.drawImage(bitmap, sx, sy, sw, sh, 0, 0, size.width, size.height);
+    const blob = await blobOf(canvas, "image/png");
+    if (blob.size <= MAX_PHOTO) return blob;
+  }
+  throw new PhotoError("the crop is too large");
 }
 
 /**
