@@ -8,7 +8,9 @@ import {
   type FocusEvent,
   type PointerEvent,
   type ReactNode,
+  type Ref,
   type RefObject,
+  useCallback,
   useEffect,
   useLayoutEffect,
   useRef,
@@ -143,4 +145,19 @@ export function useTooltip<E extends HTMLElement>(
       </span>
     ),
   };
+}
+
+/** The tooltip's host and a ref the control was given, both on the same element. */
+export function useHostRef<E extends HTMLElement>(
+  host: RefObject<E | null>,
+  ref: Ref<E> | undefined,
+): (node: E | null) => void {
+  return useCallback(
+    (node: E | null) => {
+      host.current = node;
+      if (typeof ref === "function") ref(node);
+      else if (ref != null) ref.current = node;
+    },
+    [host, ref],
+  );
 }

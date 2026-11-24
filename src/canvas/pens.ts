@@ -4,21 +4,12 @@
 // alone and stored nowhere, not with the profile and not in its export: a reload starts with
 // canvas's, and so does another learner of the same device.
 import type { PenChangeEvent, PenSettings } from "@altnovatrail/spec/canvas";
-import { useCallback, useSyncExternalStore } from "react";
+import { useCallback } from "react";
 import { useLearner } from "../account/AccountGate.tsx";
 
+// Read as a screen renders, never subscribed to: a change is for the next element, which a render
+// brings, and the element that told it holds it already, so that no screen renders again for it.
 let kept: { readonly learner: string; readonly pens: PenSettings } | undefined;
-const listeners = new Set<() => void>();
-
-function subscribe(listener: () => void): () => void {
-  listeners.add(listener);
-  return () => listeners.delete(listener);
-}
-
-function keep(next: typeof kept): void {
-  kept = next;
-  for (const listener of listeners) listener();
-}
 
 /** What an element takes, spread on it: the settings and the listener that keeps their change. */
 export interface Pens {
@@ -33,11 +24,11 @@ export interface Pens {
  */
 export function usePens(): Pens {
   const learner = useLearner()?.learner.profileId ?? "";
-  const pens = useSyncExternalStore(subscribe, () =>
-    kept?.learner === learner ? kept.pens : undefined,
-  );
+  const pens = kept?.learner === learner ? kept.pens : undefined;
   const onpenchange = useCallback(
-    (event: PenChangeEvent) => keep({ learner, pens: event.detail }),
+    (event: PenChangeEvent) => {
+      kept = { learner, pens: event.detail };
+    },
     [learner],
   );
   return pens === undefined ? { onpenchange } : { pens, onpenchange };
@@ -45,5 +36,5 @@ export function usePens(): Pens {
 
 /** The settings forgotten, for the tests. */
 export function forgetPens(): void {
-  keep(undefined);
+  kept = undefined;
 }

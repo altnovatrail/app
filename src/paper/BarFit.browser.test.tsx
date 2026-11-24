@@ -202,8 +202,8 @@ it.each([
   expect(row.dataset.fit).toBe(fit);
   expect(inOneRow(row)).toBe(fit !== "below");
   const ask = screen.getByRole("button", { name: "Спросить" });
-  expect(width(ask)).toBe(fit === "words" ? width(ask) : 44);
   if (fit === "words") expect(width(ask)).toBeGreaterThan(44);
+  else expect(width(ask)).toBe(44);
 });
 
 it("takes an empty row as one line", () => {

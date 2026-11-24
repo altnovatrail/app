@@ -43,6 +43,8 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { page, server, userEvent } from "vitest/browser";
 import { ApiProvider } from "../api/ApiContext.tsx";
 import { reset as resetDebug } from "../debug/debug.ts";
+import type { Language } from "../i18n/language.ts";
+import { WORDS } from "../i18n/words.ts";
 import type { Device } from "../storage/device.ts";
 import { addProfile, openProfile, Profile } from "../storage/profile.ts";
 import { routedApi } from "../test/api.ts";
@@ -78,6 +80,8 @@ interface Setup {
   readonly camera?: MediaStream | Promise<MediaStream>;
   /** The account has the debug right; none, and api has no DebugService. */
   readonly debug?: boolean;
+  /** The screen's language; none, English. */
+  readonly language?: Language;
 }
 
 /** A synthetic photo of a page: a white PNG of 600 × 800 px with two grey stripes. */
@@ -200,10 +204,11 @@ async function renderCamera(setup: Setup = {}) {
           </PaperProvider>
         )}
       </ApiProvider>,
+      setup.language,
     ),
   );
   if (setup.camera === undefined)
-    await screen.findByText("The camera isn't available here. Choose a photo of the page instead");
+    await screen.findByText(WORDS[setup.language ?? "en"].text("paper.no-camera"));
   return { finds, begins, submits, rungs, reads };
 }
 
@@ -245,7 +250,8 @@ async function renderPaper(setup: Setup = {}) {
   const input = document.querySelector<HTMLInputElement>('input[type="file"]');
   if (input === null) throw new Error("no picker");
   await userEvent.upload(input, await pagePhoto());
-  await screen.findByRole("heading", { level: 1, name: "Your page" }, SLOW);
+  const title = WORDS[setup.language ?? "en"].text("paper.title");
+  await screen.findByRole("heading", { level: 1, name: title }, SLOW);
   return sent;
 }
 
@@ -1529,4 +1535,17 @@ it("retakes: the page goes, and the camera comes back", async () => {
   await screen.findByRole("button", { name: "Deselect task 1" });
   await userEvent.click(screen.getByRole("button", { name: "Retake" }));
   expect(await screen.findByRole("heading", { name: "Photo of a page" })).toBeVisible();
+});
+
+it("keeps the page's bar and its Start inside a narrow tablet's width, in Russian with debug", async () => {
+  await page.viewport(600, 800);
+  await renderPaper({ debug: true, language: "ru" });
+  await screen.findByRole("button", { name: WORDS.ru.text("paper.deselect", { n: 1 }) });
+  await screen.findByRole("button", { name: DEBUG });
+  const bar = found(".nt-page-bar");
+  expect(bar.scrollWidth).toBeLessThanOrEqual(bar.clientWidth + 1);
+  const start = screen.getByRole("button", { name: WORDS.ru.text("paper.start") });
+  expect(start.getBoundingClientRect().right).toBeLessThanOrEqual(
+    bar.getBoundingClientRect().right,
+  );
 });

@@ -4,10 +4,10 @@
 // do the buttons go below the title. The row of the screen of solving keeps one row the same way:
 // "Ask" goes to its icon first, and only then does the row wrap. A row is measured, not set by a
 // width, since the words of each language differ in length.
-import { type Ref, type RefObject, useCallback, useLayoutEffect } from "react";
+import { type Ref, type RefObject, useLayoutEffect } from "react";
 import { Icon } from "../app/Icon.tsx";
 import type { IconValue } from "../app/icons.ts";
-import { useTooltip } from "../app/Tooltip.tsx";
+import { useHostRef, useTooltip } from "../app/Tooltip.tsx";
 
 /**
  * How the bar's end or the row stands: with its words, its icons alone, or below — the end under
@@ -150,15 +150,7 @@ export function BarButton({
 }) {
   const tooltip = useTooltip<HTMLButtonElement>(caption, { needed: captionHidden });
   const { host } = tooltip;
-  // The tooltip's own ref and the one given, on the same button.
-  const setButton = useCallback(
-    (node: HTMLButtonElement | null) => {
-      host.current = node;
-      if (typeof buttonRef === "function") buttonRef(node);
-      else if (buttonRef != null) buttonRef.current = node;
-    },
-    [buttonRef, host],
-  );
+  const setButton = useHostRef(host, buttonRef);
   return tooltip.wrap(
     <button
       ref={setButton}

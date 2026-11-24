@@ -1,11 +1,11 @@
 // A button that shows its icon alone: only the buttons of spec's closed list, each
 // with its caption as its accessible name and a tooltip of the same words (Tooltip.tsx).
-import { type ComponentProps, type FocusEvent, type Ref, useCallback } from "react";
+import type { ComponentProps, FocusEvent, Ref } from "react";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import type { Key } from "../i18n/words.ts";
 import { Icon } from "./Icon.tsx";
 import type { IconValue } from "./icons.ts";
-import { useTooltip } from "./Tooltip.tsx";
+import { useHostRef, useTooltip } from "./Tooltip.tsx";
 
 /**
  * The closed list: each button that shows no caption, its icon — none for the grabber,
@@ -94,15 +94,7 @@ export function IconButton<V extends Captionless>({
   const expanded = button["aria-expanded"] === true || button["aria-expanded"] === "true";
   const tooltip = useTooltip<HTMLButtonElement>(caption, { open: expanded });
   const { host } = tooltip;
-  // The tooltip's own ref and the one given, on the same button.
-  const setButton = useCallback(
-    (node: HTMLButtonElement | null) => {
-      host.current = node;
-      if (typeof ref === "function") ref(node);
-      else if (ref != null) ref.current = node;
-    },
-    [ref, host],
-  );
+  const setButton = useHostRef(host, ref);
 
   return tooltip.wrap(
     <button

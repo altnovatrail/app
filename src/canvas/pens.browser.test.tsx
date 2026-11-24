@@ -3,7 +3,7 @@
 // and nothing of them is stored.
 import "@altnovatrail/canvas";
 import type { CanvasElement } from "@altnovatrail/spec/canvas";
-import { act, cleanup, render } from "@testing-library/react";
+import { cleanup, render } from "@testing-library/react";
 import { createRef } from "react";
 import { describe, expect, it } from "vitest";
 import { type Learner, LearnerProvider } from "../account/AccountGate.tsx";
@@ -31,47 +31,55 @@ function renderSheet(profileId?: string): CanvasElement {
   return sheet.current;
 }
 
-/** The learner's change on an element, and the screen rendered after it. */
-function change(element: CanvasElement) {
-  let pens: ReturnType<typeof changePens> | undefined;
-  act(() => {
-    pens = changePens(element);
-  });
-  if (pens === undefined) throw new Error("no change");
-  return pens;
-}
-
 describe("the pens", () => {
   it("go from an element to the learner's next one, which takes them as its own", () => {
     const first = renderSheet("p1");
     const canvas = first.pens;
-    const chosen = change(first);
-    // The element that told them is given them back, and keeps them.
-    expect(first.pens).toEqual(chosen);
+    const chosen = changePens(first);
     const next = renderSheet("p1");
     expect(next).not.toBe(first);
     expect(next.pens).toEqual(chosen);
     expect(next.pens).not.toEqual(canvas);
   });
 
+  it("are given back to the element that told them when its screen renders again, which tells nothing", () => {
+    const sheet = createRef<CanvasElement>();
+    const { rerender } = render(<Sheet sheet={sheet} />);
+    const element = sheet.current;
+    if (element === null) throw new Error("no sheet");
+    const chosen = changePens(element);
+    let told = 0;
+    element.addEventListener("penchange", () => {
+      told += 1;
+    });
+    rerender(<Sheet sheet={sheet} />);
+    expect(sheet.current).toBe(element);
+    expect(element.pens).toEqual(chosen);
+    expect(told).toBe(0);
+  });
+
   it("are canvas's for another learner, and for the first again once forgotten", () => {
     const first = renderSheet("p1");
     const canvas = first.pens;
-    change(first);
+    changePens(first);
     expect(renderSheet("p2").pens).toEqual(canvas);
-    act(() => forgetPens());
+    forgetPens();
     expect(renderSheet("p1").pens).toEqual(canvas);
   });
 
   it("go between the elements of a screen with no learner, as in a screen's own test", () => {
-    const chosen = change(renderSheet());
+    const chosen = changePens(renderSheet());
     expect(renderSheet().pens).toEqual(chosen);
   });
 
-  it("are stored nowhere: neither the tab's storage nor the device's knows them", async () => {
-    change(renderSheet("p1"));
-    expect(localStorage.length).toBe(0);
-    expect(sessionStorage.length).toBe(0);
-    expect(await indexedDB.databases()).toEqual([]);
+  it("are stored nowhere: neither the tab's storage nor the device's changes with them", async () => {
+    const stores = async () => ({
+      local: { ...localStorage },
+      session: { ...sessionStorage },
+      databases: await indexedDB.databases(),
+    });
+    const before = await stores();
+    changePens(renderSheet("p1"));
+    expect(await stores()).toEqual(before);
   });
 });

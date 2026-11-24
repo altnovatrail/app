@@ -492,23 +492,20 @@ export default function DebugButton({ line = false }: { readonly line?: boolean 
 
   return (
     <>
-      {open ? null : (
-        <>
-          <button
-            ref={button}
-            type="button"
-            className="nt-debug-button"
-            aria-label="Debug: the models and their answers"
-            title={`Debug · ${total}`}
-            aria-expanded={false}
-            data-busy={debug.busy > 0}
-            onClick={() => setOpen(true)}
-          >
-            <Bug size={20} />
-          </button>
-          {line ? <RowLine /> : null}
-        </>
-      )}
+      {/* It stays in the bar while its window is open, so that the row does not move. */}
+      <button
+        ref={button}
+        type="button"
+        className="nt-debug-button"
+        aria-label="Debug: the models and their answers"
+        title={`Debug · ${total}`}
+        aria-expanded={open}
+        data-busy={debug.busy > 0}
+        onClick={() => setOpen(!open)}
+      >
+        <Bug size={20} />
+      </button>
+      {line ? <RowLine /> : null}
       {open
         ? createPortal(
             <div

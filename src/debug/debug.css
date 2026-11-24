@@ -1,10 +1,10 @@
 /*
  * The debug mode: the button, 44 round in the bottom bar, the bug of 20 in orange on a light
- * orange, 4.2:1 against it (WCAG 1.4.11), where the mockup's lighter orange has 2.8:1. The window,
- * as the mockup's `ph-dbg`, is the tutor's panel's size, over the canvas as it: glass of 0.94, 400
- * wide at the right from 74 below the top to 16 above the foot, radius 28; on a phone a sheet of
- * the whole width at half the window's height, or by its grabber from 70. The window's chunk alone
- * holds this file, loaded once `GetDebug` answered.
+ * orange, 4.2:1 against it (WCAG 1.4.11, sources 8.1), where the mockup's lighter orange has
+ * 2.8:1. The window, as the mockup's `ph-dbg`, is the tutor's panel's size, over the canvas as
+ * it: glass of 0.94, 400 wide at the right from 74 below the top to 16 above the foot, radius 28;
+ * on a phone a sheet of the whole width at half the window's height, or by its grabber from 70.
+ * The window's chunk alone holds this file, loaded once `GetDebug` answered.
  */
 button.nt-debug-button {
   display: flex;
