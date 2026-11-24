@@ -54,6 +54,7 @@ import { IconButton } from "../app/IconButton.tsx";
 import { useNarrow } from "../app/narrow.ts";
 import { PopOver } from "../app/PopOver.tsx";
 import { Screen } from "../app/Screen.tsx";
+import { usePens } from "../canvas/pens.ts";
 import { DebugSlot } from "../debug/slot.tsx";
 import { watched } from "../debug/watched.ts";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
@@ -134,6 +135,7 @@ export function Solve({
   const { language, words } = useLanguage();
   const narrow = useNarrow();
   const writeId = useId();
+  const pens = usePens();
   const element = useRef<CanvasElement>(null);
   const [asked, setAsked] = useState<string | undefined>(undefined);
   const [pending, setPending] = useState(false);
@@ -710,6 +712,7 @@ export function Solve({
             ontracingchange={onTracingChange}
             {...(only ? {} : { ontracingread: recognise })}
             ongridchange={onGridChange}
+            {...pens}
           />
         </div>
       </div>

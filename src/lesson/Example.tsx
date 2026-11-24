@@ -10,6 +10,7 @@
 import type { DemoChangeEvent, DemoState, Media } from "@altnovatrail/spec/canvas";
 import type * as open from "@altnovatrail/spec/formatv0/open";
 import type { ReactNode } from "react";
+import { usePens } from "../canvas/pens.ts";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { ReadAloud } from "../voice/ReadAloud.tsx";
 import { examplePhrases } from "../voice/texts.ts";
@@ -32,6 +33,7 @@ export function Example({
   readonly actions?: ReactNode;
 }) {
   const { language } = useLanguage();
+  const pens = usePens();
   const explanation = manifest?.languages.explanation;
   return (
     <div className="nt-example">
@@ -47,6 +49,7 @@ export function Example({
         workedExample={example}
         {...(demo === undefined ? {} : { demoState: demo })}
         ondemochange={(event: DemoChangeEvent) => onDemo(event.detail)}
+        {...pens}
       >
         {actions}
       </novatrail-canvas>

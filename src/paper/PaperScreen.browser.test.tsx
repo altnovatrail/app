@@ -48,6 +48,7 @@ import { addProfile, openProfile, Profile } from "../storage/profile.ts";
 import { routedApi } from "../test/api.ts";
 import { memoryDevice } from "../test/device.ts";
 import { inLanguage } from "../test/language.tsx";
+import { changePens } from "../test/pens.ts";
 import { PaperProvider } from "./PaperContext.tsx";
 import { PaperScreen } from "./PaperScreen.tsx";
 import { MAX_TASKS } from "./page.ts";
@@ -491,6 +492,16 @@ it("goes from task to task by ‹, › and the list, each with its own work", as
   await userEvent.click(await screen.findByRole("button", { name: /Task 1/ }));
   expect(await screen.findByRole("heading", { name: "Task 1" })).toBeVisible();
   expect(sheet().history).toHaveLength(1);
+});
+
+it("gives the next task's sheet the pen and the eraser the learner set on the one before", async () => {
+  await solving();
+  const first = sheet();
+  const chosen = changePens(first);
+  await userEvent.click(screen.getByRole("button", { name: "Next task" }));
+  await screen.findByRole("heading", { name: "Task 2" });
+  expect(sheet()).not.toBe(first);
+  await expect.poll(() => sheet().pens).toEqual(chosen);
 });
 
 it("goes back to the page by Add, and Start begins only the tasks not begun", async () => {

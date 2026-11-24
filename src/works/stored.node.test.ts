@@ -19,6 +19,7 @@ import { createApi } from "../api/client.ts";
 import { addProfile, attemptOver, type DeviceWork, type Profile } from "../storage/profile.ts";
 import { setAccount } from "../storage/registry.ts";
 import { memoryDevice } from "../test/device.ts";
+import { styledHistory } from "../test/ink.ts";
 import { createSender, type Draw, MAX_WORK, storedWork } from "./stored.ts";
 
 const SIGNATURE = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
@@ -100,10 +101,10 @@ function sender(put: (request: PutWorkRequest) => void, on = true, drawn: Draw =
 const decoder = new TextDecoder();
 
 describe("the stored work", () => {
-  it("is the history and each context as JSON in UTF-8, and the picture, with no kind or time", () => {
+  it("is the history, each stroke's style and a cut's pieces as kept, and each context as JSON in UTF-8, and the picture, with no kind or time", () => {
     const work: DeviceWork = {
       attemptId: "a1",
-      history: [stroke(1)],
+      history: styledHistory(),
       submissions: [{ context: CONTEXT, historyLength: 1 }],
     };
     const picture = new Uint8Array(SIGNATURE);

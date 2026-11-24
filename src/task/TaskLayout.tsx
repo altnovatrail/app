@@ -34,6 +34,7 @@ import { PopOver } from "../app/PopOver.tsx";
 import { Screen } from "../app/Screen.tsx";
 import { Loading, Sk } from "../app/Skeleton.tsx";
 import { AtTopEnd } from "../app/TopEnd.tsx";
+import { usePens } from "../canvas/pens.ts";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { ReadAloud } from "../voice/ReadAloud.tsx";
 import { taskPhrases } from "../voice/texts.ts";
@@ -410,6 +411,7 @@ export function TaskLayout({
   const { task, manifest, steps, mode } = parts;
   const { language, words } = useLanguage();
   const narrow = useNarrow();
+  const pens = usePens();
   const explanation = manifest?.languages.explanation;
   const statement = useMemo(() => taskPhrases(task, explanation), [task, explanation]);
   const shown = over || open;
@@ -450,6 +452,7 @@ export function TaskLayout({
             task={task}
             history={parts.history}
             onhistorychange={parts.onHistoryChange}
+            {...pens}
           />
           {underCanvas}
         </div>

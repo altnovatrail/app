@@ -8,6 +8,7 @@ import type {
 import type * as open from "@altnovatrail/spec/formatv0/open";
 import { describe, expect, it } from "vitest";
 import { DAY, memoryDevice } from "../test/device.ts";
+import { stroke, styledHistory } from "../test/ink.ts";
 import {
   addProfile,
   type KeptPaperTask,
@@ -103,6 +104,17 @@ describe("the profile's database", () => {
       task: TASK,
       changedAt: state.time,
     });
+  });
+
+  it("keeps each stroke's style and a cut's pieces as the canvas gave them, beside a stroke with none", async () => {
+    const { profile } = await setUp();
+    const [first, second, cut] = styledHistory() as [HistoryEvent, HistoryEvent, HistoryEvent];
+    const after = stroke(5, 300, 10_000);
+    expect(await profile.appendHistory("a1", { from: 0, events: [first, second] })).toBe("saved");
+    expect(await profile.appendHistory("a1", { from: 2, events: [cut, after] })).toBe("saved");
+    expect(await historyOf(profile)).toEqual([first, second, cut, after]);
+    expect(await profile.replaceHistory("a1", styledHistory())).toBe("saved");
+    expect(await historyOf(profile)).toEqual(styledHistory());
   });
 
   it("says a history missed events when its length is not `from`, and takes the whole history then", async () => {
@@ -578,7 +590,7 @@ describe("the pages from paper", () => {
       "saved",
     );
     const work = {
-      history: [write(1, 0)],
+      history: styledHistory(),
       tracing: { at: [200, 80], hidden: true },
       sent: [{ context, historyLength: 1 }],
       over: true,
@@ -597,7 +609,7 @@ describe("the pages from paper", () => {
       { attemptId: "pa2", n: 1, over: true, solved: true },
     ]);
     const second = kept?.tasks[1];
-    expect(second?.history).toEqual([write(1, 0)]);
+    expect(second?.history).toEqual(styledHistory());
     expect(second?.tracing).toEqual({ at: [200, 80], hidden: true });
     expect(second?.sent).toEqual([{ context, historyLength: 1 }]);
     expect(await second?.crop.text()).toBe("crop 2");
