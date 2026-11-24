@@ -1,14 +1,15 @@
 // The top bar of the page to pick from keeps one row: its words where they fit, its icons alone
 // where they do not, the title then hidden to the eye but still the heading and the captions still
 // the names, a tooltip only then, and the buttons below the title only where even the icons do not
-// fit; measured again as the window changes.
+// fit; measured again as the window changes. The row of the screen of solving the same way: Ask its
+// icon alone first, and only then a wrap.
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, expect, it } from "vitest";
 import { page, userEvent } from "vitest/browser";
 import "../theme/theme.css";
 import type { Language } from "../i18n/language.ts";
 import { inLanguage } from "../test/language.tsx";
-import { BarButton, fitBar } from "./BarFit.tsx";
+import { BarButton, fitBar, fitRow, inOneRow } from "./BarFit.tsx";
 import { Pick } from "./Pick.tsx";
 import type { PageTask } from "./page.ts";
 
@@ -167,4 +168,44 @@ it("puts the buttons at the row's end below a title that wraps, in a bar with no
 
 it("leaves a bar's end alone with no bar round it as with its words", () => {
   expect(fitBar(document.createElement("div"))).toBe("words");
+});
+
+it.each([
+  ["30rem", "words"],
+  ["19rem", "icons"],
+  ["9rem", "below"],
+] as const)("fits a row of %s to its %s: Ask's word first, and only then a wrap", (inline, fit) => {
+  render(
+    inLanguage(
+      <div className="nt-task-foot" style={{ inlineSize: inline }}>
+        <div className="nt-task-row">
+          <BarButton
+            icon="tutor"
+            caption="Спросить"
+            className="nt-icon-button nt-ask"
+            onClick={() => {}}
+          />
+          <button type="button" className="nt-row-button">
+            Подсказка
+          </button>
+          <button type="button" className="nt-check-button">
+            Проверить
+          </button>
+        </div>
+      </div>,
+      "ru",
+    ),
+  );
+  const row = document.querySelector<HTMLElement>(".nt-task-row");
+  if (row === null) throw new Error("no row");
+  expect(fitRow(row)).toBe(fit);
+  expect(row.dataset.fit).toBe(fit);
+  expect(inOneRow(row)).toBe(fit !== "below");
+  const ask = screen.getByRole("button", { name: "Спросить" });
+  expect(width(ask)).toBe(fit === "words" ? width(ask) : 44);
+  if (fit === "words") expect(width(ask)).toBeGreaterThan(44);
+});
+
+it("takes an empty row as one line", () => {
+  expect(inOneRow(document.createElement("div"))).toBe(true);
 });

@@ -1,7 +1,8 @@
 // The debug button and its window, as the mockup's states `pick-debug` and `solve-debug-log`:
-// a round button of glass with a graphite disc and an orange bug, at the tutor's place on the page
-// picked and above it on the screen of solving; its window at the right, 400 wide, and on a phone a
-// sheet from the bottom with a grabber. Two tabs: Models — the first model of every call, its
+// a round button, an orange bug on a light orange, in the bottom bar of the page picked and of the
+// screen of solving, with a line after it where `line` says so; its window at the right, 400 wide,
+// and on a phone a sheet from the bottom with a grabber, drawn in the body, since the bar's glass
+// would hold a fixed window inside it. Two tabs: Models — the first model of every call, its
 // effort and thinking, and a second reader of the work — and Log, the calls by action, each opening
 // to its figures and what the model returned, with the session's total. The slot loads it only once
 // api's `GetDebug` answered, for an account with the debug right. Its words are English alone: it
@@ -25,7 +26,9 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
+import { createPortal } from "react-dom";
 import { useApi } from "../api/ApiContext.tsx";
+import { RowLine } from "../task/TaskLayout.tsx";
 import {
   actionKey,
   actionTime,
@@ -449,7 +452,7 @@ function Export({
   );
 }
 
-export default function DebugButton({ above = false }: { readonly above?: boolean }) {
+export default function DebugButton({ line = false }: { readonly line?: boolean }) {
   const api = useApi();
   const debug = useSyncExternalStore(subscribe, snapshot);
   const [open, setOpen] = useState(false);
@@ -490,7 +493,7 @@ export default function DebugButton({ above = false }: { readonly above?: boolea
   return (
     <>
       {open ? null : (
-        <div className="nt-debug-call" data-above={above}>
+        <>
           <button
             ref={button}
             type="button"
@@ -501,173 +504,177 @@ export default function DebugButton({ above = false }: { readonly above?: boolea
             data-busy={debug.busy > 0}
             onClick={() => setOpen(true)}
           >
-            <span className="nt-debug-disc-in">
-              <Bug size={22} />
-            </span>
+            <Bug size={20} />
           </button>
-        </div>
+          {line ? <RowLine /> : null}
+        </>
       )}
-      {open ? (
-        <div
-          className="nt-debug-panel nt-glass"
-          role="dialog"
-          aria-label="Debug"
-          data-size={full ? "full" : "half"}
-          onKeyDown={onKey}
-        >
-          <button
-            type="button"
-            className="nt-debug-grab"
-            aria-label={full ? "Half screen" : "Full screen"}
-            aria-expanded={full}
-            onClick={() => setFull(!full)}
-          />
-          <div className="nt-debug-head">
-            <span className="nt-debug-disc">
-              <Bug size={19} />
-            </span>
-            <span className="nt-debug-two">
-              <span className="nt-debug-main">Debug</span>
-              <span className="nt-debug-sub">
-                {total} · {count} {count === 1 ? "call" : "calls"} this session
-              </span>
-            </span>
-            <button
-              ref={close}
-              type="button"
-              className="nt-debug-close"
-              aria-label="Close"
-              onClick={() => setOpen(false)}
+      {open
+        ? createPortal(
+            <div
+              className="nt-debug-panel nt-glass"
+              role="dialog"
+              aria-label="Debug"
+              data-size={full ? "full" : "half"}
+              onKeyDown={onKey}
             >
-              ×
-            </button>
-          </div>
-          <div role="tablist" aria-label="Debug" className="nt-debug-segments nt-debug-tabs">
-            <button
-              type="button"
-              role="tab"
-              aria-selected={tab === "models"}
-              onClick={() => setTab("models")}
-            >
-              Models
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={tab === "log"}
-              onClick={() => setTab("log")}
-            >
-              Log
-              {count > 0 ? <span className="nt-debug-count">{count}</span> : null}
-            </button>
-          </div>
-          {tab === "models" ? (
-            <section className="nt-debug-body" aria-label="Models">
-              <Slot
-                title="First model — every call"
-                sub="Find tasks, the statement, the solution and reading the work"
-                models={models}
-                admitted={admitted}
-                pick={debug.first}
-                onPick={(first) => choose_(first, debug.second, debug.secondOn)}
+              <button
+                type="button"
+                className="nt-debug-grab"
+                aria-label={full ? "Half screen" : "Full screen"}
+                aria-expanded={full}
+                onClick={() => setFull(!full)}
               />
-              <Slot
-                title="Second model — reading the work"
-                sub="A second reader of the crop with the strokes"
-                models={models}
-                pick={debug.second}
-                onPick={(second) => choose_(debug.first, second ?? debug.second, debug.secondOn)}
-                second={{
-                  on: debug.secondOn,
-                  toggle: () => choose_(debug.first, debug.second, !debug.secondOn),
-                }}
-              />
-              {debug.refused === undefined ? null : (
-                <p role="alert" className="nt-debug-failed">
-                  {debug.refused}
-                </p>
-              )}
-              <p className="nt-debug-warning">
-                The choice bypasses the admission list, in every profile. Only an account with the
-                debug right has this window.
-              </p>
-            </section>
-          ) : (
-            <>
-              <section className="nt-debug-body" aria-label="Log of the models">
-                {actions.length === 0 ? (
-                  <p className="nt-debug-empty">
-                    No calls yet. Take a photo of a page, or Check a task.
-                  </p>
-                ) : (
-                  [...actions].reverse().map((action) => {
-                    const key = actionKey(action);
-                    const sent = debug.sent.get(key);
-                    const request = debug.asked.get(key);
-                    return (
-                      <div key={key} className="nt-debug-group">
-                        <div className="nt-debug-group-head">
-                          <span className="nt-debug-main">{actionTitle(action)}</span>
-                          <span className="nt-debug-sub">{actionTime(action)}</span>
-                          <span className="nt-debug-figure">{usd(costOf(action.calls))}</span>
-                          {action.kind === DebugActionKind.CHECK && sent !== undefined ? (
-                            <button
-                              type="button"
-                              className="nt-debug-link"
-                              aria-expanded={exporting === key}
-                              onClick={() => setExporting(exporting === key ? undefined : key)}
-                            >
-                              Export
-                            </button>
-                          ) : null}
-                        </div>
-                        <div className="nt-debug-card">
-                          {action.calls.map((call) => (
-                            <Call
-                              key={`${call.kind}-${call.reader}-${call.attempt}`}
-                              call={call}
-                              models={models}
-                            />
-                          ))}
-                        </div>
-                        {request === undefined ? null : (
-                          <span className="nt-debug-foot">Request: “{request}”</span>
-                        )}
-                        {joinOf(action) === "" ? null : (
-                          <span className="nt-debug-foot">{joinOf(action)}</span>
-                        )}
-                        {exporting === key && sent !== undefined ? (
-                          <Export
-                            action={action}
-                            sent={sent}
-                            begin={truthOf(actions, action, sent)}
-                            onDone={() => setExporting(undefined)}
-                          />
-                        ) : null}
-                      </div>
-                    );
-                  })
-                )}
-              </section>
-              <div className="nt-debug-total">
+              <div className="nt-debug-head">
+                <span className="nt-debug-disc">
+                  <Bug size={19} />
+                </span>
                 <span className="nt-debug-two">
-                  <span className="nt-debug-main">Session total {total}</span>
-                  <span className="nt-debug-sub">Counted in the tutor time, like any call</span>
+                  <span className="nt-debug-main">Debug</span>
+                  <span className="nt-debug-sub">
+                    {total} · {count} {count === 1 ? "call" : "calls"} this session
+                  </span>
                 </span>
                 <button
+                  ref={close}
                   type="button"
-                  aria-disabled={actions.length === 0}
-                  onClick={() => {
-                    if (actions.length > 0) clear();
-                  }}
+                  className="nt-debug-close"
+                  aria-label="Close"
+                  onClick={() => setOpen(false)}
                 >
-                  Clear log
+                  ×
                 </button>
               </div>
-            </>
-          )}
-        </div>
-      ) : null}
+              <div role="tablist" aria-label="Debug" className="nt-debug-segments nt-debug-tabs">
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={tab === "models"}
+                  onClick={() => setTab("models")}
+                >
+                  Models
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={tab === "log"}
+                  onClick={() => setTab("log")}
+                >
+                  Log
+                  {count > 0 ? <span className="nt-debug-count">{count}</span> : null}
+                </button>
+              </div>
+              {tab === "models" ? (
+                <section className="nt-debug-body" aria-label="Models">
+                  <Slot
+                    title="First model — every call"
+                    sub="Find tasks, the statement, the solution and reading the work"
+                    models={models}
+                    admitted={admitted}
+                    pick={debug.first}
+                    onPick={(first) => choose_(first, debug.second, debug.secondOn)}
+                  />
+                  <Slot
+                    title="Second model — reading the work"
+                    sub="A second reader of the crop with the strokes"
+                    models={models}
+                    pick={debug.second}
+                    onPick={(second) =>
+                      choose_(debug.first, second ?? debug.second, debug.secondOn)
+                    }
+                    second={{
+                      on: debug.secondOn,
+                      toggle: () => choose_(debug.first, debug.second, !debug.secondOn),
+                    }}
+                  />
+                  {debug.refused === undefined ? null : (
+                    <p role="alert" className="nt-debug-failed">
+                      {debug.refused}
+                    </p>
+                  )}
+                  <p className="nt-debug-warning">
+                    The choice bypasses the admission list, in every profile. Only an account with
+                    the debug right has this window.
+                  </p>
+                </section>
+              ) : (
+                <>
+                  <section className="nt-debug-body" aria-label="Log of the models">
+                    {actions.length === 0 ? (
+                      <p className="nt-debug-empty">
+                        No calls yet. Take a photo of a page, or Check a task.
+                      </p>
+                    ) : (
+                      [...actions].reverse().map((action) => {
+                        const key = actionKey(action);
+                        const sent = debug.sent.get(key);
+                        const request = debug.asked.get(key);
+                        return (
+                          <div key={key} className="nt-debug-group">
+                            <div className="nt-debug-group-head">
+                              <span className="nt-debug-main">{actionTitle(action)}</span>
+                              <span className="nt-debug-sub">{actionTime(action)}</span>
+                              <span className="nt-debug-figure">{usd(costOf(action.calls))}</span>
+                              {action.kind === DebugActionKind.CHECK && sent !== undefined ? (
+                                <button
+                                  type="button"
+                                  className="nt-debug-link"
+                                  aria-expanded={exporting === key}
+                                  onClick={() => setExporting(exporting === key ? undefined : key)}
+                                >
+                                  Export
+                                </button>
+                              ) : null}
+                            </div>
+                            <div className="nt-debug-card">
+                              {action.calls.map((call) => (
+                                <Call
+                                  key={`${call.kind}-${call.reader}-${call.attempt}`}
+                                  call={call}
+                                  models={models}
+                                />
+                              ))}
+                            </div>
+                            {request === undefined ? null : (
+                              <span className="nt-debug-foot">Request: “{request}”</span>
+                            )}
+                            {joinOf(action) === "" ? null : (
+                              <span className="nt-debug-foot">{joinOf(action)}</span>
+                            )}
+                            {exporting === key && sent !== undefined ? (
+                              <Export
+                                action={action}
+                                sent={sent}
+                                begin={truthOf(actions, action, sent)}
+                                onDone={() => setExporting(undefined)}
+                              />
+                            ) : null}
+                          </div>
+                        );
+                      })
+                    )}
+                  </section>
+                  <div className="nt-debug-total">
+                    <span className="nt-debug-two">
+                      <span className="nt-debug-main">Session total {total}</span>
+                      <span className="nt-debug-sub">Counted in the tutor time, like any call</span>
+                    </span>
+                    <button
+                      type="button"
+                      aria-disabled={actions.length === 0}
+                      onClick={() => {
+                        if (actions.length > 0) clear();
+                      }}
+                    >
+                      Clear log
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>,
+            document.body,
+          )
+        : null}
     </>
   );
 }

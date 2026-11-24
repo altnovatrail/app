@@ -11,7 +11,8 @@
 // FindTasks finds again, and a Start that failed says why; a photo whose tasks were found on it
 // turned upright is turned so on the page, and the page goes on with it; a camera that answers too late is
 // stopped; with the device, the page and its work are the profile's history, which "Your pages"
-// opens again — with api on connect-es's router.
+// opens again; the tutor's button and debug's stand in the bottom bars of both screens, debug's only
+// for an account with the debug right — with api on connect-es's router.
 import { AccountService } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import {
   AttemptService,
@@ -26,6 +27,7 @@ import {
   type SubmitWorkResponseSchema,
 } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
 import { Cause, RefusalSchema } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
+import { DebugService } from "@altnovatrail/contracts/novatrail/api/v1/debug_pb.js";
 import {
   type BeginPaperAttemptsRequest,
   type BeginPaperAttemptsResponseSchema,
@@ -40,6 +42,7 @@ import { cleanup, render, screen, waitFor, within } from "@testing-library/react
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { page, server, userEvent } from "vitest/browser";
 import { ApiProvider } from "../api/ApiContext.tsx";
+import { reset as resetDebug } from "../debug/debug.ts";
 import type { Device } from "../storage/device.ts";
 import { addProfile, openProfile, Profile } from "../storage/profile.ts";
 import { routedApi } from "../test/api.ts";
@@ -72,6 +75,8 @@ interface Setup {
   readonly device?: Device;
   /** The camera's stream, or what it comes by; none, and there is no camera. */
   readonly camera?: MediaStream | Promise<MediaStream>;
+  /** The account has the debug right; none, and api has no DebugService. */
+  readonly debug?: boolean;
 }
 
 /** A synthetic photo of a page: a white PNG of 600 × 800 px with two grey stripes. */
@@ -151,6 +156,9 @@ async function renderCamera(setup: Setup = {}) {
       router.service(AccountService, {
         getQuota: () => ({ share: { profilePercent: quota } }),
       });
+    }
+    if (setup.debug === true) {
+      router.service(DebugService, { getDebug: () => ({}), takeDebugCalls: () => ({}) });
     }
     router.service(PaperService, {
       findTasks(request) {
@@ -318,6 +326,7 @@ beforeEach(() => {
 
 afterEach(async () => {
   cleanup();
+  resetDebug();
   vi.restoreAllMocks();
   await page.viewport(1024, 768);
 });
@@ -619,7 +628,7 @@ it("opens the tutor's panel by its button: the verdict a line in it, and a card 
   expect(await screen.findByText("Read: 84")).toBeVisible();
   expect(screen.queryByRole("complementary", { name: "Tutor" })).toBeNull();
   expect(document.querySelector(".nt-card-verdict")).not.toBeNull();
-  await userEvent.click(screen.getByRole("button", { name: "Tutor" }));
+  await userEvent.click(screen.getByRole("button", { name: "Ask" }));
   expect(document.activeElement).toBe(tutorPanel().getByRole("heading", { name: "Tutor" }));
   expect(tutorPanel().getByText("Read: 84")).toBeVisible();
   expect(document.querySelector(".nt-card-verdict")).toBeNull();
@@ -627,7 +636,7 @@ it("opens the tutor's panel by its button: the verdict a line in it, and a card 
   expect(tutorPanel().getByRole("button", { name: "Hint" })).toBeVisible();
   expect(tutorPanel().queryByRole("button", { name: "Next task" })).toBeNull();
   await userEvent.click(tutorPanel().getByRole("button", { name: "Close" }));
-  const tutor = screen.getByRole("button", { name: "Tutor" });
+  const tutor = screen.getByRole("button", { name: "Ask" });
   expect(document.activeElement).toBe(tutor);
   expect(document.querySelector(".nt-card-verdict")).not.toBeNull();
 });
@@ -663,7 +672,7 @@ it("brings the rung's words with the wavy line in the open panel, which the pape
       ],
     }),
   });
-  await userEvent.click(screen.getByRole("button", { name: "Tutor" }));
+  await userEvent.click(screen.getByRole("button", { name: "Ask" }));
   writeOn(sheet());
   await userEvent.click(screen.getByRole("button", { name: "Check" }));
   expect(await tutorPanel().findByText("Look at the tens.")).toBeVisible();
@@ -687,7 +696,7 @@ it("words the rung anew once by Explain differently, and says when there are no 
     explained: (n) =>
       n === 0 ? { words: "Count the tens again." } : { outcome: { cause: Cause.NO_OTHER_WORDS } },
   });
-  await userEvent.click(screen.getByRole("button", { name: "Tutor" }));
+  await userEvent.click(screen.getByRole("button", { name: "Ask" }));
   writeOn(sheet());
   await userEvent.click(screen.getByRole("button", { name: "Check" }));
   await tutorPanel().findByText("Rung 1.");
@@ -713,7 +722,7 @@ it("asks Explain differently again after a failure, and spends it on a refusal t
       throw refusal(Cause.ALREADY_ASKED);
     },
   });
-  await userEvent.click(screen.getByRole("button", { name: "Tutor" }));
+  await userEvent.click(screen.getByRole("button", { name: "Ask" }));
   writeOn(sheet());
   await userEvent.click(screen.getByRole("button", { name: "Check" }));
   await tutorPanel().findByText("Look at the tens.");
@@ -821,7 +830,7 @@ it("asks for a solution again when the sheet gives no work at the press", async 
   const { submits } = await solving();
   writeOn(sheet());
   vi.spyOn(sheet(), "exportWork").mockResolvedValue(null);
-  await userEvent.click(screen.getByRole("button", { name: "Tutor" }));
+  await userEvent.click(screen.getByRole("button", { name: "Ask" }));
   await userEvent.click(screen.getByRole("button", { name: "Check" }));
   expect(
     await screen.findByText("Write it with the pen on the sheet or on the task, then Check."),
@@ -870,7 +879,7 @@ it("shows the share of the quota in the panel's head, and the next task at its f
       solved: {},
     }),
   });
-  await userEvent.click(screen.getByRole("button", { name: "Tutor" }));
+  await userEvent.click(screen.getByRole("button", { name: "Ask" }));
   expect(await tutorPanel().findByText("Tutor time today: 20% used")).toBeVisible();
   writeOn(sheet());
   await userEvent.click(screen.getByRole("button", { name: "Check" }));
@@ -885,7 +894,7 @@ it("hides the canvas's bar of tools on a phone while the panel is open", async (
   await page.viewport(390, 844);
   await solving();
   expect(sheet().hasAttribute("tools-hidden")).toBe(false);
-  await userEvent.click(screen.getByRole("button", { name: "Tutor" }));
+  await userEvent.click(screen.getByRole("button", { name: "Ask" }));
   await waitFor(() => expect(sheet().hasAttribute("tools-hidden")).toBe(true));
   await userEvent.click(tutorPanel().getByRole("button", { name: "Close" }));
   await waitFor(() => expect(sheet().hasAttribute("tools-hidden")).toBe(false));
@@ -916,19 +925,199 @@ it("frames a task the AI missed by two taps, and removes it by its cross", async
   expect(await noneCard()).toBeVisible();
 });
 
-it("lifts the tutor's button on a phone over a card of what the page says", async () => {
-  await page.viewport(390, 844);
-  await renderPaper({ found: () => ({ frames: [] }) });
-  const band = await noneCard();
-  const call = document.querySelector(".nt-tutor-call");
-  if (call === null) throw new Error("no tutor's button");
-  const note = document.querySelector(".nt-page-note");
-  if (note === null) throw new Error("no note");
-  expect(call.getBoundingClientRect().bottom).toBeLessThanOrEqual(note.getBoundingClientRect().top);
-  expect(band.getBoundingClientRect().top).toBeGreaterThanOrEqual(
-    note.getBoundingClientRect().bottom,
+const DEBUG = "Debug: the models and their answers";
+
+/** The names of the buttons in an element, in the order of the page, which Tab follows. */
+function buttonNames(within: Element): string[] {
+  return [...within.querySelectorAll("button")].map(
+    (button) => button.getAttribute("aria-label") ?? button.textContent ?? "",
   );
+}
+
+/** The element the selector finds, or a failure that names it. */
+function found(selector: string): HTMLElement {
+  const element = document.querySelector<HTMLElement>(selector);
+  if (element === null) throw new Error(`no ${selector}`);
+  return element;
+}
+
+/** Whether a button is a circle of 44 CSS px. */
+function round(button: HTMLElement) {
+  const box = button.getBoundingClientRect();
+  expect(box.width).toBeCloseTo(44, 0);
+  expect(box.height).toBeCloseTo(44, 0);
+  const radius = getComputedStyle(button).borderRadius;
+  expect(radius === "50%" || Number.parseFloat(radius) >= 22).toBe(true);
+}
+
+const middle = (element: Element) => {
+  const box = element.getBoundingClientRect();
+  return box.top + box.height / 2;
+};
+
+it("puts the tutor's button and debug's at the start of the page's bar, before a line", async () => {
+  await renderPaper({ debug: true });
+  const debug = await screen.findByRole("button", { name: DEBUG });
+  const tutor = screen.getByRole("button", { name: "Tutor" });
+  const bar = found(".nt-page-bar");
+  expect(buttonNames(bar)).toEqual([
+    "Tutor",
+    DEBUG,
+    "Select none",
+    expect.stringContaining("Start"),
+  ]);
+  // Nothing stands at the right edge any more.
+  expect(document.querySelector(".nt-tutor-call")).toBeNull();
+  expect(tutor.getBoundingClientRect().right).toBeLessThan(window.innerWidth / 2);
+  // The chat's sign in the accent's words on its tint, the bug in orange on a light orange.
+  round(tutor);
+  round(debug);
+  expect(getComputedStyle(tutor).backgroundColor).toBe("rgba(0, 113, 227, 0.1)");
+  expect(getComputedStyle(tutor).color).toBe("rgb(0, 102, 204)");
+  expect(getComputedStyle(debug).backgroundColor).toBe("rgb(255, 243, 224)");
+  expect(getComputedStyle(debug).color).toBe("rgb(194, 84, 0)");
+  // The line between the pair and "Select none", in one row with them.
+  const line = found(".nt-page-row > .nt-row-line");
+  const none = screen.getByRole("button", { name: "Select none" });
+  expect(line.getBoundingClientRect().left).toBeGreaterThan(debug.getBoundingClientRect().right);
+  expect(line.getBoundingClientRect().right).toBeLessThan(none.getBoundingClientRect().left);
+  expect(middle(tutor)).toBeCloseTo(middle(none), 0);
+  // Tab goes along the bar.
+  tutor.focus();
+  await userEvent.tab();
+  expect(document.activeElement).toBe(debug);
+  await userEvent.tab();
+  expect(document.activeElement).toBe(none);
+  // The debug window opens as before, at the right of the window, not inside the bar's glass.
+  await userEvent.click(debug);
+  const window_ = screen.getByRole("dialog", { name: "Debug" });
+  expect(window_.parentElement).toBe(document.body);
+  expect(window_.getBoundingClientRect().right).toBeGreaterThan(window.innerWidth - 20);
+  await userEvent.keyboard("{Escape}");
+  await waitFor(() =>
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: DEBUG })),
+  );
+  // The tutor's panel takes the pair and its line away while it is open, and gives the focus back.
+  await userEvent.click(screen.getByRole("button", { name: "Tutor" }));
+  expect(document.activeElement).toBe(tutorPanel().getByRole("heading", { name: "Tutor" }));
+  expect(screen.queryByRole("button", { name: "Tutor" })).toBeNull();
+  expect(screen.queryByRole("button", { name: DEBUG })).toBeNull();
+  expect(document.querySelector(".nt-page-row > .nt-row-line")).toBeNull();
+  await userEvent.click(tutorPanel().getByRole("button", { name: "Close" }));
+  expect(document.activeElement).toBe(screen.getByRole("button", { name: "Tutor" }));
+  expect(await screen.findByRole("button", { name: DEBUG })).toBeVisible();
 });
+
+it("keeps the tutor's button and its line in the page's bar without debug, and no debug button", async () => {
+  await renderPaper();
+  await screen.findByRole("button", { name: "Deselect task 1" });
+  await new Promise((done) => setTimeout(done, 50));
+  const bar = found(".nt-page-bar");
+  expect(buttonNames(bar)).toEqual(["Tutor", "Select none", expect.stringContaining("Start")]);
+  expect(bar.querySelectorAll(".nt-row-line")).toHaveLength(1);
+});
+
+it("keeps the page's bar inside a phone's width, wrapped below its buttons", async () => {
+  await page.viewport(360, 780);
+  await renderPaper({ debug: true });
+  await screen.findByRole("button", { name: "Deselect task 1" });
+  await screen.findByRole("button", { name: DEBUG });
+  const bar = found(".nt-page-bar");
+  expect(bar.scrollWidth).toBeLessThanOrEqual(bar.clientWidth + 1);
+  expect(bar.getBoundingClientRect().right).toBeLessThanOrEqual(360);
+  for (const name of ["Tutor", DEBUG, "Select none"])
+    expect(screen.getByRole("button", { name }).getBoundingClientRect().right).toBeLessThanOrEqual(
+      360,
+    );
+});
+
+/** The row of the screen of solving. */
+function row(): HTMLElement {
+  return found(".nt-task-row");
+}
+
+it("puts debug, a line, Ask, Hint, a line and Check in the row of solving", async () => {
+  await solving({ debug: true });
+  const debug = await screen.findByRole("button", { name: DEBUG });
+  const ask = screen.getByRole("button", { name: "Ask" });
+  expect(buttonNames(row())).toEqual([DEBUG, "Ask", "Hint", "Check"]);
+  expect(
+    [
+      ...row().querySelectorAll(
+        ".nt-debug-button, .nt-row-line, .nt-ask, .nt-row-button, .nt-check-button",
+      ),
+    ].map((part) => part.className.split(" ").find((name) => name !== "nt-icon-button")),
+  ).toEqual([
+    "nt-debug-button",
+    "nt-row-line",
+    "nt-ask",
+    "nt-row-button",
+    "nt-row-line",
+    "nt-check-button",
+  ]);
+  expect(document.querySelector(".nt-tutor-call")).toBeNull();
+  expect(row().dataset.fit).toBe("words");
+  // Ask: the chat's sign and its word, in the accent's words on its tint; the bug round in orange.
+  expect(ask).toHaveAttribute("aria-expanded", "false");
+  expect(ask.textContent).toBe("Ask");
+  expect(ask.querySelector("svg")).not.toBeNull();
+  expect(getComputedStyle(ask).backgroundColor).toBe("rgba(0, 113, 227, 0.1)");
+  expect(getComputedStyle(ask).color).toBe("rgb(0, 102, 204)");
+  expect(ask.getBoundingClientRect().height).toBeCloseTo(44, 0);
+  round(debug);
+  for (const button of row().querySelectorAll("button"))
+    expect(middle(button)).toBeCloseTo(middle(ask), 0);
+  // Tab goes along the row.
+  debug.focus();
+  await userEvent.tab();
+  expect(document.activeElement).toBe(ask);
+  await userEvent.tab();
+  expect(document.activeElement).toBe(screen.getByRole("button", { name: "Hint" }));
+  await userEvent.tab();
+  expect(document.activeElement).toBe(screen.getByRole("button", { name: "Check" }));
+  // Ask opens the panel and leaves the row with debug's button, the line before Check staying.
+  await userEvent.click(ask);
+  expect(document.activeElement).toBe(tutorPanel().getByRole("heading", { name: "Tutor" }));
+  expect(buttonNames(row())).toEqual(["Hint", "Check"]);
+  expect(row().querySelectorAll(".nt-row-line")).toHaveLength(1);
+  await userEvent.click(tutorPanel().getByRole("button", { name: "Close" }));
+  expect(document.activeElement).toBe(screen.getByRole("button", { name: "Ask" }));
+});
+
+it("starts the row of solving with Ask where the account has no debug, one line before Check", async () => {
+  await solving();
+  await new Promise((done) => setTimeout(done, 50));
+  expect(buttonNames(row())).toEqual(["Ask", "Hint", "Check"]);
+  expect(row().querySelectorAll(".nt-row-line")).toHaveLength(1);
+});
+
+it.each([
+  [false, "words"],
+  [true, "icons"],
+])(
+  "keeps the row of solving in one line on a phone of 320, debug %s: Ask with its %s",
+  async (debug, fit) => {
+    await page.viewport(320, 700);
+    await solving({ debug });
+    if (debug) await screen.findByRole("button", { name: DEBUG });
+    await waitFor(() => expect(row().dataset.fit).toBe(fit));
+    const ask = screen.getByRole("button", { name: "Ask" });
+    expect(row().scrollWidth).toBeLessThanOrEqual(row().clientWidth + 1);
+    expect(row().getBoundingClientRect().right).toBeLessThanOrEqual(320);
+    for (const button of row().querySelectorAll("button"))
+      expect(middle(button)).toBeCloseTo(middle(ask), 0);
+    const words = ask.querySelector(".nt-retake-words");
+    if (fit === "words") {
+      expect(words?.getBoundingClientRect().width).toBeGreaterThan(20);
+      return;
+    }
+    // Its icon alone, its word still its name and now a tooltip too.
+    round(ask);
+    expect(words?.getBoundingClientRect().width).toBeLessThanOrEqual(1);
+    await userEvent.hover(ask);
+    await waitFor(() => expect(document.querySelector(".nt-tooltip")?.textContent).toBe("Ask"));
+  },
+);
 
 it("frames a task by a rectangle dragged corner to corner, after a tap, and resizes it by its corner", async () => {
   await renderPaper({ found: () => ({ frames: [] }) });

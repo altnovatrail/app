@@ -1,4 +1,4 @@
-// The debug button, where the screens of a task from paper put it: in every build, for an
+// The debug button, in the bottom bars of the screens of a task from paper: in every build, for an
 // account with api's debug right. The slot asks `GetDebug` itself and loads the window's code, a
 // chunk of its own, only once it answered; a refusal shows nothing.
 import { lazy, Suspense, useEffect, useSyncExternalStore } from "react";
@@ -7,8 +7,8 @@ import { ask, snapshot, subscribe } from "./gate.ts";
 
 const Debug = lazy(() => import("./DebugButton.tsx"));
 
-/** The debug button: above the tutor's place on the screen of solving, at it on the page. */
-export function DebugSlot({ above = false }: { readonly above?: boolean }) {
+/** The debug button in a bar, with a line after it where `line` says so: none, and no line. */
+export function DebugSlot({ line = false }: { readonly line?: boolean }) {
   const api = useApi();
   const gate = useSyncExternalStore(subscribe, snapshot);
   // Once a mount and an account: a failure that is no refusal is asked again at the next.
@@ -19,7 +19,7 @@ export function DebugSlot({ above = false }: { readonly above?: boolean }) {
   if (gate.status !== "on") return null;
   return (
     <Suspense fallback={null}>
-      <Debug above={above} />
+      <Debug line={line} />
     </Suspense>
   );
 }
