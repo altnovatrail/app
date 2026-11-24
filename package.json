@@ -25,7 +25,7 @@
   },
   "devDependencies": {
     "@altnovatrail/spec": "0.20.0",
-    "@biomejs/biome": "2.6.7",
+    "@biomejs/biome": "2.6.8",
     "@iconify/utils": "3.1.7",
     "@testing-library/dom": "10.4.2",
     "@testing-library/react": "16.3.3",
