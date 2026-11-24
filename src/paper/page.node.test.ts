@@ -277,6 +277,8 @@ describe("the page on its photo turned upright", () => {
     const [left] = turnedTasks([{ ...task, instruction: corner }], 45, photo, photo);
     expect(left?.frame).toEqual({ ymin: 146, xmin: 500, ymax: 324, xmax: 854 });
     expect(left).not.toHaveProperty("instruction");
+    // A frame the turn leaves off the photo takes its task and instruction with it.
+    expect(turnedTasks([{ ...task, frame: corner, instruction }], 45, photo, photo)).toEqual([]);
   });
 
   it("puts the frames found on the photo turned back on the photo as it is", () => {
