@@ -1883,6 +1883,7 @@ button.nt-row > svg {
  * stand clear of the pictures, which are dropped on a phone and in forced colours.
  */
 .nt-home-top {
+  container: nt-home-top / inline-size;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 31.25rem), 1fr));
   margin-block-end: 2rem;
@@ -1902,7 +1903,11 @@ button.nt-row > svg {
   padding: 2rem;
   overflow: hidden;
 }
+/* No shorter than the sheet drawn at its right, so that its foot stands below the sheet at any
+   width and with any words: the sheet's box, turned, ends 14.9rem down; the foot's tallest part is
+   the button, 2.75rem, over the card's padding of 2rem. */
 .nt-next-up {
+  min-block-size: 20rem;
   border-inline-end: 0.0625rem solid #ededf0;
 }
 .nt-next-up > :not(.nt-deco),
@@ -1984,6 +1989,19 @@ button.nt-row > svg {
 }
 .nt-next-step .nt-buttons {
   margin: 0;
+}
+/* On a card of the whole width — an iPad in portrait, the halves one under the other — the way to
+   what comes next stands beside the tutor time, by the words, not at the far edge under the sheet.
+   On a phone, with no sheet, the foot wraps and the button keeps to the end. */
+@media (width >= 600px) {
+  @container nt-home-top (width < 62.5rem) {
+    .nt-next-foot {
+      justify-content: flex-start;
+    }
+    .nt-next-step {
+      margin-inline-start: 0;
+    }
+  }
 }
 /* No wider than its words: on a card of the whole width, in portrait, it does not stretch across. */
 .nt-quota {
@@ -2296,6 +2314,7 @@ p.nt-pages-kept {
     flex-wrap: wrap;
   }
   .nt-next-up {
+    min-block-size: 0;
     border-inline-end: 0;
     border-block-end: 0.0625rem solid #ededf0;
   }
