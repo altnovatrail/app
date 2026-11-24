@@ -419,7 +419,7 @@ export const ru = {
   "task.chosen-judged": "Ответ: {option}, {verdict}. Изменить",
   "task.chosen-over": "Ответ: {option}, {verdict}",
   "task.reading": "Работа читается…",
-  "task.reading-line": "Снимок работы уходит на чтение, без имени.",
+  "task.reading-line": "Снимок работы уходит на чтение.",
   "task.try-again": "Попробовать ещё",
   "task.words-came": "Пришли слова наставника",
   "task.words-waiting": "Наставник пишет…",

@@ -643,7 +643,7 @@ export const en = {
   /** The verdict's card while the work is read and checked. */
   "task.reading": "Reading your work…",
   /** Under "Reading your work…": what goes, and what does not. */
-  "task.reading-line": "A picture of the work goes to be read, with no name.",
+  "task.reading-line": "A picture of the work goes to be read.",
   /** Puts the card of "Not yet" away, back to the work. */
   "task.try-again": "Try again",
   /** Told to a screen reader when the tutor's words have come; the words themselves are not. */

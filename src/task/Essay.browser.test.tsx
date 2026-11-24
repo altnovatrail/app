@@ -653,7 +653,7 @@ describe("the screen of an essay", () => {
     await userEvent.click(check());
     await vi.waitFor(() => expect(card()).toHaveAttribute("data-kind", "reading"));
     expect(card()).toHaveTextContent(
-      "Reading your work…A picture of the work goes to be read, with no name.",
+      "Reading your work…A picture of the work goes to be read.",
     );
     answer?.();
     await vi.waitFor(() => expect(card()).toHaveAttribute("data-kind", "feedback"));
