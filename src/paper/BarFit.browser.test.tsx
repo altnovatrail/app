@@ -1,8 +1,8 @@
 // The top bar of the page to pick from keeps one row: Back alone in its pill and the title the
 // heading unseen at every width; the end's words where they fit, its icons alone where they do not,
 // the captions still the names, a tooltip only then, and the buttons below Back only where even the
-// icons do not fit; measured again as the window changes. The row of the screen of solving the same way: Ask its
-// icon alone first, and only then a wrap.
+// icons do not fit; measured again as the window changes. The row of the screen of solving the same
+// way: Ask its icon alone first, and only then a wrap.
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, expect, it } from "vitest";
 import { page, userEvent } from "vitest/browser";
@@ -163,6 +163,7 @@ it("puts the buttons at the row's end below Back in a bar with no middle too", (
   expect(fitBar(end)).toBe("below");
   const bar = end.parentElement as HTMLElement;
   const pill = bar.firstElementChild as HTMLElement;
+  expect(pill.scrollWidth).toBeLessThanOrEqual(pill.clientWidth + 1);
   expect(end.getBoundingClientRect().top).toBeGreaterThanOrEqual(
     pill.getBoundingClientRect().bottom,
   );

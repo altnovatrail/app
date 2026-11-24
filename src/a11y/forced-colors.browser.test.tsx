@@ -13,12 +13,32 @@ import { ApiProvider } from "../api/ApiContext.tsx";
 import type { Api } from "../api/client.ts";
 import { Offline } from "../boot/Screens.tsx";
 import { LanguageButtons } from "../i18n/LanguageButtons.tsx";
+import { HomeScreen } from "../subjects/MySubjects.tsx";
 import { axeViolations } from "../test/a11y.ts";
 import { memoryDevice } from "../test/device.ts";
 import { inLanguage } from "../test/language.tsx";
 import { ReportProblem } from "../tutor/ReportProblem.tsx";
 
 describe("forced colours", () => {
+  it('drop Home\'s sheet in squares, and with it the height "Next up" keeps to stand below it', async () => {
+    await page.viewport(1180, 820);
+    try {
+      render(
+        inLanguage(
+          <div data-screen="home">
+            <HomeScreen connected={[]} next={null} quota={{ profilePercent: 91 } as never} />
+          </div>,
+        ),
+      );
+      const sheet = document.querySelector(".nt-next-up .nt-deco");
+      expect(sheet === null || getComputedStyle(sheet).display === "none").toBe(true);
+      const card = document.querySelector(".nt-next-up") as HTMLElement;
+      expect(getComputedStyle(card).minBlockSize).toBe("0px");
+    } finally {
+      await page.viewport(1024, 768);
+    }
+  });
+
   it("are on, and a button keeps its border and the focus its ring", async () => {
     expect(matchMedia("(forced-colors: active)").matches).toBe(true);
     render(inLanguage(<Offline onRetry={() => {}} />));

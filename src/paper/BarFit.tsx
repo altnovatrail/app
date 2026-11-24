@@ -1,8 +1,9 @@
 // The top bar of the page to pick from keeps one row: where the captions of the buttons at its end
 // do not fit beside Back and what was found, each button shows its icon alone, its caption still
-// its name and now a tooltip too; only where even the icons do not fit do the buttons go below. The row of the screen of solving keeps one row the same way:
-// "Ask" goes to its icon first, and only then does the row wrap. A row is measured, not set by a
-// width, since the words of each language differ in length.
+// its name and now a tooltip too; only where even the icons do not fit do the buttons go below. The
+// row of the screen of solving keeps one row the same way: "Ask" goes to its icon first, and only
+// then does the row wrap. A row is measured, not set by a width, since the words of each language
+// differ in length.
 import { type Ref, type RefObject, useLayoutEffect } from "react";
 import { Icon } from "../app/Icon.tsx";
 import type { IconValue } from "../app/icons.ts";
@@ -20,10 +21,11 @@ function middle(box: Element): number {
   return at.top + at.height / 2;
 }
 
-/** Whether the bar holds its end in one row with its pill, Back alone, and the end not cut. */
+/** Whether the bar holds its pill, Back alone, and its end in one row, neither of them cut. */
 export function oneRow(bar: HTMLElement, end: HTMLElement): boolean {
   const pill = bar.firstElementChild ?? end;
-  return Math.abs(middle(pill) - middle(end)) < 2 && end.scrollWidth <= end.clientWidth + 1;
+  const cut = (box: Element) => box.scrollWidth > box.clientWidth + 1;
+  return Math.abs(middle(pill) - middle(end)) < 2 && !cut(pill) && !cut(end);
 }
 
 /**

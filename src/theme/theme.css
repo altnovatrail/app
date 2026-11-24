@@ -2332,6 +2332,10 @@ p.nt-pages-kept {
   .nt-deco {
     display: none;
   }
+  /* No sheet to stand below. */
+  .nt-next-up {
+    min-block-size: 0;
+  }
 }
 /* A module's card: its tile, its title, its skills at the foot, and its buttons below them. */
 .nt-reference .nt-card.nt-module {
