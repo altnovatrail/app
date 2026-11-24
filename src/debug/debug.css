@@ -592,3 +592,330 @@ button.nt-debug-link {
   background: var(--nt-accent);
   color: var(--nt-on-fill);
 }
+/*
+ * The Log's bar: the filter's chip, the count of what is shown, the errors alone; and its lines, each
+ * a mark of its level, the line, its source and time. The chips are 32 high, as the mockup's: they
+ * are the developer's, never a learner's.
+ */
+.nt-debug-filter {
+  position: relative;
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 0.125rem 0.125rem;
+}
+button.nt-debug-chip {
+  flex: none;
+  block-size: 2rem;
+  min-block-size: 0;
+  min-inline-size: 0;
+  padding: 0 0.75rem;
+  border: 0;
+  border-radius: 1rem;
+  background: rgba(118, 118, 128, 0.12);
+  color: var(--nt-text);
+  font-size: 0.78125rem;
+  font-weight: var(--nt-weight-bold);
+  cursor: pointer;
+}
+button.nt-debug-chip[data-level="error"] {
+  background: rgba(255, 59, 48, 0.12);
+  color: #c4000f;
+}
+button.nt-debug-chip[data-accent="true"],
+.nt-debug-total > button[data-accent="true"] {
+  background: var(--nt-accent-tint);
+  color: var(--nt-accent-text);
+}
+.nt-debug-count[data-level="error"] {
+  background: #d70015;
+}
+.nt-debug-level-dot {
+  opacity: 0.35;
+}
+.nt-debug-filter-menu > button.nt-debug-all {
+  color: var(--nt-accent-text);
+}
+.nt-debug-level-dot {
+  flex: none;
+  inline-size: 0.5rem;
+  block-size: 0.5rem;
+  border-radius: 50%;
+  background: #0071e3;
+}
+.nt-debug-level-dot[data-level="error"] {
+  background: #d70015;
+}
+.nt-debug-level-dot[data-level="warn"] {
+  background: #c93400;
+}
+.nt-debug-level-dot[data-level="debug"] {
+  background: #6e6e73;
+}
+.nt-debug-filter-menu {
+  inset-block-start: 2.375rem;
+  inset-inline: 0 auto;
+  inline-size: 16.5rem;
+  display: flex;
+  flex-direction: column;
+}
+.nt-debug-menu-head {
+  padding: 0.375rem 0.625rem 0.125rem;
+  color: var(--nt-text-muted);
+  font-size: 0.6875rem;
+  font-weight: var(--nt-weight-bold);
+}
+.nt-debug-filter-menu > button {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.625rem;
+  min-block-size: 2.5rem;
+  font-size: 0.875rem;
+}
+.nt-debug-filter-menu > button[aria-checked="false"] {
+  background: none;
+  color: var(--nt-text-muted);
+}
+.nt-debug-filter-menu > button[aria-checked="false"] .nt-debug-body > * {
+  flex-shrink: 0;
+}
+button.nt-debug-line {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.625rem;
+  min-block-size: 3rem;
+  padding: 0.5rem 0.75rem;
+  border: 0;
+  background: none;
+  color: var(--nt-text);
+  text-align: start;
+  cursor: pointer;
+}
+.nt-debug-mark {
+  flex: none;
+  inline-size: 1.125rem;
+  block-size: 1.125rem;
+  margin-block-start: 0.0625rem;
+  border-radius: 50%;
+  background: rgba(0, 113, 227, 0.1);
+  color: #0062c4;
+  font-size: 0.75rem;
+  font-weight: 800;
+  line-height: 1.125rem;
+  text-align: center;
+}
+.nt-debug-line[data-level="error"] .nt-debug-mark {
+  background: rgba(255, 59, 48, 0.14);
+  color: #c4000f;
+}
+.nt-debug-line[data-level="warn"] .nt-debug-mark {
+  background: rgba(255, 159, 10, 0.16);
+  color: #b02f00;
+}
+.nt-debug-line[data-level="debug"] .nt-debug-mark {
+  background: rgba(118, 118, 128, 0.14);
+  color: var(--nt-text-muted);
+}
+.nt-debug-line-text {
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: 0.8125rem;
+  line-height: 1.3;
+  word-break: break-word;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.nt-debug-line[aria-expanded="true"] .nt-debug-line-text {
+  display: block;
+}
+.nt-debug-line[data-level="error"] .nt-debug-line-text {
+  color: #c4000f;
+}
+.nt-debug-lines > .nt-debug-open {
+  padding-inline-start: 2.5rem;
+}
+/* Performance: the live dot, the tiles, the chart of the worst frames, the meter, the rows. */
+.nt-debug-live {
+  flex: none;
+  inline-size: 0.5rem;
+  block-size: 0.5rem;
+  border-radius: 50%;
+  background: #8e8e93;
+}
+.nt-debug-live[data-live="true"],
+.nt-debug-live[data-tone="good"] {
+  background: #34c759;
+}
+.nt-debug-live[data-tone="late"] {
+  background: #ff9f0a;
+}
+.nt-debug-live[data-tone="long"] {
+  background: #ff3b30;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .nt-debug-live[data-live="true"] {
+    animation: nt-debug-pulse 1.4s ease-in-out infinite;
+  }
+}
+@keyframes nt-debug-pulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+.nt-debug-frames {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  padding: 0.75rem 0.875rem;
+  border-radius: 1rem;
+  background: var(--nt-card);
+  box-shadow:
+    0 0 0 0.5px rgba(0, 0, 0, 0.08),
+    0 1px 3px rgba(0, 0, 0, 0.05);
+}
+.nt-debug-tiles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.625rem;
+}
+.nt-debug-tiles > div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  line-height: 1.2;
+}
+.nt-debug-tiles .nt-debug-sub {
+  font-size: 0.6875rem;
+  font-weight: var(--nt-weight-bold);
+  white-space: normal;
+}
+.nt-debug-tile {
+  font-size: 1.375rem;
+  font-weight: var(--nt-weight-bold);
+  font-variant-numeric: tabular-nums;
+}
+[data-tone="good"].nt-debug-tile,
+.nt-debug-figure[data-tone="good"] {
+  color: #248a3d;
+}
+[data-tone="late"].nt-debug-tile,
+.nt-debug-figure[data-tone="late"] {
+  color: #b02f00;
+}
+[data-tone="long"].nt-debug-tile,
+.nt-debug-figure[data-tone="long"] {
+  color: #c4000f;
+}
+.nt-debug-figure[data-tone="muted"] {
+  color: var(--nt-text-muted);
+}
+.nt-debug-figure[data-tone="strong"] {
+  font-weight: var(--nt-weight-bold);
+}
+svg.nt-debug-chart {
+  display: block;
+  inline-size: 100%;
+  block-size: 4.5rem;
+  border-radius: 0.375rem;
+  background: var(--nt-page);
+}
+.nt-debug-chart path[data-line] {
+  fill: none;
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+  vector-effect: non-scaling-stroke;
+}
+.nt-debug-chart path[data-line="good"] {
+  stroke: #34c759;
+}
+.nt-debug-chart path[data-line="long"] {
+  stroke: #ff3b30;
+}
+.nt-debug-chart path[data-tone="good"] {
+  fill: #34c759;
+}
+.nt-debug-chart path[data-tone="late"] {
+  fill: #ff9f0a;
+}
+.nt-debug-chart path[data-tone="long"] {
+  fill: #ff3b30;
+}
+.nt-debug-axis {
+  display: flex;
+  justify-content: space-between;
+  color: var(--nt-text-muted);
+  font-size: 0.6875rem;
+  font-variant-numeric: tabular-nums;
+}
+.nt-debug-meter {
+  block-size: 0.5rem;
+  margin: 0.75rem 0.875rem 0.25rem;
+  margin-block-end: 0;
+  overflow: hidden;
+  border-radius: 0.25rem;
+  background: rgba(118, 118, 128, 0.16);
+}
+.nt-debug-meter > span {
+  display: block;
+  block-size: 100%;
+  border-radius: 0.25rem;
+  background: #34c759;
+}
+.nt-debug-meter > span[data-tone="late"] {
+  background: #ff9f0a;
+}
+.nt-debug-meter > span[data-tone="long"] {
+  background: #ff3b30;
+}
+.nt-debug-stat-row {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  box-sizing: border-box;
+  min-block-size: 2.5rem;
+  padding: 0.375rem 0.875rem;
+  color: var(--nt-segmented);
+  font-size: 0.8125rem;
+}
+.nt-debug-stat-row > .nt-debug-figure {
+  color: var(--nt-text);
+  text-align: end;
+}
+.nt-debug-wrap {
+  white-space: normal;
+}
+.nt-debug-note {
+  margin: 0.375rem 0 0;
+  padding: 0.625rem 0.75rem;
+  border-radius: 0.875rem;
+  background: rgba(118, 118, 128, 0.1);
+  color: var(--nt-segmented);
+  font-size: 0.75rem;
+  line-height: 1.35;
+}
+/* The strip: dark, at the top left over the canvas, beside the tool bar; on a phone at the left edge. */
+.nt-debug-strip {
+  position: fixed;
+  inset-block-start: 4.625rem;
+  inset-inline-start: 5.25rem;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  block-size: 1.75rem;
+  padding: 0 0.75rem;
+  border-radius: 0.875rem;
+  background: rgba(28, 28, 30, 0.82);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: var(--nt-weight-bold);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  pointer-events: none;
+}
+@media (width < 600px) {
+  .nt-debug-strip {
+    inset-inline-start: 1rem;
+  }
+}

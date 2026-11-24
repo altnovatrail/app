@@ -151,3 +151,76 @@ export function repeat(sleep: (ms: number) => Promise<void>): Interceptor {
     }
   };
 }
+
+/** The bytes a message carries in its fields of bytes, a few levels down: a photo's, a crop's. */
+export function bytesOf(message: unknown, depth = 3): number {
+  if (message instanceof Uint8Array) return message.byteLength;
+  if (depth === 0 || message === null || typeof message !== "object") return 0;
+  let n = 0;
+  for (const value of Array.isArray(message) ? message : Object.values(message))
+    n += bytesOf(value, depth - 1);
+  return n;
+}
+
+function size(bytes: number): string {
+  return bytes < 1024 * 1024
+    ? `${(bytes / 1024).toFixed(0)} KiB`
+    : `${(bytes / 1024 / 1024).toFixed(1)} MiB`;
+}
+
+/** Connect's code as the contract writes it: `invalid_argument`. */
+function codeName(code: Code): string {
+  return (Code[code] ?? String(code)).replace(/([a-z])([A-Z])/g, "$1_$2").toLowerCase();
+}
+
+/**
+ * Each call to api as a line of the app's log, outermost, so once a call however often it was
+ * repeated: the method, how it ended and how long it took, and what its fields of bytes held. The
+ * message itself is never written: it may hold the learner's work.
+ */
+export function journaled(
+  note: (
+    level: "error" | "warn" | "info" | "debug",
+    source: "api",
+    text: string,
+    detail: string,
+  ) => void,
+  now: () => number = () => performance.now(),
+): Interceptor {
+  return (next) => async (request) => {
+    const method = `${request.service.typeName.split(".").pop()}/${request.method.name}`;
+    const began = now();
+    const sent = request.stream ? 0 : bytesOf(request.message);
+    const fields = (took: number) =>
+      [`took: ${(took / 1000).toFixed(1)} s`, sent > 0 ? `sent: ${size(sent)}` : ""].filter(
+        Boolean,
+      );
+    try {
+      const response = await next(request);
+      const took = now() - began;
+      note(
+        "info",
+        "api",
+        `${method} · ok · ${(took / 1000).toFixed(1)} s`,
+        ["code: ok", ...fields(took)].join("\n"),
+      );
+      return response;
+    } catch (reason) {
+      const took = now() - began;
+      const error = ConnectError.from(reason);
+      const code = codeName(error.code);
+      const cause = refusalOf(error)?.cause;
+      // A call the app called off is no failure of api's.
+      const level = error.code === Code.Canceled ? "debug" : "error";
+      note(
+        level,
+        "api",
+        `${method} · ${code}${error.rawMessage ? ` · ${error.rawMessage}` : ""}`,
+        [`code: ${code}`, cause === undefined ? "" : `cause: ${Cause[cause]}`, ...fields(took)]
+          .filter(Boolean)
+          .join("\n"),
+      );
+      throw error;
+    }
+  };
+}

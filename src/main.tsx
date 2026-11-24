@@ -10,7 +10,17 @@ import { createRoot } from "react-dom/client";
 import { AccountGate } from "./account/AccountGate.tsx";
 import { App } from "./app/App.tsx";
 import { Boot } from "./boot/Boot.tsx";
+import { install, note } from "./debug/journal.ts";
 import { browserDevice } from "./storage/browser.ts";
+
+// The app's log begins with the tab, so that an error before the debug mode is known is kept too.
+install(window);
+note(
+  "info",
+  "app",
+  `Started · ${window.innerWidth} × ${window.innerHeight} @${window.devicePixelRatio}x`,
+  `user agent: ${navigator.userAgent}\norigin: ${window.location.origin}`,
+);
 
 const root = document.getElementById("root");
 if (root === null) throw new Error("index.html has no element #root");

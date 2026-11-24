@@ -24,8 +24,9 @@ import {
   type Transport,
 } from "@connectrpc/connect";
 import { createConnectTransport } from "@connectrpc/connect-web";
+import { note } from "../debug/journal.ts";
 import { ApiError, parseFailure } from "./failure.ts";
-import { type ApiEvents, effects, repeat, signIn } from "./interceptors.ts";
+import { type ApiEvents, effects, journaled, repeat, signIn } from "./interceptors.ts";
 import type { Tokens } from "./tokens.ts";
 
 /** api's own limit of a request: no call of app waits longer. */
@@ -107,7 +108,8 @@ const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, 
 export function createApi(options: ApiOptions): Api {
   const sleep = options.sleep ?? wait;
   const fetcher = networked(options.fetch ?? globalThis.fetch.bind(globalThis));
-  const interceptors = [effects(options.on), signIn(options.tokens), repeat(sleep)];
+  const logged = journaled(note);
+  const interceptors = [logged, effects(options.on), signIn(options.tokens), repeat(sleep)];
   const transport =
     options.transport?.(interceptors, "POST") ??
     createConnectTransport({
@@ -118,7 +120,7 @@ export function createApi(options: ApiOptions): Api {
       interceptors,
     });
   // No sign-in and no deadline: Connect-Timeout-Ms would make the request one with a preflight.
-  const open = [effects(options.on), repeat(sleep)];
+  const open = [logged, effects(options.on), repeat(sleep)];
   const viewsTransport =
     options.transport?.(open, "GET") ??
     createConnectTransport({

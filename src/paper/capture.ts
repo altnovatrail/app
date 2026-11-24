@@ -6,6 +6,7 @@
 // rules.
 // A kept page's thumbnail, for "Your pages", is made from its photo in memory too, and never kept:
 // the device's records go into the profile's export as they are.
+import { note } from "../debug/journal.ts";
 import { cropRect, type Frame } from "./frame.ts";
 import { cropFitted, MAX_PHOTO, QUALITY, tries, turnedSize } from "./photo.ts";
 
@@ -58,6 +59,11 @@ async function encoded(draw: Draw, width: number, height: number): Promise<Photo
     draw(context, size.width, size.height);
     const blob = await blobOf(canvas, "image/jpeg", QUALITY);
     if (blob.size <= MAX_PHOTO) {
+      note(
+        "info",
+        "camera",
+        `Photo ${width} × ${height} · fitted to ${size.width} × ${size.height} · ${mib(blob.size)} JPEG`,
+      );
       return {
         bytes: new Uint8Array(await blob.arrayBuffer()),
         width: size.width,
@@ -67,6 +73,10 @@ async function encoded(draw: Draw, width: number, height: number): Promise<Photo
     }
   }
   throw new PhotoError("the photo is too large");
+}
+
+function mib(bytes: number): string {
+  return `${(bytes / 1024 / 1024).toFixed(1)} MiB`;
 }
 
 /** The frame the camera's video shows now. */
@@ -172,7 +182,14 @@ async function croppedPng(
     if (context === null) throw new PhotoError("no canvas to draw on");
     context.drawImage(bitmap, sx, sy, sw, sh, 0, 0, size.width, size.height);
     const blob = await blobOf(canvas, "image/png");
-    if (blob.size <= MAX_PHOTO) return blob;
+    if (blob.size <= MAX_PHOTO) {
+      note(
+        "debug",
+        "camera",
+        `Crop ${Math.round(sw)} × ${Math.round(sh)} · fitted to ${size.width} × ${size.height} · ${mib(blob.size)} PNG`,
+      );
+      return blob;
+    }
   }
   throw new PhotoError("the crop is too large");
 }
