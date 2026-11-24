@@ -23,7 +23,8 @@ function middle(box: Element): number {
 
 /** Whether the bar holds its pill, Back alone, and its end in one row, neither of them cut. */
 export function oneRow(bar: HTMLElement, end: HTMLElement): boolean {
-  const pill = bar.firstElementChild ?? end;
+  // The end is one of the bar's children, so the bar has a first.
+  const pill = bar.firstElementChild as Element;
   const cut = (box: Element) => box.scrollWidth > box.clientWidth + 1;
   return Math.abs(middle(pill) - middle(end)) < 2 && !cut(pill) && !cut(end);
 }
