@@ -1251,6 +1251,13 @@ export const en = {
   "paper.counter": "{n} / {total}",
   /** The list's heading, and the button's name, which holds its caption as said (WCAG 2.5.3). */
   "paper.tasks": "Tasks",
+  "paper.tasks-done": "{n} of {total} done",
+  "paper.task-solved": "Solved",
+  "paper.task-not-yet": "Not yet",
+  "paper.task-so-far": "So far correct",
+  "paper.task-no-key": "Cannot be checked",
+  "paper.task-closed": "Closed",
+  "paper.task-to-do": "Not checked yet",
   "paper.tasks-open": "Tasks, {n} / {total}",
   /** At the list's head: back to the page, to pick more of its tasks. */
   "paper.add": "Add",

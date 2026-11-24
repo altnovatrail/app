@@ -110,6 +110,14 @@ export const TABLE: Readonly<Record<string, Value>> = {
   // home screen's card, a frame's cross the close.
   photos: { base: "photo-library", filled: false, mirrored: false },
   resize: { base: "open-in-full", filled: false, mirrored: false },
+  // The counter of the tasks begun, a bulleted list; in their list each one's state, a filled
+  // circle — solved, a tick; not yet, an exclamation mark; none to check or closed, a dash — or a
+  // ring while it is still to do.
+  tasks: { base: "format-list-bulleted", filled: false, mirrored: true },
+  "task-solved": { base: "check-circle", filled: true, mirrored: false },
+  "task-not-yet": { base: "error", filled: true, mirrored: false },
+  "task-closed": { base: "do-not-disturb-on", filled: true, mirrored: false },
+  "task-to-do": { base: "circle", filled: false, mirrored: false },
   // The field of a request on the page to pick from: Send, an arrow up in a blue circle, and
   // the microphone, off until voice comes; each without its caption.
   send: { base: "arrow-upward", filled: false, mirrored: false },

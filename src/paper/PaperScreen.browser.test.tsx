@@ -512,7 +512,8 @@ it("goes from task to task by ‹, › and the list, each with its own work", as
   await userEvent.click(screen.getByRole("button", { name: "Next task" }));
   await screen.findByRole("heading", { name: "Task 2" });
   await userEvent.click(screen.getByRole("button", { name: "Tasks, 2 / 2" }));
-  await userEvent.click(await screen.findByRole("button", { name: /Task 1/ }));
+  expect(await screen.findByText("0 of 2 done")).toBeVisible();
+  await userEvent.click(screen.getByRole("button", { name: /Task 1/ }));
   expect(await screen.findByRole("heading", { name: "Task 1" })).toBeVisible();
   expect(sheet().history).toHaveLength(1);
 });
@@ -596,7 +597,7 @@ it("shows the Check's verdict: Not yet, then Correct, which takes no Check again
   await userEvent.click(screen.getByRole("button", { name: "Check" }), { force: true });
   expect(submits).toHaveLength(2);
   await userEvent.click(screen.getByRole("button", { name: "Tasks, 1 / 2" }));
-  expect(await screen.findByRole("button", { name: /Task 1.*Correct/ })).toBeVisible();
+  expect(await screen.findByRole("button", { name: /^Task 1 ?Solved$/ })).toBeVisible();
 });
 
 it("checks a frame of several tasks each, with the count and a tick or a cross by each answer", async () => {
@@ -1719,9 +1720,13 @@ it("marks a task solved in the list of a page opened again, its verdict put away
   await userEvent.click(screen.getByRole("button", { name: /· 2 tasks$/ }));
   await screen.findByRole("heading", { name: "Task 1" }, SLOW);
   expect(screen.queryByText("Read: 85")).toBeNull();
-  await userEvent.click(screen.getByRole("button", { name: "Tasks, 1 / 2" }));
-  expect(await screen.findByRole("button", { name: /Task 1.*Correct/ })).toBeVisible();
-  expect(screen.getByRole("button", { name: "Task 2" })).toBeVisible();
+  const counter = screen.getByRole("button", { name: "Tasks, 1 / 2" });
+  await userEvent.click(counter);
+  expect(counter).toHaveAttribute("aria-expanded", "true");
+  // The head counts the tasks solved; each row says its state under its name.
+  expect(await screen.findByText("1 of 2 done")).toBeVisible();
+  expect(screen.getByRole("button", { name: /^Task 1 ?Solved$/ })).toBeVisible();
+  expect(screen.getByRole("button", { name: /^Task 2 ?Not checked yet$/ })).toBeVisible();
   history.replaceState(null, "", location.pathname);
 });
 

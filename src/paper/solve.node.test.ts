@@ -26,6 +26,7 @@ import {
   paperCard,
   paperVerdictOf,
   shownTask,
+  taskState,
   tutorActs,
   verdictMarks,
   viewOnly,
@@ -104,6 +105,20 @@ describe("the list of the tasks begun", () => {
     expect(shownTask(all.slice(0, 1), "a2")?.attemptId).toBe("a1");
     expect(shownTask(all, undefined)?.attemptId).toBe("a1");
     expect(shownTask([], "a1")).toBeUndefined();
+  });
+
+  it("gives each task its state by its last Check", () => {
+    const parts = { read: undefined, parts: [] };
+    expect(taskState({})).toBe("to-do");
+    expect(taskState({ solved: true })).toBe("solved");
+    expect(taskState({ verdict: { kind: "correct", ...parts } })).toBe("solved");
+    expect(taskState({ verdict: { kind: "not-yet", ...parts } })).toBe("not-yet");
+    expect(taskState({ verdict: { kind: "so-far", ...parts } })).toBe("so-far");
+    expect(taskState({ verdict: { kind: "nokey" } })).toBe("no-key");
+    expect(taskState({ verdict: { kind: "unchecked", outcome: undefined } })).toBe("to-do");
+    expect(taskState({ verdict: { kind: "unreadable", reason: "" } })).toBe("to-do");
+    expect(taskState({ over: true })).toBe("closed");
+    expect(taskState({ over: true, solved: true })).toBe("solved");
   });
 
   it("goes to the task before and after, and not past either end", () => {

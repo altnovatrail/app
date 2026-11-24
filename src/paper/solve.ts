@@ -212,6 +212,23 @@ function partOf(slot: AnswerSlotVerdict | undefined): PaperPart {
   return { verdict, box: [box.ymin, box.xmin, box.ymax, box.xmax] };
 }
 
+/** Where a task stands in the list of the tasks begun: its sign and the line under its name. */
+export type TaskState = "solved" | "not-yet" | "so-far" | "no-key" | "closed" | "to-do";
+
+/**
+ * A task's place in the list by what its last Check came to: solved, here or in a tab before; not
+ * yet; so far correct; one the Check has no key to; closed unsolved, as api or a page of the history
+ * says; else still to do, a Check that read nothing too.
+ */
+export function taskState(task: Pick<BegunTask, "verdict" | "over" | "solved">): TaskState {
+  const kind = task.verdict?.kind;
+  if (task.solved === true || kind === "correct") return "solved";
+  if (kind === "not-yet") return "not-yet";
+  if (kind === "nokey") return "no-key";
+  if (task.over === true) return "closed";
+  return kind === "so-far" ? "so-far" : "to-do";
+}
+
 /**
  * Whether a task's Check is over: it is solved, and its attempt closed, or its attempt is over, as a
  * page of the history may say. A Check that read nothing leaves it open: the next one checks again.

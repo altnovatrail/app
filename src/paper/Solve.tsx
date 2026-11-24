@@ -54,6 +54,7 @@ import { closesAI, outcomeOf } from "../api/outcome.ts";
 import { failureText, outcomeText } from "../api/words.ts";
 import { Icon } from "../app/Icon.tsx";
 import { IconButton } from "../app/IconButton.tsx";
+import type { IconValue } from "../app/icons.ts";
 import { useNarrow } from "../app/narrow.ts";
 import { PopOver } from "../app/PopOver.tsx";
 import { Screen } from "../app/Screen.tsx";
@@ -61,6 +62,7 @@ import { usePens } from "../canvas/pens.ts";
 import { DebugSlot } from "../debug/slot.tsx";
 import { watched } from "../debug/watched.ts";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
+import type { Key } from "../i18n/words.ts";
 import { useKeyHolder } from "../ownkey/OwnKeyContext.tsx";
 import { workOf } from "../task/attempt.ts";
 import { closedBy, useOwnVoicing } from "../task/shared.ts";
@@ -80,12 +82,24 @@ import {
   paperCard,
   paperVerdictOf,
   shownTask,
+  type TaskState,
+  taskState,
   tutorActs,
   verdictMarks,
   viewOnly,
   wavyOf,
   withChange,
 } from "./solve.ts";
+
+/** The sign of each state in the list of the tasks, and the key of the line under the name. */
+const STATES = {
+  solved: { icon: "task-solved", word: "paper.task-solved" },
+  "not-yet": { icon: "task-not-yet", word: "paper.task-not-yet" },
+  "so-far": { icon: "task-to-do", word: "paper.task-so-far" },
+  "no-key": { icon: "task-closed", word: "paper.task-no-key" },
+  closed: { icon: "task-closed", word: "paper.task-closed" },
+  "to-do": { icon: "task-to-do", word: "paper.task-to-do" },
+} as const satisfies Record<TaskState, { readonly icon: IconValue; readonly word: Key }>;
 
 /** The reading of a statement not asked yet, or asked again after none came. */
 const READY: TracingReading = Object.freeze({ state: "ready" });
@@ -271,6 +285,7 @@ export function Solve({
   const nameOf = (each: BegunTask) =>
     words.text(each.drawn ? "paper.your-frame" : "paper.task", { n: order.get(each.taskId) ?? 0 });
   const at = list.indexOf(task);
+  const done = list.filter((each) => taskState(each) === "solved").length;
   const place = { n: at + 1, total: list.length };
   const before = besideTask(list, attemptId, -1);
   const after = besideTask(list, attemptId, 1);
@@ -643,7 +658,12 @@ export function Solve({
     <PopOver
       label={words.text("paper.tasks")}
       buttonLabel={words.text("paper.tasks-open", place)}
-      caption={words.text("paper.counter", place)}
+      caption={
+        <>
+          <Icon value="tasks" />
+          {words.text("paper.counter", place)}
+        </>
+      }
       className="nt-solve-count"
       anchor=".nt-solve-nav"
       gap={6}
@@ -652,7 +672,12 @@ export function Solve({
       {(close) => (
         <>
           <div className="nt-tasks-head">
-            <h2>{words.text("paper.tasks")}</h2>
+            <h2>
+              {words.text("paper.tasks")}
+              <span className="nt-tasks-done">
+                {words.text("paper.tasks-done", { n: done, total: list.length })}
+              </span>
+            </h2>
             <button
               type="button"
               className="nt-plain nt-tasks-add"
@@ -661,34 +686,41 @@ export function Solve({
                 onAdd();
               }}
             >
+              <Icon value="add" />
               {words.text("paper.add")}
             </button>
           </div>
           <ol className="nt-tasks">
-            {list.map((each) => (
-              <li key={each.attemptId}>
-                <button
-                  type="button"
-                  className="nt-tasks-row"
-                  aria-current={each === task ? "true" : undefined}
-                  onClick={() => {
-                    close();
-                    go(each);
-                  }}
-                >
-                  <span className="nt-tasks-n" aria-hidden="true">
-                    {order.get(each.taskId)}
-                  </span>
-                  {nameOf(each)}
-                  {each.solved === true || each.verdict?.kind === "correct" ? (
-                    <>
-                      <Icon value="ticked" />
-                      <span className="nt-hidden-label">{words.text("task.correct")}</span>
-                    </>
-                  ) : null}
-                </button>
-              </li>
-            ))}
+            {list.map((each) => {
+              const state = taskState(each);
+              return (
+                <li key={each.attemptId}>
+                  <button
+                    type="button"
+                    className="nt-tasks-row"
+                    aria-current={each === task ? "true" : undefined}
+                    onClick={() => {
+                      close();
+                      go(each);
+                    }}
+                  >
+                    <span className="nt-tasks-n" aria-hidden="true">
+                      {order.get(each.taskId)}
+                    </span>
+                    <span className="nt-tasks-name">
+                      {nameOf(each)}
+                      <span className="nt-tasks-said">{words.text(STATES[state].word)}</span>
+                    </span>
+                    <span className="nt-tasks-state" data-state={state}>
+                      <Icon
+                        value={STATES[state].icon}
+                        chosen={STATES[state].icon !== "task-to-do"}
+                      />
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
           </ol>
         </>
       )}
