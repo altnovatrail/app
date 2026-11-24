@@ -141,6 +141,12 @@ export const TABLE: Readonly<Record<string, Value>> = {
   engine: { base: "autorenew", filled: false, mirrored: false },
   "next-skill": { base: "arrow-forward", filled: false, mirrored: true },
   chain: { base: "keyboard-double-arrow-right", filled: false, mirrored: true },
+  // Grown-up mode of the tutor on a task from paper: a key in the panel's head, filled while the
+  // mode is on; the grown-ups' PIN it asks, a padlock over its keypad, whose delete key is a
+  // backspace that points the way the line runs back.
+  "grown-up": { base: "key", filled: true, mirrored: false },
+  "pin-lock": { base: "lock", filled: false, mirrored: false },
+  "pin-delete": { base: "backspace", filled: false, mirrored: true },
 };
 
 /** An icon as the app draws it: its view box, and the paths it fills in the text's colour. */

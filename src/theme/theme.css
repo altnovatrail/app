@@ -92,6 +92,13 @@
   --nt-hint: rgba(255, 204, 0, 0.2);
   --nt-hint-text: #9a5b00;
   --nt-next: #a85a00;
+  /*
+   * Grown-up mode of the tutor: its band, its line and the mark of its words on an orange tint, in
+   * a dark orange; its key, while on, the fill of "Not yet". The grown-ups' PIN on its warm white.
+   */
+  --nt-grown: rgba(255, 149, 0, 0.16);
+  --nt-grown-text: #8a3b00;
+  --nt-pin: #faf9f6;
   --nt-tutor-words: #23308c;
   /* A skill with a rubric, and the sign of an essay's feedback: 6.76:1 on its tint #f7f0fc. */
   --nt-rubric: #7a2ea8;
@@ -7042,4 +7049,173 @@ p.nt-finding {
   background: var(--nt-state-mastered);
   color: var(--nt-on-fill);
   font-size: 0.875rem;
+}
+
+/*
+ * Grown-up mode of the tutor on a task from paper, the mockup's `solve-grown-*`: its key in the
+ * panel's head, filled in "Not yet"'s orange with a white icon while the mode is on; the band
+ * under the head, radius 16, its key, its name at 13.5 bold, its line at 12 and Turn off, white,
+ * 44 high; the head's line in the accent while the tutor writes on the sheet; the tutor's words of
+ * the mode marked on the orange tint.
+ */
+.nt-tutor-head button.nt-icon-only.nt-grown-key[aria-pressed="true"] {
+  background: var(--nt-not-yet);
+  color: var(--nt-on-fill);
+}
+.nt-tutor-status[data-acting="true"] {
+  color: var(--nt-accent-text);
+}
+.nt-grown-band {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 0.625rem;
+  margin: 0.625rem 0.75rem 0;
+  padding: 0.375rem 0.375rem 0.375rem 0.75rem;
+  border-radius: 1rem;
+  background: var(--nt-grown);
+  color: var(--nt-grown-text);
+  font-size: 1.25rem;
+}
+.nt-grown-band-sign {
+  display: flex;
+  flex: none;
+}
+.nt-grown-band-words {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-inline-size: 0;
+  font-size: 0.75rem;
+  line-height: 1.25;
+}
+.nt-grown-band-title {
+  font-size: 0.84375rem;
+  font-weight: var(--nt-weight-heading);
+}
+button.nt-grown-off {
+  flex: none;
+  padding: 0 0.875rem;
+  border-color: transparent;
+  background: var(--nt-card);
+  box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.16);
+  color: var(--nt-grown-text);
+  font-size: 0.84375rem;
+}
+.nt-bubble-words[data-grown="true"] {
+  background: var(--nt-grown);
+}
+.nt-bubble-words[data-grown="true"] > .nt-bubble-label {
+  color: var(--nt-grown-text);
+}
+.nt-verdict-line[data-kind="grown"] > .nt-card-sign {
+  background: var(--nt-grown);
+  color: var(--nt-grown-text);
+}
+
+/*
+ * The grown-ups' PIN of grown-up mode, the mockup's dialog: 340 wide, radius 28, on its warm
+ * white over the screen dimmed and blurred; a padlock in a white circle of 44, the name at 18 bold,
+ * the line at 13 — in "Not yet"'s orange after a wrong PIN —, four dots of 14, a keypad of 3 × 4
+ * keys of 72 × 54, radius 14, white with a ring but Cancel and the delete key, and the note at 12.
+ */
+dialog.nt-pin {
+  box-sizing: border-box;
+  inline-size: min(21.25rem, calc(100vw - 2rem));
+  max-inline-size: none;
+  padding: 1.375rem 1.5rem 1.125rem;
+  border: 0;
+  border-radius: 1.75rem;
+  background: var(--nt-pin);
+  box-shadow:
+    0 0 0 0.5px rgba(0, 0, 0, 0.08),
+    0 20px 60px rgba(0, 0, 0, 0.22);
+  color: var(--nt-text);
+}
+dialog.nt-pin[open] {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+dialog.nt-pin::backdrop {
+  background: rgba(0, 0, 0, 0.28);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+.nt-pin-lock {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 2.75rem;
+  block-size: 2.75rem;
+  border-radius: 50%;
+  background: var(--nt-card);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12);
+  font-size: 1.25rem;
+}
+dialog.nt-pin > h2.nt-pin-title {
+  margin: 0.875rem 0 0;
+  font-size: 1.125rem;
+  font-weight: var(--nt-weight-heading);
+  text-align: center;
+}
+dialog.nt-pin > p.nt-pin-line {
+  margin: 0.25rem 0 0;
+  text-align: center;
+  color: var(--nt-text-muted);
+  font-size: 0.8125rem;
+  line-height: 1.35;
+}
+dialog.nt-pin > p.nt-pin-line[data-wrong="true"] {
+  color: var(--nt-not-yet);
+}
+.nt-pin-dots {
+  display: flex;
+  gap: 0.875rem;
+  margin: 1rem 0 1.125rem;
+}
+.nt-pin-dots > span {
+  inline-size: 0.875rem;
+  block-size: 0.875rem;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1.3px var(--nt-edge);
+}
+.nt-pin-dots > span[data-on="true"] {
+  background: var(--nt-text);
+}
+.nt-pin-keys {
+  display: grid;
+  grid-template-columns: repeat(3, 4.5rem);
+  gap: 0.75rem 0.875rem;
+}
+dialog.nt-pin button.nt-pin-key {
+  inline-size: auto;
+  block-size: 3.375rem;
+  padding: 0;
+  border-color: transparent;
+  border-radius: 0.875rem;
+  background: transparent;
+  color: var(--nt-text);
+}
+dialog.nt-pin button.nt-pin-digit {
+  background: var(--nt-card);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.1);
+  font-size: 1.375rem;
+  font-weight: 400;
+}
+dialog.nt-pin button.nt-pin-cancel {
+  font-size: 0.9375rem;
+  font-weight: var(--nt-weight-medium);
+}
+dialog.nt-pin button.nt-icon-only.nt-pin-delete {
+  inline-size: auto;
+  border-radius: 0.875rem;
+  color: var(--nt-text);
+  font-size: 1.375rem;
+}
+dialog.nt-pin > p.nt-pin-note {
+  margin: 0.625rem 0 0;
+  text-align: center;
+  color: var(--nt-text-muted);
+  font-size: 0.75rem;
 }

@@ -19,6 +19,8 @@ export interface TutorWordsProps {
   readonly words: string | undefined;
   /** The words are a rung's, after a wrong answer: a hint, as the mockup marks them. */
   readonly rung?: boolean;
+  /** The words are the tutor's on what it did in grown-up mode, marked so, as the mockup marks them. */
+  readonly grown?: boolean;
   /** The module's explanation language. */
   readonly language: string | undefined;
   /**
@@ -39,6 +41,7 @@ export interface TutorWordsProps {
 export function TutorWords({
   words: text,
   rung = false,
+  grown = false,
   language,
   failure,
   waiting = false,
@@ -50,8 +53,13 @@ export function TutorWords({
   return (
     <>
       {text === undefined ? null : (
-        <div className="nt-bubble nt-bubble-words" data-rung={rung}>
-          {rung ? (
+        <div className="nt-bubble nt-bubble-words" data-rung={rung} data-grown={grown}>
+          {grown ? (
+            <span className="nt-bubble-label">
+              <Icon value="grown-up" />
+              {words.text("grown.mode")}
+            </span>
+          ) : rung ? (
             <span className="nt-bubble-label">
               <Icon value="hint" />
               {words.text("task.hint")}

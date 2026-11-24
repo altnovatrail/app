@@ -30,7 +30,11 @@
 // stops with another task or the panel closed. In the panel's field the learner asks about the task
 // by text, or an adult by voice too: the question goes with the last turns of the conversation and
 // the work as it stands, and the tutor's answer, by AI, stands under it and is said as a hint is;
-// the conversation of each task is the tab's alone, while the screen is open. "Recognise" on the tracing paper reads the task's
+// the conversation of each task is the tab's alone, while the screen is open. Behind the grown-ups'
+// PIN, grown-up mode lifts the tutor's limits on the task shown till it is turned off or the task
+// changes: the field's request goes with the strokes the crop of the work shows, and the tutor's
+// act — strokes written, strokes taken off — is drawn on the sheet, one action of its history,
+// before its words. "Recognise" on the tracing paper reads the task's
 // crop into its text by AI; the page keeps the reading while it is open, and the paper shows the
 // photo again each time it is mounted.
 import {
@@ -51,7 +55,7 @@ import type { MessageInitShape } from "@bufbuild/protobuf";
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { useApi } from "../api/ApiContext.tsx";
 import { type Failure, parseFailure } from "../api/failure.ts";
-import { PAPER_TIMEOUT_MS } from "../api/interceptors.ts";
+import { GROWN_UP_TIMEOUT_MS, PAPER_TIMEOUT_MS } from "../api/interceptors.ts";
 import { idempotencyKey } from "../api/keys.ts";
 import { closesAI, outcomeOf } from "../api/outcome.ts";
 import { failureText, outcomeText } from "../api/words.ts";
@@ -81,9 +85,11 @@ import {
   besideTask,
   checkOver,
   checkReply,
+  MAX_SHEET_STROKES,
   onList,
   paperCard,
   paperVerdictOf,
+  pixelsPerMm,
   shownTask,
   type TaskState,
   type Turn,
@@ -226,6 +232,11 @@ export function Solve({
   // The key of a question, kept till an answer, so that the same question sent again after a
   // failure repeats it.
   const askKey = useRef<{ readonly of: string; readonly key: string } | undefined>(undefined);
+  // The task whose grown-up mode is on, behind the grown-ups' PIN: in the tab's memory alone, off
+  // with another task and with the screen left.
+  const [grown, setGrown] = useState<string | undefined>(undefined);
+  // The task whose request in grown-up mode is on its way, its act drawn on the sheet after it.
+  const [writing, setWriting] = useState<string | undefined>(undefined);
 
   const list = onList(begun, tasks);
   const task = shownTask(list, asked);
@@ -252,6 +263,7 @@ export function Solve({
     setOverTold(false);
     setAskNote(undefined);
     setAgain(undefined);
+    setGrown(undefined);
     setWritten(element.current?.filled?.[0]?.[0] === true);
   }, [attemptId]);
 
@@ -507,6 +519,20 @@ export function Solve({
     })();
   };
 
+  /** A request of the field that brought no answer: out of the conversation, and back in the field. */
+  const giveBack = (of: string, asked: number, question: string, note: string | undefined) => {
+    unask(of);
+    if (asked !== epoch.current) return;
+    setAskNote(note);
+    setAgain({ text: question, at: Date.now() });
+  };
+
+  /** Grown-up mode turned on or off on this task, a line of its conversation. */
+  const grownMode = (on: boolean) => {
+    setGrown(on ? attemptId : undefined);
+    remember(attemptId, { learner: false, text: "", line: true, mode: on ? "on" : "off" });
+  };
+
   /**
    * The learner's own question about the task, by AI with the conversation before it and the work
    * as it stands, which the Check reads while the attempt keeps no Check of its own. The question
@@ -517,6 +543,7 @@ export function Solve({
     if (asking !== undefined || viewOnly(task)) return;
     // Within the press: the words that come may be said (WebKit).
     prime();
+    if (grown === attemptId) return askGrown(question, voice);
     const of = attemptId;
     const turns = turnsOf(talks.get(of) ?? []);
     remember(of, { learner: true, text: question, line: true, ...(voice ? { voice } : {}) });
@@ -527,12 +554,7 @@ export function Solve({
     setAsking(of);
     setAskNote(undefined);
     const ai = holder.aiFields(profileId);
-    const back = (note: string) => {
-      unask(of);
-      if (asked !== epoch.current) return;
-      setAskNote(note);
-      setAgain({ text: question, at: Date.now() });
-    };
+    const back = (note: string) => giveBack(of, asked, question, note);
     void (async () => {
       try {
         const work = await workNow();
@@ -573,6 +595,107 @@ export function Solve({
         closed(found);
       } finally {
         setAsking(undefined);
+        setSpent((n) => n + 1);
+      }
+    })();
+  };
+
+  /**
+   * The grown-up's request in grown-up mode, by AI with the conversation before it, the part of the
+   * sheet in sight and the strokes its crop shows, a blank sheet too: the tutor's act is drawn on
+   * the sheet — one action, which the history keeps as any other and an undo takes back whole —,
+   * and then its words stand under the request, marked. Turned off meanwhile, the act still comes:
+   * it was asked while the mode was on. A request that brings no act puts it back in the field, as a question
+   * that brings no answer does; so does an act the sheet cannot take, as one on a stroke erased
+   * meanwhile. A repeat holds nothing: api keeps nothing of the answer.
+   */
+  const askGrown = (question: string, voice: boolean) => {
+    const sheet = element.current;
+    if (sheet === null) return;
+    const of = attemptId;
+    const turns = turnsOf(talks.get(of) ?? []);
+    remember(of, {
+      learner: true,
+      text: question,
+      line: true,
+      grown: true,
+      ...(voice ? { voice } : {}),
+    });
+    const same = JSON.stringify([of, question, "grown"]);
+    if (askKey.current?.of !== same) askKey.current = { of: same, key: idempotencyKey() };
+    const key = askKey.current.key;
+    const asked = epoch.current;
+    setAsking(of);
+    setWriting(of);
+    setAskNote(undefined);
+    const ai = holder.aiFields(profileId);
+    const back = (note?: string) => giveBack(of, asked, question, note);
+    void (async () => {
+      try {
+        // The part of the sheet in sight, with room to write in, a blank sheet's too: the drawing
+        // acts where the grown-up looks.
+        const work = await sheet.exportForDrawing();
+        const context = work.submission;
+        const strokes = sheet
+          .cropStrokes(context)
+          .slice(-MAX_SHEET_STROKES)
+          .map(({ id, points }) => ({ id, points: [...points] }));
+        const paperWork = await workOf(work, task.instruction);
+        const answer = await watched(api, () =>
+          api.attempt.askGrownUp(
+            {
+              profileId,
+              attemptId: of,
+              idempotencyKey: key,
+              question,
+              turns: [...turns],
+              work: paperWork,
+              strokes,
+              pixelsPerMm: pixelsPerMm(context.crop),
+              wordsLanguage: language,
+              ...ai,
+            },
+            { timeoutMs: GROWN_UP_TIMEOUT_MS },
+          ),
+        );
+        askKey.current = undefined;
+        const read = outcomeOf(answer.outcome);
+        holder.noteOutcome(profileId, read, ai);
+        if (answer.repeated) return back();
+        const act = {
+          strokes: answer.strokes.map(({ points, color, width }) => ({
+            points: [...points],
+            color,
+            width,
+          })),
+          erase: [...answer.erase],
+        };
+        const acts = act.strokes.length > 0 || act.erase.length > 0;
+        if (read !== undefined) return back(outcomeText(read, words));
+        if (!acts && answer.words === "") return back(words.text("api.ai-failure"));
+        // Another task is another sheet: the act was on this one's crop.
+        if (!sheet.isConnected) return unask(of);
+        if (acts) {
+          try {
+            await sheet.drawTutor(context, act);
+          } catch (reason) {
+            if (!(reason instanceof TypeError)) throw reason;
+            return back(words.text("api.ai-failure"));
+          }
+        }
+        if (answer.words === "") return;
+        remember(of, { learner: false, text: answer.words, line: true, grown: true });
+        if (asked !== epoch.current) return;
+        if (isOpen.current) auto([{ text: answer.words, language }]);
+        else setTold(answer.words);
+      } catch (reason) {
+        const found = parseFailure(reason);
+        if (found.kind === "refused") askKey.current = undefined;
+        back(failureText(found, words));
+        closed(found);
+      } finally {
+        setAsking(undefined);
+        setWriting(undefined);
         setSpent((n) => n + 1);
       }
     })();
@@ -1029,6 +1152,8 @@ export function Solve({
           askOff={asking !== undefined || only}
           again={again}
           onAsk={ask}
+          {...(only ? {} : { grown: grown === attemptId, onGrown: grownMode })}
+          writing={writing === attemptId}
         />
       ) : null}
     </Screen>

@@ -306,7 +306,8 @@ export type CardKind =
   | "reading"
   | "shown"
   | "feedback"
-  | "nokey";
+  | "nokey"
+  | "grown";
 
 const CARD_SIGNS: Readonly<Record<Exclude<CardKind, "reading">, IconValue>> = {
   correct: "ticked",
@@ -318,6 +319,8 @@ const CARD_SIGNS: Readonly<Record<Exclude<CardKind, "reading">, IconValue>> = {
   feedback: "feedback",
   // A task from paper with no key: a question of its own, as the mockup draws it.
   nokey: "help",
+  // Grown-up mode turned on or off, a line of the conversation: its key.
+  grown: "grown-up",
 };
 
 /**

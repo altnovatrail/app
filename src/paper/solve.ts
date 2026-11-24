@@ -418,6 +418,29 @@ export const MAX_QUESTION = 500;
 /** The turns of the conversation a question carries, and the longest of each, in code points. */
 export const MAX_TURNS = 8;
 export const MAX_TURN = 1000;
+/**
+ * The most strokes a request of grown-up mode carries (the contract's `AskGrownUpRequest.strokes`):
+ * of a sheet with more, the newest, which a request most likely names.
+ */
+export const MAX_SHEET_STROKES = 3000;
+
+/** The width of a task's page in units of the sheet, and in millimetres: A4's. */
+const PAGE_UNITS = 1000;
+const PAGE_MM = 210;
+
+/**
+ * How many pixels of a crop of the sheet make a millimetre of the task's page, by the crop's width
+ * and the units of the sheet it spans, for a request in millimetres of grown-up mode, as a grid
+ * every 2 mm; 0 when the crop gives none, or one the contract does not take, above 100.
+ */
+export function pixelsPerMm(crop: {
+  readonly width: number;
+  readonly sheetBox: readonly [number, number, number, number];
+}): number {
+  const units = crop.sheetBox[3] - crop.sheetBox[1];
+  const perMm = (crop.width / units) * (PAGE_UNITS / PAGE_MM);
+  return Number.isFinite(perMm) && perMm > 0 && perMm <= 100 ? perMm : 0;
+}
 
 /**
  * A question as it goes: its line breaks kept, Windows' as one, its other control characters
@@ -438,7 +461,9 @@ export function questionOf(text: string): string | undefined {
  * A turn of the conversation on a task, as the tab keeps it: the learner's question, or the tutor's
  * words — a hint, the words of a Check, an answer. `line`: the conversation draws it as a line of
  * its own, as it does a question and its answer; the words of a hint and of a Check have their own
- * place in the panel.
+ * place in the panel. In grown-up mode the grown-up's request and the tutor's words on what it did
+ * are turns too, marked `grown`; the mode turned on or off is a line of the conversation, `mode`,
+ * and no turn a request carries.
  */
 export interface Turn {
   readonly learner: boolean;
@@ -446,21 +471,35 @@ export interface Turn {
   readonly line: boolean;
   /** The question went as the browser read it from the learner's voice. */
   readonly voice?: boolean;
+  /** Said in grown-up mode: the grown-up's request, or the tutor's words on its act. */
+  readonly grown?: boolean;
+  /** The line of grown-up mode turned on or off, with no text. */
+  readonly mode?: "on" | "off";
 }
 
 /** The turns a question carries: the last MAX_TURNS before it, each cut to MAX_TURN code points. */
 export function turnsOf(
   turns: readonly Turn[],
 ): readonly { readonly learner: boolean; readonly text: string }[] {
-  return turns.slice(-MAX_TURNS).map(({ learner, text }) => ({
-    learner,
-    text: [...text].slice(0, MAX_TURN).join(""),
-  }));
+  return turns
+    .filter((turn) => turn.mode === undefined)
+    .slice(-MAX_TURNS)
+    .map(({ learner, text }) => ({
+      learner,
+      text: [...text].slice(0, MAX_TURN).join(""),
+    }));
 }
 
 /** The conversation with a turn after it; the tutor's words said again are not a turn again. */
 export function withTurn(turns: readonly Turn[], turn: Turn): readonly Turn[] {
   const last = turns.at(-1);
-  if (!turn.learner && last !== undefined && !last.learner && last.text === turn.text) return turns;
+  const again =
+    turn.mode === undefined &&
+    !turn.learner &&
+    last !== undefined &&
+    last.mode === undefined &&
+    !last.learner &&
+    last.text === turn.text;
+  if (again) return turns;
   return [...turns, turn];
 }

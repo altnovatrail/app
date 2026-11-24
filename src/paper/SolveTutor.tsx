@@ -9,8 +9,12 @@
 // differently" once on a rung, and the next task once its Check is over. After them the learner's
 // questions about the task and the tutor's answers, each answer with "Report a problem" below it
 // for a learner of the category adult, and under the conversation the panel's field
-// of a question, with its microphone for a learner of the category adult. A task from paper is in
-// no module: its words are in the language of the interface.
+// of a question, with its microphone for a learner of the category adult. In the head, before the
+// switch of voicing, grown-up mode's key, while the task takes work: behind the grown-ups' PIN the
+// field takes a request for anything, up to the full solution, the band under the head says so,
+// and the conversation has a line as the mode is turned on and off; the tutor's words on what it
+// did on the sheet are marked, and the head says "Writing on the sheet…" till they come. A task
+// from paper is in no module: its words are in the language of the interface.
 import { TutorReply } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
 import type { Ref } from "react";
 import type { Failure } from "../api/failure.ts";
@@ -49,6 +53,9 @@ export function SolveTutor({
   askOff,
   again,
   onAsk,
+  grown,
+  onGrown,
+  writing = false,
 }: {
   /** The line of its head: the learner's share of the quota. */
   readonly quota: string | undefined;
@@ -93,6 +100,12 @@ export function SolveTutor({
   readonly again?: { readonly text: string; readonly at: number } | undefined;
   /** A question, and whether it is the browser's reading of the voice as it came. */
   readonly onAsk: (question: string, voice: boolean) => void;
+  /** Grown-up mode is on; none, and its key is not drawn. */
+  readonly grown?: boolean | undefined;
+  /** Grown-up mode turned on, past the grown-ups' PIN, or off. */
+  readonly onGrown?: ((on: boolean) => void) | undefined;
+  /** A request in grown-up mode is on its way, its act to be drawn on the sheet. */
+  readonly writing?: boolean;
 }) {
   const { language, words } = useLanguage();
   // Other words are another report: the form begins anew with them.
@@ -113,13 +126,19 @@ export function SolveTutor({
   return (
     <TutorPanel
       headingRef={headingRef}
-      status={quota}
+      status={writing ? words.text("grown.writing") : quota}
+      acting={writing}
       onClose={onClose}
       kit={{
         voicing: { language },
+        ...(grown === undefined || onGrown === undefined
+          ? {}
+          : { grown: { on: grown, onChange: onGrown } }),
         ask: {
           label: words.text("paper.question-label"),
-          placeholder: words.text("paper.question-placeholder"),
+          placeholder: words.text(
+            grown === true ? "grown.placeholder" : "paper.question-placeholder",
+          ),
           max: MAX_QUESTION,
           ready: questionOf,
           off: askOff,
@@ -155,7 +174,15 @@ export function SolveTutor({
             {...report(said)}
           />
           {turns.map((turn, i) =>
-            !turn.line ? null : turn.learner ? (
+            !turn.line ? null : turn.mode !== undefined ? (
+              <VerdictLine
+                // biome-ignore lint/suspicious/noArrayIndexKey: the conversation only grows.
+                key={i}
+                kind="grown"
+                title={words.text(turn.mode === "on" ? "grown.on-title" : "grown.off-title")}
+                line={words.text(turn.mode === "on" ? "grown.on-line" : "grown.off-line")}
+              />
+            ) : turn.learner ? (
               // biome-ignore lint/suspicious/noArrayIndexKey: the conversation only grows.
               <LearnerLine key={i} text={turn.text} voice={turn.voice === true} />
             ) : (
@@ -163,6 +190,7 @@ export function SolveTutor({
                 // biome-ignore lint/suspicious/noArrayIndexKey: the conversation only grows.
                 key={i}
                 words={turn.text}
+                grown={turn.grown === true}
                 language={language}
                 {...report({ text: turn.text, reply: TutorReply.ANSWER, rung: 0 })}
               />

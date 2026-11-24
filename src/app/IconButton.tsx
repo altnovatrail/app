@@ -38,6 +38,10 @@ export const CAPTIONLESS = {
   "ask-send": { icon: "send", word: "paper.ask-send" },
   // On a module's card on Home: its skill map, described by the module's title.
   "skill-map": { icon: "skill-map", word: "skillmap.title" },
+  // In the head of the tutor's panel on a task from paper: grown-up mode's key, pressed while it
+  // is on; and the delete key of the grown-ups' PIN it asks.
+  "grown-up": { icon: "grown-up", word: "grown.mode" },
+  "pin-delete": { icon: "pin-delete", word: "grown.pin-delete" },
 } as const satisfies Record<string, { icon: IconValue | undefined; word: Key }>;
 
 /** A button of the closed list. */

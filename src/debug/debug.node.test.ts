@@ -129,6 +129,7 @@ describe("the figures", () => {
     expect(named(DebugCallKind.TASK_FINDING)).toBe("Find tasks");
     expect(named(DebugCallKind.STATEMENT_READING)).toBe("Statement");
     expect(named(DebugCallKind.TASK_CHECKING)).toBe("Check");
+    expect(named(DebugCallKind.DRAWING)).toBe("Drawing");
     // A kind api no longer records is a call.
     expect(named(DebugCallKind.SOLVER)).toBe("Call");
     expect(named(DebugCallKind.WORK_READING)).toBe("Call");

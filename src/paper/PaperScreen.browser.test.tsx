@@ -15,9 +15,13 @@
 // stopped; with the device, the page and its work are the profile's history, which "Your pages"
 // opens again; the tutor's button and debug's stand in the bottom bars of both screens, debug's only
 // for an account with the debug right; the top bar of each holds Back alone, the screen's name its
-// heading unseen, clear of the sheet's popovers — with api on connect-es's router.
+// heading unseen, clear of the sheet's popovers; grown-up mode behind the grown-ups' PIN, its
+// request with the strokes of the crop, and the act drawn on the sheet before its words — with api on
+// connect-es's router.
 import { AccountService } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import {
+  type AskGrownUpRequest,
+  type AskGrownUpResponseSchema,
   type AskTutorRequest,
   type AskTutorResponseSchema,
   AttemptService,
@@ -96,6 +100,8 @@ interface Setup {
   readonly adult?: boolean;
   /** The answer to each question, by how many came before; an error fails it; none refuses it. */
   readonly asked?: (n: number) => MessageInitShape<typeof AskTutorResponseSchema> | Error;
+  /** The answer to each request in grown-up mode, by how many came before; none refuses it. */
+  readonly grown?: (n: number) => MessageInitShape<typeof AskGrownUpResponseSchema> | Error;
 }
 
 /** A synthetic photo of a page: a white PNG of 600 × 800 px with two grey stripes. */
@@ -133,6 +139,7 @@ async function renderCamera(setup: Setup = {}) {
   const opens: GetOpeningWordsRequest[] = [];
   const reports: ReportProblemRequest[] = [];
   const asks: AskTutorRequest[] = [];
+  const grownAsks: AskGrownUpRequest[] = [];
   let explains = 0;
   let attempts = 0;
   const api = routedApi((router) => {
@@ -160,6 +167,13 @@ async function renderCamera(setup: Setup = {}) {
       askTutor(request) {
         asks.push(request);
         const answer = setup.asked?.(asks.length - 1);
+        if (answer === undefined) throw new ConnectError("a refusal", Code.InvalidArgument);
+        if (answer instanceof Error) throw answer;
+        return answer;
+      },
+      askGrownUp(request) {
+        grownAsks.push(request);
+        const answer = setup.grown?.(grownAsks.length - 1);
         if (answer === undefined) throw new ConnectError("a refusal", Code.InvalidArgument);
         if (answer instanceof Error) throw answer;
         return answer;
@@ -241,7 +255,7 @@ async function renderCamera(setup: Setup = {}) {
   );
   if (setup.camera === undefined)
     await screen.findByText(WORDS[setup.language ?? "en"].text("paper.no-camera"));
-  return { finds, begins, submits, rungs, reads, opens, reports, asks };
+  return { finds, begins, submits, rungs, reads, opens, reports, asks, grownAsks };
 }
 
 /** A refusal of api for a cause. */
@@ -1927,4 +1941,309 @@ it("lets an adult ask by voice, and gives a child no microphone", async () => {
   await userEvent.click(screen.getByRole("button", { name: "Ask" }));
   expect(tutorPanel().getByRole("textbox", { name: "Your question about the task" })).toBeVisible();
   expect(tutorPanel().queryByRole("button", { name: "Dictate" })).toBeNull();
+});
+
+/** The canvas's methods of grown-up mode on the sheet shown, as the tests give them. */
+function grownSheet(draw: () => Promise<void> = () => Promise.resolve()) {
+  const element = sheet();
+  const cropStrokes = vi.fn((_context: unknown) => [{ id: 1, points: [300, 900, 340, 960] }]);
+  const drawTutor = vi.fn((_context: unknown, _act: unknown) => draw());
+  Object.assign(element, { cropStrokes, drawTutor });
+  return { cropStrokes, drawTutor };
+}
+
+/** Grown-up mode turned on in the open panel by its key and the grown-ups' PIN. */
+async function grownOn() {
+  await userEvent.click(tutorPanel().getByRole("button", { name: "Grown-up mode" }));
+  const pad = within(await screen.findByRole("dialog", { name: "Grown-up mode" }));
+  for (const digit of "5555") await userEvent.click(pad.getByRole("button", { name: digit }));
+  await waitFor(() => expect(screen.queryByRole("dialog", { name: "Grown-up mode" })).toBeNull());
+}
+
+it("turns grown-up mode on behind the grown-ups' PIN, for this task alone, and off again", async () => {
+  await solving();
+  await userEvent.click(screen.getByRole("button", { name: "Ask" }));
+  const key = tutorPanel().getByRole("button", { name: "Grown-up mode" });
+  expect(key).toHaveAttribute("aria-pressed", "false");
+  await userEvent.click(key);
+  const dialog = await screen.findByRole("dialog", { name: "Grown-up mode" });
+  const pad = within(dialog);
+  expect(pad.getByText("Enter your PIN to lift the tutor's limits on this task.")).toBeVisible();
+  expect(pad.getByText("The PIN is 5555 for now.")).toBeVisible();
+  expect(pad.getByRole("img", { name: "0 of 4 digits" })).toBeVisible();
+  expect(
+    pad
+      .getAllByRole("button")
+      .map((button) => button.getAttribute("aria-label") ?? button.textContent),
+  ).toEqual(["1", "2", "3", "4", "5", "6", "7", "8", "9", "Cancel", "0", "Delete"]);
+  // A wrong PIN clears the dots and says so; a digit taken back by the delete key.
+  for (const digit of "123") await userEvent.click(pad.getByRole("button", { name: digit }));
+  expect(pad.getByRole("img", { name: "3 of 4 digits" })).toBeVisible();
+  await userEvent.click(pad.getByRole("button", { name: "Delete" }));
+  expect(pad.getByRole("img", { name: "2 of 4 digits" })).toBeVisible();
+  for (const digit of "34") await userEvent.click(pad.getByRole("button", { name: digit }));
+  expect(pad.getByRole("alert")).toHaveTextContent("Wrong PIN. Try again.");
+  expect(pad.getByRole("img", { name: "0 of 4 digits" })).toBeVisible();
+  // Cancel leaves the mode off, and so does Escape.
+  await userEvent.click(pad.getByRole("button", { name: "Cancel" }));
+  expect(screen.queryByRole("dialog")).toBeNull();
+  expect(key).toHaveAttribute("aria-pressed", "false");
+  await userEvent.click(key);
+  await screen.findByRole("dialog", { name: "Grown-up mode" });
+  await userEvent.keyboard("{Escape}");
+  expect(screen.queryByRole("dialog")).toBeNull();
+  // The digits come by the keyboard too, and the right PIN turns the mode on.
+  await userEvent.click(key);
+  await screen.findByRole("dialog", { name: "Grown-up mode" });
+  await userEvent.keyboard("12{Backspace}");
+  expect(screen.getByRole("img", { name: "1 of 4 digits" })).toBeVisible();
+  await userEvent.keyboard("{Backspace}5555");
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  expect(key).toHaveAttribute("aria-pressed", "true");
+  expect(key).toHaveFocus();
+  expect(
+    tutorPanel().getByText(
+      "No limits, up to the full solution. Turn it off before the child goes on.",
+    ),
+  ).toBeVisible();
+  expect(tutorPanel().getByText("Grown-up mode on")).toBeVisible();
+  expect(
+    tutorPanel().getByText("The tutor does what the grown-up asks, up to the full solution."),
+  ).toBeVisible();
+  expect(
+    tutorPanel().getByRole("textbox", { name: "Your question about the task" }),
+  ).toHaveAttribute("placeholder", "Ask for anything, up to the full solution…");
+  // Another task has it off, and so has this one, come back to.
+  await userEvent.click(screen.getByRole("button", { name: "Next task" }));
+  await screen.findByRole("heading", { name: "Task 2" });
+  expect(tutorPanel().getByRole("button", { name: "Grown-up mode" })).toHaveAttribute(
+    "aria-pressed",
+    "false",
+  );
+  await userEvent.click(screen.getByRole("button", { name: "Previous task" }));
+  await screen.findByRole("heading", { name: "Task 1" });
+  expect(tutorPanel().getByRole("button", { name: "Grown-up mode" })).toHaveAttribute(
+    "aria-pressed",
+    "false",
+  );
+  expect(
+    tutorPanel().queryByText(
+      "No limits, up to the full solution. Turn it off before the child goes on.",
+    ),
+  ).toBeNull();
+  // Turn off of the band, and the key pressed while it is on.
+  await grownOn();
+  await userEvent.click(tutorPanel().getByRole("button", { name: "Turn off" }));
+  expect(tutorPanel().getByText("Grown-up mode off")).toBeVisible();
+  expect(
+    tutorPanel().getByText("The tutor's limits are back: hints and questions, never the answer."),
+  ).toBeVisible();
+  expect(
+    tutorPanel().getByRole("textbox", { name: "Your question about the task" }),
+  ).toHaveAttribute("placeholder", "Ask about this task…");
+  await grownOn();
+  await userEvent.click(tutorPanel().getByRole("button", { name: "Grown-up mode" }));
+  expect(tutorPanel().getAllByText("Grown-up mode off")).toHaveLength(2);
+});
+
+it("sends a request in grown-up mode with the work and its strokes, draws the act, then says it", async () => {
+  withRecognition(false);
+  const { grownAsks, asks, reports } = await solving({
+    grown: (n) =>
+      n === 0
+        ? {
+            words: "Done: line 1 struck out in red.",
+            strokes: [{ points: [290, 930, 350, 930], color: "#e5322d", width: 3.4 }],
+            erase: [],
+          }
+        : { words: "Done: line 1 erased.", erase: [1] },
+    asked: () => ({ words: "What do you see now?" }),
+  });
+  writeOn(sheet());
+  let finish = () => {};
+  const { cropStrokes, drawTutor } = grownSheet(
+    () =>
+      new Promise<void>((resolve) => {
+        finish = resolve;
+      }),
+  );
+  await userEvent.click(screen.getByRole("button", { name: "Ask" }));
+  await grownOn();
+  const field = tutorPanel().getByRole("textbox", { name: "Your question about the task" });
+  await userEvent.type(field, "Cross out the first line in red{Enter}");
+  await waitFor(() => expect(drawTutor).toHaveBeenCalledOnce());
+  // While the act is drawn the head says so, and the tutor's words wait for it.
+  expect(tutorPanel().getByText("Writing on the sheet…")).toBeVisible();
+  expect(tutorPanel().getByText("The tutor is writing…")).toBeVisible();
+  expect(tutorPanel().queryByText("Done: line 1 struck out in red.")).toBeNull();
+  const context = cropStrokes.mock.calls[0]?.[0];
+  expect(context).toHaveProperty("digest");
+  expect(drawTutor.mock.calls[0]).toEqual([
+    context,
+    {
+      strokes: [{ points: [290, 930, 350, 930], color: "#e5322d", width: expect.closeTo(3.4, 5) }],
+      erase: [],
+    },
+  ]);
+  finish();
+  const said = await tutorPanel().findByText("Done: line 1 struck out in red.");
+  expect(said.closest(".nt-bubble")).toHaveAttribute("data-grown", "true");
+  expect(
+    within(said.closest(".nt-bubble") as HTMLElement).getByText("Grown-up mode"),
+  ).toBeVisible();
+  expect(tutorPanel().queryByText("Writing on the sheet…")).toBeNull();
+  const first = grownAsks[0];
+  expect(first?.profileId).toBe("p1");
+  expect(first?.attemptId).toBe("a1");
+  expect(first?.question).toBe("Cross out the first line in red");
+  expect(first?.wordsLanguage).toBe("en");
+  expect(first?.idempotencyKey).not.toBe("");
+  expect(first?.turns).toEqual([]);
+  expect(first?.work?.surface.case).toBe("paper");
+  expect(first?.strokes.map(({ id, points }) => [id, [...points]])).toEqual([
+    [1, [300, 900, 340, 960]],
+  ]);
+  expect(asks).toHaveLength(0);
+  // The next request carries the conversation before it, the grown-up's turns among it.
+  await userEvent.type(field, "Erase it{Enter}");
+  await waitFor(() => expect(drawTutor).toHaveBeenCalledTimes(2));
+  finish();
+  expect(await tutorPanel().findByText("Done: line 1 erased.")).toBeVisible();
+  expect(drawTutor.mock.calls[1]?.[1]).toEqual({ strokes: [], erase: [1] });
+  expect(grownAsks[1]?.turns.map((turn) => [turn.learner, turn.text])).toEqual([
+    [true, "Cross out the first line in red"],
+    [false, "Done: line 1 struck out in red."],
+  ]);
+  // An adult reports the words as an answer of the tutor's.
+  const reportLast = tutorPanel().getAllByRole("button", { name: "Report a problem" }).at(-1);
+  if (reportLast === undefined) throw new Error("no report");
+  await userEvent.click(reportLast);
+  await userEvent.click(screen.getByRole("radio", { name: /Unclear/ }));
+  const report = within(screen.getByRole("form", { name: "Report a problem with these words" }));
+  await userEvent.click(report.getByRole("button", { name: "Send" }));
+  await waitFor(() => expect(reports).toHaveLength(1));
+  expect(reports[0]?.reply).toBe(TutorReply.ANSWER);
+  expect(reports[0]?.words).toBe("Done: line 1 erased.");
+  // Off again, the field asks the tutor with its limits, the grown-up's turns before it.
+  await userEvent.click(tutorPanel().getByRole("button", { name: "Turn off" }));
+  await userEvent.type(field, "What now?{Enter}");
+  expect(await tutorPanel().findByText("What do you see now?")).toBeVisible();
+  expect(grownAsks).toHaveLength(2);
+  expect(asks[0]?.turns.map((turn) => turn.text)).toEqual([
+    "Cross out the first line in red",
+    "Done: line 1 struck out in red.",
+    "Erase it",
+    "Done: line 1 erased.",
+  ]);
+});
+
+it("puts a request in grown-up mode back in the field when no act comes or the sheet takes none", async () => {
+  withRecognition(false);
+  const { grownAsks } = await solving({
+    grown: (n) =>
+      [
+        { outcome: { cause: Cause.AI_FAILURE } },
+        { words: "Done.", strokes: [{ points: [1, 1, 2, 2], color: "#e5322d", width: 3 }] },
+        { repeated: true },
+        { words: "Done: line 1 erased.", erase: [1] },
+      ][n] ?? new ConnectError("no more", Code.InvalidArgument),
+  });
+  await userEvent.click(screen.getByRole("button", { name: "Ask" }));
+  await grownOn();
+  const field = tutorPanel().getByRole("textbox", { name: "Your question about the task" });
+  writeOn(sheet());
+  const { drawTutor } = grownSheet();
+  // A call of AI that gave no act says what it came to.
+  await userEvent.type(field, "Write the solution{Enter}");
+  expect(await tutorPanel().findByText("The tutor can't answer right now")).toBeVisible();
+  await waitFor(() => expect(field).toHaveValue("Write the solution"));
+  expect(drawTutor).not.toHaveBeenCalled();
+  // An act the sheet cannot take, as on a stroke erased meanwhile, is none.
+  drawTutor.mockImplementationOnce(() => Promise.reject(new TypeError("no stroke 7")));
+  await userEvent.type(field, "{Enter}");
+  await waitFor(() => expect(drawTutor).toHaveBeenCalledOnce());
+  await waitFor(() => expect(field).toHaveValue("Write the solution"));
+  expect(tutorPanel().queryByText("Done.")).toBeNull();
+  expect(tutorPanel().getByText("The tutor can't answer right now")).toBeVisible();
+  // A repeat holds nothing; the request sent once more is a new one.
+  await userEvent.type(field, "{Enter}");
+  await waitFor(() => expect(grownAsks).toHaveLength(3));
+  await waitFor(() => expect(field).toHaveValue("Write the solution"));
+  expect(questions()).toEqual([]);
+  await userEvent.type(field, "{Enter}");
+  expect(await tutorPanel().findByText("Done: line 1 erased.")).toBeVisible();
+  expect(questions()).toEqual(["Write the solution"]);
+  expect(new Set(grownAsks.map((ask) => ask.idempotencyKey)).size).toBe(4);
+});
+
+it("puts the tutor's act on the sheet by canvas's own drawing, one action of the task's history", async () => {
+  withRecognition(false);
+  const { grownAsks } = await solving({
+    grown: () => ({
+      words: "Done: line 1 struck out in red.",
+      strokes: [{ points: [10, 10, 60, 12], color: "#e5322d", width: 3 }],
+      erase: [1],
+    }),
+  });
+  // A stroke in sight, under the task, where the drawing's crop takes it.
+  const write: HistoryEvent = {
+    kind: "write",
+    t: 30,
+    stroke: {
+      id: 1,
+      kind: "pen",
+      points: [
+        { x: 200, y: 300, t: 10, p: 0.5 },
+        { x: 260, y: 320, t: 30, p: 0.5 },
+      ],
+    },
+  };
+  sheet().history = [write];
+  sheet().dispatchEvent(
+    new CustomEvent("historychange", { detail: { from: 0, events: [write] }, bubbles: true }),
+  );
+  await userEvent.click(screen.getByRole("button", { name: "Ask" }));
+  await grownOn();
+  const field = tutorPanel().getByRole("textbox", { name: "Your question about the task" });
+  await userEvent.type(field, "Strike out the first line{Enter}");
+  expect(await tutorPanel().findByText("Done: line 1 struck out in red.", {}, SLOW)).toBeVisible();
+  expect(grownAsks[0]?.strokes.map((stroke) => stroke.id)).toEqual([1]);
+  expect(grownAsks[0]?.pixelsPerMm).toBeGreaterThan(0);
+  const last = sheet().history.at(-1);
+  expect(last?.kind).toBe("tutor");
+  if (last?.kind !== "tutor") throw new Error("no act of the tutor");
+  expect(last.ids).toEqual([1]);
+  expect(last.strokes).toHaveLength(1);
+  // The page keeps the act with the task's work: back on the task, it is on the sheet.
+  await userEvent.click(screen.getByRole("button", { name: "Next task" }));
+  await screen.findByRole("heading", { name: "Task 2" });
+  await userEvent.click(screen.getByRole("button", { name: "Previous task" }));
+  await screen.findByRole("heading", { name: "Task 1" });
+  expect(sheet().history.at(-1)?.kind).toBe("tutor");
+});
+
+it("acts on a blank sheet too: the part in sight goes with no strokes, and the act is drawn", async () => {
+  withRecognition(false);
+  const { grownAsks } = await solving({
+    grown: () => ({
+      words: "Done: the solution is under the task.",
+      strokes: [{ points: [20, 20, 80, 22], color: "#1d1d1f", width: 2 }],
+    }),
+  });
+  await userEvent.click(screen.getByRole("button", { name: "Ask" }));
+  await grownOn();
+  const field = tutorPanel().getByRole("textbox", { name: "Your question about the task" });
+  await userEvent.type(field, "Write the whole solution{Enter}");
+  expect(
+    await tutorPanel().findByText("Done: the solution is under the task.", {}, SLOW),
+  ).toBeVisible();
+  expect(grownAsks[0]?.strokes).toEqual([]);
+  const work = grownAsks[0]?.work?.surface;
+  if (work?.case !== "paper") throw new Error("no work of a task from paper");
+  // PNGs: the sheet in sight, and the task's crop.
+  expect([work.value.crop[1], work.value.statement[1]]).toEqual([0x50, 0x50]);
+  const last = sheet().history.at(-1);
+  if (last?.kind !== "tutor") throw new Error("no act of the tutor");
+  expect(last.strokes).toHaveLength(1);
+  expect(last.ids).toEqual([]);
 });

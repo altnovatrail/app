@@ -25,14 +25,18 @@ import {
   onList,
   paperCard,
   paperVerdictOf,
+  pixelsPerMm,
   shownTask,
+  type Turn,
   taskState,
+  turnsOf,
   tutorActs,
   verdictMarks,
   viewOnly,
   wavyOf,
   withBegun,
   withChange,
+  withTurn,
 } from "./solve.ts";
 
 const frame = (ymin: number): Frame => ({ ymin, xmin: 0, ymax: ymin + 50, xmax: 400 });
@@ -454,5 +458,65 @@ describe("the buttons of the tutor's panel", () => {
 
   it("gives neither on a task only to be looked at, whose attempt is over", () => {
     expect(tutorActs({ over: true })).toEqual({ hint: false, next: false });
+  });
+});
+
+describe("the conversation on a task", () => {
+  const tutor = (text: string, more: Partial<Turn> = {}): Turn => ({
+    learner: false,
+    text,
+    line: true,
+    ...more,
+  });
+  const mode = (on: boolean): Turn => tutor("", { mode: on ? "on" : "off" });
+
+  it("keeps the tutor's words said again once, and every line of grown-up mode", () => {
+    const said = withTurn([tutor("Look at the tens.")], tutor("Look at the tens."));
+    expect(said).toHaveLength(1);
+    const lines = [mode(true), mode(false), mode(true)].reduce<readonly Turn[]>(withTurn, said);
+    expect(lines.map((turn) => turn.mode)).toEqual([undefined, "on", "off", "on"]);
+    // Words after a line of the mode are a turn of their own, as they would be after a question.
+    expect(withTurn(lines, tutor("Done."))).toHaveLength(5);
+  });
+
+  it("carries the grown-up's requests and the tutor's words, but no line of the mode", () => {
+    const turns: readonly Turn[] = [
+      tutor("What is ten and ten?"),
+      mode(true),
+      { learner: true, text: "Finish the solution", line: true, grown: true },
+      tutor("Done: the solution goes on under the lines.", { grown: true }),
+      mode(false),
+    ];
+    expect(turnsOf(turns)).toEqual([
+      { learner: false, text: "What is ten and ten?" },
+      { learner: true, text: "Finish the solution" },
+      { learner: false, text: "Done: the solution goes on under the lines." },
+    ]);
+    // The last eight turns, the lines of the mode left out before they are counted.
+    const many = Array.from({ length: 10 }, (_, i) => tutor(String(i)));
+    expect(turnsOf([...many, mode(true), mode(false)]).map((turn) => turn.text)).toEqual([
+      "2",
+      "3",
+      "4",
+      "5",
+      "6",
+      "7",
+      "8",
+      "9",
+    ]);
+  });
+});
+
+describe("the millimetres of a crop for grown-up mode", () => {
+  it("counts a crop's pixels per millimetre of the page, its 1000 units the 210 mm of A4", () => {
+    // 840 px over 400 units: 2.1 px a unit, 4.76… units a millimetre, 10 px.
+    expect(pixelsPerMm({ width: 840, sheetBox: [0, 100, 300, 500] })).toBeCloseTo(10, 10);
+    expect(pixelsPerMm({ width: 1568, sheetBox: [50, 0, 700, 1000] })).toBeCloseTo(7.4667, 4);
+  });
+
+  it("gives 0 for a crop that spans no width, or one past what the contract takes", () => {
+    expect(pixelsPerMm({ width: 840, sheetBox: [0, 100, 300, 100] })).toBe(0);
+    expect(pixelsPerMm({ width: 0, sheetBox: [0, 0, 300, 400] })).toBe(0);
+    expect(pixelsPerMm({ width: 1568, sheetBox: [0, 0, 10, 2] })).toBe(0);
   });
 });

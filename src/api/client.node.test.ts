@@ -22,7 +22,7 @@ import { Code, ConnectError, type ConnectRouter, createRouterTransport } from "@
 import { describe, expect, it, vi } from "vitest";
 import { createApi } from "./client.ts";
 import { ApiError, type Failure, parseFailure } from "./failure.ts";
-import { PAPER_TIMEOUT_MS, PAUSES, STILL_GOING_MS } from "./interceptors.ts";
+import { GROWN_UP_TIMEOUT_MS, PAPER_TIMEOUT_MS, PAUSES, STILL_GOING_MS } from "./interceptors.ts";
 import { idempotencyKey } from "./keys.ts";
 import type { Tokens } from "./tokens.ts";
 
@@ -270,6 +270,18 @@ describe("the repeat", () => {
     await failureOf(question.api.attempt.askTutor({ idempotencyKey: "k" }));
     // A question may run the Check first, as the opening words do.
     expect(question.sleeps).toEqual(Array(PAPER_TIMEOUT_MS / 3000).fill(3000));
+    const grown = harness(({ service }) =>
+      service(AttemptService, {
+        askGrownUp() {
+          const error = refused(Code.Unavailable, { cause: Cause.STILL_GOING });
+          error.metadata.set("Retry-After", "3");
+          throw error;
+        },
+      }),
+    );
+    await failureOf(grown.api.attempt.askGrownUp({ idempotencyKey: "k" }));
+    // The drawing of grown-up mode may give a whole solution as strokes: api lets it go 300 s.
+    expect(grown.sleeps).toEqual(Array(GROWN_UP_TIMEOUT_MS / 3000).fill(3000));
     const other = harness(({ service }) =>
       service(AttemptService, {
         submitEssay() {

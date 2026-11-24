@@ -63,16 +63,24 @@ export const STILL_GOING_MS = 30_000;
  */
 export const PAPER_TIMEOUT_MS = 90_000;
 
-const PAPER_METHODS = new Set([
-  "novatrail.api.v1.PaperService/FindTasks",
-  "novatrail.api.v1.AttemptService/SubmitWork",
-  "novatrail.api.v1.AttemptService/GetOpeningWords",
-  "novatrail.api.v1.AttemptService/AskTutor",
+/**
+ * The deadline of AskGrownUp in grown-up mode, ms: the drawing may give a whole solution as
+ * strokes, a long answer of a model, and a repeat waits for a first one still going as long.
+ */
+export const GROWN_UP_TIMEOUT_MS = 300_000;
+
+/** The methods api lets go longer than STILL_GOING_MS, and how long. */
+const LONG_METHODS: ReadonlyMap<string, number> = new Map([
+  ["novatrail.api.v1.PaperService/FindTasks", PAPER_TIMEOUT_MS],
+  ["novatrail.api.v1.AttemptService/SubmitWork", PAPER_TIMEOUT_MS],
+  ["novatrail.api.v1.AttemptService/GetOpeningWords", PAPER_TIMEOUT_MS],
+  ["novatrail.api.v1.AttemptService/AskTutor", PAPER_TIMEOUT_MS],
+  ["novatrail.api.v1.AttemptService/AskGrownUp", GROWN_UP_TIMEOUT_MS],
 ]);
 
 /** How long a repeat waits for a first request of the method still going, ms. */
 export function stillGoingMs(service: string, method: string): number {
-  return PAPER_METHODS.has(`${service}/${method}`) ? PAPER_TIMEOUT_MS : STILL_GOING_MS;
+  return LONG_METHODS.get(`${service}/${method}`) ?? STILL_GOING_MS;
 }
 
 /** The pause `Retry-After` asks for, ms, from the seconds api sends; none when it names none. */

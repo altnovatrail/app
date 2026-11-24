@@ -315,6 +315,8 @@ export function callName(kind: DebugCallKind): string {
       return "Check";
     case DebugCallKind.TUTOR_WORDS:
       return "Tutor's words";
+    case DebugCallKind.DRAWING:
+      return "Drawing";
     default:
       return "Call";
   }

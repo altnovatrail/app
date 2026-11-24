@@ -4,9 +4,10 @@
 // button at the window's right edge, where a screen has it; open, glass of 400 at the right, from
 // under the top bar to 16 above the window's foot, and on a phone a sheet from the bottom, at half
 // the height or by its grabber over the whole screen. Its head — the tutor's sign, its name, a line
-// under it, the switch of voicing and × —; what stands above the conversation, the step's card by
-// steps; the conversation, which scrolls, from the tutor's greeting; the buttons at its foot; and
-// under them the field, with its microphone and Send.
+// under it, on a task from paper grown-up mode's key, the switch of voicing and × —; while grown-up
+// mode is on its band; what stands above the conversation, the step's card by steps; the
+// conversation, which scrolls, from the tutor's greeting; the buttons at its foot; and under them
+// the field, with its microphone and Send.
 import { Action } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
 import type { ReactNode, Ref } from "react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
@@ -18,6 +19,7 @@ import { useNarrow } from "../app/narrow.ts";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { useDictation } from "../voice/dictation.ts";
 import { VoicingToggle } from "../voice/VoicingToggle.tsx";
+import { GrownBand, PinDialog } from "./GrownUp.tsx";
 
 /**
  * The tutor's button, the mockup's: 56 round, of glass, its sign in the tutor's gradient, at the
@@ -126,6 +128,12 @@ export interface TutorKit {
   readonly voicing?: { readonly language: string | undefined };
   /** The field, with its microphone. */
   readonly ask?: AskKit;
+  /**
+   * Grown-up mode's key in the head, before the switch of voicing, on a task from paper: pressed
+   * while it is off, it asks the grown-ups' PIN, and the right one turns the mode on; pressed
+   * while it is on, or Turn off of the band under the head, turns it off.
+   */
+  readonly grown?: { readonly on: boolean; readonly onChange: (on: boolean) => void };
   /** The button at the window's right edge that opens the panel while it is closed. */
   readonly side?: { readonly onOpen: () => void; readonly buttonRef?: Ref<HTMLButtonElement> };
 }
@@ -159,6 +167,7 @@ export function TutorPanel({
   kit = {},
   headingRef,
   status,
+  acting = false,
   onClose,
   above,
   greeting,
@@ -172,6 +181,8 @@ export function TutorPanel({
   readonly headingRef?: Ref<HTMLHeadingElement>;
   /** The line under its name: the learner's share of the quota, or what it does here. */
   readonly status?: string | undefined;
+  /** The line says what the tutor does right now, as "Writing on the sheet…": in the accent. */
+  readonly acting?: boolean;
   /** Its ×; none, and it has none. */
   readonly onClose?: (() => void) | undefined;
   /** What stands above the conversation: the step's card. */
@@ -188,9 +199,15 @@ export function TutorPanel({
   // The phone's sheet at half the height, or by its grabber over the whole screen; each opening
   // begins at half.
   const [full, setFull] = useState(false);
+  // The dialog of the grown-ups' PIN, which grown-up mode's key opens.
+  const [pad, setPad] = useState(false);
   useEffect(() => {
-    if (!open) setFull(false);
+    if (!open) {
+      setFull(false);
+      setPad(false);
+    }
   }, [open]);
+  const grown = kit.grown;
   if (!open) {
     return kit.side === undefined ? null : (
       <TutorButton onOpen={kit.side.onOpen} {...buttonRefOf(kit.side.buttonRef)} />
@@ -218,12 +235,26 @@ export function TutorPanel({
           <h2 ref={headingRef} tabIndex={-1}>
             {words.text("task.tutor")}
           </h2>
-          {status === undefined ? null : <span className="nt-tutor-status">{status}</span>}
+          {status === undefined ? null : (
+            <span className="nt-tutor-status" data-acting={acting}>
+              {status}
+            </span>
+          )}
         </div>
+        {grown === undefined ? null : (
+          <IconButton
+            value="grown-up"
+            className="nt-grown-key"
+            chosen={grown.on}
+            aria-pressed={grown.on}
+            onClick={() => (grown.on ? grown.onChange(false) : setPad(true))}
+          />
+        )}
         {kit.voicing === undefined ? null : <VoicingToggle language={kit.voicing.language} />}
         {onClose === undefined ? null : <IconButton value="close" onClick={onClose} />}
       </div>
       <div className="nt-tutor-body">
+        {grown?.on === true ? <GrownBand onOff={() => grown.onChange(false)} /> : null}
         {above}
         {/*
           It scrolls with the buttons at its foot inside, which a keyboard reaches, as the steps'
@@ -242,6 +273,15 @@ export function TutorPanel({
         </section>
         {kit.ask === undefined ? null : <AskField ask={kit.ask} />}
       </div>
+      {pad && grown !== undefined ? (
+        <PinDialog
+          onRight={() => {
+            setPad(false);
+            grown.onChange(true);
+          }}
+          onCancel={() => setPad(false)}
+        />
+      ) : null}
     </aside>
   );
 }
