@@ -27,7 +27,10 @@
 // mode "Show where" with the wavy line under the first mistake, which goes with other work or the
 // paper moved; "Explain differently" words the rung anew, once on it; and an adult may report a
 // problem with either words. The words stand till another task or Check, and what is said of them
-// stops with another task or the panel closed. "Recognise" on the tracing paper reads the task's
+// stops with another task or the panel closed. In the panel's field the learner asks about the task
+// by text, or an adult by voice too: the question goes with the last turns of the conversation and
+// the work as it stands, and the tutor's answer, by AI, stands under it and is said as a hint is;
+// the conversation of each task is the tab's alone, while the screen is open. "Recognise" on the tracing paper reads the task's
 // crop into its text by AI; the page keeps the reading while it is open, and the paper shows the
 // photo again each time it is mounted.
 import {
@@ -83,12 +86,15 @@ import {
   paperVerdictOf,
   shownTask,
   type TaskState,
+  type Turn,
   taskState,
+  turnsOf,
   tutorActs,
   verdictMarks,
   viewOnly,
   wavyOf,
   withChange,
+  withTurn,
 } from "./solve.ts";
 
 /** The sign of each state in the list of the tasks, and the key of the line under the name. */
@@ -207,6 +213,19 @@ export function Solve({
   // The key of a check, kept while the work it sent is the same, so that a press again repeats it;
   // dropped after a failure of AI, which a press again asks anew.
   const sent = useRef<{ readonly of: string; readonly key: string } | undefined>(undefined);
+  // The conversation on each task — the learner's questions, the tutor's hints, words and
+  // answers — in the tab's memory alone, while the screen is open: no store keeps it.
+  const [talks, setTalks] = useState<ReadonlyMap<string, readonly Turn[]>>(new Map());
+  // The task whose question is on its way: one at a time.
+  const [asking, setAsking] = useState<string | undefined>(undefined);
+  // What the last question came to when no answer came, and the question, back in the field.
+  const [askNote, setAskNote] = useState<string | undefined>(undefined);
+  const [again, setAgain] = useState<{ readonly text: string; readonly at: number } | undefined>(
+    undefined,
+  );
+  // The key of a question, kept till an answer, so that the same question sent again after a
+  // failure repeats it.
+  const askKey = useRef<{ readonly of: string; readonly key: string } | undefined>(undefined);
 
   const list = onList(begun, tasks);
   const task = shownTask(list, asked);
@@ -231,6 +250,8 @@ export function Solve({
     setTold("");
     setUnwritten(false);
     setOverTold(false);
+    setAskNote(undefined);
+    setAgain(undefined);
     setWritten(element.current?.filled?.[0]?.[0] === true);
   }, [attemptId]);
 
@@ -293,8 +314,19 @@ export function Solve({
     if (to !== undefined && !pending) setAsked(to.attemptId);
   };
 
+  /** A turn of the conversation on a task, and none of it again but a question. */
+  const remember = (of: string, turn: Turn) =>
+    setTalks((before) => new Map(before).set(of, withTurn(before.get(of) ?? [], turn)));
+  /** The last question of a task taken back out of its conversation: no answer came to it. */
+  const unask = (of: string) =>
+    setTalks((before) => {
+      const turns = before.get(of) ?? [];
+      return turns.at(-1)?.learner === true ? new Map(before).set(of, turns.slice(0, -1)) : before;
+    });
+
   /** The tutor's words shown: said by the voicing in the open panel, else told to a screen reader. */
   const show = (next: Said) => {
+    remember(attemptId, { learner: false, text: next.text, line: false });
     setSaid((before) =>
       // The words shown again stay the reply they came by, and a report begun on them stays open.
       before?.text === next.text ? before : next,
@@ -316,6 +348,7 @@ export function Solve({
         attemptId: ask.attemptId,
         idempotencyKey: ask.key,
         wrongAnswers: ask.wrongAnswers,
+        wordsLanguage: language,
         ...ai,
       }),
     )
@@ -380,7 +413,7 @@ export function Solve({
     const ai = holder.aiFields(profileId);
     const answer = await watched(api, () =>
       api.attempt.getOpeningWords(
-        { profileId, attemptId, idempotencyKey: key, work, ...ai },
+        { profileId, attemptId, idempotencyKey: key, work, wordsLanguage: language, ...ai },
         { timeoutMs: PAPER_TIMEOUT_MS },
       ),
     );
@@ -453,7 +486,11 @@ export function Solve({
     setWordsNote(undefined);
     void (async () => {
       try {
-        const answer = await api.attempt.getHint({ profileId, attemptId });
+        const answer = await api.attempt.getHint({
+          profileId,
+          attemptId,
+          wordsLanguage: language,
+        });
         if (asked !== epoch.current) return;
         // Before the first wrong answer a task from paper has no techniques: the opening question.
         if (answer.hint.case === "rung") {
@@ -466,6 +503,77 @@ export function Solve({
         closed(found);
       } finally {
         setPending(false);
+      }
+    })();
+  };
+
+  /**
+   * The learner's own question about the task, by AI with the conversation before it and the work
+   * as it stands, which the Check reads while the attempt keeps no Check of its own. The question
+   * stands in the conversation at once; one that brings no answer goes back to the field, and the
+   * same question sent again goes with the same key, which gets what was done.
+   */
+  const ask = (question: string, voice: boolean) => {
+    if (asking !== undefined || viewOnly(task)) return;
+    // Within the press: the words that come may be said (WebKit).
+    prime();
+    const of = attemptId;
+    const turns = turnsOf(talks.get(of) ?? []);
+    remember(of, { learner: true, text: question, line: true, ...(voice ? { voice } : {}) });
+    const same = JSON.stringify([of, question]);
+    if (askKey.current?.of !== same) askKey.current = { of: same, key: idempotencyKey() };
+    const key = askKey.current.key;
+    const asked = epoch.current;
+    setAsking(of);
+    setAskNote(undefined);
+    const ai = holder.aiFields(profileId);
+    const back = (note: string) => {
+      unask(of);
+      if (asked !== epoch.current) return;
+      setAskNote(note);
+      setAgain({ text: question, at: Date.now() });
+    };
+    void (async () => {
+      try {
+        const work = await workNow();
+        const answer = await watched(api, () =>
+          api.attempt.askTutor(
+            {
+              profileId,
+              attemptId: of,
+              idempotencyKey: key,
+              question,
+              turns: [...turns],
+              work,
+              wordsLanguage: language,
+              ...ai,
+            },
+            { timeoutMs: PAPER_TIMEOUT_MS },
+          ),
+        );
+        askKey.current = undefined;
+        const read = outcomeOf(answer.outcome);
+        holder.noteOutcome(profileId, read, ai);
+        // A repeat holds no words: api keeps none, and the question sent again is a new one.
+        if (answer.repeated || answer.words === "") {
+          back(failureText({ kind: "offline" }, words));
+          return;
+        }
+        remember(of, { learner: false, text: answer.words, line: true });
+        if (asked !== epoch.current) return;
+        if (isOpen.current) auto([{ text: answer.words, language }]);
+        else setTold(answer.words);
+        if (closesAI(read)) setAskNote(outcomeText(read, words));
+      } catch (reason) {
+        const found = parseFailure(reason);
+        // A refusal is the end of the action; anything else may have reached api, and goes again
+        // with its key.
+        if (found.kind === "refused") askKey.current = undefined;
+        back(failureText(found, words));
+        closed(found);
+      } finally {
+        setAsking(undefined);
+        setSpent((n) => n + 1);
       }
     })();
   };
@@ -487,6 +595,7 @@ export function Solve({
         attemptId,
         idempotencyKey: key,
         wrongAnswers,
+        wordsLanguage: language,
         ...ai,
       }),
     )
@@ -591,6 +700,7 @@ export function Solve({
                 attemptId,
                 idempotencyKey: key,
                 work: paperWork,
+                wordsLanguage: language,
                 ...ai,
               },
               { timeoutMs: PAPER_TIMEOUT_MS },
@@ -630,6 +740,7 @@ export function Solve({
         const card = paperCard(verdict, words);
         setTold(card.line === undefined ? card.title : `${card.title}. ${card.line}`);
         if (answer.tutorWords !== "") {
+          remember(attemptId, { learner: false, text: answer.tutorWords, line: false });
           setCheckSaid({ text: answer.tutorWords, ...checkReply(verdict, answer.wrongAnswers) });
           if (isOpen.current) auto([{ text: answer.tutorWords, language }]);
         }
@@ -912,6 +1023,12 @@ export function Solve({
           onNext={after === undefined ? undefined : () => go(after)}
           onClose={close}
           headingRef={heading}
+          turns={talks.get(attemptId) ?? []}
+          asking={asking === attemptId}
+          askNote={askNote}
+          askOff={asking !== undefined || only}
+          again={again}
+          onAsk={ask}
         />
       ) : null}
     </Screen>

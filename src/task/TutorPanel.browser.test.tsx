@@ -1,18 +1,21 @@
-// The tutor's panel of the task screen and of an essay: over the canvas on a tablet, a
-// sheet over the row and the canvas's bar of tools on a phone, its grabber, its ×, the tutor's
-// button and the step's pill that open it, its head with the share of the quota, and the verdict a
-// line in it.
+// The tutor's panel, the one of every screen: on the task screen and beside an essay, over the
+// canvas on a tablet, a sheet over the row and the canvas's bar of tools on a phone, its grabber,
+// its ×, the tutor's button and the step's pill that open it, its head with the share of the quota,
+// the verdict a line in it, and no field; alone with its field, Enter and Shift+Enter, its growing,
+// and its microphone by a fake of the browser's recognition.
 import "@altnovatrail/canvas";
 import type * as open from "@altnovatrail/spec/formatv0/open";
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import { useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { page, userEvent } from "vitest/browser";
 import { inLanguage } from "../test/language.tsx";
+import { LocalRecognition, listening, withRecognition } from "../test/recognition.ts";
 import { NO_VERDICTS, type Verdicts, verdictsOf } from "./attempt.ts";
 import { EssayScreen } from "./EssayScreen.tsx";
 import { initialState, type Mode, type StepsState } from "./steps.ts";
 import { TaskScreen } from "./TaskScreen.tsx";
+import { LearnerLine, TutorPanel } from "./TutorPanel.tsx";
 
 const TASK: open.Task = {
   id: "dots",
@@ -293,5 +296,138 @@ describe("the tutor's panel of an essay", () => {
     expect(panel().getByText("The second sentence works.")).toBeVisible();
     rerender(inLanguage(<EssayDrawn feedback="The first sentence works too." />));
     expect(panel().getByText("The first sentence works too.")).toBeVisible();
+  });
+});
+
+/** The one panel alone with its field, the kit's microphone as given, and what it sent. */
+function Asking({ microphone = true, max = 500 }: { microphone?: boolean; max?: number }) {
+  const [sent, setSent] = useState<readonly (readonly [string, boolean])[]>([]);
+  return (
+    <TutorPanel
+      kit={{
+        ask: {
+          label: "Your question about the task",
+          placeholder: "Ask about this task…",
+          max,
+          ready: (draft) => (draft.trim() === "" ? undefined : draft.trim()),
+          off: false,
+          microphone,
+          language: "en-GB",
+          onSend: (text, voice) => setSent((was) => [...was, [text, voice]]),
+        },
+      }}
+      greeting="Ask about this task by text or voice."
+      talk={sent.map(([text, voice]) => <LearnerLine key={text} text={text} voice={voice} />)}
+    />
+  );
+}
+
+const field = () => screen.getByRole("textbox", { name: "Your question about the task" });
+
+describe("the field of the tutor's panel", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("sends by Enter, breaks the line by Shift+Enter, and grows with its lines up to five", async () => {
+    withRecognition(false);
+    render(inLanguage(<Asking />));
+    expect(panel().getByText("Ask about this task by text or voice.")).toBeVisible();
+    const one = field().getBoundingClientRect().height;
+    await userEvent.type(field(), "Why ten?{Shift>}{Enter}{/Shift}And then?");
+    expect(field()).toHaveValue("Why ten?\nAnd then?");
+    const two = field().getBoundingClientRect().height;
+    expect(two).toBeGreaterThan(one * 1.5);
+    await userEvent.type(field(), "{Shift>}{Enter}{Enter}{Enter}{Enter}{Enter}{Enter}{/Shift}");
+    // Up to five lines, then it scrolls.
+    expect(field().getBoundingClientRect().height).toBeLessThan(one * 5.5);
+    expect(field().scrollHeight).toBeGreaterThan(field().clientHeight);
+    await userEvent.clear(field());
+    await userEvent.type(field(), "Why ten?{Shift>}{Enter}{/Shift}And then?{Enter}");
+    expect(field()).toHaveValue("");
+    const sent = panel().getByText(/Why ten\?\s+And then\?/);
+    expect(sent).toBeVisible();
+    // Sent by the keys, not by voice.
+    expect(panel().queryByText("By voice")).toBeNull();
+    // An empty field sends nothing.
+    await userEvent.type(field(), "{Enter}");
+    expect(document.querySelectorAll("p.nt-bubble[data-who='learner']")).toHaveLength(1);
+  });
+
+  it("puts the voice into the field as it hears it, till Stop, and marks it said by voice", async () => {
+    withRecognition(true);
+    render(inLanguage(<Asking />));
+    await userEvent.type(field(), "Look:");
+    await userEvent.click(panel().getByRole("button", { name: "Dictate" }));
+    const recognition = listening();
+    await waitFor(() => expect(recognition.started).toBe(true));
+    expect(recognition.lang).toBe("en-GB");
+    // The browser does not say it can recognise on the device: nothing asks it to.
+    expect(recognition.processLocally).toBeUndefined();
+    expect(recognition.interimResults).toBe(true);
+    expect(await panel().findByRole("status")).toHaveTextContent("Listening…");
+    expect(panel().queryByRole("button", { name: "Send" })).toBeNull();
+    recognition.hear("why is");
+    await waitFor(() => expect(field()).toHaveValue("Look: why is"));
+    recognition.hear("why is", " the answer ten");
+    await waitFor(() => expect(field()).toHaveValue("Look: why is the answer ten"));
+    await userEvent.click(panel().getByRole("button", { name: "Stop" }));
+    expect(
+      await panel().findByText("From your voice: read it, correct it, then send."),
+    ).toBeVisible();
+    expect(panel().queryByText("Listening…")).toBeNull();
+    await userEvent.click(panel().getByRole("button", { name: "Send" }));
+    expect(panel().getByText("Look: why is the answer ten")).toBeVisible();
+    expect(panel().getByText("By voice")).toBeVisible();
+    // Corrected before Send, it is the learner's own text.
+    await userEvent.click(panel().getByRole("button", { name: "Dictate" }));
+    await waitFor(() => expect(listening().started).toBe(true));
+    listening().hear("and then");
+    await userEvent.click(panel().getByRole("button", { name: "Stop" }));
+    await userEvent.type(field(), "?");
+    expect(panel().queryByText("From your voice: read it, correct it, then send.")).toBeNull();
+    await userEvent.type(field(), "{Enter}");
+    expect(panel().getByText("and then?")).toBeVisible();
+    expect(panel().getAllByText("By voice")).toHaveLength(1);
+  });
+
+  it("asks the browser to recognise on the device where it offers that", async () => {
+    withRecognition("local");
+    render(inLanguage(<Asking />));
+    await userEvent.click(panel().getByRole("button", { name: "Dictate" }));
+    await waitFor(() => expect(listening().started).toBe(true));
+    expect(listening().processLocally).toBe(true);
+    expect(LocalRecognition.asked).toEqual([{ langs: ["en-GB"], processLocally: true }]);
+  });
+
+  it("says when it heard nothing, and keeps what the field held", async () => {
+    withRecognition(true);
+    render(inLanguage(<Asking />));
+    await userEvent.type(field(), "Why?");
+    await userEvent.click(panel().getByRole("button", { name: "Dictate" }));
+    await userEvent.click(panel().getByRole("button", { name: "Stop" }));
+    expect(await panel().findByText("Nothing was heard. Try again, or type.")).toBeVisible();
+    expect(field()).toHaveValue("Why?");
+  });
+
+  it("draws no microphone where the browser has no recognition, nor where the kit has none", async () => {
+    withRecognition(false);
+    const { unmount } = render(inLanguage(<Asking />));
+    expect(panel().getByRole("button", { name: "Send" })).toBeVisible();
+    expect(panel().queryByRole("button", { name: "Dictate" })).toBeNull();
+    unmount();
+    withRecognition(true);
+    render(inLanguage(<Asking microphone={false} />));
+    expect(panel().getByRole("button", { name: "Send" })).toBeVisible();
+    expect(panel().queryByRole("button", { name: "Dictate" })).toBeNull();
+  });
+});
+
+describe("the task screen's panel", () => {
+  it("has no field: a task of a module asks the tutor by its buttons alone", () => {
+    render(inLanguage(<Drawn />));
+    expect(panel().queryByRole("textbox")).toBeNull();
+    expect(panel().queryByRole("button", { name: "Dictate" })).toBeNull();
+    expect(panel().getByRole("heading", { name: "Tutor", level: 2 })).toBeVisible();
   });
 });

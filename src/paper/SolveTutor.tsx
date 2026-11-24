@@ -1,25 +1,27 @@
-// The tutor's panel on the screen of solving a task from paper, the shell of the
-// task screen's: in its head the learner's share of the quota and the switch of voicing; in the
-// conversation, first its line on what comes here, then the verdict of the last Check as a line —
+// The tutor's panel on the screen of solving a task from paper, the one panel of every screen: in
+// its head the learner's share of the quota and the switch of voicing; in the conversation, first
+// its line on what comes here, then the verdict of the last Check as a line —
 // the reading while it runs —, the tutor's words of that Check, and the tutor's words marked a
 // hint — the opening question, the rung's, or the rung's put another way —, each with "Report a
 // problem" below them for a learner of the category adult, and what a Check or a Hint failed with,
 // which the phone's
 // sheet would hide at the screen's foot; at its foot Hint while the task is not solved, "Explain
-// differently" once on a rung, and the next task once its Check is over. No text field and no
-// microphone. A task from paper is in no module: its words are in the language of the
-// interface.
+// differently" once on a rung, and the next task once its Check is over. After them the learner's
+// questions about the task and the tutor's answers, each answer with "Report a problem" below it
+// for a learner of the category adult, and under the conversation the panel's field
+// of a question, with its microphone for a learner of the category adult. A task from paper is in
+// no module: its words are in the language of the interface.
+import { TutorReply } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
 import type { Ref } from "react";
 import type { Failure } from "../api/failure.ts";
 import { failureText } from "../api/words.ts";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { HintButton, VerdictLine } from "../task/TaskLayout.tsx";
-import { TutorPanel } from "../task/TutorPanel.tsx";
+import { LearnerLine, TutorPanel } from "../task/TutorPanel.tsx";
 import { ExplainButton, TutorWords } from "../task/TutorWords.tsx";
 import { ReportProblem } from "../tutor/ReportProblem.tsx";
 import type { Said } from "../tutor/report.ts";
-import { VoicingToggle } from "../voice/VoicingToggle.tsx";
-import { type PaperVerdict, paperCard } from "./solve.ts";
+import { MAX_QUESTION, type PaperVerdict, paperCard, questionOf, type Turn } from "./solve.ts";
 
 export function SolveTutor({
   quota,
@@ -41,6 +43,12 @@ export function SolveTutor({
   onNext,
   onClose,
   headingRef,
+  turns,
+  asking,
+  askNote,
+  askOff,
+  again,
+  onAsk,
 }: {
   /** The line of its head: the learner's share of the quota. */
   readonly quota: string | undefined;
@@ -73,6 +81,18 @@ export function SolveTutor({
   readonly onNext?: (() => void) | undefined;
   readonly onClose: () => void;
   readonly headingRef?: Ref<HTMLHeadingElement>;
+  /** The conversation on the task, of which the questions and their answers are drawn as lines. */
+  readonly turns: readonly Turn[];
+  /** A question about this task is on its way. */
+  readonly asking: boolean;
+  /** What the last question came to when no answer came, or why platform AI gave none of its own. */
+  readonly askNote: string | undefined;
+  /** The field waits: a question is on its way, or the task is over. */
+  readonly askOff: boolean;
+  /** A question that came back unanswered, to the field again. */
+  readonly again?: { readonly text: string; readonly at: number } | undefined;
+  /** A question, and whether it is the browser's reading of the voice as it came. */
+  readonly onAsk: (question: string, voice: boolean) => void;
 }) {
   const { language, words } = useLanguage();
   // Other words are another report: the form begins anew with them.
@@ -94,11 +114,24 @@ export function SolveTutor({
     <TutorPanel
       headingRef={headingRef}
       status={quota}
-      voicing={<VoicingToggle language={language} />}
       onClose={onClose}
+      kit={{
+        voicing: { language },
+        ask: {
+          label: words.text("paper.question-label"),
+          placeholder: words.text("paper.question-placeholder"),
+          max: MAX_QUESTION,
+          ready: questionOf,
+          off: askOff,
+          microphone: adult,
+          language,
+          onSend: onAsk,
+          ...(again === undefined ? {} : { again }),
+        },
+      }}
+      greeting={words.text("paper.solve-hello")}
       talk={
         <>
-          <p className="nt-bubble">{words.text("paper.solve-hello")}</p>
           {/* Drawn alone, as the card: the screen's status line tells the verdict. */}
           {checking ? (
             <VerdictLine
@@ -121,6 +154,24 @@ export function SolveTutor({
             {...(wordsNote === undefined ? {} : { note: wordsNote })}
             {...report(said)}
           />
+          {turns.map((turn, i) =>
+            !turn.line ? null : turn.learner ? (
+              // biome-ignore lint/suspicious/noArrayIndexKey: the conversation only grows.
+              <LearnerLine key={i} text={turn.text} voice={turn.voice === true} />
+            ) : (
+              <TutorWords
+                // biome-ignore lint/suspicious/noArrayIndexKey: the conversation only grows.
+                key={i}
+                words={turn.text}
+                language={language}
+                {...report({ text: turn.text, reply: TutorReply.ANSWER, rung: 0 })}
+              />
+            ),
+          )}
+          {asking ? (
+            <p className="nt-bubble nt-typing">{words.text("task.words-waiting")}</p>
+          ) : null}
+          {askNote === undefined ? null : <p className="nt-talk-note">{askNote}</p>}
           {failure === undefined ? null : (
             <p role="alert" className="nt-error">
               {failureText(failure, words)}

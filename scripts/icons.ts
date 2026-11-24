@@ -118,10 +118,11 @@ export const TABLE: Readonly<Record<string, Value>> = {
   "task-not-yet": { base: "error", filled: true, mirrored: false },
   "task-closed": { base: "do-not-disturb-on", filled: true, mirrored: false },
   "task-to-do": { base: "circle", filled: false, mirrored: false },
-  // The field of a request on the page to pick from: Send, an arrow up in a blue circle, and
-  // the microphone, off until voice comes; each without its caption.
+  // The field of the tutor's panel: Send, an arrow up in a blue circle; the microphone, which
+  // dictates into the field; and while it listens, Stop, a square; each without its caption.
   send: { base: "arrow-upward", filled: false, mirrored: false },
   microphone: { base: "mic", filled: false, mirrored: false },
+  stop: { base: "stop", filled: false, mirrored: false },
   // The row of places of Home, Subjects and the skill map, and the phone's tab bar: Home,
   // four squares, filled while it is the place; Subjects, a book; the cognitive map, a hub, shut;
   // For grown-ups, a padlock. Help is the bar's. At the top right the notifications, a bell; in

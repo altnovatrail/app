@@ -412,3 +412,55 @@ function partsCard(
         : words.text("paper.parts-unread", { tasks: unread.join(", ") }),
   };
 }
+
+/** The longest question about a task, in code points (the contract's `AskTutorRequest.question`). */
+export const MAX_QUESTION = 500;
+/** The turns of the conversation a question carries, and the longest of each, in code points. */
+export const MAX_TURNS = 8;
+export const MAX_TURN = 1000;
+
+/**
+ * A question as it goes: its line breaks kept, Windows' as one, its other control characters
+ * spaces, trimmed and cut to MAX_QUESTION code points; none when nothing is left of it.
+ */
+export function questionOf(text: string): string | undefined {
+  // The contract refuses a control character but a line break: C0, DEL and C1.
+  const plain = [...text.replace(/\r\n?/g, "\n")].map((c) => {
+    const n = c.codePointAt(0) ?? 0;
+    return c !== "\n" && (n < 0x20 || (n >= 0x7f && n <= 0x9f)) ? " " : c;
+  });
+  const kept = plain.join("").trim();
+  const cut = [...kept].slice(0, MAX_QUESTION).join("").trim();
+  return cut === "" ? undefined : cut;
+}
+
+/**
+ * A turn of the conversation on a task, as the tab keeps it: the learner's question, or the tutor's
+ * words — a hint, the words of a Check, an answer. `line`: the conversation draws it as a line of
+ * its own, as it does a question and its answer; the words of a hint and of a Check have their own
+ * place in the panel.
+ */
+export interface Turn {
+  readonly learner: boolean;
+  readonly text: string;
+  readonly line: boolean;
+  /** The question went as the browser read it from the learner's voice. */
+  readonly voice?: boolean;
+}
+
+/** The turns a question carries: the last MAX_TURNS before it, each cut to MAX_TURN code points. */
+export function turnsOf(
+  turns: readonly Turn[],
+): readonly { readonly learner: boolean; readonly text: string }[] {
+  return turns.slice(-MAX_TURNS).map(({ learner, text }) => ({
+    learner,
+    text: [...text].slice(0, MAX_TURN).join(""),
+  }));
+}
+
+/** The conversation with a turn after it; the tutor's words said again are not a turn again. */
+export function withTurn(turns: readonly Turn[], turn: Turn): readonly Turn[] {
+  const last = turns.at(-1);
+  if (!turn.learner && last !== undefined && !last.learner && last.text === turn.text) return turns;
+  return [...turns, turn];
+}

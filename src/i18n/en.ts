@@ -1100,6 +1100,16 @@ export const en = {
   "voice.not-kept": "The choice wasn't kept on this device. Try again",
   /** The name of the part of the tutor's panel that holds its words and the verdicts, and scrolls. */
   "tutor.conversation": "Conversation",
+  /**
+   * The field of the tutor's panel: the microphone listening, its Stop, the line under the field
+   * once the browser's recognition put the voice in it, the line when it heard nothing, and the
+   * mark under a line the learner sent by voice.
+   */
+  "tutor.listening": "Listening…",
+  "tutor.stop": "Stop",
+  "tutor.dictated": "From your voice: read it, correct it, then send.",
+  "tutor.unheard": "Nothing was heard. Try again, or type.",
+  "tutor.by-voice": "By voice",
   /** The heading of the page on the tutor. */
   "tutor.title": "How to use the AI tutor safely",
   "tutor.what": "The tutor is an AI",
@@ -1230,8 +1240,8 @@ export const en = {
   "paper.ask-label": "Your request about the page",
   "paper.ask-placeholder": "Say which tasks to take…",
   "paper.ask-send": "Send",
-  /** The microphone, off: voice comes with a task of its own. */
-  "paper.ask-voice": "Voice comes later",
+  /** The microphone of the tutor's field, which puts what the learner says into it as text. */
+  "paper.ask-voice": "Dictate",
   "paper.asked-found": plural({
     one: "Found {count} task",
     other: "Found {count} tasks",
@@ -1288,8 +1298,11 @@ export const en = {
   "paper.no-key": "Couldn't check this one",
   "paper.no-key-line":
     "No solution could be read here. Write it out, then Check again. Hints still work.",
-  /** The tutor's first line on the screen of solving, where hints come. */
-  "paper.solve-hello": "Hints for this task come here, a question at a time.",
+  /** The tutor's first line on the screen of solving, and its field of a question about the task. */
+  "paper.solve-hello":
+    "Ask about this task by text or voice, or take a hint: the tutor answers with a question, never with the answer. A program checks every answer.",
+  "paper.question-label": "Your question about the task",
+  "paper.question-placeholder": "Ask about this task…",
   /** The card of a task from paper with no answer yet and no mistake in its solution so far. */
   "paper.so-far": "So far correct",
   "paper.so-far-line": "No mistake yet. Go on to the answer, then Check.",

@@ -18,6 +18,8 @@
 // heading unseen, clear of the sheet's popovers — with api on connect-es's router.
 import { AccountService } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import {
+  type AskTutorRequest,
+  type AskTutorResponseSchema,
   AttemptService,
   type ExplainDifferentlyResponseSchema,
   type GetHintResponseSchema,
@@ -58,6 +60,7 @@ import { routedApi } from "../test/api.ts";
 import { memoryDevice } from "../test/device.ts";
 import { inLanguage } from "../test/language.tsx";
 import { changePens } from "../test/pens.ts";
+import { listening, withRecognition } from "../test/recognition.ts";
 import { PaperProvider } from "./PaperContext.tsx";
 import { PaperScreen } from "./PaperScreen.tsx";
 import { MAX_TASKS } from "./page.ts";
@@ -89,6 +92,10 @@ interface Setup {
   readonly debug?: boolean;
   /** The screen's language; none, English. */
   readonly language?: Language;
+  /** The learner is of the category adult; none, an adult. */
+  readonly adult?: boolean;
+  /** The answer to each question, by how many came before; an error fails it; none refuses it. */
+  readonly asked?: (n: number) => MessageInitShape<typeof AskTutorResponseSchema> | Error;
 }
 
 /** A synthetic photo of a page: a white PNG of 600 × 800 px with two grey stripes. */
@@ -125,6 +132,7 @@ async function renderCamera(setup: Setup = {}) {
   const reads: ReadStatementRequest[] = [];
   const opens: GetOpeningWordsRequest[] = [];
   const reports: ReportProblemRequest[] = [];
+  const asks: AskTutorRequest[] = [];
   let explains = 0;
   let attempts = 0;
   const api = routedApi((router) => {
@@ -148,6 +156,13 @@ async function renderCamera(setup: Setup = {}) {
       getOpeningWords(request) {
         opens.push(request);
         return { words: setup.hinted ?? "" };
+      },
+      askTutor(request) {
+        asks.push(request);
+        const answer = setup.asked?.(asks.length - 1);
+        if (answer === undefined) throw new ConnectError("a refusal", Code.InvalidArgument);
+        if (answer instanceof Error) throw answer;
+        return answer;
       },
       reportProblem(request) {
         reports.push(request);
@@ -212,7 +227,7 @@ async function renderCamera(setup: Setup = {}) {
       <ApiProvider value={api}>
         {setup.device === undefined ? (
           <PaperProvider>
-            <PaperScreen profileId="p1" adult />
+            <PaperScreen profileId="p1" adult={setup.adult ?? true} />
           </PaperProvider>
         ) : (
           <PaperProvider profileId="p1" device={setup.device}>
@@ -226,7 +241,7 @@ async function renderCamera(setup: Setup = {}) {
   );
   if (setup.camera === undefined)
     await screen.findByText(WORDS[setup.language ?? "en"].text("paper.no-camera"));
-  return { finds, begins, submits, rungs, reads, opens, reports };
+  return { finds, begins, submits, rungs, reads, opens, reports, asks };
 }
 
 /** A refusal of api for a cause. */
@@ -352,6 +367,7 @@ afterEach(async () => {
   cleanup();
   resetDebug();
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
   await page.viewport(1024, 768);
 });
 
@@ -559,6 +575,8 @@ it("asks for a solution before Check, then sends the task's crop, the instructio
   // The instruction found above the task, a crop of its own.
   expect(work.value.instruction?.[1]).toBe(0x50);
   expect(submits[0]?.attemptId).toBe("a1");
+  // The words come in the language of the screens, which voices them too.
+  expect(submits[0]?.wordsLanguage).toBe("en");
   // The second task, found with no instruction, sends none.
   await userEvent.click(screen.getByRole("button", { name: "Next task" }));
   await screen.findByRole("heading", { name: "Task 2" });
@@ -725,6 +743,19 @@ it("opens the tutor's panel by its button: the verdict a line in it, and a card 
   expect(document.querySelector(".nt-card-verdict")).not.toBeNull();
 });
 
+it("asks for the tutor's words in the language of the screens, which voices them", async () => {
+  const ru = WORDS.ru;
+  const { opens } = await renderPaper({ language: "ru", hinted: "Что осталось найти?" });
+  await screen.findByRole("button", { name: ru.text("paper.deselect", { n: 1 }) });
+  await userEvent.click(screen.getByRole("button", { name: ru.text("paper.start") }));
+  await screen.findByRole("heading", { name: ru.text("paper.task", { n: 1 }) }, SLOW);
+  await userEvent.click(
+    screen.getAllByRole("button", { name: ru.text("task.hint") })[0] as HTMLElement,
+  );
+  expect(await screen.findByText("Что осталось найти?")).toBeVisible();
+  expect(opens.map((each) => each.wordsLanguage)).toEqual(["ru"]);
+});
+
 it("opens the panel by the row's Hint, its words a bubble there that strokes do not take away", async () => {
   const { opens } = await solving({ hinted: "What is left to find?" });
   await userEvent.click(screen.getByRole("button", { name: "Hint" }));
@@ -732,6 +763,7 @@ it("opens the panel by the row's Hint, its words a bubble there that strokes do 
   // The opening question asks the Check with the work as it stands: with nothing written, the crop.
   expect(opens).toHaveLength(1);
   expect(opens[0]?.attemptId).toBe("a1");
+  expect(opens[0]?.wordsLanguage).toBe("en");
   const asked = opens[0]?.work?.surface;
   if (asked?.case !== "paper") throw new Error("no work of a task from paper");
   expect([asked.value.statement[1], asked.value.crop[1], asked.value.instruction?.[1]]).toEqual([
@@ -786,7 +818,9 @@ it("brings the Check's words as a bubble of the open panel, which an adult may r
   expect(await tutorPanel().findByText("Count the tens once more.")).toBeVisible();
   await userEvent.click(tutorPanel().getByRole("button", { name: "Report a problem" }));
   await userEvent.click(screen.getByRole("radio", { name: /Wrong/ }));
-  await userEvent.click(screen.getByRole("button", { name: "Send" }));
+  // The report's Send, not the panel's field's.
+  const report = within(screen.getByRole("form", { name: "Report a problem with these words" }));
+  await userEvent.click(report.getByRole("button", { name: "Send" }));
   await waitFor(() => expect(reports).toHaveLength(1));
   expect(reports[0]?.reply).toBe(TutorReply.RUNG);
   expect(reports[0]?.rung).toBe(2);
@@ -1361,7 +1395,6 @@ it("finds the page anew by the learner's request, its own frame staying, and Und
   const field = await screen.findByRole("textbox", { name: "Your request about the page" });
   // No reminder of names above the field.
   expect(field).not.toHaveAttribute("aria-describedby");
-  expect(screen.getByRole("button", { name: "Voice comes later" })).toBeDisabled();
   await userEvent.type(field, "only the first column, each task apart{Enter}");
   expect(await screen.findByText("Found 3 tasks")).toBeVisible();
   expect(screen.getByText("only the first column, each task apart")).toBeVisible();
@@ -1765,4 +1798,133 @@ it("keeps the page's bar and its Start inside a narrow tablet's width, in Russia
   expect(start.getBoundingClientRect().right).toBeLessThanOrEqual(
     bar.getBoundingClientRect().right,
   );
+});
+
+it("sends a request about the page by voice, which the microphone put in the field, for frames", async () => {
+  withRecognition(true);
+  const { finds } = await renderPaper({
+    found: (request) =>
+      request.request === ""
+        ? { frames: [{ box: { ymin: 0, xmin: 0, ymax: 1000, xmax: 1000 } }] }
+        : { frames: [{ box: { ymin: 0, xmin: 0, ymax: 500, xmax: 1000 } }] },
+  });
+  await screen.findByRole("button", { name: "Deselect task 1" });
+  await userEvent.click(screen.getByRole("button", { name: "Tutor" }));
+  await userEvent.click(tutorPanel().getByRole("button", { name: "Dictate" }));
+  await waitFor(() => expect(listening().started).toBe(true));
+  expect(listening().lang).toBe("en");
+  listening().hear("the first task");
+  await userEvent.click(tutorPanel().getByRole("button", { name: "Stop" }));
+  await tutorPanel().findByText("From your voice: read it, correct it, then send.");
+  await userEvent.click(tutorPanel().getByRole("button", { name: "Send" }));
+  expect(await screen.findByText("Found 1 task")).toBeVisible();
+  expect(finds[1]?.request).toBe("the first task");
+  expect(tutorPanel().getByText("By voice")).toBeVisible();
+});
+
+/** The learner's lines of the open panel. */
+const questions = () =>
+  [...document.querySelectorAll(".nt-tutor-panel p.nt-bubble[data-who='learner']")].map(
+    (line) => line.textContent,
+  );
+
+it("asks the tutor about the task in the panel's field, with the turns before and the work, and shows the answer", async () => {
+  withRecognition(false);
+  const { asks } = await solving({
+    hinted: "What do you see in the first row?",
+    asked: (n) => ({ words: n === 0 ? "What does each row add?" : "Count them once more." }),
+  });
+  await userEvent.click(screen.getByRole("button", { name: "Hint" }));
+  expect(await tutorPanel().findByText("What do you see in the first row?")).toBeVisible();
+  expect(
+    tutorPanel().getByText(
+      "Ask about this task by text or voice, or take a hint: the tutor answers with a question, never with the answer. A program checks every answer.",
+    ),
+  ).toBeVisible();
+  const field = tutorPanel().getByRole("textbox", { name: "Your question about the task" });
+  await userEvent.type(field, "Why rows?{Shift>}{Enter}{/Shift}Not columns?{Enter}");
+  expect(await tutorPanel().findByText("What does each row add?")).toBeVisible();
+  expect(questions()).toEqual(["Why rows?\nNot columns?"]);
+  const first = asks[0];
+  expect(first?.profileId).toBe("p1");
+  expect(first?.attemptId).toBe("a1");
+  expect(first?.question).toBe("Why rows?\nNot columns?");
+  expect(first?.wordsLanguage).toBe("en");
+  expect(first?.idempotencyKey).not.toBe("");
+  expect(first?.turns.map((turn) => [turn.learner, turn.text])).toEqual([
+    [false, "What do you see in the first row?"],
+  ]);
+  // The work as it stands: nothing written, the task's crop in the place of the work's.
+  expect(first?.work?.surface.case).toBe("paper");
+  await userEvent.type(field, "And then?{Enter}");
+  expect(await tutorPanel().findByText("Count them once more.")).toBeVisible();
+  expect(asks[1]?.turns.map((turn) => [turn.learner, turn.text])).toEqual([
+    [false, "What do you see in the first row?"],
+    [true, "Why rows?\nNot columns?"],
+    [false, "What does each row add?"],
+  ]);
+  expect(asks[1]?.idempotencyKey).not.toBe(first?.idempotencyKey);
+  // Another task is another conversation; back on this one, it is as it was.
+  await userEvent.click(screen.getByRole("button", { name: "Next task" }));
+  await screen.findByRole("heading", { name: "Task 2" });
+  expect(questions()).toEqual([]);
+  await userEvent.click(screen.getByRole("button", { name: "Previous task" }));
+  await screen.findByRole("heading", { name: "Task 1" });
+  expect(questions()).toEqual(["Why rows?\nNot columns?", "And then?"]);
+});
+
+it("lets an adult report a problem with the tutor's answer to a question", async () => {
+  withRecognition(false);
+  const { reports } = await solving({ asked: () => ({ words: "Look at the tens." }) });
+  await userEvent.click(screen.getByRole("button", { name: "Ask" }));
+  const field = tutorPanel().getByRole("textbox", { name: "Your question about the task" });
+  await userEvent.type(field, "Where do I start?{Enter}");
+  expect(await tutorPanel().findByText("Look at the tens.")).toBeVisible();
+  await userEvent.click(tutorPanel().getByRole("button", { name: "Report a problem" }));
+  await userEvent.click(screen.getByRole("radio", { name: /Unclear/ }));
+  const report = within(screen.getByRole("form", { name: "Report a problem with these words" }));
+  await userEvent.click(report.getByRole("button", { name: "Send" }));
+  await waitFor(() => expect(reports).toHaveLength(1));
+  expect(reports[0]?.reply).toBe(TutorReply.ANSWER);
+  expect(reports[0]?.rung).toBe(0);
+  expect(reports[0]?.words).toBe("Look at the tens.");
+});
+
+it("puts a question that brought no answer back in the field, and sends it again with its key", async () => {
+  withRecognition(false);
+  const { asks } = await solving({
+    asked: (n) =>
+      // Past its deadline: no repeat of the client brings it back.
+      n === 0 ? new ConnectError("late", Code.DeadlineExceeded) : { words: "Look at the tens." },
+  });
+  await userEvent.click(screen.getByRole("button", { name: "Ask" }));
+  const field = tutorPanel().getByRole("textbox", { name: "Your question about the task" });
+  await userEvent.type(field, "Why tens?{Enter}");
+  expect(await tutorPanel().findByText(/^No connection/)).toBeVisible();
+  await waitFor(() => expect(field).toHaveValue("Why tens?"));
+  expect(questions()).toEqual([]);
+  await userEvent.type(field, "{Enter}");
+  expect(await tutorPanel().findByText("Look at the tens.")).toBeVisible();
+  expect(questions()).toEqual(["Why tens?"]);
+  expect(asks).toHaveLength(2);
+  expect(asks[1]?.idempotencyKey).toBe(asks[0]?.idempotencyKey);
+});
+
+it("lets an adult ask by voice, and gives a child no microphone", async () => {
+  withRecognition(true);
+  const { asks } = await solving({ asked: () => ({ words: "What is ten and ten?" }) });
+  await userEvent.click(screen.getByRole("button", { name: "Ask" }));
+  await userEvent.click(tutorPanel().getByRole("button", { name: "Dictate" }));
+  await waitFor(() => expect(listening().started).toBe(true));
+  listening().hear("why twenty");
+  await userEvent.click(tutorPanel().getByRole("button", { name: "Stop" }));
+  await userEvent.click(tutorPanel().getByRole("button", { name: "Send" }));
+  expect(await tutorPanel().findByText("What is ten and ten?")).toBeVisible();
+  expect(asks[0]?.question).toBe("why twenty");
+  expect(tutorPanel().getByText("By voice")).toBeVisible();
+  cleanup();
+  await solving({ adult: false });
+  await userEvent.click(screen.getByRole("button", { name: "Ask" }));
+  expect(tutorPanel().getByRole("textbox", { name: "Your question about the task" })).toBeVisible();
+  expect(tutorPanel().queryByRole("button", { name: "Dictate" })).toBeNull();
 });

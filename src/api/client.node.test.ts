@@ -258,6 +258,18 @@ describe("the repeat", () => {
     await failureOf(opening.api.attempt.getOpeningWords({ idempotencyKey: "k" }));
     // On a task from paper the opening words run the Check, as long as SubmitWork.
     expect(opening.sleeps).toEqual(Array(PAPER_TIMEOUT_MS / 3000).fill(3000));
+    const question = harness(({ service }) =>
+      service(AttemptService, {
+        askTutor() {
+          const error = refused(Code.Unavailable, { cause: Cause.STILL_GOING });
+          error.metadata.set("Retry-After", "3");
+          throw error;
+        },
+      }),
+    );
+    await failureOf(question.api.attempt.askTutor({ idempotencyKey: "k" }));
+    // A question may run the Check first, as the opening words do.
+    expect(question.sleeps).toEqual(Array(PAPER_TIMEOUT_MS / 3000).fill(3000));
     const other = harness(({ service }) =>
       service(AttemptService, {
         submitEssay() {

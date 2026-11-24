@@ -13,12 +13,13 @@ export interface Said {
   readonly text: string;
   /**
    * The answer the words came by: a rung — GetRungWords, or the hint again after a wrong answer —,
-   * "explain differently", the correct answer, or the opening question of a task from paper.
+   * "explain differently", the correct answer, or the opening question of a task from paper or the
+   * tutor's answer to a question on it.
    */
   readonly reply: TutorReply;
   /**
-   * Beside a rung and "explain differently", the rung, from 1 to 3; 0 beside a correct answer and
-   * the opening question.
+   * Beside a rung and "explain differently", the rung, from 1 to 3; 0 beside a correct answer, the
+   * opening question and an answer.
    */
   readonly rung: number;
 }

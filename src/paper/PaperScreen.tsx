@@ -296,10 +296,10 @@ export function PaperScreen({
     ...(closed ? [{ kind: "warn" as const, title: words.text("paper.no-ai") }] : []),
   ];
 
-  const ask = (request: string) => {
+  const ask = (request: string, voice: boolean) => {
     paper.change(page.photo, (now) => ({
       ...now,
-      talk: [...now.talk, { kind: "request", text: request }],
+      talk: [...now.talk, { kind: "request", text: request, ...(voice ? { voice } : {}) }],
     }));
     find(page.photo, request, page.tasks);
   };
@@ -359,6 +359,7 @@ export function PaperScreen({
           talk={page.talk}
           busy={finding.status === "finding"}
           closed={closed}
+          adult={adult}
           onAsk={ask}
           onUndo={page.before === undefined ? undefined : undo}
           onClose={() => setTalking(false)}

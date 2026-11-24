@@ -1,14 +1,13 @@
 // The tutor's panel on the page to pick from, as the mockup's `pick-ask` and
-// `pick-asked`: the line of what it takes — which tasks of the page and how they split —, each
-// request of the learner's and the program's line of what it came to, Undo while the frames before
-// can come back, and the field of a request, with no reminder of names above it, its Send and its
-// microphone, off until voice comes. No word of the AI comes back: its answer is
-// frames. The field is off while the finding runs and while AI is shut to the learner.
-import { type Ref, useLayoutEffect, useRef, useState } from "react";
-import { IconButton } from "../app/IconButton.tsx";
+// `pick-asked`: the one panel, with its line of what it takes — which tasks of the page and how they
+// split —, each request of the learner's and the program's line of what it came to, Undo while the
+// frames before can come back, and the panel's field of a request, with its Send and, for a learner
+// of the category adult, its microphone. No word of the AI comes back: its answer is frames. The
+// field is off while the finding runs and while AI is shut to the learner.
+import type { Ref } from "react";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { VerdictLine } from "../task/TaskLayout.tsx";
-import { TutorPanel } from "../task/TutorPanel.tsx";
+import { LearnerLine, TutorPanel } from "../task/TutorPanel.tsx";
 import type { Said } from "./PaperContext.tsx";
 import { MAX_REQUEST, requestOf } from "./page.ts";
 
@@ -16,6 +15,7 @@ export function PageTutor({
   talk,
   busy,
   closed,
+  adult,
   onAsk,
   onUndo,
   onClose,
@@ -26,44 +26,40 @@ export function PageTutor({
   readonly busy: boolean;
   /** AI is shut to the learner: the field is off. */
   readonly closed: boolean;
-  readonly onAsk: (request: string) => void;
+  /** The learner is of the category adult: the microphone stands. */
+  readonly adult: boolean;
+  /** A request, and whether it is the browser's reading of the voice as it came. */
+  readonly onAsk: (request: string, voice: boolean) => void;
   /** Undo, while the frames before the last request can come back; none, and it is not drawn. */
   readonly onUndo?: (() => void) | undefined;
   readonly onClose: () => void;
   readonly headingRef?: Ref<HTMLHeadingElement>;
 }) {
-  const { words } = useLanguage();
-  const [draft, setDraft] = useState("");
-  const request = requestOf(draft);
-  const off = busy || closed;
-  // The field grows down with its lines, up to the height CSS gives it, and then scrolls.
-  const field = useRef<HTMLTextAreaElement>(null);
-  // biome-ignore lint/correctness/useExhaustiveDependencies: the height follows the draft.
-  useLayoutEffect(() => {
-    const area = field.current;
-    if (area === null) return;
-    area.style.blockSize = "auto";
-    area.style.blockSize = `${area.scrollHeight}px`;
-  }, [draft]);
-  const send = () => {
-    if (off || request === undefined) return;
-    setDraft("");
-    onAsk(request);
-  };
+  const { language, words } = useLanguage();
   return (
     <TutorPanel
       headingRef={headingRef}
       status={words.text("paper.title")}
       onClose={onClose}
+      kit={{
+        ask: {
+          label: words.text("paper.ask-label"),
+          placeholder: words.text("paper.ask-placeholder"),
+          max: MAX_REQUEST,
+          ready: requestOf,
+          off: busy || closed,
+          microphone: adult,
+          language,
+          onSend: onAsk,
+        },
+      }}
+      greeting={words.text("paper.ask-hello")}
       talk={
         <>
-          <p className="nt-bubble">{words.text("paper.ask-hello")}</p>
           {talk.map((said, i) =>
             said.kind === "request" ? (
               // biome-ignore lint/suspicious/noArrayIndexKey: the conversation only grows.
-              <p key={i} className="nt-bubble" data-who="learner">
-                {said.text}
-              </p>
+              <LearnerLine key={i} text={said.text} voice={said.voice === true} />
             ) : (
               // biome-ignore lint/suspicious/noArrayIndexKey: the conversation only grows.
               <div key={i} role="status">
@@ -107,44 +103,6 @@ export function PageTutor({
             {words.text("paper.undo")}
           </button>
         )
-      }
-      foot={
-        <form
-          className="nt-ask"
-          onSubmit={(event) => {
-            event.preventDefault();
-            send();
-          }}
-        >
-          <textarea
-            ref={field}
-            className="nt-ask-input"
-            rows={1}
-            aria-label={words.text("paper.ask-label")}
-            placeholder={words.text("paper.ask-placeholder")}
-            maxLength={MAX_REQUEST}
-            enterKeyHint="send"
-            disabled={off}
-            value={draft}
-            onChange={(event) => setDraft(event.target.value)}
-            onKeyDown={(event) => {
-              // Enter sends, as the field's one line did; Shift+Enter breaks the line.
-              if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {
-                event.preventDefault();
-                send();
-              }
-            }}
-          />
-          <div className="nt-ask-buttons">
-            <IconButton value="ask-voice" className="nt-ask-voice" disabled />
-            <IconButton
-              value="ask-send"
-              className="nt-ask-send"
-              disabled={off || request === undefined}
-              onClick={send}
-            />
-          </div>
-        </form>
       }
     />
   );
