@@ -47,7 +47,7 @@ The tests of the screens and of the built page, and the site check, on Chromium,
   - The built page in WebKit, with Safari in `User-Agent`: at the start the SDK loads `/js/api.js` and its module `gapi_iframes` from `apis.google.com` and `/__/auth/iframe` with `iframe.js` from `authDomain` — Google's real files, with no violation of the CSP, as measurements 2 saw. The test records the page's own requests apart from Google's.
   - A frame under `frame-ancestors 'none'`: Chromium puts `chrome-error://chromewebdata/` in it, WebKit keeps app's address, `http://127.0.0.1:5181/`, with nothing run, Firefox leaves no address; none asks for `/deployment.json`.
   - The site check, on its test's stand-ins: under `Cross-Origin-Opener-Policy: same-origin` the window opened on `authDomain` in all three engines; once in WebKit the check stopped on the window's address, "Invalid URL", and in the next runs it did not: the check now names whatever address the window has.
-- **The coverage** goes to Codecov from Node and Chromium alone: Vitest's v8 coverage refuses any other engine (sources 2.5).
+- **The coverage** goes to Codecov from Node and Chromium alone: Vitest's v8 coverage refuses any other engine ([Vitest v5.1.0](https://github.com/vitest-dev/vitest/blob/v5.1.0/packages/vitest/src/node/projects/resolveProjects.ts#L989-L1029)).
 
 ## 5. gapi's ping in CI, 2026-11-14
 
