@@ -370,7 +370,7 @@ export const en = {
   /** The adult's Help on the home screen: three things, and three pages. */
   "help.ai": "The tutor is an AI",
   "help.ai-text":
-    "A computer program, not a person — and a program checks every answer. If the AI read your work wrongly, write it again, or tell the operator with Report a problem at the task",
+    "A computer program, not a person. The AI checks a task from paper, a program the rest. If the AI read your work wrongly, write it again, or tell the operator with Report a problem at the task",
   "help.name": "Your name is made up",
   "help.name-text": "Write no real names in the work — in an essay either",
   "signout.button": "Sign out",
@@ -437,7 +437,7 @@ export const en = {
   "bell.later": "Notifications will appear here",
   /** The tutor's panel from the top right of Home, where there is no work: what it is and where it helps. */
   "tutor-home.ai":
-    "The tutor is an AI — a computer program, not a person. A program checks every answer",
+    "The tutor is an AI — a computer program, not a person. The AI checks a task from paper, a program the rest",
   "tutor-home.where":
     "Open a lesson or a page from your book, and the tutor helps with the work there",
   /** The heading of the learner's home: the modules connected to the profile. */
@@ -1106,7 +1106,7 @@ export const en = {
   "tutor.what-1":
     "The tutor, which gives hints and explains, is an AI: a computer program, not a person. No person writes its replies while you learn",
   "tutor.what-2":
-    "Whether an answer is right, a program decides by the task's key, not the AI. The AI reads your work, the handwriting or the drawing, and words the tutor's replies",
+    "Whether an answer to a task of a subject is right, a program decides by the task's key; a task from your paper the AI checks. The AI also reads your work, the handwriting or the drawing, and words the tutor's replies",
   "tutor.wrong": "It can be wrong",
   "tutor.wrong-1":
     "An AI can misread the work or say what isn't so. If its words seem wrong, read the task again and check what you can yourself",
@@ -1277,18 +1277,22 @@ export const en = {
   /** Check pressed with nothing written, on the sheet or on the task. */
   "paper.write-first": "Write your solution first",
   "paper.write-first-line": "Write it with the pen on the sheet or on the task, then Check.",
-  /** The card of a task from paper whose solution gave no one answer a program can compare. */
+  /** The card of a Check of a task from paper that read nothing of a solution in any task. */
   "paper.no-key": "Couldn't check this one",
-  "paper.no-key-line": "This task has no answer that can be checked. Hints still work.",
+  "paper.no-key-line":
+    "No solution could be read here. Write it out, then Check again. Hints still work.",
   /** The tutor's first line on the screen of solving, where hints come. */
-  "paper.solve-hello":
-    "Hints for this task come here, a question at a time. A program checks every answer.",
+  "paper.solve-hello": "Hints for this task come here, a question at a time.",
+  /** The card of a task from paper with no answer yet and no mistake in its solution so far. */
+  "paper.so-far": "So far correct",
+  "paper.so-far-line": "No mistake yet. Go on to the answer, then Check.",
   /**
-   * The card of a frame of several tasks: {n} of the {of} tasks with a key are correct; {tasks} are
+   * The card of a frame of several tasks: {n} of the {of} tasks checked are correct; {tasks} are
    * the numbers of those whose answer was not read, in the frame's order.
    */
   "paper.parts-correct": "Correct · {n} of {of}",
   "paper.parts-not-yet": "Not yet · {n} of {of} correct",
+  "paper.parts-so-far": "So far correct · {n} of {of} done",
   "paper.parts-unread": "No answer was read in tasks {tasks}",
   /** The tick and the cross by an answer on the crop, for a screen reader; {n} is the task's number in the frame. */
   "paper.mark-correct": "Task {n}: correct",

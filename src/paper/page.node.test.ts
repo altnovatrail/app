@@ -68,6 +68,23 @@ describe("the tasks found", () => {
     expect(foundTasks(create(FindTasksResponseSchema, {}))).toEqual([]);
   });
 
+  it("carry the frame of the instruction above each, when it is a rectangle in the photo", () => {
+    const tasks = foundTasks(
+      create(FindTasksResponseSchema, {
+        frames: [
+          { ...box(500, 0, 600, 400), instruction: { ymin: 450, xmin: 0, ymax: 490, xmax: 400 } },
+          { ...box(100, 0, 200, 400), instruction: { ymin: 90, xmin: 0, ymax: 90, xmax: 400 } },
+        ],
+      }),
+    );
+    // In the order of the page, each with its own; one that is no rectangle is none.
+    expect(tasks.map((t) => t.instruction)).toEqual([
+      undefined,
+      { ymin: 450, xmin: 0, ymax: 490, xmax: 400 },
+    ]);
+    expect(tasks[0]).not.toHaveProperty("instruction");
+  });
+
   it("are no more than a page begins", () => {
     const many = Array.from({ length: MAX_TASKS + 3 }, (_, i) => box(i * 10, 0, i * 10 + 5, 10));
     expect(foundTasks(answer(many))).toHaveLength(MAX_TASKS);
@@ -242,6 +259,26 @@ describe("the page on its photo turned upright", () => {
     const other = { width: 1000, height: 2000, url: "other" };
     expect(uprightPage({ ...page, photo: other }, photo, turned, 90)).toBeUndefined();
     expect(uprightPage(undefined, photo, turned, 90)).toBeUndefined();
+  });
+
+  it("turns the instruction of a frame with it, and drops one the turn leaves off the photo", () => {
+    const [task] = drawn;
+    if (task === undefined) throw new Error("no task");
+    const instruction = { ymin: 100, xmin: 100, ymax: 190, xmax: 400 };
+    expect(turnedTasks([{ ...task, instruction }], 90, photo, turned)).toEqual([
+      {
+        ...task,
+        frame: { ymin: 100, xmin: 700, ymax: 400, xmax: 800 },
+        instruction: { ymin: 100, xmin: 810, ymax: 400, xmax: 900 },
+      },
+    ]);
+    // Turned off the photo, the instruction goes, and its task stays.
+    const corner = { ymin: 0, xmin: 0, ymax: 1, xmax: 1 };
+    const [left] = turnedTasks([{ ...task, instruction: corner }], 45, photo, photo);
+    expect(left?.frame).toEqual({ ymin: 146, xmin: 500, ymax: 324, xmax: 854 });
+    expect(left).not.toHaveProperty("instruction");
+    // A frame the turn leaves off the photo takes its task and instruction with it.
+    expect(turnedTasks([{ ...task, frame: corner, instruction }], 45, photo, photo)).toEqual([]);
   });
 
   it("puts the frames found on the photo turned back on the photo as it is", () => {

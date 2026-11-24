@@ -4,13 +4,14 @@ import type { Api } from "../api/client.ts";
 import * as gate from "./gate.ts";
 
 /**
- * A Check as the debug mode keeps it for its export: what it sent, and the verdict of each task of
- * its answer, in the frame's order.
+ * A Check as the debug mode keeps it for its export: what it sent — the instruction's crop too,
+ * when it had one —, and the verdict of each task of its answer, in the frame's order.
  */
 export interface Check<T> {
   readonly attemptId: string;
   readonly statement: Uint8Array;
   readonly crop: Uint8Array;
+  readonly instruction?: Uint8Array;
   readonly verdicts: (answer: T) => readonly (string | undefined)[];
 }
 
@@ -44,6 +45,7 @@ export async function watched<T>(
             attemptId: check.attemptId,
             statement: check.statement,
             crop: check.crop,
+            ...(check.instruction === undefined ? {} : { instruction: check.instruction }),
             outcomes: (answer === undefined ? [] : check.verdicts(answer.value)).map(
               debug.outcomeOf,
             ),

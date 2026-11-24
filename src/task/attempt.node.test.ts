@@ -248,6 +248,13 @@ describe("an attempt on the screen", () => {
     if (paper?.case !== "paper") throw new Error("no work of a task from paper");
     expect(paper.value.statement?.at(-1)).toBe(4);
     expect(paper.value.crop?.at(-1)).toBe(5);
+    expect(paper.value.instruction).toBeUndefined();
+    // The crop of the instruction above the task goes beside the two, when it has one.
+    const above = (
+      await workOf({ statement: png(4), png: png(5), submission: {} as PaperSubmission }, png(6))
+    ).surface;
+    if (above?.case !== "paper") throw new Error("no work of a task from paper");
+    expect(above.value.instruction?.at(-1)).toBe(6);
   });
 
   it("puts the tutor's marks where the canvas takes them, named by their number among those placed", () => {

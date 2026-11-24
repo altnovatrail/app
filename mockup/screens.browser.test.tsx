@@ -1614,6 +1614,12 @@ function popOver(name: string, mockup: string, app = mockup): Region {
   };
 }
 
+/**
+ * Why Help stands taller than the mockup: its first item says that the AI checks a task from
+ * paper and a program the rest, a line the mockup has not taken yet.
+ */
+const AI_CHECKS = "the line that the AI checks a task from paper, which the mockup has not";
+
 /** The adult's Help, open from the row of places. */
 const HELP: readonly Region[] = [
   {
@@ -1621,12 +1627,19 @@ const HELP: readonly Region[] = [
     mockup: { css: 'nav button:has-text("Help")' },
     app: { css: 'nav button:has-text("Help")' },
   },
-  popOver("the pop-over of Help", "Help"),
+  {
+    ...popOver("the pop-over of Help", "Help"),
+    differs: {
+      what: ["background", "border", "font-size", "y", "height"],
+      by: `${OVER_INERT}; ${NO_TEXT}; ${AI_CHECKS}`,
+    },
+  },
   {
     name: "The tutor is an AI",
     mockup: { css: 'div.nt-pop span:text-is("The tutor is an AI")' },
     app: { css: ".nt-help-item:first-of-type > b" },
     followsText: "start",
+    differs: { what: ["y"], by: AI_CHECKS },
   },
   {
     name: "Privacy Policy",

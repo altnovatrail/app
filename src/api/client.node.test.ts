@@ -246,6 +246,18 @@ describe("the repeat", () => {
     });
     // SubmitWork may ask up to three models in turn, and api lets it go 90 s.
     expect(sleeps).toEqual(Array(PAPER_TIMEOUT_MS / 3000).fill(3000));
+    const opening = harness(({ service }) =>
+      service(AttemptService, {
+        getOpeningWords() {
+          const error = refused(Code.Unavailable, { cause: Cause.STILL_GOING });
+          error.metadata.set("Retry-After", "3");
+          throw error;
+        },
+      }),
+    );
+    await failureOf(opening.api.attempt.getOpeningWords({ idempotencyKey: "k" }));
+    // On a task from paper the opening words run the Check, as long as SubmitWork.
+    expect(opening.sleeps).toEqual(Array(PAPER_TIMEOUT_MS / 3000).fill(3000));
     const other = harness(({ service }) =>
       service(AttemptService, {
         submitEssay() {

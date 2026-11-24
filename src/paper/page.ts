@@ -3,9 +3,11 @@
 // it out or takes it back, and "Start" begins an attempt for each picked, in the order of the page.
 // The learner may ask in words to find them anew: the request goes with the frames on
 // the page, and the frames it gave take the place of those found, the learner's own staying. Frames
-// found on the photo turned upright turn the page's photo, and the frames on it, with them. No
-// DOM.
+// found on the photo turned upright turn the page's photo, and the frames on it, with them. A
+// frame found may come with the frame of the instruction printed above it, which goes with the
+// frame wherever the frame goes; a frame the learner draws has none. No DOM.
 import type { FindTasksResponse } from "@altnovatrail/contracts/novatrail/api/v1/paper_pb.js";
+import type { CropBox } from "@altnovatrail/contracts/novatrail/observation/v1/observation_pb.js";
 import { type Frame, isFrame, pageOrder, turnedFrame } from "./frame.ts";
 import { type Size, turnedSize } from "./photo.ts";
 
@@ -23,26 +25,41 @@ export interface PageTask {
   /** Its key on the screen, which no request carries. */
   readonly id: string;
   readonly frame: Frame;
+  /** The frame of the instruction printed above it, as the finding gave it; none on a frame drawn. */
+  readonly instruction?: Frame;
   /** The learner drew it round a task the AI missed. */
   readonly drawn: boolean;
   readonly picked: boolean;
 }
 
+/** A box of the contract as a frame; none when it is absent or no rectangle in the photo. */
+function frameOf(box: CropBox | undefined): Frame | undefined {
+  if (box === undefined) return undefined;
+  const frame = { ymin: box.ymin, xmin: box.xmin, ymax: box.ymax, xmax: box.xmax };
+  return isFrame(frame) ? frame : undefined;
+}
+
 /**
  * The tasks of an answer of `FindTasks`, each picked, in the order of the page: a frame with no box,
- * or one that is no rectangle in the photo, is none, and past MAX_TASKS none either.
+ * or one that is no rectangle in the photo, is none, and past MAX_TASKS none either. An instruction
+ * that is no rectangle in the photo is none, and its task stays.
  */
 export function foundTasks(answer: FindTasksResponse): readonly PageTask[] {
-  const frames: Frame[] = [];
-  for (const { box } of answer.frames) {
-    if (box === undefined) continue;
-    const frame = { ymin: box.ymin, xmin: box.xmin, ymax: box.ymax, xmax: box.xmax };
-    if (isFrame(frame)) frames.push(frame);
+  const found: { readonly frame: Frame; readonly instruction: Frame | undefined }[] = [];
+  for (const each of answer.frames) {
+    const frame = frameOf(each.box);
+    if (frame !== undefined) found.push({ frame, instruction: frameOf(each.instruction) });
   }
-  return frames
-    .sort(pageOrder)
+  return found
+    .sort((a, b) => pageOrder(a.frame, b.frame))
     .slice(0, MAX_TASKS)
-    .map((frame, i) => ({ id: `found-${i + 1}`, frame, drawn: false, picked: true }));
+    .map(({ frame, instruction }, i) => ({
+      id: `found-${i + 1}`,
+      frame,
+      ...(instruction === undefined ? {} : { instruction }),
+      drawn: false,
+      picked: true,
+    }));
 }
 
 /** A page on its photo, as `PaperContext` holds it. */
@@ -52,16 +69,22 @@ interface OnPhoto<P extends Size> {
   readonly before?: readonly PageTask[] | undefined;
 }
 
-/** The tasks with each frame turned as `turnedFrame` turns it: one with nothing left on the photo goes. */
+/**
+ * The tasks with each frame turned as `turnedFrame` turns it, its instruction too: one with nothing
+ * left on the photo goes, and an instruction so turned is none.
+ */
 export function turnedTasks(
   tasks: readonly PageTask[],
   degrees: number,
   from: Size,
   to: Size,
 ): readonly PageTask[] {
-  return tasks.flatMap((task) => {
+  return tasks.flatMap(({ instruction, ...task }) => {
     const frame = turnedFrame(task.frame, degrees, from, to);
-    return frame === undefined ? [] : [{ ...task, frame }];
+    if (frame === undefined) return [];
+    const above =
+      instruction === undefined ? undefined : turnedFrame(instruction, degrees, from, to);
+    return [{ ...task, frame, ...(above === undefined ? {} : { instruction: above }) }];
   });
 }
 

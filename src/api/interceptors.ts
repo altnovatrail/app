@@ -56,7 +56,7 @@ export const PAUSES = [500, 1000, 2000, 4000] as const;
 export const STILL_GOING_MS = 30_000;
 
 /**
- * api's limit of FindTasks and SubmitWork, whose calls of a task from paper ask up to three models
+ * api's limit of FindTasks, SubmitWork and GetOpeningWords, whose calls of a task from paper ask up to three models
  * in turn: a call of either names it as its deadline, since a shorter Connect-Timeout-Ms
  * would cut api short, and a repeat waits for a first one still going as long.
  */
@@ -65,6 +65,7 @@ export const PAPER_TIMEOUT_MS = 90_000;
 const PAPER_METHODS = new Set([
   "novatrail.api.v1.PaperService/FindTasks",
   "novatrail.api.v1.AttemptService/SubmitWork",
+  "novatrail.api.v1.AttemptService/GetOpeningWords",
 ]);
 
 /** How long a repeat waits for a first request of the method still going, ms. */

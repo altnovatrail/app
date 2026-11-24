@@ -29,6 +29,7 @@ import {
   answerOf,
   began,
   callLine,
+  callsOf,
   callTitle,
   choose,
   clear,
@@ -37,9 +38,8 @@ import {
   exportOf,
   failureOf,
   fitted,
-  joinOf,
   load,
-  modelCalls,
+  OUTCOMES,
   outcomeOf,
   perMtok,
   reset,
@@ -61,7 +61,6 @@ const haiku = create(DebugModelSchema, {
 });
 const opus = create(DebugModelSchema, { id: "claude-opus-5-5", name: "Opus 5.5" });
 const models = [haiku, opus];
-const SECOND_PICK = { model: haiku.id, effort: DebugEffort.LOW, thinking: false };
 
 /** A client of the debug mode that answers as it is told, and keeps what it was asked. */
 function client(answers: {
@@ -100,10 +99,9 @@ describe("the figures", () => {
     ).toBe(true);
   });
 
-  it("names a call by what it did, its reader and its model as the provider gave it back", () => {
+  it("names a call by what it did, its attempt and its model as the provider gave it back", () => {
     const read = create(DebugCallSchema, {
-      kind: DebugCallKind.WORK_READING,
-      reader: 2,
+      kind: DebugCallKind.TASK_CHECKING,
       model: "claude-haiku-5-5-20261101",
       effort: DebugEffort.LOW,
       thinking: false,
@@ -111,31 +109,29 @@ describe("the figures", () => {
       costMicroUsd: 20n,
       inputTokens: 1200n,
     });
-    expect(callTitle(read)).toBe("Read the work · reader 2");
-    expect(callTitle({ ...read, reader: 1, attempt: 1 })).toBe("Read the work · reader 1");
-    expect(callTitle({ ...read, reader: 0, attempt: 3 })).toBe("Read the work · attempt 3");
-    expect(callTitle({ ...read, kind: DebugCallKind.TUTOR_WORDS, reader: 0 })).toBe(
-      "Tutor's words",
-    );
+    expect(callTitle(read)).toBe("Check");
+    expect(callTitle({ ...read, attempt: 3 })).toBe("Check · attempt 3");
+    expect(callTitle({ ...read, kind: DebugCallKind.TUTOR_WORDS })).toBe("Tutor's words");
     expect(callLine(models, read)).toBe("Haiku 5.5 · low · no thinking");
     expect(answerOf(read)).toBe('{\n  "a": 1\n}');
     expect(statsOf(read)[0]).toEqual({ k: "Input", v: "1,200" });
-    const solver = create(DebugCallSchema, { kind: DebugCallKind.SOLVER, answer: "not json" });
-    expect(callLine(models, solver)).toBe("module-kit · no AI");
-    expect(answerOf(solver)).toBe("not json");
-    expect(statsOf(solver).map((s) => s.k)).toEqual(["Time", "Cost"]);
+    const plain = create(DebugCallSchema, { answer: "not json" });
+    expect(answerOf(plain)).toBe("not json");
+    expect(answerOf(create(DebugCallSchema))).toBe("");
     expect(failureOf(create(DebugCallSchema, { failure: Cause.KEY_REFUSED }))).toMatch(
       /KEY_REFUSED/,
     );
-    expect(failureOf(solver)).toBe("");
+    expect(failureOf(plain)).toBe("");
   });
 
   it("names every call and action, a model not in the catalog by its ID, and when api took it", () => {
     const named = (kind: DebugCallKind) => callTitle(create(DebugCallSchema, { kind }));
     expect(named(DebugCallKind.TASK_FINDING)).toBe("Find tasks");
     expect(named(DebugCallKind.STATEMENT_READING)).toBe("Statement");
-    expect(named(DebugCallKind.SOLVER)).toBe("Solver");
-    expect(named(DebugCallKind.TASK_SOLVING)).toBe("Solution");
+    expect(named(DebugCallKind.TASK_CHECKING)).toBe("Check");
+    // A kind api no longer records is a call.
+    expect(named(DebugCallKind.SOLVER)).toBe("Call");
+    expect(named(DebugCallKind.WORK_READING)).toBe("Call");
     expect(named(DebugCallKind.UNSPECIFIED)).toBe("Call");
     const call = create(DebugCallSchema, { kind: DebugCallKind.TUTOR_WORDS, model: "other-1" });
     expect(callLine(models, { ...call, thinking: true })).toMatch(/^other-1 · .* · thinking$/);
@@ -152,15 +148,14 @@ describe("the figures", () => {
     expect(failed(Cause.AI_FAILURE)).toMatch(/CAUSE_AI_FAILURE/);
   });
 
-  it("says how two readers came out, and nothing of one", () => {
-    const reading = (reader: number) =>
-      create(DebugCallSchema, { kind: DebugCallKind.WORK_READING, reader });
-    const two = create(DebugActionSchema, { calls: [reading(1), reading(2)], readersDiffer: true });
-    expect(joinOf(two)).toMatch(/unreadable/);
-    expect(joinOf({ ...two, readersDiffer: false })).toBe("Both readers agree.");
-    expect(joinOf(create(DebugActionSchema, { calls: [reading(0)] }))).toBe("");
-    // The attempts of one reader are one reader.
-    expect(joinOf(create(DebugActionSchema, { calls: [reading(1), reading(1)] }))).toBe("");
+  it("names the verdict of every slot api gives, so far correct among them", () => {
+    expect(outcomeOf("correct")).toBe(DebugOutcome.CORRECT);
+    expect(outcomeOf("not_yet")).toBe(DebugOutcome.NOT_YET);
+    expect(outcomeOf("unreadable")).toBe(DebugOutcome.UNREADABLE);
+    expect(outcomeOf("unchecked")).toBe(DebugOutcome.UNCHECKED);
+    expect(outcomeOf("so_far_correct")).toBe(DebugOutcome.SO_FAR_CORRECT);
+    expect(outcomeOf(undefined)).toBe(DebugOutcome.UNSPECIFIED);
+    expect(OUTCOMES.map((o) => o.name)).toContain("so far");
   });
 });
 
@@ -219,7 +214,7 @@ describe("the tab's memory", () => {
     );
     expect(snapshot().status).toBe("unknown");
     const choice = create(DebugChoiceSchema, {
-      second: create(DebugModelChoiceSchema, {
+      first: create(DebugModelChoiceSchema, {
         model: haiku.id,
         effort: DebugEffort.HIGH,
         thinking: true,
@@ -230,9 +225,7 @@ describe("the tab's memory", () => {
     );
     const now = snapshot();
     expect(now.status).toBe("on");
-    expect(now.first).toBeUndefined();
-    expect(now.secondOn).toBe(true);
-    expect(now.second).toEqual({ model: haiku.id, effort: DebugEffort.HIGH, thinking: true });
+    expect(now.first).toEqual({ model: haiku.id, effort: DebugEffort.HIGH, thinking: true });
     await load(undefined);
     expect(snapshot().status).toBe("on");
   });
@@ -255,9 +248,9 @@ describe("the tab's memory", () => {
   });
 
   it("does nothing with no client", async () => {
-    await choose(undefined, undefined, SECOND_PICK, true);
+    await choose(undefined, { model: opus.id, effort: DebugEffort.LOW, thinking: true });
     await take(undefined);
-    expect(snapshot().secondOn).toBe(false);
+    expect(snapshot().first).toBeUndefined();
     expect(snapshot().actions).toEqual([]);
   });
 
@@ -273,14 +266,13 @@ describe("the tab's memory", () => {
       }),
     });
     const { client: c, asked } = client({ set: async () => held });
-    const second = { model: haiku.id, effort: DebugEffort.LOW, thinking: false };
-    await choose(c, { model: opus.id, effort: DebugEffort.LOW, thinking: false }, second, false);
+    await choose(c, { model: opus.id, effort: DebugEffort.LOW, thinking: false });
     expect(asked).toHaveLength(1);
+    // One model of every call: no second reader goes.
     const sent = asked[0] as { choice: { first: { thinking: boolean }; second?: unknown } };
     expect(sent.choice.first.thinking).toBe(true);
     expect(sent.choice.second).toBeUndefined();
     expect(snapshot().first?.model).toBe(opus.id);
-    expect(snapshot().second).toEqual(second);
 
     await choose(
       client({
@@ -289,13 +281,10 @@ describe("the tab's memory", () => {
         },
       }).client,
       undefined,
-      second,
-      true,
     );
     expect(snapshot().refused).toBe("no");
     // The window goes back to what api still holds.
     expect(snapshot().first?.model).toBe(opus.id);
-    expect(snapshot().secondOn).toBe(false);
   });
 
   it("sends the changes one at a time, and shows api's answer to the last", async () => {
@@ -316,8 +305,8 @@ describe("the tab's memory", () => {
       },
     } as unknown as DebugClient;
     const pick = (model: string) => ({ model, effort: DebugEffort.LOW, thinking: true });
-    const one = choose(c, pick(opus.id), SECOND_PICK, false);
-    const two = choose(c, pick(haiku.id), SECOND_PICK, false);
+    const one = choose(c, pick(opus.id));
+    const two = choose(c, pick(haiku.id));
     await Promise.resolve();
     expect(sent).toEqual([opus.id]);
     first();
@@ -328,13 +317,14 @@ describe("the tab's memory", () => {
 
   it("shows no refusal of a change that a later one followed, and a refusal that is no Error", async () => {
     await load(client({ get: async () => create(GetDebugResponseSchema, { models }) }).client);
+    const pick = (model: string) => ({ model, effort: DebugEffort.LOW, thinking: true });
     const refusing = client({
       set: async () => {
         throw "refused";
       },
     }).client;
-    const one = choose(refusing, undefined, SECOND_PICK, false);
-    const two = choose(refusing, undefined, SECOND_PICK, true);
+    const one = choose(refusing, undefined);
+    const two = choose(refusing, pick(opus.id));
     await one;
     expect(snapshot().refused).toBeUndefined();
     await two;
@@ -348,8 +338,7 @@ describe("the tab's memory", () => {
       attemptId: "a",
       calls: [
         create(DebugCallSchema, { kind: DebugCallKind.STATEMENT_READING, costMicroUsd: 100n }),
-        create(DebugCallSchema, { kind: DebugCallKind.SOLVER }),
-        create(DebugCallSchema, { kind: DebugCallKind.WORK_READING, costMicroUsd: 300n }),
+        create(DebugCallSchema, { kind: DebugCallKind.TASK_CHECKING, costMicroUsd: 300n }),
       ],
     });
     const taken = create(TakeDebugCallsResponseSchema, { actions: [action] });
@@ -366,7 +355,7 @@ describe("the tab's memory", () => {
     const now = snapshot();
     expect(now.busy).toBe(0);
     expect(now.actions).toHaveLength(1);
-    expect(modelCalls(now.actions)).toBe(2);
+    expect(callsOf(now.actions)).toHaveLength(2);
     expect(costOf(action.calls)).toBe(400n);
     expect(actionKey(action)).toBe(`${DebugActionKind.CHECK}-a-0-0`);
     clear();
@@ -418,99 +407,101 @@ describe("the export of a Check", () => {
     attemptId: "0a1b2c3d-attempt",
     statement: new Uint8Array([1, 2]),
     crop: new Uint8Array([3, 4]),
-    outcomes: [outcomeOf("unreadable")],
+    instruction: new Uint8Array([5, 6]),
+    outcomes: [outcomeOf("not_yet")],
   };
-  const call = (kind: DebugCallKind, answer: string, reader = 0) =>
-    create(DebugCallSchema, { kind, answer, reader });
+  const call = (kind: DebugCallKind, answer: string) => create(DebugCallSchema, { kind, answer });
+  /** The model's JSON of a Check, its hidden solution and answer among it. */
+  const checking = (...tasks: readonly object[]) =>
+    call(
+      DebugCallKind.TASK_CHECKING,
+      JSON.stringify({ tasks, tutor_words: "Look again", hints: ["What is 7 + 8?", "Row 2"] }),
+    );
   const first = create(DebugActionSchema, {
-    kind: DebugActionKind.CHECK,
+    kind: DebugActionKind.WORDS,
     attemptId: sent.attemptId,
-    calls: [
-      call(
-        DebugCallKind.STATEMENT_READING,
-        '{"tasks":[{"statement":"37 + 48 =","formula":"37+48"}]}',
-      ),
-      call(
-        DebugCallKind.SOLVER,
-        '{"tasks":[{"statement":"37 + 48 =","provenance":"PROVENANCE_SOLVER","answer":{"number":{"value":"85"}}}]}',
-      ),
-      call(DebugCallKind.WORK_READING, '{"results":[{"task":1,"part":1,"value":"35"}]}', 1),
-    ],
+    calls: [call(DebugCallKind.STATEMENT_READING, '{"tasks":[{"statement":"37 + 48 ="}]}')],
   });
   const second = create(DebugActionSchema, {
     kind: DebugActionKind.CHECK,
     attemptId: sent.attemptId,
     at: timestampFromDate(new Date("2026-11-19T15:04:05.250Z")),
-    calls: [call(DebugCallKind.WORK_READING, '{"results":[{"task":1,"part":1,"value":"36"}]}', 1)],
+    calls: [
+      checking({ task: 1, verdict: "incorrect", read: "75", answer: "85", solution: "37+48=85" }),
+    ],
   });
   const task = {
     statement: "37 + 48 =",
-    formula: "37+48",
-    key: '{"number":{"value":"85"}}',
-    read: "36",
-    outcome: DebugOutcome.UNREADABLE,
+    read: "75",
+    outcome: DebugOutcome.NOT_YET,
+    checkVerdict: "incorrect",
+    checkRead: "75",
   };
 
-  it("begins from what the calls gave, the key of an earlier Check of the attempt among them", () => {
+  it("begins from what the Check gave, the statement Recognise read on the attempt beside it", () => {
     expect(truthOf([first, second], second, sent)).toEqual({ tasks: [task], note: "" });
-    expect(truthOf([first], first, undefined).tasks[0]?.outcome).toBe(DebugOutcome.UNSPECIFIED);
+    expect(truthOf([first, second], second, undefined).tasks[0]?.outcome).toBe(
+      DebugOutcome.UNSPECIFIED,
+    );
     // Of the attempts of a call, the last that answered is what it gave.
     const tried = create(DebugActionSchema, {
       kind: DebugActionKind.CHECK,
       attemptId: sent.attemptId,
       calls: [
-        call(
-          DebugCallKind.STATEMENT_READING,
-          '{"tasks":[{"statement":"37 + 47 =","formula":"37+47"}]}',
-        ),
-        call(
-          DebugCallKind.STATEMENT_READING,
-          '{"tasks":[{"statement":"37 + 48 =","formula":"37+48"}]}',
-        ),
-        call(DebugCallKind.WORK_READING, '{"results":[{"task":1,"part":1,"value":"35"}]}', 1),
-        call(DebugCallKind.WORK_READING, '{"results":[{"task":1,"part":1,"value":"85"}]}', 1),
-        { ...call(DebugCallKind.WORK_READING, "{}", 1), failure: Cause.AI_FAILURE },
+        checking({ task: 1, verdict: "unreadable", read: "" }),
+        checking({ task: 1, verdict: "correct", read: "85" }),
+        { ...checking({ task: 1, verdict: "no_answer" }), failure: Cause.AI_FAILURE },
       ],
     });
-    expect(truthOf([tried], tried, sent).tasks).toMatchObject([{ formula: "37+48", read: "85" }]);
-    expect(outcomeOf("no such")).toBe(DebugOutcome.UNSPECIFIED);
+    expect(truthOf([tried], tried, sent).tasks).toMatchObject([
+      { statement: "", read: "85", checkVerdict: "correct", checkRead: "85" },
+    ]);
   });
 
-  it("begins a frame of several tasks with each, its key, what was read of it and its verdict", () => {
+  it("begins a frame of several tasks with each, by its number, and its verdict", () => {
     const several = create(DebugActionSchema, {
       kind: DebugActionKind.CHECK,
       attemptId: "another",
       calls: [
-        call(
-          DebugCallKind.STATEMENT_READING,
-          '{"tasks":[{"statement":"37 + 48 =","formula":"37+48"},{"statement":"A boat…","formula":""}]}',
-        ),
-        call(
-          DebugCallKind.SOLVER,
-          '{"tasks":[{"statement":"37 + 48 =","provenance":"PROVENANCE_SOLVER","answer":{"number":{"value":"85"}}},{"statement":"A boat…"}]}',
-        ),
-        call(
-          DebugCallKind.WORK_READING,
-          '{"results":[{"task":2,"part":1,"value":"7"},{"task":1,"part":1,"value":"85"}]}',
-          1,
+        checking(
+          { task: 2, verdict: "no_answer", read: "3 + 4" },
+          { task: 1, verdict: "correct", read: "85" },
         ),
       ],
     });
-    const outcomes = [DebugOutcome.CORRECT, DebugOutcome.UNCHECKED];
+    const outcomes = [DebugOutcome.CORRECT, DebugOutcome.SO_FAR_CORRECT];
     expect(truthOf([several], several, { ...sent, outcomes }).tasks).toEqual([
-      { ...task, read: "85", outcome: DebugOutcome.CORRECT },
-      { statement: "A boat…", formula: "", key: "", read: "7", outcome: DebugOutcome.UNCHECKED },
+      {
+        statement: "",
+        read: "85",
+        outcome: DebugOutcome.CORRECT,
+        checkVerdict: "correct",
+        checkRead: "85",
+      },
+      {
+        statement: "",
+        read: "3 + 4",
+        outcome: DebugOutcome.SO_FAR_CORRECT,
+        checkVerdict: "no_answer",
+        checkRead: "3 + 4",
+      },
     ]);
-    // With no statement read, as many tasks as api gave verdicts.
-    expect(truthOf([second], second, { ...sent, outcomes }).tasks).toHaveLength(2);
-    expect(truthOf([second], second, undefined).tasks).toHaveLength(1);
-    // An action the log no longer holds is its own attempt alone; one with no reading reads nothing.
-    expect(truthOf([], first, sent).tasks).toEqual([{ ...task, read: "35" }]);
-    const unread = create(DebugActionSchema, { kind: DebugActionKind.CHECK, attemptId: "u" });
-    expect(truthOf([unread], unread, undefined).tasks).toMatchObject([{ read: "", statement: "" }]);
+    // With no Check that answered, as many tasks as api gave verdicts, one at least.
+    expect(truthOf([first], first, { ...sent, outcomes }).tasks).toHaveLength(2);
+    expect(truthOf([first], first, undefined).tasks).toHaveLength(1);
+    // An action the log no longer holds is its own attempt alone; one with no answer reads nothing.
+    expect(truthOf([], second, sent).tasks).toEqual([{ ...task, statement: "" }]);
+    const unread = create(DebugActionSchema, {
+      kind: DebugActionKind.CHECK,
+      attemptId: "u",
+      calls: [call(DebugCallKind.TASK_CHECKING, "not json")],
+    });
+    expect(truthOf([unread], unread, undefined).tasks).toMatchObject([
+      { read: "", statement: "", checkVerdict: "" },
+    ]);
   });
 
-  it("writes a case of tutor-eval with the work sent and the truth corrected, or says why not", () => {
+  it("writes a case of tutor-eval with the work sent, the truth corrected and what the Check gave", () => {
     const truth = {
       tasks: [{ ...task, read: " 85 ", outcome: DebugOutcome.CORRECT }],
       note: "misread 85",
@@ -521,37 +512,40 @@ describe("the export of a Check", () => {
     const back = fromJsonString(DebugCaseSchema, file.json);
     expect(back.work?.statement).toEqual(sent.statement);
     expect(back.work?.crop).toEqual(sent.crop);
+    expect(back.work?.instruction).toEqual(sent.instruction);
     const [one] = back.tasks;
     expect(one?.statement).toBe("37 + 48 =");
-    expect(one?.formula).toBe("37+48");
-    expect(one?.key?.kind.case).toBe("number");
+    expect(one?.formula).toBe("");
+    expect(one?.key).toBeUndefined();
     expect(one?.read).toBe("85");
     expect(one?.outcome).toBe(DebugOutcome.CORRECT);
+    expect(one?.checkVerdict).toBe("incorrect");
+    expect(one?.checkRead).toBe("75");
     expect(back.note).toBe("misread 85");
     expect(back.action?.calls).toHaveLength(1);
 
     const with_ = (change: Partial<typeof task>) =>
       ({ ...truth, tasks: [{ ...truth.tasks[0], ...change }] }) as typeof truth;
-    expect(exportOf(second, sent, with_({ key: "" }))).not.toHaveProperty("error");
-    expect(exportOf(second, sent, with_({ key: "{oops" }))).toHaveProperty("error");
+    // A statement is the developer's to give or not: the Check reads the crop itself.
+    expect(exportOf(second, sent, with_({ statement: " " }))).not.toHaveProperty("error");
     expect(exportOf(second, sent, with_({ outcome: DebugOutcome.UNSPECIFIED }))).toEqual({
       error: "Choose the verdict each task should get.",
     });
-    expect(exportOf(second, sent, with_({ statement: " " }))).toEqual({
-      error: "Give each task its statement as printed.",
-    });
     expect(exportOf(second, sent, { ...truth, tasks: [] })).toHaveProperty("error");
-    // An action with no instant is named by the clock's start.
-    const undated = exportOf(first, sent, truth);
-    expect("name" in undated && undated.name).toBe("case-19700101T000000-0a1b2c3d.json");
+    // A Check with no instruction sends none, an action with no instant is named by the clock's start.
+    const { instruction: _, ...plain } = sent;
+    const undated = exportOf(first, plain, truth);
+    if ("error" in undated) throw new Error(undated.error);
+    expect(undated.name).toBe("case-19700101T000000-0a1b2c3d.json");
+    expect(fromJsonString(DebugCaseSchema, undated.json).work?.instruction).toHaveLength(0);
     const two = exportOf(second, sent, {
       ...truth,
-      tasks: [truth.tasks[0], { ...task, outcome: DebugOutcome.NOT_YET }],
+      tasks: [truth.tasks[0], { ...task, outcome: DebugOutcome.SO_FAR_CORRECT }],
     } as typeof truth);
     if ("error" in two) throw new Error(two.error);
     expect(fromJsonString(DebugCaseSchema, two.json).tasks.map((t) => t.outcome)).toEqual([
       DebugOutcome.CORRECT,
-      DebugOutcome.NOT_YET,
+      DebugOutcome.SO_FAR_CORRECT,
     ]);
   });
 

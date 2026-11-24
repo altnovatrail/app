@@ -1,9 +1,9 @@
 // The debug button and its window in the browser, with api's DebugService on connect-es's
 // router: nothing until GetDebug answers; the window by the button, Escape and Close, the focus
-// back on the button; the tab Models — "As admitted", a model chosen with its effort and thinking,
-// thinking that stays on, the second reader, and a choice api refuses —; and the tab Log — each
+// back on the button; the tab Models — "As admitted", one model of every call chosen with its
+// effort and thinking, thinking that stays on, and a choice api refuses —; and the tab Log — each
 // action with its calls, a call opened to its figures and what the model returned, the request of
-// a finding, how two readers came out, the export of a Check and why it makes no case, and the
+// a finding, the export of a Check with what the Check answered and why it makes no case, and the
 // log cleared.
 import { Cause } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import {
@@ -39,38 +39,40 @@ const HAIKU = {
 };
 const OPUS = { id: "claude-opus-5-5", name: "Opus 5.5", inputMicroUsd: 5_000_000n };
 
-/** A Check of a frame of one task: the statement read, the solver's key and two readers. */
-const CHECK = create(DebugActionSchema, {
-  kind: DebugActionKind.CHECK,
+/** The statement of the attempt's task, as "Recognise" read it. */
+const RECOGNISED = create(DebugActionSchema, {
+  kind: DebugActionKind.WORDS,
   attemptId: "attempt-1",
-  at: timestampFromDate(new Date("2026-11-19T15:04:05Z")),
-  readersDiffer: true,
+  at: timestampFromDate(new Date("2026-11-19T15:02:00Z")),
   calls: [
     create(DebugCallSchema, {
       kind: DebugCallKind.STATEMENT_READING,
       model: HAIKU.id,
       effort: DebugEffort.MEDIUM,
-      answer: '{"tasks":[{"statement":"37 + 48 =","formula":"37+48"}]}',
+      answer: '{"tasks":[{"statement":"37 + 48 ="}]}',
       inputTokens: 1200n,
       costMicroUsd: 2_500n,
       durationMs: 1500n,
       billed: true,
     }),
+  ],
+});
+
+/** A Check of a frame of one task: Haiku's answer, and Opus's attempt after it that failed. */
+const CHECK = create(DebugActionSchema, {
+  kind: DebugActionKind.CHECK,
+  attemptId: "attempt-1",
+  at: timestampFromDate(new Date("2026-11-19T15:04:05Z")),
+  calls: [
     create(DebugCallSchema, {
-      kind: DebugCallKind.SOLVER,
-      answer: '{"tasks":[{"statement":"37 + 48 =","answer":{"number":{"value":"85"}}}]}',
-      durationMs: 3n,
-    }),
-    create(DebugCallSchema, {
-      kind: DebugCallKind.WORK_READING,
-      reader: 1,
+      kind: DebugCallKind.TASK_CHECKING,
       model: HAIKU.id,
       thinking: true,
-      answer: '{"results":[{"task":1,"part":1,"value":"85"}]}',
+      answer:
+        '{"tasks":[{"task":1,"verdict":"correct","read":"85","answer":"85"}],"tutor_words":"Well done","hints":["a","b"]}',
     }),
     create(DebugCallSchema, {
-      kind: DebugCallKind.WORK_READING,
-      reader: 2,
+      kind: DebugCallKind.TASK_CHECKING,
       attempt: 2,
       model: OPUS.id,
       failure: Cause.AI_FAILURE,
@@ -110,7 +112,7 @@ function renderDebug(routes: Routes = {}) {
             model: { model: HAIKU.id, effort: DebugEffort.MEDIUM },
           },
           { kind: DebugCallKind.TASK_FINDING, model: { model: OPUS.id, effort: DebugEffort.HIGH } },
-          { kind: DebugCallKind.WORK_READING },
+          { kind: DebugCallKind.TASK_CHECKING },
         ],
       }),
       setDebugModels(request) {
@@ -145,6 +147,7 @@ async function logged(api: Api) {
         attemptId: "attempt-1",
         statement: new Uint8Array([1]),
         crop: new Uint8Array([2]),
+        instruction: new Uint8Array([3]),
         outcomes: [DebugOutcome.CORRECT],
       },
       "only the first column",
@@ -200,12 +203,15 @@ describe("the debug button", () => {
     expect(button).toHaveAttribute("aria-expanded", "false");
   });
 
-  it("shows the models as admitted, and sets a model, its effort and thinking, and the second reader", async () => {
+  it("shows the models as admitted, and sets one model of every call, its effort and thinking", async () => {
     const { asked } = renderDebug();
     const window_ = await opened();
     const models = within(window_.getByRole("region", { name: "Models" }));
     expect(models.getByText("Haiku 5.5 · medium → Opus 5.5 · high")).toBeVisible();
-    expect(models.getByText("Off: one reader, the first model.")).toBeVisible();
+    expect(models.getByText("Check")).toBeVisible();
+    // One model of every call: no second reader.
+    expect(models.queryByRole("switch", { name: "Second reader" })).toBeNull();
+    expect(models.getAllByRole("button", { name: /^Model/ })).toHaveLength(1);
 
     const [first] = models.getAllByRole("button", { name: /^Model/ });
     await userEvent.click(first as HTMLElement);
@@ -237,23 +243,7 @@ describe("the debug button", () => {
     );
     expect(await models.findByText("Always on for Opus 5.5")).toBeVisible();
     await userEvent.click(models.getByRole("switch", { name: /Thinking/ }), { force: true });
-
-    // The second reader, Sonnet at low until another is chosen.
-    await userEvent.click(models.getByRole("switch", { name: "Second reader" }));
-    expect(
-      await models.findByText(
-        "Two readers of the work: a place they read differently is unreadable.",
-      ),
-    ).toBeVisible();
-    await waitFor(() => expect(asked.at(-1)?.choice?.second?.effort).toBe(DebugEffort.LOW));
-    const second = models.getAllByRole("button", { name: /^Model/ })[1] as HTMLElement;
-    await userEvent.click(second);
-    await userEvent.click(
-      within(models.getByRole("menu", { name: "Model" })).getByRole("menuitemradio", {
-        name: /Haiku 5\.5/,
-      }),
-    );
-    await waitFor(() => expect(asked.at(-1)?.choice?.second?.model).toBe(HAIKU.id));
+    expect(asked.every((each) => each.choice?.second === undefined)).toBe(true);
 
     // Back to as admitted.
     await userEvent.click(models.getAllByRole("button", { name: /^Model/ })[0] as HTMLElement);
@@ -283,51 +273,41 @@ describe("the debug button", () => {
   it("logs each action with its calls, opens a call, and exports a Check as a case", async () => {
     const save = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
     const made = vi.spyOn(URL, "createObjectURL");
-    const { api } = renderDebug({ actions: [FOUND, CHECK] });
+    const { api } = renderDebug({ actions: [FOUND, RECOGNISED, CHECK] });
     await logged(api);
     const window_ = await opened();
     await userEvent.click(window_.getByRole("tab", { name: /Log/ }));
     const log = within(window_.getByRole("region", { name: "Log of the models" }));
     expect(log.getByText("Request: “only the first column”")).toBeVisible();
-    expect(log.getByText("The readers read a place differently: it is unreadable.")).toBeVisible();
-    expect(log.getByText("Read the work · reader 2 · attempt 2")).toBeVisible();
-    expect(log.getByText("module-kit · no AI")).toBeVisible();
+    expect(log.getByText("Check · attempt 2")).toBeVisible();
 
     // A call opens to its figures and what the model returned, indented when it is JSON.
     await userEvent.click(log.getByRole("button", { name: /^Statement/ }));
     expect(log.getByText("1,200")).toBeVisible();
-    expect(log.getByText(/"formula": "37\+48"/)).toBeVisible();
+    expect(log.getByText(/"statement": "37 \+ 48 ="/)).toBeVisible();
     const copy = vi.spyOn(navigator.clipboard, "writeText").mockResolvedValue();
     await userEvent.click(log.getByRole("button", { name: "Copy" }));
     expect(await log.findByRole("button", { name: "Copied" })).toBeVisible();
-    expect(copy).toHaveBeenCalledWith(expect.stringMatching(/"formula": "37\+48"/));
-    await userEvent.click(log.getByRole("button", { name: /^Solver/ }));
-    expect(log.getByText("The key")).toBeVisible();
+    expect(copy).toHaveBeenCalledWith(expect.stringMatching(/"statement": "37 \+ 48 ="/));
+    await userEvent.click(log.getByRole("button", { name: /^Check ?Haiku/ }));
+    expect(log.getByText(/"tutor_words": "Well done"/)).toBeVisible();
     await userEvent.click(log.getByRole("button", { name: /^Find tasks/ }));
     expect(log.getByText("not JSON")).toBeVisible();
     expect(log.getByText("The own key's limit (CAUSE_LIMIT_REACHED).")).toBeVisible();
     // A call that returned nothing opens to its figures and why.
-    await userEvent.click(log.getByRole("button", { name: /^Read the work · reader 2/ }));
+    await userEvent.click(log.getByRole("button", { name: /^Check · attempt 2/ }));
     expect(log.getByText("The call failed (CAUSE_AI_FAILURE).")).toBeVisible();
 
-    // The export begins from what the calls gave, and saves the case once it makes one.
+    // The export begins from what the Check gave, beside it, and saves the case once it makes one.
     await userEvent.click(log.getByRole("button", { name: "Export" }));
+    expect(log.getByText("The Check: correct · read “85”")).toBeVisible();
     expect(log.getByLabelText("Statement")).toHaveValue("37 + 48 =");
-    expect(log.getByLabelText("Key · JSON of paper.v1.Answer")).toHaveValue(
-      '{"number":{"value":"85"}}',
-    );
     expect(log.getByLabelText("Read · the answer the work holds")).toHaveValue("85");
-    await userEvent.fill(log.getByLabelText("Key · JSON of paper.v1.Answer"), "{oops");
-    await userEvent.click(log.getByRole("button", { name: "Save case" }));
-    expect(log.getByRole("alert").textContent).toMatch(
-      /^The key of task 1 is no paper\.v1\.Answer: /,
-    );
-    await userEvent.fill(log.getByLabelText("Key · JSON of paper.v1.Answer"), "");
+    expect(log.getByRole("button", { name: "correct" })).toHaveAttribute("aria-pressed", "true");
     // Each field as the developer corrects it, trimmed in the case.
     await userEvent.fill(log.getByLabelText("Statement"), "37 + 48 = ");
-    await userEvent.fill(log.getByLabelText("Formula"), "37 + 48");
     await userEvent.fill(log.getByLabelText("Read · the answer the work holds"), " 86");
-    await userEvent.fill(log.getByLabelText("Note"), "the second reader failed");
+    await userEvent.fill(log.getByLabelText("Note"), "the Check misread it");
     await userEvent.click(log.getByRole("button", { name: "not yet" }));
     await userEvent.click(log.getByRole("button", { name: "Save case" }));
     expect(save).toHaveBeenCalledOnce();
@@ -340,9 +320,12 @@ describe("the debug button", () => {
     const saved = JSON.parse(await file.text());
     expect(saved.tasks[0]).toMatchObject({
       statement: "37 + 48 =",
-      formula: "37 + 48",
       read: "86",
+      outcome: "DEBUG_OUTCOME_NOT_YET",
+      checkVerdict: "correct",
+      checkRead: "85",
     });
+    expect(saved.work.instruction).toBe("Aw==");
     await userEvent.click(log.getByRole("button", { name: "Export" }));
     await userEvent.click(log.getByRole("button", { name: "Cancel" }));
     expect(log.queryByRole("button", { name: "Cancel" })).toBeNull();

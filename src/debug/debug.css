@@ -435,9 +435,6 @@ button.nt-debug-call-row {
   border-radius: 50%;
   background: #248a3d;
 }
-.nt-debug-dot[data-of="solver"] {
-  background: #8e8e93;
-}
 .nt-debug-dot[data-of="failed"] {
   background: #ff9f0a;
 }

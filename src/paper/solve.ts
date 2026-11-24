@@ -2,15 +2,17 @@
 // sheet under its crop, the tracing paper, in the order of the page; those the learner left out on
 // the page again are not on the list, and come back with their work when picked once more. "Add"
 // goes back to the page, and Start then begins only the tasks not begun yet. A frame may hold several
-// tasks, up to 20, each with an answer of its own: a Check gives the verdict of each task's answer
-// slot by its key, and a tick or a cross by each answer on the crop of the work; none when no task
-// has a key; after Not yet, in the mode "Show where", the tutor's wavy line under the
-// first mistake. No DOM.
+// tasks, up to 20, each with an answer of its own: a Check, in which a model judges the work, gives
+// the verdict of each task's answer slot, and a tick or a cross by each answer on the crop of the
+// work; a task with no answer yet and no mistake in its solution is "So far correct", with no mark;
+// none when the Check read nothing of a solution; after Not yet, in the mode "Show where", the
+// tutor's wavy line under the first mistake. No DOM.
 import {
   type AnswerSlotVerdict,
   type Mark as ContractMark,
   type ItemVerdict,
   MarkKind,
+  TutorReply,
 } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
 import { Cause } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import type {
@@ -27,6 +29,7 @@ import { outcomeText } from "../api/words.ts";
 import type { Words } from "../i18n/words.ts";
 import type { PaperSent } from "../storage/profile.ts";
 import { reasonKey, verdictKey } from "../task/attempt.ts";
+import type { Said } from "../tutor/report.ts";
 import { type Frame, pageOrder, sameFrame } from "./frame.ts";
 import { type PageTask, picked } from "./page.ts";
 
@@ -39,6 +42,11 @@ export interface BegunTask {
   /** The learner drew its frame. */
   readonly drawn: boolean;
   readonly crop: Blob;
+  /**
+   * The crop of the instruction printed above it, cut by the frame the finding gave; none for a
+   * frame drawn, one the finding gave none, and a task of a page of the history, which keeps none.
+   */
+  readonly instruction?: Blob;
   /** The history of writing on its sheet and on its tracing paper. */
   readonly history: readonly HistoryEvent[];
   /** Where its tracing paper lies and whether it is hidden; none till the learner moves it. */
@@ -135,24 +143,25 @@ export function changed(
 }
 
 /**
- * One task of a frame as a Check judged it: the verdict of its answer slot, and where
- * its answer was read on the crop of the work, [ymin, xmin, ymax, xmax] in thousandths, when the
- * reading gave a value.
+ * One task of a frame as a Check judged it: the verdict of its answer slot — "so-far" with no answer
+ * yet and no mistake —, and where its answer was read on the crop of the work, [ymin, xmin, ymax,
+ * xmax] in thousandths, beside correct and not yet when the Check read it.
  */
 export interface PaperPart {
-  readonly verdict: "correct" | "not-yet" | "unreadable" | "unchecked";
+  readonly verdict: "correct" | "not-yet" | "so-far" | "unreadable" | "unchecked";
   readonly box?: readonly [number, number, number, number];
 }
 
 /**
- * What a Check of a task from paper came to, as its card shows it: correct when every
- * task of the frame that has a key is, or not yet, with what was read of a frame of one task and
- * each task's part; not read, with why, when no answer was; not checked, with the outcome of the
- * call that left it so; or no key, when no task has one answer a program can compare.
+ * What a Check of a task from paper came to, as its card shows it: correct when every task of the
+ * frame is, or not yet, with what was read of a frame of one task and each task's part; so far
+ * correct when no task is not yet and one has no answer yet but a solution with no mistake; not
+ * read, with why, when no answer was; not checked, with the outcome of the call that left it so; or
+ * no key, when the Check read nothing of a solution in any task.
  */
 export type PaperVerdict =
   | {
-      readonly kind: "correct" | "not-yet";
+      readonly kind: "correct" | "not-yet" | "so-far";
       readonly read: string | undefined;
       readonly parts: readonly PaperPart[];
     }
@@ -162,10 +171,11 @@ export type PaperVerdict =
 
 /**
  * The verdict of an answer to a Check of a task from paper, by each task's item, in the order of the
- * frame; a verdict the build knows not is none. A task with no key is unchecked and counts for
- * neither. Correct is whether api closed the attempt solved: a task with a key whose answer it could
- * not judge keeps it open, though no other is wrong. A repeat of the Check that solved it holds no
- * verdict of a task, which api erased with the close: it is correct all the same.
+ * frame; a verdict the build knows not is none. Correct is whether api closed the attempt solved: a
+ * task whose answer the Check could not read keeps it open, though no other is wrong. A task not yet
+ * makes the frame not yet; else one so far correct makes it so far correct, which counts no wrong
+ * answer. A repeat of the Check that solved it holds no verdict of a task, which api erased with the
+ * close: it is correct all the same.
  */
 export function paperVerdictOf(
   items: readonly ItemVerdict[],
@@ -176,39 +186,38 @@ export function paperVerdictOf(
   if (solved && items.length === 0) return { kind: "correct", read: undefined, parts: [] };
   const slots = items.map((item) => item.answerSlots[0]);
   const parts = slots.map(partOf);
-  if (parts.some(({ verdict }) => verdict === "correct" || verdict === "not-yet")) {
-    return {
-      kind: solved ? "correct" : "not-yet",
-      read: slots.length === 1 ? slots[0]?.value : undefined,
-      parts,
-    };
-  }
+  const has = (verdict: PaperPart["verdict"]) => parts.some((part) => part.verdict === verdict);
+  const read = slots.length === 1 ? slots[0]?.value : undefined;
+  if (solved) return { kind: "correct", read, parts };
+  if (has("not-yet")) return { kind: "not-yet", read, parts };
+  if (has("so-far")) return { kind: "so-far", read, parts };
+  if (has("correct")) return { kind: "not-yet", read, parts };
   const unread = slots.find((slot) => slot?.verdict === "unreadable");
   if (unread !== undefined) return { kind: "unreadable", reason: unread.reason };
   return { kind: "unchecked", outcome };
 }
 
+/** The verdicts of an answer slot the build knows, as a part names them. */
+const PARTS: Readonly<Record<string, PaperPart["verdict"]>> = {
+  correct: "correct",
+  not_yet: "not-yet",
+  so_far_correct: "so-far",
+  unreadable: "unreadable",
+};
+
 function partOf(slot: AnswerSlotVerdict | undefined): PaperPart {
-  const verdict =
-    slot?.verdict === "correct"
-      ? "correct"
-      : slot?.verdict === "not_yet"
-        ? "not-yet"
-        : slot?.verdict === "unreadable"
-          ? "unreadable"
-          : "unchecked";
+  const verdict = PARTS[slot?.verdict ?? ""] ?? "unchecked";
   const box = slot?.cropBox;
   if (box === undefined || (verdict !== "correct" && verdict !== "not-yet")) return { verdict };
   return { verdict, box: [box.ymin, box.xmin, box.ymax, box.xmax] };
 }
 
 /**
- * Whether a task's Check is over: it is solved, and its attempt closed, or it has no key, which a
- * Check again would not find; or its attempt is over, as a page of the history may say.
+ * Whether a task's Check is over: it is solved, and its attempt closed, or its attempt is over, as a
+ * page of the history may say. A Check that read nothing leaves it open: the next one checks again.
  */
 export function checkOver(task: BegunTask): boolean {
-  const kind = task.verdict?.kind;
-  return kind === "correct" || kind === "nokey" || task.over === true;
+  return task.verdict?.kind === "correct" || task.over === true;
 }
 
 /**
@@ -221,8 +230,9 @@ export function viewOnly(task: Pick<BegunTask, "verdict" | "over">): boolean {
 
 /**
  * The buttons of the screen of solving and at the foot of the tutor's panel, by the task's last
- * Check: Hint while the task is not solved, a task with no key too, whose hints still work;
- * and the way to the next task once its Check is over. A task only to be looked at has neither.
+ * Check: Hint while the task is not solved, one the Check read nothing of too, whose hints still
+ * work; and the way to the next task once it is solved, or after a Check that read nothing. A task
+ * only to be looked at has neither.
  */
 export function tutorActs(task: Pick<BegunTask, "verdict" | "over">): {
   readonly hint: boolean;
@@ -231,6 +241,19 @@ export function tutorActs(task: Pick<BegunTask, "verdict" | "over">): {
   if (viewOnly(task)) return { hint: false, next: false };
   const kind = task.verdict?.kind;
   return { hint: kind !== "correct", next: kind === "correct" || kind === "nokey" };
+}
+
+/**
+ * Which reply of the tutor the words of a Check are, as a report of a problem names it: after a
+ * correct answer the words after it; after a wrong one the rung it gave; before any, the opening.
+ */
+export function checkReply(
+  verdict: PaperVerdict,
+  wrongAnswers: number,
+): Pick<Said, "reply" | "rung"> {
+  if (verdict.kind === "correct") return { reply: TutorReply.CORRECT_ANSWER, rung: 0 };
+  if (wrongAnswers > 0) return { reply: TutorReply.RUNG, rung: Math.min(wrongAnswers, 3) };
+  return { reply: TutorReply.OPENING, rung: 0 };
 }
 
 /** A box of the crop of the work, [ymin, xmin, ymax, xmax] in thousandths. */
@@ -252,10 +275,11 @@ export function wavyOf(marks: readonly ContractMark[]): Box | undefined {
 }
 
 /**
- * The ticks and crosses of a task's last Check on the crop of its work: one by each
- * answer that was correct or not yet and whose place the reading gave, named for a screen reader
- * by its task's number in the frame; and the tutor's wavy line under the first mistake, `wavy`,
- * which stands on the same work. None without a Check that judged one, or its context.
+ * The ticks and crosses of a task's last Check on the crop of its work: one by each answer that was
+ * correct or not yet and whose place the Check read, named for a screen reader by its task's number
+ * in the frame — a task so far correct has none —; and the tutor's wavy line under the first
+ * mistake, `wavy`, which stands on the same work. None without a Check that judged one, or its
+ * context.
  */
 export function verdictMarks(
   task: Pick<BegunTask, "verdict" | "checked">,
@@ -263,7 +287,10 @@ export function verdictMarks(
   wavy?: Box,
 ): Marks | undefined {
   const { verdict, checked } = task;
-  if (checked === undefined || (verdict?.kind !== "correct" && verdict?.kind !== "not-yet"))
+  if (
+    checked === undefined ||
+    (verdict?.kind !== "correct" && verdict?.kind !== "not-yet" && verdict?.kind !== "so-far")
+  )
     return undefined;
   const marks = verdict.parts.flatMap(({ verdict: part, box }, n): VerdictMark[] => {
     if (box === undefined) return [];
@@ -287,15 +314,28 @@ const PAPER_REASONS: Readonly<Record<string, "paper.no-answer" | "paper.several"
 
 /**
  * A verdict's card: its kind, title and line. Of a frame of several tasks, the count of those
- * correct of those with a key, and under it the tasks whose answer was not read; of one task,
- * "Read: …" under a value read. Under a work not read, why, in the words of paper for no final
- * answer and more than one; under one not checked, the outcome's words.
+ * correct of those checked, and under it the tasks whose answer was not read; of one task, "Read: …"
+ * under a value read, and under "So far correct" that there is no mistake yet. Under a work not
+ * read, why, in the words of paper for no final answer and more than one; under one not checked,
+ * the outcome's words.
  */
 export function paperCard(
   verdict: PaperVerdict,
   words: Words,
-): { kind: "correct" | "not-yet" | "write" | "nokey"; title: string; line: string | undefined } {
+): {
+  kind: "correct" | "not-yet" | "so-far" | "write" | "nokey";
+  title: string;
+  line: string | undefined;
+} {
   switch (verdict.kind) {
+    case "so-far": {
+      if (verdict.parts.length > 1) return partsCard(verdict.kind, verdict.parts, words);
+      return {
+        kind: "so-far",
+        title: words.text("paper.so-far"),
+        line: words.text("paper.so-far-line"),
+      };
+    }
     case "correct":
     case "not-yet": {
       if (verdict.parts.length > 1) return partsCard(verdict.kind, verdict.parts, words);
@@ -330,21 +370,25 @@ export function paperCard(
   };
 }
 
-/** The card of a frame of several tasks: how many of those with a key are correct, and which went unread. */
+/** The titles of a frame of several tasks, by its verdict. */
+const PARTS_TITLES = {
+  correct: "paper.parts-correct",
+  "not-yet": "paper.parts-not-yet",
+  "so-far": "paper.parts-so-far",
+} as const;
+
+/** The card of a frame of several tasks: how many of those checked are correct, and which went unread. */
 function partsCard(
-  kind: "correct" | "not-yet",
+  kind: "correct" | "not-yet" | "so-far",
   parts: readonly PaperPart[],
   words: Words,
-): { kind: "correct" | "not-yet"; title: string; line: string | undefined } {
-  const keyed = parts.filter(({ verdict }) => verdict !== "unchecked").length;
+): { kind: "correct" | "not-yet" | "so-far"; title: string; line: string | undefined } {
+  const checked = parts.filter(({ verdict }) => verdict !== "unchecked").length;
   const correct = parts.filter(({ verdict }) => verdict === "correct").length;
   const unread = parts.flatMap(({ verdict }, n) => (verdict === "unreadable" ? [n + 1] : []));
   return {
     kind,
-    title: words.text(kind === "correct" ? "paper.parts-correct" : "paper.parts-not-yet", {
-      n: correct,
-      of: keyed,
-    }),
+    title: words.text(PARTS_TITLES[kind], { n: correct, of: checked }),
     line:
       unread.length === 0
         ? undefined
