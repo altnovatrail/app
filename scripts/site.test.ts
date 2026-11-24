@@ -178,7 +178,7 @@ describe("the rules of the site check", () => {
     expect(originProblem("example.org")).toBeDefined();
   });
 
-  it("lets the page ask its own host, Google's script, authDomain and Firebase Auth", () => {
+  it("lets the page in Chromium ask its own host, Google's script, authDomain and Firebase Auth", () => {
     const hosts = [
       "example.org",
       "apis.google.com",
@@ -187,12 +187,32 @@ describe("the rules of the site check", () => {
       "securetoken.googleapis.com",
     ];
     expect([...allowedHosts("https://example.org", deployment)]).toEqual(hosts);
-    expect([...allowedHosts("https://example.org", deployment, "firefox")]).toEqual(hosts);
-    // In WebKit, Google's page in the hidden iframe asks one more.
-    expect([...allowedHosts("https://example.org", deployment, "webkit")]).toEqual([
-      ...hosts,
-      "www.googleapis.com",
-    ]);
+    expect([...allowedHosts("https://example.org", deployment, "chromium")]).toEqual(hosts);
+  });
+
+  it.each(["webkit", "firefox"])(
+    "lets the page in %s ask the host Google's page in the hidden iframe asks there too",
+    (engine) => {
+      expect([...allowedHosts("https://example.org", deployment, engine)]).toEqual([
+        "example.org",
+        "apis.google.com",
+        AUTH_DOMAIN,
+        "identitytoolkit.googleapis.com",
+        "securetoken.googleapis.com",
+        "www.googleapis.com",
+      ]);
+    },
+  );
+
+  it("names www.googleapis.com, which Firefox asks, beyond the hosts of Chromium", () => {
+    const asked = [
+      new URL("https://www.googleapis.com/identitytoolkit/v3/relyingparty/getProjectConfig"),
+    ];
+    const firefox = allowedHosts("https://example.org", deployment, "firefox");
+    expect(askedBeyond(asked, firefox)).toEqual([]);
+    expect(askedBeyond(asked, allowedHosts("https://example.org", deployment, "chromium"))).toEqual(
+      ["the page asked www.googleapis.com, which the sign-in does not need"],
+    );
   });
 
   it("names each host the page asked beyond those allowed once, and none when it asked none", () => {

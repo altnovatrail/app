@@ -1883,6 +1883,7 @@ button.nt-row > svg {
  * stand clear of the pictures, which are dropped on a phone and in forced colours.
  */
 .nt-home-top {
+  container: nt-home-top / inline-size;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 31.25rem), 1fr));
   margin-block-end: 2rem;
@@ -1902,7 +1903,11 @@ button.nt-row > svg {
   padding: 2rem;
   overflow: hidden;
 }
+/* No shorter than the sheet drawn at its right, so that its foot stands below the sheet at any
+   width and with any words: the sheet's box, turned, ends 14.9rem down; the foot's tallest part is
+   the button, 2.75rem, over the card's padding of 2rem. */
 .nt-next-up {
+  min-block-size: 20rem;
   border-inline-end: 0.0625rem solid #ededf0;
 }
 .nt-next-up > :not(.nt-deco),
@@ -1984,6 +1989,19 @@ button.nt-row > svg {
 }
 .nt-next-step .nt-buttons {
   margin: 0;
+}
+/* On a card of the whole width — an iPad in portrait, the halves one under the other — the way to
+   what comes next stands beside the tutor time, by the words, not at the far edge under the sheet.
+   On a phone, with no sheet, the foot wraps and the button keeps to the end. */
+@media (width >= 600px) {
+  @container nt-home-top (width < 62.5rem) {
+    .nt-next-foot {
+      justify-content: flex-start;
+    }
+    .nt-next-step {
+      margin-inline-start: 0;
+    }
+  }
 }
 /* No wider than its words: on a card of the whole width, in portrait, it does not stretch across. */
 .nt-quota {
@@ -2296,6 +2314,7 @@ p.nt-pages-kept {
     flex-wrap: wrap;
   }
   .nt-next-up {
+    min-block-size: 0;
     border-inline-end: 0;
     border-block-end: 0.0625rem solid #ededf0;
   }
@@ -2312,6 +2331,10 @@ p.nt-pages-kept {
 @media (forced-colors: active) {
   .nt-deco {
     display: none;
+  }
+  /* No sheet to stand below. */
+  .nt-next-up {
+    min-block-size: 0;
   }
 }
 /* A module's card: its tile, its title, its skills at the foot, and its buttons below them. */
@@ -3769,6 +3792,10 @@ button.nt-menu-row {
   min-block-size: 3rem;
   padding: 0.125rem 1rem 0.125rem 0.125rem;
   border-radius: var(--nt-radius-top-bar);
+}
+/* A pill of Back alone, its heading unseen: a round glass of 48 round the target of 44. */
+.nt-top-pill.nt-top-back {
+  padding: 0.125rem;
 }
 .nt-top > .nt-top-pill > h1 {
   display: flex;
@@ -6609,13 +6636,11 @@ main.nt-task-screen:has(.nt-page-stage) {
   font-weight: var(--nt-weight-medium);
 }
 /*
- * The bar keeps one row, as BarFit.tsx fits it: with its words, the title in one line and the
- * end never wrapped, so that a row too narrow shows as cut; with its icons alone, the title and the
- * captions hidden to the eye but still the heading and the names, each button round, 48; below,
- * where even the icons do not fit, the buttons under the title, at the row's end in a bar with no
- * middle too, and the finding under them, the title wrapping by its words on its own row: a
- * squeezed pill would wrap its name a letter a line (1.4.10). Below 600 the finding, on a row of
- * its own, wraps its words rather than pass the window.
+ * The bar keeps one row, as BarFit.tsx fits it: with its words, the end never wrapped, so that a
+ * row too narrow shows as cut; with its icons alone, the captions hidden to the eye but still the
+ * names, each button round, 48; below, where even the icons do not fit, the buttons under Back, at
+ * the row's end in a bar with no middle too, and the finding under them. Below 600 the finding, on
+ * a row of its own, wraps its words rather than pass the window.
  */
 .nt-top-end[data-fit] {
   flex-wrap: nowrap;
@@ -6626,15 +6651,6 @@ main.nt-task-screen:has(.nt-page-stage) {
   flex: none;
   white-space: nowrap;
 }
-/* biome-ignore lint/style/noDescendingSpecificity: the profiles' screen has no top bar. */
-.nt-top:has(> .nt-top-end:is([data-fit="words"], [data-fit="icons"])) > .nt-top-pill > h1 {
-  white-space: nowrap;
-}
-.nt-top:has(> .nt-top-end[data-fit="icons"]) > .nt-top-pill {
-  padding-inline-end: 0.125rem;
-}
-/* biome-ignore lint/style/noDescendingSpecificity: the profiles' screen has no top bar. */
-.nt-top:has(> .nt-top-end[data-fit="icons"]) > .nt-top-pill > h1,
 .nt-top-end:is([data-fit="icons"], [data-fit="below"]) .nt-retake-words,
 .nt-task-row:is([data-fit="icons"], [data-fit="below"]) .nt-retake-words {
   position: absolute;

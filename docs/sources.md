@@ -300,6 +300,15 @@ Read 2026-11-14, by `curl` with Safari's `User-Agent`. Google publishes neither 
   - a flush sends the counters as `c=<number>:<count>` in one of a hundred cases, and nothing waits on the answer: `if(b!==""&&Math.random()<this.SW){…fetch(this.url+"?"+b,{method:"GET",mode:"no-cors",signal:p}).catch(function(){})`.
 - So the ping is a `fetch`, under `connect-src`, made wherever this module runs — in WebKit at every start, on a computer once "Sign in with Google" is tapped (sources 7.5) —, and its failure is gapi's own: the sign-in does not stand on it. What CI saw is measurements 5.
 
+### 7.7. The hidden iframe's check of the origin, 2026-11-24
+
+Read 2026-11-24. Google publishes neither the source of the iframe's script nor a text on this request: what follows about it is read from its minified code, not from a document of Google's.
+- **`@firebase/auth` 1.13.10**, the code in `node_modules`, `PopupOperation.onExecution`: once the window is open, "Check for web storage support and origin validation _after_ the popup is loaded", by `this.resolver._originValidation(this.auth)` and `this.resolver._isIframeWebStorageSupported(this.auth, …)`, which sends the hidden iframe `iframe.send(WEB_STORAGE_SUPPORT_KEY, { type: WEB_STORAGE_SUPPORT_KEY }, …)`, `webStorageSupport`.
+- **`https://novatrail.firebaseapp.com/__/auth/iframe.js`**, the script of the hidden iframe `https://<authDomain>/__/auth/iframe`, which Firebase Hosting serves on `authDomain`, 289,777 bytes, sha256 `00fe2b94c71646aab8b08d5af2b30562327de6729e1c90e8d5cc970398066856`; it names itself `Yk("Iframe","2.20.9",this.Qa)`:
+  - its endpoints are under `Ze:"https://www.googleapis.com/identitytoolkit/v3/relyingparty/"`, among them `gn={mg:!0,endpoint:"getProjectConfig",httpMethod:"GET"}`, read as `hn=function(a){return R(a,gn,{}).then(function(b){return b.authorizedDomains||[]})}`;
+  - at its start it checks its parent's origin against those domains, and only then answers `webStorageSupport`: `this.uc=new js(function(f){return hn(e.o).then(function(g){if(!Mk(g,f))throw e.destroy(),new Pl(f);})})`, `is.prototype.start=function(){var a=this;return this.Lb(this.Mb).then(function(){a.Ih=!0})…}` and `js.prototype.start=function(){var a=this;return this.Cf.start().then(function(){a.qh()})}`, where `qh` registers `"webStorageSupport"`.
+- So `www.googleapis.com` is asked by Google's page in the hidden iframe, wherever it starts, not by `app`'s code or the SDK in the page. What the engines did is measurements 3 and 11.
+
 ## 8. Interface languages and accessibility
 
 Standards, laws, libraries and checks for the interface languages and accessibility.

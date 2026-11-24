@@ -1,32 +1,32 @@
 // The screen of solving the tasks from the learner's paper, as the mockup's `solve`: the top bar's
-// pill — Back to Home and the task's name —, and at its other end ‹, the counter that opens the
-// list of the tasks begun with "Add", and ›. Each task is a sheet in dots of its own under its
-// crop, the tracing paper, which canvas draws and the learner moves and hides; its history and the
-// paper's place stay with the page, so that a task left and come back to is as it was, and the
-// page's history keeps them. At the foot the row of glass: the debug button and a line, for an
-// account with debug, Ask, Hint till the task is solved, a line and Check, kept to one row by
-// BarFit.tsx — Ask its icon alone first, and only then wrapped. Check sends the task's crop with
-// the crop of the work, and the page keeps the context of the work of each Check answered, but no
-// verdict: its verdict is that of each task of the frame by the key api derived — Correct with Next
-// task, Not yet with Hint, of several tasks with how many are correct, the work not read with why,
-// not checked with the outcome —, with a tick or a cross by each answer on the sheet; or "Couldn't
-// check this one" when no task has a key, with Hint and Next task. A frame solved or with no key
-// takes no Check again, and the list marks the one solved. A task whose attempt is over — solved,
-// or closed by api, as a page of the history opened again may hold — is only to be looked at: its
-// sheet takes no writing, no Hint stands, and its Check says "This task is already over". Ask opens
-// the tutor's panel, and so does Hint; a verdict does not; Ask and the debug button leave the row
-// while the panel is open. While the panel is open the verdict is a line in it, the hint a bubble
-// there, said by itself while the voicing is on, and on a phone its sheet hides the row and the
-// canvas's bar of tools; while it is closed the verdict is a card above the row, with the panel's
-// buttons. The tutor's words are of AI: Hint before the first wrong answer asks the opening
-// question from the task's crop as printed, once on the attempt; after Not yet, with the panel open
-// — or once it opens — the words of the rung come with the work of the Check, and in the mode "Show
-// where" with the wavy line under the first mistake, which goes with other work or the paper moved;
-// "Explain differently" words the rung anew, once on it; and an adult may report a problem with the
-// words. The words stand till another task or Check, and what is said of them stops with another
-// task or the panel closed. "Recognise" on the tracing paper reads the task's crop into its text by
-// AI, which api keeps on the attempt for its first Check; the page keeps the reading while it is
-// open, and the paper shows the photo again each time it is mounted.
+// pill — Back to Home alone, the task's name the screen's heading unseen —, and at its other end ‹,
+// the counter that opens the list of the tasks begun with "Add", and ›. Each task is a sheet in
+// dots of its own under its crop, the tracing paper, which canvas draws and the learner moves and
+// hides; its history and the paper's place stay with the page, so that a task left and come back to
+// is as it was, and the page's history keeps them. At the foot the row of glass: the debug button
+// and a line, for an account with debug, Ask, Hint till the task is solved, a line and Check, kept
+// to one row by BarFit.tsx — Ask its icon alone first, and only then wrapped. Check sends the
+// task's crop with the crop of the work, and the page keeps the context of the work of each Check
+// answered, but no verdict: its verdict is that of each task of the frame by the key api derived —
+// Correct with Next task, Not yet with Hint, of several tasks with how many are correct, the work
+// not read with why, not checked with the outcome —, with a tick or a cross by each answer on the
+// sheet; or "Couldn't check this one" when no task has a key, with Hint and Next task. A frame
+// solved or with no key takes no Check again, and the list marks the one solved. A task whose
+// attempt is over — solved, or closed by api, as a page of the history opened again may hold — is
+// only to be looked at: its sheet takes no writing, no Hint stands, and its Check says "This task
+// is already over". Ask opens the tutor's panel, and so does Hint; a verdict does not; Ask and the
+// debug button leave the row while the panel is open. While the panel is open the verdict is a line
+// in it, the hint a bubble there, said by itself while the voicing is on, and on a phone its sheet
+// hides the row and the canvas's bar of tools; while it is closed the verdict is a card above the
+// row, with the panel's buttons. The tutor's words are of AI: Hint before the first wrong answer
+// asks the opening question from the task's crop as printed, once on the attempt; after Not yet,
+// with the panel open — or once it opens — the words of the rung come with the work of the Check,
+// and in the mode "Show where" with the wavy line under the first mistake, which goes with other
+// work or the paper moved; "Explain differently" words the rung anew, once on it; and an adult may
+// report a problem with the words. The words stand till another task or Check, and what is said of
+// them stops with another task or the panel closed. "Recognise" on the tracing paper reads the
+// task's crop into its text by AI, which api keeps on the attempt for its first Check; the page
+// keeps the reading while it is open, and the paper shows the photo again each time it is mounted.
 import {
   TutorReply,
   type WorkSchema,
@@ -673,6 +673,7 @@ export function Solve({
     <Screen
       title={nameOf(task)}
       layout="task"
+      unseen
       bar={{
         back: <IconButton value="back" caption="task.home" onClick={onHome} />,
         end: (

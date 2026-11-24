@@ -1,19 +1,19 @@
-// The page photographed, its tasks to pick, as the mockup's pick screen: the photo, each
-// task's frame over it a button that is picked or left out, every one picked at first, and its
-// cross removes it; a task the AI missed the learner frames by hand, by a rectangle dragged from one
+// The page photographed, its tasks to pick, as the mockup's pick screen: the photo, each task's
+// frame over it a button that is picked or left out, every one picked at first, and its cross
+// removes it; a task the AI missed the learner frames by hand, by a rectangle dragged from one
 // corner of it to the opposite with a finger or a pen, which follows the pointer and looks as the
 // frame it becomes, or by two taps, a corner and then the one opposite. Every frame, the AI's too,
 // moves when dragged by its middle and resizes by its corner; a press that moved it picks nothing.
-// The top bar's pill holds the title alone, and its end "Remove all frames", which clears the
-// photo for frames of the learner's own, and Retake, the bar kept to one row by BarFit.tsx; while the tasks are found, its middle says
-// so, by a turning ring, and a line of light runs down the photo and back; once they are, how many
-// were found and framed by hand. At the foot, the note
-// that the photo stays on the device, and the bar of "Select all", the count and Start, with the
-// most tasks at once at its head, in a ring, once the page holds as many or more are picked; at the
-// bar's start, before a line, the round buttons of the tutor and of debug, which the screen gives.
-// Drawing a frame takes a pointer: a learner on the keyboard picks among the AI's frames alone.
-// The tutor's open panel lies over the page, as the debug panel does, and moves none of it; on a
-// phone its sheet hides the bar.
+// The top bar's pill holds Back alone, the title the screen's heading unseen, and its end "Remove
+// all frames", which clears the photo for frames of the learner's own, and Retake, the bar kept to
+// one row by BarFit.tsx; while the tasks are found, its middle says so, by a turning ring, and a
+// line of light runs down the photo and back; once they are, how many were found and framed by
+// hand. At the foot, the note that the photo stays on the device, and the bar of "Select all", the
+// count and Start, with the most tasks at once at its head, in a ring, once the page holds as many
+// or more are picked; at the bar's start, before a line, the round buttons of the tutor and of
+// debug, which the screen gives. Drawing a frame takes a pointer: a learner on the keyboard picks
+// among the AI's frames alone. The tutor's open panel lies over the page, as the debug panel does,
+// and moves none of it; on a phone its sheet hides the bar.
 import { type CSSProperties, type PointerEvent, type ReactNode, useRef, useState } from "react";
 import { Icon } from "../app/Icon.tsx";
 import { IconButton } from "../app/IconButton.tsx";
@@ -279,6 +279,7 @@ export function Pick({
     <Screen
       title={words.text("paper.title")}
       layout="task"
+      unseen
       bar={{
         back: (
           <IconButton value="back" caption="task.home" className="nt-page-back" onClick={onHome} />

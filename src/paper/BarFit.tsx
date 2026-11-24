@@ -1,9 +1,9 @@
-// The top bar of the page to pick from keeps one row: where its words do not fit beside what was
-// found, the title and the captions of the buttons at its end go together, each button its icon
-// alone, its caption still its name and now a tooltip too; only where even the icons do not fit
-// do the buttons go below the title. The row of the screen of solving keeps one row the same way:
-// "Ask" goes to its icon first, and only then does the row wrap. A row is measured, not set by a
-// width, since the words of each language differ in length.
+// The top bar of the page to pick from keeps one row: where the captions of the buttons at its end
+// do not fit beside Back and what was found, each button shows its icon alone, its caption still
+// its name and now a tooltip too; only where even the icons do not fit do the buttons go below. The
+// row of the screen of solving keeps one row the same way: "Ask" goes to its icon first, and only
+// then does the row wrap. A row is measured, not set by a width, since the words of each language
+// differ in length.
 import { type Ref, type RefObject, useLayoutEffect } from "react";
 import { Icon } from "../app/Icon.tsx";
 import type { IconValue } from "../app/icons.ts";
@@ -11,18 +11,21 @@ import { useHostRef, useTooltip } from "../app/Tooltip.tsx";
 
 /**
  * How the bar's end or the row stands: with its words, its icons alone, or below — the end under
- * the title, the row wrapped.
+ * Back, the row wrapped.
  */
 export type Fit = "words" | "icons" | "below";
 
-/** Whether the bar holds its pill and its end in one row, neither of them cut. */
+/** The vertical middle of a box on the page. */
+function middle(box: Element): number {
+  const at = box.getBoundingClientRect();
+  return at.top + at.height / 2;
+}
+
+/** Whether the bar holds its pill, Back alone, and its end in one row, neither of them cut. */
 export function oneRow(bar: HTMLElement, end: HTMLElement): boolean {
-  const pill = (bar.firstElementChild ?? end) as HTMLElement;
-  const cut = (box: HTMLElement) => box.scrollWidth > box.clientWidth + 1;
-  const middle = (box: HTMLElement) => {
-    const at = box.getBoundingClientRect();
-    return at.top + at.height / 2;
-  };
+  // The end is one of the bar's children, so the bar has a first.
+  const pill = bar.firstElementChild as Element;
+  const cut = (box: Element) => box.scrollWidth > box.clientWidth + 1;
   return Math.abs(middle(pill) - middle(end)) < 2 && !cut(pill) && !cut(end);
 }
 
@@ -46,10 +49,6 @@ export function inOneRow(row: HTMLElement): boolean {
   const first = shown[0];
   const last = shown.at(-1);
   if (first === undefined || last === undefined) return true;
-  const middle = (box: Element) => {
-    const at = box.getBoundingClientRect();
-    return at.top + at.height / 2;
-  };
   return Math.abs(middle(first) - middle(last)) < 2 && row.scrollWidth <= row.clientWidth + 1;
 }
 
