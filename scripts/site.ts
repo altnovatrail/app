@@ -182,7 +182,9 @@ export async function recordViolations(page: Page, engine: string | undefined): 
 
 /**
  * The hosts the page may ask in an engine, beside the site's own: Google's script, authDomain and
- * Firebase Auth, and in WebKit the host Google's page in the hidden iframe asks there.
+ * Firebase Auth, and in WebKit and Firefox `www.googleapis.com`: Google's page in the hidden iframe
+ * checks the page's origin against the project's authorized domains there before it answers the
+ * SDK. Chromium has not been seen asking it.
  */
 export function allowedHosts(
   origin: string,
@@ -195,7 +197,7 @@ export function allowedHosts(
     deployment.signIn.authDomain,
     "identitytoolkit.googleapis.com",
     "securetoken.googleapis.com",
-    ...(engine === "webkit" ? ["www.googleapis.com"] : []),
+    ...(engine === "webkit" || engine === "firefox" ? ["www.googleapis.com"] : []),
   ]);
 }
 

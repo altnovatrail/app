@@ -86,6 +86,7 @@ No current epic. The last done one is E5 «Интерфейс по эталон�
 | [x] | T125 | Переход на тег `spec` v0.19.17 | Claude | — | — |
 | [x] | T126 | Кнопка «Что дальше» на главной не уезжает вправо на iPad в портретной ориентации | Claude | — | — |
 | [x] | T127 | На двух экранах задачи с фото — только значок «назад», без названия экрана | Claude | — | — |
+| [x] | T128 | `site-check` проходит в Firefox: запрос к www.googleapis.com при входе | Claude | — | — |
 
 «Зависит от» names only tasks of this plan. What a task waits for from other repositories is its body's «Ждёт»: it is taken once the neighbour has done that, and until then the queue goes on.
 
