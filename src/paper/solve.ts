@@ -16,6 +16,7 @@ import {
 } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
 import { Cause } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import type {
+  DrawingCover,
   HistoryChange,
   HistoryEvent,
   Marks,
@@ -440,6 +441,41 @@ export function pixelsPerMm(crop: {
   const units = crop.sheetBox[3] - crop.sheetBox[1];
   const perMm = (crop.width / units) * (PAGE_UNITS / PAGE_MM);
   return Number.isFinite(perMm) && perMm > 0 && perMm <= 100 ? perMm : 0;
+}
+
+/** A box on the screen, in CSS px, as `getBoundingClientRect()` gives it. */
+export interface ScreenBox {
+  readonly left: number;
+  readonly top: number;
+  readonly right: number;
+  readonly bottom: number;
+}
+
+/**
+ * How far in from each side of the sheet's element the screen's own controls cover it, for the
+ * drawing's crop of grown-up mode, so that the tutor writes nowhere they hide: a control as tall as
+ * half the sheet or more, as the tutor's panel, covers the side it is nearer, left or right, up to
+ * its far edge; any other, as the bar of the top or the row of the foot, the band it is nearer,
+ * top or bottom. A control that does not meet the sheet covers nothing.
+ */
+export function coverOf(sheet: ScreenBox, controls: readonly ScreenBox[]): DrawingCover {
+  const cover = { top: 0, right: 0, bottom: 0, left: 0 };
+  const height = sheet.bottom - sheet.top;
+  for (const box of controls) {
+    const left = Math.max(box.left, sheet.left);
+    const right = Math.min(box.right, sheet.right);
+    const top = Math.max(box.top, sheet.top);
+    const bottom = Math.min(box.bottom, sheet.bottom);
+    if (!(left < right && top < bottom)) continue;
+    if (bottom - top >= height / 2) {
+      if (left + right >= sheet.left + sheet.right) {
+        cover.right = Math.max(cover.right, sheet.right - left);
+      } else cover.left = Math.max(cover.left, right - sheet.left);
+    } else if (top + bottom < sheet.top + sheet.bottom) {
+      cover.top = Math.max(cover.top, bottom - sheet.top);
+    } else cover.bottom = Math.max(cover.bottom, sheet.bottom - top);
+  }
+  return cover;
 }
 
 /**

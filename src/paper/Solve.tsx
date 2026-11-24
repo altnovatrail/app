@@ -85,6 +85,7 @@ import {
   besideTask,
   checkOver,
   checkReply,
+  coverOf,
   MAX_SHEET_STROKES,
   onList,
   paperCard,
@@ -632,9 +633,14 @@ export function Solve({
     const back = (note?: string) => giveBack(of, asked, question, note);
     void (async () => {
       try {
-        // The part of the sheet in sight, with room to write in, a blank sheet's too: the drawing
-        // acts where the grown-up looks.
-        const work = await sheet.exportForDrawing();
+        // The part of the sheet in sight that the screen's controls leave free, with room to write
+        // in, a blank sheet's too: the drawing acts where the grown-up looks, and nowhere a control
+        // hides.
+        const controls = Array.from(
+          document.querySelectorAll(".nt-tutor-panel, .nt-top .nt-glass, .nt-task-row"),
+          (control) => control.getBoundingClientRect(),
+        );
+        const work = await sheet.exportForDrawing(coverOf(sheet.getBoundingClientRect(), controls));
         const context = work.submission;
         const strokes = sheet
           .cropStrokes(context)

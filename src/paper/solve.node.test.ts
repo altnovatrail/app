@@ -21,6 +21,7 @@ import {
   changed,
   checkOver,
   checkReply,
+  coverOf,
   notBegun,
   onList,
   paperCard,
@@ -504,6 +505,35 @@ describe("the conversation on a task", () => {
       "8",
       "9",
     ]);
+  });
+});
+
+describe("what the screen's controls cover of the sheet, for grown-up mode", () => {
+  const sheet = { left: 0, top: 0, right: 1000, bottom: 800 };
+  it("takes a tall control as a side, a short one as a band, the deepest of each", () => {
+    const panel = { left: 640, top: 60, right: 990, bottom: 790 };
+    const back = { left: 16, top: 16, right: 60, bottom: 60 };
+    const nav = { left: 840, top: 12, right: 990, bottom: 70 };
+    const row = { left: 300, top: 720, right: 700, bottom: 780 };
+    expect(coverOf(sheet, [panel, back, nav, row])).toEqual({
+      top: 70,
+      right: 360,
+      bottom: 80,
+      left: 0,
+    });
+    expect(coverOf(sheet, [{ left: 0, top: 100, right: 120, bottom: 700 }])).toEqual({
+      top: 0,
+      right: 0,
+      bottom: 0,
+      left: 120,
+    });
+  });
+
+  it("counts nothing of a control beside the sheet, only the part of one that meets it", () => {
+    const beside = { left: 1000, top: 0, right: 1400, bottom: 800 };
+    const over = { left: 900, top: -50, right: 1300, bottom: 900 };
+    expect(coverOf(sheet, [beside])).toEqual({ top: 0, right: 0, bottom: 0, left: 0 });
+    expect(coverOf(sheet, [over])).toEqual({ top: 0, right: 100, bottom: 0, left: 0 });
   });
 });
 

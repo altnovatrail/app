@@ -1152,14 +1152,14 @@ const middle = (element: Element) => {
   return box.top + box.height / 2;
 };
 
-it("puts the tutor's button and debug's at the start of the page's bar, before a line", async () => {
+it("puts debug's button and the tutor's at the start of the page's bar, before a line, as the solving's bar has them", async () => {
   await renderPaper({ debug: true });
   const debug = await screen.findByRole("button", { name: DEBUG });
   const tutor = screen.getByRole("button", { name: "Tutor" });
   const bar = found(".nt-page-bar");
   expect(buttonNames(bar)).toEqual([
-    "Tutor",
     DEBUG,
+    "Tutor",
     "Select none",
     expect.stringContaining("Start"),
   ]);
@@ -1176,13 +1176,14 @@ it("puts the tutor's button and debug's at the start of the page's bar, before a
   // The line between the pair and "Select none", in one row with them.
   const line = found(".nt-page-row > .nt-row-line");
   const none = screen.getByRole("button", { name: "Select none" });
-  expect(line.getBoundingClientRect().left).toBeGreaterThan(debug.getBoundingClientRect().right);
+  expect(debug.getBoundingClientRect().right).toBeLessThanOrEqual(tutor.getBoundingClientRect().left);
+  expect(line.getBoundingClientRect().left).toBeGreaterThan(tutor.getBoundingClientRect().right);
   expect(line.getBoundingClientRect().right).toBeLessThan(none.getBoundingClientRect().left);
   expect(middle(tutor)).toBeCloseTo(middle(none), 0);
   // Tab goes along the bar.
-  tutor.focus();
+  debug.focus();
   await userEvent.tab();
-  expect(document.activeElement).toBe(debug);
+  expect(document.activeElement).toBe(tutor);
   await userEvent.tab();
   expect(document.activeElement).toBe(none);
   // The debug window opens as before, at the right of the window, not inside the bar's glass.

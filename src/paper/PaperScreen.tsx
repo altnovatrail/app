@@ -342,6 +342,7 @@ export function PaperScreen({
         calls={
           talking ? undefined : (
             <>
+              <DebugSlot />
               <IconButton
                 ref={call}
                 value="tutor"
@@ -349,7 +350,6 @@ export function PaperScreen({
                 aria-expanded={false}
                 onClick={() => setTalking(true)}
               />
-              <DebugSlot />
             </>
           )
         }
