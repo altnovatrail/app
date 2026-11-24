@@ -1,6 +1,6 @@
 # RUN.md — work plan of app
 
-What app does, does not do and has still to decide — [docs/architecture.md](docs/architecture.md); why — [docs/decisions.md](docs/decisions.md). The platform is in `spec/`, a submodule at tag v0.19.16: the component's card — the one in `spec/docs/architecture.md` whose heading names `app`; the order of repositories — `spec/docs/repositories.md`; learners' data and law — `spec/docs/privacy.md`; the platform's decisions — `spec/docs/decisions.md`. Small tasks, one at a time, each reviewed by the author; only the current epic is in detail. Other tables, each a file opening with its rules: 2, epics for later — [run/EPICS.md](run/EPICS.md); 3, questions to the author — [run/QUESTIONS.md](run/QUESTIONS.md); 4, debt — [run/DEBT.md](run/DEBT.md). Open tasks outside an epic — [run/TASKS.md](run/TASKS.md). «Как пользоваться» in older texts is Rules, «Как устроен план: эпики» is Epics, and «таблица 2, 3, 4» names the file above (R50).
+What app does, does not do and has still to decide — [docs/architecture.md](docs/architecture.md); why — [docs/decisions.md](docs/decisions.md). The platform is in `spec/`, a submodule at tag v0.19.17: the component's card — the one in `spec/docs/architecture.md` whose heading names `app`; the order of repositories — `spec/docs/repositories.md`; learners' data and law — `spec/docs/privacy.md`; the platform's decisions — `spec/docs/decisions.md`. Small tasks, one at a time, each reviewed by the author; only the current epic is in detail. Other tables, each a file opening with its rules: 2, epics for later — [run/EPICS.md](run/EPICS.md); 3, questions to the author — [run/QUESTIONS.md](run/QUESTIONS.md); 4, debt — [run/DEBT.md](run/DEBT.md). Open tasks outside an epic — [run/TASKS.md](run/TASKS.md). «Как пользоваться» in older texts is Rules, «Как устроен план: эпики» is Epics, and «таблица 2, 3, 4» names the file above (R50).
 
 Language: rules and tables in English, terse, for the session; the bodies of tasks in table 1 and in `run/TASKS.md` in Russian — the author writes and reviews them.
 
@@ -83,6 +83,7 @@ No current epic. The last done one is E5 «Интерфейс по эталон�
 | [x] | T122 | Ссылки по строгому правилу R171 spec: проход по первой части | Claude | — | T121 |
 | [x] | T123 | Чат с учителем и отладка — в нижнюю панель на экранах задачи с фото (макет 1b) | Claude | — | — |
 | [x] | T124 | История со стилем штриха и частичным стиранием проходит насквозь (R172 spec, строка 6.45) | Claude | — | — |
+| [x] | T125 | Переход на тег `spec` v0.19.17 | Claude | — | — |
 
 «Зависит от» names only tasks of this plan. What a task waits for from other repositories is its body's «Ждёт»: it is taken once the neighbour has done that, and until then the queue goes on.
 
