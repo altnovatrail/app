@@ -11,7 +11,7 @@ const BODY = [
   "## Part &amp; whole",
   "",
   "Plain *em* **strong** ~~del~~ `a &amp; b` and a line  ",
-  "break, &copy; as a sign, [words](https://example.org) ![a picture](p.png) <i>tag</i> \\*.",
+  "break, &copy; as a sign, &#8212; &#x2014; as dashes, [words](https://example.org) ![a picture](p.png) <i>tag</i> \\*.",
   "",
   "- one",
   "- two **bold**",
@@ -66,7 +66,7 @@ describe("the body of a legal text", () => {
     const { container } = render(<Markdown body={BODY} level={2} />);
     expect(container.querySelector("a, img, i, div")).toBeNull();
     expect(container.querySelector("p")?.textContent).toBe(
-      "Plain em strong del a &amp; b and a linebreak, © as a sign, words a picture <i>tag</i> *.",
+      "Plain em strong del a &amp; b and a linebreak, © as a sign, — — as dashes, words a picture <i>tag</i> *.",
     );
     expect([...container.querySelectorAll("p")].map((p) => p.textContent)).toContain(
       "<div>a block</div>",

@@ -1507,4 +1507,4 @@ What the component's card in `spec` assigns to `app` beyond the points it leaves
 
 ## 4. Sources
 
-The records of sources — the external facts this document stands on, with the address, the date read and the quote — are in [sources.md](sources.md), and the results of measurements in [measurements.md](measurements.md); a claim of this document cites its one record, `sources 3.1`, `measurements 2`.
+The records of sources — the facts no run of ours checks that this document stands on, with the address, the date read and a quote — are in [sources.md](sources.md), and the results of measurements in [measurements.md](measurements.md); a claim of this document cites its one record, `sources 3.1`, `measurements 2`. A library's documentation or code at a version or commit is a link beside the claim, a test or a measurement its evidence, and the files of NovaTrail's and MathTrail's repositories are git, at a commit.

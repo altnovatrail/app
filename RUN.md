@@ -17,8 +17,8 @@ A task starts with «Выполни задачу T01 из RUN.md» in a new sess
 4. Outside this repository — editing `spec` or other repositories, their settings, anything that costs money — only after a warning (what, where, cost) and the author's confirmation. `spec/` is read only here; a task of its own moves it to a new tag.
    - Exception, no confirmation: the task's checks — browser: Playwright in the devcontainer, custom-token sign-in of a stand-in user on the dev project; AI: the `tutor` stub in `api` dev mode. A real AI call only where the task checks the model's words: dev key under the author's spend limit at the provider, within the task's ceiling, or with confirmation where it has none; «Сделано» names the provider, the calls and the cost.
    - Nothing on devices: engines are Chromium, WebKit and Firefox in CI; what only a device shows — pen, device voices, VoiceOver and TalkBack, the home screen — stays a row of [run/DEBT.md](run/DEBT.md) until the author decides otherwise.
-5. Facts on AI providers, laws, prices and other platforms — from the primary source, with quote and date read, as a record of [docs/sources.md](docs/sources.md). What is not confirmed is not stated: it becomes an open question.
-6. End with the checks of what the task changed. Documents: `just -f spec/justfile docs-check-repo` — relative links lead to existing files and headings; the rule of citations of `spec/RULES.md` holds; each record of spec cited — `sources 2.3 spec`, `measurements 1.4 spec` — and each О-, П-, Т- exists in `spec/` at its tag; own records exist, R numbers in the headings of the log have no gaps or repeats and the log's opening names the next free one; numbers В in [run/QUESTIONS.md](run/QUESTIONS.md) and Д in [run/DEBT.md](run/DEBT.md) do not repeat and the next free one is above each. If the tag of `spec` is older than this check, check the same by hand. A code task also ends with the checks under table 1.
+5. A fact no run checks — a law, terms, a price, a page with no version — from the primary source, with quote and date read, as a record of [docs/sources.md](docs/sources.md), kept by its opening; documentation or code at a version or commit — a link beside the claim; NovaTrail's and MathTrail's files — git at a commit. What is not confirmed is not stated: it becomes an open question.
+6. End with the checks of what the task changed. Documents: `just -f spec/justfile docs-check-repo` — relative links lead to existing files and headings; the rule of citations of `spec/RULES.md` holds; each О-, П-, Т- and each record of spec cited — `sources 2.3 spec`, `measurements 1.4 spec` — exists in `spec/` at its tag, and own records exist, but for records cited in the archives `docs/plan/`, which keep citing a removed one; R numbers in the headings of the log have no gaps or repeats and the log's opening names the next free one; numbers В in [run/QUESTIONS.md](run/QUESTIONS.md) and Д in [run/DEBT.md](run/DEBT.md) do not repeat and the next free one is above each. If the tag of `spec` is older than this check, check the same by hand. A code task also ends with the checks under table 1.
 
    Then `/code-review high`, one round: fix the findings, do not rerun. A small change may skip the review even if «Как проверить» names it.
 7. Do not commit: the author commits after review. A run of spec's orchestrator, «Сделай эпик E…», is the author's word otherwise: its executor works by the contract `spec/tools/orchestrator/executor.md` — commits, pushes and opens the pull request, never merges. In a session the author started, not an orchestrator's run, the executor of E3 also merges, by the author's decision in the epic's description.
@@ -38,7 +38,7 @@ A task starts with «Выполни задачу T01 из RUN.md» in a new sess
 
 **Task body** (Russian): «Цель», «Сделать», «Как проверить», «Разделы»; as needed «Не делать», «Решить при планировании», «Мой шаг», «Стоимость», «Риски», «Ждёт»; from planning «Почему», «Решено автором (дата)», «Выяснилось при планировании»; when done «Сделано (дата)» (rule 9).
 
-**Citations** — by `spec/RULES.md`: a task's number and a dated line stand only here, in `run/` and in `docs/plan/`; outside them a text cites no decision and no section, and only a claim about the outside world cites its record — `sources 1.1` or `measurements 1.1`, spec's `sources 2.3 spec`. spec's open questions — «Т-22», «П-7», «О-2» — stand anywhere: the repository keeps no registers. A task — «T03», from another repository «T03 app»; one not here is in `run/TASKS.md` or an archive: `grep -n '^#### T03\.' RUN.md run/TASKS.md docs/plan/*.md`. Task numbers are global and never reused: take the one free when writing it down.
+**Citations** — by `spec/RULES.md`: a task's number and a dated line stand only here, in `run/` and in `docs/plan/`; outside them a text cites no decision and no section, and only a fact no run checks, or a measurement, cites its record — `sources 1.1` or `measurements 1.1`, spec's `sources 2.3 spec`. spec's open questions — «Т-22», «П-7», «О-2» — stand anywhere: the repository keeps no registers. A task — «T03», from another repository «T03 app»; one not here is in `run/TASKS.md` or an archive: `grep -n '^#### T03\.' RUN.md run/TASKS.md docs/plan/*.md`. Task numbers are global and never reused: take the one free when writing it down.
 
 ## Epics
 
@@ -87,6 +87,12 @@ No current epic. The last done one is E5 «Интерфейс по эталон�
 | [x] | T126 | Кнопка «Что дальше» на главной не уезжает вправо на iPad в портретной ориентации | Claude | — | — |
 | [x] | T127 | На двух экранах задачи с фото — только значок «назад», без названия экрана | Claude | — | — |
 | [x] | T128 | `site-check` проходит в Firefox: запрос к www.googleapis.com при входе | Claude | — | — |
+| [x] | T129 | Источники по правилу записей `spec` v0.20.0: правила, темы 9–11 и ссылки на записи `spec` | Claude | — | — |
+| [ ] | T130 | Источники по правилу записей: тема 2, сборка, пакеты и тесты | Claude | — | T129 |
+| [ ] | T131 | Источники по правилу записей: темы 3 и 4, хранилище и шаги решения | Claude | — | T129 |
+| [ ] | T132 | Источники по правилу записей: темы 5 и 6, озвучка и свой ключ | Claude | — | T129 |
+| [ ] | T133 | Источники по правилу записей: тема 7, выкладка, вход и контракт | Claude | — | T129 |
+| [ ] | T134 | Источники по правилу записей: тема 8, языки и доступность | Claude | — | T129 |
 
 «Зависит от» names only tasks of this plan. What a task waits for from other repositories is its body's «Ждёт»: it is taken once the neighbour has done that, and until then the queue goes on.
 

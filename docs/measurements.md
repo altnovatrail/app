@@ -2,7 +2,7 @@
 
 > The results of `app`'s measurements: what was measured, how, on what, and what numbers came out. The document that describes how things are built — [architecture.md](architecture.md) — links here and holds no numbers of measurements itself. A measurement is cited by its section, like any document: `measurements 2`, and from another repository `measurements 2 app`.
 >
-> An external fact that a measurement stands on is a record of [sources.md](sources.md). A new measurement is a new section at the end of the file, and a section's number does not change.
+> A fact no run of ours checks that a measurement stands on is a record of [sources.md](sources.md). A new measurement is a new section at the end of the file, and a section's number does not change.
 
 ## 1. Writing history with a mouse, 2026-11-10
 
