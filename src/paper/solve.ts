@@ -34,10 +34,14 @@ import type { Said } from "../tutor/report.ts";
 import { type Frame, pageOrder, sameFrame } from "./frame.ts";
 import { type PageTask, picked } from "./page.ts";
 
-/** A task begun: its attempt, the page's task it began from, its crop, and its work so far. */
+/**
+ * A task begun: its attempt, the page's task it began from, its crop, and its work so far. The
+ * screen knows it by its page's task: its attempt is another once a closed one is begun anew.
+ */
 export interface BegunTask {
+  /** The attempt api holds of it now. */
   readonly attemptId: string;
-  /** The page's task it began from: picking it again goes back to this attempt. */
+  /** The page's task it began from: picking it again goes back to it. */
   readonly taskId: string;
   readonly frame: Frame;
   /** The learner drew its frame. */
@@ -60,7 +64,10 @@ export interface BegunTask {
   readonly wrongAnswers?: number;
   /** Each Check that was answered: the context of its work and the history's length at its press. */
   readonly sent?: readonly PaperSent[];
-  /** Its attempt is over — solved, or closed by api —, which a page of the history keeps. */
+  /**
+   * Its attempt has closed — solved, or closed by api —, which a page of the history keeps: the
+   * first action that needs api begins a new one of the task.
+   */
   readonly over?: boolean;
   /** Its Check came to Correct, here or in a tab before: the list marks it, which the page keeps. */
   readonly solved?: true;
@@ -102,23 +109,23 @@ export function onList(
 }
 
 /**
- * The task shown: the one asked for while it is on the list, or else the first. None with an empty
- * list.
+ * The task shown: the one asked for, by its page's task, while it is on the list, or else the
+ * first. None with an empty list.
  */
 export function shownTask(
   list: readonly BegunTask[],
   asked: string | undefined,
 ): BegunTask | undefined {
-  return list.find((task) => task.attemptId === asked) ?? list[0];
+  return list.find((task) => task.taskId === asked) ?? list[0];
 }
 
 /** The task before or after the one shown, ‹ and ›: none at either end, as the list does not wrap. */
 export function besideTask(
   list: readonly BegunTask[],
-  attemptId: string,
+  taskId: string,
   by: -1 | 1,
 ): BegunTask | undefined {
-  const at = list.findIndex((task) => task.attemptId === attemptId);
+  const at = list.findIndex((task) => task.taskId === taskId);
   return at < 0 ? undefined : list[at + by];
 }
 
@@ -134,13 +141,22 @@ export function withChange(
   return history.length === change.from ? [...history, ...change.events] : whole();
 }
 
-/** A task begun, changed by its attempt; the others as they were. */
+/** A task begun, changed, by its page's task; the others as they were. */
 export function changed(
   begun: readonly BegunTask[],
-  attemptId: string,
+  taskId: string,
   change: (task: BegunTask) => BegunTask,
 ): readonly BegunTask[] {
-  return begun.map((task) => (task.attemptId === attemptId ? change(task) : task));
+  return begun.map((task) => (task.taskId === taskId ? change(task) : task));
+}
+
+/**
+ * A task whose attempt closed, in the new attempt api began of it: its work as it was, open, and
+ * no wrong answer of the attempt before, whose Checks api erased as it closed.
+ */
+export function renewed(task: BegunTask, attemptId: string): BegunTask {
+  const { over: _, wrongAnswers: __, ...rest } = task;
+  return { ...rest, attemptId };
 }
 
 /**
@@ -231,34 +247,21 @@ export function taskState(task: Pick<BegunTask, "verdict" | "over" | "solved">):
 }
 
 /**
- * Whether a task's Check is over: it is solved, and its attempt closed, or its attempt is over, as a
- * page of the history may say. A Check that read nothing leaves it open: the next one checks again.
- */
-export function checkOver(task: BegunTask): boolean {
-  return task.verdict?.kind === "correct" || task.over === true;
-}
-
-/**
- * Whether a task is only to be looked at: its attempt is over, and no verdict of this tab's shows
- * it solved — a task of a page of the history, or one api closed.
- */
-export function viewOnly(task: Pick<BegunTask, "verdict" | "over">): boolean {
-  return task.over === true && task.verdict === undefined;
-}
-
-/**
  * The buttons of the screen of solving and at the foot of the tutor's panel, by the task's last
  * Check: Hint while the task is not solved, one the Check read nothing of too, whose hints still
- * work; and the way to the next task once it is solved, or after a Check that read nothing. A task
- * only to be looked at has neither.
+ * work, and while a solved task is solved again, after a Check that was not correct; and the way to
+ * the next task once the task is solved, here or before, or after a Check that read nothing.
  */
-export function tutorActs(task: Pick<BegunTask, "verdict" | "over">): {
+export function tutorActs(task: Pick<BegunTask, "verdict" | "solved">): {
   readonly hint: boolean;
   readonly next: boolean;
 } {
-  if (viewOnly(task)) return { hint: false, next: false };
   const kind = task.verdict?.kind;
-  return { hint: kind !== "correct", next: kind === "correct" || kind === "nokey" };
+  const solved = task.solved === true || kind === "correct";
+  return {
+    hint: kind === undefined ? !solved : kind !== "correct",
+    next: solved || kind === "nokey",
+  };
 }
 
 /**

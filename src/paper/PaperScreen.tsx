@@ -71,6 +71,11 @@ export function PaperScreen({
   // The key of Start, kept while the photo and the tasks picked are the same, so that a press
   // again repeats it.
   const startKey = useRef<{ readonly of: string; readonly key: string } | undefined>(undefined);
+  // Each closed attempt being begun anew, by the attempt that closed: an action meanwhile waits for
+  // the same, so that a task is begun anew once; and its key, kept till an answer, so that a try
+  // again after a failure repeats it.
+  const renewing = useRef(new Map<string, Promise<string>>());
+  const renewKeys = useRef(new Map<string, string>());
   const change = paper?.change;
   const turn = paper?.turn;
   // The tasks begun on the page as it is now, which an answer that comes later reads.
@@ -216,6 +221,36 @@ export function PaperScreen({
   if (paper === undefined) return null;
   const home = () => navigate(HOME);
 
+  /**
+   * A task whose attempt closed, begun anew on its page, which, as any Start, closes the open
+   * attempts of the other pages: the new attempt, which the task holds from then on.
+   */
+  const renew = (pageId: string, task: BegunTask): Promise<string> => {
+    const was = task.attemptId;
+    const going = renewing.current.get(was);
+    if (going !== undefined) return going;
+    const key = renewKeys.current.get(was) ?? idempotencyKey();
+    renewKeys.current.set(was, key);
+    const begun = api.paper
+      .beginPaperAttempts({
+        profileId,
+        idempotencyKey: key,
+        pageId,
+        tasks: 1,
+        ...holder.routeFields(profileId),
+      })
+      .then((answer) => {
+        const attemptId = answer.attemptIds[0];
+        if (attemptId === undefined) throw new Error("api began no task");
+        renewKeys.current.delete(was);
+        paper.renew(task.taskId, attemptId);
+        return attemptId;
+      })
+      .finally(() => renewing.current.delete(was));
+    renewing.current.set(was, begun);
+    return begun;
+  };
+
   if (paper.begun !== undefined && paper.solving && page !== undefined) {
     return (
       <Solve
@@ -224,6 +259,7 @@ export function PaperScreen({
         tasks={page.tasks}
         begun={paper.begun}
         onKeep={paper.keep}
+        onRenew={(task) => renew(page.pageId, task)}
         onAdd={paper.add}
         onHome={home}
       />

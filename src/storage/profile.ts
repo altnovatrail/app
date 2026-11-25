@@ -805,6 +805,20 @@ export class Profile {
     });
   }
 
+  /**
+   * A task from paper whose attempt closed, under the new attempt api began of it: its record, its
+   * work and its place on the page, open again; none for a task not kept.
+   */
+  renewPaperTask(was: string, attemptId: string): Promise<Saved> {
+    return this.save([PAPER_TASKS], async (tx) => {
+      const kept = (await tx.get(PAPER_TASKS, was)) as object | undefined;
+      if (kept === undefined) return "unsaved";
+      await tx.delete(PAPER_TASKS, was);
+      await tx.put(PAPER_TASKS, attemptId, { ...kept, attemptId, over: false });
+      return "saved";
+    });
+  }
+
   /** The pages of the history, the newest first, with how many tasks each began: no photo is read. */
   async pages(): Promise<PageSummary[]> {
     return this.connection.read([PAGES, PAPER_TASKS], async (tx) => {

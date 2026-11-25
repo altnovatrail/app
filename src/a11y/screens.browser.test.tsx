@@ -879,6 +879,7 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
             },
           ]}
           onKeep={() => {}}
+          onRenew={() => new Promise(() => {})}
           onAdd={() => {}}
           onHome={() => {}}
         />

@@ -12,11 +12,11 @@
 // correct with no answer yet and no mistake, of several tasks with how many are correct, the work
 // not read with why, not checked with the outcome —, with a tick or a cross by each answer on the
 // sheet; or "Couldn't check this one" when the Check read nothing of a solution, with Hint and Next
-// task, and the next Check checks again. A frame solved takes no Check again, and the list marks
-// it. A task whose
-// attempt is over — solved, or closed by api, as a page of the history opened again may hold — is
-// only to be looked at: its sheet takes no writing, no Hint stands, and its Check says "This task
-// is already over". Ask opens the tutor's panel, and so does Hint; a verdict does not; Ask and the
+// task, and the next Check checks again. A task solved is marked in the list, and "Next task"
+// stands beside its Check in the row; it is solved again as any other. The first action that needs
+// api on a task whose attempt has closed — solved, closed by api, or of a page of the history opened
+// again — begins a new attempt of it, its work as it was, and goes on in that; so does one api
+// refuses as closed, once. Ask opens the tutor's panel, and so does Hint; a verdict does not; Ask and the
 // debug button leave the row while the panel is open. While the panel is open the verdict is a line
 // in it, the hint a bubble there, said by itself while the voicing is on, and on a phone its sheet
 // hides the row and the canvas's bar of tools; while it is closed the verdict is a card above the
@@ -83,7 +83,6 @@ import {
   type BegunTask,
   type Box,
   besideTask,
-  checkOver,
   checkReply,
   coverOf,
   MAX_SHEET_STROKES,
@@ -98,7 +97,6 @@ import {
   turnsOf,
   tutorActs,
   verdictMarks,
-  viewOnly,
   wavyOf,
   withChange,
   withTurn,
@@ -147,6 +145,7 @@ export function Solve({
   tasks,
   begun,
   onKeep,
+  onRenew,
   onAdd,
   onHome,
 }: {
@@ -156,7 +155,13 @@ export function Solve({
   /** The page's tasks, by which the tasks begun are named and listed. */
   readonly tasks: readonly PageTask[];
   readonly begun: readonly BegunTask[];
-  readonly onKeep: (attemptId: string, change: (task: BegunTask) => BegunTask) => void;
+  /** A task begun, changed, by its page's task. */
+  readonly onKeep: (taskId: string, change: (task: BegunTask) => BegunTask) => void;
+  /**
+   * A task whose attempt closed, begun anew: the new attempt, which the task holds from then on.
+   * Asked again for the same attempt meanwhile, it gives the same.
+   */
+  readonly onRenew: (task: BegunTask) => Promise<string>;
   readonly onAdd: () => void;
   readonly onHome: () => void;
 }) {
@@ -213,15 +218,14 @@ export function Solve({
   const [told, setTold] = useState("");
   const [unwritten, setUnwritten] = useState(false);
   const [written, setWritten] = useState(false);
-  // Check pressed on a task that is over: "This task is already over".
-  const [overTold, setOverTold] = useState(false);
   // The keys of the Checks whose work the page keeps: a repeat's answer is none of a new one.
   const kept = useRef(new Set<string>());
   // The key of a check, kept while the work it sent is the same, so that a press again repeats it;
   // dropped after a failure of AI, which a press again asks anew.
   const sent = useRef<{ readonly of: string; readonly key: string } | undefined>(undefined);
-  // The conversation on each task — the learner's questions, the tutor's hints, words and
-  // answers — in the tab's memory alone, while the screen is open: no store keeps it.
+  // The conversation on each task, by its page's task — the learner's questions, the tutor's
+  // hints, words and answers — in the tab's memory alone, while the screen is open: no store keeps
+  // it.
   const [talks, setTalks] = useState<ReadonlyMap<string, readonly Turn[]>>(new Map());
   // The task whose question is on its way: one at a time.
   const [asking, setAsking] = useState<string | undefined>(undefined);
@@ -246,6 +250,8 @@ export function Solve({
   const list = onList(begun, tasks);
   const task = shownTask(list, asked);
   const attemptId = task?.attemptId;
+  // The task, as the screen knows it: its attempt begun anew is the same task.
+  const taskId = task?.taskId;
 
   // Another task: what the one before came to is none of its.
   // biome-ignore lint/correctness/useExhaustiveDependencies: it runs on the task's change alone.
@@ -265,44 +271,42 @@ export function Solve({
     setWavy(undefined);
     setTold("");
     setUnwritten(false);
-    setOverTold(false);
     setAskNote(undefined);
     setAgain(undefined);
     setGrown(undefined);
     setWritten(element.current?.filled?.[0]?.[0] === true);
-  }, [attemptId]);
+  }, [taskId]);
 
   const onHistoryChange = useCallback(
     (event: HistoryChangeEvent) => {
-      if (attemptId === undefined) return;
+      if (taskId === undefined) return;
       const sheet = event.currentTarget as CanvasElement;
-      // Other work puts a verdict away, but that of a Check that is over, whose marks go all the
-      // same: the canvas drops them, and their context holds strokes the work may no longer have.
-      onKeep(attemptId, (was) => {
-        const history = withChange(was.history, event.detail, () => sheet.history);
-        return checkOver(was)
-          ? { ...was, history, checked: undefined }
-          : withoutVerdict({ ...was, history });
-      });
+      // Other work puts a verdict away, a solved task's too, which is solved again.
+      onKeep(taskId, (was) =>
+        withoutVerdict({
+          ...was,
+          history: withChange(was.history, event.detail, () => sheet.history),
+        }),
+      );
       setWritten(sheet.filled?.[0]?.[0] === true);
       setUnwritten(false);
       setTold("");
       // The wavy line stood under the work as it was.
       setWavy(undefined);
     },
-    [attemptId, onKeep],
+    [taskId, onKeep],
   );
   const onGridChange = useCallback((event: GridChangeEvent) => setGrid(event.detail.grid), []);
   const onTracingChange = useCallback(
     (event: TracingChangeEvent) => {
-      if (attemptId === undefined) return;
+      if (taskId === undefined) return;
       const tracing = event.detail;
       // The canvas puts its marks away with the paper moved, and a mount again would give them
       // the context of a Check the tracing is no longer at.
-      onKeep(attemptId, (was) => ({ ...was, tracing, checked: undefined }));
+      onKeep(taskId, (was) => ({ ...was, tracing, checked: undefined }));
       setWavy(undefined);
     },
-    [attemptId, onKeep],
+    [taskId, onKeep],
   );
 
   const verdict = task?.verdict;
@@ -320,28 +324,45 @@ export function Solve({
   // the words stand without them.
   useLayoutEffect(() => {
     const canvas = element.current;
-    if (canvas === null || attemptId === undefined) return;
+    if (canvas === null || taskId === undefined) return;
     try {
       canvas.marks = marks;
     } catch {
       canvas.marks = undefined;
     }
-  }, [marks, attemptId]);
+  }, [marks, taskId]);
 
   // The row is fitted once it is drawn, and again with the words; a button that comes or goes in it
   // fits it anew by itself.
   useBarFit(row, [language, task === undefined].join(" "), fitRow);
-  if (task === undefined || attemptId === undefined) return null;
+  if (task === undefined || attemptId === undefined || taskId === undefined) return null;
   const order = numbers(tasks);
   const nameOf = (each: BegunTask) =>
     words.text(each.drawn ? "paper.your-frame" : "paper.task", { n: order.get(each.taskId) ?? 0 });
   const at = list.indexOf(task);
   const done = list.filter((each) => taskState(each) === "solved").length;
   const place = { n: at + 1, total: list.length };
-  const before = besideTask(list, attemptId, -1);
-  const after = besideTask(list, attemptId, 1);
+  const before = besideTask(list, taskId, -1);
+  const after = besideTask(list, taskId, 1);
   const go = (to: BegunTask | undefined) => {
-    if (to !== undefined && !pending) setAsked(to.attemptId);
+    if (to !== undefined && !pending) setAsked(to.taskId);
+  };
+
+  /**
+   * An action of the learner that needs api, in the task's attempt: once it has closed, in a new
+   * attempt of the task, begun first; and in another, begun then, when api refuses it as closed —
+   * solved in another tab, or closed by another page's Start —, which marks a task solved so solved.
+   */
+  const inAttempt = async <T,>(act: (attemptId: string) => Promise<T>): Promise<T> => {
+    const now = task.over === true ? await onRenew(task) : attemptId;
+    try {
+      return await act(now);
+    } catch (reason) {
+      const by = closedBy(parseFailure(reason));
+      if (by === undefined) throw reason;
+      if (by === CloseReason.CORRECT) onKeep(taskId, (was) => ({ ...was, solved: true }));
+      return act(await onRenew({ ...task, attemptId: now }));
+    }
   };
 
   /** A turn of the conversation on a task, and none of it again but a question. */
@@ -356,7 +377,7 @@ export function Solve({
 
   /** The tutor's words shown: said by the voicing in the open panel, else told to a screen reader. */
   const show = (next: Said) => {
-    remember(attemptId, { learner: false, text: next.text, line: false });
+    remember(taskId, { learner: false, text: next.text, line: false });
     setSaid((before) =>
       // The words shown again stay the reply they came by, and a report begun on them stays open.
       before?.text === next.text ? before : next,
@@ -433,17 +454,17 @@ export function Solve({
   };
 
   /** The opening question of a task before its first Check, by AI from the work as it stands. */
-  const openingWords = async (asked: number) => {
+  const openingWords = async (asked: number, now: string) => {
     // Other work is another action, with a key of its own, as a Check's.
     const sheet = element.current;
-    const of = JSON.stringify([attemptId, sheet?.history.length ?? 0, sheet?.tracing]);
+    const of = JSON.stringify([now, sheet?.history.length ?? 0, sheet?.tracing]);
     if (openingKey.current?.of !== of) openingKey.current = { of, key: idempotencyKey() };
     const key = openingKey.current.key;
     const work = await workNow();
     const ai = holder.aiFields(profileId);
     const answer = await watched(api, () =>
       api.attempt.getOpeningWords(
-        { profileId, attemptId, idempotencyKey: key, work, wordsLanguage: language, ...ai },
+        { profileId, attemptId: now, idempotencyKey: key, work, wordsLanguage: language, ...ai },
         { timeoutMs: PAPER_TIMEOUT_MS },
       ),
     );
@@ -458,10 +479,8 @@ export function Solve({
 
   /** The task's statement read by AI into its text, on the learner's Recognise. */
   const recognise = () => {
-    const of = attemptId;
+    const of = taskId;
     if (readings.get(of)?.state === "busy") return;
-    if (readKey.current?.of !== of) readKey.current = { of, key: idempotencyKey() };
-    const key = readKey.current.key;
     const asked = epoch.current;
     const keep = (reading: TracingReading) =>
       setReadings((before) => new Map(before).set(of, reading));
@@ -472,15 +491,19 @@ export function Solve({
     void task.crop
       .arrayBuffer()
       .then((buffer) =>
-        watched(api, () =>
-          api.attempt.readStatement({
-            profileId,
-            attemptId: of,
-            idempotencyKey: key,
-            statement: new Uint8Array(buffer),
-            ...ai,
-          }),
-        ),
+        inAttempt((now) => {
+          if (readKey.current?.of !== now) readKey.current = { of: now, key: idempotencyKey() };
+          const key = readKey.current.key;
+          return watched(api, () =>
+            api.attempt.readStatement({
+              profileId,
+              attemptId: now,
+              idempotencyKey: key,
+              statement: new Uint8Array(buffer),
+              ...ai,
+            }),
+          );
+        }),
       )
       .then(
         (answer) => {
@@ -516,17 +539,19 @@ export function Solve({
     setWordsNote(undefined);
     void (async () => {
       try {
-        const answer = await api.attempt.getHint({
-          profileId,
-          attemptId,
-          wordsLanguage: language,
+        await inAttempt(async (now) => {
+          const answer = await api.attempt.getHint({
+            profileId,
+            attemptId: now,
+            wordsLanguage: language,
+          });
+          if (asked !== epoch.current) return;
+          // Before the first wrong answer a task from paper has no techniques: the opening question.
+          if (answer.hint.case === "rung") {
+            const { words: text, rung } = answer.hint.value;
+            show({ text, reply: TutorReply.RUNG, rung });
+          } else await openingWords(asked, now);
         });
-        if (asked !== epoch.current) return;
-        // Before the first wrong answer a task from paper has no techniques: the opening question.
-        if (answer.hint.case === "rung") {
-          const { words: text, rung } = answer.hint.value;
-          show({ text, reply: TutorReply.RUNG, rung });
-        } else await openingWords(asked);
       } catch (reason) {
         const found = parseFailure(reason);
         if (asked === epoch.current) setFailure(found);
@@ -572,8 +597,8 @@ export function Solve({
 
   /** Grown-up mode turned on or off on this task, a line of its conversation. */
   const grownMode = (on: boolean) => {
-    setGrown(on ? attemptId : undefined);
-    remember(attemptId, { learner: false, text: "", line: true, mode: on ? "on" : "off" });
+    setGrown(on ? taskId : undefined);
+    remember(taskId, { learner: false, text: "", line: true, mode: on ? "on" : "off" });
   };
 
   /**
@@ -583,16 +608,13 @@ export function Solve({
    * same question sent again goes with the same key, which gets what was done.
    */
   const ask = (question: string, voice: boolean) => {
-    if (asking !== undefined || viewOnly(task)) return;
+    if (asking !== undefined) return;
     // Within the press: the words that come may be said (WebKit).
     prime();
-    if (grown === attemptId) return askGrown(question, voice);
-    const of = attemptId;
+    if (grown === taskId) return askGrown(question, voice);
+    const of = taskId;
     const turns = turnsOf(talks.get(of) ?? []);
     remember(of, { learner: true, text: question, line: true, ...(voice ? { voice } : {}) });
-    const same = JSON.stringify([of, question]);
-    if (askKey.current?.of !== same) askKey.current = { of: same, key: idempotencyKey() };
-    const key = askKey.current.key;
     const asked = epoch.current;
     setAsking(of);
     setAskNote(undefined);
@@ -603,21 +625,26 @@ export function Solve({
       try {
         const work = await workNow();
         stopping.signal.throwIfAborted();
-        const answer = await watched(api, () =>
-          api.attempt.askTutor(
-            {
-              profileId,
-              attemptId: of,
-              idempotencyKey: key,
-              question,
-              turns: [...turns],
-              work,
-              wordsLanguage: language,
-              ...ai,
-            },
-            { timeoutMs: PAPER_TIMEOUT_MS, signal: stopping.signal },
-          ),
-        );
+        const answer = await inAttempt((now) => {
+          const same = JSON.stringify([now, question]);
+          if (askKey.current?.of !== same) askKey.current = { of: same, key: idempotencyKey() };
+          const key = askKey.current.key;
+          return watched(api, () =>
+            api.attempt.askTutor(
+              {
+                profileId,
+                attemptId: now,
+                idempotencyKey: key,
+                question,
+                turns: [...turns],
+                work,
+                wordsLanguage: language,
+                ...ai,
+              },
+              { timeoutMs: PAPER_TIMEOUT_MS, signal: stopping.signal },
+            ),
+          );
+        });
         stopping.past();
         askKey.current = undefined;
         const read = outcomeOf(answer.outcome);
@@ -660,7 +687,7 @@ export function Solve({
   const askGrown = (question: string, voice: boolean) => {
     const sheet = element.current;
     if (sheet === null) return;
-    const of = attemptId;
+    const of = taskId;
     const turns = turnsOf(talks.get(of) ?? []);
     remember(of, {
       learner: true,
@@ -669,9 +696,6 @@ export function Solve({
       grown: true,
       ...(voice ? { voice } : {}),
     });
-    const same = JSON.stringify([of, question, "grown"]);
-    if (askKey.current?.of !== same) askKey.current = { of: same, key: idempotencyKey() };
-    const key = askKey.current.key;
     const asked = epoch.current;
     setAsking(of);
     setWriting(of);
@@ -696,23 +720,28 @@ export function Solve({
           .map(({ id, points }) => ({ id, points: [...points] }));
         const paperWork = await workOf(work, task.instruction);
         stopping.signal.throwIfAborted();
-        const answer = await watched(api, () =>
-          api.attempt.askGrownUp(
-            {
-              profileId,
-              attemptId: of,
-              idempotencyKey: key,
-              question,
-              turns: [...turns],
-              work: paperWork,
-              strokes,
-              pixelsPerMm: pixelsPerMm(context.crop),
-              wordsLanguage: language,
-              ...ai,
-            },
-            { timeoutMs: GROWN_UP_TIMEOUT_MS, signal: stopping.signal },
-          ),
-        );
+        const answer = await inAttempt((now) => {
+          const same = JSON.stringify([now, question, "grown"]);
+          if (askKey.current?.of !== same) askKey.current = { of: same, key: idempotencyKey() };
+          const key = askKey.current.key;
+          return watched(api, () =>
+            api.attempt.askGrownUp(
+              {
+                profileId,
+                attemptId: now,
+                idempotencyKey: key,
+                question,
+                turns: [...turns],
+                work: paperWork,
+                strokes,
+                pixelsPerMm: pixelsPerMm(context.crop),
+                wordsLanguage: language,
+                ...ai,
+              },
+              { timeoutMs: GROWN_UP_TIMEOUT_MS, signal: stopping.signal },
+            ),
+          );
+        });
         // The act comes: what is drawn now is past Stop.
         stopping.past();
         askKey.current = undefined;
@@ -816,27 +845,19 @@ export function Solve({
       });
   };
 
-  /** The attempt api closed: the task is over, and only to be looked at. */
+  /** The attempt api closed though it was begun anew: the next action begins another. */
   const closed = (found: Failure) => {
-    // A verdict still shown is put away, so that the task is only to be looked at, as it is when
-    // its page is opened again.
     const reason = closedBy(found);
     if (reason !== undefined)
-      onKeep(attemptId, (was) =>
-        withoutVerdict({
-          ...was,
-          over: true,
-          ...(reason === CloseReason.CORRECT ? { solved: true } : {}),
-        }),
-      );
+      onKeep(taskId, (was) => ({
+        ...was,
+        over: true,
+        ...(reason === CloseReason.CORRECT ? { solved: true } : {}),
+      }));
   };
 
   const check = () => {
-    if (viewOnly(task)) {
-      setOverTold(true);
-      return;
-    }
-    if (pending || checkOver(task)) return;
+    if (pending) return;
     if (!written) {
       setUnwritten(true);
       return;
@@ -855,11 +876,11 @@ export function Solve({
     setTold("");
     epoch.current += 1;
     unasked.current = undefined;
-    onKeep(attemptId, withoutVerdict);
+    onKeep(taskId, withoutVerdict);
     // Other work is another action, with a key of its own: the history, and where the paper lay,
     // as they are at the press, before the work is read.
     const length = sheet.history.length;
-    const of = JSON.stringify([attemptId, length, sheet.tracing]);
+    const tracing = sheet.tracing;
     void (async () => {
       try {
         const work = await sheet.exportWork();
@@ -867,38 +888,42 @@ export function Solve({
           setUnwritten(true);
           return;
         }
-        if (sent.current?.of !== of) sent.current = { of, key: idempotencyKey() };
         const ai = holder.aiFields(profileId);
-        const key = sent.current.key;
         const paperWork = await workOf(work, task.instruction);
         const surface = paperWork.surface;
         const sentWork = surface?.case === "paper" ? surface.value : undefined;
-        const answer = await watched(
-          api,
-          () =>
-            api.attempt.submitWork(
-              {
-                profileId,
-                attemptId,
-                idempotencyKey: key,
-                work: paperWork,
-                wordsLanguage: language,
-                ...ai,
-              },
-              { timeoutMs: PAPER_TIMEOUT_MS },
-            ),
-          sentWork?.statement instanceof Uint8Array && sentWork.crop instanceof Uint8Array
-            ? {
-                attemptId,
-                statement: sentWork.statement,
-                crop: sentWork.crop,
-                ...(sentWork.instruction instanceof Uint8Array
-                  ? { instruction: sentWork.instruction }
-                  : {}),
-                verdicts: (a) => a.items.map((item) => item.answerSlots[0]?.verdict),
-              }
-            : undefined,
-        );
+        const { answer, key, now } = await inAttempt(async (now) => {
+          const of = JSON.stringify([now, length, tracing]);
+          if (sent.current?.of !== of) sent.current = { of, key: idempotencyKey() };
+          const key = sent.current.key;
+          const answer = await watched(
+            api,
+            () =>
+              api.attempt.submitWork(
+                {
+                  profileId,
+                  attemptId: now,
+                  idempotencyKey: key,
+                  work: paperWork,
+                  wordsLanguage: language,
+                  ...ai,
+                },
+                { timeoutMs: PAPER_TIMEOUT_MS },
+              ),
+            sentWork?.statement instanceof Uint8Array && sentWork.crop instanceof Uint8Array
+              ? {
+                  attemptId: now,
+                  statement: sentWork.statement,
+                  crop: sentWork.crop,
+                  ...(sentWork.instruction instanceof Uint8Array
+                    ? { instruction: sentWork.instruction }
+                    : {}),
+                  verdicts: (a) => a.items.map((item) => item.answerSlots[0]?.verdict),
+                }
+              : undefined,
+          );
+          return { answer, key, now };
+        });
         const read = outcomeOf(answer.outcome);
         holder.noteOutcome(profileId, read, ai);
         // A failure of AI is a moment's: api keeps it under the key, so a press again with the same
@@ -909,7 +934,7 @@ export function Solve({
           "cells" in work || work.statement === undefined ? undefined : work.submission;
         const first = !kept.current.has(key);
         kept.current.add(key);
-        onKeep(attemptId, (was) => ({
+        onKeep(taskId, (was) => ({
           ...was,
           verdict,
           wrongAnswers: answer.wrongAnswers,
@@ -922,7 +947,7 @@ export function Solve({
         const card = paperCard(verdict, words);
         setTold(card.line === undefined ? card.title : `${card.title}. ${card.line}`);
         if (answer.tutorWords !== "") {
-          remember(attemptId, { learner: false, text: answer.tutorWords, line: false });
+          remember(taskId, { learner: false, text: answer.tutorWords, line: false });
           setCheckSaid({ text: answer.tutorWords, ...checkReply(verdict, answer.wrongAnswers) });
           if (isOpen.current) auto([{ text: answer.tutorWords, language }]);
         }
@@ -931,7 +956,7 @@ export function Solve({
           setExplained(false);
           explainKey.current = undefined;
           // The words of the rung are asked at once while the panel is open, else once it opens.
-          const ask = { attemptId, wrongAnswers: answer.wrongAnswers, key: idempotencyKey() };
+          const ask = { attemptId: now, wrongAnswers: answer.wrongAnswers, key: idempotencyKey() };
           if (isOpen.current) rungWords(ask);
           else unasked.current = ask;
         }
@@ -987,7 +1012,7 @@ export function Solve({
             {list.map((each) => {
               const state = taskState(each);
               return (
-                <li key={each.attemptId}>
+                <li key={each.taskId}>
                   <button
                     type="button"
                     className="nt-tasks-row"
@@ -1022,8 +1047,9 @@ export function Solve({
 
   // Hint waits while the rung's words are on their way, as for any request of its own.
   const busy = pending || wordsWaiting;
-  const only = viewOnly(task);
   const acts = tutorActs(task);
+  // A task solved, here or before: "Next task" is the row's own button, beside Check.
+  const ahead = taskState(task) === "solved" ? after : undefined;
   const close = () => {
     hush();
     setOpen(false);
@@ -1057,21 +1083,21 @@ export function Solve({
       }}
     >
       <div className="nt-task nt-task-paper" {...beside}>
-        <div className="nt-task-work" inert={only}>
+        <div className="nt-task-work">
           {/* The order of the properties is the order React gives them: the paper first. */}
           <novatrail-canvas
-            key={attemptId}
+            key={taskId}
             ref={element}
             lang={language}
             {...(narrow && open ? { "tools-hidden": "" } : {})}
             paper={paperOf(task.crop)}
             history={task.history}
             {...(task.tracing === undefined ? {} : { tracing: task.tracing })}
-            {...(only ? {} : { reading: readings.get(attemptId) ?? READY })}
+            reading={readings.get(taskId) ?? READY}
             {...(grid === undefined ? {} : { grid })}
             onhistorychange={onHistoryChange}
             ontracingchange={onTracingChange}
-            {...(only ? {} : { ontracingread: recognise })}
+            ontracingread={recognise}
             ongridchange={onGridChange}
             {...pens}
           />
@@ -1097,11 +1123,6 @@ export function Solve({
             {readNote}
           </p>
         )}
-        {overTold ? (
-          <p role="alert" className="nt-error">
-            {words.text("api.attempt-closed")}
-          </p>
-        ) : null}
         {/* While the panel is open the reading and the verdict are lines in it. */}
         {open ? null : checking ? (
           <VerdictCard
@@ -1117,7 +1138,8 @@ export function Solve({
                 {words.text("task.hint")}
               </button>
             ) : null}
-            {acts.next ? (
+            {/* A task solved has "Next task" in the row. */}
+            {acts.next && ahead === undefined ? (
               after === undefined ? null : (
                 <button type="button" className="nt-card-button" onClick={() => go(after)}>
                   {words.text("next.task")}
@@ -1127,7 +1149,7 @@ export function Solve({
               <button
                 type="button"
                 className="nt-card-button"
-                onClick={() => onKeep(attemptId, withoutVerdict)}
+                onClick={() => onKeep(taskId, withoutVerdict)}
               >
                 {words.text(task.verdict.kind === "not-yet" ? "task.try-again" : "common.ok")}
               </button>
@@ -1172,13 +1194,23 @@ export function Solve({
           {/* Not disabled while nothing is written: a disabled button would drop the focus. */}
           <button
             type="button"
-            className="nt-check-button"
-            aria-disabled={!written || pending || checkOver(task)}
+            className={ahead === undefined ? "nt-check-button" : "nt-row-button"}
+            aria-disabled={!written || pending}
             {...(written ? {} : { "aria-describedby": writeId })}
             onClick={check}
           >
             {words.text("task.check")}
           </button>
+          {ahead === undefined ? null : (
+            <button
+              type="button"
+              className="nt-check-button"
+              aria-disabled={pending}
+              onClick={() => go(ahead)}
+            >
+              {words.text("next.task")}
+            </button>
+          )}
         </div>
       </div>
       {open ? (
@@ -1204,15 +1236,16 @@ export function Solve({
           onNext={after === undefined ? undefined : () => go(after)}
           onClose={close}
           headingRef={heading}
-          turns={talks.get(attemptId) ?? []}
-          asking={asking === attemptId}
+          turns={talks.get(taskId) ?? []}
+          asking={asking === taskId}
           askNote={askNote}
-          askOff={asking !== undefined || only}
+          askOff={asking !== undefined}
           again={again}
           onAsk={ask}
-          onStop={stoppable === attemptId ? stop : undefined}
-          {...(only ? {} : { grown: grown === attemptId, onGrown: grownMode })}
-          writing={writing === attemptId}
+          onStop={stoppable === taskId ? stop : undefined}
+          grown={grown === taskId}
+          onGrown={grownMode}
+          writing={writing === taskId}
         />
       ) : null}
     </Screen>
