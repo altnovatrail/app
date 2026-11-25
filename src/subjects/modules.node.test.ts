@@ -2,13 +2,31 @@ import type * as open from "@altnovatrail/spec/formatv0/open";
 import { describe, expect, it } from "vitest";
 import { ApiError } from "../api/failure.ts";
 import type { OpenViews } from "../packages/views.ts";
-import { byTitle, cardOf, cardsOf, isSequential, sequentialOf } from "./modules.ts";
+import {
+  byTitle,
+  cardOf,
+  cardsOf,
+  graphFactsOf,
+  isSequential,
+  sequentialOf,
+  skillListOf,
+} from "./modules.ts";
 
 const D1 = `sha256:${"1".repeat(64)}`;
 const D2 = `sha256:${"2".repeat(64)}`;
 
 function manifest(title: string, explanation = "en"): open.Manifest {
-  return { title, languages: { explanation } } as open.Manifest;
+  return {
+    module_format_version: "1.0",
+    id: "novatrail/test",
+    title,
+    subject: "mathematics",
+    audience: { age_categories: ["under_13"] },
+    version: "1.0.0",
+    languages: { explanation },
+    authors: [{ name: "The NovaTrail authors" }],
+    license: "Apache-2.0",
+  };
 }
 
 /** How often the cache of earlier manifests was read. */
@@ -41,8 +59,23 @@ describe("the cards of modules", () => {
         digest: D1,
         title: "Olympiad maths",
         language: "en",
+        about: {
+          subject: "mathematics",
+          ageCategories: ["under_13"],
+          grades: [],
+          version: "1.0.0",
+          authors: ["The NovaTrail authors"],
+          license: "Apache-2.0",
+        },
       },
     );
+  });
+
+  it("stand without the manifest's facts where it lacks the ones they need", async () => {
+    const partial = { title: "Partial", languages: { explanation: "en" } } as open.Manifest;
+    const card = await cardOf(viewsOf({ [D1]: partial }), { moduleId: "m/p", packageDigest: D1 });
+    expect(card.title).toBe("Partial");
+    expect(card).not.toHaveProperty("about");
   });
 
   it("mark a module solved on the sheet, as the list of connected modules says", async () => {
@@ -121,7 +154,10 @@ describe('the mark "in order"', () => {
       async get(digest: string, kind: string) {
         asked.push(`${kind} ${digest}`);
         if (kind === "manifest") return { view: manifest("Chain"), skillTiers: {} };
-        if (digest === D1) return { view: {}, skillTiers: { a: 1, b: 2 } };
+        if (digest === D1) {
+          const skill = (title: string) => ({ title, assessability: "verdict" });
+          return { view: { skills: { a: skill("A"), b: skill("B") } }, skillTiers: { a: 1, b: 2 } };
+        }
         if (digest === D2) throw new ApiError({ kind: "offline" });
         return undefined;
       },
@@ -137,5 +173,54 @@ describe('the mark "in order"', () => {
     const [card] = await cardsOf(views, [{ moduleId: "m/chain", packageDigest: D1 }]);
     expect(card).not.toHaveProperty("sequential");
     expect(asked).toEqual([`manifest ${D1}`]);
+  });
+});
+
+describe("a module's skills on its card of Subjects", () => {
+  const skill = (title: string, assessability: "verdict" | "rubric" | "none" = "verdict") =>
+    ({ title, assessability }) as open.Skill;
+
+  it("go by tier from the first, each tier named where the graph names it, its skills by title", () => {
+    const graph = {
+      tiers: ["Basics"],
+      skills: { b: skill("Bravo"), a: skill("Alpha"), c: skill("Charlie"), d: skill("Delta") },
+    } as open.SkillGraph;
+    expect(skillListOf(graph, { a: 1, b: 1, c: 2 })).toEqual({
+      tiers: [
+        { tier: 1, name: "Basics", skills: ["Alpha", "Bravo"] },
+        { tier: 2, skills: ["Charlie"] },
+        // A skill with no tier comes last, under no tier.
+        { skills: ["Delta"] },
+      ],
+      count: 4,
+      rubric: false,
+    });
+  });
+
+  it("are by a rubric only where no skill has a verdict and one has a rubric", () => {
+    const of = (...kinds: ("verdict" | "rubric" | "none")[]) =>
+      skillListOf(
+        { skills: Object.fromEntries(kinds.map((kind, i) => [`s${i}`, skill(`S${i}`, kind)])) },
+        {},
+      ).rubric;
+    expect(of("rubric", "none")).toBe(true);
+    expect(of("rubric", "verdict")).toBe(false);
+    expect(of("none")).toBe(false);
+  });
+
+  it("come with the mark from the graph, and are none for a graph that cannot be had", async () => {
+    const views = {
+      async get(digest: string) {
+        if (digest === D1) return { view: { skills: { a: skill("A") } }, skillTiers: { a: 1 } };
+        if (digest === D2) throw new ApiError({ kind: "offline" });
+        return undefined;
+      },
+    } as unknown as OpenViews;
+    expect(await graphFactsOf(views, D1)).toEqual({
+      sequential: false,
+      skillList: { tiers: [{ tier: 1, skills: ["A"] }], count: 1, rubric: false },
+    });
+    expect(await graphFactsOf(views, D2)).toEqual({ sequential: false });
+    expect(await graphFactsOf(views, `sha256:${"3".repeat(64)}`)).toEqual({ sequential: false });
   });
 });

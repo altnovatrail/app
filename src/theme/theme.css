@@ -3073,6 +3073,156 @@ h2.nt-caps {
   font-weight: var(--nt-weight-bold);
 }
 /*
+ * What a card of Subjects says of its module: the line of its subject, audience and kind under its
+ * title; ⋯ at the top right, 44 round, its dots grey; its skills — a small heading in capitals, then
+ * chips of 28, grey, and the chip of the rest in the accent —; a connected one's squares and counts;
+ * and the foot at the card's bottom, so the cards of a row end alike.
+ */
+.nt-catalog-card .nt-module-head {
+  align-items: flex-start;
+}
+.nt-catalog-name {
+  flex: 1 1 auto;
+  min-inline-size: 0;
+  padding-block-start: 0.25rem;
+}
+.nt-module article .nt-catalog-name > p {
+  margin: 0.1875rem 0 0;
+  color: var(--nt-text-muted);
+  font-size: 0.8125rem;
+}
+.nt-catalog-about {
+  flex: none;
+  margin-block-start: -0.375rem;
+}
+.nt-catalog-about > button {
+  color: var(--nt-text-muted);
+}
+.nt-module article p.nt-catalog-caps {
+  margin: 0.875rem 0 0;
+  color: var(--nt-text-muted);
+  font-size: 0.75rem;
+  font-weight: var(--nt-weight-bold);
+  letter-spacing: 0.01875rem;
+  text-transform: uppercase;
+}
+.nt-skill-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  margin: 0.4375rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+.nt-skill-chip {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  min-block-size: 1.75rem;
+  padding: 0.25rem 0.6875rem;
+  border: 0.0625rem solid transparent;
+  border-radius: 0.875rem;
+  background: rgba(118, 118, 128, 0.1);
+  color: var(--nt-segmented);
+  font-size: 0.8125rem;
+}
+/* The chip of the rest is a button: its target 44 tall around a chip of 28, in the row's line. */
+button.nt-skill-more {
+  display: flex;
+  align-items: center;
+  min-block-size: var(--nt-target);
+  margin-block: -0.5rem;
+  padding: 0;
+  border-radius: 0.875rem;
+  background: none;
+  color: var(--nt-accent-text);
+}
+.nt-skill-more > .nt-skill-chip {
+  gap: 0.125rem;
+  background: var(--nt-accent-tint);
+  color: var(--nt-accent-text);
+  font-weight: var(--nt-weight-bold);
+}
+.nt-catalog-progress {
+  margin-block-start: 0.875rem;
+}
+.nt-catalog-progress .nt-dots i {
+  box-sizing: border-box;
+  inline-size: 8px;
+  block-size: 8px;
+  border-radius: 2px;
+  background: #e5e5ea;
+}
+.nt-module article .nt-catalog-progress > p {
+  margin: 0.4375rem 0 0;
+  color: var(--nt-segmented);
+  font-size: 0.8125rem;
+}
+.nt-catalog-progress.nt-loading,
+.nt-loading > .nt-catalog-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4375rem;
+}
+.nt-module.nt-catalog-card .nt-catalog-foot {
+  margin-block-start: auto;
+  padding-block-start: 0.625rem;
+}
+.nt-module article .nt-catalog-foot > p {
+  margin: 0;
+}
+.nt-module article p.nt-catalog-count {
+  color: var(--nt-text-muted);
+  font-size: 0.8125rem;
+}
+/* About the module: its facts in rows under hairlines, the name at the start, the value at the end. */
+.nt-facts {
+  margin: 0.5rem 0 0;
+}
+.nt-facts > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+  padding: 0.5rem 0.625rem;
+  border-block-start: 0.5px solid rgba(60, 60, 67, 0.18);
+  font-size: var(--nt-size-body);
+}
+.nt-facts dt {
+  color: var(--nt-text-muted);
+}
+.nt-facts dd {
+  margin: 0;
+  text-align: end;
+}
+/* Disconnect, a row of the pop-over in the colour of what cannot be undone at once, with no fill. */
+.nt-about-pop .nt-danger {
+  justify-content: flex-start;
+  inline-size: 100%;
+  margin-block-start: 0.375rem;
+  padding-inline: 0.625rem;
+  border-radius: 0.75rem;
+  background: none;
+  color: var(--nt-error);
+  font-weight: var(--nt-weight-bold);
+}
+/* Every skill by its tier: each tier's name small and in capitals above its chips. */
+.nt-pop .nt-skill-tier h3 {
+  margin: 0.5rem 0 0;
+  padding-inline: 0.625rem;
+  color: var(--nt-text-muted);
+  font-size: 0.75rem;
+  font-weight: var(--nt-weight-bold);
+  letter-spacing: 0.01875rem;
+  text-transform: uppercase;
+}
+.nt-skill-tier .nt-skill-chips {
+  padding-inline: 0.625rem;
+}
+.nt-skills-map {
+  margin-block-start: 0.5rem;
+}
+/*
  * A module's skill map in the frame (the mockup's `map`): "Subjects" back above the heading, the
  * module's pill of 44 beside it, white with its tile of 32, and the frame below to the window's foot.
  */

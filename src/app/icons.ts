@@ -382,6 +382,18 @@ export const ICONS = {
       "M15 19v-1h-2q-.825 0-1.412-.587T11 16V8H9v1q0 .825-.587 1.413T7 11H4q-.825 0-1.412-.587T2 9V5q0-.825.588-1.412T4 3h3q.825 0 1.413.588T9 5v1h6V5q0-.825.588-1.412T17 3h3q.825 0 1.413.588T22 5v4q0 .825-.587 1.413T20 11h-3q-.825 0-1.412-.587T15 9V8h-2v8h2v-1q0-.825.588-1.412T17 13h3q.825 0 1.413.588T22 15v4q0 .825-.587 1.413T20 21h-3q-.825 0-1.412-.587T15 19M4 5v4zm13 10v4zm0-10v4zm0 4h3V5h-3zm0 10h3v-4h-3zM4 9h3V5H4z",
     ],
   },
+  "more-horiz-outline-rounded": {
+    viewBox: "0 0 24 24",
+    paths: [
+      "M6 14q-.825 0-1.412-.587T4 12t.588-1.412T6 10t1.413.588T8 12t-.587 1.413T6 14m6 0q-.825 0-1.412-.587T10 12t.588-1.412T12 10t1.413.588T14 12t-.587 1.413T12 14m6 0q-.825 0-1.412-.587T16 12t.588-1.412T18 10t1.413.588T20 12t-.587 1.413T18 14",
+    ],
+  },
+  "more-horiz-rounded": {
+    viewBox: "0 0 24 24",
+    paths: [
+      "M6 14q-.825 0-1.412-.587T4 12t.588-1.412T6 10t1.413.588T8 12t-.587 1.413T6 14m6 0q-.825 0-1.412-.587T10 12t.588-1.412T12 10t1.413.588T14 12t-.587 1.413T12 14m6 0q-.825 0-1.412-.587T16 12t.588-1.412T18 10t1.413.588T20 12t-.587 1.413T18 14",
+    ],
+  },
   "play-arrow-outline-rounded": {
     viewBox: "0 0 24 24",
     paths: [
@@ -663,6 +675,12 @@ export const VALUES = {
   "skill-map": {
     outline: "account-tree-outline-rounded",
     filled: "account-tree-outline-rounded",
+    mirrored: false,
+  },
+  dots: { outline: "more-horiz-outline-rounded", filled: "more-horiz-rounded", mirrored: false },
+  disconnect: {
+    outline: "do-not-disturb-on-outline-rounded",
+    filled: "do-not-disturb-on-outline-rounded",
     mirrored: false,
   },
   play: {

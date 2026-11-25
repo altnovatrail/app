@@ -39,6 +39,8 @@ export const CAPTIONLESS = {
   "ask-stop": { icon: "stop", word: "tutor.stop" },
   // On a module's card on Home: its skill map, described by the module's title.
   "skill-map": { icon: "skill-map", word: "skillmap.title" },
+  // On a module's card of Subjects: About the module, described by the module's title.
+  "about-module": { icon: "dots", word: "subjects.about" },
   // In the head of the tutor's panel on a task from paper: grown-up mode's key, pressed while it
   // is on; and the delete key of the grown-ups' PIN it asks.
   "grown-up": { icon: "grown-up", word: "grown.mode" },

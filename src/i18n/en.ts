@@ -486,7 +486,7 @@ export const en = {
   "subjects.unavailable": "Not available now",
   "subjects.connect": "Connect",
   "subjects.disconnect": "Disconnect",
-  /** On a module's card: the page of its LICENSE and NOTICE. */
+  /** On a module's card in the section for adults: the page of its LICENSE and NOTICE. */
   "subjects.license": "License",
   /** On a module's card: its skill graph is a chain, so its lessons go one after another. */
   "subjects.sequential": "In order",
@@ -509,6 +509,41 @@ export const en = {
   "subjects.skills": "All the skills: {list}",
   /** One state or mark in the bar's name; {state} is its word below. */
   "subjects.skill-count": "{state}: {count}",
+  /** A card of Subjects: the button ⋯ and its pop-over, the facts of the module's manifest. */
+  "subjects.about": "About the module",
+  "subjects.about-version": "Version",
+  "subjects.about-authors": "Authors",
+  "subjects.about-for": "For",
+  "subjects.about-language": "Explanation language",
+  "subjects.about-license": "License",
+  /** The subject of a module, on the line under its title. */
+  "subjects.subject-mathematics": "Mathematics",
+  "subjects.subject-physics": "Physics",
+  "subjects.subject-writing": "Writing",
+  /** Whom a module is for: its grades, or its ages. */
+  "subjects.grade": "Grade {grade}",
+  "subjects.grades": "Grades {from}–{to}",
+  "subjects.grade-list": "Grades {list}",
+  "subjects.age-under-13": "Under 13",
+  "subjects.age-teen": "13–17",
+  "subjects.age-adult": "Grown-ups",
+  "subjects.age-any": "Any age",
+  /** The kind of a module solved on the sheet of a task from paper. */
+  "subjects.kind-sheet": "On a sheet",
+  /** On the line under a module's title: its explanation language, when it is not the screen's. */
+  "subjects.in-language": "In {language}",
+  /** The heading of a module's skills on its card and in their pop-over. */
+  "subjects.skills-head": "Skills · {count}",
+  /** The chip of the skills a card does not name, which opens them all. */
+  "subjects.skills-more": "+{count} more",
+  /** A tier with no name of its own, by its number. */
+  "subjects.tier": "Tier {tier}",
+  "subjects.open-map": "Open the skill map",
+  /** A connected module's counts beside how many are mastered. */
+  "subjects.to-review": "{count} to review",
+  "subjects.in-progress": "{count} in progress",
+  /** Beside Connect: how many skills the module has. */
+  "subjects.skill-total": plural({ one: "{count} skill", other: "{count} skills" }),
   /** The legend of the marks of the cards: below the modules, and on a phone a button that opens it. */
   "subjects.legend": "What the marks mean",
   /**

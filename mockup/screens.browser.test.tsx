@@ -42,7 +42,7 @@ import { NextStep } from "../src/next/NextStep.tsx";
 import { SignInScreen } from "../src/signin/SignInScreen.tsx";
 import { MapScreen } from "../src/skills/SkillMapScreen.tsx";
 import { HomeScreen } from "../src/subjects/MySubjects.tsx";
-import type { ModuleCard } from "../src/subjects/modules.ts";
+import type { ModuleAbout, ModuleCard, SkillList } from "../src/subjects/modules.ts";
 import { CatalogScreen } from "../src/subjects/SubjectsPage.tsx";
 import type { SkillCounts } from "../src/subjects/states.ts";
 import { NO_VERDICTS, type Verdicts, verdictsOf } from "../src/task/attempt.ts";
@@ -1720,19 +1720,54 @@ const HOME_TUTOR: readonly Region[] = [
   },
 ];
 
+/** The facts of a module of the mockup's Subjects: its subject and grades, by the NovaTrail authors. */
+function aboutOf(subject: string, grades: number[]): ModuleAbout {
+  return {
+    subject,
+    ageCategories: ["under_13"],
+    grades,
+    version: "0.1.0",
+    authors: ["The NovaTrail authors"],
+    license: "Apache-2.0",
+  };
+}
+
+/** Skills of a module by tier: the three the mockup's card names first, and the rest to its count. */
+function skillsOf(named: string[], count: number, rubric = false): SkillList {
+  const rest = Array.from({ length: count - named.length }, (_, i) => `Skill ${i + 1}`);
+  return { tiers: [{ tier: 1, skills: [...named, ...rest] }], count, rubric };
+}
+
 /** Subjects, the catalog, with the three modules connected and the check board to connect. */
 function subjects() {
+  const about: readonly Pick<ModuleCard, "about" | "skillList">[] = [
+    {
+      about: aboutOf("mathematics", [1, 2, 3, 4, 5, 6]),
+      skillList: skillsOf(["Number patterns", "Logic puzzles", "Perimeter"], 45),
+    },
+    {
+      about: aboutOf("mathematics", [3]),
+      skillList: skillsOf(["Numbers to 1000", "Multiplying by 6–9", "Hours and minutes"], 36),
+    },
+    {
+      about: { ...aboutOf("writing", []), ageCategories: ["from_13_to_consent", "adult"] },
+      skillList: skillsOf(["Topic sentence", "Order of ideas", "Linking words"], 18, true),
+    },
+  ];
+  const connected = MODULES.map((card, i) => ({ ...card, ...about[i] }));
   const board: ModuleCard = {
     moduleId: "novatrail/check-board",
     title: "Tasks on a sheet",
     digest: `sha256:${"4".repeat(64)}`,
     language: "en",
+    about: { ...aboutOf("mathematics", []), ageCategories: ["adult"] },
+    skillList: skillsOf(["Arithmetic", "Word problems", "Equations"], 3),
   };
   return framed(
     "subjects",
     <CatalogScreen
-      connected={MODULES}
-      catalog={[...MODULES, board]}
+      connected={connected}
+      catalog={[...connected, board]}
       onConnect={() => {}}
       onDisconnect={() => {}}
     />,
@@ -1741,9 +1776,10 @@ function subjects() {
 
 /**
  * Why a card of Subjects is shorter than the mockup's: a module's manifest has no words of what it
- * teaches and no tags, so the card holds its title, its mark and its buttons.
+ * teaches, and skill-map keeps the titles of the anchor skills it builds on to itself.
  */
-const NO_ABOUT = "a manifest has no words of what a module teaches, nor tags";
+const NO_ABOUT =
+  "a manifest has no words of what a module teaches, and the anchor skills it builds on are not named";
 
 const SUBJECTS_REGIONS: readonly Region[] = [
   {
@@ -1754,7 +1790,7 @@ const SUBJECTS_REGIONS: readonly Region[] = [
   },
   {
     name: "the first module connected",
-    mockup: { css: 'div:has(> span > span > span:text-is("Olympiad maths 1–6")):has(button)' },
+    mockup: { css: 'div[data-card="Olympiad maths 1–6"]' },
     app: { css: "section:first-of-type .nt-catalog-card:first-child" },
     differs: { what: ["height", "font-size"], by: `${NO_ABOUT}; ${NO_TEXT}` },
   },

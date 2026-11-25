@@ -136,6 +136,10 @@ export const TABLE: Readonly<Record<string, Value>> = {
   device: { base: "tablet-android", filled: false, mirrored: false },
   settings: { base: "settings", filled: false, mirrored: false },
   "skill-map": { base: "account-tree", filled: false, mirrored: false },
+  // A card of Subjects: About the module, three dots, filled while its pop-over is open; and
+  // Disconnect in it, a circle struck through.
+  dots: { base: "more-horiz", filled: true, mirrored: false },
+  disconnect: { base: "do-not-disturb-on", filled: false, mirrored: false },
   // A module's card on Home: Continue, the engine that chooses, and the next skill.
   play: { base: "play-arrow", filled: false, mirrored: true },
   engine: { base: "autorenew", filled: false, mirrored: false },

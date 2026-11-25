@@ -34,8 +34,8 @@ function squaresOf(counts: SkillCounts): ReactNode[] {
   return squares;
 }
 
-/** A square for each skill, named by every state and mark with its count. */
-function SkillDots({ counts }: { readonly counts: SkillCounts }) {
+/** A square for each skill, named by every state and mark with its count: Home's card and Subjects'. */
+export function SkillDots({ counts }: { readonly counts: SkillCounts }) {
   const { language, words } = useLanguage();
   const named = listFormat(language, { type: "unit" }).format(
     [...STATES, ...MARKS]

@@ -75,7 +75,9 @@ import { addProfile } from "../storage/profile.ts";
 import { addDatabase, setAccount } from "../storage/registry.ts";
 import { PROFILE_SCHEMA, profileDatabase } from "../storage/schema.ts";
 import { HomeScreen } from "../subjects/MySubjects.tsx";
+import type { ModuleAbout, SkillList } from "../subjects/modules.ts";
 import { CatalogScreen } from "../subjects/SubjectsPage.tsx";
+import type { SkillCounts } from "../subjects/states.ts";
 import { NO_VERDICTS, verdictsOf } from "../task/attempt.ts";
 import { initialState } from "../task/steps.ts";
 import { TaskScreen, type TaskScreenProps } from "../task/TaskScreen.tsx";
@@ -451,6 +453,34 @@ async function submit(): Promise<void> {
 
 const D1 = `sha256:${"1".repeat(64)}`;
 const D2 = `sha256:${"2".repeat(64)}`;
+
+/** A catalog card's facts and skills: a module for grades 1 to 6, its skills in two tiers. */
+const CATALOG_ABOUT: ModuleAbout = {
+  subject: "mathematics",
+  ageCategories: ["under_13"],
+  grades: [1, 2, 3, 4, 5, 6],
+  version: "0.1.0",
+  authors: ["The NovaTrail authors"],
+  license: "Apache-2.0",
+};
+const CATALOG_SKILLS: SkillList = {
+  tiers: [
+    { tier: 1, name: "Basics", skills: ["Counting on", "Even and odd", "Perimeter"] },
+    { tier: 2, skills: ["Number patterns", "Logic puzzles"] },
+  ],
+  count: 5,
+  rubric: false,
+};
+/** No skill in any state or mark. */
+const NO_SKILLS: SkillCounts = {
+  mastered: 0,
+  "time-to-review": 0,
+  "in-progress": 0,
+  "ready-to-start": 0,
+  locked: 0,
+  "feedback-by-criteria": 0,
+  "not-assessed": 0,
+};
 
 /** The packages of a module whose manifest and files come at once: LICENSE with long lines. */
 const LICENSED = {
@@ -1356,7 +1386,7 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
     ),
   ],
   [
-    "Subjects with cards that open their licenses",
+    "Subjects with cards that say what their modules are",
     () => (
       <CatalogScreen
         connected={[
@@ -1366,12 +1396,23 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
             title: "Olympiad maths",
             language: "en",
             sequential: true,
+            about: CATALOG_ABOUT,
+            skillList: CATALOG_SKILLS,
+            skills: { ...NO_SKILLS, mastered: 2, "in-progress": 1, locked: 2 },
           },
         ]}
-        catalog={[{ moduleId: "novatrail/physics", digest: D2, title: "Физика", language: "ru" }]}
+        catalog={[
+          {
+            moduleId: "novatrail/physics",
+            digest: D2,
+            title: "Физика",
+            language: "ru",
+            about: { ...CATALOG_ABOUT, subject: "physics", grades: [] },
+            skillList: CATALOG_SKILLS,
+          },
+        ]}
         onConnect={() => {}}
         onDisconnect={() => {}}
-        onLicense={() => {}}
       />
     ),
   ],

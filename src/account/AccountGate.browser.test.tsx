@@ -1274,15 +1274,15 @@ describe("the license of a module", () => {
     "device LICENSE": () => new Response(LICENSE),
   });
 
-  it("opens from a card of Subjects in the learner's language, and closes home", async () => {
+  it("opens by its address in the learner's language while one is chosen, and closes home", async () => {
     const service = fakeSignIn("uid-1");
     const { asked } = renderApp(routes({ ...OWNER, interfaceLanguage: "ru" }), service);
     await userEvent.click(await screen.findByRole("button", { name: "Ёжик" }));
-    // The catalog and the licenses are Subjects', not Home's cards.
+    // A card of Subjects names the license among its facts, with no button of the page.
     await userEvent.click(await screen.findByRole("link", { name: "Предметы" }));
     const card = within(await screen.findByRole("article", { name: "Choices" }));
-    await userEvent.click(card.getByRole("button", { name: "Лицензия" }));
-    expect(window.location.hash).toBe(`#/license/sha256%3A${"1".repeat(64)}`);
+    expect(card.queryByRole("button", { name: "Лицензия" })).toBeNull();
+    window.location.hash = `#/license/${encodeURIComponent(D1)}`;
     expect(
       await screen.findByRole("heading", { level: 1, name: "Лицензия и уведомления модуля" }),
     ).toBeTruthy();
