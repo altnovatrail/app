@@ -7,7 +7,11 @@
 
 import type { SubmitWorkRequest } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
 import { AttemptService } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
-import { Cause, RefusalSchema } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
+import {
+  Cause,
+  CloseReason,
+  RefusalSchema,
+} from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import {
   type BeginPaperAttemptsRequest,
   BeginPaperAttemptsResponseSchema,
@@ -50,6 +54,19 @@ function Routed() {
   return useRoute().screen === "paper" ? <PaperScreen profileId="p1" adult /> : <p>Home</p>;
 }
 
+/** A refusal of an attempt closed solved, as by another tab. */
+function closedSolved() {
+  return new ConnectError("closed", Code.FailedPrecondition, undefined, [
+    {
+      desc: RefusalSchema,
+      value: create(RefusalSchema, {
+        cause: Cause.ATTEMPT_CLOSED,
+        data: { case: "closeReason", value: CloseReason.CORRECT },
+      }),
+    },
+  ]);
+}
+
 /** The screen on the module's route; `fail` refuses each beginning under the first key. */
 function renderModule({ fail = false } = {}) {
   const begins: BeginPaperAttemptsRequest[] = [];
@@ -71,18 +88,18 @@ function renderModule({ fail = false } = {}) {
       },
     });
     router.service(AttemptService, {
-      // The first attempt is closed, as by another page: the refusal begins the task anew.
+      // The first attempt is closed, solved in another tab: the refusal begins the task anew.
       getHint(request) {
         hinted.push(request.attemptId);
-        if (request.attemptId === "a1")
-          throw new ConnectError("closed", Code.FailedPrecondition, undefined, [
-            { desc: RefusalSchema, value: create(RefusalSchema, { cause: Cause.ATTEMPT_CLOSED }) },
-          ]);
+        if (request.attemptId === "a1") throw closedSolved();
         return { hint: { case: "rung", value: { rung: 1, words: "Look at the tens." } } };
       },
+      // The first attempt's Check solves its task; any other is refused as solved elsewhere.
       submitWork(request) {
         submits.push(request);
+        if (request.attemptId !== "a1") throw closedSolved();
         return {
+          solved: {},
           items: [
             {
               verdict: "correct",
@@ -156,7 +173,7 @@ it("begins the module's tasks by its ID, each a sheet under its text, with no Re
   expect(screen.queryByRole("button", { name: "Add" })).toBeNull();
 });
 
-it("sends the module's text drawn as the statement of Check, and goes on to the next task", async () => {
+it("sends the module's text drawn as the statement of Check, goes on, and marks a task solved elsewhere", async () => {
   const { submits } = renderModule();
   await screen.findByRole("heading", { name: "Task 1" }, SLOW);
   writeOn(sheet());
@@ -170,8 +187,14 @@ it("sends the module's text drawn as the statement of Check, and goes on to the 
   const picture = new Uint8Array(await statement.arrayBuffer());
   expect(work.value.statement).toEqual(picture);
   expect(submits[0]?.attemptId).toBe("a1");
-  await userEvent.click(await screen.findByRole("button", { name: "Next task" }, SLOW));
+  await userEvent.click(await screen.findByText("Next task", { selector: "button" }, SLOW));
   expect(await screen.findByRole("heading", { name: "Task 2" })).toBeVisible();
+  writeOn(sheet());
+  await userEvent.click(screen.getByRole("button", { name: "Check" }));
+  // Refused as solved elsewhere, the Check goes again in an attempt begun anew, refused so too.
+  await expect.poll(() => submits.map((s) => s.attemptId)).toEqual(["a1", "a2", "renewed-0"]);
+  await userEvent.click(screen.getByRole("button", { name: "Tasks, 2 / 2" }));
+  expect(await screen.findByText("2 of 2 done")).toBeVisible();
 });
 
 it("begins a task api closed anew on the same page, with no module", async () => {
