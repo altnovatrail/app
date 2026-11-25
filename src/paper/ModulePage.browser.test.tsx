@@ -88,10 +88,15 @@ function renderModule({ fail = false } = {}) {
       },
     });
     router.service(AttemptService, {
-      // The first attempt is closed, solved in another tab: the refusal begins the task anew.
+      // The first attempt is closed, solved in another tab: the refusal begins the task anew; the
+      // attempt begun anew is closed too, by another page, with no reason told.
       getHint(request) {
         hinted.push(request.attemptId);
         if (request.attemptId === "a1") throw closedSolved();
+        if (request.attemptId === "renewed-0")
+          throw new ConnectError("closed", Code.FailedPrecondition, undefined, [
+            { desc: RefusalSchema, value: create(RefusalSchema, { cause: Cause.ATTEMPT_CLOSED }) },
+          ]);
         return { hint: { case: "rung", value: { rung: 1, words: "Look at the tens." } } };
       },
       // The first attempt's Check solves its task; any other is refused as solved elsewhere.
@@ -205,7 +210,7 @@ it("begins a task api closed anew on the same page, with no module", async () =>
   expect(begins[1]?.moduleId).toBe("");
   expect(begins[1]?.tasks).toBe(1);
   expect(begins[1]?.pageId).toBe(begins[0]?.pageId);
-  await expect.poll(() => hinted.at(-1)).toBe("renewed-0");
+  await expect.poll(() => hinted).toEqual(["a1", "renewed-0"]);
 });
 
 it("stands the shapes of a sheet while it begins, says a failure, and tries again", async () => {
