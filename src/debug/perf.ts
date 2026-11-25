@@ -151,6 +151,8 @@ export function deviceOf(
   cores: number | undefined,
 ): Device {
   const v = (re: RegExp) => ua.match(re)?.[1];
+  // Safari's version stands after "Version/", and the string names Safari after it.
+  const safari = ua.includes("Safari/") ? v(/Version\/([\d.]+)/) : undefined;
   const name =
     v(/Edg\/(\d+)/) !== undefined
       ? `Edge ${v(/Edg\/(\d+)/)}`
@@ -158,8 +160,8 @@ export function deviceOf(
         ? `Firefox ${v(/Firefox\/(\d+)/)}`
         : v(/(?:Chrome|CriOS)\/(\d+)/) !== undefined
           ? `Chrome ${v(/(?:Chrome|CriOS)\/(\d+)/)}`
-          : v(/Version\/([\d.]+).*Safari/) !== undefined
-            ? `Safari ${v(/Version\/([\d.]+).*Safari/)}`
+          : safari !== undefined
+            ? `Safari ${safari}`
             : "a browser";
   const system = /iPad/.test(ua)
     ? "iPadOS"
