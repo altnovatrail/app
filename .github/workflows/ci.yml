@@ -18,17 +18,17 @@ concurrency:
 jobs:
   secrets:
     name: Secrets
-    uses: altnovatrail/.github/.github/workflows/secrets.yml@1704f782e76cee50ea5392cc0ea0d4b76c4b3672 # v0.1.32
+    uses: altnovatrail/.github/.github/workflows/secrets.yml@baa18cde370b3515e85b180d0563cb3eaa4955f2 # v0.1.34
 
   # A pull request's commits are what it checks; a push to main has been checked as one.
   dco:
     name: DCO
     if: github.event_name == 'pull_request'
-    uses: altnovatrail/.github/.github/workflows/dco.yml@1704f782e76cee50ea5392cc0ea0d4b76c4b3672 # v0.1.32
+    uses: altnovatrail/.github/.github/workflows/dco.yml@baa18cde370b3515e85b180d0563cb3eaa4955f2 # v0.1.34
 
   documents:
     name: Documents
-    uses: altnovatrail/.github/.github/workflows/documents.yml@1704f782e76cee50ea5392cc0ea0d4b76c4b3672 # v0.1.32
+    uses: altnovatrail/.github/.github/workflows/documents.yml@baa18cde370b3515e85b180d0563cb3eaa4955f2 # v0.1.34
 
   # The app's TypeScript code, by its own ci- recipes, and the coverage of its tests, which the
   # shared workflow sends to Codecov. lint, vuln and licenses run in the stage
@@ -42,7 +42,7 @@ jobs:
     permissions:
       contents: read
       id-token: write
-    uses: altnovatrail/.github/.github/workflows/typescript.yml@1704f782e76cee50ea5392cc0ea0d4b76c4b3672 # v0.1.32
+    uses: altnovatrail/.github/.github/workflows/typescript.yml@baa18cde370b3515e85b180d0563cb3eaa4955f2 # v0.1.34
     with:
       engines: true
 
@@ -63,7 +63,7 @@ jobs:
           persist-credentials: false
 
       - name: Toolchain image
-        uses: altnovatrail/.github/.github/actions/toolchain@1704f782e76cee50ea5392cc0ea0d4b76c4b3672 # v0.1.32
+        uses: altnovatrail/.github/.github/actions/toolchain@baa18cde370b3515e85b180d0563cb3eaa4955f2 # v0.1.34
         with:
           check: mockup
 
