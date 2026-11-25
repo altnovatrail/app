@@ -6,7 +6,8 @@
 import type { DebugAction } from "@altnovatrail/contracts/novatrail/api/v1/debug_pb.js";
 import { timestampDate } from "@bufbuild/protobuf/wkt";
 import { type ReactNode, useState } from "react";
-import type { Entry, Level, Source } from "./journal.ts";
+import type { Entry, Level } from "./journal.ts";
+import { folded, oldestOf, type Run, runSummary, SOURCE_NAMES } from "./runs.ts";
 
 export const LEVELS: readonly {
   readonly level: Level;
@@ -27,14 +28,8 @@ export const KINDS: readonly { readonly kind: Kind; readonly name: string }[] = 
   { kind: "canvas", name: "Canvas" },
   { kind: "app", name: "App" },
 ];
-const SOURCE_NAMES: Record<Source, string> = {
-  app: "App",
-  api: "Server · api",
-  canvas: "Canvas",
-  camera: "Camera",
-};
 
-export function kindOf(source: Source): Kind {
+export function kindOf(source: Entry["source"]): Kind {
   return source === "camera" ? "app" : source;
 }
 
@@ -97,51 +92,6 @@ export function textOf(items: readonly Item[], title: (action: DebugAction) => s
         : `${time(item.at)} info ai ${title(item.action)}`,
     )
     .join("\n");
-}
-
-/** Info in a row on a card, two lines or more, newest first: one row, closed till pressed. */
-export interface Run {
-  readonly entries: readonly Entry[];
-}
-
-/** A card's lines, each run of info in them folded; a line of another level ends a run. */
-export function folded(lines: readonly Entry[]): readonly (Entry | Run)[] {
-  const out: (Entry | Run)[] = [];
-  for (let i = 0; i < lines.length; ) {
-    let end = i;
-    while (lines[end]?.level === "info") end++;
-    if (end - i >= 2) {
-      out.push({ entries: lines.slice(i, end) });
-      i = end;
-    } else {
-      out.push(lines[i] as Entry);
-      i++;
-    }
-  }
-  return out;
-}
-
-/**
- * A run in words: the names of its lines — a call to api by its method — each with how many times
- * it was said, newest first; how many lines, from where and from when to when.
- */
-export function runSummary(run: Run): { readonly names: string; readonly sub: string } {
-  const names: { name: string; n: number }[] = [];
-  for (const entry of run.entries) {
-    const head = entry.text.split(" · ")[0] ?? "";
-    const name = entry.source === "api" ? (head.split("/").pop() ?? head) : head;
-    const seen = names.find((x) => x.name === name);
-    if (seen === undefined) names.push({ name, n: entry.repeats + 1 });
-    else seen.n += entry.repeats + 1;
-  }
-  const time = (entry: Entry | undefined) => entry?.at.toLocaleTimeString("en-GB") ?? "";
-  const newest = time(run.entries[0]);
-  const oldest = time(run.entries.at(-1));
-  const from = [...new Set(run.entries.map((e) => SOURCE_NAMES[e.source]))].join(", ");
-  return {
-    names: names.map((x) => (x.n > 1 ? `${x.name} ×${x.n}` : x.name)).join(" · "),
-    sub: `${run.entries.length} info · ${from} · ${oldest === newest ? newest : `${oldest} – ${newest}`}`,
-  };
 }
 
 /** A run's row, and its lines under it while open, indented on a tint. */
@@ -375,7 +325,7 @@ export function Log({
                   as they are, a run open. */}
               {folded(block.lines).map((each) =>
                 "entries" in each ? (
-                  <RunRows key={`run${each.entries.at(-1)?.id}`} run={each} />
+                  <RunRows key={`run${oldestOf(each).id}`} run={each} />
                 ) : (
                   <Line key={each.id} entry={each} />
                 ),

@@ -1,9 +1,9 @@
-// The Log's runs of info: the lines of a card with each run of two info lines or more folded, a
+// The Log's runs of info (runs.ts): the lines of a card with each run of two info lines or more folded, a
 // line of another level ending it, and a run in words — its names counted, newest first, how many,
 // from where and from when to when.
 import { expect, it } from "vitest";
 import type { Entry } from "./journal.ts";
-import { folded, runSummary } from "./Log.tsx";
+import { folded, type Run, runSummary } from "./runs.ts";
 
 let id = 0;
 function entry(
@@ -29,18 +29,14 @@ it("folds two info lines or more in a row, and leaves one alone and every other 
     entry("info", "app", "Started", "14:57:50"),
   ];
   const out = folded(lines);
-  expect(out.map((each) => ("entries" in each ? each.entries.length : each.level))).toEqual([
-    2,
-    "warn",
-    "info",
-    "debug",
-    3,
-  ]);
+  expect(
+    out.map((each: Entry | Run) => ("entries" in each ? each.entries.length : each.level)),
+  ).toEqual([2, "warn", "info", "debug", 3]);
   expect(folded([])).toEqual([]);
 });
 
 it("says a run's names with their counts, how many, from where and when", () => {
-  const run = {
+  const run: Run = {
     entries: [
       entry("info", "api", "AccountService/GetQuota · ok · 0.9 s", "14:57:53"),
       entry("info", "api", "ModuleService/ListConnectedModules · ok · 0.5 s", "14:57:52", 1),
@@ -51,6 +47,6 @@ it("says a run's names with their counts, how many, from where and when", () => 
   const { names, sub } = runSummary(run);
   expect(names).toBe("GetQuota ×2 · ListConnectedModules ×2 · Photo 4032 × 3024");
   expect(sub).toMatch(/^4 info · Server · api, Camera · \d\d:\d\d:\d\d – \d\d:\d\d:\d\d$/);
-  const same = runSummary({ entries: run.entries.slice(1, 3) }).sub;
+  const same = runSummary({ entries: [run.entries[1], run.entries[2] as Entry] }).sub;
   expect(same).toMatch(/^2 info · Server · api, Camera · \d\d:\d\d:\d\d$/);
 });
