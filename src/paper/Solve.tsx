@@ -52,7 +52,7 @@ import type {
   TracingReading,
 } from "@altnovatrail/spec/canvas";
 import type { MessageInitShape } from "@bufbuild/protobuf";
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useApi } from "../api/ApiContext.tsx";
 import { type Failure, parseFailure } from "../api/failure.ts";
 import { GROWN_UP_TIMEOUT_MS, PAPER_TIMEOUT_MS } from "../api/interceptors.ts";
@@ -314,6 +314,19 @@ export function Solve({
     () => verdictMarks({ verdict, checked }, words, line),
     [verdict, checked, words, line],
   );
+  // The marks go to the canvas after its paper, its history and the place of its paper, which React
+  // gave it in the render, and before the screen is painted with the verdict. Marks it refuses — a
+  // submission it cannot place on its strokes — are dropped, not a broken screen: the verdict and
+  // the words stand without them.
+  useLayoutEffect(() => {
+    const canvas = element.current;
+    if (canvas === null || attemptId === undefined) return;
+    try {
+      canvas.marks = marks;
+    } catch {
+      canvas.marks = undefined;
+    }
+  }, [marks, attemptId]);
 
   // The row is fitted once it is drawn, and again with the words; a button that comes or goes in it
   // fits it anew by itself.
@@ -1056,7 +1069,6 @@ export function Solve({
             {...(task.tracing === undefined ? {} : { tracing: task.tracing })}
             {...(only ? {} : { reading: readings.get(attemptId) ?? READY })}
             {...(grid === undefined ? {} : { grid })}
-            marks={marks}
             onhistorychange={onHistoryChange}
             ontracingchange={onTracingChange}
             {...(only ? {} : { ontracingread: recognise })}

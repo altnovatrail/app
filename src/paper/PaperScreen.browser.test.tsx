@@ -683,6 +683,50 @@ it("checks a frame of several tasks each, with the count and a tick or a cross b
   expect(sheet().shadowRoot?.querySelectorAll(".marks g[role=img]")).toHaveLength(0);
 });
 
+it("keeps the screen and the verdict when the canvas refuses the marks of a Check", async () => {
+  await solving({
+    checked: () => ({
+      items: [
+        {
+          verdict: "correct",
+          answerSlots: [
+            {
+              answerSlot: { item: 1, slot: 1 },
+              verdict: "correct",
+              value: "85",
+              cropBox: { ymin: 0, xmin: 600, ymax: 250, xmax: 900 },
+            },
+          ],
+        },
+      ],
+      solved: {},
+    }),
+  });
+  const canvas = sheet();
+  const given: unknown[] = [];
+  // A canvas that takes the submission for another sheet's, as one did whose copied strokes it
+  // did not know: the marks are a TypeError.
+  Object.defineProperty(canvas, "marks", {
+    configurable: true,
+    get: () => undefined,
+    set: (value: unknown) => {
+      given.push(value);
+      if (value !== undefined) throw new TypeError("marks.submission: not this sheet's");
+    },
+  });
+  writeOn(canvas);
+  await userEvent.click(screen.getByRole("button", { name: "Check" }));
+  await waitFor(() => {
+    const card = document.querySelector<HTMLElement>(".nt-card-verdict");
+    if (card === null) throw new Error("no card");
+    expect(within(card).getByText("Correct")).toBeVisible();
+  });
+  expect(given.at(-2)).toBeDefined();
+  expect(given.at(-1)).toBeUndefined();
+  expect(screen.getByRole("button", { name: "Check" })).toBeVisible();
+  expect(sheet()).toBe(canvas);
+});
+
 it("says nothing could be read to check, with Hint, Next task and Check again", async () => {
   await solving({
     checked: () => ({
