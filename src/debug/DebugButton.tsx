@@ -2,9 +2,10 @@
 // a round button, an orange bug on a light orange, in the bottom bar of the page picked and of the
 // screen of solving, with a line after it where `line` says so; its window at the right, 400 wide,
 // and on a phone a sheet from the bottom with a grabber, drawn in the body, since the bar's glass
-// would hold a fixed window inside it. Two tabs: Models — the model of every call, its effort and
-// thinking, one for the Check and every other call — and Log, the calls by action, each opening
-// to its figures and what the model returned, with the session's total. The slot loads it only once
+// would hold a fixed window inside it. Three tabs: Models — the model of every call, its effort and
+// thinking, one for the Check and every other call —; Log, the app's own log with the calls of AI
+// by action among its lines, each call opening to its figures and what the model returned, with the
+// session's total; and Performance, what loads the device. The slot loads it only once
 // api's `GetDebug` answered, for an account with the debug right. Its words are English alone: it
 // is the developer's, never a learner's.
 import "./debug.css";
@@ -58,6 +59,9 @@ import {
   truthOf,
   usd,
 } from "./debug.ts";
+import * as journal from "./journal.ts";
+import { EVERYTHING, type Filter, itemsOf, Log, shown as shownBy, textOf } from "./Log.tsx";
+import { Perf, Strip } from "./Perf.tsx";
 
 /**
  * Material Symbols' `bug-report-outline-rounded` from @iconify-json/material-symbols 1.2.99, under the
@@ -406,7 +410,10 @@ export default function DebugButton({ line = false }: { readonly line?: boolean 
   const api = useApi();
   const debug = useSyncExternalStore(subscribe, snapshot);
   const [open, setOpen] = useState(false);
-  const [tab, setTab] = useState<"models" | "log">("models");
+  const [tab, setTab] = useState<"models" | "log" | "perf">("models");
+  const [filter, setFilter] = useState<Filter>(EVERYTHING);
+  const [copied, setCopied] = useState(false);
+  const lines = useSyncExternalStore(journal.subscribe, journal.snapshot);
   const [full, setFull] = useState(false);
   const [exporting, setExporting] = useState<string | undefined>(undefined);
   const button = useRef<HTMLButtonElement>(null);
@@ -434,6 +441,11 @@ export default function DebugButton({ line = false }: { readonly line?: boolean 
       .map((m) => `${modelName(models, m.model)} · ${effortName(m.effort)}`)
       .join(" → "),
   }));
+  const errors = lines.filter((l) => l.level === "error").length;
+  const items = itemsOf(
+    lines,
+    actions.map((action) => ({ action, key: actionKey(action) })),
+  );
   const onKey = (event: KeyboardEvent) => {
     if (event.key === "Escape") setOpen(false);
   };
@@ -454,6 +466,7 @@ export default function DebugButton({ line = false }: { readonly line?: boolean 
         <Bug size={20} />
       </button>
       {line ? <RowLine /> : null}
+      <Strip />
       {open
         ? createPortal(
             <div
@@ -506,7 +519,22 @@ export default function DebugButton({ line = false }: { readonly line?: boolean 
                   onClick={() => setTab("log")}
                 >
                   Log
-                  {count > 0 ? <span className="nt-debug-count">{count}</span> : null}
+                  {errors > 0 ? (
+                    <span className="nt-debug-count" data-level="error">
+                      <span className="nt-hidden-label">errors: </span>
+                      {errors}
+                    </span>
+                  ) : count > 0 ? (
+                    <span className="nt-debug-count">{count}</span>
+                  ) : null}
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={tab === "perf"}
+                  onClick={() => setTab("perf")}
+                >
+                  Performance
                 </button>
               </div>
               {tab === "models" ? (
@@ -529,16 +557,16 @@ export default function DebugButton({ line = false }: { readonly line?: boolean 
                     the debug right has this window.
                   </p>
                 </section>
+              ) : tab === "perf" ? (
+                <Perf />
               ) : (
                 <>
-                  <section className="nt-debug-body" aria-label="Log of the models">
-                    {actions.length === 0 ? (
-                      <p className="nt-debug-empty">
-                        No calls yet. Take a photo of a page, or Check a task.
-                      </p>
-                    ) : (
-                      [...actions].reverse().map((action) => {
-                        const key = actionKey(action);
+                  <section className="nt-debug-body" aria-label="Log">
+                    <Log
+                      items={items}
+                      filter={filter}
+                      onFilter={setFilter}
+                      action={(action, key) => {
                         const sent = debug.sent.get(key);
                         const request = debug.asked.get(key);
                         return (
@@ -559,9 +587,11 @@ export default function DebugButton({ line = false }: { readonly line?: boolean 
                               ) : null}
                             </div>
                             <div className="nt-debug-card">
-                              {action.calls.map((call) => (
+                              {action.calls.map((call, at) => (
                                 <Call
-                                  key={`${call.kind}-${call.attempt}`}
+                                  // Two calls of one kind and attempt — the reader's pair — keep their order.
+                                  // biome-ignore lint/suspicious/noArrayIndexKey: the calls of an action never move
+                                  key={`${call.kind}-${call.attempt}-${at}`}
                                   call={call}
                                   models={models}
                                 />
@@ -580,22 +610,45 @@ export default function DebugButton({ line = false }: { readonly line?: boolean 
                             ) : null}
                           </div>
                         );
-                      })
-                    )}
+                      }}
+                    />
                   </section>
                   <div className="nt-debug-total">
                     <span className="nt-debug-two">
                       <span className="nt-debug-main">Session total {total}</span>
-                      <span className="nt-debug-sub">Counted in the tutor time, like any call</span>
+                      <span className="nt-debug-sub">
+                        The AI’s calls, counted in the tutor time
+                      </span>
                     </span>
                     <button
                       type="button"
-                      aria-disabled={actions.length === 0}
+                      data-accent="true"
+                      aria-disabled={items.length === 0}
                       onClick={() => {
-                        if (actions.length > 0) clear();
+                        if (items.length === 0) return;
+                        const text = textOf(
+                          items.filter((item) => shownBy(item, filter)),
+                          actionTitle,
+                        );
+                        void navigator.clipboard?.writeText(text).then(
+                          () => setCopied(true),
+                          () => {},
+                        );
                       }}
                     >
-                      Clear log
+                      {copied ? "Copied" : "Copy"}
+                    </button>
+                    <button
+                      type="button"
+                      aria-disabled={items.length === 0}
+                      onClick={() => {
+                        if (items.length === 0) return;
+                        clear();
+                        journal.clear();
+                        setCopied(false);
+                      }}
+                    >
+                      Clear
                     </button>
                   </div>
                 </>

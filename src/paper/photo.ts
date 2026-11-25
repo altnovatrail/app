@@ -35,6 +35,34 @@ export function fitted(width: number, height: number, longSide: number = LONG_SI
   return { width: Math.max(1, Math.round(width * k)), height: Math.max(1, Math.round(height * k)) };
 }
 
+/**
+ * The bounds of a crop of a task cut from the photo, as the crop of the work is drawn: its long side
+ * in px, and its patches of PATCH px a side, ⌈w / PATCH⌉ × ⌈h / PATCH⌉, by which Claude counts the
+ * tokens of a picture. Every model of Claude takes such a picture unshrunk, and a larger one costs
+ * more tokens for each model a Check asks, while a frame of one task reads as well.
+ */
+export const CROP_EDGE = 1568;
+export const CROP_PATCHES = 1568;
+export const PATCH = 28;
+
+/** The size of a crop of `width` × `height` px within CROP_EDGE and CROP_PATCHES, its aspect kept. */
+export function cropFitted(width: number, height: number): Size {
+  const long = Math.max(width, height);
+  if (long === 0) return { width, height };
+  const scaled = (side: number): Size => ({
+    width: Math.max(1, Math.round((width * side) / long)),
+    height: Math.max(1, Math.round((height * side) / long)),
+  });
+  const patches = ({ width: w, height: h }: Size) => Math.ceil(w / PATCH) * Math.ceil(h / PATCH);
+  let side = Math.min(long, CROP_EDGE);
+  let size = scaled(side);
+  while (side > 1 && patches(size) > CROP_PATCHES) {
+    side -= 1;
+    size = scaled(side);
+  }
+  return size;
+}
+
 /** The sizes to encode a photo at, one try after another: fitted first, then smaller by STEP. */
 export function tries(width: number, height: number): readonly Size[] {
   const first = fitted(width, height);

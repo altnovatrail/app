@@ -110,10 +110,19 @@ export const TABLE: Readonly<Record<string, Value>> = {
   // home screen's card, a frame's cross the close.
   photos: { base: "photo-library", filled: false, mirrored: false },
   resize: { base: "open-in-full", filled: false, mirrored: false },
-  // The field of a request on the page to pick from: Send, an arrow up in a blue circle, and
-  // the microphone, off until voice comes; each without its caption.
+  // The counter of the tasks begun, a bulleted list; in their list each one's state, a filled
+  // circle — solved, a tick; not yet, an exclamation mark; none to check or closed, a dash — or a
+  // ring while it is still to do.
+  tasks: { base: "format-list-bulleted", filled: false, mirrored: true },
+  "task-solved": { base: "check-circle", filled: true, mirrored: false },
+  "task-not-yet": { base: "error", filled: true, mirrored: false },
+  "task-closed": { base: "do-not-disturb-on", filled: true, mirrored: false },
+  "task-to-do": { base: "circle", filled: false, mirrored: false },
+  // The field of the tutor's panel: Send, an arrow up in a blue circle; the microphone, which
+  // dictates into the field; and while it listens, Stop, a square; each without its caption.
   send: { base: "arrow-upward", filled: false, mirrored: false },
   microphone: { base: "mic", filled: false, mirrored: false },
+  stop: { base: "stop", filled: false, mirrored: false },
   // The row of places of Home, Subjects and the skill map, and the phone's tab bar: Home,
   // four squares, filled while it is the place; Subjects, a book; the cognitive map, a hub, shut;
   // For grown-ups, a padlock. Help is the bar's. At the top right the notifications, a bell; in
@@ -132,6 +141,12 @@ export const TABLE: Readonly<Record<string, Value>> = {
   engine: { base: "autorenew", filled: false, mirrored: false },
   "next-skill": { base: "arrow-forward", filled: false, mirrored: true },
   chain: { base: "keyboard-double-arrow-right", filled: false, mirrored: true },
+  // Grown-up mode of the tutor on a task from paper: a key in the panel's head, filled while the
+  // mode is on; the grown-ups' PIN it asks, a padlock over its keypad, whose delete key is a
+  // backspace that points the way the line runs back.
+  "grown-up": { base: "key", filled: true, mirrored: false },
+  "pin-lock": { base: "lock", filled: false, mirrored: false },
+  "pin-delete": { base: "backspace", filled: false, mirrored: true },
 };
 
 /** An icon as the app draws it: its view box, and the paths it fills in the text's colour. */

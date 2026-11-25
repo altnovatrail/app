@@ -231,7 +231,7 @@ export function TaskScreen(props: TaskScreenProps) {
       }
       acts={
         <>
-          <HintButton parts={{ pending, onHint: hint }} className="nt-act" />
+          <HintButton parts={{ pending, onHint: hint }} className="nt-act nt-act-hint" />
           {props.onExplain === undefined || props.tutorWords === undefined ? null : (
             <ExplainButton explaining={props.explaining === true} onExplain={props.onExplain} />
           )}

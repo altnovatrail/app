@@ -42,7 +42,7 @@ import { VoicingToggle } from "../voice/VoicingToggle.tsx";
 import { Hint, type HintGiven } from "./Hint.tsx";
 import { StepPill, StepsPanel } from "./StepsPanel.tsx";
 import type { Mode, StepsState } from "./steps.ts";
-import { TutorButton, TutorPanel, usePanelFocus } from "./TutorPanel.tsx";
+import { TutorPanel, usePanelFocus } from "./TutorPanel.tsx";
 
 /**
  * The screen of the task — the top bar's pill with Back to Home and the heading, the
@@ -214,7 +214,10 @@ export function HintButton({
   className = "nt-row-button",
 }: {
   readonly parts: Pick<TaskParts, "pending" | "onHint">;
-  /** Its look: a button of the row, or `nt-act` at the foot of the tutor's panel. */
+  /**
+   * Its look: a button of the row, or `nt-act nt-act-hint` at the foot of the tutor's panel, which
+   * stands there on a phone alone.
+   */
   readonly className?: string;
 }) {
   const { words } = useLanguage();
@@ -306,7 +309,8 @@ export type CardKind =
   | "reading"
   | "shown"
   | "feedback"
-  | "nokey";
+  | "nokey"
+  | "grown";
 
 const CARD_SIGNS: Readonly<Record<Exclude<CardKind, "reading">, IconValue>> = {
   correct: "ticked",
@@ -318,6 +322,8 @@ const CARD_SIGNS: Readonly<Record<Exclude<CardKind, "reading">, IconValue>> = {
   feedback: "feedback",
   // A task from paper with no key: a question of its own, as the mockup draws it.
   nokey: "help",
+  // Grown-up mode turned on or off, a line of the conversation: its key.
+  grown: "grown-up",
 };
 
 /**
@@ -492,48 +498,50 @@ export function TaskLayout({
           <div className="nt-task-row nt-glass">{row}</div>
         )}
       </div>
-      {shown || onOpen === undefined ? null : <TutorButton onOpen={onOpen} buttonRef={call} />}
-      {shown ? (
-        <TutorPanel
-          headingRef={heading}
-          status={quota}
-          voicing={<VoicingToggle language={explanation} />}
-          onClose={over ? undefined : onClose}
-          above={
-            stepsShown ? (
-              <StepsPanel
-                task={task}
-                steps={steps}
-                catalog={parts.catalog}
-                state={parts.state}
-                filled={parts.filled}
-                language={explanation}
-                onGoTo={parts.onGoTo}
-                onTick={parts.onTick}
-                onDone={parts.onDone}
-              />
-            ) : null
-          }
-          talk={
-            over ? (
-              result
-            ) : (
-              <>
-                {parts.hint === undefined ? null : (
-                  <Hint
-                    hint={parts.hint}
-                    task={task}
-                    catalog={parts.catalog}
-                    language={explanation}
-                  />
-                )}
-                {tutor}
-              </>
-            )
-          }
-          acts={over ? undefined : acts}
-        />
-      ) : null}
+      {/* A task of a module asks the tutor by its buttons alone: the panel has no field here. */}
+      <TutorPanel
+        open={shown}
+        kit={{
+          voicing: { language: explanation },
+          ...(onOpen === undefined ? {} : { side: { onOpen, buttonRef: call } }),
+        }}
+        headingRef={heading}
+        status={quota}
+        onClose={over ? undefined : onClose}
+        above={
+          stepsShown ? (
+            <StepsPanel
+              task={task}
+              steps={steps}
+              catalog={parts.catalog}
+              state={parts.state}
+              filled={parts.filled}
+              language={explanation}
+              onGoTo={parts.onGoTo}
+              onTick={parts.onTick}
+              onDone={parts.onDone}
+            />
+          ) : null
+        }
+        talk={
+          over ? (
+            result
+          ) : (
+            <>
+              {parts.hint === undefined ? null : (
+                <Hint
+                  hint={parts.hint}
+                  task={task}
+                  catalog={parts.catalog}
+                  language={explanation}
+                />
+              )}
+              {tutor}
+            </>
+          )
+        }
+        acts={over ? undefined : acts}
+      />
     </Frame>
   );
 }

@@ -256,6 +256,48 @@ export const ICONS = {
       "M4 21q-.425 0-.712-.288T3 20v-6q0-.425.288-.712T4 13t.713.288T5 14v3.6L17.6 5H14q-.425 0-.712-.288T13 4t.288-.712T14 3h6q.425 0 .713.288T21 4v6q0 .425-.288.713T20 11t-.712-.288T19 10V6.4L6.4 19H10q.425 0 .713.288T11 20t-.288.713T10 21z",
     ],
   },
+  "format-list-bulleted-outline-rounded": {
+    viewBox: "0 0 24 24",
+    paths: [
+      "M10 19q-.425 0-.712-.288T9 18t.288-.712T10 17h10q.425 0 .713.288T21 18t-.288.713T20 19zm0-6q-.425 0-.712-.288T9 12t.288-.712T10 11h10q.425 0 .713.288T21 12t-.288.713T20 13zm0-6q-.425 0-.712-.288T9 6t.288-.712T10 5h10q.425 0 .713.288T21 6t-.288.713T20 7zM5 20q-.825 0-1.412-.587T3 18t.588-1.412T5 16t1.413.588T7 18t-.587 1.413T5 20m0-6q-.825 0-1.412-.587T3 12t.588-1.412T5 10t1.413.588T7 12t-.587 1.413T5 14M3.588 7.413Q3 6.825 3 6t.588-1.412T5 4t1.413.588T7 6t-.587 1.413T5 8t-1.412-.587",
+    ],
+  },
+  "check-circle-rounded": {
+    viewBox: "0 0 24 24",
+    paths: [
+      "m10.6 13.8l-2.15-2.15q-.275-.275-.7-.275t-.7.275t-.275.7t.275.7L9.9 15.9q.3.3.7.3t.7-.3l5.65-5.65q.275-.275.275-.7t-.275-.7t-.7-.275t-.7.275zM12 22q-2.075 0-3.9-.788t-3.175-2.137T2.788 15.9T2 12t.788-3.9t2.137-3.175T8.1 2.788T12 2t3.9.788t3.175 2.137T21.213 8.1T22 12t-.788 3.9t-2.137 3.175t-3.175 2.138T12 22",
+    ],
+  },
+  "error-outline-rounded": {
+    viewBox: "0 0 24 24",
+    paths: [
+      "M12.713 16.713Q13 16.425 13 16t-.288-.712T12 15t-.712.288T11 16t.288.713T12 17t.713-.288m0-4Q13 12.425 13 12V8q0-.425-.288-.712T12 7t-.712.288T11 8v4q0 .425.288.713T12 13t.713-.288M12 22q-2.075 0-3.9-.788t-3.175-2.137T2.788 15.9T2 12t.788-3.9t2.137-3.175T8.1 2.788T12 2t3.9.788t3.175 2.137T21.213 8.1T22 12t-.788 3.9t-2.137 3.175t-3.175 2.138T12 22m0-2q3.35 0 5.675-2.325T20 12t-2.325-5.675T12 4T6.325 6.325T4 12t2.325 5.675T12 20m0-8",
+    ],
+  },
+  "error-rounded": {
+    viewBox: "0 0 24 24",
+    paths: [
+      "M12.713 16.713Q13 16.425 13 16t-.288-.712T12 15t-.712.288T11 16t.288.713T12 17t.713-.288m0-4Q13 12.425 13 12V8q0-.425-.288-.712T12 7t-.712.288T11 8v4q0 .425.288.713T12 13t.713-.288M12 22q-2.075 0-3.9-.788t-3.175-2.137T2.788 15.9T2 12t.788-3.9t2.137-3.175T8.1 2.788T12 2t3.9.788t3.175 2.137T21.213 8.1T22 12t-.788 3.9t-2.137 3.175t-3.175 2.138T12 22",
+    ],
+  },
+  "do-not-disturb-on-outline-rounded": {
+    viewBox: "0 0 24 24",
+    paths: [
+      "M8 13h8q.425 0 .713-.288T17 12t-.288-.712T16 11H8q-.425 0-.712.288T7 12t.288.713T8 13m4 9q-2.075 0-3.9-.788t-3.175-2.137T2.788 15.9T2 12t.788-3.9t2.137-3.175T8.1 2.788T12 2t3.9.788t3.175 2.137T21.213 8.1T22 12t-.788 3.9t-2.137 3.175t-3.175 2.138T12 22m0-2q3.35 0 5.675-2.325T20 12t-2.325-5.675T12 4T6.325 6.325T4 12t2.325 5.675T12 20m0-8",
+    ],
+  },
+  "do-not-disturb-on-rounded": {
+    viewBox: "0 0 24 24",
+    paths: [
+      "M8 13h8q.425 0 .713-.288T17 12t-.288-.712T16 11H8q-.425 0-.712.288T7 12t.288.713T8 13m4 9q-2.075 0-3.9-.788t-3.175-2.137T2.788 15.9T2 12t.788-3.9t2.137-3.175T8.1 2.788T12 2t3.9.788t3.175 2.137T21.213 8.1T22 12t-.788 3.9t-2.137 3.175t-3.175 2.138T12 22",
+    ],
+  },
+  "circle-outline-rounded": {
+    viewBox: "0 0 24 24",
+    paths: [
+      "M12 22q-2.075 0-3.9-.788t-3.175-2.137T2.788 15.9T2 12t.788-3.9t2.137-3.175T8.1 2.788T12 2t3.9.788t3.175 2.137T21.213 8.1T22 12t-.788 3.9t-2.137 3.175t-3.175 2.138T12 22m0-2q3.35 0 5.675-2.325T20 12t-2.325-5.675T12 4T6.325 6.325T4 12t2.325 5.675T12 20m0-8",
+    ],
+  },
   "arrow-upward-outline-rounded": {
     viewBox: "0 0 24 24",
     paths: [
@@ -266,6 +308,12 @@ export const ICONS = {
     viewBox: "0 0 24 24",
     paths: [
       "M9.875 13.125Q9 12.25 9 11V5q0-1.25.875-2.125T12 2t2.125.875T15 5v6q0 1.25-.875 2.125T12 14t-2.125-.875M11 20v-2.075q-2.3-.325-3.937-1.95t-1.988-3.95q-.05-.425.225-.725T6 11t.713.288T7.1 12q.35 1.75 1.738 2.875T12 16q1.8 0 3.175-1.137T16.9 12q.1-.425.388-.712T18 11t.7.3t.225.725q-.35 2.275-1.975 3.925T13 17.925V20q0 .425-.288.713T12 21t-.712-.288T11 20m1.713-8.287Q13 11.425 13 11V5q0-.425-.288-.712T12 4t-.712.288T11 5v6q0 .425.288.713T12 12t.713-.288",
+    ],
+  },
+  "stop-outline-rounded": {
+    viewBox: "0 0 24 24",
+    paths: [
+      "M6 16V8q0-.825.588-1.412T8 6h8q.825 0 1.413.588T18 8v8q0 .825-.587 1.413T16 18H8q-.825 0-1.412-.587T6 16m2 0h8V8H8zm4-4",
     ],
   },
   "grid-view-outline-rounded": {
@@ -356,6 +404,24 @@ export const ICONS = {
     viewBox: "0 0 24 24",
     paths: [
       "M9.575 12L5.7 8.1q-.275-.275-.288-.687T5.7 6.7q.275-.275.7-.275t.7.275l4.6 4.6q.15.15.213.325t.062.375t-.062.375t-.213.325l-4.6 4.6q-.275.275-.687.288T5.7 17.3q-.275-.275-.275-.7t.275-.7zm6.6 0L12.3 8.1q-.275-.275-.288-.687T12.3 6.7q.275-.275.7-.275t.7.275l4.6 4.6q.15.15.213.325t.062.375t-.062.375t-.213.325l-4.6 4.6q-.275.275-.687.288T12.3 17.3q-.275-.275-.275-.7t.275-.7z",
+    ],
+  },
+  "key-outline-rounded": {
+    viewBox: "0 0 24 24",
+    paths: [
+      "M5.588 13.413Q5 12.825 5 12t.588-1.412T7 10t1.413.588T9 12t-.587 1.413T7 14t-1.412-.587M7 18q-2.5 0-4.25-1.75T1 12t1.75-4.25T7 6q1.675 0 3.038.825T12.2 9h8.375q.2 0 .388.075t.337.225l2 2q.15.15.212.325t.063.375t-.063.375t-.212.325l-3.175 3.175q-.125.125-.3.2t-.35.1t-.35-.025t-.325-.175L17.5 15l-1.425 1.075q-.125.1-.275.15t-.3.05t-.313-.05t-.287-.15L13.375 15H12.2q-.8 1.35-2.163 2.175T7 18m0-2q1.4 0 2.463-.85T10.875 13H14l1.45 1.025v.013v-.013L17.5 12.5l1.775 1.375L21.15 12h-.012h.012l-1-1v-.012V11h-9.275q-.35-1.3-1.412-2.15T7 8Q5.35 8 4.175 9.175T3 12t1.175 2.825T7 16",
+    ],
+  },
+  "key-rounded": {
+    viewBox: "0 0 24 24",
+    paths: [
+      "M4.875 14.125Q4 13.25 4 12t.875-2.125T7 9t2.125.875T10 12t-.875 2.125T7 15t-2.125-.875M7 18q1.925 0 3.475-1.1T12.65 14H13l1.3 1.3q.15.15.325.212t.375.063t.375-.062t.325-.213L17 14l1.75 1.375q.15.125.338.187t.387.038t.363-.112t.287-.238l2.25-2.575q.125-.15.188-.325t.062-.375t-.075-.362t-.2-.288L21.325 10.3q-.15-.15-.337-.225T20.6 10h-7.95q-.6-1.7-2.113-2.85T7 6Q4.5 6 2.75 7.75T1 12t1.75 4.25T7 18",
+    ],
+  },
+  "backspace-outline-rounded": {
+    viewBox: "0 0 24 24",
+    paths: [
+      "m14 13.4l1.9 1.9q.275.275.7.275t.7-.275t.275-.7t-.275-.7L15.4 12l1.9-1.9q.275-.275.275-.7t-.275-.7t-.7-.275t-.7.275L14 10.6l-1.9-1.9q-.275-.275-.7-.275t-.7.275t-.275.7t.275.7l1.9 1.9l-1.9 1.9q-.275.275-.275.7t.275.7t.7.275t.7-.275zM9 20q-.475 0-.9-.213t-.7-.587l-4.5-6q-.4-.525-.4-1.2t.4-1.2l4.5-6q.275-.375.7-.587T9 4h11q.825 0 1.413.588T22 6v12q0 .825-.587 1.413T20 20zm0-2h11V6H9l-4.5 6zm3.25-6",
     ],
   },
 } as const;
@@ -535,12 +601,34 @@ export const VALUES = {
     filled: "open-in-full-outline-rounded",
     mirrored: false,
   },
+  tasks: {
+    outline: "format-list-bulleted-outline-rounded",
+    filled: "format-list-bulleted-outline-rounded",
+    mirrored: true,
+  },
+  "task-solved": {
+    outline: "check-circle-outline-rounded",
+    filled: "check-circle-rounded",
+    mirrored: false,
+  },
+  "task-not-yet": { outline: "error-outline-rounded", filled: "error-rounded", mirrored: false },
+  "task-closed": {
+    outline: "do-not-disturb-on-outline-rounded",
+    filled: "do-not-disturb-on-rounded",
+    mirrored: false,
+  },
+  "task-to-do": {
+    outline: "circle-outline-rounded",
+    filled: "circle-outline-rounded",
+    mirrored: false,
+  },
   send: {
     outline: "arrow-upward-outline-rounded",
     filled: "arrow-upward-outline-rounded",
     mirrored: false,
   },
   microphone: { outline: "mic-outline-rounded", filled: "mic-outline-rounded", mirrored: false },
+  stop: { outline: "stop-outline-rounded", filled: "stop-outline-rounded", mirrored: false },
   "nav-home": {
     outline: "grid-view-outline-rounded",
     filled: "grid-view-rounded",
@@ -595,6 +683,13 @@ export const VALUES = {
   chain: {
     outline: "keyboard-double-arrow-right-outline-rounded",
     filled: "keyboard-double-arrow-right-outline-rounded",
+    mirrored: true,
+  },
+  "grown-up": { outline: "key-outline-rounded", filled: "key-rounded", mirrored: false },
+  "pin-lock": { outline: "lock-outline-rounded", filled: "lock-outline-rounded", mirrored: false },
+  "pin-delete": {
+    outline: "backspace-outline-rounded",
+    filled: "backspace-outline-rounded",
     mirrored: true,
   },
 } as const satisfies Record<string, { outline: IconName; filled: IconName; mirrored: boolean }>;

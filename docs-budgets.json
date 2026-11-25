@@ -9,7 +9,7 @@
     "architecture 3.7": 40,
     "architecture 3.8": 89,
     "architecture 3.9": 31,
-    "architecture 3.10": 60
+    "architecture 3.10": 62
   },
   "entries": {
     "R03": 13,
@@ -23,6 +23,6 @@
     "R16": 13,
     "R30": 15,
     "R33": 14,
-    "R71": 13
+    "R71": 14
   }
 }

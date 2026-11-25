@@ -43,7 +43,7 @@ export type Finding =
 
 /** A line of the conversation about the page: the learner's request, or what came of it. */
 export type Said =
-  | { readonly kind: "request"; readonly text: string }
+  | { readonly kind: "request"; readonly text: string; readonly voice?: boolean }
   /** The request gave this many frames, which took the place of those found. */
   | { readonly kind: "found"; readonly count: number }
   /** It gave none: the frames stay. */

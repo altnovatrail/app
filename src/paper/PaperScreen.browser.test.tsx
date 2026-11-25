@@ -15,9 +15,15 @@
 // stopped; with the device, the page and its work are the profile's history, which "Your pages"
 // opens again; the tutor's button and debug's stand in the bottom bars of both screens, debug's only
 // for an account with the debug right; the top bar of each holds Back alone, the screen's name its
-// heading unseen, clear of the sheet's popovers — with api on connect-es's router.
+// heading unseen, clear of the sheet's popovers; grown-up mode behind the grown-ups' PIN, its
+// request with the strokes of the crop, and the act drawn on the sheet before its words — with api on
+// connect-es's router.
 import { AccountService } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import {
+  type AskGrownUpRequest,
+  type AskGrownUpResponseSchema,
+  type AskTutorRequest,
+  type AskTutorResponseSchema,
   AttemptService,
   type ExplainDifferentlyResponseSchema,
   type GetHintResponseSchema,
@@ -58,13 +64,18 @@ import { routedApi } from "../test/api.ts";
 import { memoryDevice } from "../test/device.ts";
 import { inLanguage } from "../test/language.tsx";
 import { changePens } from "../test/pens.ts";
+import { listening, withRecognition } from "../test/recognition.ts";
 import { PaperProvider } from "./PaperContext.tsx";
 import { PaperScreen } from "./PaperScreen.tsx";
 import { MAX_TASKS } from "./page.ts";
 import { YourPages } from "./YourPages.tsx";
 
 interface Setup {
-  readonly found?: (request: FindTasksRequest) => MessageInitShape<typeof FindTasksResponseSchema>;
+  readonly found?: (
+    request: FindTasksRequest,
+  ) =>
+    | MessageInitShape<typeof FindTasksResponseSchema>
+    | Promise<MessageInitShape<typeof FindTasksResponseSchema>>;
   /** The answer to each Check, by how many came before it; none refuses it. */
   readonly checked?: (n: number) => MessageInitShape<typeof SubmitWorkResponseSchema>;
   /** The opening question of a Hint before the first wrong answer, by GetOpeningWords. */
@@ -89,6 +100,25 @@ interface Setup {
   readonly debug?: boolean;
   /** The screen's language; none, English. */
   readonly language?: Language;
+  /** The learner is of the category adult; none, an adult. */
+  readonly adult?: boolean;
+  /**
+   * The answer to each question, by how many came before; an error fails it; none refuses it; a
+   * promise is an answer still awaited.
+   */
+  readonly asked?: (
+    n: number,
+  ) =>
+    | MessageInitShape<typeof AskTutorResponseSchema>
+    | Error
+    | Promise<MessageInitShape<typeof AskTutorResponseSchema>>;
+  /** The answer to each request in grown-up mode, by how many came before; none refuses it. */
+  readonly grown?: (
+    n: number,
+  ) =>
+    | MessageInitShape<typeof AskGrownUpResponseSchema>
+    | Error
+    | Promise<MessageInitShape<typeof AskGrownUpResponseSchema>>;
 }
 
 /** A synthetic photo of a page: a white PNG of 600 × 800 px with two grey stripes. */
@@ -125,6 +155,8 @@ async function renderCamera(setup: Setup = {}) {
   const reads: ReadStatementRequest[] = [];
   const opens: GetOpeningWordsRequest[] = [];
   const reports: ReportProblemRequest[] = [];
+  const asks: AskTutorRequest[] = [];
+  const grownAsks: AskGrownUpRequest[] = [];
   let explains = 0;
   let attempts = 0;
   const api = routedApi((router) => {
@@ -148,6 +180,20 @@ async function renderCamera(setup: Setup = {}) {
       getOpeningWords(request) {
         opens.push(request);
         return { words: setup.hinted ?? "" };
+      },
+      async askTutor(request) {
+        asks.push(request);
+        const answer = await setup.asked?.(asks.length - 1);
+        if (answer === undefined) throw new ConnectError("a refusal", Code.InvalidArgument);
+        if (answer instanceof Error) throw answer;
+        return answer;
+      },
+      async askGrownUp(request) {
+        grownAsks.push(request);
+        const answer = await setup.grown?.(grownAsks.length - 1);
+        if (answer === undefined) throw new ConnectError("a refusal", Code.InvalidArgument);
+        if (answer instanceof Error) throw answer;
+        return answer;
       },
       reportProblem(request) {
         reports.push(request);
@@ -212,7 +258,7 @@ async function renderCamera(setup: Setup = {}) {
       <ApiProvider value={api}>
         {setup.device === undefined ? (
           <PaperProvider>
-            <PaperScreen profileId="p1" adult />
+            <PaperScreen profileId="p1" adult={setup.adult ?? true} />
           </PaperProvider>
         ) : (
           <PaperProvider profileId="p1" device={setup.device}>
@@ -226,7 +272,7 @@ async function renderCamera(setup: Setup = {}) {
   );
   if (setup.camera === undefined)
     await screen.findByText(WORDS[setup.language ?? "en"].text("paper.no-camera"));
-  return { finds, begins, submits, rungs, reads, opens, reports };
+  return { finds, begins, submits, rungs, reads, opens, reports, asks, grownAsks };
 }
 
 /** A refusal of api for a cause. */
@@ -352,6 +398,7 @@ afterEach(async () => {
   cleanup();
   resetDebug();
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
   await page.viewport(1024, 768);
 });
 
@@ -512,7 +559,8 @@ it("goes from task to task by ‹, › and the list, each with its own work", as
   await userEvent.click(screen.getByRole("button", { name: "Next task" }));
   await screen.findByRole("heading", { name: "Task 2" });
   await userEvent.click(screen.getByRole("button", { name: "Tasks, 2 / 2" }));
-  await userEvent.click(await screen.findByRole("button", { name: /Task 1/ }));
+  expect(await screen.findByText("0 of 2 done")).toBeVisible();
+  await userEvent.click(screen.getByRole("button", { name: /Task 1/ }));
   expect(await screen.findByRole("heading", { name: "Task 1" })).toBeVisible();
   expect(sheet().history).toHaveLength(1);
 });
@@ -558,6 +606,8 @@ it("asks for a solution before Check, then sends the task's crop, the instructio
   // The instruction found above the task, a crop of its own.
   expect(work.value.instruction?.[1]).toBe(0x50);
   expect(submits[0]?.attemptId).toBe("a1");
+  // The words come in the language of the screens, which voices them too.
+  expect(submits[0]?.wordsLanguage).toBe("en");
   // The second task, found with no instruction, sends none.
   await userEvent.click(screen.getByRole("button", { name: "Next task" }));
   await screen.findByRole("heading", { name: "Task 2" });
@@ -596,7 +646,7 @@ it("shows the Check's verdict: Not yet, then Correct, which takes no Check again
   await userEvent.click(screen.getByRole("button", { name: "Check" }), { force: true });
   expect(submits).toHaveLength(2);
   await userEvent.click(screen.getByRole("button", { name: "Tasks, 1 / 2" }));
-  expect(await screen.findByRole("button", { name: /Task 1.*Correct/ })).toBeVisible();
+  expect(await screen.findByRole("button", { name: /^Task 1 ?Solved$/ })).toBeVisible();
 });
 
 it("checks a frame of several tasks each, with the count and a tick or a cross by each answer", async () => {
@@ -662,6 +712,37 @@ it("says nothing could be read to check, with Hint, Next task and Check again", 
   expect(await screen.findByRole("heading", { name: "Task 2" })).toBeVisible();
 });
 
+it("checks the same work anew after a failure of AI, with a new key, and again with a verdict", async () => {
+  const { submits } = await solving({
+    checked: (n) =>
+      n === 0
+        ? { outcome: { cause: Cause.AI_FAILURE } }
+        : {
+            items: [
+              {
+                verdict: "not_yet",
+                answerSlots: [
+                  { answerSlot: { item: 1, slot: 1 }, verdict: "not_yet", value: "84" },
+                ],
+              },
+            ],
+            wrongAnswers: 1,
+          },
+  });
+  writeOn(sheet());
+  await userEvent.click(screen.getByRole("button", { name: "Check" }));
+  expect(await screen.findByText("Not checked")).toBeVisible();
+  await userEvent.click(screen.getByRole("button", { name: "Check" }));
+  expect(await screen.findByText("Not yet")).toBeVisible();
+  // A verdict is kept: the same work pressed again repeats it.
+  await userEvent.click(screen.getByRole("button", { name: "Try again" }));
+  await userEvent.click(screen.getByRole("button", { name: "Check" }));
+  await waitFor(() => expect(submits).toHaveLength(3));
+  const keys = submits.map((each) => each.idempotencyKey);
+  expect(keys[1]).not.toBe(keys[0]);
+  expect(keys[2]).toBe(keys[1]);
+});
+
 it("opens the tutor's panel by its button: the verdict a line in it, and a card again once it closes", async () => {
   await solving({
     checked: () => ({
@@ -684,13 +765,27 @@ it("opens the tutor's panel by its button: the verdict a line in it, and a card 
   expect(document.activeElement).toBe(tutorPanel().getByRole("heading", { name: "Tutor" }));
   expect(tutorPanel().getByText("Read: 84")).toBeVisible();
   expect(document.querySelector(".nt-card-verdict")).toBeNull();
-  // Not yet: Hint at the panel's foot, and no way on yet.
-  expect(tutorPanel().getByRole("button", { name: "Hint" })).toBeVisible();
+  // Not yet: Hint in the row, which the panel does not repeat at this width, and no way on yet.
+  expect(tutorPanel().queryByRole("button", { name: "Hint" })).toBeNull();
+  expect(screen.getByRole("button", { name: "Hint" })).toBeVisible();
   expect(tutorPanel().queryByRole("button", { name: "Next task" })).toBeNull();
   await userEvent.click(tutorPanel().getByRole("button", { name: "Close" }));
   const tutor = screen.getByRole("button", { name: "Ask" });
   expect(document.activeElement).toBe(tutor);
   expect(document.querySelector(".nt-card-verdict")).not.toBeNull();
+});
+
+it("asks for the tutor's words in the language of the screens, which voices them", async () => {
+  const ru = WORDS.ru;
+  const { opens } = await renderPaper({ language: "ru", hinted: "Что осталось найти?" });
+  await screen.findByRole("button", { name: ru.text("paper.deselect", { n: 1 }) });
+  await userEvent.click(screen.getByRole("button", { name: ru.text("paper.start") }));
+  await screen.findByRole("heading", { name: ru.text("paper.task", { n: 1 }) }, SLOW);
+  await userEvent.click(
+    screen.getAllByRole("button", { name: ru.text("task.hint") })[0] as HTMLElement,
+  );
+  expect(await screen.findByText("Что осталось найти?")).toBeVisible();
+  expect(opens.map((each) => each.wordsLanguage)).toEqual(["ru"]);
 });
 
 it("opens the panel by the row's Hint, its words a bubble there that strokes do not take away", async () => {
@@ -700,6 +795,7 @@ it("opens the panel by the row's Hint, its words a bubble there that strokes do 
   // The opening question asks the Check with the work as it stands: with nothing written, the crop.
   expect(opens).toHaveLength(1);
   expect(opens[0]?.attemptId).toBe("a1");
+  expect(opens[0]?.wordsLanguage).toBe("en");
   const asked = opens[0]?.work?.surface;
   if (asked?.case !== "paper") throw new Error("no work of a task from paper");
   expect([asked.value.statement[1], asked.value.crop[1], asked.value.instruction?.[1]]).toEqual([
@@ -754,7 +850,9 @@ it("brings the Check's words as a bubble of the open panel, which an adult may r
   expect(await tutorPanel().findByText("Count the tens once more.")).toBeVisible();
   await userEvent.click(tutorPanel().getByRole("button", { name: "Report a problem" }));
   await userEvent.click(screen.getByRole("radio", { name: /Wrong/ }));
-  await userEvent.click(screen.getByRole("button", { name: "Send" }));
+  // The report's Send, not the panel's field's.
+  const report = within(screen.getByRole("form", { name: "Report a problem with these words" }));
+  await userEvent.click(report.getByRole("button", { name: "Send" }));
   await waitFor(() => expect(reports).toHaveLength(1));
   expect(reports[0]?.reply).toBe(TutorReply.RUNG);
   expect(reports[0]?.rung).toBe(2);
@@ -879,10 +977,7 @@ it("asks the rung's words the closed panel left by Hint, and says nothing of a r
   await userEvent.click(screen.getByRole("button", { name: "Check" }));
   await waitFor(() => expect(rungs).toHaveLength(2));
   await waitFor(() =>
-    expect(tutorPanel().getByRole("button", { name: "Hint" })).toHaveAttribute(
-      "aria-disabled",
-      "false",
-    ),
+    expect(screen.getByRole("button", { name: "Hint" })).toHaveAttribute("aria-disabled", "false"),
   );
   expect(tutorPanel().queryByText("Look at the tens.")).toBeNull();
   expect(tutorPanel().queryByRole("alert")).toBeNull();
@@ -899,9 +994,9 @@ it("gives a rung's words again by Hint, and makes a task api closed one only to 
   await userEvent.click(screen.getByRole("button", { name: "Hint" }));
   expect(await tutorPanel().findByText("Again: the tens.")).toBeVisible();
   closed = true;
-  await userEvent.click(tutorPanel().getByRole("button", { name: "Hint" }));
+  await userEvent.click(screen.getByRole("button", { name: "Hint" }));
   expect(await tutorPanel().findByText("This task is already over")).toBeVisible();
-  await waitFor(() => expect(tutorPanel().queryByRole("button", { name: "Hint" })).toBeNull());
+  await waitFor(() => expect(screen.queryByRole("button", { name: "Hint" })).toBeNull());
   await userEvent.click(tutorPanel().getByRole("button", { name: "Close" }));
   // The failure of Hint at the foot, and Check's own line beside it.
   expect(screen.getAllByRole("alert")).toHaveLength(1);
@@ -1007,12 +1102,14 @@ it("shows the share of the quota in the panel's head, and the next task at its f
   expect(await screen.findByRole("heading", { name: "Task 2" })).toBeVisible();
 });
 
-it("hides the canvas's bar of tools on a phone while the panel is open", async () => {
+it("hides the canvas's bar of tools on a phone while the panel is open, its Hint at the panel's foot", async () => {
   await page.viewport(390, 844);
   await solving();
   expect(sheet().hasAttribute("tools-hidden")).toBe(false);
   await userEvent.click(screen.getByRole("button", { name: "Ask" }));
   await waitFor(() => expect(sheet().hasAttribute("tools-hidden")).toBe(true));
+  // The panel hides the row here, so the panel gives Hint itself.
+  expect(tutorPanel().getByRole("button", { name: "Hint" })).toBeVisible();
   await userEvent.click(tutorPanel().getByRole("button", { name: "Close" }));
   await waitFor(() => expect(sheet().hasAttribute("tools-hidden")).toBe(false));
 });
@@ -1072,14 +1169,14 @@ const middle = (element: Element) => {
   return box.top + box.height / 2;
 };
 
-it("puts the tutor's button and debug's at the start of the page's bar, before a line", async () => {
+it("puts debug's button and the tutor's at the start of the page's bar, before a line, as the solving's bar has them", async () => {
   await renderPaper({ debug: true });
   const debug = await screen.findByRole("button", { name: DEBUG });
   const tutor = screen.getByRole("button", { name: "Tutor" });
   const bar = found(".nt-page-bar");
   expect(buttonNames(bar)).toEqual([
-    "Tutor",
     DEBUG,
+    "Tutor",
     "Select none",
     expect.stringContaining("Start"),
   ]);
@@ -1096,13 +1193,16 @@ it("puts the tutor's button and debug's at the start of the page's bar, before a
   // The line between the pair and "Select none", in one row with them.
   const line = found(".nt-page-row > .nt-row-line");
   const none = screen.getByRole("button", { name: "Select none" });
-  expect(line.getBoundingClientRect().left).toBeGreaterThan(debug.getBoundingClientRect().right);
+  expect(debug.getBoundingClientRect().right).toBeLessThanOrEqual(
+    tutor.getBoundingClientRect().left,
+  );
+  expect(line.getBoundingClientRect().left).toBeGreaterThan(tutor.getBoundingClientRect().right);
   expect(line.getBoundingClientRect().right).toBeLessThan(none.getBoundingClientRect().left);
   expect(middle(tutor)).toBeCloseTo(middle(none), 0);
   // Tab goes along the bar.
-  tutor.focus();
+  debug.focus();
   await userEvent.tab();
-  expect(document.activeElement).toBe(debug);
+  expect(document.activeElement).toBe(tutor);
   await userEvent.tab();
   expect(document.activeElement).toBe(none);
   // The debug window opens as before, at the right of the window, not inside the bar's glass.
@@ -1329,7 +1429,6 @@ it("finds the page anew by the learner's request, its own frame staying, and Und
   const field = await screen.findByRole("textbox", { name: "Your request about the page" });
   // No reminder of names above the field.
   expect(field).not.toHaveAttribute("aria-describedby");
-  expect(screen.getByRole("button", { name: "Voice comes later" })).toBeDisabled();
   await userEvent.type(field, "only the first column, each task apart{Enter}");
   expect(await screen.findByText("Found 3 tasks")).toBeVisible();
   expect(screen.getByText("only the first column, each task apart")).toBeVisible();
@@ -1343,6 +1442,41 @@ it("finds the page anew by the learner's request, its own frame staying, and Und
   expect(await screen.findByText("The frames are back as they were")).toBeVisible();
   expect(screen.getAllByRole("button", { name: /^Deselect task/ })).toHaveLength(1);
   expect(screen.queryByRole("button", { name: "Undo" })).toBeNull();
+});
+
+it("stops a request about the page while its frames are found: the frames as they were, the request back in the field, said so", async () => {
+  withRecognition(false);
+  let stopped = false;
+  const { finds } = await renderPaper({
+    found: (request) => {
+      if (request.request === "")
+        return { frames: [{ box: { ymin: 0, xmin: 0, ymax: 1000, xmax: 1000 } }] };
+      if (!stopped) return never();
+      return { frames: [{ box: { ymin: 0, xmin: 0, ymax: 500, xmax: 500 } }] };
+    },
+  });
+  await screen.findByRole("button", { name: "Deselect task 1" });
+  await userEvent.click(screen.getByRole("button", { name: "Tutor" }));
+  const field = await screen.findByRole("textbox", { name: "Your request about the page" });
+  expect(tutorPanel().queryByRole("button", { name: "Stop" })).toBeNull();
+  await userEvent.type(field, "the first half{Enter}");
+  const stop = await tutorPanel().findByRole("button", { name: "Stop" });
+  expect(tutorPanel().queryByRole("button", { name: "Send" })).toBeNull();
+  expect(tutorPanel().getByText("the first half")).toBeVisible();
+  stopped = true;
+  await userEvent.click(stop);
+  await waitFor(() => expect(field).toHaveValue("the first half"));
+  const said = "Stopped: your question is back in the field — change it and send it again.";
+  expect(tutorPanel().getByText(said)).toBeVisible();
+  expect(tutorPanel().queryByText("the first half", { selector: "p" })).toBeNull();
+  expect(tutorPanel().queryByRole("button", { name: "Stop" })).toBeNull();
+  // The frames as they were, and no Undo: nothing was found.
+  expect(screen.getAllByRole("button", { name: /^Deselect task/ })).toHaveLength(1);
+  expect(screen.queryByRole("button", { name: "Undo" })).toBeNull();
+  await userEvent.type(field, "{Enter}");
+  expect(await screen.findByText("Found 1 task")).toBeVisible();
+  expect(finds).toHaveLength(3);
+  expect(finds[2]?.idempotencyKey).not.toBe(finds[1]?.idempotencyKey);
 });
 
 it("turns the photo upright as its tasks were found, and goes on with it turned", async () => {
@@ -1688,9 +1822,13 @@ it("marks a task solved in the list of a page opened again, its verdict put away
   await userEvent.click(screen.getByRole("button", { name: /· 2 tasks$/ }));
   await screen.findByRole("heading", { name: "Task 1" }, SLOW);
   expect(screen.queryByText("Read: 85")).toBeNull();
-  await userEvent.click(screen.getByRole("button", { name: "Tasks, 1 / 2" }));
-  expect(await screen.findByRole("button", { name: /Task 1.*Correct/ })).toBeVisible();
-  expect(screen.getByRole("button", { name: "Task 2" })).toBeVisible();
+  const counter = screen.getByRole("button", { name: "Tasks, 1 / 2" });
+  await userEvent.click(counter);
+  expect(counter).toHaveAttribute("aria-expanded", "true");
+  // The head counts the tasks solved; each row says its state under its name.
+  expect(await screen.findByText("1 of 2 done")).toBeVisible();
+  expect(screen.getByRole("button", { name: /^Task 1 ?Solved$/ })).toBeVisible();
+  expect(screen.getByRole("button", { name: /^Task 2 ?Not checked yet$/ })).toBeVisible();
   history.replaceState(null, "", location.pathname);
 });
 
@@ -1729,4 +1867,493 @@ it("keeps the page's bar and its Start inside a narrow tablet's width, in Russia
   expect(start.getBoundingClientRect().right).toBeLessThanOrEqual(
     bar.getBoundingClientRect().right,
   );
+});
+
+it("sends a request about the page by voice, which the microphone put in the field, for frames", async () => {
+  withRecognition(true);
+  const { finds } = await renderPaper({
+    found: (request) =>
+      request.request === ""
+        ? { frames: [{ box: { ymin: 0, xmin: 0, ymax: 1000, xmax: 1000 } }] }
+        : { frames: [{ box: { ymin: 0, xmin: 0, ymax: 500, xmax: 1000 } }] },
+  });
+  await screen.findByRole("button", { name: "Deselect task 1" });
+  await userEvent.click(screen.getByRole("button", { name: "Tutor" }));
+  await userEvent.click(tutorPanel().getByRole("button", { name: "Dictate" }));
+  await waitFor(() => expect(listening().started).toBe(true));
+  expect(listening().lang).toBe("en");
+  listening().hear("the first task");
+  await userEvent.click(tutorPanel().getByRole("button", { name: "Stop" }));
+  await tutorPanel().findByText("From your voice: read it, correct it, then send.");
+  await userEvent.click(tutorPanel().getByRole("button", { name: "Send" }));
+  expect(await screen.findByText("Found 1 task")).toBeVisible();
+  expect(finds[1]?.request).toBe("the first task");
+  expect(tutorPanel().getByText("By voice")).toBeVisible();
+});
+
+/** The learner's lines of the open panel. */
+const questions = () =>
+  [...document.querySelectorAll(".nt-tutor-panel p.nt-bubble[data-who='learner']")].map(
+    (line) => line.textContent,
+  );
+
+it("asks the tutor about the task in the panel's field, with the turns before and the work, and shows the answer", async () => {
+  withRecognition(false);
+  const { asks } = await solving({
+    hinted: "What do you see in the first row?",
+    asked: (n) => ({ words: n === 0 ? "What does each row add?" : "Count them once more." }),
+  });
+  await userEvent.click(screen.getByRole("button", { name: "Hint" }));
+  expect(await tutorPanel().findByText("What do you see in the first row?")).toBeVisible();
+  expect(
+    tutorPanel().getByText(
+      "Ask about this task by text or voice, or take a hint: the tutor answers with a question, never with the answer. A program checks every answer.",
+    ),
+  ).toBeVisible();
+  const field = tutorPanel().getByRole("textbox", { name: "Your question about the task" });
+  await userEvent.type(field, "Why rows?{Shift>}{Enter}{/Shift}Not columns?{Enter}");
+  expect(await tutorPanel().findByText("What does each row add?")).toBeVisible();
+  expect(questions()).toEqual(["Why rows?\nNot columns?"]);
+  const first = asks[0];
+  expect(first?.profileId).toBe("p1");
+  expect(first?.attemptId).toBe("a1");
+  expect(first?.question).toBe("Why rows?\nNot columns?");
+  expect(first?.wordsLanguage).toBe("en");
+  expect(first?.idempotencyKey).not.toBe("");
+  expect(first?.turns.map((turn) => [turn.learner, turn.text])).toEqual([
+    [false, "What do you see in the first row?"],
+  ]);
+  // The work as it stands: nothing written, the task's crop in the place of the work's.
+  expect(first?.work?.surface.case).toBe("paper");
+  await userEvent.type(field, "And then?{Enter}");
+  expect(await tutorPanel().findByText("Count them once more.")).toBeVisible();
+  expect(asks[1]?.turns.map((turn) => [turn.learner, turn.text])).toEqual([
+    [false, "What do you see in the first row?"],
+    [true, "Why rows?\nNot columns?"],
+    [false, "What does each row add?"],
+  ]);
+  expect(asks[1]?.idempotencyKey).not.toBe(first?.idempotencyKey);
+  // Another task is another conversation; back on this one, it is as it was.
+  await userEvent.click(screen.getByRole("button", { name: "Next task" }));
+  await screen.findByRole("heading", { name: "Task 2" });
+  expect(questions()).toEqual([]);
+  await userEvent.click(screen.getByRole("button", { name: "Previous task" }));
+  await screen.findByRole("heading", { name: "Task 1" });
+  expect(questions()).toEqual(["Why rows?\nNot columns?", "And then?"]);
+});
+
+it("lets an adult report a problem with the tutor's answer to a question", async () => {
+  withRecognition(false);
+  const { reports } = await solving({ asked: () => ({ words: "Look at the tens." }) });
+  await userEvent.click(screen.getByRole("button", { name: "Ask" }));
+  const field = tutorPanel().getByRole("textbox", { name: "Your question about the task" });
+  await userEvent.type(field, "Where do I start?{Enter}");
+  expect(await tutorPanel().findByText("Look at the tens.")).toBeVisible();
+  await userEvent.click(tutorPanel().getByRole("button", { name: "Report a problem" }));
+  await userEvent.click(screen.getByRole("radio", { name: /Unclear/ }));
+  const report = within(screen.getByRole("form", { name: "Report a problem with these words" }));
+  await userEvent.click(report.getByRole("button", { name: "Send" }));
+  await waitFor(() => expect(reports).toHaveLength(1));
+  expect(reports[0]?.reply).toBe(TutorReply.ANSWER);
+  expect(reports[0]?.rung).toBe(0);
+  expect(reports[0]?.words).toBe("Look at the tens.");
+});
+
+it("puts a question that brought no answer back in the field, and sends it again with its key", async () => {
+  withRecognition(false);
+  const { asks } = await solving({
+    asked: (n) =>
+      // Past its deadline: no repeat of the client brings it back.
+      n === 0 ? new ConnectError("late", Code.DeadlineExceeded) : { words: "Look at the tens." },
+  });
+  await userEvent.click(screen.getByRole("button", { name: "Ask" }));
+  const field = tutorPanel().getByRole("textbox", { name: "Your question about the task" });
+  await userEvent.type(field, "Why tens?{Enter}");
+  expect(await tutorPanel().findByText(/^No connection/)).toBeVisible();
+  await waitFor(() => expect(field).toHaveValue("Why tens?"));
+  expect(questions()).toEqual([]);
+  await userEvent.type(field, "{Enter}");
+  expect(await tutorPanel().findByText("Look at the tens.")).toBeVisible();
+  expect(questions()).toEqual(["Why tens?"]);
+  expect(asks).toHaveLength(2);
+  expect(asks[1]?.idempotencyKey).toBe(asks[0]?.idempotencyKey);
+});
+
+/** An answer that never comes: a request still awaited till Stop calls it off. */
+const never = <T,>() => new Promise<T>(() => {});
+
+it("stops a question whose answer is awaited: it goes back to the field, said so, and again under a new key", async () => {
+  withRecognition(false);
+  const { asks } = await solving({
+    asked: (n) => (n === 0 ? never() : { words: "Look at the tens." }),
+  });
+  await userEvent.click(screen.getByRole("button", { name: "Ask" }));
+  const field = tutorPanel().getByRole("textbox", { name: "Your question about the task" });
+  expect(tutorPanel().queryByRole("button", { name: "Stop" })).toBeNull();
+  await userEvent.type(field, "Why tens?{Enter}");
+  const stop = await tutorPanel().findByRole("button", { name: "Stop" });
+  // Stop stands in place of Send while the answer is awaited.
+  expect(tutorPanel().queryByRole("button", { name: "Send" })).toBeNull();
+  expect(questions()).toEqual(["Why tens?"]);
+  await userEvent.click(stop);
+  await waitFor(() => expect(field).toHaveValue("Why tens?"));
+  expect(questions()).toEqual([]);
+  const said = "Stopped: your question is back in the field — change it and send it again.";
+  expect(tutorPanel().getByText(said)).toBeVisible();
+  expect(tutorPanel().queryByRole("button", { name: "Stop" })).toBeNull();
+  await userEvent.type(field, "{Enter}");
+  expect(await tutorPanel().findByText("Look at the tens.")).toBeVisible();
+  expect(tutorPanel().queryByText(said)).toBeNull();
+  expect(questions()).toEqual(["Why tens?"]);
+  expect(asks).toHaveLength(2);
+  expect(asks[1]?.idempotencyKey).not.toBe(asks[0]?.idempotencyKey);
+});
+
+it("lets an adult ask by voice, and gives a child no microphone", async () => {
+  withRecognition(true);
+  const { asks } = await solving({ asked: () => ({ words: "What is ten and ten?" }) });
+  await userEvent.click(screen.getByRole("button", { name: "Ask" }));
+  await userEvent.click(tutorPanel().getByRole("button", { name: "Dictate" }));
+  await waitFor(() => expect(listening().started).toBe(true));
+  listening().hear("why twenty");
+  await userEvent.click(tutorPanel().getByRole("button", { name: "Stop" }));
+  await userEvent.click(tutorPanel().getByRole("button", { name: "Send" }));
+  expect(await tutorPanel().findByText("What is ten and ten?")).toBeVisible();
+  expect(asks[0]?.question).toBe("why twenty");
+  expect(tutorPanel().getByText("By voice")).toBeVisible();
+  cleanup();
+  await solving({ adult: false });
+  await userEvent.click(screen.getByRole("button", { name: "Ask" }));
+  expect(tutorPanel().getByRole("textbox", { name: "Your question about the task" })).toBeVisible();
+  expect(tutorPanel().queryByRole("button", { name: "Dictate" })).toBeNull();
+});
+
+/** The canvas's methods of grown-up mode on the sheet shown, as the tests give them. */
+function grownSheet(draw: () => Promise<void> = () => Promise.resolve()) {
+  const element = sheet();
+  const cropStrokes = vi.fn((_context: unknown) => [{ id: 1, points: [300, 900, 340, 960] }]);
+  const drawTutor = vi.fn((_context: unknown, _act: unknown) => draw());
+  Object.assign(element, { cropStrokes, drawTutor });
+  return { cropStrokes, drawTutor };
+}
+
+/** Grown-up mode turned on in the open panel by its key and the grown-ups' PIN. */
+async function grownOn() {
+  await userEvent.click(tutorPanel().getByRole("button", { name: "Grown-up mode" }));
+  const pad = within(await screen.findByRole("dialog", { name: "Grown-up mode" }));
+  for (const digit of "5555") await userEvent.click(pad.getByRole("button", { name: digit }));
+  await waitFor(() => expect(screen.queryByRole("dialog", { name: "Grown-up mode" })).toBeNull());
+}
+
+it("turns grown-up mode on behind the grown-ups' PIN, for this task alone, and off again", async () => {
+  await solving();
+  await userEvent.click(screen.getByRole("button", { name: "Ask" }));
+  const key = tutorPanel().getByRole("button", { name: "Grown-up mode" });
+  expect(key).toHaveAttribute("aria-pressed", "false");
+  await userEvent.click(key);
+  const dialog = await screen.findByRole("dialog", { name: "Grown-up mode" });
+  const pad = within(dialog);
+  expect(pad.getByText("Enter your PIN to lift the tutor's limits on this task.")).toBeVisible();
+  expect(pad.getByText("The PIN is 5555 for now.")).toBeVisible();
+  expect(pad.getByRole("img", { name: "0 of 4 digits" })).toBeVisible();
+  expect(
+    pad
+      .getAllByRole("button")
+      .map((button) => button.getAttribute("aria-label") ?? button.textContent),
+  ).toEqual(["1", "2", "3", "4", "5", "6", "7", "8", "9", "Cancel", "0", "Delete"]);
+  // A wrong PIN clears the dots and says so; a digit taken back by the delete key.
+  for (const digit of "123") await userEvent.click(pad.getByRole("button", { name: digit }));
+  expect(pad.getByRole("img", { name: "3 of 4 digits" })).toBeVisible();
+  await userEvent.click(pad.getByRole("button", { name: "Delete" }));
+  expect(pad.getByRole("img", { name: "2 of 4 digits" })).toBeVisible();
+  for (const digit of "34") await userEvent.click(pad.getByRole("button", { name: digit }));
+  expect(pad.getByRole("alert")).toHaveTextContent("Wrong PIN. Try again.");
+  expect(pad.getByRole("img", { name: "0 of 4 digits" })).toBeVisible();
+  // Cancel leaves the mode off, and so does Escape.
+  await userEvent.click(pad.getByRole("button", { name: "Cancel" }));
+  expect(screen.queryByRole("dialog")).toBeNull();
+  expect(key).toHaveAttribute("aria-pressed", "false");
+  await userEvent.click(key);
+  await screen.findByRole("dialog", { name: "Grown-up mode" });
+  await userEvent.keyboard("{Escape}");
+  expect(screen.queryByRole("dialog")).toBeNull();
+  // The digits come by the keyboard too, and the right PIN turns the mode on.
+  await userEvent.click(key);
+  await screen.findByRole("dialog", { name: "Grown-up mode" });
+  await userEvent.keyboard("12{Backspace}");
+  expect(screen.getByRole("img", { name: "1 of 4 digits" })).toBeVisible();
+  await userEvent.keyboard("{Backspace}5555");
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  expect(key).toHaveAttribute("aria-pressed", "true");
+  expect(key).toHaveFocus();
+  expect(
+    tutorPanel().getByText(
+      "No limits, up to the full solution. Turn it off before the child goes on.",
+    ),
+  ).toBeVisible();
+  expect(tutorPanel().getByText("Grown-up mode on")).toBeVisible();
+  expect(
+    tutorPanel().getByText("The tutor does what the grown-up asks, up to the full solution."),
+  ).toBeVisible();
+  expect(
+    tutorPanel().getByRole("textbox", { name: "Your question about the task" }),
+  ).toHaveAttribute("placeholder", "Ask for anything, up to the full solution…");
+  // Another task has it off, and so has this one, come back to.
+  await userEvent.click(screen.getByRole("button", { name: "Next task" }));
+  await screen.findByRole("heading", { name: "Task 2" });
+  expect(tutorPanel().getByRole("button", { name: "Grown-up mode" })).toHaveAttribute(
+    "aria-pressed",
+    "false",
+  );
+  await userEvent.click(screen.getByRole("button", { name: "Previous task" }));
+  await screen.findByRole("heading", { name: "Task 1" });
+  expect(tutorPanel().getByRole("button", { name: "Grown-up mode" })).toHaveAttribute(
+    "aria-pressed",
+    "false",
+  );
+  expect(
+    tutorPanel().queryByText(
+      "No limits, up to the full solution. Turn it off before the child goes on.",
+    ),
+  ).toBeNull();
+  // Turn off of the band, and the key pressed while it is on.
+  await grownOn();
+  await userEvent.click(tutorPanel().getByRole("button", { name: "Turn off" }));
+  expect(tutorPanel().getByText("Grown-up mode off")).toBeVisible();
+  expect(
+    tutorPanel().getByText("The tutor's limits are back: hints and questions, never the answer."),
+  ).toBeVisible();
+  expect(
+    tutorPanel().getByRole("textbox", { name: "Your question about the task" }),
+  ).toHaveAttribute("placeholder", "Ask about this task…");
+  await grownOn();
+  await userEvent.click(tutorPanel().getByRole("button", { name: "Grown-up mode" }));
+  expect(tutorPanel().getAllByText("Grown-up mode off")).toHaveLength(2);
+});
+
+it("sends a request in grown-up mode with the work and its strokes, draws the act, then says it", async () => {
+  withRecognition(false);
+  const { grownAsks, asks, reports } = await solving({
+    grown: (n) =>
+      n === 0
+        ? {
+            words: "Done: line 1 struck out in red.",
+            strokes: [{ points: [290, 930, 350, 930], color: "#e5322d", width: 3.4 }],
+            erase: [],
+          }
+        : { words: "Done: line 1 erased.", erase: [1] },
+    asked: () => ({ words: "What do you see now?" }),
+  });
+  writeOn(sheet());
+  let finish = () => {};
+  const { cropStrokes, drawTutor } = grownSheet(
+    () =>
+      new Promise<void>((resolve) => {
+        finish = resolve;
+      }),
+  );
+  await userEvent.click(screen.getByRole("button", { name: "Ask" }));
+  await grownOn();
+  const field = tutorPanel().getByRole("textbox", { name: "Your question about the task" });
+  await userEvent.type(field, "Cross out the first line in red{Enter}");
+  await waitFor(() => expect(drawTutor).toHaveBeenCalledOnce());
+  // While the act is drawn the head says so, and the tutor's words wait for it.
+  expect(tutorPanel().getByText("Writing on the sheet…")).toBeVisible();
+  expect(tutorPanel().getByText("The tutor is writing…")).toBeVisible();
+  expect(tutorPanel().queryByText("Done: line 1 struck out in red.")).toBeNull();
+  const context = cropStrokes.mock.calls[0]?.[0];
+  expect(context).toHaveProperty("digest");
+  expect(drawTutor.mock.calls[0]).toEqual([
+    context,
+    {
+      strokes: [{ points: [290, 930, 350, 930], color: "#e5322d", width: expect.closeTo(3.4, 5) }],
+      erase: [],
+    },
+  ]);
+  finish();
+  const said = await tutorPanel().findByText("Done: line 1 struck out in red.");
+  expect(said.closest(".nt-bubble")).toHaveAttribute("data-grown", "true");
+  expect(
+    within(said.closest(".nt-bubble") as HTMLElement).getByText("Grown-up mode"),
+  ).toBeVisible();
+  expect(tutorPanel().queryByText("Writing on the sheet…")).toBeNull();
+  const first = grownAsks[0];
+  expect(first?.profileId).toBe("p1");
+  expect(first?.attemptId).toBe("a1");
+  expect(first?.question).toBe("Cross out the first line in red");
+  expect(first?.wordsLanguage).toBe("en");
+  expect(first?.idempotencyKey).not.toBe("");
+  expect(first?.turns).toEqual([]);
+  expect(first?.work?.surface.case).toBe("paper");
+  expect(first?.strokes.map(({ id, points }) => [id, [...points]])).toEqual([
+    [1, [300, 900, 340, 960]],
+  ]);
+  expect(asks).toHaveLength(0);
+  // The next request carries the conversation before it, the grown-up's turns among it.
+  await userEvent.type(field, "Erase it{Enter}");
+  await waitFor(() => expect(drawTutor).toHaveBeenCalledTimes(2));
+  finish();
+  expect(await tutorPanel().findByText("Done: line 1 erased.")).toBeVisible();
+  expect(drawTutor.mock.calls[1]?.[1]).toEqual({ strokes: [], erase: [1] });
+  expect(grownAsks[1]?.turns.map((turn) => [turn.learner, turn.text])).toEqual([
+    [true, "Cross out the first line in red"],
+    [false, "Done: line 1 struck out in red."],
+  ]);
+  // An adult reports the words as an answer of the tutor's.
+  const reportLast = tutorPanel().getAllByRole("button", { name: "Report a problem" }).at(-1);
+  if (reportLast === undefined) throw new Error("no report");
+  await userEvent.click(reportLast);
+  await userEvent.click(screen.getByRole("radio", { name: /Unclear/ }));
+  const report = within(screen.getByRole("form", { name: "Report a problem with these words" }));
+  await userEvent.click(report.getByRole("button", { name: "Send" }));
+  await waitFor(() => expect(reports).toHaveLength(1));
+  expect(reports[0]?.reply).toBe(TutorReply.ANSWER);
+  expect(reports[0]?.words).toBe("Done: line 1 erased.");
+  // Off again, the field asks the tutor with its limits, the grown-up's turns before it.
+  await userEvent.click(tutorPanel().getByRole("button", { name: "Turn off" }));
+  await userEvent.type(field, "What now?{Enter}");
+  expect(await tutorPanel().findByText("What do you see now?")).toBeVisible();
+  expect(grownAsks).toHaveLength(2);
+  expect(asks[0]?.turns.map((turn) => turn.text)).toEqual([
+    "Cross out the first line in red",
+    "Done: line 1 struck out in red.",
+    "Erase it",
+    "Done: line 1 erased.",
+  ]);
+});
+
+it("stops a request in grown-up mode while it is awaited, and draws nothing of it", async () => {
+  withRecognition(false);
+  const { grownAsks } = await solving({
+    grown: (n) => (n === 0 ? never() : { words: "Done.", erase: [] }),
+  });
+  writeOn(sheet());
+  const { drawTutor } = grownSheet();
+  await userEvent.click(screen.getByRole("button", { name: "Ask" }));
+  await grownOn();
+  const field = tutorPanel().getByRole("textbox", { name: "Your question about the task" });
+  await userEvent.type(field, "Write the whole solution{Enter}");
+  await userEvent.click(await tutorPanel().findByRole("button", { name: "Stop" }));
+  await waitFor(() => expect(field).toHaveValue("Write the whole solution"));
+  expect(
+    tutorPanel().getByText(
+      "Stopped: your question is back in the field — change it and send it again.",
+    ),
+  ).toBeVisible();
+  expect(drawTutor).not.toHaveBeenCalled();
+  await userEvent.type(field, "{Enter}");
+  expect(await tutorPanel().findByText("Done.")).toBeVisible();
+  expect(grownAsks).toHaveLength(2);
+  expect(grownAsks[1]?.idempotencyKey).not.toBe(grownAsks[0]?.idempotencyKey);
+});
+
+it("puts a request in grown-up mode back in the field when no act comes or the sheet takes none", async () => {
+  withRecognition(false);
+  const { grownAsks } = await solving({
+    grown: (n) =>
+      [
+        { outcome: { cause: Cause.AI_FAILURE } },
+        { words: "Done.", strokes: [{ points: [1, 1, 2, 2], color: "#e5322d", width: 3 }] },
+        { repeated: true },
+        { words: "Done: line 1 erased.", erase: [1] },
+      ][n] ?? new ConnectError("no more", Code.InvalidArgument),
+  });
+  await userEvent.click(screen.getByRole("button", { name: "Ask" }));
+  await grownOn();
+  const field = tutorPanel().getByRole("textbox", { name: "Your question about the task" });
+  writeOn(sheet());
+  const { drawTutor } = grownSheet();
+  // A call of AI that gave no act says what it came to.
+  await userEvent.type(field, "Write the solution{Enter}");
+  expect(await tutorPanel().findByText("The tutor can't answer right now")).toBeVisible();
+  await waitFor(() => expect(field).toHaveValue("Write the solution"));
+  expect(drawTutor).not.toHaveBeenCalled();
+  // An act the sheet cannot take, as on a stroke erased meanwhile, is none.
+  drawTutor.mockImplementationOnce(() => Promise.reject(new TypeError("no stroke 7")));
+  await userEvent.type(field, "{Enter}");
+  await waitFor(() => expect(drawTutor).toHaveBeenCalledOnce());
+  await waitFor(() => expect(field).toHaveValue("Write the solution"));
+  expect(tutorPanel().queryByText("Done.")).toBeNull();
+  expect(tutorPanel().getByText("The tutor can't answer right now")).toBeVisible();
+  // A repeat holds nothing; the request sent once more is a new one.
+  await userEvent.type(field, "{Enter}");
+  await waitFor(() => expect(grownAsks).toHaveLength(3));
+  await waitFor(() => expect(field).toHaveValue("Write the solution"));
+  expect(questions()).toEqual([]);
+  await userEvent.type(field, "{Enter}");
+  expect(await tutorPanel().findByText("Done: line 1 erased.")).toBeVisible();
+  expect(questions()).toEqual(["Write the solution"]);
+  expect(new Set(grownAsks.map((ask) => ask.idempotencyKey)).size).toBe(4);
+});
+
+it("puts the tutor's act on the sheet by canvas's own drawing, one action of the task's history", async () => {
+  withRecognition(false);
+  const { grownAsks } = await solving({
+    grown: () => ({
+      words: "Done: line 1 struck out in red.",
+      strokes: [{ points: [10, 10, 60, 12], color: "#e5322d", width: 3 }],
+      erase: [1],
+    }),
+  });
+  // A stroke in sight, under the task, where the drawing's crop takes it.
+  const write: HistoryEvent = {
+    kind: "write",
+    t: 30,
+    stroke: {
+      id: 1,
+      kind: "pen",
+      points: [
+        { x: 200, y: 300, t: 10, p: 0.5 },
+        { x: 260, y: 320, t: 30, p: 0.5 },
+      ],
+    },
+  };
+  sheet().history = [write];
+  sheet().dispatchEvent(
+    new CustomEvent("historychange", { detail: { from: 0, events: [write] }, bubbles: true }),
+  );
+  await userEvent.click(screen.getByRole("button", { name: "Ask" }));
+  await grownOn();
+  const field = tutorPanel().getByRole("textbox", { name: "Your question about the task" });
+  await userEvent.type(field, "Strike out the first line{Enter}");
+  expect(await tutorPanel().findByText("Done: line 1 struck out in red.", {}, SLOW)).toBeVisible();
+  expect(grownAsks[0]?.strokes.map((stroke) => stroke.id)).toEqual([1]);
+  expect(grownAsks[0]?.pixelsPerMm).toBeGreaterThan(0);
+  const last = sheet().history.at(-1);
+  expect(last?.kind).toBe("tutor");
+  if (last?.kind !== "tutor") throw new Error("no act of the tutor");
+  expect(last.ids).toEqual([1]);
+  expect(last.strokes).toHaveLength(1);
+  // The page keeps the act with the task's work: back on the task, it is on the sheet.
+  await userEvent.click(screen.getByRole("button", { name: "Next task" }));
+  await screen.findByRole("heading", { name: "Task 2" });
+  await userEvent.click(screen.getByRole("button", { name: "Previous task" }));
+  await screen.findByRole("heading", { name: "Task 1" });
+  expect(sheet().history.at(-1)?.kind).toBe("tutor");
+});
+
+it("acts on a blank sheet too: the part in sight goes with no strokes, and the act is drawn", async () => {
+  withRecognition(false);
+  const { grownAsks } = await solving({
+    grown: () => ({
+      words: "Done: the solution is under the task.",
+      strokes: [{ points: [20, 20, 80, 22], color: "#1d1d1f", width: 2 }],
+    }),
+  });
+  await userEvent.click(screen.getByRole("button", { name: "Ask" }));
+  await grownOn();
+  const field = tutorPanel().getByRole("textbox", { name: "Your question about the task" });
+  await userEvent.type(field, "Write the whole solution{Enter}");
+  expect(
+    await tutorPanel().findByText("Done: the solution is under the task.", {}, SLOW),
+  ).toBeVisible();
+  expect(grownAsks[0]?.strokes).toEqual([]);
+  const work = grownAsks[0]?.work?.surface;
+  if (work?.case !== "paper") throw new Error("no work of a task from paper");
+  // PNGs: the sheet in sight, and the task's crop.
+  expect([work.value.crop[1], work.value.statement[1]]).toEqual([0x50, 0x50]);
+  const last = sheet().history.at(-1);
+  if (last?.kind !== "tutor") throw new Error("no act of the tutor");
+  expect(last.strokes).toHaveLength(1);
+  expect(last.ids).toEqual([]);
 });

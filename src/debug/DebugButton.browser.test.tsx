@@ -4,7 +4,8 @@
 // effort and thinking, thinking that stays on, and a choice api refuses —; and the tab Log — each
 // action with its calls, a call opened to its figures and what the model returned, the request of
 // a finding, the export of a Check with what the Check answered and why it makes no case, and the
-// log cleared.
+// log cleared —, with the app's own lines among the actions, filtered by level and source and
+// copied; and the tab Performance with its strip and the flash of what a frame paints.
 import { Cause } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import {
   type DebugAction,
@@ -28,6 +29,8 @@ import type { Api } from "../api/client.ts";
 import { routedApi } from "../test/api.ts";
 import DebugButton from "./DebugButton.tsx";
 import { reset, take } from "./debug.ts";
+import * as journal from "./journal.ts";
+import { theMonitor } from "./Perf.tsx";
 
 const HAIKU = {
   id: "claude-haiku-5-5",
@@ -157,6 +160,7 @@ async function logged(api: Api) {
 
 beforeEach(() => {
   reset();
+  journal.clear();
 });
 
 afterEach(() => {
@@ -277,7 +281,7 @@ describe("the debug button", () => {
     await logged(api);
     const window_ = await opened();
     await userEvent.click(window_.getByRole("tab", { name: /Log/ }));
-    const log = within(window_.getByRole("region", { name: "Log of the models" }));
+    const log = within(window_.getByRole("region", { name: "Log" }));
     expect(log.getByText("Request: “only the first column”")).toBeVisible();
     expect(log.getByText("Check · attempt 2")).toBeVisible();
 
@@ -334,18 +338,156 @@ describe("the debug button", () => {
     await userEvent.click(log.getByRole("button", { name: "Export" }));
     expect(log.queryByRole("button", { name: "Cancel" })).toBeNull();
 
-    await userEvent.click(window_.getByRole("button", { name: "Clear log" }));
+    await userEvent.click(window_.getByRole("button", { name: "Clear" }));
     expect(
-      await window_.findByText("No calls yet. Take a photo of a page, or Check a task."),
+      await window_.findByText("Nothing yet. What the app does, and the AI’s calls, come here."),
     ).toBeVisible();
-    expect(window_.getByRole("button", { name: "Clear log" })).toHaveAttribute(
-      "aria-disabled",
-      "true",
-    );
+    expect(window_.getByRole("button", { name: "Clear" })).toHaveAttribute("aria-disabled", "true");
     // Marked disabled, and pressed all the same.
-    await userEvent.click(window_.getByRole("button", { name: "Clear log" }), { force: true });
+    await userEvent.click(window_.getByRole("button", { name: "Clear" }), { force: true });
     await userEvent.click(window_.getByRole("tab", { name: "Models" }));
     expect(window_.getByRole("region", { name: "Models" })).toBeVisible();
+  });
+
+  it("shows the app's lines among the actions, the errors alone, a filter and a copy", async () => {
+    const { api } = renderDebug({ actions: [FOUND, CHECK] });
+    await logged(api);
+    journal.clear();
+    journal.note("info", "camera", "Photo 4032 × 3024", "", new Date("2026-11-19T15:02:30Z"));
+    journal.note(
+      "error",
+      "api",
+      "AttemptService/SubmitWork · invalid_argument",
+      "code: invalid_argument\ntook: 0.2 s",
+      new Date("2026-11-19T15:03:30Z"),
+    );
+    journal.note("debug", "canvas", "a line of the canvas", "", new Date("2026-11-19T15:05:00Z"));
+    act(() => journal.flush());
+    const window_ = await opened();
+    // The tab counts the errors in red.
+    const tab = window_.getByRole("tab", { name: /Log/ });
+    expect(tab.textContent).toBe("Logerrors: 1");
+    await userEvent.click(tab);
+    const log = within(window_.getByRole("region", { name: "Log" }));
+    expect(log.getByText("5 entries")).toBeVisible();
+    // Newest first: the canvas's line, the Check, the refusal, the finding, the photo.
+    const order = [
+      "a line of the canvas",
+      "Check · attempt 2",
+      "AttemptService/SubmitWork · invalid_argument",
+      "Request: “only the first column”",
+      "Photo 4032 × 3024",
+    ].map((text) => log.getByText(text));
+    for (let i = 1; i < order.length; i++)
+      expect(
+        (order[i - 1] as Node).compareDocumentPosition(order[i] as Node) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+    expect(log.getByText("Camera · 15:02:30", { exact: false })).toBeVisible();
+
+    // A line opens to its details, which Copy takes.
+    const copy = vi.spyOn(navigator.clipboard, "writeText").mockResolvedValue();
+    await userEvent.click(log.getByRole("button", { name: /SubmitWork · invalid_argument/ }));
+    expect(log.getByText(/took: 0\.2 s/)).toBeVisible();
+    await userEvent.click(log.getByRole("button", { name: "Copy" }));
+    expect(copy).toHaveBeenLastCalledWith(
+      expect.stringMatching(/error api .*\ncode: invalid_argument/),
+    );
+    expect(await log.findByRole("button", { name: "Copied" })).toBeVisible();
+
+    // The errors alone, by one press.
+    await userEvent.click(log.getByRole("button", { name: "1 error" }));
+    expect(log.getByRole("button", { name: "Errors" })).toBeVisible();
+    expect(log.getByText("1 of 5 entries")).toBeVisible();
+    expect(log.queryByText("Photo 4032 × 3024")).toBeNull();
+    expect(log.queryByRole("button", { name: "1 error" })).toBeNull();
+
+    // The filter: everything again, then no AI and no debug.
+    await userEvent.click(log.getByRole("button", { name: "Errors" }));
+    await userEvent.click(log.getByRole("menuitem", { name: "Show everything" }));
+    await userEvent.click(log.getByRole("button", { name: "All" }));
+    expect(log.getByRole("menuitemcheckbox", { name: /AI calls/ }).textContent).toBe("AI calls2");
+    await userEvent.click(log.getByRole("menuitemcheckbox", { name: /AI calls/ }));
+    await userEvent.click(log.getByRole("button", { name: "Filtered" }));
+    await userEvent.click(log.getByRole("menuitemcheckbox", { name: /Debug/ }));
+    expect(log.queryByText("Check · attempt 2")).toBeNull();
+    expect(log.queryByText("a line of the canvas")).toBeNull();
+    expect(log.getByText("2 of 5 entries")).toBeVisible();
+    // Copy at the foot takes what is shown, as text.
+    await userEvent.click(window_.getByRole("button", { name: "Copy" }));
+    const text = copy.mock.calls.at(-1)?.[0] ?? "";
+    expect(text.split("\n").filter((l) => !l.startsWith(" "))).toEqual([
+      expect.stringMatching(/ error api AttemptService\/SubmitWork · invalid_argument$/),
+      expect.stringMatching(/ info camera Photo 4032 × 3024$/),
+    ]);
+    // A filter that shows nothing says so.
+    await userEvent.click(log.getByRole("button", { name: "Filtered" }));
+    await userEvent.click(log.getByRole("menuitemcheckbox", { name: /Server · api/ }));
+    await userEvent.click(log.getByRole("button", { name: "Filtered" }));
+    await userEvent.click(log.getByRole("menuitemcheckbox", { name: /^App/ }));
+    expect(log.getByText("Nothing of what the filter shows.")).toBeVisible();
+    // Clear takes the lines too.
+    await userEvent.click(window_.getByRole("button", { name: "Clear" }));
+    expect(journal.snapshot()).toEqual([]);
+  });
+
+  it("shows Performance, its strip on the screen and the flash on the canvas", async () => {
+    const canvas = document.createElement("novatrail-canvas-stub");
+    const stub = Object.assign(canvas, {
+      paintFlash: false,
+      paintStats: {
+        strokes: 1284,
+        points: 96410,
+        frames: 40,
+        fullRepaints: 4,
+        fills: 300,
+        last: { fills: 3, area: 0.04, ms: 1.5 },
+        paintMs: [1, 2, 6],
+        buffers: [{ width: 2388, height: 1668 }],
+      },
+    });
+    const query = document.querySelectorAll.bind(document);
+    vi.spyOn(document, "querySelectorAll").mockImplementation(((selector: string) =>
+      selector === "novatrail-canvas" ? [stub] : query(selector)) as never);
+    renderDebug();
+    const window_ = await opened();
+    await userEvent.click(window_.getByRole("tab", { name: "Performance" }));
+    const perf = within(window_.getByRole("region", { name: "Performance" }));
+    expect(perf.getByText("Frames a second")).toBeVisible();
+    expect(perf.getByText("Live")).toBeVisible();
+    await waitFor(() => expect(perf.getByText("1,284 · 96,410")).toBeVisible(), { timeout: 3000 });
+    expect(perf.getByText("3 strokes · 4% of the view")).toBeVisible();
+    expect(perf.getByText("6.0 ms")).toBeVisible();
+    expect(perf.getByText(/^1 · 15\.2 MB$/)).toBeVisible();
+    expect(perf.getByText("not given to a page")).toBeVisible();
+
+    await userEvent.click(perf.getByRole("button", { name: "Pause" }));
+    expect(perf.getByText("Paused")).toBeVisible();
+    await userEvent.click(perf.getByRole("button", { name: "Resume" }));
+    expect(perf.getByText("Live")).toBeVisible();
+    const copy = vi.spyOn(navigator.clipboard, "writeText").mockResolvedValue();
+    await userEvent.click(perf.getByRole("button", { name: "Copy" }));
+    expect(JSON.parse(copy.mock.calls[0]?.[0] ?? "{}").canvas.strokes).toBe(1284);
+
+    await userEvent.click(perf.getByRole("switch", { name: /Flash what is repainted/ }));
+    expect(stub.paintFlash).toBe(true);
+    await userEvent.click(perf.getByRole("switch", { name: /Show on the canvas/ }));
+    await userEvent.click(window_.getByRole("button", { name: "Close" }));
+    // The strip stays with the window closed, and the monitor measures for it.
+    const strip = await screen.findByRole("status", { name: "Performance" });
+    expect(strip.textContent).toMatch(/^\d+ fps · \d+ ms · busy \d+% · ≈ \d+ MB$/);
+    expect(theMonitor().snapshot().live).toBe(true);
+    await userEvent.click(
+      screen.getByRole("button", { name: "Debug: the models and their answers" }),
+    );
+    const again = within(screen.getByRole("dialog", { name: "Debug" }));
+    await userEvent.click(again.getByRole("tab", { name: "Performance" }));
+    await userEvent.click(again.getByRole("switch", { name: /Show on the canvas/ }));
+    await userEvent.click(again.getByRole("switch", { name: /Flash what is repainted/ }));
+    expect(stub.paintFlash).toBe(false);
+    expect(screen.queryByRole("status", { name: "Performance" })).toBeNull();
+    await userEvent.click(again.getByRole("tab", { name: "Models" }));
+    expect(theMonitor().snapshot().live).toBe(false);
   });
 
   it("counts one call of the session as one", async () => {

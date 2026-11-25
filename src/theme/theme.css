@@ -92,6 +92,13 @@
   --nt-hint: rgba(255, 204, 0, 0.2);
   --nt-hint-text: #9a5b00;
   --nt-next: #a85a00;
+  /*
+   * Grown-up mode of the tutor: its band, its line and the mark of its words on an orange tint, in
+   * a dark orange; its key, while on, the fill of "Not yet". The grown-ups' PIN on its warm white.
+   */
+  --nt-grown: rgba(255, 149, 0, 0.16);
+  --nt-grown-text: #8a3b00;
+  --nt-pin: #faf9f6;
   --nt-tutor-words: #23308c;
   /* A skill with a rubric, and the sign of an essay's feedback: 6.76:1 on its tint #f7f0fc. */
   --nt-rubric: #7a2ea8;
@@ -3496,8 +3503,10 @@ p.nt-page-note {
 }
 /*
  * The screen of solving: at the top bar's end ‹, the counter and › in a pill of glass as tall as the
- * bar's pill at its start, 48; the counter opens the list of the tasks begun, each its number in a circle of 26 and its name, the one shown
- * in the accent, and "Add" at its head.
+ * bar's pill at its start, 48; the counter, a list's sign and "n / total", tinted while open, opens
+ * the list of the tasks begun: at its head "Tasks", how many are solved and "+ Add"; each its number
+ * in a circle of 26, the one shown in the accent on a tint of it, its name with its state under it,
+ * and the state's sign at the end.
  */
 .nt-solve-nav {
   display: inline-flex;
@@ -3506,12 +3515,25 @@ p.nt-page-note {
   border-radius: var(--nt-radius-top-bar);
 }
 .nt-solve-nav > button.nt-solve-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
   min-inline-size: 3.5rem;
   min-block-size: 2.75rem;
+  padding-inline: 0.625rem;
+  border-radius: 1.375rem;
   background: transparent;
   color: var(--nt-segmented);
   font-size: var(--nt-size-caption);
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
+  transition: background-color 0.15s;
+}
+.nt-solve-nav > button.nt-solve-count > svg {
+  font-size: 0.9375rem;
+}
+.nt-solve-nav > button.nt-solve-count[aria-expanded="true"] {
+  background: rgb(0 113 227 / 0.12);
 }
 .nt-tasks-head {
   display: flex;
@@ -3521,14 +3543,31 @@ p.nt-page-note {
   padding: 0.25rem 0.25rem 0.375rem 0.5rem;
 }
 .nt-tasks-head > h2 {
+  display: flex;
+  align-items: baseline;
+  gap: 0.375rem;
   margin: 0;
   font-size: var(--nt-size-caption);
 }
+.nt-tasks-done {
+  color: var(--nt-text-muted);
+  font-size: 0.75rem;
+  font-weight: 400;
+}
 .nt-tasks-head > button.nt-tasks-add {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
   min-block-size: 2.75rem;
+  padding-inline: 0.625rem;
+  border-radius: 1.375rem;
   background: transparent;
   color: var(--nt-accent-text);
+  font-size: var(--nt-size-caption);
   font-weight: var(--nt-weight-medium);
+}
+.nt-tasks-head > button.nt-tasks-add > svg {
+  font-size: 0.875rem;
 }
 ol.nt-tasks {
   margin: 0;
@@ -3565,6 +3604,39 @@ button.nt-tasks-row[aria-current="true"] {
 button.nt-tasks-row[aria-current="true"] > .nt-tasks-n {
   background: var(--nt-accent);
   color: #ffffff;
+}
+.nt-tasks-name {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-inline-size: 0;
+  font-size: var(--nt-size-caption);
+  font-weight: var(--nt-weight-medium);
+  line-height: 1.2;
+}
+.nt-tasks-said {
+  color: var(--nt-text-muted);
+  font-size: 0.71875rem;
+  font-weight: 400;
+}
+.nt-tasks-state {
+  display: inline-flex;
+  flex: none;
+  font-size: 1.25rem;
+}
+.nt-tasks-state[data-state="solved"] {
+  color: var(--nt-correct);
+}
+.nt-tasks-state[data-state="not-yet"] {
+  color: var(--nt-not-yet);
+}
+.nt-tasks-state[data-state="no-key"],
+.nt-tasks-state[data-state="closed"] {
+  color: var(--nt-disabled);
+}
+.nt-tasks-state[data-state="so-far"],
+.nt-tasks-state[data-state="to-do"] {
+  color: #c7c7cc;
 }
 /*
  * A disabled button: grey on a grey fill, as an inactive control may be (1.4.3); last, so that it
@@ -5427,17 +5499,47 @@ button.nt-act[aria-disabled="true"] {
   color: var(--nt-text-muted);
 }
 /*
- * The tutor's panel on the page to pick from, the mockup's `pick-ask`: the learner's request a
- * bubble at the right on the accent, its corner of 6 at the bottom right; the program's line with
- * the pencil on the accent's tint. Under the conversation the reminder at 11.5 in the muted grey, the
- * field a grey pill of 52, radius 26, at 14.5, and under it the microphone, off, and Send on the
- * accent, each with its caption.
+ * Hint stands at the panel's foot on a phone alone: from 600 px the row's Hint beside Check stays in
+ * sight beside the open panel, and a second would only repeat it; on a phone the open sheet hides
+ * the row. A foot left with nothing else takes no room.
  */
-.nt-talk .nt-talk-lines p.nt-bubble[data-who="learner"] {
+@media (width >= 600px) {
+  .nt-tutor-acts button.nt-act-hint {
+    display: none;
+  }
+  .nt-tutor-acts:not(:has(> :not(.nt-act-hint))) {
+    display: none;
+  }
+}
+/*
+ * The learner's line in the tutor's panel, the mockup's: a bubble at the right on the accent, its
+ * corner of 6 at the bottom right, its line breaks kept, and under it, when it was said by voice, a
+ * microphone of 11 and "By voice" at 11 in the muted grey. The program's line of a request about
+ * the page has the pencil on the accent's tint.
+ */
+.nt-said[data-who="learner"] {
+  display: flex;
+  flex-direction: column;
   align-self: flex-end;
+  align-items: flex-end;
+  gap: 0.1875rem;
+  max-inline-size: 88%;
+}
+.nt-talk .nt-talk-lines p.nt-bubble[data-who="learner"] {
+  max-inline-size: 100%;
   border-radius: 1.125rem 1.125rem 0.375rem 1.125rem;
   background: var(--nt-accent);
   color: var(--nt-on-fill);
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+.nt-said-voice {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding-inline-end: 0.25rem;
+  color: var(--nt-text-muted);
+  font-size: 0.6875rem;
 }
 .nt-verdict-line[data-kind="write"] > .nt-card-sign,
 .nt-verdict-line[data-kind="so-far"] > .nt-card-sign {
@@ -5445,9 +5547,11 @@ button.nt-act[aria-disabled="true"] {
   color: var(--nt-accent);
 }
 /*
- * The field of a request: one rounded box of grey in a blue edge of 2, the text at its top,
- * growing down with its lines up to 7.5rem and then scrolling, and under it at the right the
- * microphone, shut, and Send, a blue circle with its arrow, each a target of 44.
+ * The panel's field: one rounded box of grey in a blue edge of 2, the text at its top, growing
+ * down with its lines up to five and then scrolling, and under it at the right the microphone and
+ * Send, a blue circle with its arrow, each a target of 44; while the microphone listens, a red dot
+ * and "Listening…" in the accent, and Stop on the accent, with its caption. Under the box the line
+ * on what came by voice, at 12 in the muted grey.
  */
 form.nt-ask {
   display: flex;
@@ -5463,7 +5567,7 @@ form.nt-ask {
 form.nt-ask > textarea.nt-ask-input {
   box-sizing: border-box;
   inline-size: 100%;
-  max-block-size: 7.5rem;
+  max-block-size: calc(0.9375rem * 1.4 * 5);
   margin: 0;
   padding: 0 0.625rem 0 0;
   border: 0;
@@ -5483,16 +5587,70 @@ form.nt-ask > textarea.nt-ask-input:focus-visible {
   justify-content: flex-end;
   gap: 0.25rem;
 }
-/* Shut until voice comes: its icon grey, with no fill of a disabled button. */
+.nt-ask-buttons button.nt-icon-only.nt-ask-voice {
+  color: var(--nt-accent);
+  font-size: 1.25rem;
+}
+/* While the field waits: its icon grey, with no fill of a disabled button. */
 .nt-ask-buttons button.nt-icon-only.nt-ask-voice:disabled {
   background: transparent;
   color: #aeaeb2;
-  font-size: 1.25rem;
+}
+.nt-ask-listening {
+  display: inline-flex;
+  flex: 1;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--nt-accent);
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+.nt-ask-dot {
+  inline-size: 0.5rem;
+  block-size: 0.5rem;
+  border-radius: 50%;
+  background: #ff3b30;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .nt-ask-dot {
+    animation: nt-listening 1.2s ease-in-out infinite;
+  }
+}
+@keyframes nt-listening {
+  50% {
+    opacity: 0.3;
+  }
+}
+.nt-ask-buttons button.nt-ask-stop {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-block-size: var(--nt-target);
+  padding: 0 1rem 0 0.75rem;
+  border-color: transparent;
+  border-radius: 1.375rem;
+  background: var(--nt-accent);
+  color: var(--nt-on-fill);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+form.nt-ask > p.nt-ask-said {
+  margin: 0;
+  padding: 0 0.625rem 0.25rem 0;
+  color: var(--nt-text-muted);
+  font-size: 0.75rem;
 }
 .nt-ask-buttons button.nt-icon-only.nt-ask-send {
   border-radius: 50%;
   background: var(--nt-accent);
   color: var(--nt-on-fill);
+  font-size: 1.25rem;
+}
+/* Stop, while an answer is awaited: the page's ink, its icon the card's. */
+.nt-ask-buttons button.nt-icon-only.nt-ask-stop-asking {
+  border-radius: 50%;
+  background: var(--nt-text);
+  color: var(--nt-card);
   font-size: 1.25rem;
 }
 .nt-ask-buttons button.nt-icon-only.nt-ask-send:disabled {
@@ -6911,4 +7069,173 @@ p.nt-finding {
   background: var(--nt-state-mastered);
   color: var(--nt-on-fill);
   font-size: 0.875rem;
+}
+
+/*
+ * Grown-up mode of the tutor on a task from paper, the mockup's `solve-grown-*`: its key in the
+ * panel's head, filled in "Not yet"'s orange with a white icon while the mode is on; the band
+ * under the head, radius 16, its key, its name at 13.5 bold, its line at 12 and Turn off, white,
+ * 44 high; the head's line in the accent while the tutor writes on the sheet; the tutor's words of
+ * the mode marked on the orange tint.
+ */
+.nt-tutor-head button.nt-icon-only.nt-grown-key[aria-pressed="true"] {
+  background: var(--nt-not-yet);
+  color: var(--nt-on-fill);
+}
+.nt-tutor-status[data-acting="true"] {
+  color: var(--nt-accent-text);
+}
+.nt-grown-band {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 0.625rem;
+  margin: 0.625rem 0.75rem 0;
+  padding: 0.375rem 0.375rem 0.375rem 0.75rem;
+  border-radius: 1rem;
+  background: var(--nt-grown);
+  color: var(--nt-grown-text);
+  font-size: 1.25rem;
+}
+.nt-grown-band-sign {
+  display: flex;
+  flex: none;
+}
+.nt-grown-band-words {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-inline-size: 0;
+  font-size: 0.75rem;
+  line-height: 1.25;
+}
+.nt-grown-band-title {
+  font-size: 0.84375rem;
+  font-weight: var(--nt-weight-heading);
+}
+button.nt-grown-off {
+  flex: none;
+  padding: 0 0.875rem;
+  border-color: transparent;
+  background: var(--nt-card);
+  box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.16);
+  color: var(--nt-grown-text);
+  font-size: 0.84375rem;
+}
+.nt-bubble-words[data-grown="true"] {
+  background: var(--nt-grown);
+}
+.nt-bubble-words[data-grown="true"] > .nt-bubble-label {
+  color: var(--nt-grown-text);
+}
+.nt-verdict-line[data-kind="grown"] > .nt-card-sign {
+  background: var(--nt-grown);
+  color: var(--nt-grown-text);
+}
+
+/*
+ * The grown-ups' PIN of grown-up mode, the mockup's dialog: 340 wide, radius 28, on its warm
+ * white over the screen dimmed and blurred; a padlock in a white circle of 44, the name at 18 bold,
+ * the line at 13 — in "Not yet"'s orange after a wrong PIN —, four dots of 14, a keypad of 3 × 4
+ * keys of 72 × 54, radius 14, white with a ring but Cancel and the delete key, and the note at 12.
+ */
+dialog.nt-pin {
+  box-sizing: border-box;
+  inline-size: min(21.25rem, calc(100vw - 2rem));
+  max-inline-size: none;
+  padding: 1.375rem 1.5rem 1.125rem;
+  border: 0;
+  border-radius: 1.75rem;
+  background: var(--nt-pin);
+  box-shadow:
+    0 0 0 0.5px rgba(0, 0, 0, 0.08),
+    0 20px 60px rgba(0, 0, 0, 0.22);
+  color: var(--nt-text);
+}
+dialog.nt-pin[open] {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+dialog.nt-pin::backdrop {
+  background: rgba(0, 0, 0, 0.28);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+.nt-pin-lock {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 2.75rem;
+  block-size: 2.75rem;
+  border-radius: 50%;
+  background: var(--nt-card);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12);
+  font-size: 1.25rem;
+}
+dialog.nt-pin > h2.nt-pin-title {
+  margin: 0.875rem 0 0;
+  font-size: 1.125rem;
+  font-weight: var(--nt-weight-heading);
+  text-align: center;
+}
+dialog.nt-pin > p.nt-pin-line {
+  margin: 0.25rem 0 0;
+  text-align: center;
+  color: var(--nt-text-muted);
+  font-size: 0.8125rem;
+  line-height: 1.35;
+}
+dialog.nt-pin > p.nt-pin-line[data-wrong="true"] {
+  color: var(--nt-not-yet);
+}
+.nt-pin-dots {
+  display: flex;
+  gap: 0.875rem;
+  margin: 1rem 0 1.125rem;
+}
+.nt-pin-dots > span {
+  inline-size: 0.875rem;
+  block-size: 0.875rem;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1.3px var(--nt-edge);
+}
+.nt-pin-dots > span[data-on="true"] {
+  background: var(--nt-text);
+}
+.nt-pin-keys {
+  display: grid;
+  grid-template-columns: repeat(3, 4.5rem);
+  gap: 0.75rem 0.875rem;
+}
+dialog.nt-pin button.nt-pin-key {
+  inline-size: auto;
+  block-size: 3.375rem;
+  padding: 0;
+  border-color: transparent;
+  border-radius: 0.875rem;
+  background: transparent;
+  color: var(--nt-text);
+}
+dialog.nt-pin button.nt-pin-digit {
+  background: var(--nt-card);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.1);
+  font-size: 1.375rem;
+  font-weight: 400;
+}
+dialog.nt-pin button.nt-pin-cancel {
+  font-size: 0.9375rem;
+  font-weight: var(--nt-weight-medium);
+}
+dialog.nt-pin button.nt-icon-only.nt-pin-delete {
+  inline-size: auto;
+  border-radius: 0.875rem;
+  color: var(--nt-text);
+  font-size: 1.375rem;
+}
+dialog.nt-pin > p.nt-pin-note {
+  margin: 0.625rem 0 0;
+  text-align: center;
+  color: var(--nt-text-muted);
+  font-size: 0.75rem;
 }

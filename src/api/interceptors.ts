@@ -56,21 +56,31 @@ export const PAUSES = [500, 1000, 2000, 4000] as const;
 export const STILL_GOING_MS = 30_000;
 
 /**
- * api's limit of FindTasks, SubmitWork and GetOpeningWords, whose calls of a task from paper ask up to three models
- * in turn: a call of either names it as its deadline, since a shorter Connect-Timeout-Ms
+ * api's limit of FindTasks, SubmitWork, GetOpeningWords and AskTutor, whose calls of a task from paper
+ * ask up to three models in turn — the last two run the Check first while the attempt keeps none —:
+ * a call of any of them names it as its deadline, since a shorter Connect-Timeout-Ms
  * would cut api short, and a repeat waits for a first one still going as long.
  */
 export const PAPER_TIMEOUT_MS = 90_000;
 
-const PAPER_METHODS = new Set([
-  "novatrail.api.v1.PaperService/FindTasks",
-  "novatrail.api.v1.AttemptService/SubmitWork",
-  "novatrail.api.v1.AttemptService/GetOpeningWords",
+/**
+ * The deadline of AskGrownUp in grown-up mode, ms: the drawing may give a whole solution as
+ * strokes, a long answer of a model, and a repeat waits for a first one still going as long.
+ */
+export const GROWN_UP_TIMEOUT_MS = 300_000;
+
+/** The methods api lets go longer than STILL_GOING_MS, and how long. */
+const LONG_METHODS: ReadonlyMap<string, number> = new Map([
+  ["novatrail.api.v1.PaperService/FindTasks", PAPER_TIMEOUT_MS],
+  ["novatrail.api.v1.AttemptService/SubmitWork", PAPER_TIMEOUT_MS],
+  ["novatrail.api.v1.AttemptService/GetOpeningWords", PAPER_TIMEOUT_MS],
+  ["novatrail.api.v1.AttemptService/AskTutor", PAPER_TIMEOUT_MS],
+  ["novatrail.api.v1.AttemptService/AskGrownUp", GROWN_UP_TIMEOUT_MS],
 ]);
 
 /** How long a repeat waits for a first request of the method still going, ms. */
 export function stillGoingMs(service: string, method: string): number {
-  return PAPER_METHODS.has(`${service}/${method}`) ? PAPER_TIMEOUT_MS : STILL_GOING_MS;
+  return LONG_METHODS.get(`${service}/${method}`) ?? STILL_GOING_MS;
 }
 
 /** The pause `Retry-After` asks for, ms, from the seconds api sends; none when it names none. */
@@ -148,6 +158,79 @@ export function repeat(sleep: (ms: number) => Promise<void>): Interceptor {
         waited += pause;
         await sleep(pause);
       }
+    }
+  };
+}
+
+/** The bytes a message carries in its fields of bytes, a few levels down: a photo's, a crop's. */
+export function bytesOf(message: unknown, depth = 3): number {
+  if (message instanceof Uint8Array) return message.byteLength;
+  if (depth === 0 || message === null || typeof message !== "object") return 0;
+  let n = 0;
+  for (const value of Array.isArray(message) ? message : Object.values(message))
+    n += bytesOf(value, depth - 1);
+  return n;
+}
+
+function size(bytes: number): string {
+  return bytes < 1024 * 1024
+    ? `${(bytes / 1024).toFixed(0)} KiB`
+    : `${(bytes / 1024 / 1024).toFixed(1)} MiB`;
+}
+
+/** Connect's code as the contract writes it: `invalid_argument`. */
+function codeName(code: Code): string {
+  return (Code[code] ?? String(code)).replace(/([a-z])([A-Z])/g, "$1_$2").toLowerCase();
+}
+
+/**
+ * Each call to api as a line of the app's log, outermost, so once a call however often it was
+ * repeated: the method, how it ended and how long it took, and what its fields of bytes held. The
+ * message itself is never written: it may hold the learner's work.
+ */
+export function journaled(
+  note: (
+    level: "error" | "warn" | "info" | "debug",
+    source: "api",
+    text: string,
+    detail: string,
+  ) => void,
+  now: () => number = () => performance.now(),
+): Interceptor {
+  return (next) => async (request) => {
+    const method = `${request.service.typeName.split(".").pop()}/${request.method.name}`;
+    const began = now();
+    const sent = request.stream ? 0 : bytesOf(request.message);
+    const fields = (took: number) =>
+      [`took: ${(took / 1000).toFixed(1)} s`, sent > 0 ? `sent: ${size(sent)}` : ""].filter(
+        Boolean,
+      );
+    try {
+      const response = await next(request);
+      const took = now() - began;
+      note(
+        "info",
+        "api",
+        `${method} · ok · ${(took / 1000).toFixed(1)} s`,
+        ["code: ok", ...fields(took)].join("\n"),
+      );
+      return response;
+    } catch (reason) {
+      const took = now() - began;
+      const error = ConnectError.from(reason);
+      const code = codeName(error.code);
+      const cause = refusalOf(error)?.cause;
+      // A call the app called off is no failure of api's.
+      const level = error.code === Code.Canceled ? "debug" : "error";
+      note(
+        level,
+        "api",
+        `${method} · ${code}${error.rawMessage ? ` · ${error.rawMessage}` : ""}`,
+        [`code: ${code}`, cause === undefined ? "" : `cause: ${Cause[cause]}`, ...fields(took)]
+          .filter(Boolean)
+          .join("\n"),
+      );
+      throw error;
     }
   };
 }

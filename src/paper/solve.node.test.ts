@@ -21,17 +21,23 @@ import {
   changed,
   checkOver,
   checkReply,
+  coverOf,
   notBegun,
   onList,
   paperCard,
   paperVerdictOf,
+  pixelsPerMm,
   shownTask,
+  type Turn,
+  taskState,
+  turnsOf,
   tutorActs,
   verdictMarks,
   viewOnly,
   wavyOf,
   withBegun,
   withChange,
+  withTurn,
 } from "./solve.ts";
 
 const frame = (ymin: number): Frame => ({ ymin, xmin: 0, ymax: ymin + 50, xmax: 400 });
@@ -104,6 +110,20 @@ describe("the list of the tasks begun", () => {
     expect(shownTask(all.slice(0, 1), "a2")?.attemptId).toBe("a1");
     expect(shownTask(all, undefined)?.attemptId).toBe("a1");
     expect(shownTask([], "a1")).toBeUndefined();
+  });
+
+  it("gives each task its state by its last Check", () => {
+    const parts = { read: undefined, parts: [] };
+    expect(taskState({})).toBe("to-do");
+    expect(taskState({ solved: true })).toBe("solved");
+    expect(taskState({ verdict: { kind: "correct", ...parts } })).toBe("solved");
+    expect(taskState({ verdict: { kind: "not-yet", ...parts } })).toBe("not-yet");
+    expect(taskState({ verdict: { kind: "so-far", ...parts } })).toBe("so-far");
+    expect(taskState({ verdict: { kind: "nokey" } })).toBe("no-key");
+    expect(taskState({ verdict: { kind: "unchecked", outcome: undefined } })).toBe("to-do");
+    expect(taskState({ verdict: { kind: "unreadable", reason: "" } })).toBe("to-do");
+    expect(taskState({ over: true })).toBe("closed");
+    expect(taskState({ over: true, solved: true })).toBe("solved");
   });
 
   it("goes to the task before and after, and not past either end", () => {
@@ -439,5 +459,94 @@ describe("the buttons of the tutor's panel", () => {
 
   it("gives neither on a task only to be looked at, whose attempt is over", () => {
     expect(tutorActs({ over: true })).toEqual({ hint: false, next: false });
+  });
+});
+
+describe("the conversation on a task", () => {
+  const tutor = (text: string, more: Partial<Turn> = {}): Turn => ({
+    learner: false,
+    text,
+    line: true,
+    ...more,
+  });
+  const mode = (on: boolean): Turn => tutor("", { mode: on ? "on" : "off" });
+
+  it("keeps the tutor's words said again once, and every line of grown-up mode", () => {
+    const said = withTurn([tutor("Look at the tens.")], tutor("Look at the tens."));
+    expect(said).toHaveLength(1);
+    const lines = [mode(true), mode(false), mode(true)].reduce<readonly Turn[]>(withTurn, said);
+    expect(lines.map((turn) => turn.mode)).toEqual([undefined, "on", "off", "on"]);
+    // Words after a line of the mode are a turn of their own, as they would be after a question.
+    expect(withTurn(lines, tutor("Done."))).toHaveLength(5);
+  });
+
+  it("carries the grown-up's requests and the tutor's words, but no line of the mode", () => {
+    const turns: readonly Turn[] = [
+      tutor("What is ten and ten?"),
+      mode(true),
+      { learner: true, text: "Finish the solution", line: true, grown: true },
+      tutor("Done: the solution goes on under the lines.", { grown: true }),
+      mode(false),
+    ];
+    expect(turnsOf(turns)).toEqual([
+      { learner: false, text: "What is ten and ten?" },
+      { learner: true, text: "Finish the solution" },
+      { learner: false, text: "Done: the solution goes on under the lines." },
+    ]);
+    // The last eight turns, the lines of the mode left out before they are counted.
+    const many = Array.from({ length: 10 }, (_, i) => tutor(String(i)));
+    expect(turnsOf([...many, mode(true), mode(false)]).map((turn) => turn.text)).toEqual([
+      "2",
+      "3",
+      "4",
+      "5",
+      "6",
+      "7",
+      "8",
+      "9",
+    ]);
+  });
+});
+
+describe("what the screen's controls cover of the sheet, for grown-up mode", () => {
+  const sheet = { left: 0, top: 0, right: 1000, bottom: 800 };
+  it("takes a tall control as a side, a short one as a band, the deepest of each", () => {
+    const panel = { left: 640, top: 60, right: 990, bottom: 790 };
+    const back = { left: 16, top: 16, right: 60, bottom: 60 };
+    const nav = { left: 840, top: 12, right: 990, bottom: 70 };
+    const row = { left: 300, top: 720, right: 700, bottom: 780 };
+    expect(coverOf(sheet, [panel, back, nav, row])).toEqual({
+      top: 70,
+      right: 360,
+      bottom: 80,
+      left: 0,
+    });
+    expect(coverOf(sheet, [{ left: 0, top: 100, right: 120, bottom: 700 }])).toEqual({
+      top: 0,
+      right: 0,
+      bottom: 0,
+      left: 120,
+    });
+  });
+
+  it("counts nothing of a control beside the sheet, only the part of one that meets it", () => {
+    const beside = { left: 1000, top: 0, right: 1400, bottom: 800 };
+    const over = { left: 900, top: -50, right: 1300, bottom: 900 };
+    expect(coverOf(sheet, [beside])).toEqual({ top: 0, right: 0, bottom: 0, left: 0 });
+    expect(coverOf(sheet, [over])).toEqual({ top: 0, right: 100, bottom: 0, left: 0 });
+  });
+});
+
+describe("the millimetres of a crop for grown-up mode", () => {
+  it("counts a crop's pixels per millimetre of the page, its 1000 units the 210 mm of A4", () => {
+    // 840 px over 400 units: 2.1 px a unit, 4.76… units a millimetre, 10 px.
+    expect(pixelsPerMm({ width: 840, sheetBox: [0, 100, 300, 500] })).toBeCloseTo(10, 10);
+    expect(pixelsPerMm({ width: 1568, sheetBox: [50, 0, 700, 1000] })).toBeCloseTo(7.4667, 4);
+  });
+
+  it("gives 0 for a crop that spans no width, or one past what the contract takes", () => {
+    expect(pixelsPerMm({ width: 840, sheetBox: [0, 100, 300, 100] })).toBe(0);
+    expect(pixelsPerMm({ width: 0, sheetBox: [0, 0, 300, 400] })).toBe(0);
+    expect(pixelsPerMm({ width: 1568, sheetBox: [0, 0, 10, 2] })).toBe(0);
   });
 });

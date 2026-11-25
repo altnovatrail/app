@@ -1451,9 +1451,28 @@ const STEP_PILL: Region = {
   differs: { what: ["font-size"], by: NO_TEXT },
 };
 
-/** The panel's regions on a device: the grabber on a phone. */
+/**
+ * Why the panel's foot, and what scrolls above it, stand lower on a task of a module: the mockup's
+ * question field is under the foot on every screen, where app has it on a task from paper alone.
+ */
+const NO_FIELD = "the mockup's question field under the foot, app's on a task from paper alone";
+
+/** The regions the question field's room moves: the foot's buttons and the report under the words. */
+const OVER_FIELD = new Set([HINT_ACT.name, EXPLAIN_ACT.name, REPORT_OPEN.name]);
+
+/**
+ * The panel's regions on a task of a module: the grabber on a phone, and Hint at the foot on a phone
+ * alone, since from 600 px the row's Hint stands beside the open panel on both sides.
+ */
 function panelOf(device: Device, ...regions: readonly Region[]): readonly Region[] {
-  return [PANEL, ...regions, ...(device === "phone" ? [GRABBER] : [])];
+  const phone = device === "phone";
+  return [
+    PANEL,
+    ...regions
+      .filter((region) => phone || region !== HINT_ACT)
+      .map((region) => (OVER_FIELD.has(region.name) ? differing(region, ["y"], NO_FIELD) : region)),
+    ...(phone ? [GRABBER] : []),
+  ];
 }
 
 /** The verdict's card, 460 wide above the row. */

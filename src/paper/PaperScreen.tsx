@@ -12,7 +12,8 @@
 // photo turned upright turn the page's photo the same way before they show, the finding going on
 // meanwhile, and the page goes on with the photo turned: its crops, a request and the history take
 // it. Start cuts each task's crop, and the crop of the instruction above it where the finding gave
-// one, from the same photo.
+// one, from the same photo. Stop calls a request's finding off while it runs: the frames and the
+// page stay as they were, and the request goes back to the field, said so.
 import { Cause } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import { useCallback, useRef, useState } from "react";
 import { useApi } from "../api/ApiContext.tsx";
@@ -31,7 +32,7 @@ import { usePanelFocus } from "../task/TutorPanel.tsx";
 import { Camera } from "./Camera.tsx";
 import { cropsOf, type Photo, turnedPhoto } from "./capture.ts";
 import { PageTutor } from "./PageTutor.tsx";
-import { type BegunTask, type PaperPage, usePaper } from "./PaperContext.tsx";
+import { type BegunTask, type Finding, type PaperPage, usePaper } from "./PaperContext.tsx";
 import { type PageSay, Pick } from "./Pick.tsx";
 import { asked, foundTasks, framesOf, type PageTask, picked, unturned } from "./page.ts";
 import { Solve } from "./Solve.tsx";
@@ -78,11 +79,31 @@ export function PaperScreen({
   // The tutor's panel on the page is open.
   const [talking, setTalking] = useState(false);
   const { heading, call } = usePanelFocus(talking);
+  // The hand that calls the finding of a request off, by Stop, while it runs.
+  const stopper = useRef<AbortController | undefined>(undefined);
+  const [stoppable, setStoppable] = useState(false);
+  // A request Stop took back, to the field again.
+  const [again, setAgain] = useState<
+    { readonly text: string; readonly at: number; readonly stopped: true } | undefined
+  >(undefined);
 
-  /** FindTasks on the photo; with the learner's request, with the frames of these tasks too. */
+  /**
+   * FindTasks on the photo; with the learner's request, with the frames of these tasks too, and
+   * what the finding came to before it, which Stop gives back.
+   */
   const find = useCallback(
-    (photo: Photo, request?: string, tasks: readonly PageTask[] = []) => {
+    (photo: Photo, request?: string, tasks: readonly PageTask[] = [], before?: Finding) => {
       if (change === undefined || turn === undefined) return;
+      const controller = request === undefined ? undefined : new AbortController();
+      if (controller !== undefined) {
+        stopper.current = controller;
+        setStoppable(true);
+      }
+      const past = () => {
+        if (controller === undefined || stopper.current !== controller) return;
+        stopper.current = undefined;
+        setStoppable(false);
+      };
       const ai = holder.aiFields(profileId);
       const failed = (failure: Failure) =>
         change(photo, (page) => ({ ...page, finding: { status: "failed", failure, request } }));
@@ -106,12 +127,16 @@ export function PaperScreen({
                   }),
               ...ai,
             },
-            { timeoutMs: PAPER_TIMEOUT_MS },
+            {
+              timeoutMs: PAPER_TIMEOUT_MS,
+              ...(controller === undefined ? {} : { signal: controller.signal }),
+            },
           ),
         undefined,
         request,
       ).then(
         (answer) => {
+          past();
           const read = outcomeOf(answer.outcome);
           holder.noteOutcome(profileId, read, ai);
           // A repeat holds no frames: api keeps none, and a new try asks again.
@@ -164,7 +189,24 @@ export function PaperScreen({
             asIs,
           );
         },
-        (reason: unknown) => failed(parseFailure(reason)),
+        (reason: unknown) => {
+          past();
+          if (controller?.signal.aborted !== true || request === undefined) {
+            failed(parseFailure(reason));
+            return;
+          }
+          // Stopped: the page as it was, the request gone from the conversation and in the field.
+          change(photo, (page) => {
+            const last = page.talk.at(-1);
+            const asked = last?.kind === "request" && last.text === request;
+            return {
+              ...page,
+              finding: before ?? { status: "found" },
+              talk: asked ? page.talk.slice(0, -1) : page.talk,
+            };
+          });
+          setAgain({ text: request, at: Date.now(), stopped: true });
+        },
       );
     },
     [api, change, turn, holder, profileId],
@@ -296,12 +338,12 @@ export function PaperScreen({
     ...(closed ? [{ kind: "warn" as const, title: words.text("paper.no-ai") }] : []),
   ];
 
-  const ask = (request: string) => {
+  const ask = (request: string, voice: boolean) => {
     paper.change(page.photo, (now) => ({
       ...now,
-      talk: [...now.talk, { kind: "request", text: request }],
+      talk: [...now.talk, { kind: "request", text: request, ...(voice ? { voice } : {}) }],
     }));
-    find(page.photo, request, page.tasks);
+    find(page.photo, request, page.tasks, finding);
   };
   const undo = () =>
     paper.change(page.photo, (now) =>
@@ -342,6 +384,7 @@ export function PaperScreen({
         calls={
           talking ? undefined : (
             <>
+              <DebugSlot />
               <IconButton
                 ref={call}
                 value="tutor"
@@ -349,7 +392,6 @@ export function PaperScreen({
                 aria-expanded={false}
                 onClick={() => setTalking(true)}
               />
-              <DebugSlot />
             </>
           )
         }
@@ -359,7 +401,10 @@ export function PaperScreen({
           talk={page.talk}
           busy={finding.status === "finding"}
           closed={closed}
+          adult={adult}
           onAsk={ask}
+          again={again}
+          {...(stoppable ? { onStop: () => stopper.current?.abort() } : {})}
           onUndo={page.before === undefined ? undefined : undo}
           onClose={() => setTalking(false)}
           headingRef={heading}

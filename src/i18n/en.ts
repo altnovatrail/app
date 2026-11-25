@@ -643,7 +643,7 @@ export const en = {
   /** The verdict's card while the work is read and checked. */
   "task.reading": "Reading your work…",
   /** Under "Reading your work…": what goes, and what does not. */
-  "task.reading-line": "A picture of the work goes to be read, with no name.",
+  "task.reading-line": "A picture of the work goes to be read.",
   /** Puts the card of "Not yet" away, back to the work. */
   "task.try-again": "Try again",
   /** Told to a screen reader when the tutor's words have come; the words themselves are not. */
@@ -1100,6 +1100,17 @@ export const en = {
   "voice.not-kept": "The choice wasn't kept on this device. Try again",
   /** The name of the part of the tutor's panel that holds its words and the verdicts, and scrolls. */
   "tutor.conversation": "Conversation",
+  /**
+   * The field of the tutor's panel: the microphone listening, its Stop, the line under the field
+   * once the browser's recognition put the voice in it, the line when it heard nothing, and the
+   * mark under a line the learner sent by voice.
+   */
+  "tutor.listening": "Listening…",
+  "tutor.stop": "Stop",
+  "tutor.dictated": "From your voice: read it, correct it, then send.",
+  "tutor.unheard": "Nothing was heard. Try again, or type.",
+  "tutor.stopped": "Stopped: your question is back in the field — change it and send it again.",
+  "tutor.by-voice": "By voice",
   /** The heading of the page on the tutor. */
   "tutor.title": "How to use the AI tutor safely",
   "tutor.what": "The tutor is an AI",
@@ -1230,8 +1241,8 @@ export const en = {
   "paper.ask-label": "Your request about the page",
   "paper.ask-placeholder": "Say which tasks to take…",
   "paper.ask-send": "Send",
-  /** The microphone, off: voice comes with a task of its own. */
-  "paper.ask-voice": "Voice comes later",
+  /** The microphone of the tutor's field, which puts what the learner says into it as text. */
+  "paper.ask-voice": "Dictate",
   "paper.asked-found": plural({
     one: "Found {count} task",
     other: "Found {count} tasks",
@@ -1251,6 +1262,13 @@ export const en = {
   "paper.counter": "{n} / {total}",
   /** The list's heading, and the button's name, which holds its caption as said (WCAG 2.5.3). */
   "paper.tasks": "Tasks",
+  "paper.tasks-done": "{n} of {total} done",
+  "paper.task-solved": "Solved",
+  "paper.task-not-yet": "Not yet",
+  "paper.task-so-far": "So far correct",
+  "paper.task-no-key": "Cannot be checked",
+  "paper.task-closed": "Closed",
+  "paper.task-to-do": "Not checked yet",
   "paper.tasks-open": "Tasks, {n} / {total}",
   /** At the list's head: back to the page, to pick more of its tasks. */
   "paper.add": "Add",
@@ -1281,8 +1299,35 @@ export const en = {
   "paper.no-key": "Couldn't check this one",
   "paper.no-key-line":
     "No solution could be read here. Write it out, then Check again. Hints still work.",
-  /** The tutor's first line on the screen of solving, where hints come. */
-  "paper.solve-hello": "Hints for this task come here, a question at a time.",
+  /** The tutor's first line on the screen of solving, and its field of a question about the task. */
+  "paper.solve-hello":
+    "Ask about this task by text or voice, or take a hint: the tutor answers with a question, never with the answer. A program checks every answer.",
+  "paper.question-label": "Your question about the task",
+  "paper.question-placeholder": "Ask about this task…",
+  /**
+   * Grown-up mode of the tutor on a task from paper, behind the grown-ups' PIN: the key in the
+   * panel's head, its name; the PIN's dialog — its line, the same in red after a wrong PIN, the
+   * dots of the digits entered for a screen reader, Cancel and the delete key, and the line under
+   * it while the PIN is the same for everyone.
+   */
+  "grown.mode": "Grown-up mode",
+  "grown.pin-line": "Enter your PIN to lift the tutor's limits on this task.",
+  "grown.pin-wrong": "Wrong PIN. Try again.",
+  "grown.pin-dots": "{n} of 4 digits",
+  "grown.pin-cancel": "Cancel",
+  "grown.pin-delete": "Delete",
+  "grown.pin-note": "The PIN is 5555 for now.",
+  /** The band under the panel's head while the mode is on, and its button. */
+  "grown.band-line": "No limits, up to the full solution. Turn it off before the child goes on.",
+  "grown.off": "Turn off",
+  /** The lines of the conversation as the mode is turned on and off. */
+  "grown.on-title": "Grown-up mode on",
+  "grown.on-line": "The tutor does what the grown-up asks, up to the full solution.",
+  "grown.off-title": "Grown-up mode off",
+  "grown.off-line": "The tutor's limits are back: hints and questions, never the answer.",
+  /** The field while the mode is on, and the head's line while the tutor acts on the sheet. */
+  "grown.placeholder": "Ask for anything, up to the full solution…",
+  "grown.writing": "Writing on the sheet…",
   /** The card of a task from paper with no answer yet and no mistake in its solution so far. */
   "paper.so-far": "So far correct",
   "paper.so-far-line": "No mistake yet. Go on to the answer, then Check.",

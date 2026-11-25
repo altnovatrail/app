@@ -16,6 +16,7 @@ import {
 } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
 import { Cause } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import type {
+  DrawingCover,
   HistoryChange,
   HistoryEvent,
   Marks,
@@ -212,6 +213,23 @@ function partOf(slot: AnswerSlotVerdict | undefined): PaperPart {
   return { verdict, box: [box.ymin, box.xmin, box.ymax, box.xmax] };
 }
 
+/** Where a task stands in the list of the tasks begun: its sign and the line under its name. */
+export type TaskState = "solved" | "not-yet" | "so-far" | "no-key" | "closed" | "to-do";
+
+/**
+ * A task's place in the list by what its last Check came to: solved, here or in a tab before; not
+ * yet; so far correct; one the Check has no key to; closed unsolved, as api or a page of the history
+ * says; else still to do, a Check that read nothing too.
+ */
+export function taskState(task: Pick<BegunTask, "verdict" | "over" | "solved">): TaskState {
+  const kind = task.verdict?.kind;
+  if (task.solved === true || kind === "correct") return "solved";
+  if (kind === "not-yet") return "not-yet";
+  if (kind === "nokey") return "no-key";
+  if (task.over === true) return "closed";
+  return kind === "so-far" ? "so-far" : "to-do";
+}
+
 /**
  * Whether a task's Check is over: it is solved, and its attempt closed, or its attempt is over, as a
  * page of the history may say. A Check that read nothing leaves it open: the next one checks again.
@@ -394,4 +412,130 @@ function partsCard(
         ? undefined
         : words.text("paper.parts-unread", { tasks: unread.join(", ") }),
   };
+}
+
+/** The longest question about a task, in code points (the contract's `AskTutorRequest.question`). */
+export const MAX_QUESTION = 500;
+/** The turns of the conversation a question carries, and the longest of each, in code points. */
+export const MAX_TURNS = 8;
+export const MAX_TURN = 1000;
+/**
+ * The most strokes a request of grown-up mode carries (the contract's `AskGrownUpRequest.strokes`):
+ * of a sheet with more, the newest, which a request most likely names.
+ */
+export const MAX_SHEET_STROKES = 3000;
+
+/** The width of a task's page in units of the sheet, and in millimetres: A4's. */
+const PAGE_UNITS = 1000;
+const PAGE_MM = 210;
+
+/**
+ * How many pixels of a crop of the sheet make a millimetre of the task's page, by the crop's width
+ * and the units of the sheet it spans, for a request in millimetres of grown-up mode, as a grid
+ * every 2 mm; 0 when the crop gives none, or one the contract does not take, above 100.
+ */
+export function pixelsPerMm(crop: {
+  readonly width: number;
+  readonly sheetBox: readonly [number, number, number, number];
+}): number {
+  const units = crop.sheetBox[3] - crop.sheetBox[1];
+  const perMm = (crop.width / units) * (PAGE_UNITS / PAGE_MM);
+  return Number.isFinite(perMm) && perMm > 0 && perMm <= 100 ? perMm : 0;
+}
+
+/** A box on the screen, in CSS px, as `getBoundingClientRect()` gives it. */
+export interface ScreenBox {
+  readonly left: number;
+  readonly top: number;
+  readonly right: number;
+  readonly bottom: number;
+}
+
+/**
+ * How far in from each side of the sheet's element the screen's own controls cover it, for the
+ * drawing's crop of grown-up mode, so that the tutor writes nowhere they hide: a control as tall as
+ * half the sheet or more, as the tutor's panel, covers the side it is nearer, left or right, up to
+ * its far edge; any other, as the bar of the top or the row of the foot, the band it is nearer,
+ * top or bottom. A control that does not meet the sheet covers nothing.
+ */
+export function coverOf(sheet: ScreenBox, controls: readonly ScreenBox[]): DrawingCover {
+  const cover = { top: 0, right: 0, bottom: 0, left: 0 };
+  const height = sheet.bottom - sheet.top;
+  for (const box of controls) {
+    const left = Math.max(box.left, sheet.left);
+    const right = Math.min(box.right, sheet.right);
+    const top = Math.max(box.top, sheet.top);
+    const bottom = Math.min(box.bottom, sheet.bottom);
+    if (!(left < right && top < bottom)) continue;
+    if (bottom - top >= height / 2) {
+      if (left + right >= sheet.left + sheet.right) {
+        cover.right = Math.max(cover.right, sheet.right - left);
+      } else cover.left = Math.max(cover.left, right - sheet.left);
+    } else if (top + bottom < sheet.top + sheet.bottom) {
+      cover.top = Math.max(cover.top, bottom - sheet.top);
+    } else cover.bottom = Math.max(cover.bottom, sheet.bottom - top);
+  }
+  return cover;
+}
+
+/**
+ * A question as it goes: its line breaks kept, Windows' as one, its other control characters
+ * spaces, trimmed and cut to MAX_QUESTION code points; none when nothing is left of it.
+ */
+export function questionOf(text: string): string | undefined {
+  // The contract refuses a control character but a line break: C0, DEL and C1.
+  const plain = [...text.replace(/\r\n?/g, "\n")].map((c) => {
+    const n = c.codePointAt(0) ?? 0;
+    return c !== "\n" && (n < 0x20 || (n >= 0x7f && n <= 0x9f)) ? " " : c;
+  });
+  const kept = plain.join("").trim();
+  const cut = [...kept].slice(0, MAX_QUESTION).join("").trim();
+  return cut === "" ? undefined : cut;
+}
+
+/**
+ * A turn of the conversation on a task, as the tab keeps it: the learner's question, or the tutor's
+ * words — a hint, the words of a Check, an answer. `line`: the conversation draws it as a line of
+ * its own, as it does a question and its answer; the words of a hint and of a Check have their own
+ * place in the panel. In grown-up mode the grown-up's request and the tutor's words on what it did
+ * are turns too, marked `grown`; the mode turned on or off is a line of the conversation, `mode`,
+ * and no turn a request carries.
+ */
+export interface Turn {
+  readonly learner: boolean;
+  readonly text: string;
+  readonly line: boolean;
+  /** The question went as the browser read it from the learner's voice. */
+  readonly voice?: boolean;
+  /** Said in grown-up mode: the grown-up's request, or the tutor's words on its act. */
+  readonly grown?: boolean;
+  /** The line of grown-up mode turned on or off, with no text. */
+  readonly mode?: "on" | "off";
+}
+
+/** The turns a question carries: the last MAX_TURNS before it, each cut to MAX_TURN code points. */
+export function turnsOf(
+  turns: readonly Turn[],
+): readonly { readonly learner: boolean; readonly text: string }[] {
+  return turns
+    .filter((turn) => turn.mode === undefined)
+    .slice(-MAX_TURNS)
+    .map(({ learner, text }) => ({
+      learner,
+      text: [...text].slice(0, MAX_TURN).join(""),
+    }));
+}
+
+/** The conversation with a turn after it; the tutor's words said again are not a turn again. */
+export function withTurn(turns: readonly Turn[], turn: Turn): readonly Turn[] {
+  const last = turns.at(-1);
+  const again =
+    turn.mode === undefined &&
+    !turn.learner &&
+    last !== undefined &&
+    last.mode === undefined &&
+    !last.learner &&
+    last.text === turn.text;
+  if (again) return turns;
+  return [...turns, turn];
 }

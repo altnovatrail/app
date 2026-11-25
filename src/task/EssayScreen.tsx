@@ -152,7 +152,7 @@ export function EssayScreen(props: EssayScreenProps) {
       onOpen={() => setChosen(true)}
       onClose={() => setChosen(false)}
       tutor={feedback}
-      acts={<HintButton parts={{ pending, onHint: hint }} className="nt-act" />}
+      acts={<HintButton parts={{ pending, onHint: hint }} className="nt-act nt-act-hint" />}
       result={
         <>
           <p className="nt-result">{words.text("task.essay-done")}</p>

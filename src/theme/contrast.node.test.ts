@@ -36,6 +36,12 @@ const GROUPS: readonly [number, string, string][] = [
   [TEXT, "on-fill", "paper-from paper-mid paper-to"],
   [TEXT, "correct not-yet error", "card page"],
   [TEXT, "hint-text", "hint/card"],
+  // Grown-up mode: the band on the tutor's panel, the sign of its line and the mark of its words on
+  // the orange tint, and Turn off on white. The grown-ups' PIN: its words, a wrong PIN's line, and
+  // the ring of a dot, on its warm white.
+  [TEXT, "grown-text", "card grown/card grown/glass-panel/page"],
+  [TEXT, "text text-muted not-yet", "pin"],
+  [EDGE, "edge", "pin"],
   // The accent on the skill map's paper, as text too; the focus ring, a primary button's fill and
   // what is selected, against what they stand on.
   [TEXT, "accent", "card"],
