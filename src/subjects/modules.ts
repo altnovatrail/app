@@ -30,12 +30,16 @@ export interface ModuleCard {
   readonly counting?: true;
   /** Where the learner stands in its chain of skills, once its map has come: a chain's alone. */
   readonly chain?: ChainPlace;
+  /** It is solved on the sheet of a task from paper: Continue opens its page of tasks. */
+  readonly sheet?: true;
 }
 
 /** A module as the catalog or the list of connected modules gives it. */
 export interface ModuleRef {
   readonly moduleId: string;
   readonly packageDigest: string;
+  /** The list of connected modules says it is solved on the sheet; the catalog says nothing. */
+  readonly onSheet?: boolean;
 }
 
 /**
@@ -88,6 +92,7 @@ export async function cardOf(
     title: manifest?.title ?? moduleId,
     ...(manifest === undefined ? {} : { language: manifest.languages.explanation }),
     ...(unnamed ? { unnamed: true as const } : {}),
+    ...(module.onSheet === true ? { sheet: true as const } : {}),
   };
 }
 

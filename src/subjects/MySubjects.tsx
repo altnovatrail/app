@@ -35,6 +35,7 @@ import { NextStep } from "../next/NextStep.tsx";
 import { useEngine } from "../next/useEngine.ts";
 import { usePackages } from "../packages/PackagesContext.tsx";
 import type { OpenViews } from "../packages/views.ts";
+import { paperModuleRoute } from "../paper/module.ts";
 import { usePaper } from "../paper/PaperContext.tsx";
 import { YourPages } from "../paper/YourPages.tsx";
 import { moduleMapRoute } from "../skills/SkillMapScreen.tsx";
@@ -288,10 +289,12 @@ export function HomeScreen({
                 key={card.moduleId}
                 card={card}
                 onContinue={() => {
-                  // The lesson begun of the module, else its task open, else a task of its skill
-                  // to work on, else its map, where a skill is chosen.
+                  // A module solved on the sheet: its page of tasks. Else the lesson begun of the
+                  // module, else its task open, else a task of its skill to work on, else its map,
+                  // where a skill is chosen.
                   const run = runs.find((each) => each.moduleId === card.moduleId);
-                  if (run !== undefined) onLesson?.(run.lessonRunId);
+                  if (card.sheet === true) navigate(paperModuleRoute(card.moduleId));
+                  else if (run !== undefined) onLesson?.(run.lessonRunId);
                   else if (
                     onContinue !== undefined &&
                     openTask?.kind === "module" &&

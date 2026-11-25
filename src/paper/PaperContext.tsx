@@ -10,7 +10,9 @@
 // over —, the work written a moment after it changes, not on every stroke, and at once when the
 // page goes or the tab is hidden. A page of the history opens again on the screen of solving with
 // its work, but no verdict, which the device does not keep. A task whose attempt closed is kept,
-// once api began it anew, under its new attempt.
+// once api began it anew, under its new attempt. A module solved on the sheet is a page of its
+// own: its tasks, begun all at once, with no photo, in the tab's memory alone, as the history keeps
+// pages from paper only.
 import {
   createContext,
   type ReactNode,
@@ -66,9 +68,20 @@ export interface PaperPage {
   readonly before?: readonly PageTask[] | undefined;
 }
 
+/** The page of a module solved on the sheet: each of its tasks, begun, with no photo. */
+export interface ModulePage {
+  /** The page's ID, a new one each time it is begun, by which a task of it is begun anew. */
+  readonly pageId: string;
+  readonly moduleId: string;
+  /** The tasks, one under another in the order the module gave them, by which they are named. */
+  readonly tasks: readonly PageTask[];
+}
+
 export interface Paper {
   /** The page photographed, if any. */
   readonly page: PaperPage | undefined;
+  /** The page of a module solved on the sheet, if any: then no page photographed. */
+  readonly module: ModulePage | undefined;
   /** The tasks Start began on it, in the order of the page. */
   readonly begun: readonly BegunTask[] | undefined;
   /** The screen of solving is shown, not the page: Start shows it, "Add" the page again. */
@@ -95,6 +108,8 @@ export interface Paper {
   readonly keep: (taskId: string, change: (task: BegunTask) => BegunTask) => void;
   /** A task whose attempt closed, in the new attempt api began of it, its work as it was. */
   readonly renew: (taskId: string, attemptId: string) => void;
+  /** A module's page, its tasks begun, in place of any page: solving it shows. */
+  readonly beginModule: (page: ModulePage, begun: readonly BegunTask[]) => void;
   /** The page and its tasks forgotten: Close, or Retake. The history keeps those begun. */
   readonly clear: () => void;
   /**
@@ -134,6 +149,7 @@ const PaperContext = createContext<Paper | undefined>(undefined);
 
 interface Held {
   readonly page: PaperPage | undefined;
+  readonly module?: ModulePage | undefined;
   readonly begun: readonly BegunTask[] | undefined;
   readonly solving: boolean;
 }
@@ -206,6 +222,8 @@ export function PaperProvider({
 
   // Each task changed since it was written is written a moment later, with whatever came meanwhile.
   useEffect(() => {
+    // A module's page is the tab's alone.
+    if (held.module !== undefined) return;
     for (const task of held.begun ?? []) {
       if (sameWork(written.current.get(task.taskId), task)) continue;
       written.current.set(task.taskId, task);
@@ -213,7 +231,7 @@ export function PaperProvider({
     }
     if (dirty.current.size > 0 && timer.current === undefined)
       timer.current = setTimeout(flush, SETTLE_MS);
-  }, [held.begun, flush]);
+  }, [held.begun, held.module, flush]);
   useEffect(() => {
     const hidden = () => {
       if (document.visibilityState === "hidden") flush();
@@ -314,9 +332,21 @@ export function PaperProvider({
           ? now
           : { ...now, begun: changed(now.begun, taskId, (task) => renewed(task, attemptId)) },
       );
-      run((profile) => profile.renewPaperTask(was.attemptId, attemptId));
+      if (shown.current.module === undefined)
+        run((profile) => profile.renewPaperTask(was.attemptId, attemptId));
     },
     [flush, run],
+  );
+  const beginModule = useCallback(
+    (module: ModulePage, begun: readonly BegunTask[]) => {
+      flush();
+      era.current += 1;
+      setHeld((now) => {
+        release(now.page?.photo);
+        return { page: undefined, module, begun: withBegun(undefined, begun), solving: true };
+      });
+    },
+    [flush],
   );
   const clear = useCallback(() => {
     flush();
@@ -376,6 +406,7 @@ export function PaperProvider({
   const value = useMemo(
     () => ({
       page: held.page,
+      module: held.module,
       begun: held.begun,
       solving: held.solving,
       takePhoto,
@@ -385,10 +416,11 @@ export function PaperProvider({
       add,
       keep,
       renew,
+      beginModule,
       clear,
       open,
     }),
-    [held, takePhoto, change, turn, begin, add, keep, renew, clear, open],
+    [held, takePhoto, change, turn, begin, add, keep, renew, beginModule, clear, open],
   );
   return <PaperContext.Provider value={value}>{children}</PaperContext.Provider>;
 }

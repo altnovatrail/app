@@ -36,7 +36,9 @@
 // act — strokes written, strokes taken off — is drawn on the sheet, one action of its history,
 // before its words. "Recognise" on the tracing paper reads the task's
 // crop into its text by AI; the page keeps the reading while it is open, and the paper shows the
-// photo again each time it is mounted.
+// photo again each time it is mounted. A module solved on the sheet is solved here too, each task's
+// picture the module's text drawn, which needs no Recognise, and with no "Add": its page is the
+// module's tasks.
 import {
   TutorReply,
   type WorkSchema,
@@ -115,16 +117,22 @@ const STATES = {
 /** The reading of a statement not asked yet, or asked again after none came. */
 const READY: TracingReading = Object.freeze({ state: "ready" });
 
-/** Each crop's task for the element, one object a crop, so that a render gives it no new one. */
+/**
+ * Each crop's task for the element, one object a crop, so that a render gives it no new one: a
+ * photo's, or the picture of a module's text.
+ */
 const papers = new WeakMap<Blob, PaperTask>();
-function paperOf(crop: Blob): PaperTask {
+function paperOf(crop: Blob, source: PaperSource): PaperTask {
   let paper = papers.get(crop);
   if (paper === undefined) {
-    paper = Object.freeze({ statement: crop });
+    paper = Object.freeze(source === "module" ? { statement: crop, source } : { statement: crop });
     papers.set(crop, paper);
   }
   return paper;
 }
+
+/** Where the pictures of the tasks come from: a photographed page, or a module's text. */
+export type PaperSource = NonNullable<PaperTask["source"]>;
 
 /**
  * A wrong answer whose rung's words are to be asked, and the key of the request, the same when it
@@ -148,6 +156,7 @@ export function Solve({
   onRenew,
   onAdd,
   onHome,
+  source = "photo",
 }: {
   readonly profileId: string;
   /** The learner is of the category adult: "Report a problem" stands below the tutor's words. */
@@ -162,8 +171,11 @@ export function Solve({
    * Asked again for the same attempt meanwhile, it gives the same.
    */
   readonly onRenew: (task: BegunTask) => Promise<string>;
-  readonly onAdd: () => void;
+  /** "Add", back to the page to pick more of its tasks; none on a module's page, which has them all. */
+  readonly onAdd?: () => void;
   readonly onHome: () => void;
+  /** Where the tasks' pictures come from: a module's text has nothing to recognise. */
+  readonly source?: PaperSource;
 }) {
   const api = useApi();
   const holder = useKeyHolder();
@@ -996,17 +1008,19 @@ export function Solve({
                 {words.text("paper.tasks-done", { n: done, total: list.length })}
               </span>
             </h2>
-            <button
-              type="button"
-              className="nt-plain nt-tasks-add"
-              onClick={() => {
-                close();
-                onAdd();
-              }}
-            >
-              <Icon value="add" />
-              {words.text("paper.add")}
-            </button>
+            {onAdd === undefined ? null : (
+              <button
+                type="button"
+                className="nt-plain nt-tasks-add"
+                onClick={() => {
+                  close();
+                  onAdd();
+                }}
+              >
+                <Icon value="add" />
+                {words.text("paper.add")}
+              </button>
+            )}
           </div>
           <ol className="nt-tasks">
             {list.map((each) => {
@@ -1090,10 +1104,10 @@ export function Solve({
             ref={element}
             lang={language}
             {...(narrow && open ? { "tools-hidden": "" } : {})}
-            paper={paperOf(task.crop)}
+            paper={paperOf(task.crop, source)}
             history={task.history}
             {...(task.tracing === undefined ? {} : { tracing: task.tracing })}
-            reading={readings.get(taskId) ?? READY}
+            {...(source === "module" ? {} : { reading: readings.get(taskId) ?? READY })}
             {...(grid === undefined ? {} : { grid })}
             onhistorychange={onHistoryChange}
             ontracingchange={onTracingChange}

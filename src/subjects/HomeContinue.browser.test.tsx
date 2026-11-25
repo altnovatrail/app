@@ -41,6 +41,17 @@ describe("a module's Continue on Home", () => {
     expect(onPractise).not.toHaveBeenCalled();
   });
 
+  it("opens a module solved on the sheet on its page of tasks, whatever its skill", async () => {
+    const onPractise = vi.fn();
+    render(
+      inLanguage(<HomeScreen connected={[{ ...card, sheet: true }]} onPractise={onPractise} />),
+    );
+    await userEvent.click(screen.getByRole("button", { name: /^Continue$/ }));
+    expect(window.location.hash).toBe("#/paper/module/a%2Fm");
+    expect(onPractise).not.toHaveBeenCalled();
+    window.location.hash = "";
+  });
+
   it("works on the skill the card names when the module has no lesson begun nor task open", async () => {
     const onPractise = vi.fn();
     render(

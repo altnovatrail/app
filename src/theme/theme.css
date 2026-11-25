@@ -6539,6 +6539,16 @@ dialog.nt-legal-sheet .nt-legal-body .nt-legal-foot > button.nt-link {
   flex: 1 1 auto;
   max-inline-size: 20rem;
 }
+/* A module's page on the sheet while it begins: its statement near the top left, the row at the foot. */
+.nt-sheet-loading {
+  block-size: 100%;
+  box-sizing: border-box;
+  padding: 5.5rem 1.5rem 1.5rem 5.5rem;
+  justify-content: space-between;
+}
+.nt-sheet-loading > .nt-sheet-row {
+  align-self: center;
+}
 /* A shape in a line of text: a count in a heading. */
 .nt-sk-inline {
   display: inline-block;

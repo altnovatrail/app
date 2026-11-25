@@ -45,6 +45,22 @@ describe("the cards of modules", () => {
     );
   });
 
+  it("mark a module solved on the sheet, as the list of connected modules says", async () => {
+    const views = viewsOf({ [D1]: manifest("Tasks on a sheet") });
+    const sheet = await cardOf(views, {
+      moduleId: "novatrail/check-board",
+      packageDigest: D1,
+      onSheet: true,
+    });
+    expect(sheet.sheet).toBe(true);
+    const other = await cardOf(views, {
+      moduleId: "novatrail/check-board",
+      packageDigest: D1,
+      onSheet: false,
+    });
+    expect(other).not.toHaveProperty("sheet");
+  });
+
   it("name one with no current version by a manifest kept of an earlier one, or by its ID", async () => {
     const views = viewsOf({}, { "novatrail/kept": manifest("Kept title", "ru") });
     expect(await cardOf(views, { moduleId: "novatrail/kept", packageDigest: "" })).toEqual({
