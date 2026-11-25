@@ -1,7 +1,8 @@
-// The debug window's Log, as the mockup's states `solve-debug-log`, `solve-debug-errors` and
-// `solve-debug-filter`: the app's log — what the app, api, the canvas and the camera said — with
-// the actions of AI among its lines, newest first, a filter by level and source behind a small
-// button, the errors alone by one press, and Copy of what is shown.
+// The debug window's Log, as the mockup's states `solve-debug-log`, `solve-debug-errors`,
+// `solve-debug-filter`, `solve-debug-runs` and `solve-debug-run-open`: the app's log — what the
+// app, api, the canvas and the camera said — with the actions of AI among its lines, newest first,
+// info in a row folded into one row, a filter by level and source behind a small button, the
+// errors alone by one press, and Copy of what is shown.
 import type { DebugAction } from "@altnovatrail/contracts/novatrail/api/v1/debug_pb.js";
 import { timestampDate } from "@bufbuild/protobuf/wkt";
 import { type ReactNode, useState } from "react";
@@ -98,7 +99,84 @@ export function textOf(items: readonly Item[], title: (action: DebugAction) => s
     .join("\n");
 }
 
-function Line({ entry }: { readonly entry: Entry }) {
+/** Info in a row on a card, two lines or more, newest first: one row, closed till pressed. */
+export interface Run {
+  readonly entries: readonly Entry[];
+}
+
+/** A card's lines, each run of info in them folded; a line of another level ends a run. */
+export function folded(lines: readonly Entry[]): readonly (Entry | Run)[] {
+  const out: (Entry | Run)[] = [];
+  for (let i = 0; i < lines.length; ) {
+    let end = i;
+    while (lines[end]?.level === "info") end++;
+    if (end - i >= 2) {
+      out.push({ entries: lines.slice(i, end) });
+      i = end;
+    } else {
+      out.push(lines[i] as Entry);
+      i++;
+    }
+  }
+  return out;
+}
+
+/**
+ * A run in words: the names of its lines — a call to api by its method — each with how many times
+ * it was said, newest first; how many lines, from where and from when to when.
+ */
+export function runSummary(run: Run): { readonly names: string; readonly sub: string } {
+  const names: { name: string; n: number }[] = [];
+  for (const entry of run.entries) {
+    const head = entry.text.split(" · ")[0] ?? "";
+    const name = entry.source === "api" ? (head.split("/").pop() ?? head) : head;
+    const seen = names.find((x) => x.name === name);
+    if (seen === undefined) names.push({ name, n: entry.repeats + 1 });
+    else seen.n += entry.repeats + 1;
+  }
+  const time = (entry: Entry | undefined) => entry?.at.toLocaleTimeString("en-GB") ?? "";
+  const newest = time(run.entries[0]);
+  const oldest = time(run.entries.at(-1));
+  const from = [...new Set(run.entries.map((e) => SOURCE_NAMES[e.source]))].join(", ");
+  return {
+    names: names.map((x) => (x.n > 1 ? `${x.name} ×${x.n}` : x.name)).join(" · "),
+    sub: `${run.entries.length} info · ${from} · ${oldest === newest ? newest : `${oldest} – ${newest}`}`,
+  };
+}
+
+/** A run's row, and its lines under it while open, indented on a tint. */
+function RunRows({ run }: { readonly run: Run }) {
+  const [open, setOpen] = useState(false);
+  const { names, sub } = runSummary(run);
+  return (
+    <>
+      <button
+        type="button"
+        className="nt-debug-run"
+        aria-expanded={open}
+        aria-label={`${run.entries.length} info entries: ${names}`}
+        onClick={() => setOpen(!open)}
+      >
+        <span className="nt-debug-stack" aria-hidden="true">
+          <span className="nt-debug-mark">i</span>
+        </span>
+        <span className="nt-debug-two">
+          <span className="nt-debug-line-text">{names}</span>
+          <span className="nt-debug-sub">{sub}</span>
+        </span>
+        <span className="nt-debug-count" aria-hidden="true">
+          {run.entries.length}
+        </span>
+        <svg className="nt-debug-chevron" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M9 6l6 6-6 6" />
+        </svg>
+      </button>
+      {open ? run.entries.map((entry) => <Line key={entry.id} entry={entry} nested />) : null}
+    </>
+  );
+}
+
+function Line({ entry, nested = false }: { readonly entry: Entry; readonly nested?: boolean }) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const level = LEVELS.find((l) => l.level === entry.level) ?? LEVELS[2];
@@ -106,7 +184,7 @@ function Line({ entry }: { readonly entry: Entry }) {
     <>
       <button
         type="button"
-        className="nt-debug-line"
+        className={nested ? "nt-debug-line nt-debug-nested" : "nt-debug-line"}
         aria-expanded={entry.detail === "" ? undefined : open}
         data-level={entry.level}
         onClick={() => setOpen(!open)}
@@ -124,7 +202,7 @@ function Line({ entry }: { readonly entry: Entry }) {
         </span>
       </button>
       {open ? (
-        <div className="nt-debug-open">
+        <div className={nested ? "nt-debug-open nt-debug-nested" : "nt-debug-open"}>
           <div className="nt-debug-json-head">
             <span className="nt-debug-grow">Details</span>
             <button
@@ -207,7 +285,7 @@ function FilterMenu({
 
 /**
  * The Log's body: the filter's bar, then the items newest first — the lines that follow one
- * another on one card, each action of AI as `action` draws it.
+ * another on one card, info in a row folded, each action of AI as `action` draws it.
  */
 export function Log({
   items,
@@ -292,10 +370,16 @@ export function Log({
       ) : (
         blocks.map((block) =>
           "lines" in block ? (
-            <div key={`l${block.lines[0]?.id}`} className="nt-debug-card nt-debug-lines">
-              {block.lines.map((entry) => (
-                <Line key={entry.id} entry={entry} />
-              ))}
+            <div key={`l${block.lines.at(-1)?.id}`} className="nt-debug-card nt-debug-lines">
+              {/* A card and a run are known by their oldest line, so that a line coming keeps them
+                  as they are, a run open. */}
+              {folded(block.lines).map((each) =>
+                "entries" in each ? (
+                  <RunRows key={`run${each.entries.at(-1)?.id}`} run={each} />
+                ) : (
+                  <Line key={each.id} entry={each} />
+                ),
+              )}
             </div>
           ) : (
             action(block.action, block.key)
