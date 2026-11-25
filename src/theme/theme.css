@@ -5499,6 +5499,19 @@ button.nt-act[aria-disabled="true"] {
   color: var(--nt-text-muted);
 }
 /*
+ * Hint stands at the panel's foot on a phone alone: from 600 px the row's Hint beside Check stays in
+ * sight beside the open panel, and a second would only repeat it; on a phone the open sheet hides
+ * the row. A foot left with nothing else takes no room.
+ */
+@media (width >= 600px) {
+  .nt-tutor-acts button.nt-act-hint {
+    display: none;
+  }
+  .nt-tutor-acts:not(:has(> :not(.nt-act-hint))) {
+    display: none;
+  }
+}
+/*
  * The learner's line in the tutor's panel, the mockup's: a bubble at the right on the accent, its
  * corner of 6 at the bottom right, its line breaks kept, and under it, when it was said by voice, a
  * microphone of 11 and "By voice" at 11 in the muted grey. The program's line of a request about

@@ -214,7 +214,10 @@ export function HintButton({
   className = "nt-row-button",
 }: {
   readonly parts: Pick<TaskParts, "pending" | "onHint">;
-  /** Its look: a button of the row, or `nt-act` at the foot of the tutor's panel. */
+  /**
+   * Its look: a button of the row, or `nt-act nt-act-hint` at the foot of the tutor's panel, which
+   * stands there on a phone alone.
+   */
   readonly className?: string;
 }) {
   const { words } = useLanguage();

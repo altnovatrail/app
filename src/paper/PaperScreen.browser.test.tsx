@@ -748,8 +748,9 @@ it("opens the tutor's panel by its button: the verdict a line in it, and a card 
   expect(document.activeElement).toBe(tutorPanel().getByRole("heading", { name: "Tutor" }));
   expect(tutorPanel().getByText("Read: 84")).toBeVisible();
   expect(document.querySelector(".nt-card-verdict")).toBeNull();
-  // Not yet: Hint at the panel's foot, and no way on yet.
-  expect(tutorPanel().getByRole("button", { name: "Hint" })).toBeVisible();
+  // Not yet: Hint in the row, which the panel does not repeat at this width, and no way on yet.
+  expect(tutorPanel().queryByRole("button", { name: "Hint" })).toBeNull();
+  expect(screen.getByRole("button", { name: "Hint" })).toBeVisible();
   expect(tutorPanel().queryByRole("button", { name: "Next task" })).toBeNull();
   await userEvent.click(tutorPanel().getByRole("button", { name: "Close" }));
   const tutor = screen.getByRole("button", { name: "Ask" });
@@ -959,10 +960,7 @@ it("asks the rung's words the closed panel left by Hint, and says nothing of a r
   await userEvent.click(screen.getByRole("button", { name: "Check" }));
   await waitFor(() => expect(rungs).toHaveLength(2));
   await waitFor(() =>
-    expect(tutorPanel().getByRole("button", { name: "Hint" })).toHaveAttribute(
-      "aria-disabled",
-      "false",
-    ),
+    expect(screen.getByRole("button", { name: "Hint" })).toHaveAttribute("aria-disabled", "false"),
   );
   expect(tutorPanel().queryByText("Look at the tens.")).toBeNull();
   expect(tutorPanel().queryByRole("alert")).toBeNull();
@@ -979,9 +977,9 @@ it("gives a rung's words again by Hint, and makes a task api closed one only to 
   await userEvent.click(screen.getByRole("button", { name: "Hint" }));
   expect(await tutorPanel().findByText("Again: the tens.")).toBeVisible();
   closed = true;
-  await userEvent.click(tutorPanel().getByRole("button", { name: "Hint" }));
+  await userEvent.click(screen.getByRole("button", { name: "Hint" }));
   expect(await tutorPanel().findByText("This task is already over")).toBeVisible();
-  await waitFor(() => expect(tutorPanel().queryByRole("button", { name: "Hint" })).toBeNull());
+  await waitFor(() => expect(screen.queryByRole("button", { name: "Hint" })).toBeNull());
   await userEvent.click(tutorPanel().getByRole("button", { name: "Close" }));
   // The failure of Hint at the foot, and Check's own line beside it.
   expect(screen.getAllByRole("alert")).toHaveLength(1);
@@ -1087,12 +1085,14 @@ it("shows the share of the quota in the panel's head, and the next task at its f
   expect(await screen.findByRole("heading", { name: "Task 2" })).toBeVisible();
 });
 
-it("hides the canvas's bar of tools on a phone while the panel is open", async () => {
+it("hides the canvas's bar of tools on a phone while the panel is open, its Hint at the panel's foot", async () => {
   await page.viewport(390, 844);
   await solving();
   expect(sheet().hasAttribute("tools-hidden")).toBe(false);
   await userEvent.click(screen.getByRole("button", { name: "Ask" }));
   await waitFor(() => expect(sheet().hasAttribute("tools-hidden")).toBe(true));
+  // The panel hides the row here, so the panel gives Hint itself.
+  expect(tutorPanel().getByRole("button", { name: "Hint" })).toBeVisible();
   await userEvent.click(tutorPanel().getByRole("button", { name: "Close" }));
   await waitFor(() => expect(sheet().hasAttribute("tools-hidden")).toBe(false));
 });
@@ -1176,7 +1176,9 @@ it("puts debug's button and the tutor's at the start of the page's bar, before a
   // The line between the pair and "Select none", in one row with them.
   const line = found(".nt-page-row > .nt-row-line");
   const none = screen.getByRole("button", { name: "Select none" });
-  expect(debug.getBoundingClientRect().right).toBeLessThanOrEqual(tutor.getBoundingClientRect().left);
+  expect(debug.getBoundingClientRect().right).toBeLessThanOrEqual(
+    tutor.getBoundingClientRect().left,
+  );
   expect(line.getBoundingClientRect().left).toBeGreaterThan(tutor.getBoundingClientRect().right);
   expect(line.getBoundingClientRect().right).toBeLessThan(none.getBoundingClientRect().left);
   expect(middle(tutor)).toBeCloseTo(middle(none), 0);

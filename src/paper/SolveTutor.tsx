@@ -209,7 +209,9 @@ export function SolveTutor({
       }
       acts={
         <>
-          {acts.hint ? <HintButton parts={{ pending, onHint }} className="nt-act" /> : null}
+          {acts.hint ? (
+            <HintButton parts={{ pending, onHint }} className="nt-act nt-act-hint" />
+          ) : null}
           {onExplain === undefined ? null : (
             <ExplainButton explaining={explaining} onExplain={onExplain} />
           )}
