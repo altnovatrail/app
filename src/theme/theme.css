@@ -5280,7 +5280,9 @@ button.nt-step-done[aria-disabled="true"] {
  * The conversation (the mockup's): it scrolls from its foot, where its newest words stand; bubbles of 14.5, radius 18
  * with a corner of 6 — the tutor's on grey, a hint on the hint's yellow with its label at 11.5
  * semibold —; the verdict a line in the middle, white, radius 14, its sign in a circle of 22; the
- * notes a white card at 13 semibold.
+ * notes a white card at 13 semibold. Words scrolled up past its top fade out over the room its
+ * lines leave above them, empty while nothing is scrolled: a bubble cut at the edge would seem to
+ * go on under what stands over it, as under grown-up mode's band of the same tint.
  */
 .nt-talk {
   display: flex;
@@ -5288,6 +5290,7 @@ button.nt-step-done[aria-disabled="true"] {
   flex-direction: column-reverse;
   min-block-size: var(--nt-target);
   overflow-y: auto;
+  mask-image: linear-gradient(to bottom, transparent, #000 0.625rem);
 }
 .nt-talk-lines {
   display: flex;
