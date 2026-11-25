@@ -1109,6 +1109,7 @@ export const en = {
   "tutor.stop": "Stop",
   "tutor.dictated": "From your voice: read it, correct it, then send.",
   "tutor.unheard": "Nothing was heard. Try again, or type.",
+  "tutor.stopped": "Stopped: your question is back in the field — change it and send it again.",
   "tutor.by-voice": "By voice",
   /** The heading of the page on the tutor. */
   "tutor.title": "How to use the AI tutor safely",

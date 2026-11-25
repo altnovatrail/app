@@ -227,9 +227,13 @@ export function Solve({
   const [asking, setAsking] = useState<string | undefined>(undefined);
   // What the last question came to when no answer came, and the question, back in the field.
   const [askNote, setAskNote] = useState<string | undefined>(undefined);
-  const [again, setAgain] = useState<{ readonly text: string; readonly at: number } | undefined>(
-    undefined,
-  );
+  const [again, setAgain] = useState<
+    { readonly text: string; readonly at: number; readonly stopped?: boolean } | undefined
+  >(undefined);
+  // The question whose answer may still be called off, by Stop: its task, and the hand that calls
+  // its request off. An act already being drawn is past it.
+  const [stoppable, setStoppable] = useState<string | undefined>(undefined);
+  const stopper = useRef<AbortController | undefined>(undefined);
   // The key of a question, kept till an answer, so that the same question sent again after a
   // failure repeats it.
   const askKey = useRef<{ readonly of: string; readonly key: string } | undefined>(undefined);
@@ -528,6 +532,31 @@ export function Solve({
     setAgain({ text: question, at: Date.now() });
   };
 
+  /**
+   * The hand that calls a question's request off, by Stop, while its answer is awaited: the
+   * question then goes back to the field, said so, and under a new key, since api may still hold
+   * the one called off as going till it sees it gone.
+   */
+  const stoppableAsk = (of: string) => {
+    const controller = new AbortController();
+    stopper.current = controller;
+    setStoppable(of);
+    const past = () => {
+      if (stopper.current !== controller) return;
+      stopper.current = undefined;
+      setStoppable(undefined);
+    };
+    const stopped = (asked: number, question: string) => {
+      askKey.current = undefined;
+      unask(of);
+      if (asked !== epoch.current) return;
+      setAskNote(undefined);
+      setAgain({ text: question, at: Date.now(), stopped: true });
+    };
+    return { signal: controller.signal, past, stopped };
+  };
+  const stop = () => stopper.current?.abort();
+
   /** Grown-up mode turned on or off on this task, a line of its conversation. */
   const grownMode = (on: boolean) => {
     setGrown(on ? attemptId : undefined);
@@ -556,9 +585,11 @@ export function Solve({
     setAskNote(undefined);
     const ai = holder.aiFields(profileId);
     const back = (note: string) => giveBack(of, asked, question, note);
+    const stopping = stoppableAsk(of);
     void (async () => {
       try {
         const work = await workNow();
+        stopping.signal.throwIfAborted();
         const answer = await watched(api, () =>
           api.attempt.askTutor(
             {
@@ -571,9 +602,10 @@ export function Solve({
               wordsLanguage: language,
               ...ai,
             },
-            { timeoutMs: PAPER_TIMEOUT_MS },
+            { timeoutMs: PAPER_TIMEOUT_MS, signal: stopping.signal },
           ),
         );
+        stopping.past();
         askKey.current = undefined;
         const read = outcomeOf(answer.outcome);
         holder.noteOutcome(profileId, read, ai);
@@ -588,6 +620,7 @@ export function Solve({
         else setTold(answer.words);
         if (closesAI(read)) setAskNote(outcomeText(read, words));
       } catch (reason) {
+        if (stopping.signal.aborted) return stopping.stopped(asked, question);
         const found = parseFailure(reason);
         // A refusal is the end of the action; anything else may have reached api, and goes again
         // with its key.
@@ -595,6 +628,7 @@ export function Solve({
         back(failureText(found, words));
         closed(found);
       } finally {
+        stopping.past();
         setAsking(undefined);
         setSpent((n) => n + 1);
       }
@@ -631,6 +665,7 @@ export function Solve({
     setAskNote(undefined);
     const ai = holder.aiFields(profileId);
     const back = (note?: string) => giveBack(of, asked, question, note);
+    const stopping = stoppableAsk(of);
     void (async () => {
       try {
         // The part of the sheet in sight that the screen's controls leave free, with room to write
@@ -647,6 +682,7 @@ export function Solve({
           .slice(-MAX_SHEET_STROKES)
           .map(({ id, points }) => ({ id, points: [...points] }));
         const paperWork = await workOf(work, task.instruction);
+        stopping.signal.throwIfAborted();
         const answer = await watched(api, () =>
           api.attempt.askGrownUp(
             {
@@ -661,9 +697,11 @@ export function Solve({
               wordsLanguage: language,
               ...ai,
             },
-            { timeoutMs: GROWN_UP_TIMEOUT_MS },
+            { timeoutMs: GROWN_UP_TIMEOUT_MS, signal: stopping.signal },
           ),
         );
+        // The act comes: what is drawn now is past Stop.
+        stopping.past();
         askKey.current = undefined;
         const read = outcomeOf(answer.outcome);
         holder.noteOutcome(profileId, read, ai);
@@ -695,11 +733,13 @@ export function Solve({
         if (isOpen.current) auto([{ text: answer.words, language }]);
         else setTold(answer.words);
       } catch (reason) {
+        if (stopping.signal.aborted) return stopping.stopped(asked, question);
         const found = parseFailure(reason);
         if (found.kind === "refused") askKey.current = undefined;
         back(failureText(found, words));
         closed(found);
       } finally {
+        stopping.past();
         setAsking(undefined);
         setWriting(undefined);
         setSpent((n) => n + 1);
@@ -1158,6 +1198,7 @@ export function Solve({
           askOff={asking !== undefined || only}
           again={again}
           onAsk={ask}
+          onStop={stoppable === attemptId ? stop : undefined}
           {...(only ? {} : { grown: grown === attemptId, onGrown: grownMode })}
           writing={writing === attemptId}
         />

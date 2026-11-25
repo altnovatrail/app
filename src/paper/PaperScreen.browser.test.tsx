@@ -98,10 +98,23 @@ interface Setup {
   readonly language?: Language;
   /** The learner is of the category adult; none, an adult. */
   readonly adult?: boolean;
-  /** The answer to each question, by how many came before; an error fails it; none refuses it. */
-  readonly asked?: (n: number) => MessageInitShape<typeof AskTutorResponseSchema> | Error;
+  /**
+   * The answer to each question, by how many came before; an error fails it; none refuses it; a
+   * promise is an answer still awaited.
+   */
+  readonly asked?: (
+    n: number,
+  ) =>
+    | MessageInitShape<typeof AskTutorResponseSchema>
+    | Error
+    | Promise<MessageInitShape<typeof AskTutorResponseSchema>>;
   /** The answer to each request in grown-up mode, by how many came before; none refuses it. */
-  readonly grown?: (n: number) => MessageInitShape<typeof AskGrownUpResponseSchema> | Error;
+  readonly grown?: (
+    n: number,
+  ) =>
+    | MessageInitShape<typeof AskGrownUpResponseSchema>
+    | Error
+    | Promise<MessageInitShape<typeof AskGrownUpResponseSchema>>;
 }
 
 /** A synthetic photo of a page: a white PNG of 600 × 800 px with two grey stripes. */
@@ -164,16 +177,16 @@ async function renderCamera(setup: Setup = {}) {
         opens.push(request);
         return { words: setup.hinted ?? "" };
       },
-      askTutor(request) {
+      async askTutor(request) {
         asks.push(request);
-        const answer = setup.asked?.(asks.length - 1);
+        const answer = await setup.asked?.(asks.length - 1);
         if (answer === undefined) throw new ConnectError("a refusal", Code.InvalidArgument);
         if (answer instanceof Error) throw answer;
         return answer;
       },
-      askGrownUp(request) {
+      async askGrownUp(request) {
         grownAsks.push(request);
-        const answer = setup.grown?.(grownAsks.length - 1);
+        const answer = await setup.grown?.(grownAsks.length - 1);
         if (answer === undefined) throw new ConnectError("a refusal", Code.InvalidArgument);
         if (answer instanceof Error) throw answer;
         return answer;
@@ -1927,6 +1940,36 @@ it("puts a question that brought no answer back in the field, and sends it again
   expect(asks[1]?.idempotencyKey).toBe(asks[0]?.idempotencyKey);
 });
 
+/** An answer that never comes: a request still awaited till Stop calls it off. */
+const never = <T,>() => new Promise<T>(() => {});
+
+it("stops a question whose answer is awaited: it goes back to the field, said so, and again under a new key", async () => {
+  withRecognition(false);
+  const { asks } = await solving({
+    asked: (n) => (n === 0 ? never() : { words: "Look at the tens." }),
+  });
+  await userEvent.click(screen.getByRole("button", { name: "Ask" }));
+  const field = tutorPanel().getByRole("textbox", { name: "Your question about the task" });
+  expect(tutorPanel().queryByRole("button", { name: "Stop" })).toBeNull();
+  await userEvent.type(field, "Why tens?{Enter}");
+  const stop = await tutorPanel().findByRole("button", { name: "Stop" });
+  // Stop stands in place of Send while the answer is awaited.
+  expect(tutorPanel().queryByRole("button", { name: "Send" })).toBeNull();
+  expect(questions()).toEqual(["Why tens?"]);
+  await userEvent.click(stop);
+  await waitFor(() => expect(field).toHaveValue("Why tens?"));
+  expect(questions()).toEqual([]);
+  const said = "Stopped: your question is back in the field — change it and send it again.";
+  expect(tutorPanel().getByText(said)).toBeVisible();
+  expect(tutorPanel().queryByRole("button", { name: "Stop" })).toBeNull();
+  await userEvent.type(field, "{Enter}");
+  expect(await tutorPanel().findByText("Look at the tens.")).toBeVisible();
+  expect(tutorPanel().queryByText(said)).toBeNull();
+  expect(questions()).toEqual(["Why tens?"]);
+  expect(asks).toHaveLength(2);
+  expect(asks[1]?.idempotencyKey).not.toBe(asks[0]?.idempotencyKey);
+});
+
 it("lets an adult ask by voice, and gives a child no microphone", async () => {
   withRecognition(true);
   const { asks } = await solving({ asked: () => ({ words: "What is ten and ten?" }) });
@@ -2138,6 +2181,31 @@ it("sends a request in grown-up mode with the work and its strokes, draws the ac
     "Erase it",
     "Done: line 1 erased.",
   ]);
+});
+
+it("stops a request in grown-up mode while it is awaited, and draws nothing of it", async () => {
+  withRecognition(false);
+  const { grownAsks } = await solving({
+    grown: (n) => (n === 0 ? never() : { words: "Done.", erase: [] }),
+  });
+  writeOn(sheet());
+  const { drawTutor } = grownSheet();
+  await userEvent.click(screen.getByRole("button", { name: "Ask" }));
+  await grownOn();
+  const field = tutorPanel().getByRole("textbox", { name: "Your question about the task" });
+  await userEvent.type(field, "Write the whole solution{Enter}");
+  await userEvent.click(await tutorPanel().findByRole("button", { name: "Stop" }));
+  await waitFor(() => expect(field).toHaveValue("Write the whole solution"));
+  expect(
+    tutorPanel().getByText(
+      "Stopped: your question is back in the field — change it and send it again.",
+    ),
+  ).toBeVisible();
+  expect(drawTutor).not.toHaveBeenCalled();
+  await userEvent.type(field, "{Enter}");
+  expect(await tutorPanel().findByText("Done.")).toBeVisible();
+  expect(grownAsks).toHaveLength(2);
+  expect(grownAsks[1]?.idempotencyKey).not.toBe(grownAsks[0]?.idempotencyKey);
 });
 
 it("puts a request in grown-up mode back in the field when no act comes or the sheet takes none", async () => {

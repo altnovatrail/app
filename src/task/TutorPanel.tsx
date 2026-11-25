@@ -114,9 +114,15 @@ export interface AskKit {
   readonly onSend: (text: string, voice: boolean) => void;
   /**
    * A text that went and came back unanswered, put in the field again, so that Send sends it
-   * again: each new `at` puts it there once.
+   * again: each new `at` puts it there once; `stopped` when Stop took it back, which the field
+   * says under it till the text changes.
    */
-  readonly again?: { readonly text: string; readonly at: number };
+  readonly again?: { readonly text: string; readonly at: number; readonly stopped?: boolean };
+  /**
+   * Stop, while the answer to the text sent is awaited and may still be called off: it stands in
+   * place of the microphone and Send. None, and there is nothing to stop.
+   */
+  readonly onStop?: (() => void) | undefined;
 }
 
 /**
@@ -301,7 +307,8 @@ export function withHeard(before: string, heard: string, max: number): string {
  * sends and Shift+Enter breaks the line — but while an input method composes —; the microphone,
  * where the kit and the browser allow it, which listens till Stop and puts what it hears into the
  * field as it hears it; and Send. What came by voice waits in the field to be read and corrected:
- * nothing goes by itself.
+ * nothing goes by itself. While an answer is awaited that may be called off, Stop stands in place
+ * of the microphone and Send.
  */
 function AskField({ ask }: { readonly ask: AskKit }) {
   const { words } = useLanguage();
@@ -309,6 +316,7 @@ function AskField({ ask }: { readonly ask: AskKit }) {
   // The text the microphone left in the field, while the field still holds it as it came.
   const [dictated, setDictated] = useState<string | undefined>(undefined);
   const [unheard, setUnheard] = useState(false);
+  const [stopped, setStopped] = useState(false);
   // The field before the microphone began, and what it holds with what was heard after it.
   const before = useRef("");
   const latest = useRef("");
@@ -319,6 +327,7 @@ function AskField({ ask }: { readonly ask: AskKit }) {
     if (again === undefined) return;
     setDraft(again.text);
     setDictated(undefined);
+    setStopped(again.stopped === true);
   }, [again?.at]);
   const dictation = useDictation({
     language: ask.language,
@@ -349,6 +358,7 @@ function AskField({ ask }: { readonly ask: AskKit }) {
     setDraft("");
     setDictated(undefined);
     setUnheard(false);
+    setStopped(false);
     ask.onSend(text, voice);
   };
   return (
@@ -373,6 +383,7 @@ function AskField({ ask }: { readonly ask: AskKit }) {
         onChange={(event) => {
           setDraft(event.target.value);
           setUnheard(false);
+          setStopped(false);
         }}
         onKeyDown={(event) => {
           // Enter sends; Shift+Enter breaks the line, and so does Enter while a word is composed.
@@ -394,6 +405,8 @@ function AskField({ ask }: { readonly ask: AskKit }) {
               {words.text("tutor.stop")}
             </button>
           </>
+        ) : ask.onStop !== undefined ? (
+          <IconButton value="ask-stop" className="nt-ask-stop-asking" onClick={ask.onStop} />
         ) : (
           <>
             {microphone ? (
@@ -422,6 +435,10 @@ function AskField({ ask }: { readonly ask: AskKit }) {
         <p className="nt-ask-said">{words.text("tutor.dictated")}</p>
       ) : unheard ? (
         <p className="nt-ask-said">{words.text("tutor.unheard")}</p>
+      ) : stopped && ask.onStop === undefined ? (
+        <p className="nt-ask-said" role="status">
+          {words.text("tutor.stopped")}
+        </p>
       ) : null}
     </form>
   );

@@ -52,6 +52,7 @@ export function SolveTutor({
   askNote,
   askOff,
   again,
+  onStop,
   onAsk,
   grown,
   onGrown,
@@ -96,8 +97,12 @@ export function SolveTutor({
   readonly askNote: string | undefined;
   /** The field waits: a question is on its way, or the task is over. */
   readonly askOff: boolean;
-  /** A question that came back unanswered, to the field again. */
-  readonly again?: { readonly text: string; readonly at: number } | undefined;
+  /** A question that came back unanswered, to the field again, or that Stop took back. */
+  readonly again?:
+    | { readonly text: string; readonly at: number; readonly stopped?: boolean }
+    | undefined;
+  /** Stop, while the answer to the question sent is awaited; none while nothing can be stopped. */
+  readonly onStop?: (() => void) | undefined;
   /** A question, and whether it is the browser's reading of the voice as it came. */
   readonly onAsk: (question: string, voice: boolean) => void;
   /** Grown-up mode is on; none, and its key is not drawn. */
@@ -146,6 +151,7 @@ export function SolveTutor({
           language,
           onSend: onAsk,
           ...(again === undefined ? {} : { again }),
+          ...(onStop === undefined ? {} : { onStop }),
         },
       }}
       greeting={words.text("paper.solve-hello")}

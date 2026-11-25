@@ -5646,6 +5646,13 @@ form.nt-ask > p.nt-ask-said {
   color: var(--nt-on-fill);
   font-size: 1.25rem;
 }
+/* Stop, while an answer is awaited: the page's ink, its icon the card's. */
+.nt-ask-buttons button.nt-icon-only.nt-ask-stop-asking {
+  border-radius: 50%;
+  background: var(--nt-text);
+  color: var(--nt-card);
+  font-size: 1.25rem;
+}
 .nt-ask-buttons button.nt-icon-only.nt-ask-send:disabled {
   background: rgba(0, 0, 0, 0.08);
   color: #aeaeb2;
