@@ -71,7 +71,11 @@ import { MAX_TASKS } from "./page.ts";
 import { YourPages } from "./YourPages.tsx";
 
 interface Setup {
-  readonly found?: (request: FindTasksRequest) => MessageInitShape<typeof FindTasksResponseSchema>;
+  readonly found?: (
+    request: FindTasksRequest,
+  ) =>
+    | MessageInitShape<typeof FindTasksResponseSchema>
+    | Promise<MessageInitShape<typeof FindTasksResponseSchema>>;
   /** The answer to each Check, by how many came before it; none refuses it. */
   readonly checked?: (n: number) => MessageInitShape<typeof SubmitWorkResponseSchema>;
   /** The opening question of a Hint before the first wrong answer, by GetOpeningWords. */
@@ -1438,6 +1442,41 @@ it("finds the page anew by the learner's request, its own frame staying, and Und
   expect(await screen.findByText("The frames are back as they were")).toBeVisible();
   expect(screen.getAllByRole("button", { name: /^Deselect task/ })).toHaveLength(1);
   expect(screen.queryByRole("button", { name: "Undo" })).toBeNull();
+});
+
+it("stops a request about the page while its frames are found: the frames as they were, the request back in the field, said so", async () => {
+  withRecognition(false);
+  let stopped = false;
+  const { finds } = await renderPaper({
+    found: (request) => {
+      if (request.request === "")
+        return { frames: [{ box: { ymin: 0, xmin: 0, ymax: 1000, xmax: 1000 } }] };
+      if (!stopped) return never();
+      return { frames: [{ box: { ymin: 0, xmin: 0, ymax: 500, xmax: 500 } }] };
+    },
+  });
+  await screen.findByRole("button", { name: "Deselect task 1" });
+  await userEvent.click(screen.getByRole("button", { name: "Tutor" }));
+  const field = await screen.findByRole("textbox", { name: "Your request about the page" });
+  expect(tutorPanel().queryByRole("button", { name: "Stop" })).toBeNull();
+  await userEvent.type(field, "the first half{Enter}");
+  const stop = await tutorPanel().findByRole("button", { name: "Stop" });
+  expect(tutorPanel().queryByRole("button", { name: "Send" })).toBeNull();
+  expect(tutorPanel().getByText("the first half")).toBeVisible();
+  stopped = true;
+  await userEvent.click(stop);
+  await waitFor(() => expect(field).toHaveValue("the first half"));
+  const said = "Stopped: your question is back in the field — change it and send it again.";
+  expect(tutorPanel().getByText(said)).toBeVisible();
+  expect(tutorPanel().queryByText("the first half", { selector: "p" })).toBeNull();
+  expect(tutorPanel().queryByRole("button", { name: "Stop" })).toBeNull();
+  // The frames as they were, and no Undo: nothing was found.
+  expect(screen.getAllByRole("button", { name: /^Deselect task/ })).toHaveLength(1);
+  expect(screen.queryByRole("button", { name: "Undo" })).toBeNull();
+  await userEvent.type(field, "{Enter}");
+  expect(await screen.findByText("Found 1 task")).toBeVisible();
+  expect(finds).toHaveLength(3);
+  expect(finds[2]?.idempotencyKey).not.toBe(finds[1]?.idempotencyKey);
 });
 
 it("turns the photo upright as its tasks were found, and goes on with it turned", async () => {

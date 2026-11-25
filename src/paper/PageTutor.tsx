@@ -3,7 +3,8 @@
 // split —, each request of the learner's and the program's line of what it came to, Undo while the
 // frames before can come back, and the panel's field of a request, with its Send and, for a learner
 // of the category adult, its microphone. No word of the AI comes back: its answer is frames. The
-// field is off while the finding runs and while AI is shut to the learner.
+// field is off while the finding runs and while AI is shut to the learner; while a request's
+// finding runs, Stop stands in place of Send, and a request it took back is in the field again.
 import type { Ref } from "react";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { VerdictLine } from "../task/TaskLayout.tsx";
@@ -17,6 +18,8 @@ export function PageTutor({
   closed,
   adult,
   onAsk,
+  again,
+  onStop,
   onUndo,
   onClose,
   headingRef,
@@ -30,6 +33,12 @@ export function PageTutor({
   readonly adult: boolean;
   /** A request, and whether it is the browser's reading of the voice as it came. */
   readonly onAsk: (request: string, voice: boolean) => void;
+  /** A request Stop took back, to the field again. */
+  readonly again?:
+    | { readonly text: string; readonly at: number; readonly stopped?: boolean }
+    | undefined;
+  /** Stop, while a request's finding runs; none while nothing can be stopped. */
+  readonly onStop?: (() => void) | undefined;
   /** Undo, while the frames before the last request can come back; none, and it is not drawn. */
   readonly onUndo?: (() => void) | undefined;
   readonly onClose: () => void;
@@ -51,6 +60,8 @@ export function PageTutor({
           microphone: adult,
           language,
           onSend: onAsk,
+          ...(again === undefined ? {} : { again }),
+          ...(onStop === undefined ? {} : { onStop }),
         },
       }}
       greeting={words.text("paper.ask-hello")}
