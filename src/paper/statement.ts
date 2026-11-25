@@ -46,15 +46,13 @@ export function wrapped(text: string, fits: (line: string) => boolean): string[]
 /** The statement drawn as a PNG, as tall as its lines. */
 export async function statementPicture(text: string): Promise<Blob> {
   const canvas = document.createElement("canvas");
-  const measure = canvas.getContext("2d");
-  if (measure === null) throw new Error("no 2D context to draw the statement");
-  measure.font = FONT;
-  const lines = wrapped(text, (line) => measure.measureText(line).width <= WIDTH - 2 * PAD);
-  canvas.width = WIDTH;
-  canvas.height = 2 * PAD + lines.length * LINE;
-  // A size set clears the context: the font and the colours again.
   const context = canvas.getContext("2d");
   if (context === null) throw new Error("no 2D context to draw the statement");
+  context.font = FONT;
+  const lines = wrapped(text, (line) => context.measureText(line).width <= WIDTH - 2 * PAD);
+  canvas.width = WIDTH;
+  canvas.height = 2 * PAD + lines.length * LINE;
+  // A size set resets the context's state: the font and the colours again.
   context.fillStyle = "#FFFFFF";
   context.fillRect(0, 0, canvas.width, canvas.height);
   context.font = FONT;

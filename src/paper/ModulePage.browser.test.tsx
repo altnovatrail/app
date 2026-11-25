@@ -10,6 +10,7 @@ import { AttemptService } from "@altnovatrail/contracts/novatrail/api/v1/attempt
 import { Cause, RefusalSchema } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import {
   type BeginPaperAttemptsRequest,
+  BeginPaperAttemptsResponseSchema,
   PaperService,
 } from "@altnovatrail/contracts/novatrail/api/v1/paper_pb.js";
 import type { CanvasElement, HistoryEvent } from "@altnovatrail/spec/canvas";
@@ -23,7 +24,7 @@ import { formatHash } from "../app/hash.ts";
 import { HOME, navigate, useRoute } from "../app/router.ts";
 import { routedApi } from "../test/api.ts";
 import { inLanguage } from "../test/language.tsx";
-import { paperModuleRoute } from "./module.ts";
+import { modulePageOf, paperModuleRoute } from "./module.ts";
 import { PaperProvider } from "./PaperContext.tsx";
 import { PaperScreen } from "./PaperScreen.tsx";
 import { statementPicture, statementText, wrapped } from "./statement.ts";
@@ -155,7 +156,7 @@ it("begins the module's tasks by its ID, each a sheet under its text, with no Re
   expect(screen.queryByRole("button", { name: "Add" })).toBeNull();
 });
 
-it("sends the module's text drawn as the statement of Check", async () => {
+it("sends the module's text drawn as the statement of Check, and goes on to the next task", async () => {
   const { submits } = renderModule();
   await screen.findByRole("heading", { name: "Task 1" }, SLOW);
   writeOn(sheet());
@@ -169,6 +170,8 @@ it("sends the module's text drawn as the statement of Check", async () => {
   const picture = new Uint8Array(await statement.arrayBuffer());
   expect(work.value.statement).toEqual(picture);
   expect(submits[0]?.attemptId).toBe("a1");
+  await userEvent.click(await screen.findByRole("button", { name: "Next task" }, SLOW));
+  expect(await screen.findByRole("heading", { name: "Task 2" })).toBeVisible();
 });
 
 it("begins a task api closed anew on the same page, with no module", async () => {
@@ -211,8 +214,21 @@ it("draws the statement's text parts as one wrapped picture, wider than tall", a
       ),
     ),
   ).toBe("Two parts.");
+  for (const json of ["null", "3", '{"statement":3}', '{"statement":[3,{"text":4}]}'])
+    expect(statementText(new TextEncoder().encode(json))).toBe("");
   expect(wrapped("a bb ccc", (line) => line.length <= 4)).toEqual(["a bb", "ccc"]);
   expect(wrapped("", () => true)).toEqual([""]);
   const picture = await createImageBitmap(await statementPicture(TEXTS[0] as string));
   expect(picture.width).toBeGreaterThan(picture.height);
+});
+
+it("refuses an answer that began another number of tasks than it gave", async () => {
+  const answer = create(BeginPaperAttemptsResponseSchema, {
+    attemptIds: ["a1", "a2"],
+    tasks: [viewOf("t1", "x")],
+  });
+  await expect(modulePageOf(answer, "page", MODULE)).rejects.toThrow("another number");
+  await expect(
+    modulePageOf(create(BeginPaperAttemptsResponseSchema, {}), "page", MODULE),
+  ).rejects.toThrow("another number");
 });
