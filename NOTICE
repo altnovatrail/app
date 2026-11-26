@@ -7,7 +7,7 @@ The build of this app includes the following third-party software, each under it
 A test checks that this list names every package the build takes from npm, at its version in
 package-lock.json, with the NOTICE of each package that holds one, as it is.
 
-@altnovatrail/canvas 0.3.46 — Apache-2.0 — Copyright the NovaTrail authors.
+@altnovatrail/canvas 0.3.47 — Apache-2.0 — Copyright the NovaTrail authors.
 @altnovatrail/contracts 0.21.1 — Apache-2.0 — Copyright the NovaTrail authors.
 @altnovatrail/skill-map 0.1.19 — Apache-2.0 — Copyright the NovaTrail authors.
 @altnovatrail/spec 0.18.27 — Apache-2.0 — Copyright the NovaTrail authors.
@@ -38,7 +38,7 @@ Google's pre-approved Sign in with Google button assets, only its white circle l
 as Google's Sign in with Google branding guidelines allow. It is not under the Apache License, and
 no license to Google's trademarks is granted with this app.
 
-Notice of @altnovatrail/canvas 0.3.46:
+Notice of @altnovatrail/canvas 0.3.47:
 
 @altnovatrail/canvas
 
