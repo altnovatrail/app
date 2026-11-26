@@ -14,7 +14,7 @@ import { AttemptProvider } from "../task/AttemptContext.tsx";
 import { inLanguage } from "../test/language.tsx";
 import "../theme/theme.css";
 import { formatHash } from "./hash.ts";
-import { ADULTS, PAPER, TASK } from "./router.ts";
+import { ADULTS, TASK } from "./router.ts";
 import { ShellBar } from "./Shell.tsx";
 import { TIP_DELAY_MS } from "./Tooltip.tsx";
 
@@ -72,28 +72,16 @@ describe("the frame of Home", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 
-  it("leads from the tutor's panel to the attempt open, and to a task from paper", async () => {
+  it("holds the tutor shut until it comes: named, its tooltip saying so, opening nothing", async () => {
     renderBar(learnerWith("a1"));
     const tutor = screen.getByRole("button", { name: "Tutor" });
-    await userEvent.click(tutor);
-    const panel = within(screen.getByRole("dialog", { name: "Tutor" }));
-    // It says that the tutor is an AI, and what the AI checks.
-    expect(panel.getByText(/The AI checks a task from paper, a program the rest/)).toBeVisible();
-    await userEvent.click(panel.getByRole("button", { name: "Continue the task" }));
-    expect(window.location.hash).toBe(formatHash(TASK));
+    expect(tutor).toHaveAttribute("aria-disabled", "true");
+    await userEvent.hover(tutor);
+    await new Promise((done) => setTimeout(done, TIP_DELAY_MS + 100));
+    expect(document.querySelector(".nt-tooltip")?.textContent).toBe("Tutor — comes later");
+    await userEvent.click(tutor, { force: true });
     expect(screen.queryByRole("dialog")).toBeNull();
-
-    await userEvent.click(tutor);
-    await userEvent.click(screen.getByRole("button", { name: "Tasks from my paper" }));
-    expect(window.location.hash).toBe(formatHash(PAPER));
-  });
-
-  it("has no Continue in the tutor's panel with no attempt open", async () => {
-    renderBar();
-    await userEvent.click(screen.getByRole("button", { name: "Tutor" }));
-    const panel = within(screen.getByRole("dialog", { name: "Tutor" }));
-    expect(panel.queryByRole("button", { name: "Continue the task" })).toBeNull();
-    expect(panel.getByRole("button", { name: "Tasks from my paper" })).toBeVisible();
+    expect(window.location.hash).not.toBe(formatHash(TASK));
   });
 
   it("says in the bell that nothing is new", async () => {

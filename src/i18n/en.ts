@@ -173,10 +173,6 @@ export const en = {
   "legal.title": "Privacy and legal information",
   "legal.intro":
     "The privacy policy, the terms of use and the consent are the texts of the operator of this copy of the app",
-  /** The button to the legal pages on the first page of the section for adults. */
-  "legal.open": "Read the privacy policy and other texts",
-  "legal.hint":
-    "The privacy policy, the terms of use, the consent to keeping works, accessibility and licenses",
   /** The way back before a legal page's heading, a button that shows its icon alone. */
   "legal.back": "Back to the list",
   "legal.privacy-policy": "Privacy Policy",
@@ -361,6 +357,7 @@ export const en = {
   "learner.back": "Profile",
   /** The hint mode on the profile's page: its group, and each mode's title, "Show where" with its line. */
   "hints.title": "Hints",
+  "hints.questions-line": "The tutor asks about a step of the work",
   "hints.questions": "Questions only",
   "hints.where": "Show where",
   "hints.where-line":
@@ -428,11 +425,8 @@ export const en = {
   "bell.title": "Notifications",
   "bell.none": "Nothing new yet",
   "bell.later": "Notifications will appear here",
-  /** The tutor's panel from the top right of Home, where there is no work: what it is and where it helps. */
-  "tutor-home.ai":
-    "The tutor is an AI — a computer program, not a person. The AI checks a task from paper, a program the rest",
-  "tutor-home.where":
-    "Open a lesson or a page from your book, and the tutor helps with the work there",
+  /** The tooltip of the tutor's button at the top right of Home, shut until the tutor comes there. */
+  "tutor-home.later": "Tutor — comes later",
   /** The heading of the learner's home: the modules connected to the profile. */
   "subjects.title": "My subjects",
   /** A module's kind on Home: the engine leads, or its skills go in a chain. */
@@ -479,8 +473,6 @@ export const en = {
   "subjects.unavailable": "Not available now",
   "subjects.connect": "Connect",
   "subjects.disconnect": "Disconnect",
-  /** On a module's card in the section for adults: the page of its LICENSE and NOTICE. */
-  "subjects.license": "License",
   /** On a module's card: its skill graph is a chain, so its lessons go one after another. */
   "subjects.sequential": "In order",
   /** The heading of the card of what comes next: the task in progress, the engine's way, the tutor time. */
@@ -552,8 +544,6 @@ export const en = {
   "skill-state.not-assessed": "Not assessed",
   /** The second way in beside Home, and its screen's heading. */
   "skillmap.title": "Skill map",
-  /** On a module's card on the screen Skill map: opens the module's map. */
-  "skillmap.open": "Open the map",
   /** Back from a module's map to the list of the maps of the modules connected. */
   /** The heading of a module's map; {module} is the module's title, in its own language. */
   "skillmap.module-title": "Skill map: {module}",
@@ -571,25 +561,10 @@ export const en = {
   /** A module of those connected from the map: its card says so in place of its button. */
   "skillmap.connected": "Connected: it is on Home now",
   /**
-   * Under a module's map, on the learner's screen and in the section for adults alike: an adult set
-   * the module's level, {date} the day of the last correction.
+   * Under a module's map on the learner's screen: an adult set the module's level, {date} the day
+   * of the last correction.
    */
   "level.set-by-adult": "The level was set by an adult on {date}",
-  /** The adult's correction of a module's level, on its map in the section for adults. */
-  "level.title": "Level",
-  /** Each press sets the level one band easier or harder: a fact the learner model takes. */
-  "level.hint":
-    "Each press moves the level one band, and the learner sees on their map that an adult set it",
-  /** {band} is the title of the band of the level, in the module's language. */
-  "level.band": "The level: {band}",
-  /** The level stands below the lowest band, {band}, where a new learner may start. */
-  "level.below": "The level: below {band}",
-  /** The button that sets the level in the band before it, {band}. */
-  "level.easier": "Easier: {band}",
-  /** The button that sets the level in the band after it, {band}. */
-  "level.harder": "Harder: {band}",
-  /** The band pressed was no longer next to the level: the map was read again. */
-  "level.moved": "The level had changed meanwhile. It shows here as it stands now",
   /** The heading of the task screen: a task has no title of its own. */
   "task.title": "Task",
   /** The name of the group of the two buttons of the mode. */
@@ -815,27 +790,23 @@ export const en = {
   /** The section for adults: its heading, and the buttons that open it. */
   "adults.title": "For grown-ups",
   /** Leaves the section for the learner's home, or the choice of the learner. */
-  "adults.close": "Close the section",
-  /** From a page of the section to its first page. */
-  "adults.back": "Back to the section",
-  /** The heading above the buttons of the language of this device, on the section's first page. */
+  "adults.close": "Close the settings",
+  /** The quiet link under Settings' list to the legal pages: Connecticut's law asks the word "privacy" there. */
+  "adults.privacy": "Privacy",
+  /** The name of the way back in a page's bar, whose words are the page above: a profile, Settings. */
+  "adults.back-to": "Back to {name}",
+  /** The heading above the rows of the language of this device, on its page Language. */
   "adults.device-language": "Language on this device",
-  "adults.device-language-hint":
-    "This section and the screens before a learner is chosen are in it",
+  "adults.device-language-hint": "Every screen of this device is in it, a learner's too",
   /** The heading above the profiles of the account, each a page of its own. */
   "adults.profiles": "Profiles",
   /** A profile's page and the button that opens it: the pseudonym is not declined. */
   "adults.profile": "Profile: {pseudonym}",
   /** The setting each task begins in: the learner switches it on the task screen. */
+  /** The group of the default mode and the language of the learner's screens. */
+  "adults.learning": "Learning",
   "adults.mode": "Default mode",
   "adults.mode-hint": "Each task begins in it. The learner can switch it on the task screen",
-  /** The language of the learner's screens, a field of the profile. */
-  "adults.language": "Language of the learner's screens",
-  /** The profile has no language: its learner's screens are in the device's. */
-  "adults.language-none": "None is chosen: the learner's screens are in the language of the device",
-  /** The profile's language is one this build does not have; {language} is its name. */
-  "adults.language-unknown":
-    "The profile's language is {language}, which this version of the app doesn't have. The learner's screens are in the language of the device",
   /** The voicing of the tutor's words by the device. */
   "adults.voicing": "Voicing",
   "adults.voicing-on": "Read the tutor's words aloud",
@@ -853,95 +824,12 @@ export const en = {
   "adults.saved": "Saved",
   /** Save with nothing changed: nothing is asked. */
   "adults.unchanged": "Nothing has changed",
-  /** The modules of a profile, on its page: each with the page of its license. */
-  "adults.modules": "Modules",
-  "adults.modules-hint": "The modules connected to the profile, and the license of each",
-  "adults.modules-open": "See the modules and their licenses",
-  "adults.modules-title": "Modules: {pseudonym}",
-  /** On the page of a module's license in the section: back to the profile's modules. */
-  "adults.modules-back": "Back to the modules",
-  /** The progress of a profile, on its page: the way to the page of the progress. */
-  "progress.section": "Progress",
-  "progress.section-hint":
-    "The skill maps, the attempts with why each task was given, and the traps that repeat",
-  "progress.open": "See the progress",
-  "progress.title": "Progress: {pseudonym}",
-  /** The reason codes are the adult's alone: no learner's screen shows them. */
-  "progress.hint": "Why each task was given shows here alone: the learner's screens don't say it",
-  "progress.maps": "Skill maps",
-  "progress.maps-hint": "The skills of each module connected, as the learner model reads them",
-  /** On a module's map in the progress: back to the page of the progress. */
-  "progress.back": "Back to the progress",
-  /** The traps that repeat: mistakes the program found in two closed attempts or more. */
-  "progress.traps": "Traps that repeat",
-  "progress.traps-hint":
-    "Mistakes the program found in two closed attempts or more, each with the advice of the module's author",
-  "progress.traps-none": "No trap repeats yet",
-  "progress.trap-advice": "Advice",
-  /** How many closed attempts found the trap: two or more. */
-  "progress.trap-found": "Found in",
-  "progress.trap-count": plural({
-    one: "{count} closed attempt",
-    other: "{count} closed attempts",
-  }),
-  "progress.trap-last": "Last time",
-  "progress.attempts": "Attempts",
-  "progress.attempts-hint": "The newest first",
-  "progress.attempts-none": "No attempts yet",
-  /** Asks api for the next page of attempts. */
-  "progress.more": "Show more",
-  /** The heading of an attempt: {task} is the task's ID in its module, as the progress names it. */
-  "progress.task": "Task {task}",
-  "progress.module": "Module",
-  /** The lesson of an attempt of a lesson's segment, by its title, or else its ID in its module. */
-  "progress.lesson": "Lesson",
-  /** The skills a solved attempt's task trains, by their titles in the module's language. */
-  "progress.skills": "Skills",
-  "progress.version": "Version",
-  "progress.outcome": "Outcome",
-  "progress.outcome-open": "Still going",
-  "progress.outcome-first": "Answered correctly at the first answer",
-  "progress.outcome-correct": "Answered correctly",
-  "progress.outcome-solution-shown": "Solution shown",
-  "progress.outcome-left": "Left: another task was begun",
-  "progress.outcome-abandoned": "Nothing was done on it for 7 days",
-  "progress.outcome-unchecked": "Not checked: this version of the module is no longer given",
-  "progress.outcome-not-suitable": "Ended: its lesson doesn't suit this profile any more",
-  "progress.outcome-done": "Finished with Done",
-  "progress.wrong": "Wrong answers",
-  "progress.begun": "Begun",
-  "progress.closed": "Closed",
-  /** Why the engine gave the task, outside a lesson. */
-  "progress.why": "Why it was given",
-  /** Why the engine gave the lesson the attempt is a segment of. */
-  "progress.why-lesson": "Why its lesson was given",
-  "progress.chosen": "Chosen",
-  /** No choice of the engine: the learner began the same task again. */
-  "progress.again": "The learner began it again: the program chose nothing",
-  /** The nine reason codes of the engine's choice. */
-  "progress.reason-consolidation":
-    "Consolidation: after a wrong answer, another task on the same skill",
-  "progress.reason-new-skill":
-    "A new skill: one not given before, whose prerequisites are counted as met, or which has none",
-  "progress.reason-queue":
-    "Next in the queue: of the skills within reach given before and not mastered, the one not given for longest",
-  "progress.reason-repetition": "Review: the time to review a mastered skill has come",
-  "progress.reason-probe": "A probe: a skill put aside comes back as a check",
-  "progress.reason-skill-chosen":
-    "The learner chose the skill on the skill map, and the program the task or lesson on it",
-  "progress.reason-author-order":
-    "The author's order: a skill with a rubric or with no assessment comes next by the skill graph",
-  "progress.reason-open-run": "The lesson begun: the learner goes on with it",
-  "progress.reason-rotation":
-    "In rotation: a skill given before comes round again, the one not given for longest first",
   /** The storage of a profile's works on the server, on the profile's page. */
   "storage.title": "Keeping works on the server",
   "storage.on": "Keeping this profile's works on the server is on",
   "storage.off": "Keeping this profile's works on the server is off",
-  /** Opens the consent, in place. */
+  /** The storage's switch: off, it opens the consent in place; on, it switches off at once, with no question. */
   "storage.keep": "Keep works on the server",
-  /** Switches the storage off at once, with no question. */
-  "storage.switch-off": "Stop keeping works on the server",
   "storage.off-hint":
     "It stops at once, and the copies of this profile's works on the server are erased. The works on this device stay",
   /** The heading of the consent, above the text storage-consent. */
@@ -966,10 +854,12 @@ export const en = {
   "quota.title": "Tutor time",
   "quota.hint":
     "How much of today's tutor time — the platform's AI, which checks work and words the tutor's replies — this profile and the whole account have used",
-  /** The share of the profile's own cap, as a percentage: {percent} is "40%". */
-  "quota.profile": "This profile: {percent} used",
-  /** The share of the cap of the whole account, which all its profiles use. */
-  "quota.account": "The whole account: {percent} used",
+  /** The row of the share of the profile's own cap. */
+  "quota.this-profile": "This profile",
+  /** The row of the share of the cap of the whole account, which all its profiles use. */
+  "quota.whole-account": "The whole account",
+  /** A share at its row's end, beside its bar: {percent} is "40%". */
+  "quota.used": "{percent} used",
   /** The profile's or the account's cap is reached: no work of the profile goes to platform AI. */
   "quota.reached":
     "Today's tutor time is used up: until it renews, the platform's AI checks no work of this profile",
@@ -990,34 +880,40 @@ export const en = {
   "ownkey.open-profile": "Open my profile",
   /** The account has no owner's profile of an adult as a learner. */
   "ownkey.no-profile": "Only your own profile as an adult learner can have an own AI key",
-  /** What happens to the key, said before its field, in words and with no links. */
-  "ownkey.server":
-    "The key goes to NovaTrail's server with each request of your profile that calls the AI, and lives there only while the request runs: not in the database and not in the logs",
-  "ownkey.billing":
-    "The provider links each such request to your account with it and to your terms with it",
-  "ownkey.not-protected":
-    "A PIN doesn't protect the key, and the browser doesn't encrypt it: whoever holds this device can get at a key kept on it",
+  /** What happens to the key: the caption of a group of four rows, each a line and one under it. */
+  "ownkey.about": "About the key",
+  "ownkey.server": "Goes to the server only with a request",
+  "ownkey.server-line": "Only while the request runs: never into the database or the logs",
+  "ownkey.billing": "The provider bills your account",
+  "ownkey.billing-line": "Each request goes under your account and your terms with the provider",
+  "ownkey.not-protected": "Not encrypted on this device",
+  "ownkey.not-protected-line":
+    "A PIN doesn't protect the key: whoever holds this device can get at a key kept on it",
   /** How to limit the damage, for OpenAI and Anthropic. */
-  "ownkey.limits":
-    "To limit the damage, make the key in a separate OpenAI project with a hard spending limit, or bind it to a separate Anthropic workspace with a monthly limit, not the default workspace, where no limit can be set. Give the key a lifetime, and if it may have fallen into other hands, revoke it at the provider",
+  "ownkey.limits": "Set a hard spending limit",
+  "ownkey.limits-line":
+    "A separate OpenAI project with a hard limit, or a separate Anthropic workspace with a monthly limit, not the default one. Give the key a lifetime, and revoke it at the provider if it may have leaked",
   "ownkey.provider": "AI provider",
   "ownkey.provider-choose": "Choose the provider",
+  /** The provider's row before one is chosen among several. */
+  "ownkey.provider-none": "Not chosen",
   /** The server opens no provider to an own key: on a deployment, until its models are admitted. */
   "ownkey.no-providers":
     "No AI provider takes an own key on this server yet. Your profile's requests go to the platform's AI",
   "ownkey.key": "Key",
+  "ownkey.key-placeholder": "Paste the key",
   "ownkey.key-needed": "Enter the key",
   "ownkey.keep": "Keep on this device",
-  "ownkey.keep-hint":
-    "Without this mark the key stays only in this tab's memory until you switch the learner or reload, and then you enter it again",
+  "ownkey.keep-hint": "Off: the key stays in this tab only, until you switch the learner or reload",
   "ownkey.connect": "Connect",
   /** The answers of the check of a new key; the former key, if any, stays as it was. */
   "ownkey.invalid": "The provider doesn't accept this key: it isn't valid, or it was revoked",
   "ownkey.no-permission": "The key is valid, but it has no right to the models the tutor uses",
   "ownkey.provider-closed": "This provider doesn't take an own key for your profile",
   "ownkey.check-failed": "The key couldn't be checked. Try again",
-  /** The key connected: {provider} is the provider's name, {last4} the key's last four characters. */
-  "ownkey.connected": "Connected: a key of {provider} ending in {last4}",
+  /** The key connected, under its provider's name: {last4} its last four characters. */
+  "ownkey.ending": "Key ending in {last4}",
+  "ownkey.connected-hint": "Your profile's requests to the tutor go with this key",
   "ownkey.kept": "The key is kept on this device",
   "ownkey.in-memory": "The key is in this tab's memory alone",
   "ownkey.not-saved": "The key couldn't be kept on this device: it is in this tab's memory alone",
@@ -1118,11 +1014,6 @@ export const en = {
   "voice.disallow": "Turn voicing off on this device",
   /** Above the voices of each language. */
   "voice.languages": "Each language is read by a voice of this device. You can choose it",
-  /** A language this device has no voice for: the text stays, and nothing reads it. */
-  "voice.none": "This device has no voice for this language. Its texts stay on the screen",
-  /** How to add a voice, in words with no link. */
-  "voice.add":
-    "A voice is added in the system's settings: in Windows, in the speech settings; on a Mac, the voice is downloaded from Apple; on Android, as the voice data of the language",
   /** Says a sentence by the voice chosen. */
   "voice.sample": "Read a sample aloud",
   "voice.not-kept": "The choice wasn't kept on this device. Try again",

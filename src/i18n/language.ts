@@ -33,12 +33,3 @@ export function deviceLanguage(languages: readonly string[]): Language {
   }
   return "en";
 }
-
-/**
- * The language of a learner's screens: the field of the profile as the build finds it — a tag it
- * does not know, written by a newer build or another copy, cut from the right — else the device's.
- * The field is never written back.
- */
-export function learnerLanguage(field: string | undefined, device: Language): Language {
-  return (field === undefined ? undefined : lookup(field)) ?? device;
-}

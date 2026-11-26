@@ -1,14 +1,15 @@
-// The page Own AI key in the section for adults (the contract): the owner connects,
-// replaces and removes their own key at an AI provider. It works while the owner profile of the
-// category `adult` is the learner chosen: with none chosen, it opens that profile — no PIN while
-// the account has no child. Before the field it says in words what happens to the key. The
-// providers are those `ListOwnKeyProviders` gives, with no list of the build's own; with none, the
-// page says so and has no field. "Connect" asks `CheckOwnKey`, and only a key it accepted takes the
-// place of the former one; the key is shown by its provider and last four characters alone, never
-// whole, and lives in no state of the page but its field. "Keep on this device" is off until the
-// adult sets it. A refusal of the key stays beside it with what to do, and its limit reached with
-// which limit, when access comes back if api says, and what to do about that limit; "Remove key" is
-// the one way to platform AI, and the owner's. In the device's language, as the section is.
+// The page Own AI key in the section for adults (the contract), drawn as a device's settings: the
+// owner connects, replaces and removes their own key at an AI provider. It works while the owner
+// profile of the category `adult` is the learner chosen: with none chosen, it opens that profile —
+// no PIN while the account has no child. The providers are those `ListOwnKeyProviders` gives, with
+// no list of the build's own; with none, the page says so and has no field. "Connect" asks
+// `CheckOwnKey`, and only a key it accepted takes the place of the former one; the key is shown by
+// its provider and last four characters alone, never whole, and lives in no state of the page but
+// its field. "Keep on this device" is off until the adult sets it. A refusal of the key stays beside
+// it with what to do, and its limit reached with which limit, when access comes back if api says,
+// and what to do about that limit; "Remove key" is the one way to platform AI, and the owner's.
+// Under it all, a group says in words what happens to the key. In the device's language, as the
+// section is.
 import type { Profile } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import { OwnKeyCheck } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import { Cause, LimitCause } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
@@ -33,7 +34,7 @@ import { keyFor } from "../i18n/codes.ts";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import type { HeldKey, KeyRefusal } from "../ownkey/holder.ts";
 import { keyed, useHeldKey, useKeyHolder } from "../ownkey/OwnKeyContext.tsx";
-import { Erase } from "./DevicePage.tsx";
+import { ActionRow, ChoiceRow, Group, InfoRow, SwitchRow } from "./rows.tsx";
 import { SectionScreen } from "./SectionScreen.tsx";
 
 /** The page Own AI key. */
@@ -47,22 +48,55 @@ const CHECK_KEYS = {
   [OwnKeyCheck.UNSPECIFIED]: "ownkey.check-failed",
 } as const;
 
-/** What the page says before the field, in words and with no links. */
-function Warning() {
+/** What happens to the key: four rows in words, with no links. */
+function About() {
   const { words } = useLanguage();
   return (
-    <div className="nt-group">
-      <p>{words.text("ownkey.server")}</p>
-      <p>{words.text("ownkey.billing")}</p>
-      <p>{words.text("ownkey.not-protected")}</p>
-      <p>{words.text("ownkey.limits")}</p>
-    </div>
+    <Group title={words.text("ownkey.about")} className="nt-set-about">
+      <InfoRow
+        icon="set-server"
+        tile="blue"
+        label={words.text("ownkey.server")}
+        sub={words.text("ownkey.server-line")}
+      />
+      <InfoRow
+        icon="set-card"
+        tile="green"
+        label={words.text("ownkey.billing")}
+        sub={words.text("ownkey.billing-line")}
+      />
+      <InfoRow
+        icon="set-lock"
+        tile="grey"
+        label={words.text("ownkey.not-protected")}
+        sub={words.text("ownkey.not-protected-line")}
+      />
+      <InfoRow
+        icon="set-limit"
+        tile="orange"
+        label={words.text("ownkey.limits")}
+        sub={words.text("ownkey.limits-line")}
+      />
+    </Group>
+  );
+}
+
+/** A group of one row of words, and the action it leads to where it has one. */
+function Said({ text, children }: { readonly text: string; readonly children?: ReactNode }) {
+  return (
+    <Group>
+      <div className="nt-set-row nt-set-lines">
+        <p>{text}</p>
+      </div>
+      {children}
+    </Group>
   );
 }
 
 /**
- * A new key: the provider, the field and the mark, and its check. A key not accepted changes
- * nothing; one accepted takes the place of the former one, and its field is emptied.
+ * A new key: the provider and the key in one group, the mark in its own, and Connect, which checks
+ * it. Connect stays grey until a key is typed, and pressed then it says what is missing. A key not
+ * accepted changes nothing; one accepted takes the place of the former one, and its field is emptied.
  */
 function NewKey({
   profileId,
@@ -84,9 +118,10 @@ function NewKey({
     [profileId],
   );
   const providers = useRequest(read);
-  const providerField = useRef<HTMLSelectElement>(null);
-  // The key is in its field alone, never in the page's state.
+  const providerField = useRef<HTMLButtonElement>(null);
+  // The key is in its field alone, never in the page's state: the page knows only that one is typed.
   const keyField = useRef<HTMLInputElement>(null);
+  const [typed, setTyped] = useState(false);
   const [chosen, setChosen] = useState("");
   const [keep, setKeep] = useState(false);
   const [providerError, setProviderError] = useState(false);
@@ -100,6 +135,7 @@ function NewKey({
 
   async function submit(event: FormEvent) {
     event.preventDefault();
+    if (pending) return;
     const key = keyField.current?.value.trim() ?? "";
     const given = list.find((each) => each.provider === provider);
     setProviderError(given === undefined);
@@ -132,96 +168,99 @@ function NewKey({
   }
 
   if (providers.status === "loading") {
+    const row = (label: string, end?: ReactNode) => (
+      <div className="nt-set-row">
+        <Sk width={label} height="1rem" radius="0.3125rem" />
+        {end}
+      </div>
+    );
     return (
       <Loading>
-        {["8rem", "6rem"].map((label) => (
-          <div key={label} className="nt-field nt-loading nt-field-loading">
-            <Sk width={label} height="1rem" radius="0.3125rem" />
-            <Sk width="100%" height="var(--nt-target)" radius="var(--nt-radius-field)" />
+        <div className="nt-set-sec">
+          <div className="nt-set-group">
+            {row("5rem", <Sk width="6rem" height="1rem" radius="0.3125rem" />)}
+            {row("3rem")}
           </div>
-        ))}
-        <div className="nt-check">
-          <Sk width="2.75rem" height="2.75rem" radius="0.5rem" />
-          <Sk width="14rem" height="0.875rem" radius="0.3125rem" />
         </div>
-        <Sk width="9rem" height="var(--nt-target)" radius="999px" />
+        <div className="nt-set-sec">
+          <div className="nt-set-group">
+            {row("11rem", <Sk width="3.1875rem" height="1.9375rem" radius="1rem" />)}
+          </div>
+        </div>
+        <div className="nt-set-sec">
+          <div className="nt-set-group">{row("5rem")}</div>
+        </div>
       </Loading>
     );
   }
   if (providers.status === "failed") {
     return <ReadFailure failure={providers.failure} onRetry={providers.retry} />;
   }
-  if (list.length === 0) return <p>{words.text("ownkey.no-providers")}</p>;
+  if (list.length === 0) return <Said text={words.text("ownkey.no-providers")} />;
   return (
     <form noValidate onSubmit={(event) => void submit(event)}>
-      <div className="nt-field">
-        <label htmlFor={`${id}-provider`}>{words.text("ownkey.provider")}</label>
-        <select
-          ref={providerField}
-          id={`${id}-provider`}
-          value={provider}
-          aria-invalid={providerError}
-          aria-describedby={described(providerError && `${id}-provider-error`)}
-          onChange={(event) => setChosen(event.target.value)}
-        >
-          {only === "" ? <option value="">{words.text("ownkey.provider-choose")}</option> : null}
-          {list.map((each) => (
-            <option key={each.provider} value={each.provider}>
-              {each.name}
-            </option>
-          ))}
-        </select>
-        {providerError ? (
-          <p id={`${id}-provider-error`} className="nt-error">
-            {words.text("ownkey.provider-choose")}
-          </p>
-        ) : null}
-      </div>
-      <div className="nt-field">
-        <label htmlFor={`${id}-key`}>{words.text("ownkey.key")}</label>
-        <input
-          ref={keyField}
-          id={`${id}-key`}
-          type="password"
-          autoComplete="off"
-          autoCapitalize="off"
-          spellCheck={false}
-          aria-invalid={keyError !== undefined}
-          aria-describedby={described(keyError !== undefined && `${id}-key-error`)}
+      <Group
+        note={
+          <>
+            <p>{words.text(onCancel === undefined ? "ownkey.hint" : "ownkey.replace-hint")}</p>
+            {providerError ? (
+              <p id={`${id}-provider-error`} className="nt-error">
+                {words.text("ownkey.provider-choose")}
+              </p>
+            ) : null}
+            {keyError === undefined ? null : (
+              <p id={`${id}-key-error`} className="nt-error">
+                {keyError}
+              </p>
+            )}
+          </>
+        }
+      >
+        <ChoiceRow
+          label={words.text("ownkey.provider")}
+          options={list.map((each) => [each.provider, each.name] as const)}
+          value={provider === "" ? undefined : provider}
+          shown={words.text("ownkey.provider-none")}
+          describedBy={described(providerError && `${id}-provider-error`)}
+          buttonRef={providerField}
+          onChange={setChosen}
         />
-        {keyError === undefined ? null : (
-          <p id={`${id}-key-error`} className="nt-error">
-            {keyError}
-          </p>
-        )}
-      </div>
-      <div className="nt-field">
-        <div className="nt-check">
+        <div className="nt-set-row nt-set-field">
+          <label htmlFor={`${id}-key`} className="nt-set-label">
+            {words.text("ownkey.key")}
+          </label>
           <input
-            id={`${id}-keep`}
-            type="checkbox"
-            checked={keep}
-            aria-describedby={`${id}-keep-hint`}
-            onChange={(event) => setKeep(event.target.checked)}
+            ref={keyField}
+            id={`${id}-key`}
+            type="password"
+            autoComplete="off"
+            autoCapitalize="off"
+            spellCheck={false}
+            placeholder={words.text("ownkey.key-placeholder")}
+            aria-invalid={keyError !== undefined}
+            aria-describedby={described(keyError !== undefined && `${id}-key-error`)}
+            onInput={(event) => setTyped(event.currentTarget.value.trim() !== "")}
           />
-          <label htmlFor={`${id}-keep`}>{words.text("ownkey.keep")}</label>
         </div>
-        <p id={`${id}-keep-hint`} className="nt-hint">
-          {words.text("ownkey.keep-hint")}
-        </p>
-      </div>
-      <div className="nt-buttons">
-        <button type="submit" disabled={pending}>
-          {words.text("ownkey.connect")}
-        </button>
+      </Group>
+      <Group
+        note={<p id={`${id}-keep-hint`}>{words.text(keep ? "ownkey.kept" : "ownkey.keep-hint")}</p>}
+      >
+        <SwitchRow
+          label={words.text("ownkey.keep")}
+          checked={keep}
+          describedBy={`${id}-keep-hint`}
+          onChange={setKeep}
+        />
+      </Group>
+      <Group>
+        <ActionRow submit label={words.text("ownkey.connect")} off={pending || !typed} />
         {onCancel === undefined ? null : (
-          <button type="button" className="nt-secondary" onClick={onCancel}>
-            {words.text("common.cancel")}
-          </button>
+          <ActionRow label={words.text("common.cancel")} onPress={onCancel} />
         )}
-      </div>
+      </Group>
       {failure === undefined ? null : (
-        <p role="alert" className="nt-error">
+        <p role="alert" className="nt-error nt-set-alert">
           {failureText(failure, words)}
         </p>
       )}
@@ -255,7 +294,66 @@ function Refusal({ refusal }: { readonly refusal: KeyRefusal }) {
   );
 }
 
-/** The key connected: its provider and last four, where it lives, and its replacement or removal. */
+/**
+ * "Remove key" and its question: asked, the group holds the question, Erase and Cancel, the focus
+ * on Erase; answered, the focus goes back to Remove key.
+ */
+function RemoveKey({ onRemove }: { readonly onRemove: () => Promise<void> }) {
+  const { words } = useLanguage();
+  const id = useId();
+  const [asking, setAsking] = useState(false);
+  const [pending, setPending] = useState(false);
+  const remove = useRef<HTMLButtonElement>(null);
+  const yes = useRef<HTMLButtonElement>(null);
+  const asked = useRef(false);
+  useEffect(() => {
+    if (asking) yes.current?.focus();
+    else if (asked.current) remove.current?.focus();
+    asked.current = asking;
+  }, [asking]);
+  const note = <p>{words.text("ownkey.remove-hint")}</p>;
+  if (!asking) {
+    return (
+      <Group note={note}>
+        <ActionRow
+          danger
+          label={words.text("ownkey.remove")}
+          buttonRef={remove}
+          onPress={() => setAsking(true)}
+        />
+      </Group>
+    );
+  }
+  return (
+    <Group note={note}>
+      <div className="nt-set-row nt-set-lines">
+        <p id={`${id}-question`}>{words.text("ownkey.remove-confirm")}</p>
+      </div>
+      {/* Not disabled while it is under way: a disabled button would drop the focus. */}
+      <ActionRow
+        danger
+        label={words.text("device.erase")}
+        off={pending}
+        describedBy={`${id}-question`}
+        buttonRef={yes}
+        onPress={() => {
+          if (pending) return;
+          setPending(true);
+          void onRemove().finally(() => {
+            setPending(false);
+            setAsking(false);
+          });
+        }}
+      />
+      <ActionRow label={words.text("common.cancel")} onPress={() => setAsking(false)} />
+    </Group>
+  );
+}
+
+/**
+ * The key connected: its provider and last four, with a refusal of it or its limit; where it lives;
+ * its replacement; and its removal.
+ */
 function Connected({
   profileId,
   held,
@@ -272,59 +370,60 @@ function Connected({
   const [pending, setPending] = useState(false);
   if (replacing) {
     return (
-      <>
-        <p id={`${id}-replace`}>{words.text("ownkey.replace-hint")}</p>
-        <NewKey
-          profileId={profileId}
-          onConnected={() => setReplacing(false)}
-          onCancel={() => setReplacing(false)}
-        />
-      </>
+      <NewKey
+        profileId={profileId}
+        onConnected={() => setReplacing(false)}
+        onCancel={() => setReplacing(false)}
+      />
     );
   }
   return (
     <>
-      <p role="status">
-        {words.text("ownkey.connected", { provider: held.name, last4: held.last4 })}
-      </p>
-      {refusal === undefined ? null : <Refusal refusal={refusal} />}
-      <div className="nt-field">
-        <div className="nt-check">
-          <input
-            id={`${id}-keep`}
-            type="checkbox"
-            checked={held.kept}
-            aria-disabled={pending}
-            aria-describedby={`${id}-keep-hint`}
-            onChange={(event) => {
-              if (pending) return;
-              const keep = event.target.checked;
-              setPending(true);
-              void holder.setKeep(profileId, keep).finally(() => setPending(false));
-            }}
-          />
-          <label htmlFor={`${id}-keep`}>{words.text("ownkey.keep")}</label>
-        </div>
-        <p id={`${id}-keep-hint`} className="nt-hint">
-          {words.text(held.kept ? "ownkey.kept" : "ownkey.in-memory")}
-        </p>
-        {held.unsaved ? (
-          <p role="alert" className="nt-error">
-            {words.text("ownkey.not-saved")}
-          </p>
-        ) : null}
-      </div>
-      <div className="nt-buttons">
-        <button type="button" className="nt-secondary" onClick={() => setReplacing(true)}>
-          {words.text("ownkey.replace")}
-        </button>
-      </div>
-      <p>{words.text("ownkey.remove-hint")}</p>
-      <Erase
-        label={words.text("ownkey.remove")}
-        question={words.text("ownkey.remove-confirm")}
-        onErase={() => holder.remove(profileId)}
-      />
+      <Group
+        note={
+          <>
+            {refusal === undefined ? null : <Refusal refusal={refusal} />}
+            <p>{words.text("ownkey.connected-hint")}</p>
+          </>
+        }
+      >
+        <InfoRow
+          status
+          icon="set-key"
+          tile="orange"
+          label={held.name}
+          sub={words.text("ownkey.ending", { last4: held.last4 })}
+        />
+      </Group>
+      <Group
+        note={
+          <>
+            <p id={`${id}-keep-hint`}>
+              {words.text(held.kept ? "ownkey.kept" : "ownkey.in-memory")}
+            </p>
+            {held.unsaved ? (
+              <p role="alert" className="nt-error">
+                {words.text("ownkey.not-saved")}
+              </p>
+            ) : null}
+          </>
+        }
+      >
+        <SwitchRow
+          label={words.text("ownkey.keep")}
+          checked={held.kept}
+          busy={pending}
+          describedBy={`${id}-keep-hint`}
+          onChange={(keep) => {
+            setPending(true);
+            void holder.setKeep(profileId, keep).finally(() => setPending(false));
+          }}
+        />
+      </Group>
+      <Group note={<p>{words.text("ownkey.replace-hint")}</p>}>
+        <ActionRow label={words.text("ownkey.replace")} onPress={() => setReplacing(true)} />
+      </Group>
+      <RemoveKey onRemove={() => holder.remove(profileId)} />
     </>
   );
 }
@@ -353,7 +452,7 @@ export function OwnKeyPage({
     had.current = held !== undefined;
   }, [held]);
   let shown: ReactNode;
-  if (owner === undefined) shown = <p>{words.text("ownkey.no-profile")}</p>;
+  if (owner === undefined) shown = <Said text={words.text("ownkey.no-profile")} />;
   else if (open && state.status === "open") {
     shown =
       state.key === undefined ? (
@@ -368,23 +467,20 @@ export function OwnKeyPage({
       );
   } else if (state.status !== "opening") {
     shown = (
-      <>
-        <p>{words.text("ownkey.not-open")}</p>
+      <Said text={words.text("ownkey.not-open")}>
         {onOpenOwner === undefined ? null : (
-          <div className="nt-buttons">
-            <button type="button" onClick={onOpenOwner}>
-              {words.text("ownkey.open-profile")}
-            </button>
-          </div>
+          <ActionRow label={words.text("ownkey.open-profile")} onPress={onOpenOwner} />
         )}
-      </>
+      </Said>
     );
   }
   return (
     <SectionScreen title={words.text("ownkey.title")}>
-      <Warning />
-      {shown === undefined ? null : <div className="nt-group">{shown}</div>}
-      <p role="status">{removed ? words.text("ownkey.removed") : null}</p>
+      <p role="status" className="nt-hidden-label">
+        {removed ? words.text("ownkey.removed") : null}
+      </p>
+      {shown}
+      <About />
     </SectionScreen>
   );
 }

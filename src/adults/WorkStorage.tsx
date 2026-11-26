@@ -11,22 +11,14 @@
 import type { Profile } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import { Action } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
 import { Cause } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
-import {
-  type FormEvent,
-  type ReactNode,
-  useCallback,
-  useEffect,
-  useId,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { type FormEvent, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { useApi, useRequest } from "../api/ApiContext.tsx";
 import type { Api } from "../api/client.ts";
 import { ApiError, type Failure, parseFailure, refusedWith } from "../api/failure.ts";
 import { ReadFailure } from "../api/ReadFailure.tsx";
 import { failureText } from "../api/words.ts";
 import { Loading, Sk } from "../app/Skeleton.tsx";
+import { Tick } from "../app/Tick.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { LegalText, NextLegalText } from "../legal/LegalText.tsx";
 import { readLegal, STORAGE_TEXT, type Versions, versionsOf } from "../legal/texts.ts";
@@ -34,6 +26,7 @@ import type { Device } from "../storage/device.ts";
 import { openProfile } from "../storage/profile.ts";
 import { drawPicture } from "../works/picture.ts";
 import { createSender, type Draw } from "../works/stored.ts";
+import { Group } from "./rows.tsx";
 
 /** No text: before the first read, and after a failure. */
 const NO_TEXT: Versions = { current: undefined, next: undefined };
@@ -140,19 +133,21 @@ function Consent({
       <p id={`${id}-what`}>{words.text("storage.what")}</p>
       <div className="nt-field">
         <div className="nt-check">
-          <input
-            ref={field}
-            id={`${id}-agree`}
-            type="checkbox"
-            checked={agreed}
-            aria-invalid={error !== undefined}
-            aria-describedby={error === undefined ? `${id}-what` : `${id}-what ${id}-error`}
-            onChange={(event) => {
-              setAgreedTo(event.target.checked ? version : undefined);
-              // Ticked, the field is right: what it lacked is said no more.
-              if (event.target.checked) setError(undefined);
-            }}
-          />
+          <Tick>
+            <input
+              ref={field}
+              id={`${id}-agree`}
+              type="checkbox"
+              checked={agreed}
+              aria-invalid={error !== undefined}
+              aria-describedby={error === undefined ? `${id}-what` : `${id}-what ${id}-error`}
+              onChange={(event) => {
+                setAgreedTo(event.target.checked ? version : undefined);
+                // Ticked, the field is right: what it lacked is said no more.
+                if (event.target.checked) setError(undefined);
+              }}
+            />
+          </Tick>
           <label htmlFor={`${id}-agree`}>{words.text("storage.agree")}</label>
         </div>
         {error === undefined ? null : (
@@ -231,18 +226,18 @@ export function WorkStorage({
     [device, profileId, sender],
   );
   const id = useId();
-  const toggle = useRef<HTMLButtonElement>(null);
+  const toggle = useRef<HTMLInputElement>(null);
   const [consenting, setConsenting] = useState(false);
   const [pending, setPending] = useState(false);
   const [failure, setFailure] = useState<Failure | undefined>(undefined);
-  // Each switch done, and the consent left, gives the focus to the button now in place of what went.
+  // Each switch done, and the consent left, gives the focus back to the switch.
   const [settled, setSettled] = useState(0);
   useEffect(() => {
     if (settled > 0) toggle.current?.focus();
   }, [settled]);
   const on = profile.workStorage;
   // Switched on elsewhere — another tab —, the consent open here has nothing left to ask: it goes,
-  // and gives the focus to the button now in its place, rather than come back once it is off again.
+  // and gives the focus back to the switch, rather than come back once it is off again.
   useEffect(() => {
     if (on && consenting) {
       setConsenting(false);
@@ -273,72 +268,65 @@ export function WorkStorage({
     }
   }
 
-  let control: ReactNode;
-  if (on) {
-    control = (
-      <>
-        <div className="nt-buttons">
-          {/* Not disabled while it is under way: a disabled button would drop the focus. */}
-          <button
-            ref={toggle}
-            type="button"
-            className="nt-secondary"
-            aria-disabled={pending}
-            aria-describedby={`${id}-off`}
-            onClick={() => void switchOff()}
-          >
-            {words.text("storage.switch-off")}
-          </button>
-        </div>
-        <p id={`${id}-off`} className="nt-hint">
-          {words.text("storage.off-hint")}
-        </p>
-      </>
-    );
-  } else if (consenting) {
-    control = (
-      <Consent
-        profile={profile}
-        onSwitchedOn={(changed) => {
-          onSaved(changed);
-          void followed(changed);
-          setConsenting(false);
-          setSettled((n) => n + 1);
-        }}
-        onCancel={() => {
-          setConsenting(false);
-          setSettled((n) => n + 1);
-        }}
-        onFailed={onFailed}
-      />
-    );
-  } else {
-    control = (
-      <div className="nt-buttons">
-        <button
-          ref={toggle}
-          type="button"
-          onClick={() => {
-            setFailure(undefined);
-            setConsenting(true);
-          }}
-        >
-          {words.text("storage.keep")}
-        </button>
-      </div>
-    );
-  }
-
   return (
-    <section className="nt-group" aria-labelledby={`${id}-title`}>
-      <h2 id={`${id}-title`}>{words.text("storage.title")}</h2>
-      <p role="status">{words.text(on ? "storage.on" : "storage.off")}</p>
-      {control}
-      {failure === undefined ? null : (
-        <p role="alert" className="nt-error">
-          {failureText(failure, words)}
-        </p>
-      )}
-    </section>
+    <Group
+      title={words.text("storage.title")}
+      note={
+        <>
+          <p id={`${id}-state`} role="status">
+            {words.text(on ? "storage.on" : "storage.off")}
+          </p>
+          {on ? <p id={`${id}-off`}>{words.text("storage.off-hint")}</p> : null}
+          {failure === undefined ? null : (
+            <p role="alert" className="nt-error">
+              {failureText(failure, words)}
+            </p>
+          )}
+        </>
+      }
+    >
+      <label className="nt-set-row">
+        <span className="nt-set-text">
+          <span className="nt-set-label">{words.text("storage.keep")}</span>
+        </span>
+        {/* Not disabled while it is under way: a disabled switch would drop the focus. */}
+        <input
+          ref={toggle}
+          type="checkbox"
+          role="switch"
+          className="nt-set-input"
+          checked={on}
+          aria-checked={on}
+          aria-disabled={pending || undefined}
+          aria-describedby={on ? `${id}-off` : undefined}
+          onChange={() => {
+            if (pending) return;
+            setFailure(undefined);
+            // On, it goes off at once; off, it asks the consent first, and a second press leaves it.
+            if (on) void switchOff();
+            else setConsenting((now) => !now);
+          }}
+        />
+        <span className="nt-set-switch" />
+      </label>
+      {consenting && !on ? (
+        <div className="nt-set-inset">
+          <Consent
+            profile={profile}
+            onSwitchedOn={(changed) => {
+              onSaved(changed);
+              void followed(changed);
+              setConsenting(false);
+              setSettled((n) => n + 1);
+            }}
+            onCancel={() => {
+              setConsenting(false);
+              setSettled((n) => n + 1);
+            }}
+            onFailed={onFailed}
+          />
+        </div>
+      ) : null}
+    </Group>
   );
 }

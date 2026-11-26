@@ -10,6 +10,7 @@ import { render, screen, within } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
+import { ru } from "../i18n/ru.ts";
 import { type Packages, PackagesProvider } from "../packages/PackagesContext.tsx";
 import { allowVoicing, chooseVoice, readVoicing } from "../storage/voicing.ts";
 import { memoryDevice } from "../test/device.ts";
@@ -160,13 +161,18 @@ describe("the section Voicing of This device", () => {
       text: "This is how the tutor's words will sound.",
       voice: DANIEL,
     });
-    // Russian has a network voice alone: no voice, and how to add one, in words.
-    const russian = fieldset("Russian");
-    expect(russian.queryByRole("radio")).toBeNull();
-    expect(
-      russian.getByText("This device has no voice for this language. Its texts stay on the screen"),
-    ).toBeTruthy();
-    expect(russian.getByText(/A voice is added in the system's settings/)).toBeTruthy();
+    // The device's language alone among the build's: none of the others is listed.
+    expect(screen.queryByRole("group", { name: "Russian" })).toBeNull();
+  });
+
+  it("names no language that has a network voice alone, nor the line that a language is chosen", () => {
+    withSpeech(
+      fakeSpeech([voice("Web", "ru-RU", { local: false })]).speech,
+      <DeviceVoices device={memoryDevice().device} />,
+      "ru",
+    );
+    expect(screen.queryByRole("group")).toBeNull();
+    expect(screen.queryByText(ru["voice.languages"])).toBeNull();
   });
 
   it("takes the choice kept on this device, and lists the languages of the modules kept", async () => {
@@ -178,12 +184,11 @@ describe("the section Voicing of This device", () => {
       <PackagesProvider value={GERMAN}>
         <DeviceVoices device={device} />
       </PackagesProvider>,
-      "ru",
     );
     await expect
-      .poll(() => fieldset("Английский").getByRole("radio", { name: "Daniel" }))
+      .poll(() => fieldset("English").getByRole("radio", { name: "Daniel" }))
       .toBeChecked();
-    const german = await screen.findByRole("group", { name: "Немецкий" });
+    const german = await screen.findByRole("group", { name: "German" });
     expect(within(german).getByRole("radio", { name: "Anna" })).toBeChecked();
     // No sentence of a sample in a language the build does not speak.
     expect(within(german).queryByRole("button")).toBeNull();
@@ -235,15 +240,9 @@ describe("the section Voicing of This device", () => {
     expect(screen.queryByRole("group")).toBeNull();
   });
 
-  it("says no voice for each language on the engine's own synthesis, which has none here", () => {
+  it("names no language on the engine's own synthesis, which has no voice here", () => {
     withSpeech(ownSynthesis(), <DeviceVoices device={memoryDevice().device} />);
-    for (const name of ["English", "Russian"]) {
-      expect(
-        fieldset(name).getByText(
-          "This device has no voice for this language. Its texts stay on the screen",
-        ),
-      ).toBeTruthy();
-    }
+    expect(screen.queryByRole("group")).toBeNull();
   });
 
   it("asks for the leave on the browser's own synthesis where it runs on Linux", () => {

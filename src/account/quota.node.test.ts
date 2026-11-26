@@ -17,7 +17,7 @@ import { createApi } from "../api/client.ts";
 import { ApiError } from "../api/failure.ts";
 import { dateTimeFormat, percentText } from "../i18n/intl.ts";
 import { WORDS } from "../i18n/words.ts";
-import { adultQuotaTexts, learnerQuotaText, readQuota, shareText } from "./quota.ts";
+import { type AdultQuota, adultQuota, learnerQuotaText, readQuota, shareText } from "./quota.ts";
 
 function harness(routes: (router: ConnectRouter) => void) {
   const on = { stale: vi.fn(), accountGone: async () => {}, noAccess: async () => {} };
@@ -128,8 +128,19 @@ describe("the line of the tutor's panel", () => {
   });
 });
 
+/** What the adult sees, as lines: each share by its words and how much, then the cap and the day. */
+function adultQuotaTexts(...args: Parameters<typeof adultQuota>): string[] {
+  const quota: AdultQuota = adultQuota(...args);
+  if ("closed" in quota) return [quota.closed];
+  return [
+    ...quota.shares.map((each) => `${each.label}: ${each.used}`),
+    ...(quota.reached === undefined ? [] : [quota.reached]),
+    ...(quota.renews === undefined ? [] : [quota.renews]),
+  ];
+}
+
 describe("the adult's lines", () => {
-  it("say the profile's share and the account's, and when the next family day begins", () => {
+  it("say the profile's share and the account's, each with its percentage, and when the next family day begins", () => {
     const spent = share({
       profilePercent: 40,
       accountPercent: 65,
@@ -139,6 +150,11 @@ describe("the adult's lines", () => {
       "This profile: 40% used",
       "The whole account: 65% used",
       `Tutor time renews tomorrow at ${time("en", MIDNIGHT)}`,
+    ]);
+    const quota = adultQuota(spent, WORDS.en, EVENING);
+    expect("shares" in quota && quota.shares.map((each) => [each.whose, each.percent])).toEqual([
+      ["profile", 40],
+      ["account", 65],
     ]);
     expect(adultQuotaTexts(spent, WORDS.ru, EVENING)).toEqual([
       `Этот профиль: потрачено ${percentText("ru", 40)}`,

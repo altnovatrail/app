@@ -13,7 +13,6 @@ import {
   VoicingSpeed,
 } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import { fromBinary, type MessageInitShape, toBinary } from "@bufbuild/protobuf";
-import { type Language, lookup } from "../i18n/language.ts";
 
 /** The settings of a profile's page, each as the build shows it. */
 export interface ProfileForm {
@@ -22,8 +21,6 @@ export interface ProfileForm {
   /** The code of the avatar as the profile gives it, empty for none: one the build does not know too. */
   readonly avatar: string;
   readonly defaultMode: Mode.BY_STEPS | Mode.SELF;
-  /** The language of the learner's screens; none while the field is absent or unknown to the build. */
-  readonly language: Language | undefined;
   readonly voicing: boolean;
   readonly speed: VoicingSpeed.NORMAL | VoicingSpeed.SLOW;
   readonly hintMode: HintMode.QUESTIONS_ONLY | HintMode.SHOW_WHERE;
@@ -49,8 +46,6 @@ export function formOf(profile: Profile): ProfileForm {
     pseudonym: profile.pseudonym,
     avatar: profile.avatar,
     defaultMode: profile.defaultMode === Mode.SELF ? Mode.SELF : Mode.BY_STEPS,
-    language:
-      profile.interfaceLanguage === undefined ? undefined : lookup(profile.interfaceLanguage),
     voicing: voicing?.enabled === true,
     speed: voicing?.speed === VoicingSpeed.SLOW ? VoicingSpeed.SLOW : VoicingSpeed.NORMAL,
     hintMode: hintModeOf(profile),
@@ -61,8 +56,8 @@ export type Settings = MessageInitShape<typeof ProfileSettingsSchema>;
 
 /**
  * The settings that changed against the form as the profile gives it, for `UpdateProfile`: none
- * when nothing did. A field the form shows as the build reads it — a tag cut to its language, an
- * unknown mode — goes only once the adult changed it.
+ * when nothing did. A field the form shows as the build reads it — an unknown mode — goes only
+ * once the adult changed it.
  */
 export function changes(profile: Profile, form: ProfileForm): Settings | undefined {
   const before = formOf(profile);
@@ -74,9 +69,6 @@ export function changes(profile: Profile, form: ProfileForm): Settings | undefin
     ...(form.pseudonym === before.pseudonym ? {} : { pseudonym: form.pseudonym }),
     ...(form.avatar === before.avatar ? {} : { avatar: form.avatar }),
     ...(form.defaultMode === before.defaultMode ? {} : { defaultMode: form.defaultMode }),
-    ...(form.language === undefined || form.language === before.language
-      ? {}
-      : { interfaceLanguage: form.language }),
     ...(Object.keys(voicing).length === 0 ? {} : { voicing }),
     ...(form.hintMode === before.hintMode ? {} : { hintMode: form.hintMode }),
   };

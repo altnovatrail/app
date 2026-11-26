@@ -81,9 +81,13 @@ async function settled(name: string) {
   return region;
 }
 
-/** The lines of a section below its heading. */
+/** The lines of a section below its heading — a share's row as its words and how much —, its note last. */
 const linesOf = (region: HTMLElement) =>
-  [...region.querySelectorAll("p")].map((line) => line.textContent);
+  [...region.querySelectorAll(".nt-set-meter-row, p")].map((line) =>
+    line.matches(".nt-set-meter-row")
+      ? `${line.querySelector(".nt-set-label")?.textContent}: ${line.querySelector(".nt-set-value")?.textContent}`
+      : line.textContent,
+  );
 
 // In the device's time zone: the midnight that begins tomorrow.
 const now = new Date();
@@ -92,7 +96,7 @@ const time = (language: Language) =>
   dateTimeFormat(language, { timeStyle: "short" }).format(MIDNIGHT);
 
 describe("the tutor time of a profile", () => {
-  it("shows, below the progress, the profile's share and the account's, and when it renews", async () => {
+  it("shows, below the storage of works, the profile's share and the account's, each a meter, and when it renews", async () => {
     const { asked } = renderPage(() => ({
       profilePercent: 40,
       accountPercent: 65,
@@ -100,15 +104,29 @@ describe("the tutor time of a profile", () => {
     }));
     const region = await settled("Tutor time");
     expect(linesOf(region)).toEqual([
-      "How much of today's tutor time — the platform's AI, which checks work and words the tutor's replies — this profile and the whole account have used",
       "This profile: 40% used",
       "The whole account: 65% used",
       `Tutor time renews tomorrow at ${time("en")}`,
+      "How much of today's tutor time — the platform's AI, which checks work and words the tutor's replies — this profile and the whole account have used",
     ]);
-    const progress = screen.getByRole("region", { name: "Progress" });
-    expect(
-      progress.compareDocumentPosition(region) & Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy();
+    const meters = within(region).getAllByRole("meter");
+    expect(meters.map((meter) => meter.getAttribute("aria-valuenow"))).toEqual(["40", "65"]);
+    expect(meters[0]).toHaveAccessibleName("This profile");
+    expect(meters[1]).toHaveAttribute("aria-valuetext", "65% used");
+    expect(meters.map((meter) => meter.dataset.level)).toEqual([undefined, undefined]);
+    // Each bar spans its row under the words, and fills as much as its share.
+    for (const [meter, share] of [
+      [meters[0], 0.4],
+      [meters[1], 0.65],
+    ] as const) {
+      const bar = meter?.getBoundingClientRect().width ?? 0;
+      const row = meter?.closest(".nt-set-row")?.getBoundingClientRect().width ?? 0;
+      const fill = meter?.firstElementChild?.getBoundingClientRect().width ?? 0;
+      expect(bar).toBeGreaterThan(row * 0.8);
+      expect(fill / bar).toBeCloseTo(share, 1);
+    }
+    const storage = screen.getByRole("region", { name: "Keeping works on the server" });
+    expect(storage.compareDocumentPosition(region) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     // By an adult's action, ACTION_ADULT, of the profile of the page.
     expect(asked).toEqual([expect.objectContaining({ profileId: "p1", action: Action.ADULT })]);
   });
@@ -122,7 +140,7 @@ describe("the tutor time of a profile", () => {
     const region = await screen.findByRole("region", { name: "Tutor time" });
     expectLoading(region, 2);
     give();
-    expect(await within(region).findByText("This profile: 40% used")).toBeTruthy();
+    expect(await within(region).findByRole("meter", { name: "This profile" })).toBeTruthy();
     expectLoaded(region);
   });
 
@@ -137,25 +155,31 @@ describe("the tutor time of a profile", () => {
       "ru",
     );
     const region = await settled("Время наставника");
-    expect(linesOf(region).slice(1)).toEqual([
+    expect(linesOf(region).slice(0, -1)).toEqual([
       `Этот профиль: потрачено ${percentText("ru", 20)}`,
       `Весь аккаунт: потрачено ${percentText("ru", 100)}`,
-      "Время наставника на сегодня кончилось: пока оно не обновится, ИИ платформы не проверяет работы этого профиля",
       `Время наставника обновится завтра в ${time("ru")}`,
+      "Время наставника на сегодня кончилось: пока оно не обновится, ИИ платформы не проверяет работы этого профиля",
     ]);
+    // A cap reached turns both bars red.
+    expect(
+      within(region)
+        .getAllByRole("meter")
+        .map((meter) => meter.dataset.level),
+    ).toEqual(["full", "full"]);
   });
 
   it("says in one line that platform AI is closed to an account whose tariff has no caps", async () => {
     renderPage(() => ({ nextFamilyDay: timestampFromDate(MIDNIGHT) }));
     const region = await settled("Tutor time");
-    expect(linesOf(region).slice(1)).toEqual([
+    expect(linesOf(region).slice(0, -1)).toEqual([
       "The platform's AI has no tutor time on this account now: it is closed to it",
     ]);
   });
 
   it("has no section from an api with no GetQuota yet, and offers it no reload", async () => {
     const { stale } = renderPage();
-    expect(await screen.findByRole("region", { name: "Progress" })).toBeTruthy();
+    expect(await screen.findByRole("region", { name: "Keeping works on the server" })).toBeTruthy();
     // The read came back before the page settled: nothing stands in for the section.
     await vi.waitFor(() => expect(screen.queryByRole("region", { name: "Tutor time" })).toBeNull());
     expect(screen.queryByRole("alert")).toBeNull();
@@ -172,8 +196,14 @@ describe("the tutor time of a profile", () => {
     expect((await region.findByRole("alert")).textContent).toBe("No connection");
     down = false;
     await userEvent.click(region.getByRole("button", { name: "Try again" }));
-    expect(await region.findByText("This profile: 5% used")).toBeVisible();
-    expect(region.getByText("The whole account: 10% used")).toBeVisible();
+    expect(await region.findByRole("meter", { name: "This profile" })).toHaveAttribute(
+      "aria-valuetext",
+      "5% used",
+    );
+    expect(region.getByRole("meter", { name: "The whole account" })).toHaveAttribute(
+      "aria-valuetext",
+      "10% used",
+    );
     expect(region.queryByRole("alert")).toBeNull();
     // The client's own repeats, then the retry's one.
     expect(asked).toHaveLength(6);

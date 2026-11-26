@@ -2,6 +2,7 @@
 // "Choose an avatar" — "Change the avatar" once one is given — opening the set in a pop-over
 // centred below it, each a picture with its name. A choice closes it. The owner's profile
 // chooses so, and a profile's page in the section for adults changes one so.
+import type { ReactNode } from "react";
 import { PopOver } from "../app/PopOver.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { Avatar } from "./Avatar.tsx";
@@ -10,16 +11,20 @@ import { AVATARS, type AvatarCode } from "./avatars.ts";
 export function AvatarChoice({
   code,
   onChoose,
+  children,
 }: {
   /** The avatar shown: none or empty for none chosen, or a code this build may not know. */
   readonly code: string | undefined;
   readonly onChoose: (code: AvatarCode) => void;
+  /** What stands between the avatar and its choice: a profile's name, on its page. */
+  readonly children?: ReactNode;
 }) {
   const { words } = useLanguage();
   const none = code === undefined || code === "";
   return (
     <>
       <Avatar code={code} size="profile" />
+      {children}
       <PopOver
         label={words.text(none ? "profile.avatar-choose" : "profile.avatar-change")}
         className="nt-link"

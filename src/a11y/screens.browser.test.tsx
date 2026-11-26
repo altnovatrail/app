@@ -19,15 +19,12 @@ import {
 } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
 import {
   ChoiceKind,
-  CloseReason,
   EngineChoiceSchema,
-  ReasonCode,
   RunEndReason,
 } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import { LegalTextSchema } from "@altnovatrail/contracts/novatrail/api/v1/legal_pb.js";
 import {
   AnchorSkillHolding,
-  GetProgressResponseSchema,
   GetSkillMapResponseSchema,
 } from "@altnovatrail/contracts/novatrail/api/v1/progress_pb.js";
 import { create } from "@bufbuild/protobuf";
@@ -38,9 +35,7 @@ import { InviteScreen, type TextsRead } from "../account/InviteScreen.tsx";
 import { OwnerProfileScreen } from "../account/OwnerProfileScreen.tsx";
 import { AdultSection } from "../adults/AdultSection.tsx";
 import { DevicePage } from "../adults/DevicePage.tsx";
-import { ModulesPage } from "../adults/ModulesPage.tsx";
 import { ProfilePage } from "../adults/ProfilePage.tsx";
-import { ProgressMap, ProgressPage } from "../adults/ProgressPage.tsx";
 import { ApiProvider } from "../api/ApiContext.tsx";
 import type { Api } from "../api/client.ts";
 import { App } from "../app/App.tsx";
@@ -64,6 +59,8 @@ import { Explanation } from "../lesson/Explanation.tsx";
 import { LessonEnd } from "../lesson/Lesson.tsx";
 import { ContinueButton, LessonScreen, type LessonScreenProps } from "../lesson/LessonScreen.tsx";
 import { NextStep } from "../next/NextStep.tsx";
+import { KeyHolder } from "../ownkey/holder.ts";
+import { KeyHolderProvider } from "../ownkey/OwnKeyContext.tsx";
 import { LicensePages, licenseRoute } from "../packages/LicensePage.tsx";
 import { type Packages, PackagesProvider } from "../packages/PackagesContext.tsx";
 import { Camera } from "../paper/Camera.tsx";
@@ -402,6 +399,49 @@ const POLICY_API = {
   },
 } as unknown as Api;
 
+/** An api that opens Anthropic alone to an own key. */
+const KEY_API = {
+  account: {
+    listOwnKeyProviders: async () => ({
+      providers: [{ provider: "anthropic", name: "Anthropic" }],
+    }),
+  },
+} as unknown as Api;
+
+/** The own key's page in the section, beside its list, with the owner open: a key connected, or none. */
+function ownKeyPage(connected: boolean) {
+  // A synthetic key: no provider issued it.
+  let kept = connected
+    ? { provider: "anthropic", name: "Anthropic", key: "sk-ant-synthetic-7f3a", last4: "7f3a" }
+    : undefined;
+  const holder = new KeyHolder({
+    read: async () => kept,
+    keep: async (_, key) => {
+      kept = key;
+      return "saved";
+    },
+    drop: async () => {
+      kept = undefined;
+    },
+  });
+  void holder.open(OWNER.profileId);
+  return (
+    <ApiProvider value={KEY_API}>
+      <KeyHolderProvider holder={holder}>
+        <AdultSection
+          route={{ screen: "adults", parts: ["own-key"] }}
+          device={memoryDevice().device}
+          profiles={[OWNER]}
+          onSaved={() => {}}
+          onFailed={() => {}}
+          onEraseAll={async () => "erased"}
+          onLegal={() => {}}
+        />
+      </KeyHolderProvider>
+    </ApiProvider>
+  );
+}
+
 /** An api that gives the text storage-consent alone, for the consent of a profile's page. */
 const STORAGE_API = {
   legal: {
@@ -437,9 +477,13 @@ const QUOTA_API = {
 
 /** The consent to keeping works opened on a profile's page, and switched on with no tick. */
 async function consenting(): Promise<void> {
-  const keep = document.querySelector<HTMLButtonElement>("section .nt-buttons button");
+  const keep =
+    [...document.querySelectorAll<HTMLInputElement>("input[role=switch]")].at(-1) ?? null;
   if (keep === null) throw new Error("no Keep works on the server");
-  await userEvent.click(keep);
+  // By the keyboard: after a pointer's click on a switch of Settings, axe's target-size check
+  // crashes Firefox's page.
+  keep.focus();
+  await userEvent.keyboard(" ");
   const on = document.querySelector<HTMLButtonElement>("section form button[type=submit]");
   if (on === null) throw new Error("no Switch it on");
   await vi.waitFor(() => expect(on.disabled).toBe(false));
@@ -504,18 +548,6 @@ const LICENSED = {
         : undefined,
   },
 } as unknown as Packages;
-
-/** An api that gives the profile two modules, one with no current version. */
-const MODULES_API = {
-  module: {
-    listConnectedModules: async () => ({
-      modules: [
-        { moduleId: "novatrail/olympiad-math", packageDigest: D1 },
-        { moduleId: "novatrail/gone", packageDigest: "" },
-      ],
-    }),
-  },
-} as unknown as Api;
 
 /** The open views of a module with a skill graph of two skills, and of a module that teaches. */
 const MAPPED = {
@@ -584,45 +616,6 @@ const MAP_API = {
             teachingModules: ["novatrail/tables"],
           },
         ],
-      }),
-  },
-} as unknown as Api;
-
-/** An api of a profile's progress: a trap that repeats, two attempts and a page more. */
-const PROGRESS_API = {
-  ...MAP_API,
-  progress: {
-    ...MAP_API.progress,
-    getProgress: async () =>
-      create(GetProgressResponseSchema, {
-        repeatingTraps: [
-          {
-            trap: "example/fair-shares/trap/halves-of-unequal-parts",
-            description: "Takes unequal parts for halves",
-            trapAdvice: "Ask whether both parts are the same size before naming them halves",
-            attemptCount: 2,
-            lastClosedAt: { seconds: 1_794_000_000n },
-          },
-        ],
-        attempts: [
-          {
-            task: "example/fair-shares/task/a-rather-long-task-identifier-with-no-break-in-it-at-all",
-            moduleVersion: "1.0.0",
-            lesson: "example/fair-shares/lesson/halves-first-steps",
-            closeReason: CloseReason.CORRECT,
-            wrongAnswers: 2,
-            begunAt: { seconds: 1_794_000_000n },
-            closedAt: { seconds: 1_794_000_600n },
-            chosenAt: { seconds: 1_793_999_990n },
-            reasonCode: ReasonCode.QUEUE,
-          },
-          {
-            task: "novatrail/gone/task/levers-1",
-            moduleVersion: "0.3.0",
-            begunAt: { seconds: 1_794_000_000n },
-          },
-        ],
-        nextPageToken: "page-2",
       }),
   },
 } as unknown as Api;
@@ -1254,7 +1247,7 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
     () => <LegalPages route={{ ...LEGAL, parts: ["notices"] }} back={HOME} />,
   ],
   [
-    "the section for adults, below its bar, with the next version of a text",
+    "Settings beside the owner's page",
     () => (
       <ApiProvider value={POLICY_API}>
         <AdultSection
@@ -1269,21 +1262,44 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
       </ApiProvider>
     ),
     async () => {
-      await vi.waitFor(() => expect(document.querySelectorAll("h2")).toHaveLength(5));
+      await page.viewport(1024, 640);
+      await vi.waitFor(() =>
+        expect(document.querySelector(".nt-set-side .nt-set-row")).not.toBeNull(),
+      );
     },
   ],
   [
-    "This device in the section, below its top bar with Back and Close",
+    "Own AI key, its form beside the section's list",
+    () => ownKeyPage(false),
+    async () => {
+      await page.viewport(1024, 640);
+      await vi.waitFor(() => expect(document.querySelector(".nt-set-field input")).not.toBeNull());
+    },
+  ],
+  [
+    "Own AI key connected, on its own as the phone shows it",
+    () => ownKeyPage(true),
+    async () => {
+      await page.viewport(390, 844);
+      await vi.waitFor(() =>
+        expect(document.querySelector("[role=status] .nt-set-tile")).not.toBeNull(),
+      );
+    },
+  ],
+  [
+    "This device in the section, beside its list",
     () => (
-      <AdultSection
-        route={{ screen: "adults", parts: ["device"] }}
-        device={SEEDED}
-        profiles={[OWNER, create(ProfileSchema, { profileId: "p2", pseudonym: "Аня" })]}
-        onSaved={() => {}}
-        onFailed={() => {}}
-        onEraseAll={async () => "failed"}
-        onLegal={() => {}}
-      />
+      <ApiProvider value={POLICY_API}>
+        <AdultSection
+          route={{ screen: "adults", parts: ["device"] }}
+          device={SEEDED}
+          profiles={[OWNER, create(ProfileSchema, { profileId: "p2", pseudonym: "Аня" })]}
+          onSaved={() => {}}
+          onFailed={() => {}}
+          onEraseAll={async () => "failed"}
+          onLegal={() => {}}
+        />
+      </ApiProvider>
     ),
     async () => {
       await vi.waitFor(() => expect(document.querySelectorAll("h3 ~ p").length).toBeGreaterThan(4));
@@ -1305,19 +1321,6 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
       await userEvent.click(buttons[buttons.length - 1] as HTMLButtonElement);
       expect(document.querySelector("fieldset legend")).not.toBeNull();
     },
-  ],
-  [
-    "a profile's page, with a language the build does not have",
-    () => (
-      <ApiProvider value={{} as Api}>
-        <ProfilePage
-          device={memoryDevice().device}
-          profile={{ ...OWNER, interfaceLanguage: "de" }}
-          onSaved={() => {}}
-          onFailed={() => {}}
-        />
-      </ApiProvider>
-    ),
   ],
   [
     "a profile's page with its error",
@@ -1373,7 +1376,7 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
       </ApiProvider>
     ),
     async () => {
-      await vi.waitFor(() => expect(document.querySelectorAll("section")).toHaveLength(4));
+      await vi.waitFor(() => expect(document.querySelector(".nt-set-meter")).not.toBeNull());
     },
   ],
   [
@@ -1463,52 +1466,6 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
       await vi.waitFor(() => expect(document.querySelector("pre")).not.toBeNull());
     },
   ],
-  [
-    "the modules of a profile in the section",
-    () => (
-      <ApiProvider value={MODULES_API}>
-        <PackagesProvider value={LICENSED}>
-          <ModulesPage profile={OWNER} />
-        </PackagesProvider>
-      </ApiProvider>
-    ),
-    async () => {
-      await vi.waitFor(() => expect(document.querySelectorAll("article")).toHaveLength(2));
-    },
-  ],
-  [
-    "the progress of a profile in the section",
-    () => (
-      <ApiProvider value={PROGRESS_API}>
-        <PackagesProvider value={MAPPED}>
-          <ProgressPage profile={OWNER} />
-        </PackagesProvider>
-      </ApiProvider>
-    ),
-    async () => {
-      await vi.waitFor(() => expect(document.querySelectorAll("article")).toHaveLength(5));
-    },
-  ],
-  [
-    "a module's map in the progress, the adult's view, a skill open",
-    () => (
-      <ApiProvider value={PROGRESS_API}>
-        <PackagesProvider value={MAPPED}>
-          <ProgressMap profile={OWNER} moduleId="example/fair-shares" />
-        </PackagesProvider>
-      </ApiProvider>
-    ),
-    async () => {
-      const root = await vi.waitFor(() => {
-        const found = document.querySelector("novatrail-skill-map")?.shadowRoot;
-        if (found?.querySelector("button.tile") == null) throw new Error("no map yet");
-        return found;
-      });
-      root.querySelector<HTMLButtonElement>("button.tile")?.click();
-      await vi.waitFor(() => expect(root.querySelector("[aria-expanded='true']")).not.toBeNull());
-    },
-  ],
-  ["Home with none connected", () => <HomeScreen connected={[]} />],
   [
     "Subjects with none connected and an empty catalog",
     () => (

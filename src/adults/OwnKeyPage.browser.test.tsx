@@ -1,5 +1,5 @@
 // The page Own AI key in the browser, with api on connect-es's router and the storage
-// on the engine's own IndexedDB: the words before the field, the providers api gives and none, the
+// on the engine's own IndexedDB: the words under the form, the providers api gives and none, the
 // five answers of the check and one this build does not know, a key not accepted that leaves the
 // former one, the key shown by its last four alone, the mark that keeps it on the device and the
 // key in none of the browser's storages without it, its replacement and removal, a refusal beside
@@ -160,21 +160,21 @@ afterEach(async () => {
 });
 
 describe("the page Own AI key", () => {
-  it("says what happens to the key before its field, and checks it with no learner's content", async () => {
+  it("says what happens to the key under its form, and checks it with no learner's content", async () => {
     const { checked, listed, holder } = await renderPage();
     expect(screen.getByRole("heading", { level: 1, name: "Own AI key" })).toBeTruthy();
-    expect(screen.getByText(/lives there only while the request runs/)).toBeTruthy();
-    expect(screen.getByText(/links each such request to your account/)).toBeTruthy();
+    expect(screen.getByText(/Only while the request runs/)).toBeTruthy();
+    expect(screen.getByText("The provider bills your account")).toBeTruthy();
     expect(screen.getByText(/A PIN doesn't protect the key/)).toBeTruthy();
-    expect(screen.getByText(/separate OpenAI project with a hard spending limit/)).toBeTruthy();
+    expect(screen.getByText(/separate OpenAI project with a hard limit/)).toBeTruthy();
     expect(screen.queryByRole("link")).toBeNull();
     // The one provider is chosen already; the field hides what is typed and offers nothing.
-    expect(await screen.findByRole("combobox", { name: "AI provider" })).toHaveValue("anthropic");
+    expect(await screen.findByRole("button", { name: "AI provider Anthropic" })).toBeTruthy();
     expect(keyField()).toHaveAttribute("type", "password");
     expect(keyField()).toHaveAttribute("autocomplete", "off");
-    expect(screen.getByRole("checkbox", { name: "Keep on this device" })).not.toBeChecked();
+    expect(screen.getByRole("switch", { name: "Keep on this device" })).not.toBeChecked();
     await enter(`  ${KEY}  `);
-    expect(await screen.findByText("Connected: a key of Anthropic ending in a1b2")).toBeTruthy();
+    expect(await screen.findByText("Key ending in a1b2")).toBeTruthy();
     expect(listed).toEqual(["p1"]);
     expect(checked).toHaveLength(1);
     expect(checked[0]?.profileId).toBe("p1");
@@ -194,31 +194,31 @@ describe("the page Own AI key", () => {
       },
     });
     expect(screen.getByRole("heading", { level: 1, name: "Own AI key" })).toBeTruthy();
-    expect(screen.queryByRole("combobox")).toBeNull();
+    expect(screen.queryByLabelText("Key")).toBeNull();
     expectLoading(document, 6);
     give();
-    expect(await screen.findByRole("combobox", { name: "AI provider" })).toHaveValue("anthropic");
+    expect(await screen.findByRole("button", { name: "AI provider Anthropic" })).toBeTruthy();
     expectLoaded(document);
   });
 
   it("keeps the key in none of the browser's storages without the mark, and on the device with it", async () => {
     const { device } = await renderPage();
     await enter(KEY);
-    await screen.findByText("Connected: a key of Anthropic ending in a1b2");
+    await screen.findByText("Key ending in a1b2");
     expect(await stored(KEY)).toBe(false);
-    await userEvent.click(screen.getByRole("checkbox", { name: "Keep on this device" }));
+    await userEvent.click(screen.getByRole("switch", { name: "Keep on this device" }));
     await screen.findByText("The key is kept on this device");
     expect(await keptKey(device, "p1")).toMatchObject({ key: KEY, last4: "a1b2" });
     expect(await stored(KEY)).toBe(true);
     // The mark taken off erases it there; memory keeps it.
-    await userEvent.click(screen.getByRole("checkbox", { name: "Keep on this device" }));
+    await userEvent.click(screen.getByRole("switch", { name: "Keep on this device" }));
     await screen.findByText("The key is in this tab's memory alone");
     expect(await stored(KEY)).toBe(false);
   });
 
   it("keeps the key on the device when the mark is set before Connect", async () => {
     const { device } = await renderPage();
-    await userEvent.click(await screen.findByRole("checkbox", { name: "Keep on this device" }));
+    await userEvent.click(await screen.findByRole("switch", { name: "Keep on this device" }));
     await enter(KEY);
     await screen.findByText("The key is kept on this device");
     expect(await keptKey(device, "p1")).toMatchObject({ key: KEY });
@@ -249,18 +249,25 @@ describe("the page Own AI key", () => {
 
   it("asks for a provider among several, and for the key", async () => {
     const { checked } = await renderPage({ providers: () => [ANTHROPIC, OPENAI] });
-    const provider = await screen.findByRole("combobox", { name: "AI provider" });
-    expect(provider).toHaveValue("");
+    const provider = await screen.findByRole("button", { name: "AI provider Not chosen" });
+    // Connect waits for a key, grey; Enter in the field asks for what is missing all the same.
+    expect(connect()).toHaveAttribute("aria-disabled", "true");
+    await userEvent.fill(keyField(), KEY);
+    expect(connect()).not.toHaveAttribute("aria-disabled");
     await userEvent.click(connect());
-    expect(provider).toHaveAttribute("aria-invalid", "true");
+    expect(provider).toHaveAccessibleDescription("Choose the provider");
     expect(document.activeElement).toBe(provider);
-    await userEvent.selectOptions(provider, "openai");
-    await userEvent.click(connect());
+    await userEvent.click(provider);
+    await userEvent.click(await screen.findByRole("radio", { name: "OpenAI" }));
+    expect(screen.getByRole("button", { name: "AI provider OpenAI" })).toBeTruthy();
+    await userEvent.clear(keyField());
+    await userEvent.type(keyField(), "{Enter}");
     expect(await screen.findByText("Enter the key")).toBeTruthy();
     expect(document.activeElement).toBe(keyField());
     expect(checked).toEqual([]);
     await enter(KEY);
-    expect(await screen.findByText("Connected: a key of OpenAI ending in a1b2")).toBeTruthy();
+    expect(await screen.findByText("Key ending in a1b2")).toBeTruthy();
+    expect(screen.getByText("OpenAI")).toBeTruthy();
   });
 
   it("says when no provider takes an own key, with no field, and retries a list that did not come", async () => {
@@ -325,7 +332,7 @@ describe("the page Own AI key", () => {
     let answer: Answer = { check: OwnKeyCheck.ACCEPTED };
     const { holder } = await renderPage({ check: () => answer });
     await enter(KEY);
-    await screen.findByText("Connected: a key of Anthropic ending in a1b2");
+    await screen.findByText("Key ending in a1b2");
     await userEvent.click(screen.getByRole("button", { name: "Replace the key" }));
     expect(screen.getByText(/stays until the new one passes the check/)).toBeTruthy();
     answer = { check: OwnKeyCheck.INVALID };
@@ -333,11 +340,11 @@ describe("the page Own AI key", () => {
     await screen.findByText(/it isn't valid/);
     expect(holder.aiFields("p1")).toMatchObject({ ownKey: { key: KEY } });
     await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
-    expect(screen.getByText("Connected: a key of Anthropic ending in a1b2")).toBeTruthy();
+    expect(screen.getByText("Key ending in a1b2")).toBeTruthy();
     await userEvent.click(screen.getByRole("button", { name: "Replace the key" }));
     answer = { check: OwnKeyCheck.ACCEPTED };
     await enter(NEXT);
-    expect(await screen.findByText("Connected: a key of Anthropic ending in c3d4")).toBeTruthy();
+    expect(await screen.findByText("Key ending in c3d4")).toBeTruthy();
     expect(holder.aiFields("p1")).toMatchObject({ ownKey: { key: NEXT } });
     expect(screen.getByText(/go to the platform's AI and spend its tutor time/)).toBeTruthy();
     await userEvent.click(screen.getByRole("button", { name: "Remove key" }));
@@ -350,7 +357,7 @@ describe("the page Own AI key", () => {
   it("says what to do beside the key when its provider refused it or its limit ran out", async () => {
     const { holder } = await renderPage();
     await enter(KEY);
-    await screen.findByText("Connected: a key of Anthropic ending in a1b2");
+    await screen.findByText("Key ending in a1b2");
     const sent = holder.aiFields("p1");
     holder.noteOutcome("p1", { cause: Cause.KEY_REFUSED }, sent);
     expect(
@@ -370,7 +377,7 @@ describe("the page Own AI key", () => {
   it("says beside the key which limit ran out, when access comes back if api says, and what to do", async () => {
     const { holder } = await renderPage();
     await enter(KEY);
-    await screen.findByText("Connected: a key of Anthropic ending in a1b2");
+    await screen.findByText("Key ending in a1b2");
     const sent = holder.aiFields("p1");
     const limit = (cause: LimitCause, at?: Date) => ({
       cause: Cause.LIMIT_REACHED as const,
@@ -428,18 +435,18 @@ describe("the page Own AI key", () => {
 
   it("says when the device did not take the key to keep, connected and replaced alike", async () => {
     await renderPage({ full: true });
-    await userEvent.click(await screen.findByRole("checkbox", { name: "Keep on this device" }));
+    await userEvent.click(await screen.findByRole("switch", { name: "Keep on this device" }));
     await enter(KEY);
-    await screen.findByText("Connected: a key of Anthropic ending in a1b2");
+    await screen.findByText("Key ending in a1b2");
     expect((await screen.findByRole("alert")).textContent).toContain("couldn't be kept");
     expect(screen.getByText("The key is in this tab's memory alone")).toBeTruthy();
     await userEvent.click(screen.getByRole("button", { name: "Replace the key" }));
-    await userEvent.click(screen.getByRole("checkbox", { name: "Keep on this device" }));
+    await userEvent.click(screen.getByRole("switch", { name: "Keep on this device" }));
     await enter(NEXT);
-    await screen.findByText("Connected: a key of Anthropic ending in c3d4");
+    await screen.findByText("Key ending in c3d4");
     expect((await screen.findByRole("alert")).textContent).toContain("couldn't be kept");
     // The mark shows where the key is: not on the device.
-    expect(screen.getByRole("checkbox", { name: "Keep on this device" })).not.toBeChecked();
+    expect(screen.getByRole("switch", { name: "Keep on this device" })).not.toBeChecked();
   });
 
   it("opens the owner profile from the page when no learner is chosen", async () => {

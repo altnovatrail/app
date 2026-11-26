@@ -4,6 +4,7 @@
 // to the mockup yet: its differences are reported in mockup/out/ and not held. Without it, every
 // difference but those a region's `differs` names fails the test.
 import {
+  AccountService,
   ProfileSchema,
   QuotaShareSchema,
 } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
@@ -29,8 +30,9 @@ import { LearnerProvider } from "../src/account/AccountGate.tsx";
 import { ChooseScreen } from "../src/account/ChooseScreen.tsx";
 import { InviteScreen, type TextsRead } from "../src/account/InviteScreen.tsx";
 import { OwnerProfileScreen } from "../src/account/OwnerProfileScreen.tsx";
+import { AdultSection } from "../src/adults/AdultSection.tsx";
 import { ApiProvider } from "../src/api/ApiContext.tsx";
-import { HOME as HOME_ROUTE, type Route } from "../src/app/router.ts";
+import { HOME as HOME_ROUTE, type Route, useRoute } from "../src/app/router.ts";
 import { type Place, ShellBar } from "../src/app/Shell.tsx";
 import { Waiting } from "../src/app/Waiting.tsx";
 import { LegalPages } from "../src/legal/LegalPages.tsx";
@@ -39,8 +41,11 @@ import { Explanation } from "../src/lesson/Explanation.tsx";
 import { LessonEnd } from "../src/lesson/Lesson.tsx";
 import { ContinueButton, LessonScreen } from "../src/lesson/LessonScreen.tsx";
 import { NextStep } from "../src/next/NextStep.tsx";
+import { KeyHolder } from "../src/ownkey/holder.ts";
+import { KeyHolderProvider } from "../src/ownkey/OwnKeyContext.tsx";
 import { SignInScreen } from "../src/signin/SignInScreen.tsx";
 import { MapScreen } from "../src/skills/SkillMapScreen.tsx";
+import type { KeptKey } from "../src/storage/profile.ts";
 import { HomeScreen } from "../src/subjects/MySubjects.tsx";
 import type { ModuleAbout, ModuleCard, SkillList } from "../src/subjects/modules.ts";
 import { CatalogScreen } from "../src/subjects/SubjectsPage.tsx";
@@ -1558,6 +1563,12 @@ function frameOf(device: Device): readonly Region[] {
       app: { css: "nav button:has-text('Cognitive map')" },
     },
     {
+      name: "the tutor, shut",
+      mockup: { css: '.nt-top-pills button[aria-disabled="true"]' },
+      app: { css: '.nt-top-pills button[aria-disabled="true"]' },
+      differs: { what: ["font-size", "font-weight"], by: ICON_ALONE },
+    },
+    {
       name: "the pills at the right",
       mockup: { css: ".nt-top-pills" },
       app: { css: ".nt-top-pills" },
@@ -1694,19 +1705,6 @@ const BELL: readonly Region[] = [
     differs: { what: ["font-size", "font-weight"], by: ICON_ALONE },
   },
   popOver("the notifications", "Notifications"),
-];
-
-/** The tutor's panel from the top right of Home. */
-const HOME_TUTOR: readonly Region[] = [
-  {
-    name: "the tutor's button",
-    mockup: { role: "button", name: "Tutor" },
-    app: { role: "button", name: "Tutor" },
-    differs: {
-      what: ["border", "colour", "font-size", "font-weight"],
-      by: `the button is its sign, where the mockup's sign is a span in it; ${ICON_ALONE}`,
-    },
-  },
 ];
 
 /** The facts of a module of the mockup's Subjects: its subject and grades, by the NovaTrail authors. */
@@ -2178,9 +2176,256 @@ const WORKBOOK_AND_ESSAY: readonly Compared[] = [
   ),
 ];
 
+/** Settings, the section for adults, at the hash: Sam's account, its owner alone. */
+function SettingsDrawn() {
+  const route = useRoute();
+  return (
+    <AdultSection
+      route={route.screen === "adults" ? route : { screen: "adults", parts: [] }}
+      device={memoryDevice().device}
+      profiles={[SAM.learner]}
+      onSaved={() => {}}
+      onFailed={() => {}}
+      onEraseAll={async () => "erased"}
+      onLegal={() => {}}
+    />
+  );
+}
+
+/** Settings from its page given: its list, or a page of it. */
+function settings(route: readonly string[] = []) {
+  return () => {
+    window.location.hash = `#/adults${route.map((part) => `/${part}`).join("")}`;
+    return inLanguage(
+      <ApiProvider value={QUIET}>
+        <SettingsDrawn />
+      </ApiProvider>,
+    );
+  };
+}
+
+/** The api of the own key's page: Anthropic alone takes one, as the mockup draws it. */
+const KEY_API = routedApi((router) =>
+  router.service(AccountService, {
+    listOwnKeyProviders: () => ({ providers: [{ provider: "anthropic", name: "Anthropic" }] }),
+  }),
+);
+
+/** The own key's page with Sam's profile open: a key connected and kept, or none. */
+function ownKey(connected: boolean) {
+  return () => {
+    window.location.hash = "#/adults/own-key";
+    // A synthetic key: no provider issued it.
+    let kept: KeptKey | undefined = connected
+      ? { provider: "anthropic", name: "Anthropic", key: "sk-ant-synthetic-7f3a", last4: "7f3a" }
+      : undefined;
+    const holder = new KeyHolder({
+      read: async () => kept,
+      keep: async (_, key) => {
+        kept = key;
+        return "saved";
+      },
+      drop: async () => {
+        kept = undefined;
+      },
+    });
+    void holder.open(SAM.learner.profileId);
+    return inLanguage(
+      <ApiProvider value={KEY_API}>
+        <KeyHolderProvider holder={holder}>
+          <SettingsDrawn />
+        </KeyHolderProvider>
+      </ApiProvider>,
+    );
+  };
+}
+
+/** Why the page's heading is wider than the mockup's: it names whose page it is. */
+const WHOSE =
+  "the heading of a profile's page says whose it is, \"Profile: Sam\", the mockup's the name";
+/** Why a row's words are not the mockup's: app keeps the words of its documents. */
+const APP_WORDS =
+  'app\'s own words: "This device", "Pseudonym", "Default mode", the mockup\'s "This iPad", "Name", "Each task begins"';
+/** Why the close is not the mockup's: app's close of its closed list of icon buttons, on every sheet. */
+const CLOSE = "app's close of its closed list of icon buttons, its glass ring a shadow";
+/** Why Save waiting for a change is darker than the mockup's: its words keep the contrast of text. */
+const SAVE_WAITS =
+  "Save waiting for a change keeps the contrast of text, 4.5:1, the mockup's the grey of a switched-off control";
+
+/** The section's list: its heading, its close, the owner's row and the groups of the device and of the texts. */
+function listOf(device: Device): readonly Region[] {
+  const side = device === "ipad" ? ".nt-set-side" : "main.nt-settings-list";
+  return [
+    {
+      name: "the heading Settings",
+      mockup: { css: ".st-sidehead h1" },
+      app: { css: device === "ipad" ? ".nt-set-side-title" : "main h1" },
+      followsText: "start",
+    },
+    {
+      name: "the close",
+      mockup: { role: "button", name: "Close the settings" },
+      app: { role: "button", name: "Close the settings" },
+      differs: { what: ["border", "font-size", "font-weight"], by: CLOSE },
+    },
+    {
+      name: "the owner's row",
+      mockup: { css: ".st-side .st-prof" },
+      app: { css: `${side} .nt-set-profiles .nt-set-row` },
+    },
+    {
+      name: "the group of the device, the language and the key",
+      mockup: { css: ".st-side > .st-group:nth-child(3)" },
+      app: { css: `${side} > section:nth-of-type(2) > .nt-set-group` },
+      differs: {
+        what: ["height"],
+        by: "the own key is the owner's as an adult learner: Sam's account has it",
+      },
+    },
+    {
+      name: "the quiet link Privacy",
+      mockup: { css: ".st-side > button" },
+      app: { css: `${side} > p.nt-set-foot > button` },
+    },
+  ];
+}
+
+/**
+ * A profile's page beside the list or alone: its bar, Save — waiting for a change, or lit by one —,
+ * its avatar and its group of hints.
+ */
+const profilePage = (lit: boolean): readonly Region[] => [
+  {
+    name: "the page's heading",
+    mockup: { css: ".st-bar h2" },
+    app: { css: "main h1" },
+    followsText: "centre",
+    differs: { what: ["x"], by: WHOSE },
+  },
+  {
+    name: "Save",
+    mockup: { css: ".st-save" },
+    app: { css: ".nt-set-save" },
+    followsText: "end",
+    ...(lit ? { contrast: ACCENT_TEXT } : { differs: { what: ["colour"], by: SAVE_WAITS } }),
+  },
+  {
+    name: "the avatar",
+    mockup: { css: ".st-av-big" },
+    app: { css: ".nt-set-hero .nt-avatar" },
+  },
+  {
+    name: "the group Hints",
+    mockup: { css: ".st-col > .st-sec:nth-child(4) > .st-group" },
+    app: { css: "form > section:nth-of-type(3) > .nt-set-group" },
+    differs: { what: ["y"], by: APP_WORDS },
+  },
+];
+
+const SETTINGS: readonly Compared[] = [
+  ...DEVICES.map(
+    (device): Compared => ({
+      state: "settings",
+      devices: [device],
+      draw: settings(),
+      regions: [...listOf(device), ...(device === "ipad" ? profilePage(false) : [])],
+    }),
+  ),
+  {
+    state: "settings-profile",
+    draw: settings(),
+    settle: async () => {
+      // The phone's list leads to the page; on the iPad it stands beside the list.
+      const row = screen.queryByRole("button", { name: "Sam Your profile", current: false });
+      if (document.querySelector(".nt-set-side") === null && row !== null)
+        await userEvent.click(row);
+      await userEvent.click(await screen.findByRole("radio", { name: "Questions only" }));
+    },
+    regions: profilePage(true),
+  },
+  {
+    state: "settings-device",
+    draw: settings(["device"]),
+    regions: [
+      {
+        name: "the page's heading",
+        mockup: { css: ".st-bar h2" },
+        app: { css: "main h1" },
+        followsText: "centre",
+        differs: { what: ["x"], by: APP_WORDS },
+      },
+    ],
+  },
+];
+
+/** The page's heading, in the middle of its bar. */
+const KEY_HEADING: Region = {
+  name: "the page's heading",
+  mockup: { css: ".st-bar h2" },
+  app: { css: "main h1" },
+  followsText: "centre",
+};
+
+/** The group under the key's form or its actions: what happens to the key, four rows. */
+const ABOUT_KEY: Region = {
+  name: "the group About the key",
+  mockup: { css: ".st-col > .st-sec:last-child > .st-group" },
+  app: { css: ".nt-set-about > .nt-set-group" },
+};
+
+const OWN_KEY: readonly Compared[] = [
+  {
+    state: "settings-key",
+    draw: ownKey(false),
+    settle: () => screen.findByRole("button", { name: "AI provider Anthropic" }),
+    regions: [
+      KEY_HEADING,
+      {
+        name: "the group of the provider and the key",
+        mockup: { css: ".st-col > .st-sec:nth-child(1) > .st-group" },
+        app: { css: "form > section:nth-of-type(1) > .nt-set-group" },
+      },
+      {
+        name: "the switch Keep on this device",
+        mockup: { css: ".st-col > .st-sec:nth-child(2) .st-switch" },
+        app: { css: "form > section:nth-of-type(2) .nt-set-switch" },
+      },
+      {
+        name: "Connect, waiting for a key",
+        mockup: { css: ".st-col > .st-sec:nth-child(3) .st-action" },
+        app: { css: "form > section:nth-of-type(3) .nt-set-action" },
+        followsText: "centre",
+      },
+      ABOUT_KEY,
+    ],
+  },
+  {
+    state: "settings-key-on",
+    draw: ownKey(true),
+    settle: () => screen.findByText("Key ending in 7f3a"),
+    regions: [
+      KEY_HEADING,
+      {
+        name: "the key connected",
+        mockup: { css: ".st-col > .st-sec:nth-child(1) > .st-group" },
+        app: { css: '.nt-set-group:has(> [role="status"])' },
+      },
+      {
+        name: "Remove key",
+        mockup: { role: "button", name: "Remove key" },
+        app: { role: "button", name: "Remove key" },
+        followsText: "centre",
+      },
+      ABOUT_KEY,
+    ],
+  },
+];
+
 const SCREENS: readonly Compared[] = [
   ...WAY_IN,
   ...LEGAL_TEXTS,
+  ...SETTINGS,
+  ...OWN_KEY,
   ...DEVICES.map(
     (device): Compared => ({
       state: "home",
@@ -2231,12 +2476,6 @@ const SCREENS: readonly Compared[] = [
     draw: home,
     settle: () => userEvent.click(screen.getByRole("button", { name: "Notifications" })),
     regions: BELL,
-  },
-  {
-    state: "home-tutor",
-    draw: home,
-    settle: () => userEvent.click(screen.getByRole("button", { name: "Tutor" })),
-    regions: HOME_TUTOR,
   },
   ...DEVICES.map(
     (device): Compared => ({

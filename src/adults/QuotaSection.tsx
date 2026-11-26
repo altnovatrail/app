@@ -9,21 +9,22 @@
 // are no text. In the device's language, as the section is.
 import type { Profile } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import { Action } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
-import { type ReactNode, useCallback, useId } from "react";
-import { adultQuotaTexts, readQuota } from "../account/quota.ts";
+import { type ReactNode, useCallback } from "react";
+import { adultQuota, readQuota } from "../account/quota.ts";
 import { useRequest } from "../api/ApiContext.tsx";
 import type { Api } from "../api/client.ts";
 import { ReadFailure } from "../api/ReadFailure.tsx";
 import { Loading, Sk } from "../app/Skeleton.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
+import { Group, MeterRow, TileIcon } from "./rows.tsx";
 
 export function QuotaSection({ profile }: { readonly profile: Profile }) {
   const { words } = useLanguage();
-  const id = useId();
   const profileId = profile.profileId;
   const read = useCallback((api: Api) => readQuota(api, profileId, Action.ADULT), [profileId]);
   const share = useRequest(read);
   let shown: ReactNode;
+  let reached: string | undefined;
   if (share.status === "loading") {
     shown = (
       <Loading>
@@ -34,16 +35,53 @@ export function QuotaSection({ profile }: { readonly profile: Profile }) {
   } else if (share.status === "failed") {
     shown = <ReadFailure failure={share.failure} onRetry={share.retry} />;
   } else if (share.status === "done" && share.value !== undefined) {
-    // Each line a phrase of its own, and no two alike.
-    shown = adultQuotaTexts(share.value, words).map((line) => <p key={line}>{line}</p>);
+    const quota = adultQuota(share.value, words);
+    if ("closed" in quota) {
+      shown = (
+        <div className="nt-set-row nt-set-lines">
+          <p>{quota.closed}</p>
+        </div>
+      );
+    } else {
+      reached = quota.reached;
+      shown = (
+        <>
+          {quota.shares.map((each) => (
+            <MeterRow
+              key={each.whose}
+              label={each.label}
+              value={each.used}
+              percent={each.percent}
+              full={share.value?.capReached === true}
+            />
+          ))}
+          {quota.renews === undefined ? null : (
+            <div className="nt-set-row">
+              <TileIcon icon="set-time" tile="orange" />
+              <p className="nt-set-label">{quota.renews}</p>
+            </div>
+          )}
+        </>
+      );
+    }
   }
   // Nothing from an api that has no share to give.
   if (shown === undefined) return null;
   return (
-    <section className="nt-group" aria-labelledby={id}>
-      <h2 id={id}>{words.text("quota.title")}</h2>
-      <p className="nt-hint">{words.text("quota.hint")}</p>
-      {shown}
-    </section>
+    <Group
+      title={words.text("quota.title")}
+      note={
+        <>
+          {reached === undefined ? null : <p className="nt-set-warn">{reached}</p>}
+          <p>{words.text("quota.hint")}</p>
+        </>
+      }
+    >
+      {share.status === "loading" || share.status === "failed" ? (
+        <div className="nt-set-row nt-set-lines">{shown}</div>
+      ) : (
+        shown
+      )}
+    </Group>
   );
 }

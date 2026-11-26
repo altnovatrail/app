@@ -1,12 +1,10 @@
 // The frame of Home, Subjects and the skill map, as the mockup's `home`: from 600
 // CSS px a row at the top — at its left a pill of the places, Home and Subjects, the cognitive map
-// shut with "Soon" until it comes; at its right a pill of the tutor, the notifications and the
-// profile's menu, which holds Settings and Help —, on a phone the three places as a tab bar at the
+// shut with "Soon" until it comes; at its right a pill of the tutor, shut until it comes too, the
+// notifications and the profile's menu, which holds Settings and Help —, on a phone the three places as a tab bar at the
 // bottom and the mark at the top left. A place is a link of the hash, the page shown marked as
 // current.
 import { useLanguage } from "../i18n/LanguageContext.tsx";
-import { usePaper } from "../paper/PaperContext.tsx";
-import { useAttempt } from "../task/AttemptContext.tsx";
 import { Spark } from "./Brand.tsx";
 import { BELOW_BAR } from "./hang.ts";
 import { formatHash } from "./hash.ts";
@@ -15,7 +13,7 @@ import type { IconValue } from "./icons.ts";
 import { LearnerMenu } from "./LearnerMenu.tsx";
 import { captionHidden, NavCaption } from "./NavCaption.tsx";
 import { PopOver } from "./PopOver.tsx";
-import { HOME, navigate, PAPER, type Route, SUBJECTS, TASK } from "./router.ts";
+import { HOME, navigate, type Route, SUBJECTS } from "./router.ts";
 import { APP_NAME } from "./Screen.tsx";
 import { useTooltip } from "./Tooltip.tsx";
 
@@ -112,61 +110,24 @@ export function Bell() {
 }
 
 /**
- * The tutor's button at the top right and its panel: where there is no work, the panel says
- * that the tutor is an AI and where it helps, and leads to the work — the attempt open, and a task
- * from paper. To an adult the tutor is neutral, its gradient sign; Pip is the children's (epic E4).
+ * The tutor at the top right, shut until it comes, as the cognitive map: in its place and in the
+ * keyboard's order, named, its tooltip saying it comes later; it opens nothing.
  */
-export function HomeTutor() {
+function ShutTutor() {
   const { words } = useLanguage();
-  const open = useAttempt()?.attemptId;
-  const paper = usePaper();
-  const title = words.text("icon.tutor");
-  return (
-    <PopOver
-      icon="tutor"
-      label={title}
-      className="nt-top-round"
-      popClassName="nt-pop-tutor"
-      gap={BELOW_BAR}
+  const tooltip = useTooltip<HTMLButtonElement>(words.text("tutor-home.later"));
+  return tooltip.wrap(
+    <button
+      ref={tooltip.host}
+      type="button"
+      className="nt-icon-only nt-top-round"
+      aria-disabled="true"
+      aria-label={words.text("icon.tutor")}
+      onFocus={tooltip.onFocus}
+      onBlur={tooltip.onBlur}
     >
-      {(close) => (
-        <>
-          <div className="nt-tutor-home-head">
-            <span className="nt-tutor-sign">
-              <Icon value="tutor" />
-            </span>
-            <h2 className="nt-pop-heading">{title}</h2>
-          </div>
-          <p className="nt-tutor-bubble">{words.text("tutor-home.ai")}</p>
-          <p className="nt-tutor-bubble">{words.text("tutor-home.where")}</p>
-          <div className="nt-tutor-home-acts">
-            {open === undefined ? null : (
-              <button
-                type="button"
-                onClick={() => {
-                  close();
-                  navigate(TASK);
-                }}
-              >
-                {words.text("task.continue")}
-              </button>
-            )}
-            <button
-              type="button"
-              className="nt-secondary nt-icon-text"
-              onClick={() => {
-                close();
-                paper?.clear();
-                navigate(PAPER);
-              }}
-            >
-              <Icon value="camera" />
-              {words.text("subjects.paper")}
-            </button>
-          </div>
-        </>
-      )}
-    </PopOver>
+      <Icon value="tutor" />
+    </button>,
   );
 }
 
@@ -193,7 +154,7 @@ export function ShellBar({ place }: { readonly place: Place }) {
       <header className="nt-shell-top">
         <Mark className="nt-mark nt-top-mark" />
         <div className="nt-top-pills">
-          <HomeTutor />
+          <ShutTutor />
           <Bell />
           <LearnerMenu />
         </div>

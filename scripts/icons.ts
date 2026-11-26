@@ -147,6 +147,19 @@ export const TABLE: Readonly<Record<string, Value>> = {
   "grown-up": { base: "key", filled: true, mirrored: false },
   "pin-lock": { base: "lock", filled: false, mirrored: false },
   "pin-delete": { base: "backspace", filled: false, mirrored: true },
+  // The tiles of Settings, white on their colour, as a device's settings: this device, a tablet; the
+  // device's language, a globe; the own key, a key. What happens to the key: the server it goes
+  // to, a rack; the provider's bill, a card; no encryption on the device, a padlock; a spending
+  // limit, a gauge. Each shows its fill.
+  "set-device": { base: "tablet-android", filled: true, mirrored: false },
+  "set-language": { base: "language", filled: true, mirrored: false },
+  "set-key": { base: "key", filled: true, mirrored: false },
+  "set-server": { base: "dns", filled: true, mirrored: false },
+  "set-card": { base: "credit-card", filled: true, mirrored: false },
+  "set-lock": { base: "lock", filled: true, mirrored: false },
+  "set-limit": { base: "speed", filled: true, mirrored: false },
+  // The hour tutor time renews at, a clock.
+  "set-time": { base: "schedule", filled: true, mirrored: false },
 };
 
 /** An icon as the app draws it: its view box, and the paths it fills in the text's colour. */

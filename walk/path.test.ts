@@ -27,7 +27,6 @@ import {
   GetAccountResponseSchema,
 } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import { Cause } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
-import { GetLegalTextsResponseSchema } from "@altnovatrail/contracts/novatrail/api/v1/legal_pb.js";
 import { fromBinary } from "@bufbuild/protobuf";
 import { Code, ConnectError } from "@connectrpc/connect";
 import { errorFromJsonBytes } from "@connectrpc/connect/protocol-connect";
@@ -46,7 +45,6 @@ import { createServer, type ViteDevServer } from "vite";
 import { afterAll, beforeAll, describe, expect, it, onTestFailed } from "vitest";
 import { TOKEN_FILE } from "../scripts/local-token.ts";
 import { refusalOf } from "../src/api/failure.ts";
-import { isPageText } from "../src/legal/texts.ts";
 
 const ORIGIN = "http://127.0.0.1:5173";
 const ENGINES: Readonly<Record<string, BrowserType>> = { chromium, webkit, firefox };
@@ -472,38 +470,6 @@ describe.each(NAMED)("the path in %s", (name) => {
     await page.getByRole("button", { name: "Sign in with Google" }).click();
     await chooseDev(page);
     await home(page);
-    // The section's first page, from the profile's menu, reads the legal texts: what api gives, the
-    // page tells of.
-    const legal = page.waitForResponse((response) => response.url().includes("/GetLegalTexts"));
-    await fromMenu(page, "For grown-ups");
-    const given = fromBinary(GetLegalTextsResponseSchema, await (await legal).body());
-    // The notice tells of the texts that are legal pages; a family's waits for its screens, E4.
-    const pages = given.nextTexts.filter((text) => isPageText(text.id));
-    const policy = pages.find((text) => text.id === "privacy-policy");
-    const notice = page.getByRole("heading", { name: "New versions of the texts" });
-    if (pages.length === 0) {
-      note("api gives no next version of a legal page's text");
-      // Nothing to tell, once the answer has been read and the screen drawn twice after it.
-      await (await legal).finished();
-      await page.evaluate(
-        "new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done)))",
-      );
-      expect(await notice.count()).toBe(0);
-    } else {
-      note(`api gives ${pages.map((text) => `${text.id} ${text.version}`).join(", ")}`);
-      await notice.waitFor();
-    }
-    if (policy !== undefined) {
-      const { version, inForceSince } = policy;
-      note(`the privacy policy's version ${version} applies from ${inForceSince}`);
-      const read = `Read Privacy Policy, version ${version}`;
-      await page.getByRole("button", { name: read, exact: true }).click();
-      await page.getByRole("heading", { name: "Privacy Policy: the next version" }).waitFor();
-      await page.getByText(new RegExp(`^Version ${version}, applies from `)).waitFor();
-      await page.getByRole("button", { name: "Close", exact: true }).click();
-    }
-    await page.getByRole("button", { name: "Close the section" }).click();
-    await home(page);
     // The platform AI quota share of the profile today.
     const share = page.getByText(/Tutor time today: \d+\s?% used|Today's tutor time is used up/);
     await share.waitFor({ timeout: 30_000 });
@@ -640,11 +606,9 @@ describe.each(NAMED)("the path in %s", (name) => {
     await page.getByRole("button", { name: "Connect" }).click();
     await page.getByText(/it isn't valid, or it was revoked/).waitFor({ timeout: 30_000 });
     await field.fill(OWN_KEY);
-    await page.getByRole("checkbox", { name: "Keep on this device" }).check();
+    await page.getByRole("switch", { name: "Keep on this device" }).check();
     await page.getByRole("button", { name: "Connect" }).click();
-    await page
-      .getByText(`Connected: a key of Anthropic ending in ${OWN_KEY.slice(-4)}`)
-      .waitFor({ timeout: 30_000 });
+    await page.getByText(`Key ending in ${OWN_KEY.slice(-4)}`).waitFor({ timeout: 30_000 });
     await page.getByText("The key is kept on this device").waitFor();
     await page.getByRole("button", { name: "Close the section" }).click();
     await home(page);
@@ -697,7 +661,7 @@ describe.each(NAMED)("the path in %s", (name) => {
     // Left unfinished for the sign-out's list, with no check: each check spends the quota.
   });
 
-  it("shows the adults the tutor's time and the progress, with the lesson's name", async () => {
+  it("shows the adults the tutor's time", async () => {
     shoot();
     const { page } = walk;
     await page.goto(`${ORIGIN}/#/home`);
@@ -710,14 +674,6 @@ describe.each(NAMED)("the path in %s", (name) => {
     await time
       .getByText(/This profile: \d+\s?% used|The platform's AI has no tutor time/)
       .waitFor({ timeout: 30_000 });
-    await page.getByRole("button", { name: "See the progress" }).click();
-    await page.getByRole("heading", { level: 1, name: "Progress: Dev" }).waitFor();
-    // The lesson's attempt by the lesson's name, not its local ID.
-    const lesson = page.getByRole("definition").filter({ hasText: lessonTitle });
-    await lesson.first().waitFor();
-    expect(await lesson.count()).toBeGreaterThan(0);
-    await page.getByRole("term").filter({ hasText: "Skills" }).first().waitFor();
-    await page.getByRole("button", { name: "Back to the section" }).click();
     await page.getByRole("button", { name: "See what is on this device" }).click();
     const dev = page.getByRole("region", { name: "Profile: Dev" });
     await dev.getByText(/1 unfinished task/).waitFor();
@@ -757,9 +713,7 @@ describe.each(NAMED)("the path in %s", (name) => {
     await page.getByRole("heading", { level: 1, name: "Own AI key" }).waitFor();
     await page.getByLabel("Key", { exact: true }).fill(TIER_KEY);
     await page.getByRole("button", { name: "Connect" }).click();
-    await page
-      .getByText(`Connected: a key of Anthropic ending in ${TIER_KEY.slice(-4)}`)
-      .waitFor({ timeout: 30_000 });
+    await page.getByText(`Key ending in ${TIER_KEY.slice(-4)}`).waitFor({ timeout: 30_000 });
     await page.getByRole("button", { name: "Close the section" }).click();
     await home(page);
     // The task left with its row of strokes: its check reads them on the key and meets the tier,

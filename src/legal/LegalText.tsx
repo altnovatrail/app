@@ -1,4 +1,5 @@
-// A legal text as app shows it, in place (the contract): its title, which opens it; its gist
+// A legal text as app shows it, in place (the contract): "Read the full text" in the screen's
+// language, which opens it; its gist
 // in the language api found, with that `lang`; on a screen in another language than English, the
 // line that the English text is the one in force and the version's translation, when it has one,
 // which has no force of its own; and the English body, `lang="en"`. Nothing in it leads
@@ -10,7 +11,7 @@ import { Loading, Sk } from "../app/Skeleton.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { titleOf } from "./body.ts";
 import { Markdown } from "./Markdown.tsx";
-import { dayText } from "./texts.ts";
+import { dayText, isPageText } from "./texts.ts";
 
 /**
  * A legal text open on its page while it is read: the caption and the lines of its
@@ -40,21 +41,24 @@ export function LegalLoading({ body = true }: { readonly body?: boolean }) {
   );
 }
 
-/** A text, closed until it is opened; its own headings begin at `level`. */
+/**
+ * A text, closed until it is opened, under the words that open it in the screen's language: what
+ * stands above it names it, and its English title heads its body. Its own headings begin at
+ * `level`.
+ */
 export function LegalText({ text, level }: { readonly text: Text; readonly level: number }) {
-  const title = useMemo(() => titleOf(text.body) ?? text.id, [text.body, text.id]);
+  const { words } = useLanguage();
   return (
     <details className="nt-legal">
-      <summary>
-        <span lang="en">{title}</span>
-      </summary>
+      <summary>{words.text("legal.full")}</summary>
       <LegalContent text={text} level={level} />
     </details>
   );
 }
 
 /**
- * A text's next version, closed until it is opened: its title with the number of the version and
+ * A text's next version, closed until it is opened: its name — in the screen's language where the
+ * text is a legal page, else its English title — with the number of the version and
  * the day it applies from, and, while a current version is in force, that it is until then.
  */
 export function NextLegalText({
@@ -72,7 +76,7 @@ export function NextLegalText({
   return (
     <details className="nt-legal">
       <summary>
-        <span lang="en">{title}</span>
+        {isPageText(text.id) ? words.text(`legal.${text.id}`) : <span lang="en">{title}</span>}
         {": "}
         {words.text("legal.next-summary", { version, date: dayText(language, text.inForceSince) })}
       </summary>
