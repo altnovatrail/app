@@ -13,12 +13,17 @@ export class FakeRecognition implements Recognition {
   onresult: ((event: RecognitionEvent) => void) | null = null;
   onerror: ((event: Event) => void) | null = null;
   onend: (() => void) | null = null;
+  onaudiostart: (() => void) | null = null;
+  onspeechstart: (() => void) | null = null;
   started = false;
+  /** Set before the press: the recognition starts and no sound ever comes, as on an iPad whose voice holds the audio. */
+  static deaf = false;
   constructor() {
     FakeRecognition.made.push(this);
   }
   start() {
     this.started = true;
+    if (!FakeRecognition.deaf) queueMicrotask(() => this.onaudiostart?.());
   }
   /** Stop: the browser ends the listening, and says so. */
   stop() {
@@ -46,6 +51,7 @@ export class LocalRecognition extends FakeRecognition {
  */
 export function withRecognition(fake: boolean | "local"): void {
   FakeRecognition.made = [];
+  FakeRecognition.deaf = false;
   LocalRecognition.asked = [];
   const Class = fake === "local" ? LocalRecognition : fake ? FakeRecognition : undefined;
   vi.stubGlobal("SpeechRecognition", Class);
