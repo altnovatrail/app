@@ -525,7 +525,11 @@ export function TaskLayout({
           {underCanvas}
         </div>
       </div>
-      <div className="nt-task-foot" {...beside}>
+      <div
+        className="nt-task-foot"
+        {...beside}
+        {...(onOpen === undefined ? {} : { "data-tutor-side": "" })}
+      >
         {parts.failure === undefined ? null : (
           <p role="alert" className="nt-error">
             {failureText(parts.failure, words)}

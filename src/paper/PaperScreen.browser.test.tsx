@@ -1287,6 +1287,16 @@ it("hides the canvas's bar of tools on a phone while the panel is open, its Hint
   await waitFor(() => expect(sheet().hasAttribute("tools-hidden")).toBe(false));
 });
 
+it("puts the card of the Check on a phone in the middle, 16 from either edge, nothing beside it", async () => {
+  await page.viewport(390, 844);
+  await solving({ checked: () => new Promise(() => {}) });
+  writeOn(sheet());
+  await userEvent.click(screen.getByRole("button", { name: "Check" }));
+  await screen.findByText("Reading your work…");
+  const card = found(".nt-card-verdict").getBoundingClientRect();
+  expect([Math.round(card.left), Math.round(390 - card.right)]).toEqual([16, 16]);
+});
+
 it("frames a task the AI missed by two taps, and removes it by its cross", async () => {
   await renderPaper({ found: () => ({ frames: [] }) });
   const none = await noneCard();

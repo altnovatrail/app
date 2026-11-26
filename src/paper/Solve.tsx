@@ -57,7 +57,7 @@ import type { MessageInitShape } from "@bufbuild/protobuf";
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useApi } from "../api/ApiContext.tsx";
 import { type Failure, parseFailure } from "../api/failure.ts";
-import { GROWN_UP_TIMEOUT_MS, PAPER_TIMEOUT_MS } from "../api/interceptors.ts";
+import { expecting, GROWN_UP_TIMEOUT_MS, PAPER_TIMEOUT_MS } from "../api/interceptors.ts";
 import { idempotencyKey } from "../api/keys.ts";
 import { closesAI, outcomeOf } from "../api/outcome.ts";
 import { failureText, outcomeText } from "../api/words.ts";
@@ -144,6 +144,9 @@ interface RungAsk {
   readonly wrongAnswers: number;
   readonly key: string;
 }
+
+/** Causes of a refusal of "Explain differently" that say its right on this rung is spent or none. */
+const SPENT: ReadonlySet<Cause> = new Set([Cause.ALREADY_ASKED, Cause.NOT_CURRENT, Cause.NO_RUNG]);
 
 /** Causes of a refusal of the words of a rung that say there are none to show for this answer. */
 const QUIET = new Set([Cause.NOT_CURRENT, Cause.NO_RUNG, Cause.NO_MORE_WORDS]);
@@ -415,14 +418,17 @@ export function Solve({
     setWordsNote(undefined);
     const ai = holder.aiFields(profileId);
     void watched(api, () =>
-      api.attempt.getRungWords({
-        profileId,
-        attemptId: ask.attemptId,
-        idempotencyKey: ask.key,
-        wrongAnswers: ask.wrongAnswers,
-        wordsLanguage: language,
-        ...ai,
-      }),
+      api.attempt.getRungWords(
+        {
+          profileId,
+          attemptId: ask.attemptId,
+          idempotencyKey: ask.key,
+          wrongAnswers: ask.wrongAnswers,
+          wordsLanguage: language,
+          ...ai,
+        },
+        expecting(QUIET),
+      ),
     )
       .then(
         (answer) => {
@@ -822,14 +828,17 @@ export function Solve({
     setWordsNote(undefined);
     const ai = holder.aiFields(profileId);
     void watched(api, () =>
-      api.attempt.explainDifferently({
-        profileId,
-        attemptId,
-        idempotencyKey: key,
-        wrongAnswers,
-        wordsLanguage: language,
-        ...ai,
-      }),
+      api.attempt.explainDifferently(
+        {
+          profileId,
+          attemptId,
+          idempotencyKey: key,
+          wrongAnswers,
+          wordsLanguage: language,
+          ...ai,
+        },
+        expecting(SPENT),
+      ),
     )
       .then(
         (answer) => {
@@ -852,10 +861,7 @@ export function Solve({
           // again with its key, which gets what was done.
           if (found.kind !== "refused") return setWordsNote(failureText(found, words));
           explainKey.current = undefined;
-          const spent =
-            found.cause === Cause.ALREADY_ASKED ||
-            found.cause === Cause.NOT_CURRENT ||
-            found.cause === Cause.NO_RUNG;
+          const spent = SPENT.has(found.cause);
           if (spent) setExplained(true);
           else setWordsNote(failureText(found, words));
         },

@@ -5065,11 +5065,17 @@ button.nt-card-button {
   padding: 0 1rem;
   background: var(--nt-accent-tint);
 }
-/* On a phone from the row's edge to 72 before the other, where the tutor's button stands. */
+/*
+ * On a phone from the row's edge to its other, as a task from paper has it; where the tutor's round
+ * button stands at the right, to 72 before that edge.
+ */
 @media (width < 600px) {
   .nt-task-foot > .nt-card-verdict {
     inline-size: auto;
-    margin-inline: 0.25rem 4.5rem;
+    margin-inline: 0.25rem;
+  }
+  .nt-task-foot[data-tutor-side] > .nt-card-verdict {
+    margin-inline-end: 4.5rem;
   }
 }
 /*

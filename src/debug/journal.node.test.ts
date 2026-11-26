@@ -143,4 +143,44 @@ describe("the app's log", () => {
     // The console still says it.
     expect(said).toHaveLength(2);
   });
+
+  it("notes the browser's word of a ResizeObserver loop as no error", () => {
+    const target = new EventTarget();
+    install(target, { error: () => {}, warn: () => {} } as unknown as Console);
+    for (const message of [
+      "ResizeObserver loop completed with undelivered notifications.",
+      "ResizeObserver loop limit exceeded",
+    ])
+      target.dispatchEvent(Object.assign(new Event("error"), { message }));
+    target.dispatchEvent(
+      Object.assign(new Event("error"), { message: "ResizeObserver is broken" }),
+    );
+    expect(seen().map((e) => [e.level, e.text])).toEqual([
+      ["debug", "ResizeObserver loop completed with undelivered notifications."],
+      ["debug", "ResizeObserver loop limit exceeded"],
+      ["error", "ResizeObserver is broken"],
+    ]);
+  });
+
+  it("notes the page put away and back, and the network gone and back", () => {
+    const target = new EventTarget();
+    install(target, { error: () => {}, warn: () => {} } as unknown as Console);
+    const page = { visibilityState: "hidden" };
+    vi.stubGlobal("document", page);
+    try {
+      target.dispatchEvent(new Event("visibilitychange"));
+      page.visibilityState = "visible";
+      target.dispatchEvent(new Event("visibilitychange"));
+    } finally {
+      vi.unstubAllGlobals();
+    }
+    target.dispatchEvent(new Event("offline"));
+    target.dispatchEvent(new Event("online"));
+    expect(seen().map((e) => [e.level, e.text])).toEqual([
+      ["info", "page hidden"],
+      ["info", "page shown"],
+      ["info", "network offline"],
+      ["info", "network online"],
+    ]);
+  });
 });

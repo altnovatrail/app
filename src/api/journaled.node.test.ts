@@ -2,16 +2,18 @@
 // of bytes held, never the message itself.
 import { Cause, RefusalSchema } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import { create } from "@bufbuild/protobuf";
-import { Code, ConnectError } from "@connectrpc/connect";
+import { Code, ConnectError, createContextValues } from "@connectrpc/connect";
 import { describe, expect, it, vi } from "vitest";
-import { bytesOf, journaled } from "./interceptors.ts";
+import { bytesOf, expecting, journaled, repeat } from "./interceptors.ts";
 
-function request(message: unknown, stream = false) {
+function request(message: unknown, stream = false, contextValues = createContextValues()) {
   return {
+    contextValues,
     service: { typeName: "novatrail.api.v1.AttemptService" },
     method: { name: "SubmitWork" },
     message,
     stream,
+    signal: new AbortController().signal,
   } as never;
 }
 
@@ -70,6 +72,80 @@ describe("journaled", () => {
       })(request({}, true)),
     ).rejects.toBeDefined();
     expect(note.mock.calls[1]?.[0]).toBe("debug");
+  });
+
+  it("notes a refusal the screen waits for as info, and any other as an error", async () => {
+    const note = vi.fn();
+    const refusal = (cause: Cause) =>
+      new ConnectError("", Code.FailedPrecondition, undefined, [
+        { desc: RefusalSchema, value: create(RefusalSchema, { cause }) },
+      ]);
+    const { contextValues } = expecting([Cause.NO_MORE_WORDS, Cause.NO_RUNG]);
+    for (const cause of [Cause.NO_MORE_WORDS, Cause.ATTEMPT_CLOSED]) {
+      await expect(
+        journaled(
+          note,
+          () => 0,
+        )(async () => {
+          throw refusal(cause);
+        })(request({}, false, contextValues)),
+      ).rejects.toBeDefined();
+    }
+    await expect(
+      journaled(
+        note,
+        () => 0,
+      )(async () => {
+        throw refusal(Cause.NO_MORE_WORDS);
+      })(request({})),
+    ).rejects.toBeDefined();
+    expect(note.mock.calls.map((call) => [call[0], call[2]])).toEqual([
+      ["info", "AttemptService/SubmitWork · failed_precondition"],
+      ["error", "AttemptService/SubmitWork · failed_precondition"],
+      ["error", "AttemptService/SubmitWork · failed_precondition"],
+    ]);
+  });
+
+  it("notes each attempt the client repeats: what the browser said, and how long it had gone", async () => {
+    const note = vi.fn();
+    let t = 0;
+    const going = new ConnectError("", Code.Aborted, undefined, [
+      { desc: RefusalSchema, value: create(RefusalSchema, { cause: Cause.STILL_GOING }) },
+    ]);
+    const failures = [
+      new ConnectError(
+        "the network failed",
+        Code.Unavailable,
+        undefined,
+        undefined,
+        new TypeError("Load failed"),
+      ),
+      going,
+    ];
+    const call = repeat(
+      async () => {},
+      note,
+      () => (t += 24_000),
+    )(async () => {
+      const failure = failures.shift();
+      if (failure !== undefined) throw failure;
+      return "ok" as never;
+    });
+    await expect(call(request({}))).resolves.toBe("ok");
+    expect(note.mock.calls).toEqual([
+      [
+        "warn",
+        "api",
+        "AttemptService/SubmitWork · unavailable · the network failed · repeated",
+        "attempt: 1\ncode: unavailable\nbrowser: TypeError: Load failed\ntook: 24.0 s\nnext in: 0.5 s",
+      ],
+      [
+        "info",
+        "api",
+        "AttemptService/SubmitWork · still going · repeated",
+        "attempt: 2\ncode: aborted\ncause: STILL_GOING\ntook: 24.0 s\nnext in: 1.0 s",
+      ],
+    ]);
   });
 
   it("counts the bytes a few levels down, and nothing else", () => {

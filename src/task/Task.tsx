@@ -55,6 +55,7 @@ import type { MessageInitShape } from "@bufbuild/protobuf";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useApi } from "../api/ApiContext.tsx";
 import { type Failure, parseFailure } from "../api/failure.ts";
+import { expecting } from "../api/interceptors.ts";
 import { idempotencyKey } from "../api/keys.ts";
 import { closesAI, outcomeOf } from "../api/outcome.ts";
 import { failureText, outcomeText } from "../api/words.ts";
@@ -439,6 +440,16 @@ export interface OpenTaskProps {
   readonly onClosed: (reason: CloseReason) => void;
 }
 
+/** Causes of a refusal of the words of a rung that say there are none to show for this answer. */
+const QUIET_WORDS: ReadonlySet<Cause> = new Set([
+  Cause.NOT_CURRENT,
+  Cause.NO_RUNG,
+  Cause.NO_MORE_WORDS,
+]);
+
+/** Causes of a refusal of "Explain differently" that say its right on this rung is spent or none. */
+const SPENT: ReadonlySet<Cause> = new Set([Cause.ALREADY_ASKED, Cause.NOT_CURRENT, Cause.NO_RUNG]);
+
 /** A submission sent: its key, the work the canvas gave and as the contract carries it, its number. */
 interface Sent {
   readonly key: string;
@@ -650,14 +661,17 @@ function OpenTask({
       const late = () => asked !== checks.current || over.current;
       const ai = holder.aiFields(profileId);
       void api.attempt
-        .getRungWords({
-          profileId,
-          attemptId,
-          idempotencyKey: idempotencyKey(),
-          wrongAnswers,
-          ...(of.contract === undefined ? {} : { work: of.contract }),
-          ...ai,
-        })
+        .getRungWords(
+          {
+            profileId,
+            attemptId,
+            idempotencyKey: idempotencyKey(),
+            wrongAnswers,
+            ...(of.contract === undefined ? {} : { work: of.contract }),
+            ...ai,
+          },
+          expecting(QUIET_WORDS),
+        )
         .then(
           (answer) => {
             const read = outcomeOf(answer.outcome);
@@ -696,11 +710,7 @@ function OpenTask({
             const found = unlessClosed(reason, close);
             if (found === undefined) return;
             // A rung that is not this answer's, or none, has no words to show.
-            const quiet =
-              found.kind === "refused" &&
-              (found.cause === Cause.NOT_CURRENT ||
-                found.cause === Cause.NO_RUNG ||
-                found.cause === Cause.NO_MORE_WORDS);
+            const quiet = found.kind === "refused" && QUIET_WORDS.has(found.cause);
             if (!quiet) setWordsFailure(failureText(found, words));
           },
         )
@@ -982,13 +992,16 @@ function OpenTask({
     const late = () => asked !== checks.current || over.current;
     const ai = holder.aiFields(profileId);
     void api.attempt
-      .explainDifferently({
-        profileId,
-        attemptId,
-        idempotencyKey: explainKey.current,
-        wrongAnswers: latest.current.state.wrongAnswers,
-        ...ai,
-      })
+      .explainDifferently(
+        {
+          profileId,
+          attemptId,
+          idempotencyKey: explainKey.current,
+          wrongAnswers: latest.current.state.wrongAnswers,
+          ...ai,
+        },
+        expecting(SPENT),
+      )
       .then(
         (answer) => {
           explainKey.current = undefined;
@@ -1020,11 +1033,7 @@ function OpenTask({
           // A refusal is the end of the action; anything else may have reached api, and goes again
           // with its key, which gets what was done.
           if (found.kind === "refused") explainKey.current = undefined;
-          const spent =
-            found.kind === "refused" &&
-            (found.cause === Cause.ALREADY_ASKED ||
-              found.cause === Cause.NOT_CURRENT ||
-              found.cause === Cause.NO_RUNG);
+          const spent = found.kind === "refused" && SPENT.has(found.cause);
           if (spent) setExplained(true);
           else setExplainNote(failureText(found, words));
         },
