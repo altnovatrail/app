@@ -15,6 +15,7 @@ import {
   FakeRecognition,
   LocalRecognition,
   listening,
+  SlowRecognition,
   withRecognition,
 } from "../test/recognition.ts";
 import { NO_AUDIO_MS } from "../voice/dictation.ts";
@@ -500,6 +501,66 @@ describe("the field of the tutor's panel", () => {
     expect(
       snapshot().some((e) => e.text === "dictation: the browser refused — audio-capture"),
     ).toBe(true);
+  });
+
+  it("ends a start the browser refuses at once as one that heard nothing, and says so", async () => {
+    withRecognition(true);
+    reset();
+    FakeRecognition.refuses = true;
+    render(inLanguage(<Asking />));
+    await userEvent.click(panel().getByRole("button", { name: "Dictate" }));
+    expect(await panel().findByText("Nothing was heard. Try again, or type.")).toBeVisible();
+    expect(panel().getByRole("button", { name: "Dictate" })).toBeVisible();
+    flush();
+    expect(snapshot().some((e) => e.text === "dictation: the browser refused to start")).toBe(true);
+  });
+
+  it("ends a Stop before the browser answered about the device, and starts nothing after", async () => {
+    withRecognition("slow");
+    render(inLanguage(<Asking />));
+    await userEvent.click(panel().getByRole("button", { name: "Dictate" }));
+    expect(await panel().findByRole("status")).toHaveTextContent("Listening…");
+    await userEvent.click(panel().getByRole("button", { name: "Stop" }));
+    expect(await panel().findByText("Nothing was heard. Try again, or type.")).toBeVisible();
+    // The answer comes late: the recognition put away is not started.
+    SlowRecognition.answer?.("available");
+    await Promise.resolve();
+    expect(listening().started).toBe(false);
+    // An end the browser still reports of it changes nothing.
+    listening().onend?.();
+    expect(panel().getByRole("button", { name: "Dictate" })).toBeVisible();
+  });
+
+  it("notes the speech, an error with no code, and the voice it stopped", async () => {
+    withRecognition(true);
+    reset();
+    const speaking = vi.spyOn(speechSynthesis, "speaking", "get").mockReturnValue(true);
+    render(inLanguage(<Asking />));
+    await userEvent.click(panel().getByRole("button", { name: "Dictate" }));
+    speaking.mockRestore();
+    const recognition = listening();
+    recognition.onspeechstart?.();
+    recognition.onerror?.(new Event("error"));
+    recognition.onend?.();
+    expect(await panel().findByText("Nothing was heard. Try again, or type.")).toBeVisible();
+    flush();
+    const lines = snapshot();
+    expect(lines.find((e) => e.text === "dictation: started in en-GB")?.detail).toBe(
+      "the voice was speaking: stopped first",
+    );
+    expect(lines.some((e) => e.text === "dictation: speech began")).toBe(true);
+    expect(lines.some((e) => e.text === "dictation: the browser refused — no code")).toBe(true);
+  });
+
+  it("starts where the browser will not say whether it speaks", async () => {
+    withRecognition(true);
+    const speaking = vi.spyOn(speechSynthesis, "speaking", "get").mockImplementation(() => {
+      throw new Error("no synthesis");
+    });
+    render(inLanguage(<Asking />));
+    await userEvent.click(panel().getByRole("button", { name: "Dictate" }));
+    speaking.mockRestore();
+    expect(listening().started).toBe(true);
   });
 
   it("drops the word that Stop took the question back once the microphone listens", async () => {
