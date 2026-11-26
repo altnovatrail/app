@@ -740,71 +740,73 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
   [
     "Home, in the frame of its bar, with a card of each kind",
     () => (
-      <LearnerProvider value={CHOSEN}>
-        <div className="nt-shell">
-          <ShellBar place="home" />
-          <HomeScreen
-            connected={[
-              {
-                moduleId: "novatrail/olympiad-math",
-                digest: "sha256:1",
-                title: "Olympiad maths",
-                language: "en",
-                skills: {
-                  mastered: 14,
-                  "time-to-review": 3,
-                  "in-progress": 6,
-                  "ready-to-start": 9,
-                  locked: 13,
-                  "feedback-by-criteria": 2,
-                  "not-assessed": 1,
+      <ApiProvider value={{} as Api}>
+        <LearnerProvider value={CHOSEN}>
+          <div className="nt-shell">
+            <ShellBar place="home" />
+            <HomeScreen
+              connected={[
+                {
+                  moduleId: "novatrail/olympiad-math",
+                  digest: "sha256:1",
+                  title: "Olympiad maths",
+                  language: "en",
+                  skills: {
+                    mastered: 14,
+                    "time-to-review": 3,
+                    "in-progress": 6,
+                    "ready-to-start": 9,
+                    locked: 13,
+                    "feedback-by-criteria": 2,
+                    "not-assessed": 1,
+                  },
                 },
-              },
-              {
-                moduleId: "novatrail/fractions",
-                digest: "sha256:4",
-                title: "Fractions step by step",
-                language: "en",
-                sequential: true,
-                skills: {
-                  mastered: 3,
-                  "time-to-review": 1,
-                  "in-progress": 1,
-                  "ready-to-start": 1,
-                  locked: 4,
-                  "feedback-by-criteria": 0,
-                  "not-assessed": 0,
+                {
+                  moduleId: "novatrail/fractions",
+                  digest: "sha256:4",
+                  title: "Fractions step by step",
+                  language: "en",
+                  sequential: true,
+                  skills: {
+                    mastered: 3,
+                    "time-to-review": 1,
+                    "in-progress": 1,
+                    "ready-to-start": 1,
+                    locked: 4,
+                    "feedback-by-criteria": 0,
+                    "not-assessed": 0,
+                  },
+                  chain: {
+                    step: 5,
+                    total: 10,
+                    mastered: 3,
+                    current: "Comparing fractions with different denominators",
+                    next: "Adding fractions",
+                  },
                 },
-                chain: {
-                  step: 5,
-                  total: 10,
-                  mastered: 3,
-                  current: "Comparing fractions with different denominators",
-                  next: "Adding fractions",
+                {
+                  moduleId: "novatrail/short-essays",
+                  digest: "sha256:3",
+                  title: "Short essays",
+                  language: "en",
+                  skills: {
+                    mastered: 0,
+                    "time-to-review": 0,
+                    "in-progress": 0,
+                    "ready-to-start": 0,
+                    locked: 0,
+                    "feedback-by-criteria": 18,
+                    "not-assessed": 0,
+                  },
                 },
-              },
-              {
-                moduleId: "novatrail/short-essays",
-                digest: "sha256:3",
-                title: "Short essays",
-                language: "en",
-                skills: {
-                  mastered: 0,
-                  "time-to-review": 0,
-                  "in-progress": 0,
-                  "ready-to-start": 0,
-                  locked: 0,
-                  "feedback-by-criteria": 18,
-                  "not-assessed": 0,
-                },
-              },
-              { moduleId: "novatrail/gone", title: "novatrail/gone" },
-            ]}
-            quota={create(QuotaShareSchema, { profilePercent: 20 })}
-            failure={{ kind: "offline" }}
-          />
-        </div>
-      </LearnerProvider>
+                { moduleId: "novatrail/gone", title: "novatrail/gone" },
+              ]}
+              quota={create(QuotaShareSchema, { profilePercent: 20 })}
+              failure={{ kind: "offline" }}
+            />
+          </div>
+        </LearnerProvider>
+      </ApiProvider>
     ),
   ],
   [
