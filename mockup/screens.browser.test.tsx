@@ -86,6 +86,14 @@ interface Compared {
   readonly devices?: readonly Device[];
 }
 
+/**
+ * The mockup draws Ask in the bottom row of a module's task and of a lesson, as app does on a task
+ * from paper, with no round button of the tutor at the right edge; app still draws that button there
+ * (Д58).
+ */
+const TUTOR_IN_ROW =
+  "Ask in the bottom row of a task and a lesson, in place of the tutor's round button (Д58)";
+
 const noMedia = () => Promise.reject(new Error("no file in this test"));
 
 /** The mockup's first task of olympiad maths, on a squared sheet: the dots in rows. */
@@ -2099,6 +2107,7 @@ const WORKBOOK_AND_ESSAY: readonly Compared[] = [
   ...DEVICES.map(
     (device): Compared => ({
       state: "workbook-not-yet",
+      until: TUTOR_IN_ROW,
       devices: [device],
       draw: aTask({ task: REMAINDERS, mode: "steps", filled: true, verdicts: REMAINDERS_READ }),
       settle: barDrawn,
@@ -2132,6 +2141,7 @@ const WORKBOOK_AND_ESSAY: readonly Compared[] = [
   ...DEVICES.map(
     (device): Compared => ({
       state: "essay-feedback",
+      until: TUTOR_IN_ROW,
       devices: [device],
       draw: anEssay({ mode: "self", filled: true, feedback: FEEDBACK, mayFinish: true }),
       settle: barDrawn,
@@ -2526,6 +2536,7 @@ const SCREENS: readonly Compared[] = [
   { state: "map-skill-locked", draw: skillMap("Olympiad maths 1–6"), regions: MAP },
   {
     state: "task-pill",
+    until: TUTOR_IN_ROW,
     draw: aTask({ mode: "steps" }),
     settle: barDrawn,
     regions: [...BAR, ...ROW, STEP_PILL, TUTOR_BUTTON],
@@ -2656,6 +2667,7 @@ const SCREENS: readonly Compared[] = [
   ...DEVICES.map(
     (device): Compared => ({
       state: "task-empty",
+      until: TUTOR_IN_ROW,
       devices: [device],
       draw: sheetTask,
       settle: async () => {
@@ -2669,6 +2681,7 @@ const SCREENS: readonly Compared[] = [
   ...DEVICES.map(
     (device): Compared => ({
       state: "task-reading",
+      until: TUTOR_IN_ROW,
       devices: [device],
       draw: aTask({ filled: true, waits: true }),
       settle: async () => {
@@ -2692,6 +2705,7 @@ const SCREENS: readonly Compared[] = [
   ...DEVICES.map(
     (device): Compared => ({
       state: "task-not-yet",
+      until: TUTOR_IN_ROW,
       devices: [device],
       draw: aTask({ filled: true, verdicts: judged(DOTS, "not_yet", "32") }),
       settle: barDrawn,
@@ -2785,6 +2799,7 @@ const SCREENS: readonly Compared[] = [
   ...WORKBOOK_AND_ESSAY,
   {
     state: "lesson",
+    until: TUTOR_IN_ROW,
     draw: explanation,
     settle: readAloudOn,
     regions: [...LESSON_BAR, ...EXPLANATION, ...LESSON_ROW],
@@ -2802,6 +2817,7 @@ const SCREENS: readonly Compared[] = [
   },
   ...DEVICES.map((device) => ({
     state: "example",
+    until: TUTOR_IN_ROW,
     devices: [device],
     draw: workedExample(),
     settle: canvasDrawn,
@@ -2809,6 +2825,7 @@ const SCREENS: readonly Compared[] = [
   })),
   ...DEVICES.map((device) => ({
     state: "example-demo",
+    until: TUTOR_IN_ROW,
     devices: [device],
     draw: workedExample(4),
     settle: canvasDrawn,
