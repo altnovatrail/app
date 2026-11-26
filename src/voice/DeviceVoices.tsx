@@ -1,15 +1,14 @@
 // The section Voicing of the page This device: on Android and Linux, why the voicing
 // waits for an adult here and the leave to give or take back; and for each language a text may be
-// in — the languages of the build, which every profile's screens and the device's are in, and the
-// explanation languages of the modules the cache holds — the voice that says it, chosen among its
-// candidates, with a sample; a language with no voice says so, and how to add one in the system, in
-// words, with no link. The choice and the leave lie in the registry of this device, the other tabs
+// in — the device's, which every screen is in, and the explanation languages of the modules the
+// cache holds, not every language of the build — that has a voice here, the voice that says it,
+// chosen among its candidates, with a sample. A language with no voice is not named: the languages
+// are many, and the speaker's line on a screen says it where it is needed. The choice and the leave lie in the registry of this device, the other tabs
 // hear of a change of them, and "Erase everything on this device" or another account signing in
 // erases them.
 import { useEffect, useId, useMemo, useState, useSyncExternalStore } from "react";
 import { languageName } from "../i18n/intl.ts";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
-import { LANGUAGES } from "../i18n/language.ts";
 import { useOptionalPackages } from "../packages/PackagesContext.tsx";
 import type { Device } from "../storage/device.ts";
 import {
@@ -28,8 +27,9 @@ const SAMPLES: Readonly<Record<string, string>> = {
   ru: "Так будут звучать слова наставника.",
 };
 
-/** The languages a text may be in on this device's screens, each once, the build's first. */
+/** The languages a text may be in on this device's screens, each once, the device's first. */
 function useLanguagesHere(): readonly string[] {
+  const { language } = useLanguage();
   const packages = useOptionalPackages();
   const [modules, setModules] = useState<readonly string[]>([]);
   useEffect(() => {
@@ -47,16 +47,16 @@ function useLanguagesHere(): readonly string[] {
   }, [packages]);
   return useMemo(() => {
     const seen = new Set<string>();
-    return [...LANGUAGES, ...modules].filter((tag) => {
+    return [language, ...modules].filter((tag) => {
       const key = tagOf(tag);
       if (key === "" || seen.has(key)) return false;
       seen.add(key);
       return true;
     });
-  }, [modules]);
+  }, [language, modules]);
 }
 
-/** One language: its voice among the candidates, with a sample, or how to add one. */
+/** One language with a voice here: its voice among the candidates, with a sample. */
 function LanguageVoice({
   tag,
   kept,
@@ -87,40 +87,31 @@ function LanguageVoice({
   return (
     <fieldset className="nt-choices">
       <legend>{name}</legend>
-      {found.length === 0 ? (
-        <>
-          <p>{words.text("voice.none")}</p>
-          <p className="nt-hint">{words.text("voice.add")}</p>
-        </>
-      ) : (
-        <>
-          {found.map((voice) => (
-            <div key={voice.voiceURI} className="nt-option">
-              <label>
-                <input
-                  type="radio"
-                  name={id}
-                  checked={voice === taken}
-                  onChange={() => onChoose(tagOf(tag), voice.voiceURI)}
-                />
-                {voice.name}
-              </label>
-            </div>
-          ))}
-          {sample === undefined || waits ? null : (
-            <div className="nt-buttons">
-              <button
-                type="button"
-                className="nt-secondary"
-                onClick={() =>
-                  speech.say([{ text: sample, language: tag }], { rate: 1, chosen: kept.voices })
-                }
-              >
-                {words.text("voice.sample")}
-              </button>
-            </div>
-          )}
-        </>
+      {found.map((voice) => (
+        <div key={voice.voiceURI} className="nt-option">
+          <label>
+            <input
+              type="radio"
+              name={id}
+              checked={voice === taken}
+              onChange={() => onChoose(tagOf(tag), voice.voiceURI)}
+            />
+            {voice.name}
+          </label>
+        </div>
+      ))}
+      {sample === undefined || waits ? null : (
+        <div className="nt-buttons">
+          <button
+            type="button"
+            className="nt-secondary"
+            onClick={() =>
+              speech.say([{ text: sample, language: tag }], { rate: 1, chosen: kept.voices })
+            }
+          >
+            {words.text("voice.sample")}
+          </button>
+        </div>
       )}
     </fieldset>
   );
@@ -130,7 +121,9 @@ export function DeviceVoices({ device }: { readonly device: Device }) {
   const { words } = useLanguage();
   const id = useId();
   const speech = useSpeech();
-  const languages = useLanguagesHere();
+  const voices = useSyncExternalStore(speech.subscribe, speech.voices);
+  const here = useLanguagesHere();
+  const languages = here.filter((tag) => candidates(voices, tag).length > 0);
   const [kept, setKept] = useState<DeviceVoicing>(NO_VOICING);
   const [failed, setFailed] = useState(false);
   const [said, setSaid] = useState<string | undefined>(undefined);
@@ -186,7 +179,7 @@ export function DeviceVoices({ device }: { readonly device: Device }) {
         </>
       ) : null}
       <p role="status">{said ?? ""}</p>
-      {speech.supported ? (
+      {speech.supported && languages.length > 0 ? (
         <>
           <p>{words.text("voice.languages")}</p>
           {languages.map((tag) => (

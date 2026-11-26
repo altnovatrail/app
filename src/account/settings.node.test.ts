@@ -49,26 +49,22 @@ describe("formOf", () => {
       pseudonym: "Ёжик",
       avatar: "moon",
       defaultMode: Mode.SELF,
-      language: "ru",
       voicing: true,
       speed: VoicingSpeed.SLOW,
       hintMode: HintMode.QUESTIONS_ONLY,
     });
   });
 
-  it("reads a value it does not know as the contract says, and a tag by its language", () => {
+  it("reads a value it does not know as the contract says", () => {
     const form = formOf(
       profile({ defaultMode: 7 as Mode, interfaceLanguage: "ru-RU", presentationStyle: {} }),
     );
     expect(form).toMatchObject({
       defaultMode: Mode.BY_STEPS,
-      language: "ru",
       voicing: false,
       speed: VoicingSpeed.NORMAL,
       hintMode: HintMode.SHOW_WHERE,
     });
-    expect(formOf(profile({ interfaceLanguage: "de" })).language).toBeUndefined();
-    expect(formOf(profile()).language).toBeUndefined();
   });
 });
 
@@ -83,9 +79,11 @@ describe("changes", () => {
     expect(changes(profile(), { ...same(), defaultMode: Mode.SELF })).toEqual({
       defaultMode: Mode.SELF,
     });
-    expect(changes(profile(), { ...same(), pseudonym: "Ёж", language: "en" })).toEqual({
+    expect(
+      changes(profile(), { ...same(), pseudonym: "Ёж", hintMode: HintMode.QUESTIONS_ONLY }),
+    ).toEqual({
       pseudonym: "Ёж",
-      interfaceLanguage: "en",
+      hintMode: HintMode.QUESTIONS_ONLY,
     });
   });
 
@@ -116,10 +114,8 @@ describe("changes", () => {
   it("never writes back a value the build reads its own way, unless the adult changed it", () => {
     const unknown = profile({ defaultMode: 7 as Mode, interfaceLanguage: "ru-RU" });
     expect(changes(unknown, same(unknown))).toBeUndefined();
-    const german = profile({ interfaceLanguage: "de" });
-    expect(changes(german, same(german))).toBeUndefined();
-    expect(changes(german, { ...same(german), language: "ru" })).toEqual({
-      interfaceLanguage: "ru",
+    expect(changes(unknown, { ...same(unknown), defaultMode: Mode.SELF })).toEqual({
+      defaultMode: Mode.SELF,
     });
   });
 });

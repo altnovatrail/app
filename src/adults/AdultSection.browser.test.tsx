@@ -1,9 +1,10 @@
-// The section for adults in the browser: its first page with the profiles, each by its
-// avatar, and the device's language, the top bar of each page, a profile's page and its form — the
-// avatar changed by its pop-over, only what changed goes to UpdateProfile, nothing when nothing
-// did, the pseudonym checked first, a failure said, the language the build does not have named —,
-// what another tab saved meanwhile, and the next versions of the legal texts on the first page,
-// with api on connect-es's router.
+// Settings, the section for adults, in the browser: its list with the profiles, the owner's first,
+// each by its avatar, and the rows of the device, the language and the legal pages, the list beside
+// a page from 600 CSS px and a first page of its own below, the bar of each page, a profile's page
+// and its form — the avatar changed by its pop-over, the mode and the language chosen in a pop-over,
+// only what changed goes to UpdateProfile, nothing when nothing did, the pseudonym checked first, a
+// failure said, the language the build does not have named —, what another tab saved meanwhile,
+// and the question when a press would leave changes not saved, with api on connect-es's router.
 import {
   AccountService,
   HintMode,
@@ -14,16 +15,11 @@ import {
   VoicingSpeed,
 } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import { Cause, RefusalSchema } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
-import {
-  LegalService,
-  type LegalText,
-  LegalTextSchema,
-} from "@altnovatrail/contracts/novatrail/api/v1/legal_pb.js";
 import { create, type MessageInitShape } from "@bufbuild/protobuf";
 import { Code, ConnectError, type ConnectRouter, createRouterTransport } from "@connectrpc/connect";
 import { render, screen, within } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
-import { userEvent } from "vitest/browser";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { page, userEvent } from "vitest/browser";
 import { ApiProvider } from "../api/ApiContext.tsx";
 import { createApi } from "../api/client.ts";
 import type { Failure } from "../api/failure.ts";
@@ -92,11 +88,23 @@ function renderPage(
   return { asked, saved, failed, rerender: (of: Profile) => rendered.rerender(page(of)) };
 }
 
+/** Chooses one of a row's choices in its pop-over, which the choice closes. */
+async function choose(row: string, option: string) {
+  await userEvent.click(screen.getByRole("button", { name: new RegExp(`^${row}`) }));
+  await userEvent.click(
+    within(screen.getByRole("dialog", { name: row })).getByRole("radio", { name: option }),
+  );
+  expect(screen.queryByRole("dialog")).toBeNull();
+}
+
 /** The status of the profile's form, not of the storage of works below it. */
 const saving = () => within(document.querySelector("form") as HTMLElement).getByRole("status");
 
-afterEach(() => {
+// The tablet's width, where the list stands beside the page; the runner's own after.
+beforeEach(() => page.viewport(1194, 834));
+afterEach(async () => {
   window.location.hash = "";
+  await page.viewport(414, 896);
 });
 
 describe("the section's first page", () => {
@@ -118,7 +126,7 @@ describe("the section's first page", () => {
         </ApiProvider>,
       );
     const { rerender } = render(section({ screen: "adults", parts: [] }, [profile()]));
-    await userEvent.click(screen.getByRole("button", { name: "Set up an own AI key" }));
+    await userEvent.click(screen.getByRole("button", { name: "Own AI key" }));
     expect(window.location.hash).toBe("#/adults/own-key");
     // No learner is chosen outside the gate: the page opens the owner profile.
     const onOpenOwner = vi.fn();
@@ -127,10 +135,10 @@ describe("the section's first page", () => {
     await userEvent.click(screen.getByRole("button", { name: "Open my profile" }));
     expect(onOpenOwner).toHaveBeenCalledOnce();
     rerender(section({ screen: "adults", parts: [] }, [profile({ ageCategory: "under_13" })]));
-    expect(screen.queryByRole("button", { name: "Set up an own AI key" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Own AI key" })).toBeNull();
   });
 
-  it("names each profile, the owner's first, and opens its page; the bar leads back and out", async () => {
+  it("names each profile, the owner's first, and opens its page beside the list; the list closes", async () => {
     window.location.hash = "#/adults";
     const { api } = apiOf((request) => profile({ profileId: request.profileId }));
     const route: Route = { screen: "adults", parts: [] };
@@ -154,32 +162,59 @@ describe("the section's first page", () => {
         </ApiProvider>,
       );
     const { rerender } = render(section(route));
-    expect(screen.getByRole("heading", { level: 1, name: "For grown-ups" })).toBeTruthy();
-    expect(screen.getByRole("group", { name: "Language" })).toBeTruthy();
-    expect(screen.queryByRole("button", { name: "Back to the section" })).toBeNull();
-    // Each a row of its avatar and its pseudonym, named by the words of its page.
-    const rows = screen.getAllByRole("button", { name: /^Profile: / });
-    expect(rows.map((row) => row.getAttribute("aria-label"))).toEqual([
-      "Profile: Ёжик",
-      "Profile: Аня",
-      "Profile: Белка",
+    // From 600 CSS px the list stands beside the owner's page, and no bar leads back.
+    const list = screen.getByRole("navigation", { name: "Settings" });
+    expect(screen.getByRole("heading", { level: 1, name: "Profile: Ёжик" })).toBeTruthy();
+    expect(document.querySelector(".nt-set-back")).toBeNull();
+    // Each a row of its avatar, its pseudonym and whose it is, named by what it shows.
+    const rows = within(list).getAllByRole("button", { name: / (Your profile|Learner)$/ });
+    expect(rows.map((row) => row.textContent)).toEqual([
+      "Ёжик Your profile",
+      "Аня Learner",
+      "Белка Learner",
     ]);
-    expect(rows.map((row) => row.textContent)).toEqual(["Ёжик", "Аня", "Белка"]);
+    expect(rows[0]).toHaveAttribute("aria-current", "page");
     expect(
       rows.map((row) => row.querySelector("[data-avatar]")?.getAttribute("data-avatar")),
     ).toEqual(["peak", "moon", "peak"]);
-    // The section's name is the heading of its first page, and under the heading of each other.
-    expect(screen.queryByText("For grown-ups", { selector: ".nt-top-sub" })).toBeNull();
-    await userEvent.click(screen.getByRole("button", { name: "Profile: Аня" }));
+    expect(within(list).getByRole("button", { name: "Language English" })).toBeTruthy();
+    await userEvent.click(rows[1] as HTMLElement);
     expect(window.location.hash).toBe("#/adults/profile");
     rerender(section({ screen: "adults", parts: ["profile"] }));
     expect(screen.getByRole("heading", { level: 1, name: "Profile: Аня" })).toBeTruthy();
-    expect(screen.getByText("For grown-ups", { selector: ".nt-top-sub" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /^Аня / })).toHaveAttribute("aria-current", "page");
     expect(document.querySelector(".nt-avatar-profile")?.getAttribute("data-avatar")).toBe("moon");
-    await userEvent.click(screen.getByRole("button", { name: "Back to the section" }));
-    expect(window.location.hash).toBe("#/adults");
-    await userEvent.click(screen.getByRole("button", { name: "Close the section" }));
+    await userEvent.click(screen.getByRole("button", { name: "Close the settings" }));
     expect(window.location.hash).toBe("#/home");
+  });
+
+  it("below 600 CSS px is a first page of its own, and each other page leads back to it", async () => {
+    await page.viewport(390, 844);
+    window.location.hash = "#/adults";
+    const { api } = apiOf((request) => profile({ profileId: request.profileId }));
+    const section = (shown: Route) =>
+      inLanguage(
+        <ApiProvider value={api}>
+          <AdultSection
+            route={shown}
+            device={memoryDevice().device}
+            profiles={[profile()]}
+            onSaved={() => {}}
+            onFailed={() => {}}
+            onEraseAll={async () => "erased"}
+            onLegal={() => {}}
+          />
+        </ApiProvider>,
+      );
+    const { rerender } = render(section({ screen: "adults", parts: [] }));
+    expect(screen.getByRole("heading", { level: 1, name: "Settings" })).toBeTruthy();
+    expect(screen.queryByRole("navigation", { name: "Settings" })).toBeNull();
+    await userEvent.click(screen.getByRole("button", { name: /^Ёжик / }));
+    rerender(section({ screen: "adults", parts: ["profile"] }));
+    expect(screen.getByRole("heading", { level: 1, name: "Profile: Ёжик" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Language English" })).toBeNull();
+    await userEvent.click(screen.getByRole("button", { name: "Back to Settings" }));
+    expect(window.location.hash).toBe("#/adults");
   });
 
   it("opens This device from the first page", async () => {
@@ -200,108 +235,46 @@ describe("the section's first page", () => {
         </ApiProvider>,
       );
     const { rerender } = render(section({ screen: "adults", parts: [] }));
-    const open = screen.getByRole("button", { name: "See what is on this device" });
-    expect(open).toHaveAccessibleDescription(
-      "What the app keeps on this device, and how to erase it",
-    );
-    await userEvent.click(open);
+    await userEvent.click(screen.getByRole("button", { name: "This device" }));
     expect(window.location.hash).toBe("#/adults/device");
     rerender(section({ screen: "adults", parts: ["device"] }));
     expect(screen.getByRole("heading", { level: 1, name: "This device" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Back to the section" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "This device" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
     expect(await screen.findByText("Nothing of this profile is kept on this device")).toBeTruthy();
   });
 
-  it("tells of the next versions of the texts, and that a profile's storage can be switched off first", async () => {
-    const next = create(LegalTextSchema, {
-      id: "privacy-policy",
-      version: 3,
-      inForceSince: "2026-11-27",
-      body: "# Privacy policy\n\nText.\n",
-      summary: "In short.",
-      summaryLanguage: "en",
-    });
-    const opened: (Route | undefined)[] = [];
-    let reads = 0;
-    const first = (profiles: Profile[], nextTexts: LegalText[] | Error) => {
-      const api = createApi({
-        baseUrl: "https://api.example.org",
-        tokens: { token: async () => "t", signOut: async () => {} },
-        on: { stale: () => {}, accountGone: async () => {}, noAccess: async () => {} },
-        sleep: async () => {},
-        transport: (interceptors) =>
-          createRouterTransport(
-            (router: ConnectRouter) =>
-              router.service(LegalService, {
-                getLegalTexts() {
-                  reads += 1;
-                  if (nextTexts instanceof Error) throw nextTexts;
-                  return { texts: [], nextTexts };
-                },
-              }),
-            { transport: { interceptors } },
-          ),
-      });
-      return render(
-        inLanguage(
-          <ApiProvider value={api}>
-            <AdultSection
-              route={{ screen: "adults", parts: [] }}
-              device={memoryDevice().device}
-              profiles={profiles}
-              onSaved={() => {}}
-              onFailed={() => {}}
-              onEraseAll={async () => "erased"}
-              onLegal={(page) => opened.push(page)}
-            />
-          </ApiProvider>,
-        ),
-      );
-    };
-    first([profile(), profile({ profileId: "p2", owner: false, workStorage: true })], [next]);
-    expect(
-      await screen.findByRole("heading", { level: 2, name: "New versions of the texts" }),
-    ).toBeTruthy();
-    const read = screen.getByRole("button", { name: "Read Privacy Policy, version 3" });
-    expect(read).toHaveAccessibleDescription(
-      "Privacy Policy: version 3 applies from November 27, 2026",
+  it("has no notice of the next versions of the texts in its list", async () => {
+    const { api } = apiOf((request) => profile({ profileId: request.profileId }));
+    render(
+      inLanguage(
+        <ApiProvider value={api}>
+          <AdultSection
+            route={{ screen: "adults", parts: [] }}
+            device={memoryDevice().device}
+            profiles={[profile()]}
+            onSaved={() => {}}
+            onFailed={() => {}}
+            onEraseAll={async () => "erased"}
+            onLegal={() => {}}
+          />
+        </ApiProvider>,
+      ),
     );
-    expect(screen.getByText(/Keeping works on the server is on for a profile/)).toBeTruthy();
-    await userEvent.click(read);
-    await userEvent.click(
-      screen.getByRole("button", { name: "Read the privacy policy and other texts" }),
-    );
-    expect(opened).toEqual([{ screen: "legal", parts: ["privacy-policy", "next"] }, undefined]);
-    document.body.innerHTML = "";
-    // No profile keeps its works on the server: nothing to switch off. Two texts whose next
-    // versions have one number, each in the order of the pages, each button named by its text.
-    first([profile()], [{ ...next, id: "terms-of-use" }, next]);
-    expect(
-      await screen.findByRole("button", { name: "Read Privacy Policy, version 3" }),
-    ).toBeTruthy();
-    expect(
-      screen.getAllByRole("button", { name: /, version 3$/ }).map((each) => each.textContent),
-    ).toEqual(["Read Privacy Policy, version 3", "Read Terms of Use, version 3"]);
-    expect(screen.queryByText(/Keeping works on the server is on/)).toBeNull();
-    document.body.innerHTML = "";
-    // No next version, or a read that failed: no part at all, and no Try again.
-    for (const none of [[], new ConnectError("broken", Code.Internal)]) {
-      const before = reads;
-      first([profile({ workStorage: true })], none);
-      await vi.waitFor(() => expect(reads).toBeGreaterThan(before));
-      // The answer, or the failure, has come to the page.
-      await new Promise((settled) => setTimeout(settled, 50));
-      expect(screen.queryByRole("heading", { name: "New versions of the texts" })).toBeNull();
-      expect(screen.queryByRole("button", { name: "Try again" })).toBeNull();
-      document.body.innerHTML = "";
-    }
+    expect(await screen.findByRole("button", { name: "Privacy" })).toBeTruthy();
+    expect(screen.queryByRole("heading", { name: "New versions of the texts" })).toBeNull();
   });
 });
 
 describe("a profile's page", () => {
   it("asks nothing when nothing changed, and says so", async () => {
     const { asked } = renderPage(profile(), () => profile());
-    await userEvent.click(screen.getByRole("button", { name: "Save" }));
+    // Save waits for a change, shown so, and pressed still it says why it sends nothing.
+    const save = screen.getByRole("button", { name: "Save" });
+    expect(save).toHaveAttribute("aria-disabled", "true");
+    await userEvent.click(save, { force: true });
     expect(saving().textContent).toBe("Nothing has changed");
     expect(asked).toEqual([]);
   });
@@ -317,11 +290,11 @@ describe("a profile's page", () => {
     expect(pseudonym).toHaveAccessibleDescription("Not a real name, up to 30 characters");
     await userEvent.clear(pseudonym);
     await userEvent.type(pseudonym, "  Ёж ");
-    await userEvent.click(screen.getByRole("checkbox", { name: "Read the tutor's words aloud" }));
+    await userEvent.click(screen.getByRole("switch", { name: "Read the tutor's words aloud" }));
     await userEvent.click(screen.getByRole("radio", { name: "Slow" }));
     // A choice taken back is no change.
-    await userEvent.click(screen.getByRole("radio", { name: "On my own" }));
-    await userEvent.click(screen.getByRole("radio", { name: "Step by step" }));
+    await choose("Default mode", "On my own");
+    await choose("Default mode", "Step by step");
     await userEvent.click(screen.getByRole("radio", { name: "Normal" }));
     await userEvent.click(screen.getByRole("radio", { name: "Slow" }));
     await userEvent.click(screen.getByRole("button", { name: "Save" }));
@@ -345,7 +318,7 @@ describe("a profile's page", () => {
     expect(hints.getByRole("radio", { name: "Show where" })).toBeChecked();
     await userEvent.click(hints.getByRole("radio", { name: "Questions only" }));
     await userEvent.click(hints.getByRole("radio", { name: "Show where" }));
-    await userEvent.click(screen.getByRole("button", { name: "Save" }));
+    await userEvent.click(screen.getByRole("button", { name: "Save" }), { force: true });
     expect(saving().textContent).toBe("Nothing has changed");
     await userEvent.click(hints.getByRole("radio", { name: "Questions only" }));
     await userEvent.click(screen.getByRole("button", { name: "Save" }));
@@ -394,10 +367,10 @@ describe("a profile's page", () => {
         { desc: RefusalSchema, value: create(RefusalSchema, { cause: Cause.NO_PROFILE }) },
       ]);
     });
-    await userEvent.click(screen.getByRole("radio", { name: "On my own" }));
+    await choose("Default mode", "On my own");
     await userEvent.click(screen.getByRole("button", { name: "Save" }));
     expect((await screen.findByRole("alert")).textContent).toBe("This isn't there any more");
-    expect(screen.getByRole("radio", { name: "On my own" })).toBeChecked();
+    expect(screen.getByRole("button", { name: "Default mode On my own" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Save" })).toBeEnabled();
     // The session hears of it too.
     expect(failed).toMatchObject([{ kind: "refused", cause: Cause.NO_PROFILE }]);
@@ -411,7 +384,7 @@ describe("a profile's page", () => {
       });
       return profile({ defaultMode: Mode.SELF });
     });
-    await userEvent.click(screen.getByRole("radio", { name: "On my own" }));
+    await choose("Default mode", "On my own");
     await userEvent.click(screen.getByRole("button", { name: "Save" }));
     await vi.waitFor(() => expect(answered).toBeDefined());
     await userEvent.click(screen.getByRole("radio", { name: "Slow" }));
@@ -419,56 +392,116 @@ describe("a profile's page", () => {
     await vi.waitFor(() => expect(saving().textContent).toBe("Saved"));
     // The page shows the profile it is given: the mode sent is its own now, the speed still an edit.
     rerender(profile({ defaultMode: Mode.BY_STEPS }));
-    expect(screen.getByRole("radio", { name: "Step by step" })).toBeChecked();
+    expect(screen.getByRole("button", { name: "Default mode Step by step" })).toBeTruthy();
     expect(screen.getByRole("radio", { name: "Slow" })).toBeChecked();
-  });
-
-  it("names the language the profile has when the build has none of it, and none when it has none", () => {
-    const { rerender } = renderPage(profile({ interfaceLanguage: "de" }), () => profile());
-    const group = () => screen.getByRole("group", { name: "Language of the learner's screens" });
-    expect(group()).toHaveAccessibleDescription(
-      "The profile's language is German, which this version of the app doesn't have. The learner's screens are in the language of the device",
-    );
-    expect(screen.getByRole("radio", { name: "English" })).not.toBeChecked();
-    expect(screen.getByRole("radio", { name: "Русский" })).not.toBeChecked();
-    // Each language by its own name, in its own language.
-    expect(screen.getByText("Русский").closest("label")).toHaveAttribute("lang", "ru");
-    rerender(profile());
-    expect(group()).toHaveAccessibleDescription(
-      "None is chosen: the learner's screens are in the language of the device",
-    );
-    // A tag Intl cannot read stands for itself.
-    rerender(profile({ interfaceLanguage: "not a tag" }));
-    expect(group()).toHaveAccessibleDescription(
-      "The profile's language is not a tag, which this version of the app doesn't have. The learner's screens are in the language of the device",
-    );
-    // An empty field is none.
-    rerender(profile({ interfaceLanguage: "" }));
-    expect(group()).toHaveAccessibleDescription(
-      "None is chosen: the learner's screens are in the language of the device",
-    );
-    rerender(profile({ interfaceLanguage: "ru-RU" }));
-    expect(screen.getByRole("radio", { name: "Русский" })).toBeChecked();
-    expect(group()).toHaveAccessibleDescription("");
   });
 
   it("shows what another tab saved in the fields not edited here, and keeps those edited", async () => {
     const { rerender } = renderPage(profile(), () => profile());
-    await userEvent.click(screen.getByRole("radio", { name: "On my own" }));
+    await choose("Default mode", "On my own");
     rerender(profile({ pseudonym: "Ёж", interfaceLanguage: "ru", defaultMode: Mode.BY_STEPS }));
     expect(screen.getByRole("heading", { level: 1, name: "Profile: Ёж" })).toBeTruthy();
     expect(screen.getByRole("textbox", { name: "Pseudonym" })).toHaveValue("Ёж");
-    expect(screen.getByRole("radio", { name: "Русский" })).toBeChecked();
-    expect(screen.getByRole("radio", { name: "On my own" })).toBeChecked();
+    expect(screen.getByRole("button", { name: "Default mode On my own" })).toBeTruthy();
   });
 
   it("says that the voice is the device's, and to turn the voicing off beside a screen reader", () => {
     renderPage(profile(), () => profile());
-    expect(screen.getByRole("group", { name: "Voicing" })).toHaveAccessibleDescription(
+    expect(
+      screen.getByRole("switch", { name: "Read the tutor's words aloud" }),
+    ).toHaveAccessibleDescription(
       "The tutor's words are read by a voice of the device. Each device's voice is chosen on its page This device If you listen to a screen reader, turn voicing off: the two would speak at once",
     );
-    expect(screen.getByRole("group", { name: "Default mode" })).toHaveAccessibleDescription(
+    expect(
+      screen.getByRole("button", { name: "Default mode Step by step" }),
+    ).toHaveAccessibleDescription(
       "Each task begins in it. The learner can switch it on the task screen",
     );
+  });
+});
+
+describe("leaving a profile's page with changes not saved", () => {
+  function section(answer: (request: UpdateProfileRequest) => Profile | Promise<Profile>) {
+    window.location.hash = "#/adults";
+    const { api, asked } = apiOf(answer);
+    const profiles = [profile(), profile({ profileId: "p2", owner: false, pseudonym: "Аня" })];
+    render(
+      inLanguage(
+        <ApiProvider value={api}>
+          <AdultSection
+            route={{ screen: "adults", parts: [] }}
+            device={memoryDevice().device}
+            profiles={profiles}
+            onSaved={() => {}}
+            onFailed={() => {}}
+            onEraseAll={async () => "erased"}
+            onLegal={() => {}}
+          />
+        </ApiProvider>,
+      ),
+    );
+    return { asked };
+  }
+  const question = () => screen.queryByRole("alertdialog", { name: "Save changes?" });
+  const voicing = () => screen.getByRole("switch", { name: "Read the tutor's words aloud" });
+
+  it("goes with nothing asked when nothing changed", async () => {
+    section(() => profile());
+    await userEvent.click(screen.getByRole("button", { name: "Close the settings" }));
+    expect(question()).toBeNull();
+    expect(window.location.hash).toBe("#/home");
+  });
+
+  it("asks at the close; Cancel stays, the change kept and the focus back on the close", async () => {
+    const { asked } = section(() => profile());
+    await userEvent.click(voicing());
+    const close = screen.getByRole("button", { name: "Close the settings" });
+    await userEvent.click(close);
+    const asking = question() as HTMLElement;
+    expect(asking).toHaveAccessibleDescription("The changes to your profile are not saved yet.");
+    expect(window.location.hash).toBe("#/adults");
+    await userEvent.click(within(asking).getByRole("button", { name: "Cancel" }));
+    expect(question()).toBeNull();
+    expect(window.location.hash).toBe("#/adults");
+    expect(voicing()).toBeChecked();
+    expect(document.activeElement).toBe(close);
+    expect(asked).toEqual([]);
+  });
+
+  it("Don't Save drops the change and goes on", async () => {
+    const { asked } = section(() => profile());
+    await userEvent.click(voicing());
+    await userEvent.click(screen.getByRole("button", { name: "Language English" }));
+    await userEvent.click(screen.getByRole("button", { name: "Don't Save" }));
+    expect(window.location.hash).toBe("#/adults/language");
+    expect(asked).toEqual([]);
+  });
+
+  it("Save from another profile's row sends the change, then goes there", async () => {
+    const { asked } = section((request) =>
+      profile({
+        presentationStyle: { voicing: { enabled: true, speed: VoicingSpeed.NORMAL } },
+        profileId: request.profileId,
+      }),
+    );
+    await userEvent.click(voicing());
+    await userEvent.click(screen.getByRole("button", { name: /^Аня / }));
+    await userEvent.click(within(question() as HTMLElement).getByRole("button", { name: "Save" }));
+    await vi.waitFor(() => expect(window.location.hash).toBe("#/adults/profile"));
+    expect(asked).toHaveLength(1);
+    expect(asked[0]?.settings?.voicing).toMatchObject({ enabled: true });
+  });
+
+  it("Save that does not go through stays, and says why", async () => {
+    const { asked } = section(() => {
+      throw new ConnectError("refused", Code.InvalidArgument);
+    });
+    await userEvent.click(voicing());
+    await userEvent.click(screen.getByRole("button", { name: "Close the settings" }));
+    await userEvent.click(within(question() as HTMLElement).getByRole("button", { name: "Save" }));
+    await vi.waitFor(() => expect(screen.getByRole("alert")).toBeTruthy());
+    expect(window.location.hash).toBe("#/adults");
+    expect(asked).toHaveLength(1);
+    expect(question()).toBeNull();
   });
 });

@@ -735,6 +735,89 @@ button.nt-debug-line {
 .nt-debug-lines > .nt-debug-open {
   padding-inline-start: 2.5rem;
 }
+/* A run of info: its row — two marks stacked, the names, the count and the chevron —, and its lines
+   under it while open, indented on a tint. */
+button.nt-debug-run {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.625rem;
+  min-block-size: 3rem;
+  padding: 0.5rem 0.75rem;
+  border: 0;
+  background: none;
+  color: var(--nt-text);
+  text-align: start;
+  cursor: pointer;
+}
+button.nt-debug-run[aria-expanded="true"],
+.nt-debug-lines > .nt-debug-nested {
+  background: rgba(0, 113, 227, 0.04);
+}
+.nt-debug-stack {
+  position: relative;
+  flex: none;
+  inline-size: 1.375rem;
+  block-size: 1.25rem;
+}
+.nt-debug-stack::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: 0.25rem;
+  inset-block-start: 0;
+  inline-size: 1.125rem;
+  block-size: 1.125rem;
+  border-radius: 50%;
+  background: rgba(0, 113, 227, 0.07);
+}
+.nt-debug-run .nt-debug-stack > .nt-debug-mark {
+  position: absolute;
+  inset-inline-start: 0;
+  inset-block-start: 0.125rem;
+  margin: 0;
+  background: #e6f0fc;
+  box-shadow: 0 0 0 1.5px var(--nt-card);
+}
+.nt-debug-count {
+  flex: none;
+  min-inline-size: 1.375rem;
+  block-size: 1.25rem;
+  margin-block-start: 0.0625rem;
+  padding: 0 0.4375rem;
+  box-sizing: border-box;
+  border-radius: 0.625rem;
+  background: rgba(118, 118, 128, 0.12);
+  color: var(--nt-text);
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.25rem;
+  text-align: center;
+}
+.nt-debug-chevron {
+  flex: none;
+  inline-size: 0.75rem;
+  block-size: 0.75rem;
+  margin-block-start: 0.25rem;
+  fill: none;
+  stroke: var(--nt-text-muted);
+  stroke-width: 2.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.nt-debug-run[aria-expanded="true"] .nt-debug-chevron {
+  transform: rotate(90deg);
+}
+button.nt-debug-line.nt-debug-nested {
+  padding-inline-start: 2.25rem;
+}
+.nt-debug-lines > .nt-debug-open.nt-debug-nested {
+  padding-inline-start: 4.75rem;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .nt-debug-chevron {
+    transition: transform 0.2s;
+  }
+}
 /* Performance: the live dot, the tiles, the chart of the worst frames, the meter, the rows. */
 .nt-debug-live {
   flex: none;

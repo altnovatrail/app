@@ -1,20 +1,22 @@
-// A profile's page in the section for adults: what an adult sets of the
-// profile — its avatar, its pseudonym, its default mode, the language of its learner's
-// screens, its voicing and its hint mode — in one form, saved by its button with `UpdateProfile` and only the
-// fields that changed. The choices are radio buttons, and the avatar a choice in a pop-over, that
-// change nothing until Save (WCAG 3.2.2). What another tab changed meanwhile shows in the fields
-// not edited here; what is edited here stays until it is saved — an edit made while the request was
-// on its way among them. A failure that is the session's own goes to it as well (`onFailed`). Below
-// the form, the storage of the profile's works on the server, a consent of its own, the way
-// to the profile's modules and their licenses and to its progress, and the share of
-// today's tutor time the profile and the account have used (the contract's quota).
+// A profile's page in Settings, the section for adults: what an adult sets of the profile — its
+// avatar, its pseudonym, its default mode, its hint mode and its voicing — in one form of grouped lists, saved by Save in the page's bar with `UpdateProfile`
+// and only the fields that changed. A choice — a tick, a switch, a segment, a value in its
+// pop-over, the avatar in its own — changes nothing until Save (WCAG 3.2.2), which waits for a
+// change and says Saved once it has gone. What another tab changed meanwhile shows in the fields
+// not edited here; what is edited here stays until it is saved — an edit made while the request
+// was on its way among them. A failure that is the session's own goes to it as well
+// (`onFailed`). Below the form, the storage of the profile's works on the server, a consent of its
+// own, and the share of today's tutor time the profile and the account have used (the contract's
+// quota). While the form holds changes not saved, a press that would leave the page asks first:
+// Save sends them and goes on once they have gone, else stays with why; Don't Save drops them and
+// goes on; Cancel stays.
 import {
   HintMode,
   Mode,
   type Profile,
   VoicingSpeed,
 } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
-import { type FormEvent, type ReactNode, useId, useRef, useState } from "react";
+import { type FormEvent, useId, useRef, useState } from "react";
 import { AvatarChoice } from "../account/AvatarChoice.tsx";
 import { pseudonymOf } from "../account/session.ts";
 import { changes, formOf, type ProfileForm } from "../account/settings.ts";
@@ -22,16 +24,13 @@ import { useApi } from "../api/ApiContext.tsx";
 import { ApiError, type Failure, parseFailure } from "../api/failure.ts";
 import { failureText } from "../api/words.ts";
 import { described } from "../app/described.ts";
-import { navigate } from "../app/router.ts";
-import { languageName } from "../i18n/intl.ts";
-import { NAMES } from "../i18n/LanguageButtons.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
-import { LANGUAGES, type Language } from "../i18n/language.ts";
 import type { Device } from "../storage/device.ts";
-import { MODULES_PAGE } from "./ModulesPage.tsx";
-import { PROGRESS_PAGE } from "./progress.ts";
+import { useHold } from "./leave.tsx";
 import { QuotaSection } from "./QuotaSection.tsx";
+import { ChoiceRow, Group, SegmentsRow, SwitchRow, TickRow } from "./rows.tsx";
 import { SectionScreen } from "./SectionScreen.tsx";
+import { UnsavedDialog } from "./UnsavedDialog.tsx";
 import { WorkStorage } from "./WorkStorage.tsx";
 
 /** What the adult changed on the page and has not saved: the pseudonym as typed. */
@@ -42,30 +41,6 @@ function unsent(now: Edits, sent: Edits): Edits {
   return Object.fromEntries(
     Object.entries(now).filter(([key, value]) => sent[key as keyof Edits] !== value),
   ) as Edits;
-}
-
-/** One radio button of a group, its label beside it, 44 × 44 as every target. */
-function Option({
-  name,
-  checked,
-  onChange,
-  lang,
-  children,
-}: {
-  readonly name: string;
-  readonly checked: boolean;
-  readonly onChange: () => void;
-  readonly lang?: Language;
-  readonly children: ReactNode;
-}) {
-  return (
-    <div className="nt-option">
-      <label lang={lang}>
-        <input type="radio" name={name} checked={checked} onChange={onChange} />
-        {children}
-      </label>
-    </div>
-  );
 }
 
 export function ProfilePage({
@@ -83,7 +58,7 @@ export function ProfilePage({
   readonly onFailed: (failure: Failure) => void;
 }) {
   const api = useApi();
-  const { language, words } = useLanguage();
+  const { words } = useLanguage();
   const id = useId();
   const pseudonymField = useRef<HTMLInputElement>(null);
   const [edits, setEdits] = useState<Edits>({});
@@ -91,12 +66,13 @@ export function ProfilePage({
   const [status, setStatus] = useState<"saved" | "unchanged" | undefined>(undefined);
   const [failure, setFailure] = useState<Failure | undefined>(undefined);
   const [pending, setPending] = useState(false);
+  /** Where a press would have gone, while the page asks whether to save first. */
+  const [leaving, setLeaving] = useState<(() => void) | undefined>(undefined);
   const saved = formOf(profile);
   const pseudonym = edits.pseudonym ?? profile.pseudonym;
   const form: Omit<ProfileForm, "pseudonym"> = {
     avatar: edits.avatar ?? saved.avatar,
     defaultMode: edits.defaultMode ?? saved.defaultMode,
-    language: edits.language ?? saved.language,
     voicing: edits.voicing ?? saved.voicing,
     speed: edits.speed ?? saved.speed,
     hintMode: edits.hintMode ?? saved.hintMode,
@@ -107,15 +83,22 @@ export function ProfilePage({
     setStatus(undefined);
   }
 
-  async function submit(event: FormEvent) {
-    event.preventDefault();
+  /** Sends what changed: true once it has gone, or when nothing had changed. */
+  async function send(): Promise<boolean> {
     const name = pseudonymOf(pseudonym);
+    if (pending) return false;
     setPseudonymError(name === undefined);
     setFailure(undefined);
     setStatus(undefined);
-    if (name === undefined) return pseudonymField.current?.focus();
+    if (name === undefined) {
+      pseudonymField.current?.focus();
+      return false;
+    }
     const settings = changes(profile, { ...form, pseudonym: name });
-    if (settings === undefined) return setStatus("unchanged");
+    if (settings === undefined) {
+      setStatus("unchanged");
+      return true;
+    }
     const sent = edits;
     setPending(true);
     try {
@@ -125,206 +108,171 @@ export function ProfilePage({
       setEdits((now) => unsent(now, sent));
       onSaved(answer.profile);
       setStatus("saved");
+      return true;
     } catch (reason) {
       const failed = parseFailure(reason);
       setFailure(failed);
       onFailed(failed);
+      return false;
     } finally {
       setPending(false);
     }
   }
 
-  // The field's language when the build has none of it: none set, or one it does not have.
-  const field = profile.interfaceLanguage;
-  let unknownName: string | undefined;
-  // An empty field is none, as the contract clears it by one.
-  if (form.language === undefined && field !== undefined && field !== "") {
-    try {
-      unknownName = languageName(language, field);
-    } catch {
-      unknownName = field;
-    }
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    await send();
   }
 
+  // Save waits for a change, and says Saved once one has gone and none is new.
+  const name = pseudonymOf(pseudonym);
+  const dirty = name === undefined || changes(profile, { ...form, pseudonym: name }) !== undefined;
+  const off = pending || !dirty;
+  const title = words.text("adults.profile", { pseudonym: profile.pseudonym });
+  useHold(dirty, (go) => setLeaving(() => go));
+
   return (
-    <SectionScreen title={words.text("adults.profile", { pseudonym: profile.pseudonym })}>
-      <div className="nt-profile-head">
-        <AvatarChoice code={form.avatar} onChoose={(avatar) => edit({ avatar })} />
-      </div>
-      <form noValidate onSubmit={(event) => void submit(event)}>
-        <div className="nt-field">
-          <div className="nt-rows">
-            <div className="nt-row">
-              <label htmlFor={`${id}-pseudonym`}>{words.text("profile.pseudonym")}</label>
-              <input
-                ref={pseudonymField}
-                id={`${id}-pseudonym`}
-                type="text"
-                autoComplete="off"
-                value={pseudonym}
-                aria-invalid={pseudonymError}
-                aria-describedby={described(
-                  `${id}-pseudonym-hint`,
-                  pseudonymError && `${id}-pseudonym-error`,
-                )}
-                onChange={(event) => edit({ pseudonym: event.target.value })}
-              />
-            </div>
-          </div>
-          <p id={`${id}-pseudonym-hint`} className="nt-hint">
-            {words.text("profile.pseudonym-hint")}
+    <SectionScreen
+      title={title}
+      action={
+        // Not disabled: a disabled button would drop the focus once the form has gone.
+        <button type="submit" form={`${id}-form`} className="nt-set-save" aria-disabled={off}>
+          {status === "saved" && !dirty ? words.text("adults.saved") : words.text("adults.save")}
+        </button>
+      }
+    >
+      <div className="nt-set-hero">
+        <AvatarChoice code={form.avatar} onChoose={(avatar) => edit({ avatar })}>
+          <p className="nt-set-hero-name">{profile.pseudonym}</p>
+          <p className="nt-set-hero-sub">
+            {words.text(profile.owner ? "choose.owner" : "choose.learner")}
           </p>
-          {pseudonymError ? (
-            <p id={`${id}-pseudonym-error`} className="nt-error">
-              {words.text("profile.pseudonym-length")}
-            </p>
-          ) : null}
-        </div>
-        <div className="nt-group">
-          <fieldset className="nt-choices" aria-describedby={`${id}-mode-hint`}>
-            <legend>{words.text("adults.mode")}</legend>
-            <Option
-              name={`${id}-mode`}
-              checked={form.defaultMode === Mode.BY_STEPS}
-              onChange={() => edit({ defaultMode: Mode.BY_STEPS })}
-            >
-              {words.text("task.by-steps")}
-            </Option>
-            <Option
-              name={`${id}-mode`}
-              checked={form.defaultMode === Mode.SELF}
-              onChange={() => edit({ defaultMode: Mode.SELF })}
-            >
-              {words.text("task.on-my-own")}
-            </Option>
-            <p id={`${id}-mode-hint`} className="nt-hint">
-              {words.text("adults.mode-hint")}
-            </p>
-          </fieldset>
-        </div>
-        <div className="nt-group">
-          <fieldset
-            className="nt-choices"
-            aria-describedby={form.language === undefined ? `${id}-language-hint` : undefined}
-          >
-            <legend>{words.text("adults.language")}</legend>
-            {LANGUAGES.map((tag) => (
-              <Option
-                key={tag}
-                name={`${id}-language`}
-                lang={tag}
-                checked={form.language === tag}
-                onChange={() => edit({ language: tag })}
-              >
-                {NAMES[tag]}
-              </Option>
-            ))}
-            {form.language === undefined ? (
-              <p id={`${id}-language-hint`} className="nt-hint">
-                {unknownName === undefined
-                  ? words.text("adults.language-none")
-                  : words.text("adults.language-unknown", { language: unknownName })}
-              </p>
-            ) : null}
-          </fieldset>
-        </div>
-        <div className="nt-group">
-          <fieldset className="nt-choices" aria-describedby={`${id}-voicing-hint`}>
-            <legend>{words.text("adults.voicing")}</legend>
-            <div className="nt-check">
-              <input
-                id={`${id}-voicing`}
-                type="checkbox"
-                checked={form.voicing}
-                onChange={(event) => edit({ voicing: event.target.checked })}
-              />
-              <label htmlFor={`${id}-voicing`}>{words.text("adults.voicing-on")}</label>
-            </div>
-            <fieldset className="nt-choices">
-              <legend>{words.text("adults.speed")}</legend>
-              <Option
-                name={`${id}-speed`}
-                checked={form.speed === VoicingSpeed.NORMAL}
-                onChange={() => edit({ speed: VoicingSpeed.NORMAL })}
-              >
-                {words.text("adults.speed-normal")}
-              </Option>
-              <Option
-                name={`${id}-speed`}
-                checked={form.speed === VoicingSpeed.SLOW}
-                onChange={() => edit({ speed: VoicingSpeed.SLOW })}
-              >
-                {words.text("adults.speed-slow")}
-              </Option>
-            </fieldset>
-            <div id={`${id}-voicing-hint`}>
-              <p className="nt-hint">{words.text("adults.voicing-device")}</p>
-              <p className="nt-hint">{words.text("adults.voicing-reader")}</p>
-            </div>
-          </fieldset>
-        </div>
-        <div className="nt-group">
-          <fieldset className="nt-choices">
-            <legend>{words.text("hints.title")}</legend>
-            <Option
+        </AvatarChoice>
+      </div>
+      <form id={`${id}-form`} noValidate onSubmit={(event) => void submit(event)}>
+        <Group
+          label={words.text("profile.pseudonym")}
+          note={
+            <>
+              <p id={`${id}-pseudonym-hint`}>{words.text("profile.pseudonym-hint")}</p>
+              {pseudonymError ? (
+                <p id={`${id}-pseudonym-error`} className="nt-error">
+                  {words.text("profile.pseudonym-length")}
+                </p>
+              ) : null}
+            </>
+          }
+        >
+          <div className="nt-set-row nt-set-field">
+            <label htmlFor={`${id}-pseudonym`} className="nt-set-label">
+              {words.text("profile.pseudonym")}
+            </label>
+            <input
+              ref={pseudonymField}
+              id={`${id}-pseudonym`}
+              type="text"
+              autoComplete="off"
+              value={pseudonym}
+              aria-invalid={pseudonymError}
+              aria-describedby={described(
+                `${id}-pseudonym-hint`,
+                pseudonymError && `${id}-pseudonym-error`,
+              )}
+              onChange={(event) => edit({ pseudonym: event.target.value })}
+            />
+          </div>
+        </Group>
+        <Group
+          title={words.text("adults.learning")}
+          note={<p id={`${id}-mode-hint`}>{words.text("adults.mode-hint")}</p>}
+        >
+          <ChoiceRow
+            label={words.text("adults.mode")}
+            value={form.defaultMode}
+            describedBy={`${id}-mode-hint`}
+            options={[
+              [Mode.BY_STEPS, words.text("task.by-steps")],
+              [Mode.SELF, words.text("task.on-my-own")],
+            ]}
+            onChange={(defaultMode) => edit({ defaultMode })}
+          />
+        </Group>
+        <Group title={words.text("hints.title")}>
+          <fieldset className="nt-set-choices">
+            <legend className="nt-hidden-label">{words.text("hints.title")}</legend>
+            <TickRow
               name={`${id}-hints`}
+              label={words.text("hints.questions")}
+              sub={words.text("hints.questions-line")}
               checked={form.hintMode === HintMode.QUESTIONS_ONLY}
               onChange={() => edit({ hintMode: HintMode.QUESTIONS_ONLY })}
-            >
-              {words.text("hints.questions")}
-            </Option>
-            <Option
+            />
+            <TickRow
               name={`${id}-hints`}
+              label={words.text("hints.where")}
+              sub={words.text("hints.where-line")}
               checked={form.hintMode === HintMode.SHOW_WHERE}
               onChange={() => edit({ hintMode: HintMode.SHOW_WHERE })}
-            >
-              {words.text("hints.where")}
-            </Option>
-            <p className="nt-hint">{words.text("hints.where-line")}</p>
+            />
           </fieldset>
-        </div>
-        <button type="submit" className="nt-main" disabled={pending}>
-          {words.text("adults.save")}
-        </button>
-        <p role="status">{status === undefined ? null : words.text(`adults.${status}`)}</p>
+        </Group>
+        <Group
+          title={words.text("adults.voicing")}
+          note={
+            <div id={`${id}-voicing-hint`}>
+              <p>{words.text("adults.voicing-device")}</p>
+              <p>{words.text("adults.voicing-reader")}</p>
+            </div>
+          }
+        >
+          <SwitchRow
+            label={words.text("adults.voicing-on")}
+            checked={form.voicing}
+            describedBy={`${id}-voicing-hint`}
+            onChange={(voicing) => edit({ voicing })}
+          />
+          <SegmentsRow
+            label={words.text("adults.speed")}
+            value={form.speed}
+            options={[
+              [VoicingSpeed.NORMAL, words.text("adults.speed-normal")],
+              [VoicingSpeed.SLOW, words.text("adults.speed-slow")],
+            ]}
+            onChange={(speed) => edit({ speed })}
+          />
+        </Group>
+        <p role="status" className="nt-hidden-label">
+          {status === undefined ? null : words.text(`adults.${status}`)}
+        </p>
         {failure === undefined ? null : (
-          <p role="alert" className="nt-error">
+          <p role="alert" className="nt-error nt-set-alert">
             {failureText(failure, words)}
           </p>
         )}
       </form>
       <WorkStorage profile={profile} device={device} onSaved={onSaved} onFailed={onFailed} />
-      <section className="nt-group" aria-labelledby={`${id}-modules`}>
-        <h2 id={`${id}-modules`}>{words.text("adults.modules")}</h2>
-        <p id={`${id}-modules-hint`} className="nt-hint">
-          {words.text("adults.modules-hint")}
-        </p>
-        <div className="nt-buttons">
-          <button
-            type="button"
-            aria-describedby={`${id}-modules-hint`}
-            onClick={() => navigate(MODULES_PAGE)}
-          >
-            {words.text("adults.modules-open")}
-          </button>
-        </div>
-      </section>
-      <section className="nt-group" aria-labelledby={`${id}-progress`}>
-        <h2 id={`${id}-progress`}>{words.text("progress.section")}</h2>
-        <p id={`${id}-progress-hint`} className="nt-hint">
-          {words.text("progress.section-hint")}
-        </p>
-        <div className="nt-buttons">
-          <button
-            type="button"
-            aria-describedby={`${id}-progress-hint`}
-            onClick={() => navigate(PROGRESS_PAGE)}
-          >
-            {words.text("progress.open")}
-          </button>
-        </div>
-      </section>
       <QuotaSection profile={profile} />
+      {leaving === undefined ? null : (
+        <UnsavedDialog
+          line={
+            profile.owner
+              ? words.text("adults.unsaved-own")
+              : words.text("adults.unsaved-line", { pseudonym: profile.pseudonym })
+          }
+          onSave={() => {
+            setLeaving(undefined);
+            void send().then((sent) => {
+              if (sent) leaving();
+            });
+          }}
+          onDrop={() => {
+            setLeaving(undefined);
+            setEdits({});
+            leaving();
+          }}
+          onCancel={() => setLeaving(undefined)}
+        />
+      )}
     </SectionScreen>
   );
 }

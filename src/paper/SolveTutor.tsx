@@ -6,7 +6,7 @@
 // problem" below them for a learner of the category adult, and what a Check or a Hint failed with,
 // which the phone's
 // sheet would hide at the screen's foot; at its foot Hint while the task is not solved, "Explain
-// differently" once on a rung, and the next task once its Check is over. After them the learner's
+// differently" once on a rung, and the next task once it is solved. After them the learner's
 // questions about the task and the tutor's answers, each answer with "Report a problem" below it
 // for a learner of the category adult, and under the conversation the panel's field
 // of a question, with its microphone for a learner of the category adult. In the head, before the

@@ -1,21 +1,26 @@
-// The frame of Home: For grown-ups leads to This device, the tutor's panel to the attempt
-// open and to a task from paper, the bell says that nothing is new, and a place that shows its icon
+// The frame of Home: the places alone in its row, Settings in the profile's menu leading to the
+// section for adults, the tutor's panel to the attempt open and to a task from paper, the bell says that nothing is new, or tells of the next version of a legal text, and a place that shows its icon
 // alone, from 600 CSS px to 72em, is named by a tooltip of its words.
 
 import { ProfileSchema } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
+import {
+  LegalService,
+  type LegalText,
+  LegalTextSchema,
+} from "@altnovatrail/contracts/novatrail/api/v1/legal_pb.js";
 import { create } from "@bufbuild/protobuf";
+import { type ConnectRouter, createRouterTransport } from "@connectrpc/connect";
 import { cleanup, render, screen, within } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { page, userEvent } from "vitest/browser";
 import { type Learner, LearnerProvider } from "../account/AccountGate.tsx";
-import { DEVICE_PAGE } from "../adults/AdultSection.tsx";
 import { ApiProvider } from "../api/ApiContext.tsx";
-import type { Api } from "../api/client.ts";
+import { type Api, createApi } from "../api/client.ts";
 import { AttemptProvider } from "../task/AttemptContext.tsx";
 import { inLanguage } from "../test/language.tsx";
 import "../theme/theme.css";
 import { formatHash } from "./hash.ts";
-import { PAPER, TASK } from "./router.ts";
+import { ADULTS, TASK } from "./router.ts";
 import { ShellBar } from "./Shell.tsx";
 import { TIP_DELAY_MS } from "./Tooltip.tsx";
 
@@ -35,10 +40,31 @@ function learnerWith(attemptId?: string): Learner {
   };
 }
 
-function renderBar(learner: Learner = learnerWith()) {
+/** api whose legal texts are these, the current at version 2 of each. */
+function legalApi(next: readonly LegalText[]): Api {
+  return createApi({
+    baseUrl: "https://api.example.org",
+    tokens: { token: async () => "t", signOut: async () => {} },
+    on: { stale: () => {}, accountGone: async () => {}, noAccess: async () => {} },
+    sleep: async () => {},
+    transport: (interceptors) =>
+      createRouterTransport(
+        (router: ConnectRouter) =>
+          router.service(LegalService, {
+            getLegalTexts: () => ({
+              texts: next.map((each) => ({ ...each, version: 2 })),
+              nextTexts: [...next],
+            }),
+          }),
+        { transport: { interceptors } },
+      ),
+  });
+}
+
+function renderBar(learner: Learner = learnerWith(), api: Api = {} as Api) {
   return render(
     inLanguage(
-      <ApiProvider value={{} as Api}>
+      <ApiProvider value={api}>
         <LearnerProvider value={learner}>
           <AttemptProvider learner={learner.learner}>
             <div className="nt-shell">
@@ -58,37 +84,71 @@ afterEach(async () => {
 });
 
 describe("the frame of Home", () => {
-  it("leads from For grown-ups to This device, the pop-over closed", async () => {
+  it("holds the places alone, Settings in the profile's menu leading to the section, the menu closed", async () => {
     renderBar();
-    await userEvent.click(screen.getByRole("button", { name: "Grown-ups" }));
-    const grown = within(screen.getByRole("dialog", { name: "For grown-ups" }));
-    await userEvent.click(grown.getByRole("button", { name: "This device" }));
-    expect(window.location.hash).toBe(formatHash(DEVICE_PAGE));
+    const nav = within(screen.getByRole("navigation", { name: "Main" }));
+    expect(
+      [...nav.queryAllByRole("link"), ...nav.queryAllByRole("button")].map(
+        (place) => place.getAttribute("aria-label") ?? place.textContent,
+      ),
+    ).toEqual(["Home", "Subjects", "Cognitive map Soon"]);
+    await userEvent.click(screen.getByRole("button", { name: "Sam, profile menu" }));
+    const menu = within(screen.getByRole("dialog", { name: "Profile menu" }));
+    await userEvent.click(menu.getByRole("button", { name: "Settings" }));
+    expect(window.location.hash).toBe(formatHash(ADULTS));
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 
-  it("leads from the tutor's panel to the attempt open, and to a task from paper", async () => {
+  it("holds the tutor shut until it comes: named, its tooltip saying so, opening nothing", async () => {
     renderBar(learnerWith("a1"));
     const tutor = screen.getByRole("button", { name: "Tutor" });
-    await userEvent.click(tutor);
-    const panel = within(screen.getByRole("dialog", { name: "Tutor" }));
-    // It says that the tutor is an AI, and what the AI checks.
-    expect(panel.getByText(/The AI checks a task from paper, a program the rest/)).toBeVisible();
-    await userEvent.click(panel.getByRole("button", { name: "Continue the task" }));
-    expect(window.location.hash).toBe(formatHash(TASK));
+    expect(tutor).toHaveAttribute("aria-disabled", "true");
+    await userEvent.hover(tutor);
+    await new Promise((done) => setTimeout(done, TIP_DELAY_MS + 100));
+    expect(document.querySelector(".nt-tooltip")?.textContent).toBe("Tutor — comes later");
+    await userEvent.click(tutor, { force: true });
     expect(screen.queryByRole("dialog")).toBeNull();
-
-    await userEvent.click(tutor);
-    await userEvent.click(screen.getByRole("button", { name: "Tasks from my paper" }));
-    expect(window.location.hash).toBe(formatHash(PAPER));
+    expect(window.location.hash).not.toBe(formatHash(TASK));
   });
 
-  it("has no Continue in the tutor's panel with no attempt open", async () => {
-    renderBar();
-    await userEvent.click(screen.getByRole("button", { name: "Tutor" }));
-    const panel = within(screen.getByRole("dialog", { name: "Tutor" }));
-    expect(panel.queryByRole("button", { name: "Continue the task" })).toBeNull();
-    expect(panel.getByRole("button", { name: "Tasks from my paper" })).toBeVisible();
+  it("tells in the bell of a text's next version, its dot gone once shown, and leads to its page", async () => {
+    window.localStorage.removeItem("novatrail.bell.seen");
+    const opened: unknown[] = [];
+    const next = create(LegalTextSchema, {
+      id: "privacy-policy",
+      version: 3,
+      inForceSince: "2026-11-27",
+      body: "# Privacy policy\n\nText.\n",
+    });
+    const learner = {
+      ...learnerWith(),
+      storing: true,
+      openLegal: (page: unknown) => opened.push(page),
+    };
+    renderBar(learner, legalApi([next]));
+    const button = screen.getByRole("button", { name: "Notifications" });
+    await vi.waitFor(() => expect(button).toHaveAccessibleDescription("1 new"));
+    expect(button).toHaveClass("nt-bell-new");
+    await userEvent.click(button);
+    const bell = within(screen.getByRole("dialog", { name: "Notifications" }));
+    expect(bell.getByText("Privacy Policy: version 3")).toBeVisible();
+    expect(
+      bell.getByText("Applies from November 27, 2026. Until then, version 2 is in force."),
+    ).toBeVisible();
+    expect(bell.getByText(/turn that off in Settings before that day/)).toBeVisible();
+    await vi.waitFor(() => expect(button).not.toHaveClass("nt-bell-new"));
+    expect(button).not.toHaveAccessibleDescription("1 new");
+    await userEvent.click(bell.getByRole("button", { name: "Read Privacy Policy, version 3" }));
+    expect(opened).toEqual([{ screen: "legal", parts: ["privacy-policy", "next"] }]);
+    cleanup();
+    // Shown once on this device, it has no dot again; no profile keeping works, no line of it.
+    renderBar({ ...learnerWith(), storing: false }, legalApi([next]));
+    const again = screen.getByRole("button", { name: "Notifications" });
+    await userEvent.click(again);
+    expect(await screen.findByText("Privacy Policy: version 3")).toBeVisible();
+    expect(again).not.toHaveClass("nt-bell-new");
+    expect(screen.queryByText(/turn that off in Settings/)).toBeNull();
+    window.localStorage.removeItem("novatrail.bell.seen");
   });
 
   it("says in the bell that nothing is new", async () => {
@@ -118,7 +178,7 @@ describe("the frame of Home", () => {
     await userEvent.keyboard("{Escape}");
     await expect.poll(() => document.querySelector(".nt-tooltip")).toBeNull();
     await userEvent.unhover(shut);
-    await userEvent.hover(screen.getByRole("button", { name: "Grown-ups" }));
+    await userEvent.hover(screen.getByRole("link", { name: "Subjects" }));
     await new Promise((done) => setTimeout(done, TIP_DELAY_MS + 100));
     expect(document.querySelector(".nt-tooltip")).toBeNull();
   });

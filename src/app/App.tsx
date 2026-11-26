@@ -16,7 +16,6 @@ import type { Profile } from "@altnovatrail/contracts/novatrail/api/v1/account_p
 import { type Learner, useLearner } from "../account/AccountGate.tsx";
 import { useStorage } from "../boot/Boot.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
-import { LearnerLanguage } from "../i18n/LearnerLanguage.tsx";
 import { LessonProvider } from "../lesson/LessonContext.tsx";
 import { LessonRoute } from "../lesson/LessonRoute.tsx";
 import { PaperProvider } from "../paper/PaperContext.tsx";
@@ -167,11 +166,11 @@ export function App() {
     );
   }
   return (
-    <LearnerLanguage field={chosen.learner.interfaceLanguage}>
+    <>
       <LearnerBar />
       <div data-screen={route.screen}>
         <LearnerScreens key={chosen.learner.profileId} route={route} chosen={chosen} />
       </div>
-    </LearnerLanguage>
+    </>
   );
 }

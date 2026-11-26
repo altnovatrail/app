@@ -4,6 +4,7 @@
 // to the mockup yet: its differences are reported in mockup/out/ and not held. Without it, every
 // difference but those a region's `differs` names fails the test.
 import {
+  AccountService,
   ProfileSchema,
   QuotaShareSchema,
 } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
@@ -29,8 +30,9 @@ import { LearnerProvider } from "../src/account/AccountGate.tsx";
 import { ChooseScreen } from "../src/account/ChooseScreen.tsx";
 import { InviteScreen, type TextsRead } from "../src/account/InviteScreen.tsx";
 import { OwnerProfileScreen } from "../src/account/OwnerProfileScreen.tsx";
+import { AdultSection } from "../src/adults/AdultSection.tsx";
 import { ApiProvider } from "../src/api/ApiContext.tsx";
-import { HOME as HOME_ROUTE, type Route } from "../src/app/router.ts";
+import { HOME as HOME_ROUTE, type Route, useRoute } from "../src/app/router.ts";
 import { type Place, ShellBar } from "../src/app/Shell.tsx";
 import { Waiting } from "../src/app/Waiting.tsx";
 import { LegalPages } from "../src/legal/LegalPages.tsx";
@@ -39,10 +41,13 @@ import { Explanation } from "../src/lesson/Explanation.tsx";
 import { LessonEnd } from "../src/lesson/Lesson.tsx";
 import { ContinueButton, LessonScreen } from "../src/lesson/LessonScreen.tsx";
 import { NextStep } from "../src/next/NextStep.tsx";
+import { KeyHolder } from "../src/ownkey/holder.ts";
+import { KeyHolderProvider } from "../src/ownkey/OwnKeyContext.tsx";
 import { SignInScreen } from "../src/signin/SignInScreen.tsx";
 import { MapScreen } from "../src/skills/SkillMapScreen.tsx";
+import type { KeptKey } from "../src/storage/profile.ts";
 import { HomeScreen } from "../src/subjects/MySubjects.tsx";
-import type { ModuleCard } from "../src/subjects/modules.ts";
+import type { ModuleAbout, ModuleCard, SkillList } from "../src/subjects/modules.ts";
 import { CatalogScreen } from "../src/subjects/SubjectsPage.tsx";
 import type { SkillCounts } from "../src/subjects/states.ts";
 import { NO_VERDICTS, type Verdicts, verdictsOf } from "../src/task/attempt.ts";
@@ -80,6 +85,14 @@ interface Compared {
   /** The sizes it is compared at, when not both. */
   readonly devices?: readonly Device[];
 }
+
+/**
+ * The mockup draws Ask in the bottom row of a module's task and of a lesson, as app does on a task
+ * from paper, with no round button of the tutor at the right edge; app still draws that button there
+ * (Д58).
+ */
+const TUTOR_IN_ROW =
+  "Ask in the bottom row of a task and a lesson, in place of the tutor's round button (Д58)";
 
 const noMedia = () => Promise.reject(new Error("no file in this test"));
 
@@ -1505,10 +1518,10 @@ const MODE_PILL: Region = {
   differs: { what: ["font-size"], by: NO_TEXT },
 };
 
-/** A screen in the frame of the row of places, as App lays it, for the learner Sam. */
+/** A screen in the frame of the row of places, as App lays it, for the learner Sam; its bell tells of the policy's next version. */
 function framed(place: Place, child: ReactNode) {
   return inLanguage(
-    <ApiProvider value={QUIET}>
+    <ApiProvider value={LEGAL_API}>
       <LearnerProvider value={SAM}>
         <div className="nt-shell">
           <ShellBar place={place} />
@@ -1556,6 +1569,12 @@ function frameOf(device: Device): readonly Region[] {
       name: "the cognitive map, shut",
       mockup: { css: "nav button:has-text('Cognitive map')" },
       app: { css: "nav button:has-text('Cognitive map')" },
+    },
+    {
+      name: "the tutor, shut",
+      mockup: { css: '.nt-top-pills button[aria-disabled="true"]' },
+      app: { css: '.nt-top-pills button[aria-disabled="true"]' },
+      differs: { what: ["font-size", "font-weight"], by: ICON_ALONE },
     },
     {
       name: "the pills at the right",
@@ -1639,19 +1658,22 @@ function popOver(name: string, mockup: string, app = mockup): Region {
  */
 const AI_CHECKS = "the line that the AI checks a task from paper, which the mockup has not";
 
-/** The adult's Help, open from the row of places. */
+/** The adult's Help in the profile's menu, in its rows' place, with the way back to them. */
 const HELP: readonly Region[] = [
+  PILL,
   {
-    name: "Help",
-    mockup: { css: 'nav button:has-text("Help")' },
-    app: { css: 'nav button:has-text("Help")' },
-  },
-  {
-    ...popOver("the pop-over of Help", "Help"),
+    ...popOver("the profile's menu on Help", "Help", "Profile menu"),
     differs: {
-      what: ["background", "border", "font-size", "y", "height"],
+      what: ["background", "border", "font-size", "height"],
       by: `${OVER_INERT}; ${NO_TEXT}; ${AI_CHECKS}`,
     },
+  },
+  {
+    name: "back to the menu",
+    mockup: { role: "button", name: "Profile" },
+    app: { role: "button", name: "Profile" },
+    followsText: "start",
+    differs: { what: ["background"], by: OVER_INERT },
   },
   {
     name: "The tutor is an AI",
@@ -1669,31 +1691,17 @@ const HELP: readonly Region[] = [
   },
 ];
 
-/** The profile's menu, open: who is learning, and Switch learner. */
+/** The profile's menu, open: who is learning, Switch learner, Settings, Help and Sign out. */
 const MENU: readonly Region[] = [
   PILL,
   popOver("the profile's menu", "Profile", "Profile menu"),
-  {
-    name: "Switch learner",
-    mockup: { role: "button", name: "Switch learner" },
-    app: { role: "button", name: "Switch learner" },
-  },
-];
-
-/** For grown-ups, open from the row of places: the hint mode, This device and All settings. */
-const GROWN: readonly Region[] = [
-  {
-    name: "For grown-ups",
-    mockup: { css: 'nav button:has-text("Grown-ups")' },
-    app: { css: 'nav button:has-text("Grown-ups")' },
-  },
-  popOver("the pop-over For grown-ups", "For grown-ups"),
-  {
-    name: "Questions only",
-    mockup: { css: 'div.nt-pop span:text-is("Questions only")' },
-    app: { css: ".nt-pop-grown .nt-hint-mode-title >> nth=0" },
-    followsText: "start",
-  },
+  ...["Switch learner", "Settings", "Help", "Sign out"].map(
+    (name): Region => ({
+      name,
+      mockup: { role: "button", name },
+      app: { role: "button", name },
+    }),
+  ),
 ];
 
 /** The notifications, open: nothing new yet. */
@@ -1707,32 +1715,54 @@ const BELL: readonly Region[] = [
   popOver("the notifications", "Notifications"),
 ];
 
-/** The tutor's panel from the top right of Home. */
-const HOME_TUTOR: readonly Region[] = [
-  {
-    name: "the tutor's button",
-    mockup: { role: "button", name: "Tutor" },
-    app: { role: "button", name: "Tutor" },
-    differs: {
-      what: ["border", "colour", "font-size", "font-weight"],
-      by: `the button is its sign, where the mockup's sign is a span in it; ${ICON_ALONE}`,
-    },
-  },
-];
+/** The facts of a module of the mockup's Subjects: its subject and grades, by the NovaTrail authors. */
+function aboutOf(subject: string, grades: number[]): ModuleAbout {
+  return {
+    subject,
+    ageCategories: ["under_13"],
+    grades,
+    version: "0.1.0",
+    authors: ["The NovaTrail authors"],
+    license: "Apache-2.0",
+  };
+}
+
+/** Skills of a module by tier: the three the mockup's card names first, and the rest to its count. */
+function skillsOf(named: string[], count: number, rubric = false): SkillList {
+  const rest = Array.from({ length: count - named.length }, (_, i) => `Skill ${i + 1}`);
+  return { tiers: [{ tier: 1, skills: [...named, ...rest] }], count, rubric };
+}
 
 /** Subjects, the catalog, with the three modules connected and the check board to connect. */
 function subjects() {
+  const about: readonly Pick<ModuleCard, "about" | "skillList">[] = [
+    {
+      about: aboutOf("mathematics", [1, 2, 3, 4, 5, 6]),
+      skillList: skillsOf(["Number patterns", "Logic puzzles", "Perimeter"], 45),
+    },
+    {
+      about: aboutOf("mathematics", [3]),
+      skillList: skillsOf(["Numbers to 1000", "Multiplying by 6–9", "Hours and minutes"], 36),
+    },
+    {
+      about: { ...aboutOf("writing", []), ageCategories: ["from_13_to_consent", "adult"] },
+      skillList: skillsOf(["Topic sentence", "Order of ideas", "Linking words"], 18, true),
+    },
+  ];
+  const connected = MODULES.map((card, i) => ({ ...card, ...about[i] }));
   const board: ModuleCard = {
     moduleId: "novatrail/check-board",
-    title: "Tasks on a sheet",
+    title: "Introductory block",
     digest: `sha256:${"4".repeat(64)}`,
     language: "en",
+    about: { ...aboutOf("mathematics", []), ageCategories: ["adult"] },
+    skillList: skillsOf(["Arithmetic", "Word problems", "Equations"], 3),
   };
   return framed(
     "subjects",
     <CatalogScreen
-      connected={MODULES}
-      catalog={[...MODULES, board]}
+      connected={connected}
+      catalog={[...connected, board]}
       onConnect={() => {}}
       onDisconnect={() => {}}
     />,
@@ -1741,9 +1771,10 @@ function subjects() {
 
 /**
  * Why a card of Subjects is shorter than the mockup's: a module's manifest has no words of what it
- * teaches and no tags, so the card holds its title, its mark and its buttons.
+ * teaches, and skill-map keeps the titles of the anchor skills it builds on to itself.
  */
-const NO_ABOUT = "a manifest has no words of what a module teaches, nor tags";
+const NO_ABOUT =
+  "a manifest has no words of what a module teaches, and the anchor skills it builds on are not named";
 
 const SUBJECTS_REGIONS: readonly Region[] = [
   {
@@ -1754,7 +1785,7 @@ const SUBJECTS_REGIONS: readonly Region[] = [
   },
   {
     name: "the first module connected",
-    mockup: { css: 'div:has(> span > span > span:text-is("Olympiad maths 1–6")):has(button)' },
+    mockup: { css: 'div[data-card="Olympiad maths 1–6"]' },
     app: { css: "section:first-of-type .nt-catalog-card:first-child" },
     differs: { what: ["height", "font-size"], by: `${NO_ABOUT}; ${NO_TEXT}` },
   },
@@ -2076,6 +2107,7 @@ const WORKBOOK_AND_ESSAY: readonly Compared[] = [
   ...DEVICES.map(
     (device): Compared => ({
       state: "workbook-not-yet",
+      until: TUTOR_IN_ROW,
       devices: [device],
       draw: aTask({ task: REMAINDERS, mode: "steps", filled: true, verdicts: REMAINDERS_READ }),
       settle: barDrawn,
@@ -2109,6 +2141,7 @@ const WORKBOOK_AND_ESSAY: readonly Compared[] = [
   ...DEVICES.map(
     (device): Compared => ({
       state: "essay-feedback",
+      until: TUTOR_IN_ROW,
       devices: [device],
       draw: anEssay({ mode: "self", filled: true, feedback: FEEDBACK, mayFinish: true }),
       settle: barDrawn,
@@ -2153,15 +2186,307 @@ const WORKBOOK_AND_ESSAY: readonly Compared[] = [
   ),
 ];
 
+/** Settings, the section for adults, at the hash: Sam's account, its owner alone. */
+function SettingsDrawn() {
+  const route = useRoute();
+  return (
+    <AdultSection
+      route={route.screen === "adults" ? route : { screen: "adults", parts: [] }}
+      device={memoryDevice().device}
+      profiles={[SAM.learner]}
+      onSaved={() => {}}
+      onFailed={() => {}}
+      onEraseAll={async () => "erased"}
+      onLegal={() => {}}
+    />
+  );
+}
+
+/** Settings from its page given: its list, or a page of it. */
+function settings(route: readonly string[] = []) {
+  return () => {
+    window.location.hash = `#/adults${route.map((part) => `/${part}`).join("")}`;
+    return inLanguage(
+      <ApiProvider value={QUIET}>
+        <SettingsDrawn />
+      </ApiProvider>,
+    );
+  };
+}
+
+/** The api of the own key's page: Anthropic alone takes one, as the mockup draws it. */
+const KEY_API = routedApi((router) =>
+  router.service(AccountService, {
+    listOwnKeyProviders: () => ({ providers: [{ provider: "anthropic", name: "Anthropic" }] }),
+  }),
+);
+
+/** The own key's page with Sam's profile open: a key connected and kept, or none. */
+function ownKey(connected: boolean) {
+  return () => {
+    window.location.hash = "#/adults/own-key";
+    // A synthetic key: no provider issued it.
+    let kept: KeptKey | undefined = connected
+      ? { provider: "anthropic", name: "Anthropic", key: "sk-ant-synthetic-7f3a", last4: "7f3a" }
+      : undefined;
+    const holder = new KeyHolder({
+      read: async () => kept,
+      keep: async (_, key) => {
+        kept = key;
+        return "saved";
+      },
+      drop: async () => {
+        kept = undefined;
+      },
+    });
+    void holder.open(SAM.learner.profileId);
+    return inLanguage(
+      <ApiProvider value={KEY_API}>
+        <KeyHolderProvider holder={holder}>
+          <SettingsDrawn />
+        </KeyHolderProvider>
+      </ApiProvider>,
+    );
+  };
+}
+
+/** Why the page's heading is wider than the mockup's: it names whose page it is. */
+const WHOSE =
+  "the heading of a profile's page says whose it is, \"Profile: Sam\", the mockup's the name";
+/** Why a row's words are not the mockup's: app keeps the words of its documents. */
+const APP_WORDS =
+  'app\'s own words: "This device", "Pseudonym", "Default mode", the mockup\'s "This iPad", "Name", "Each task begins"';
+/** Why the close is not the mockup's: app's close of its closed list of icon buttons, on every sheet. */
+const CLOSE = "app's close of its closed list of icon buttons, its glass ring a shadow";
+/** Why Save waiting for a change is darker than the mockup's: its words keep the contrast of text. */
+const SAVE_WAITS =
+  "Save waiting for a change keeps the contrast of text, 4.5:1, the mockup's the grey of a switched-off control";
+
+/** The section's list: its heading, its close, the owner's row and the groups of the device and of the texts. */
+function listOf(device: Device): readonly Region[] {
+  const side = device === "ipad" ? ".nt-set-side" : "main.nt-settings-list";
+  return [
+    {
+      name: "the heading Settings",
+      mockup: { css: ".st-sidehead h1" },
+      app: { css: device === "ipad" ? ".nt-set-side-title" : "main h1" },
+      followsText: "start",
+    },
+    {
+      name: "the close",
+      mockup: { role: "button", name: "Close the settings" },
+      app: { role: "button", name: "Close the settings" },
+      differs: { what: ["border", "font-size", "font-weight"], by: CLOSE },
+    },
+    {
+      name: "the owner's row",
+      mockup: { css: ".st-side .st-prof" },
+      app: { css: `${side} .nt-set-profiles .nt-set-row` },
+    },
+    {
+      name: "the group of the device, the language and the key",
+      mockup: { css: ".st-side > .st-group:nth-child(3)" },
+      app: { css: `${side} > section:nth-of-type(2) > .nt-set-group` },
+      differs: {
+        what: ["height"],
+        by: "the own key is the owner's as an adult learner: Sam's account has it",
+      },
+    },
+    {
+      name: "the quiet link Privacy",
+      mockup: { css: ".st-side > button" },
+      app: { css: `${side} > p.nt-set-foot > button` },
+    },
+  ];
+}
+
+/**
+ * A profile's page beside the list or alone: its bar, Save — waiting for a change, or lit by one —,
+ * its avatar and its group of hints.
+ */
+const profilePage = (lit: boolean): readonly Region[] => [
+  {
+    name: "the page's heading",
+    mockup: { css: ".st-bar h2" },
+    app: { css: "main h1" },
+    followsText: "centre",
+    differs: { what: ["x"], by: WHOSE },
+  },
+  {
+    name: "Save",
+    mockup: { css: ".st-save" },
+    app: { css: ".nt-set-save" },
+    followsText: "end",
+    ...(lit ? { contrast: ACCENT_TEXT } : { differs: { what: ["colour"], by: SAVE_WAITS } }),
+  },
+  {
+    name: "the avatar",
+    mockup: { css: ".st-av-big" },
+    app: { css: ".nt-set-hero .nt-avatar" },
+  },
+  {
+    name: "the group Hints",
+    mockup: { css: ".st-col > .st-sec:nth-child(4) > .st-group" },
+    app: { css: "form > section:nth-of-type(3) > .nt-set-group" },
+    differs: { what: ["y"], by: APP_WORDS },
+  },
+];
+
+const SETTINGS: readonly Compared[] = [
+  ...DEVICES.map(
+    (device): Compared => ({
+      state: "settings",
+      devices: [device],
+      draw: settings(),
+      regions: [...listOf(device), ...(device === "ipad" ? profilePage(false) : [])],
+    }),
+  ),
+  {
+    state: "settings-profile",
+    draw: settings(),
+    settle: async () => {
+      // The phone's list leads to the page; on the iPad it stands beside the list.
+      const row = screen.queryByRole("button", { name: "Sam Your profile", current: false });
+      if (document.querySelector(".nt-set-side") === null && row !== null)
+        await userEvent.click(row);
+      await userEvent.click(await screen.findByRole("radio", { name: "Questions only" }));
+    },
+    regions: profilePage(true),
+  },
+  {
+    state: "settings-unsaved",
+    draw: settings(),
+    settle: async () => {
+      const row = screen.queryByRole("button", { name: "Sam Your profile", current: false });
+      if (document.querySelector(".nt-set-side") === null && row !== null)
+        await userEvent.click(row);
+      await userEvent.click(await screen.findByRole("radio", { name: "Questions only" }));
+      // The phone's page leaves by its way back, the iPad's by the close: the question is the same.
+      const back = document.querySelector<HTMLElement>(".nt-set-back");
+      await userEvent.click(back ?? screen.getByRole("button", { name: "Close the settings" }));
+    },
+    regions: [
+      {
+        name: "the question, Save changes?",
+        mockup: { role: "alertdialog", name: "Save changes?" },
+        app: { role: "alertdialog", name: "Save changes?" },
+        differs: { what: ["font-size"], by: NO_TEXT },
+      },
+      {
+        name: "its Save",
+        mockup: { css: "[role=alertdialog] button:nth-of-type(1)" },
+        app: { css: "[role=alertdialog] button.nt-unsaved-save" },
+      },
+      {
+        name: "its Don’t Save",
+        mockup: { css: "[role=alertdialog] button:nth-of-type(2)" },
+        app: { css: "[role=alertdialog] button.nt-unsaved-drop" },
+      },
+    ],
+  },
+  {
+    state: "settings-device",
+    draw: settings(["device"]),
+    regions: [
+      {
+        name: "the page's heading",
+        mockup: { css: ".st-bar h2" },
+        app: { css: "main h1" },
+        followsText: "centre",
+        differs: { what: ["x"], by: APP_WORDS },
+      },
+    ],
+  },
+];
+
+/** The page's heading, in the middle of its bar. */
+const KEY_HEADING: Region = {
+  name: "the page's heading",
+  mockup: { css: ".st-bar h2" },
+  app: { css: "main h1" },
+  followsText: "centre",
+};
+
+/** The group under the key's form or its actions: what happens to the key, four rows. */
+const ABOUT_KEY: Region = {
+  name: "the group About the key",
+  mockup: { css: ".st-col > .st-sec:last-child > .st-group" },
+  app: { css: ".nt-set-about > .nt-set-group" },
+};
+
+const OWN_KEY: readonly Compared[] = [
+  {
+    state: "settings-key",
+    draw: ownKey(false),
+    settle: () => screen.findByRole("button", { name: "AI provider Anthropic" }),
+    regions: [
+      KEY_HEADING,
+      {
+        name: "the group of the provider and the key",
+        mockup: { css: ".st-col > .st-sec:nth-child(1) > .st-group" },
+        app: { css: "form > section:nth-of-type(1) > .nt-set-group" },
+      },
+      {
+        name: "the switch Keep on this device",
+        mockup: { css: ".st-col > .st-sec:nth-child(2) .st-switch" },
+        app: { css: "form > section:nth-of-type(2) .nt-set-switch" },
+      },
+      {
+        name: "Connect, waiting for a key",
+        mockup: { css: ".st-col > .st-sec:nth-child(3) .st-action" },
+        app: { css: "form > section:nth-of-type(3) .nt-set-action" },
+        followsText: "centre",
+      },
+      ABOUT_KEY,
+    ],
+  },
+  {
+    state: "settings-key-on",
+    draw: ownKey(true),
+    settle: () => screen.findByText("Key ending in 7f3a"),
+    regions: [
+      KEY_HEADING,
+      {
+        name: "the key connected",
+        mockup: { css: ".st-col > .st-sec:nth-child(1) > .st-group" },
+        app: { css: '.nt-set-group:has(> [role="status"])' },
+      },
+      {
+        name: "Remove key",
+        mockup: { role: "button", name: "Remove key" },
+        app: { role: "button", name: "Remove key" },
+        followsText: "centre",
+      },
+      ABOUT_KEY,
+    ],
+  },
+];
+
 const SCREENS: readonly Compared[] = [
   ...WAY_IN,
   ...LEGAL_TEXTS,
+  ...SETTINGS,
+  ...OWN_KEY,
   ...DEVICES.map(
     (device): Compared => ({
       state: "home",
       devices: [device],
       draw: home,
-      regions: [...frameOf(device), ...HOME, ...(device === "ipad" ? [LEGEND] : [])],
+      regions: [
+        // The phone's tab bar is glass: what shows through its middle is the card that Home's
+        // other heights move under it.
+        ...frameOf(device).map(
+          (region): Region =>
+            region.name === "the tab bar"
+              ? {
+                  ...region,
+                  differs: { what: ["font-size", "background"], by: `${HOME_PLACED}; ${NO_TEXT}` },
+                }
+              : region,
+        ),
+        ...HOME,
+        ...(device === "ipad" ? [LEGEND] : []),
+      ],
     }),
   ),
   { state: "home-legend", devices: ["ipad"], draw: home, regions: [LEGEND] },
@@ -2173,34 +2498,25 @@ const SCREENS: readonly Compared[] = [
     regions: [popOver("the sheet of the legend", "What the marks mean")],
   },
   {
-    state: "home-help",
-    draw: home,
-    settle: () => userEvent.click(screen.getByRole("button", { name: "Help" })),
-    regions: HELP,
-  },
-  {
     state: "home-switch",
     draw: home,
     settle: () => userEvent.click(screen.getByRole("button", { name: "Sam, profile menu" })),
     regions: MENU,
   },
   {
-    state: "home-grownups",
+    state: "home-help",
     draw: home,
-    settle: () => userEvent.click(screen.getByRole("button", { name: "Grown-ups" })),
-    regions: GROWN,
+    settle: async () => {
+      await userEvent.click(screen.getByRole("button", { name: "Sam, profile menu" }));
+      await userEvent.click(screen.getByRole("button", { name: "Help" }));
+    },
+    regions: HELP,
   },
   {
     state: "home-bell",
     draw: home,
     settle: () => userEvent.click(screen.getByRole("button", { name: "Notifications" })),
     regions: BELL,
-  },
-  {
-    state: "home-tutor",
-    draw: home,
-    settle: () => userEvent.click(screen.getByRole("button", { name: "Tutor" })),
-    regions: HOME_TUTOR,
   },
   ...DEVICES.map(
     (device): Compared => ({
@@ -2215,8 +2531,12 @@ const SCREENS: readonly Compared[] = [
   ),
   { state: "map", draw: skillMap("Olympiad maths 1–6"), regions: MAP },
   { state: "map-essays", draw: skillMap("Short essays"), regions: MAP },
+  // A skill chosen: its card is skill-map's, at the foot of the window; the head and the frame stay.
+  { state: "map-skill", draw: skillMap("Olympiad maths 1–6"), regions: MAP },
+  { state: "map-skill-locked", draw: skillMap("Olympiad maths 1–6"), regions: MAP },
   {
     state: "task-pill",
+    until: TUTOR_IN_ROW,
     draw: aTask({ mode: "steps" }),
     settle: barDrawn,
     regions: [...BAR, ...ROW, STEP_PILL, TUTOR_BUTTON],
@@ -2347,6 +2667,7 @@ const SCREENS: readonly Compared[] = [
   ...DEVICES.map(
     (device): Compared => ({
       state: "task-empty",
+      until: TUTOR_IN_ROW,
       devices: [device],
       draw: sheetTask,
       settle: async () => {
@@ -2360,6 +2681,7 @@ const SCREENS: readonly Compared[] = [
   ...DEVICES.map(
     (device): Compared => ({
       state: "task-reading",
+      until: TUTOR_IN_ROW,
       devices: [device],
       draw: aTask({ filled: true, waits: true }),
       settle: async () => {
@@ -2383,6 +2705,7 @@ const SCREENS: readonly Compared[] = [
   ...DEVICES.map(
     (device): Compared => ({
       state: "task-not-yet",
+      until: TUTOR_IN_ROW,
       devices: [device],
       draw: aTask({ filled: true, verdicts: judged(DOTS, "not_yet", "32") }),
       settle: barDrawn,
@@ -2476,6 +2799,7 @@ const SCREENS: readonly Compared[] = [
   ...WORKBOOK_AND_ESSAY,
   {
     state: "lesson",
+    until: TUTOR_IN_ROW,
     draw: explanation,
     settle: readAloudOn,
     regions: [...LESSON_BAR, ...EXPLANATION, ...LESSON_ROW],
@@ -2493,6 +2817,7 @@ const SCREENS: readonly Compared[] = [
   },
   ...DEVICES.map((device) => ({
     state: "example",
+    until: TUTOR_IN_ROW,
     devices: [device],
     draw: workedExample(),
     settle: canvasDrawn,
@@ -2500,6 +2825,7 @@ const SCREENS: readonly Compared[] = [
   })),
   ...DEVICES.map((device) => ({
     state: "example-demo",
+    until: TUTOR_IN_ROW,
     devices: [device],
     draw: workedExample(4),
     settle: canvasDrawn,

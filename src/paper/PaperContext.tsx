@@ -9,7 +9,10 @@
 // work — the history, the tracing paper's place, the contexts of its submissions and whether it is
 // over —, the work written a moment after it changes, not on every stroke, and at once when the
 // page goes or the tab is hidden. A page of the history opens again on the screen of solving with
-// its work, but no verdict, which the device does not keep.
+// its work, but no verdict, which the device does not keep. A task whose attempt closed is kept,
+// once api began it anew, under its new attempt. A module solved on the sheet is a page of its
+// own: its tasks, begun all at once, with no photo, in the tab's memory alone, as the history keeps
+// pages from paper only.
 import {
   createContext,
   type ReactNode,
@@ -26,7 +29,7 @@ import type { Device } from "../storage/device.ts";
 import { openProfile, type PaperWork, type Profile } from "../storage/profile.ts";
 import { type Photo, release } from "./capture.ts";
 import { keptTasks, type PageTask, uprightPage } from "./page.ts";
-import { type BegunTask, changed, withBegun } from "./solve.ts";
+import { type BegunTask, changed, renewed, withBegun } from "./solve.ts";
 
 export type { BegunTask } from "./solve.ts";
 
@@ -65,9 +68,20 @@ export interface PaperPage {
   readonly before?: readonly PageTask[] | undefined;
 }
 
+/** The page of a module solved on the sheet: each of its tasks, begun, with no photo. */
+export interface ModulePage {
+  /** The page's ID, a new one each time it is begun, by which a task of it is begun anew. */
+  readonly pageId: string;
+  readonly moduleId: string;
+  /** The tasks, one under another in the order the module gave them, by which they are named. */
+  readonly tasks: readonly PageTask[];
+}
+
 export interface Paper {
   /** The page photographed, if any. */
   readonly page: PaperPage | undefined;
+  /** The page of a module solved on the sheet, if any: then no page photographed. */
+  readonly module: ModulePage | undefined;
   /** The tasks Start began on it, in the order of the page. */
   readonly begun: readonly BegunTask[] | undefined;
   /** The screen of solving is shown, not the page: Start shows it, "Add" the page again. */
@@ -90,8 +104,12 @@ export interface Paper {
   readonly begin: (photo: Photo, begun: readonly BegunTask[]) => void;
   /** "Add": the page again, to pick more of its tasks; the tasks begun stay. */
   readonly add: () => void;
-  /** A task begun, changed: its history, or its tracing paper's place. */
-  readonly keep: (attemptId: string, change: (task: BegunTask) => BegunTask) => void;
+  /** A task begun, changed, by its page's task: its history, or its tracing paper's place. */
+  readonly keep: (taskId: string, change: (task: BegunTask) => BegunTask) => void;
+  /** A task whose attempt closed, in the new attempt api began of it, its work as it was. */
+  readonly renew: (taskId: string, attemptId: string) => void;
+  /** A module's page, its tasks begun, in place of any page: solving it shows. */
+  readonly beginModule: (page: ModulePage, begun: readonly BegunTask[]) => void;
   /** The page and its tasks forgotten: Close, or Retake. The history keeps those begun. */
   readonly clear: () => void;
   /**
@@ -131,6 +149,7 @@ const PaperContext = createContext<Paper | undefined>(undefined);
 
 interface Held {
   readonly page: PaperPage | undefined;
+  readonly module?: ModulePage | undefined;
   readonly begun: readonly BegunTask[] | undefined;
   readonly solving: boolean;
 }
@@ -157,7 +176,8 @@ export function PaperProvider({
     { readonly of: string; readonly profile: Promise<Profile | undefined> } | undefined
   >(undefined);
   const queue = useRef<Promise<void>>(Promise.resolve());
-  // The work of each task as written, or as being written, and the tasks changed since.
+  // The work of each task as written, or as being written, and the tasks changed since, by the
+  // page's task.
   const written = useRef(new Map<string, BegunTask>());
   const dirty = useRef(new Map<string, BegunTask>());
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -202,14 +222,16 @@ export function PaperProvider({
 
   // Each task changed since it was written is written a moment later, with whatever came meanwhile.
   useEffect(() => {
+    // A module's page is the tab's alone.
+    if (held.module !== undefined) return;
     for (const task of held.begun ?? []) {
-      if (sameWork(written.current.get(task.attemptId), task)) continue;
-      written.current.set(task.attemptId, task);
-      dirty.current.set(task.attemptId, task);
+      if (sameWork(written.current.get(task.taskId), task)) continue;
+      written.current.set(task.taskId, task);
+      dirty.current.set(task.taskId, task);
     }
     if (dirty.current.size > 0 && timer.current === undefined)
       timer.current = setTimeout(flush, SETTLE_MS);
-  }, [held.begun, flush]);
+  }, [held.begun, held.module, flush]);
   useEffect(() => {
     const hidden = () => {
       if (document.visibilityState === "hidden") flush();
@@ -270,7 +292,7 @@ export function PaperProvider({
       );
       if (page?.photo !== photo || begun.length === 0) return;
       // Written with the page, as they are: the work's own writes come after.
-      for (const task of begun) written.current.set(task.attemptId, task);
+      for (const task of begun) written.current.set(task.taskId, task);
       const frames = page.tasks.map(({ id, frame, drawn }) => ({ id, frame, drawn }));
       const { pageId, takenAt } = page;
       const { bytes, width, height } = photo;
@@ -294,11 +316,38 @@ export function PaperProvider({
   const add = useCallback(() => {
     setHeld((now) => ({ ...now, solving: false }));
   }, []);
-  const keep = useCallback((attemptId: string, change: (task: BegunTask) => BegunTask) => {
+  const keep = useCallback((taskId: string, change: (task: BegunTask) => BegunTask) => {
     setHeld((now) =>
-      now.begun === undefined ? now : { ...now, begun: changed(now.begun, attemptId, change) },
+      now.begun === undefined ? now : { ...now, begun: changed(now.begun, taskId, change) },
     );
   }, []);
+  const renew = useCallback(
+    (taskId: string, attemptId: string) => {
+      const was = shown.current.begun?.find((task) => task.taskId === taskId);
+      if (was === undefined || was.attemptId === attemptId) return;
+      // The work waiting to be written goes under the attempt it is kept by, before it moves.
+      flush();
+      setHeld((now) =>
+        now.begun === undefined
+          ? now
+          : { ...now, begun: changed(now.begun, taskId, (task) => renewed(task, attemptId)) },
+      );
+      if (shown.current.module === undefined)
+        run((profile) => profile.renewPaperTask(was.attemptId, attemptId));
+    },
+    [flush, run],
+  );
+  const beginModule = useCallback(
+    (module: ModulePage, begun: readonly BegunTask[]) => {
+      flush();
+      era.current += 1;
+      setHeld((now) => {
+        release(now.page?.photo);
+        return { page: undefined, module, begun: withBegun(undefined, begun), solving: true };
+      });
+    },
+    [flush],
+  );
   const clear = useCallback(() => {
     flush();
     era.current += 1;
@@ -332,7 +381,7 @@ export function PaperProvider({
         over: task.over,
         ...(task.solved === true ? { solved: true } : {}),
       }));
-      for (const task of begun) written.current.set(task.attemptId, task);
+      for (const task of begun) written.current.set(task.taskId, task);
       const url = URL.createObjectURL(new Blob([photo.bytes.slice()], { type: "image/jpeg" }));
       setHeld((now) => {
         release(now.page?.photo);
@@ -357,6 +406,7 @@ export function PaperProvider({
   const value = useMemo(
     () => ({
       page: held.page,
+      module: held.module,
       begun: held.begun,
       solving: held.solving,
       takePhoto,
@@ -365,10 +415,12 @@ export function PaperProvider({
       begin,
       add,
       keep,
+      renew,
+      beginModule,
       clear,
       open,
     }),
-    [held, takePhoto, change, turn, begin, add, keep, clear, open],
+    [held, takePhoto, change, turn, begin, add, keep, renew, beginModule, clear, open],
   );
   return <PaperContext.Provider value={value}>{children}</PaperContext.Provider>;
 }

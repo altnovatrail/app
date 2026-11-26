@@ -43,7 +43,6 @@ import { Waiting } from "../app/Waiting.tsx";
 import { useDeployment, useStorage } from "../boot/Boot.tsx";
 import { Held, Offline, ReadFailed, StorageGone } from "../boot/Screens.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
-import { LearnerLanguage } from "../i18n/LearnerLanguage.tsx";
 import { LegalPages, legalPage, OPERATOR } from "../legal/LegalPages.tsx";
 import { accountTexts, type Legal, readLegal } from "../legal/texts.ts";
 import { KeyHolderProvider, keyed, useTabHolder } from "../ownkey/OwnKeyContext.tsx";
@@ -69,6 +68,8 @@ export interface Learner {
   readonly onSaved: (profile: Profile) => void;
   /** A request of a learner's screen about the profile did not go through. */
   readonly onFailed: (failure: Failure) => void;
+  /** A profile of the account keeps its works on the server: the bell says it can be turned off. */
+  readonly storing?: boolean;
 }
 
 const LearnerContext = createContext<Learner | undefined>(undefined);
@@ -159,8 +160,7 @@ export function AccountGate({ children }: { readonly children: ReactNode }) {
       ) : (
         <LicensePages route={route} />
       );
-    if (state.step !== "learning") return pages;
-    return <LearnerLanguage field={state.learner.interfaceLanguage}>{pages}</LearnerLanguage>;
+    return pages;
   }
   // Back to the section only while its account is open: once it has gone, home. The page on the AI
   // tutor shows at any step, and so is gone back to at any step.
@@ -175,6 +175,7 @@ export function AccountGate({ children }: { readonly children: ReactNode }) {
           route={route}
           device={device}
           profiles={state.account.profiles}
+          {...(state.step === "learning" ? { learner: state.learner.profileId } : {})}
           onSaved={onSaved}
           onFailed={onFailed}
           // The own key is the owner profile's: the page opens it, with no PIN while the account
@@ -188,7 +189,7 @@ export function AccountGate({ children }: { readonly children: ReactNode }) {
             navigate(HOME);
             return done;
           }}
-          onLegal={(page) => openLegal(ADULTS, page)}
+          onLegal={() => openLegal(ADULTS)}
         />
       </KeyHolderProvider>
     );
@@ -257,6 +258,7 @@ export function AccountGate({ children }: { readonly children: ReactNode }) {
               openLegal: (page) => openLegal(HOME, page),
               onSaved,
               onFailed,
+              storing: state.account.profiles.some((each) => each.workStorage),
             }}
           >
             {children}

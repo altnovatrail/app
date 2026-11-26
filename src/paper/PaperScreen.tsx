@@ -13,9 +13,12 @@
 // meanwhile, and the page goes on with the photo turned: its crops, a request and the history take
 // it. Start cuts each task's crop, and the crop of the instruction above it where the finding gave
 // one, from the same photo. Stop calls a request's finding off while it runs: the frames and the
-// page stay as they were, and the request goes back to the field, said so.
+// page stay as they were, and the request goes back to the field, said so. `#/paper/module/<module>`
+// is a module solved on the sheet: its tasks begun at once, a new page each time, shown on the
+// screen of solving with no Add, the shapes of a sheet standing meanwhile; the page stays while the
+// tab is open, and a closed task is begun anew on it as a page's is.
 import { Cause } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useApi } from "../api/ApiContext.tsx";
 import { type Failure, parseFailure } from "../api/failure.ts";
 import { PAPER_TIMEOUT_MS } from "../api/interceptors.ts";
@@ -23,7 +26,9 @@ import { idempotencyKey } from "../api/keys.ts";
 import { closesAI, outcomeOf } from "../api/outcome.ts";
 import { failureText, outcomeText } from "../api/words.ts";
 import { IconButton } from "../app/IconButton.tsx";
-import { HOME, navigate } from "../app/router.ts";
+import { HOME, navigate, useRoute } from "../app/router.ts";
+import { Loading, Sk } from "../app/Skeleton.tsx";
+import { ReadFailed } from "../boot/Screens.tsx";
 import { DebugSlot } from "../debug/slot.tsx";
 import { watched } from "../debug/watched.ts";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
@@ -31,6 +36,7 @@ import { useKeyHolder } from "../ownkey/OwnKeyContext.tsx";
 import { usePanelFocus } from "../task/TutorPanel.tsx";
 import { Camera } from "./Camera.tsx";
 import { cropsOf, type Photo, turnedPhoto } from "./capture.ts";
+import { moduleOfRoute, modulePageOf } from "./module.ts";
 import { PageTutor } from "./PageTutor.tsx";
 import { type BegunTask, type Finding, type PaperPage, usePaper } from "./PaperContext.tsx";
 import { type PageSay, Pick } from "./Pick.tsx";
@@ -71,6 +77,11 @@ export function PaperScreen({
   // The key of Start, kept while the photo and the tasks picked are the same, so that a press
   // again repeats it.
   const startKey = useRef<{ readonly of: string; readonly key: string } | undefined>(undefined);
+  // Each closed attempt being begun anew, by the attempt that closed: an action meanwhile waits for
+  // the same, so that a task is begun anew once; and its key, kept till an answer, so that a try
+  // again after a failure repeats it.
+  const renewing = useRef(new Map<string, Promise<string>>());
+  const renewKeys = useRef(new Map<string, string>());
   const change = paper?.change;
   const turn = paper?.turn;
   // The tasks begun on the page as it is now, which an answer that comes later reads.
@@ -86,6 +97,49 @@ export function PaperScreen({
   const [again, setAgain] = useState<
     { readonly text: string; readonly at: number; readonly stopped: true } | undefined
   >(undefined);
+  // The module the route names, begun as a page of its own unless the page held is its; what
+  // beginning it came to when it failed, and each try again, each a page and a key of its own,
+  // kept for the try, so that a second run of the effect repeats it.
+  const moduleId = moduleOfRoute(useRoute());
+  const [moduleFailure, setModuleFailure] = useState<Failure | undefined>(undefined);
+  const [moduleTry, setModuleTry] = useState(0);
+  const moduleBegun = useRef<{
+    readonly of: string;
+    readonly key: string;
+    readonly pageId: string;
+  }>(undefined);
+  const beginModule = paper?.beginModule;
+  const heldModule = paper?.module?.moduleId;
+  useEffect(() => {
+    if (moduleId === undefined || beginModule === undefined || heldModule === moduleId) return;
+    let current = true;
+    const of = `${moduleId} ${moduleTry}`;
+    if (moduleBegun.current?.of !== of)
+      moduleBegun.current = { of, key: idempotencyKey(), pageId: crypto.randomUUID() };
+    const { key, pageId } = moduleBegun.current;
+    setModuleFailure(undefined);
+    api.paper
+      .beginPaperAttempts({
+        profileId,
+        idempotencyKey: key,
+        pageId,
+        moduleId,
+        tasks: 0,
+        ...holder.routeFields(profileId),
+      })
+      .then((answer) => modulePageOf(answer, pageId, moduleId))
+      .then(
+        ({ page, begun }) => {
+          if (current) beginModule(page, begun);
+        },
+        (reason: unknown) => {
+          if (current) setModuleFailure(parseFailure(reason));
+        },
+      );
+    return () => {
+      current = false;
+    };
+  }, [api, holder, profileId, moduleId, moduleTry, beginModule, heldModule]);
 
   /**
    * FindTasks on the photo; with the learner's request, with the frames of these tasks too, and
@@ -216,6 +270,56 @@ export function PaperScreen({
   if (paper === undefined) return null;
   const home = () => navigate(HOME);
 
+  /**
+   * A task whose attempt closed, begun anew on its page, which, as any Start, closes the open
+   * attempts of the other pages: the new attempt, which the task holds from then on.
+   */
+  const renew = (pageId: string, task: BegunTask): Promise<string> => {
+    const was = task.attemptId;
+    const going = renewing.current.get(was);
+    if (going !== undefined) return going;
+    const key = renewKeys.current.get(was) ?? idempotencyKey();
+    renewKeys.current.set(was, key);
+    const begun = api.paper
+      .beginPaperAttempts({
+        profileId,
+        idempotencyKey: key,
+        pageId,
+        tasks: 1,
+        ...holder.routeFields(profileId),
+      })
+      .then((answer) => {
+        const attemptId = answer.attemptIds[0];
+        if (attemptId === undefined) throw new Error("api began no task");
+        renewKeys.current.delete(was);
+        paper.renew(task.taskId, attemptId);
+        return attemptId;
+      })
+      .finally(() => renewing.current.delete(was));
+    renewing.current.set(was, begun);
+    return begun;
+  };
+
+  if (moduleId !== undefined) {
+    const module = paper.module;
+    if (module?.moduleId === moduleId && paper.begun !== undefined) {
+      return (
+        <Solve
+          profileId={profileId}
+          adult={adult}
+          tasks={module.tasks}
+          begun={paper.begun}
+          onKeep={paper.keep}
+          onRenew={(task) => renew(module.pageId, task)}
+          onHome={home}
+          source="module"
+        />
+      );
+    }
+    if (moduleFailure !== undefined)
+      return <ReadFailed failure={moduleFailure} onRetry={() => setModuleTry((n) => n + 1)} home />;
+    return <SheetLoading />;
+  }
   if (paper.begun !== undefined && paper.solving && page !== undefined) {
     return (
       <Solve
@@ -224,6 +328,7 @@ export function PaperScreen({
         tasks={page.tasks}
         begun={paper.begun}
         onKeep={paper.keep}
+        onRenew={(task) => renew(page.pageId, task)}
         onAdd={paper.add}
         onHome={home}
       />
@@ -411,5 +516,17 @@ export function PaperScreen({
         />
       ) : null}
     </>
+  );
+}
+
+/** A module's page being begun: the shapes of its statement on the sheet, and of the row below. */
+function SheetLoading() {
+  return (
+    <div className="nt-task nt-task-paper">
+      <Loading className="nt-sheet-loading">
+        <Sk width="min(34rem, 70%)" height="7.5rem" radius="0.5rem" />
+        <Sk width="min(22rem, 60%)" height="2.75rem" radius="1.375rem" className="nt-sheet-row" />
+      </Loading>
+    </div>
   );
 }

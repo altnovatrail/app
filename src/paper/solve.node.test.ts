@@ -19,7 +19,6 @@ import {
   type BegunTask,
   besideTask,
   changed,
-  checkOver,
   checkReply,
   coverOf,
   notBegun,
@@ -27,13 +26,13 @@ import {
   paperCard,
   paperVerdictOf,
   pixelsPerMm,
+  renewed,
   shownTask,
   type Turn,
   taskState,
   turnsOf,
   tutorActs,
   verdictMarks,
-  viewOnly,
   wavyOf,
   withBegun,
   withChange,
@@ -105,11 +104,15 @@ describe("the list of the tasks begun", () => {
     expect(onList(all, page(true, true, true))).toEqual(all);
   });
 
-  it("shows the task asked for while it is on the list, or the first", () => {
-    expect(shownTask(all, "a2")?.attemptId).toBe("a2");
-    expect(shownTask(all.slice(0, 1), "a2")?.attemptId).toBe("a1");
+  it("shows the task asked for, by its page's task, while it is on the list, or the first", () => {
+    expect(shownTask(all, "found-2")?.attemptId).toBe("a2");
+    expect(shownTask(all.slice(0, 1), "found-2")?.attemptId).toBe("a1");
     expect(shownTask(all, undefined)?.attemptId).toBe("a1");
-    expect(shownTask([], "a1")).toBeUndefined();
+    expect(shownTask([], "found-1")).toBeUndefined();
+    // Begun anew, it is the same task.
+    expect(shownTask([begun(1), { ...begun(2), attemptId: "a9" }], "found-2")?.attemptId).toBe(
+      "a9",
+    );
   });
 
   it("gives each task its state by its last Check", () => {
@@ -127,11 +130,11 @@ describe("the list of the tasks begun", () => {
   });
 
   it("goes to the task before and after, and not past either end", () => {
-    expect(besideTask(all, "a2", -1)?.attemptId).toBe("a1");
-    expect(besideTask(all, "a2", 1)?.attemptId).toBe("a3");
-    expect(besideTask(all, "a1", -1)).toBeUndefined();
-    expect(besideTask(all, "a3", 1)).toBeUndefined();
-    expect(besideTask(all, "a9", 1)).toBeUndefined();
+    expect(besideTask(all, "found-2", -1)?.attemptId).toBe("a1");
+    expect(besideTask(all, "found-2", 1)?.attemptId).toBe("a3");
+    expect(besideTask(all, "found-1", -1)).toBeUndefined();
+    expect(besideTask(all, "found-3", 1)).toBeUndefined();
+    expect(besideTask(all, "found-9", 1)).toBeUndefined();
   });
 });
 
@@ -145,11 +148,36 @@ describe("the work of each task", () => {
     expect(withChange([write(1)], { from: 2, events: [write(3)] }, () => whole)).toBe(whole);
   });
 
-  it("changes the task of its attempt alone", () => {
+  it("changes the task of its page's task alone", () => {
     const tracing = { at: [100, 200] as const, hidden: true };
-    const after = changed([begun(1), begun(2)], "a2", (task) => ({ ...task, tracing }));
+    const after = changed([begun(1), begun(2)], "found-2", (task) => ({ ...task, tracing }));
     expect(after[0]?.tracing).toBeUndefined();
     expect(after[1]?.tracing).toBe(tracing);
+  });
+
+  it("begins a closed task anew with its work, open, and no wrong answer of the attempt before", () => {
+    const history = [write(1)];
+    const tracing = { at: [100, 200] as const, hidden: false };
+    const verdict = { kind: "correct", read: "85", parts: [] } as const;
+    const was: BegunTask = {
+      ...begun(1),
+      history,
+      tracing,
+      verdict,
+      wrongAnswers: 2,
+      over: true,
+      solved: true,
+    };
+    const again = renewed(was, "a7");
+    expect(again).toEqual({
+      ...begun(1),
+      attemptId: "a7",
+      history,
+      tracing,
+      verdict,
+      solved: true,
+    });
+    expect(again.history).toBe(history);
   });
 });
 
@@ -233,17 +261,6 @@ describe("what a Check of a task from paper came to", () => {
       parts: [],
     });
     expect(paperVerdictOf([], undefined, false).kind).toBe("unchecked");
-  });
-
-  it("takes a task that is over, as a page of the history keeps it, only to be looked at", () => {
-    const over = { ...begun(1), over: true };
-    expect(checkOver(over)).toBe(true);
-    expect(viewOnly(over)).toBe(true);
-    // Solved in this tab: its card stands, and so does the work under it.
-    const solved = { ...over, verdict: { kind: "correct", read: undefined, parts: [] } } as const;
-    expect(viewOnly(solved)).toBe(false);
-    expect(checkOver(begun(1))).toBe(false);
-    expect(viewOnly(begun(1))).toBe(false);
   });
 
   it("puts a tick or a cross by each answer whose place was read, on the context of its Check", () => {
@@ -345,20 +362,6 @@ describe("what a Check of a task from paper came to", () => {
       "unchecked",
     );
   });
-
-  it("is over once the task is solved, and open to a Check again after one that read nothing", () => {
-    expect(checkOver(begun(1))).toBe(false);
-    expect(checkOver({ ...begun(1), verdict: { kind: "correct", read: "85", parts: [] } })).toBe(
-      true,
-    );
-    expect(checkOver({ ...begun(1), verdict: { kind: "nokey" } })).toBe(false);
-    expect(checkOver({ ...begun(1), verdict: { kind: "so-far", read: "3", parts: [] } })).toBe(
-      false,
-    );
-    expect(checkOver({ ...begun(1), verdict: { kind: "not-yet", read: "84", parts: [] } })).toBe(
-      false,
-    );
-  });
 });
 
 describe("a task with no answer yet and no mistake", () => {
@@ -435,7 +438,7 @@ describe("a task with no answer yet and no mistake", () => {
 });
 
 describe("the buttons of the tutor's panel", () => {
-  it("gives Hint till the task is solved, and the next task once its Check is over", () => {
+  it("gives Hint till the task is solved, and the next task once it is solved", () => {
     expect(tutorActs({})).toEqual({ hint: true, next: false });
     expect(tutorActs({ verdict: { kind: "not-yet", read: "84", parts: [] } })).toEqual({
       hint: true,
@@ -447,8 +450,8 @@ describe("the buttons of the tutor's panel", () => {
     });
     const solved = { verdict: { kind: "correct", read: "85", parts: [] } } as const;
     expect(tutorActs(solved)).toEqual({ hint: false, next: true });
-    // Solved in this tab, it stays so once its attempt is over.
-    expect(tutorActs({ ...solved, over: true })).toEqual({ hint: false, next: true });
+    // Solved before, as a page of the history keeps it, with no verdict of this tab.
+    expect(tutorActs({ solved: true })).toEqual({ hint: false, next: true });
     // A Check that read nothing keeps the hints.
     expect(tutorActs({ verdict: { kind: "nokey" } })).toEqual({ hint: true, next: true });
     expect(tutorActs({ verdict: { kind: "so-far", read: "3", parts: [] } })).toEqual({
@@ -457,8 +460,12 @@ describe("the buttons of the tutor's panel", () => {
     });
   });
 
-  it("gives neither on a task only to be looked at, whose attempt is over", () => {
-    expect(tutorActs({ over: true })).toEqual({ hint: false, next: false });
+  it("gives Hint and the next task while a solved task is solved again and is not yet", () => {
+    const again = { solved: true, verdict: { kind: "not-yet", read: "84", parts: [] } } as const;
+    expect(tutorActs(again)).toEqual({ hint: true, next: true });
+    expect(
+      tutorActs({ solved: true, verdict: { kind: "correct", read: "85", parts: [] } }),
+    ).toEqual({ hint: false, next: true });
   });
 });
 

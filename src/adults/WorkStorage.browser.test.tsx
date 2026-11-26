@@ -198,19 +198,17 @@ describe("the storage of works on the server", () => {
     ).toBeTruthy();
     expect(screen.getByRole("status").textContent).toBe(OFF);
     expect(screen.queryByText(NOT_YET)).toBeNull();
-    await userEvent.click(screen.getByRole("button", { name: "Keep works on the server" }));
-    // The consent takes the place of the button, and the focus.
+    await userEvent.click(screen.getByRole("switch", { name: "Keep works on the server" }));
+    // The consent opens under the switch, still off, and takes the focus.
     const heading = screen.getByRole("heading", {
       level: 3,
       name: "Consent to keeping works on the server",
     });
     expect(document.activeElement).toBe(heading);
-    expect(screen.queryByRole("button", { name: "Keep works on the server" })).toBeNull();
-    // The text in force, in place, read in the language of the section.
+    expect(screen.getByRole("switch", { name: "Keep works on the server" })).not.toBeChecked();
+    // The text in force, in place, read in the language of the section, which opens it in its words.
     expect(await screen.findByText("Works kept, version 1.")).toBeTruthy();
-    expect(document.querySelector("details summary")?.textContent).toBe(
-      "Keeping works on our server",
-    );
+    expect(document.querySelector("details summary")?.textContent).toBe("Read the full text");
     expect(read).toEqual(["en"]);
     const agree = screen.getByRole("checkbox", { name: AGREE });
     expect(agree).toHaveAccessibleDescription(WHAT);
@@ -239,7 +237,7 @@ describe("the storage of works on the server", () => {
     expect(puts[0]?.profileId).toBe("p1");
     expect(puts[0]?.work?.attemptId).toBe("a1");
     await vi.waitFor(async () => expect((await profile.usage()).stored).toBe(true));
-    const off = screen.getByRole("button", { name: "Stop keeping works on the server" });
+    const off = screen.getByRole("switch", { name: "Keep works on the server", checked: true });
     await vi.waitFor(() => expect(document.activeElement).toBe(off));
     expect(screen.queryByRole("checkbox")).toBeNull();
   });
@@ -252,15 +250,13 @@ describe("the storage of works on the server", () => {
         return [consent(1)];
       },
     });
-    await userEvent.click(screen.getByRole("button", { name: "Keep works on the server" }));
+    await userEvent.click(screen.getByRole("switch", { name: "Keep works on the server" }));
     const form = screen.getByRole("form", { name: "Consent to keeping works on the server" });
     expect(within(form).getByRole("checkbox", { name: AGREE })).toBeTruthy();
     expectLoading(form);
     give();
     await vi.waitFor(() =>
-      expect(form.querySelector("details summary")?.textContent).toBe(
-        "Keeping works on our server",
-      ),
+      expect(form.querySelector("details summary")?.textContent).toBe("Read the full text"),
     );
     expectLoaded(form);
   });
@@ -268,13 +264,13 @@ describe("the storage of works on the server", () => {
   it("shows the text's next version below it, with its day, and consents to the current one", async () => {
     const next = create(LegalTextSchema, { ...consent(2), inForceSince: "2026-12-01" });
     const { asked } = renderSection(OWNER, { texts: () => [consent(1)], next: [next] });
-    await userEvent.click(screen.getByRole("button", { name: "Keep works on the server" }));
+    await userEvent.click(screen.getByRole("switch", { name: "Keep works on the server" }));
     expect(await screen.findByText("Works kept, version 1.")).toBeTruthy();
     expect(
       [...document.querySelectorAll("details summary")].map((each) => each.textContent),
     ).toEqual([
-      "Keeping works on our server",
-      "Keeping works on our server: version 2, applies from December 1, 2026",
+      "Read the full text",
+      "Consent to keeping works on the server: version 2, applies from December 1, 2026",
     ]);
     expect(screen.getByText("Until then, version 1 is in force")).toBeTruthy();
     await userEvent.click(screen.getByRole("checkbox", { name: AGREE }));
@@ -291,7 +287,7 @@ describe("the storage of works on the server", () => {
         return create(ProfileSchema, { ...OWNER, workStorage: request.enabled });
       },
     });
-    await userEvent.click(screen.getByRole("button", { name: "Keep works on the server" }));
+    await userEvent.click(screen.getByRole("switch", { name: "Keep works on the server" }));
     const agree = await screen.findByRole("checkbox", { name: AGREE });
     await vi.waitFor(() =>
       expect(screen.getByRole("button", { name: "Switch it on" })).toBeEnabled(),
@@ -324,7 +320,7 @@ describe("the storage of works on the server", () => {
         return create(ProfileSchema, { ...OWNER, workStorage: request.enabled });
       },
     });
-    await userEvent.click(screen.getByRole("button", { name: "Keep works on the server" }));
+    await userEvent.click(screen.getByRole("switch", { name: "Keep works on the server" }));
     await userEvent.click(await screen.findByRole("checkbox", { name: AGREE }));
     const on = screen.getByRole("button", { name: "Switch it on" });
     await vi.waitFor(() => expect(on).toBeEnabled());
@@ -341,25 +337,25 @@ describe("the storage of works on the server", () => {
 
   it("closes the consent open here when another tab switched the storage on, for good", async () => {
     const { elsewhere, read } = renderSection(OWNER, { texts: () => [consent(1)] });
-    await userEvent.click(screen.getByRole("button", { name: "Keep works on the server" }));
+    await userEvent.click(screen.getByRole("switch", { name: "Keep works on the server" }));
     expect(await screen.findByRole("checkbox", { name: AGREE })).toBeTruthy();
     act(() => elsewhere.change?.(create(ProfileSchema, { ...OWNER, workStorage: true })));
     expect(screen.getByRole("status").textContent).toBe(ON);
     expect(screen.queryByRole("checkbox")).toBeNull();
-    const off = screen.getByRole("button", { name: "Stop keeping works on the server" });
+    const off = screen.getByRole("switch", { name: "Keep works on the server", checked: true });
     await vi.waitFor(() => expect(document.activeElement).toBe(off));
     // Off again, the consent does not come back by itself.
     act(() => elsewhere.change?.(OWNER));
     expect(screen.getByRole("status").textContent).toBe(OFF);
     expect(screen.queryByRole("checkbox")).toBeNull();
-    expect(screen.getByRole("button", { name: "Keep works on the server" })).toBeTruthy();
+    expect(screen.getByRole("switch", { name: "Keep works on the server" })).toBeTruthy();
     expect(read).toHaveLength(1);
   });
 
   it("asks the consent with no text when none is in force, and names none", async () => {
     // An api with no LegalService has no text in force.
     const { asked } = renderSection(OWNER);
-    await userEvent.click(screen.getByRole("button", { name: "Keep works on the server" }));
+    await userEvent.click(screen.getByRole("switch", { name: "Keep works on the server" }));
     await vi.waitFor(() =>
       expect(screen.getByRole("button", { name: "Switch it on" })).toBeEnabled(),
     );
@@ -381,7 +377,7 @@ describe("the storage of works on the server", () => {
     );
     expect(screen.getByRole("status").textContent).toBe(ON);
     expect(screen.queryByText(NOT_YET)).toBeNull();
-    const off = screen.getByRole("button", { name: "Stop keeping works on the server" });
+    const off = screen.getByRole("switch", { name: "Keep works on the server", checked: true });
     expect(off).toHaveAccessibleDescription(
       "It stops at once, and the copies of this profile's works on the server are erased. The works on this device stay",
     );
@@ -392,7 +388,7 @@ describe("the storage of works on the server", () => {
     expect(asked[0]?.text).toBeUndefined();
     expect(saved.map((each) => each.workStorage)).toEqual([false]);
     expect(screen.queryByRole("checkbox")).toBeNull();
-    const on = screen.getByRole("button", { name: "Keep works on the server" });
+    const on = screen.getByRole("switch", { name: "Keep works on the server" });
     await vi.waitFor(() => expect(document.activeElement).toBe(on));
     // The server erased its copies: the work's mark goes, and nothing is sent.
     await vi.waitFor(async () => expect((await profile.usage()).stored).toBe(false));
@@ -405,7 +401,9 @@ describe("the storage of works on the server", () => {
         throw refused(Cause.NO_PROFILE);
       },
     });
-    await userEvent.click(screen.getByRole("button", { name: "Stop keeping works on the server" }));
+    await userEvent.click(
+      screen.getByRole("switch", { name: "Keep works on the server", checked: true }),
+    );
     expect((await screen.findByRole("alert")).textContent).toBe("This isn't there any more");
     expect(screen.getByRole("status").textContent).toBe(ON);
     expect(failed).toMatchObject([{ kind: "refused", cause: Cause.NO_PROFILE }]);
@@ -418,7 +416,7 @@ describe("the storage of works on the server", () => {
         throw refused(Cause.LEARNER_DECIDES, Code.PermissionDenied);
       },
     });
-    await userEvent.click(screen.getByRole("button", { name: "Keep works on the server" }));
+    await userEvent.click(screen.getByRole("switch", { name: "Keep works on the server" }));
     await userEvent.click(await screen.findByRole("checkbox", { name: AGREE }));
     await vi.waitFor(() =>
       expect(screen.getByRole("button", { name: "Switch it on" })).toBeEnabled(),
@@ -430,7 +428,7 @@ describe("the storage of works on the server", () => {
     expect(failed).toMatchObject([{ kind: "refused", cause: Cause.LEARNER_DECIDES }]);
     expect(screen.getByRole("checkbox", { name: AGREE })).toBeChecked();
     await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
-    const keep = screen.getByRole("button", { name: "Keep works on the server" });
+    const keep = screen.getByRole("switch", { name: "Keep works on the server" });
     await vi.waitFor(() => expect(document.activeElement).toBe(keep));
     expect(screen.queryByRole("alert")).toBeNull();
   });
@@ -443,7 +441,7 @@ describe("the storage of works on the server", () => {
         return [consent(1)];
       },
     });
-    await userEvent.click(screen.getByRole("button", { name: "Keep works on the server" }));
+    await userEvent.click(screen.getByRole("switch", { name: "Keep works on the server" }));
     expect((await screen.findByRole("alert")).textContent).toBe("No connection");
     expect(screen.getByRole("button", { name: "Switch it on" })).toBeDisabled();
     down = false;

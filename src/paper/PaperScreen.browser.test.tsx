@@ -26,6 +26,7 @@ import {
   type AskTutorResponseSchema,
   AttemptService,
   type ExplainDifferentlyResponseSchema,
+  type GetHintRequest,
   type GetHintResponseSchema,
   type GetOpeningWordsRequest,
   type GetRungWordsRequest,
@@ -81,7 +82,7 @@ interface Setup {
   /** The opening question of a Hint before the first wrong answer, by GetOpeningWords. */
   readonly hinted?: string;
   /** The answer to Hint; none, and a task from paper has no techniques yet. */
-  readonly hint?: () => MessageInitShape<typeof GetHintResponseSchema>;
+  readonly hint?: (request: GetHintRequest) => MessageInitShape<typeof GetHintResponseSchema>;
   /** The words of each rung asked, by how many came before; none, and api has no GetRungWords. */
   readonly rung?: (n: number) => MessageInitShape<typeof GetRungWordsResponseSchema>;
   /** Each "Explain differently", by how many came before; none, and api has no ExplainDifferently. */
@@ -168,8 +169,8 @@ async function renderCamera(setup: Setup = {}) {
         return answer;
       },
       // Before the first wrong answer a task from paper has no techniques: the opening question.
-      getHint() {
-        return setup.hint?.() ?? { hint: { case: "techniques", value: {} } };
+      getHint(request) {
+        return setup.hint?.(request) ?? { hint: { case: "techniques", value: {} } };
       },
       readStatement(request) {
         reads.push(request);
@@ -619,11 +620,11 @@ it("asks for a solution before Check, then sends the task's crop, the instructio
   expect(second.value.instruction).toHaveLength(0);
 });
 
-it("shows the Check's verdict: Not yet, then Correct, which takes no Check again", async () => {
+it("shows the Check's verdict: Not yet, then Correct, and checks a task solved again in a new attempt", async () => {
   const verdict = (v: string, value: string) => ({
     items: [{ verdict: v, answerSlots: [{ answerSlot: { item: 1, slot: 1 }, verdict: v, value }] }],
   });
-  const { submits } = await solving({
+  const { submits, begins } = await solving({
     checked: (n) =>
       n === 0
         ? { ...verdict("not_yet", "84"), wrongAnswers: 1 }
@@ -642,9 +643,26 @@ it("shows the Check's verdict: Not yet, then Correct, which takes no Check again
     .getAllByRole("status")
     .find((each) => each.textContent === "Correct. Read: 85");
   expect(told).toHaveClass("nt-hidden-label");
-  // Marked disabled once solved, and pressed all the same.
-  await userEvent.click(screen.getByRole("button", { name: "Check" }), { force: true });
-  expect(submits).toHaveLength(2);
+  // Solved: "Next task" stands in the row beside Check, which stays open, and the card is put away.
+  const row = document.querySelector<HTMLElement>(".nt-task-row");
+  if (row === null) throw new Error("no row");
+  expect(within(row).getByRole("button", { name: "Next task" })).toBeVisible();
+  const check = within(row).getByRole("button", { name: "Check" });
+  expect(check).toHaveAttribute("aria-disabled", "false");
+  // The card of the solved task puts itself away by OK: the row holds the way on.
+  const foot = document.querySelector<HTMLElement>(".nt-task-foot");
+  expect(within(foot ?? document.body).getAllByRole("button", { name: "Next task" })).toHaveLength(
+    1,
+  );
+  expect(within(foot ?? document.body).getByRole("button", { name: "OK" })).toBeVisible();
+  // Its attempt closed solved: the Check again begins a new one of the task, on the same page.
+  await userEvent.click(check);
+  await waitFor(() => expect(submits).toHaveLength(3));
+  expect(begins).toHaveLength(2);
+  expect(begins[1]?.tasks).toBe(1);
+  expect(begins[1]?.pageId).toBe(begins[0]?.pageId);
+  expect(submits.map((each) => each.attemptId)).toEqual(["a1", "a1", "a3"]);
+  expect(await screen.findByText("Read: 85")).toBeVisible();
   await userEvent.click(screen.getByRole("button", { name: "Tasks, 1 / 2" }));
   expect(await screen.findByRole("button", { name: /^Task 1 ?Solved$/ })).toBeVisible();
 });
@@ -681,6 +699,50 @@ it("checks a frame of several tasks each, with the count and a tick or a cross b
   // Try again puts the card away, and the marks with it.
   await userEvent.click(screen.getByRole("button", { name: "Try again" }));
   expect(sheet().shadowRoot?.querySelectorAll(".marks g[role=img]")).toHaveLength(0);
+});
+
+it("keeps the screen and the verdict when the canvas refuses the marks of a Check", async () => {
+  await solving({
+    checked: () => ({
+      items: [
+        {
+          verdict: "correct",
+          answerSlots: [
+            {
+              answerSlot: { item: 1, slot: 1 },
+              verdict: "correct",
+              value: "85",
+              cropBox: { ymin: 0, xmin: 600, ymax: 250, xmax: 900 },
+            },
+          ],
+        },
+      ],
+      solved: {},
+    }),
+  });
+  const canvas = sheet();
+  const given: unknown[] = [];
+  // A canvas that takes the submission for another sheet's, as one did whose copied strokes it
+  // did not know: the marks are a TypeError.
+  Object.defineProperty(canvas, "marks", {
+    configurable: true,
+    get: () => undefined,
+    set: (value: unknown) => {
+      given.push(value);
+      if (value !== undefined) throw new TypeError("marks.submission: not this sheet's");
+    },
+  });
+  writeOn(canvas);
+  await userEvent.click(screen.getByRole("button", { name: "Check" }));
+  await waitFor(() => {
+    const card = document.querySelector<HTMLElement>(".nt-card-verdict");
+    if (card === null) throw new Error("no card");
+    expect(within(card).getByText("Correct")).toBeVisible();
+  });
+  expect(given.at(-2)).toBeDefined();
+  expect(given.at(-1)).toBeUndefined();
+  expect(screen.getByRole("button", { name: "Check" })).toBeVisible();
+  expect(sheet()).toBe(canvas);
 });
 
 it("says nothing could be read to check, with Hint, Next task and Check again", async () => {
@@ -983,27 +1045,31 @@ it("asks the rung's words the closed panel left by Hint, and says nothing of a r
   expect(tutorPanel().queryByRole("alert")).toBeNull();
 });
 
-it("gives a rung's words again by Hint, and makes a task api closed one only to be looked at", async () => {
+it("gives a rung's words again by Hint, and begins a task api closed anew, once, by the next", async () => {
   let closed = false;
-  await solving({
-    hint: () => {
-      if (closed) throw refusal(Cause.ATTEMPT_CLOSED);
-      return { hint: { case: "rung", value: { rung: 2, words: "Again: the tens." } } };
+  const hinted: string[] = [];
+  const { begins } = await solving({
+    hint: (request) => {
+      hinted.push(request.attemptId);
+      if (closed && request.attemptId === "a1") throw refusal(Cause.ATTEMPT_CLOSED);
+      const words = request.attemptId === "a1" ? "Again: the tens." : "Once more: the tens.";
+      return { hint: { case: "rung", value: { rung: 2, words } } };
     },
   });
   await userEvent.click(screen.getByRole("button", { name: "Hint" }));
   expect(await tutorPanel().findByText("Again: the tens.")).toBeVisible();
+  // Closed by another page's Start: the refusal begins a new attempt, and the Hint goes on in it.
   closed = true;
   await userEvent.click(screen.getByRole("button", { name: "Hint" }));
-  expect(await tutorPanel().findByText("This task is already over")).toBeVisible();
-  await waitFor(() => expect(screen.queryByRole("button", { name: "Hint" })).toBeNull());
-  await userEvent.click(tutorPanel().getByRole("button", { name: "Close" }));
-  // The failure of Hint at the foot, and Check's own line beside it.
-  expect(screen.getAllByRole("alert")).toHaveLength(1);
-  await userEvent.click(screen.getByRole("button", { name: "Check" }), { force: true });
-  await waitFor(() => expect(screen.getAllByRole("alert")).toHaveLength(2));
-  for (const alert of screen.getAllByRole("alert"))
-    expect(alert).toHaveTextContent("This task is already over");
+  expect(await tutorPanel().findByText("Once more: the tens.")).toBeVisible();
+  expect(hinted).toEqual(["a1", "a1", "a3"]);
+  expect(begins).toHaveLength(2);
+  expect(screen.queryByText("This task is already over")).toBeNull();
+  // The task holds its new attempt from then on: the next Hint begins none.
+  await userEvent.click(screen.getByRole("button", { name: "Hint" }));
+  await waitFor(() => expect(hinted).toEqual(["a1", "a1", "a3", "a3"]));
+  expect(begins).toHaveLength(2);
+  expect(screen.getByRole("button", { name: "Check" })).toBeVisible();
 });
 
 it("reads the statement into its text by Recognise, a reading for its task alone", async () => {
@@ -1789,7 +1855,7 @@ it("keeps the page and its work in the profile's history, and opens it again fro
   history.replaceState(null, "", location.pathname);
 });
 
-it("marks a task solved in the list of a page opened again, its verdict put away", async () => {
+it("marks a task solved in the list of a page opened again, and solves it again in a new attempt", async () => {
   const { device } = memoryDevice();
   await addProfile(device, "p1");
   await solving({
@@ -1817,7 +1883,14 @@ it("marks a task solved in the list of a page opened again, its verdict put away
   });
   cleanup();
 
-  await renderCamera({ device });
+  const [kept] = (await profile?.pages()) ?? [];
+  const pageId = kept?.pageId ?? "";
+
+  const again = await renderCamera({
+    device,
+    began: () => ({ attemptIds: ["b1"] }),
+    checked: () => ({ items: [], solved: {} }),
+  });
   await userEvent.click(await screen.findByRole("button", { name: "Your pages" }));
   await userEvent.click(screen.getByRole("button", { name: /· 2 tasks$/ }));
   await screen.findByRole("heading", { name: "Task 1" }, SLOW);
@@ -1829,6 +1902,28 @@ it("marks a task solved in the list of a page opened again, its verdict put away
   expect(await screen.findByText("1 of 2 done")).toBeVisible();
   expect(screen.getByRole("button", { name: /^Task 1 ?Solved$/ })).toBeVisible();
   expect(screen.getByRole("button", { name: /^Task 2 ?Not checked yet$/ })).toBeVisible();
+  await userEvent.keyboard("{Escape}");
+  // Solved before: "Next task" in the row, and Check open on the work kept.
+  const row = document.querySelector<HTMLElement>(".nt-task-row");
+  if (row === null) throw new Error("no row");
+  expect(within(row).getByRole("button", { name: "Next task" })).toBeVisible();
+  await waitFor(() =>
+    expect(screen.getByRole("button", { name: "Check" })).toHaveAttribute("aria-disabled", "false"),
+  );
+  await userEvent.click(screen.getByRole("button", { name: "Check" }));
+  // Its attempt closed: the Check begins a new one on the same page, and goes in it.
+  await waitFor(() => expect(again.submits).toHaveLength(1));
+  expect(again.begins.map((each) => [each.pageId, each.tasks])).toEqual([[pageId, 1]]);
+  expect(again.submits[0]?.attemptId).toBe("b1");
+  // The history keeps the task under its new attempt, with its work and its place.
+  document.dispatchEvent(new Event("visibilitychange"));
+  await waitFor(async () => {
+    const tasks = (await profile?.page(pageId))?.tasks ?? [];
+    expect(tasks.map((task) => [task.attemptId, task.history.length, task.solved])).toEqual([
+      ["b1", 1, true],
+      ["a2", 0, undefined],
+    ]);
+  });
   history.replaceState(null, "", location.pathname);
 });
 

@@ -39,6 +39,8 @@ export const CAPTIONLESS = {
   "ask-stop": { icon: "stop", word: "tutor.stop" },
   // On a module's card on Home: its skill map, described by the module's title.
   "skill-map": { icon: "skill-map", word: "skillmap.title" },
+  // On a module's card of Subjects: About the module, described by the module's title.
+  "about-module": { icon: "dots", word: "subjects.about" },
   // In the head of the tutor's panel on a task from paper: grown-up mode's key, pressed while it
   // is on; and the delete key of the grown-ups' PIN it asks.
   "grown-up": { icon: "grown-up", word: "grown.mode" },
@@ -51,14 +53,12 @@ export type Captionless = keyof typeof CAPTIONLESS;
 /**
  * The captions a button of the list takes in place of its own, each for its button alone, where they
  * name where it goes: back in a lesson is "Leave the lesson", as the mockup's, back from a
- * task "Back to Home", the one way home, the section for adults' back and
- * close "Back to the section" and "Close the section", and a legal page's back "Back to the
- * list".
+ * task "Back to Home", the one way home, the section for adults' close "Close the settings", and a
+ * legal page's back "Back to the list".
  */
 export const INSTEAD = {
   "lesson.leave": "back",
   "task.home": "back",
-  "adults.back": "back",
   "adults.close": "close",
   "legal.back": "back",
 } as const satisfies Partial<Record<Key, Captionless>>;

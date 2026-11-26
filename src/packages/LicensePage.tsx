@@ -2,15 +2,13 @@
 // version, as they are, each in `<pre lang="en">`, and the module by its manifest — its title in
 // its explanation language, its version and its license by name. The files come from api by the
 // digest of the package (files.ts), and nothing on the page leads out of app. The page shows at
-// `#/license/<digest>` at any step, as the legal pages do, opened from a module's card on Home, a
-// sheet of the mockup's legal text that closes home; and in the section for adults as one of
-// its pages (ModulesPage.tsx).
+// `#/license/<digest>` at any step, as the legal pages do, by its address: a sheet of the mockup's
+// legal text that closes home.
 import type * as open from "@altnovatrail/spec/formatv0/open";
 import { type ReactNode, useCallback, useEffect, useState } from "react";
 import { useRequest } from "../api/ApiContext.tsx";
 import { ReadFailure } from "../api/ReadFailure.tsx";
 import { HOME, MODULE_LICENSE, navigate, type Route, redirect } from "../app/router.ts";
-import { Screen } from "../app/Screen.tsx";
 import { SheetScreen } from "../app/SheetScreen.tsx";
 import { Loading, Sk } from "../app/Skeleton.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
@@ -90,23 +88,11 @@ function TextsLoading() {
   );
 }
 
-/** The screen a license stands in: its title and what it shows. */
-export type LicenseFrame = (props: { title: string; children?: ReactNode }) => ReactNode;
-
 /**
  * The page itself, for the version of a digest, read each time it opens: through the HTTP cache,
- * which keeps the files. `back` is what the page leads back to below its heading, and
- * `frame` the screen it stands in: a page of the section for adults in the section.
+ * which keeps the files, in a sheet that closes home.
  */
-export function ModuleLicense({
-  digest,
-  back,
-  frame: Frame = Screen,
-}: {
-  readonly digest: string;
-  readonly back?: ReactNode;
-  readonly frame?: LicenseFrame;
-}) {
+function ModuleLicense({ digest }: { readonly digest: string }) {
   const { words } = useLanguage();
   const { files, views } = usePackages();
   const read = useCallback(() => readLicense(files, digest), [files, digest]);
@@ -133,25 +119,9 @@ export function ModuleLicense({
     shown = <Texts read={license.value} manifest={manifest} />;
   }
   return (
-    <Frame title={words.text("license.title")}>
-      {back}
+    <SheetScreen title={words.text("license.title")} onClose={() => navigate(HOME)}>
       <p>{words.text("license.intro")}</p>
       {shown}
-    </Frame>
-  );
-}
-
-/** The sheet the license stands in outside the section, whose close goes home. */
-function LicenseSheet({
-  title,
-  children,
-}: {
-  readonly title: string;
-  readonly children?: ReactNode;
-}) {
-  return (
-    <SheetScreen title={title} onClose={() => navigate(HOME)}>
-      {children}
     </SheetScreen>
   );
 }
@@ -166,5 +136,5 @@ export function LicensePages({ route }: { readonly route: Route }) {
     if (digest === undefined) redirect(HOME);
   }, [digest]);
   if (digest === undefined) return null;
-  return <ModuleLicense key={digest} digest={digest} frame={LicenseSheet} />;
+  return <ModuleLicense key={digest} digest={digest} />;
 }

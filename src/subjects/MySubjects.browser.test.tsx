@@ -66,7 +66,11 @@ function manifest(id: string, title: string, explanation: string) {
     id,
     version: "1.0.0",
     title,
+    subject: "mathematics",
+    audience: { age_categories: ["under_13"], grades: [1, 2, 3, 4, 5, 6] },
     languages: { explanation },
+    authors: [{ name: "The NovaTrail authors" }],
+    license: "Apache-2.0",
   };
   return { json: new TextEncoder().encode(JSON.stringify(json)), moduleFormatVersion: "0.4" };
 }
@@ -374,7 +378,7 @@ describe("Subjects", () => {
         });
       },
     });
-    expect((await card("Odd")).getByText("Explanation language: en_US")).toBeTruthy();
+    expect((await card("Odd")).getByText(/· In en_US$/)).toBeTruthy();
   });
 
   it("connects a module from the catalog, and disconnects it", async () => {
@@ -391,9 +395,9 @@ describe("Subjects", () => {
     // The card in Russian says so to an English screen; the English one does not.
     const physics = await card("Физика");
     expect(physics.getByRole("heading", { level: 3 })).toHaveAttribute("lang", "ru");
-    expect(physics.getByText("Explanation language: Russian")).toBeTruthy();
+    expect(physics.getByText("Mathematics · Grades 1–6 · In Russian")).toBeTruthy();
     const maths = await card("Olympiad maths");
-    expect(maths.queryByText(/Explanation language/)).toBeNull();
+    expect(maths.getByText("Mathematics · Grades 1–6")).toBeTruthy();
     const connect = maths.getByRole("button", { name: "Connect" });
     expect(connect).toHaveAccessibleDescription("Olympiad maths");
     // Titles in the order of the language: Latin before Cyrillic in English.
@@ -402,23 +406,40 @@ describe("Subjects", () => {
       "Физика",
     ]);
 
+    // A card of the catalog has no Disconnect in its About.
+    await userEvent.click(maths.getByRole("button", { name: "About the module" }));
+    expect(screen.getByRole("dialog", { name: "About the module" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Disconnect" })).toBeNull();
+    await userEvent.keyboard("{Escape}");
+
     await userEvent.click(connect);
     const mine = within(await screen.findByRole("region", { name: "Connected · 1" }));
-    const disconnect = await mine.findByRole("button", { name: "Disconnect" });
-    expect(disconnect).toHaveAccessibleDescription("Olympiad maths");
-    // The focus went with the card to its new place.
-    await vi.waitFor(() => expect(document.activeElement).toBe(disconnect));
+    const about = await mine.findByRole("button", { name: "About the module" });
+    expect(about).toHaveAccessibleDescription("Olympiad maths");
+    // The focus went with the card to its new place: its About, which holds Disconnect.
+    await vi.waitFor(() => expect(document.activeElement).toBe(about));
     expect(screen.queryByText("No subjects are connected yet")).toBeNull();
     expect(more.queryByRole("article", { name: "Olympiad maths" })).toBeNull();
 
+    await userEvent.click(about);
+    const disconnect = within(screen.getByRole("dialog", { name: "About the module" })).getByRole(
+      "button",
+      { name: "Disconnect" },
+    );
     await userEvent.click(disconnect);
+    expect(screen.queryByRole("dialog")).toBeNull();
     expect(await screen.findByText("No subjects are connected yet")).toBeTruthy();
     const back = await within(
       await more.findByRole("article", { name: "Olympiad maths" }),
     ).findByRole("button", { name: "Connect" });
     await vi.waitFor(() => expect(document.activeElement).toBe(back));
-    // The lists are not read again, and Subjects reads no map: the states of skills are Home's.
-    expect(asked).toEqual(["list p1", "catalog p1", `connect ${MATH}`, `disconnect ${MATH}`]);
+    // The lists are not read again; the map of the module connected is read for its squares.
+    expect(asked.filter((call) => !call.startsWith("map "))).toEqual([
+      "list p1",
+      "catalog p1",
+      `connect ${MATH}`,
+      `disconnect ${MATH}`,
+    ]);
   });
 
   it("names a module with no current version by the manifest kept of an earlier one, or by its ID", async () => {
@@ -437,33 +458,87 @@ describe("Subjects", () => {
       "ru",
     );
     const maths = await card("Olympiad maths");
-    expect(maths.getByText("Язык объяснений: английский")).toBeTruthy();
+    expect(maths.getByText("Язык: английский")).toBeTruthy();
     expect(maths.getByText("Сейчас недоступен")).toBeTruthy();
     // No map for a module with no current version.
     expect(maths.queryByRole("button", { name: "Карта навыков" })).toBeNull();
     expect((await card("novatrail/gone")).getByText("Сейчас недоступен")).toBeTruthy();
     expect(await screen.findByText("В каталоге пока нет модулей для этого профиля")).toBeTruthy();
-    expect((await card("novatrail/gone")).getByRole("button", { name: "Отключить" })).toBeTruthy();
+    // Disconnect stands in its About, with no facts: no manifest names them.
+    await userEvent.click((await card("novatrail/gone")).getByRole("button", { name: "О модуле" }));
+    const about = within(screen.getByRole("dialog", { name: "О модуле" }));
+    expect(about.getByRole("button", { name: "Отключить" })).toBeTruthy();
+    expect(about.queryByRole("term")).toBeNull();
   });
 
-  it("opens the license of a version from its card, connected or not, and has none without one", async () => {
+  it("names the facts of a module's manifest in its About, its license among them, and has no button of the license", async () => {
     await renderSubjects(
       {
         page: "subjects",
-        connected: [
-          { moduleId: MATH, packageDigest: D1 },
-          { moduleId: "novatrail/gone", packageDigest: "" },
-        ],
+        connected: [{ moduleId: MATH, packageDigest: D1 }],
         catalog: [{ moduleId: PHYSICS, packageDigest: D2 }],
       },
       "ru",
     );
-    const physics = (await card("Физика")).getByRole("button", { name: "Лицензия" });
-    expect(physics).toHaveAccessibleDescription("Физика");
-    expect((await card("novatrail/gone")).queryByRole("button", { name: "Лицензия" })).toBeNull();
-    await userEvent.click((await card("Olympiad maths")).getByRole("button", { name: "Лицензия" }));
-    expect(window.location.hash).toBe(`#/license/sha256%3A${"1".repeat(64)}`);
+    const physics = await card("Физика");
+    expect(physics.queryByRole("button", { name: "Лицензия" })).toBeNull();
+    const about = physics.getByRole("button", { name: "О модуле" });
+    expect(about).toHaveAccessibleDescription("Физика");
+    await userEvent.click(about);
+    const dialog = within(screen.getByRole("dialog", { name: "О модуле" }));
+    expect(
+      dialog
+        .getAllByRole("term")
+        .map((term) => [term.textContent, term.nextElementSibling?.textContent]),
+    ).toEqual([
+      ["Версия", "1.0.0"],
+      ["Авторы", "The NovaTrail authors"],
+      ["Для кого", "1–6 класс"],
+      ["Язык объяснений", "русский"],
+      ["Лицензия", "Apache-2.0"],
+    ]);
+    expect(dialog.getByText("Apache-2.0")).toHaveAttribute("lang", "en");
+    expect(dialog.queryByRole("button", { name: "Отключить" })).toBeNull();
+  });
+
+  it("names three of a module's skills, and the rest by tier in a pop-over with the way to its map", async () => {
+    await renderSubjects({
+      page: "subjects",
+      connected: [{ moduleId: MATH, packageDigest: D1 }],
+      catalog: [{ moduleId: PHYSICS, packageDigest: D2 }],
+      tiers: { [D1]: SKILL_TIERS, [D2]: { a: 1 } },
+      graphs: {
+        [D1]: { ...SKILLS, tiers: ["Basics", "Patterns"] },
+        [D2]: { skills: { a: { title: "Сила", assessability: "verdict" } } },
+      },
+    });
+    const maths = await card("Olympiad maths");
+    expect(await maths.findByText("Skills · 6")).toBeVisible();
+    // A tier's skills by title, the first tier first.
+    expect(
+      maths
+        .getAllByRole("listitem")
+        .slice(0, 3)
+        .map((item) => item.textContent),
+    ).toEqual(["Counting", "Days and cycles", "Halves"]);
+    const rest = maths.getByRole("button", { name: "+3 more" });
+    expect(rest).toHaveAccessibleDescription("Olympiad maths");
+    await userEvent.click(rest);
+    const dialog = within(screen.getByRole("dialog", { name: "Skills · 6" }));
+    expect(dialog.getAllByRole("heading", { level: 3 }).map((h) => h.textContent)).toEqual([
+      "Basics",
+      "Patterns",
+      "Tier 3",
+    ]);
+    expect(dialog.getByText("Sums of rows")).toBeTruthy();
+    await userEvent.click(dialog.getByRole("button", { name: "Open the skill map" }));
+    expect(window.location.hash).toBe(`#/skill-map/${encodeURIComponent(MATH)}`);
     window.location.hash = "";
+    // A module of one skill names it, with no chip of the rest, and says how many beside Connect.
+    const physics = await card("Физика");
+    expect(await physics.findByText("Сила")).toHaveAttribute("lang", "ru");
+    expect(physics.queryByRole("button", { name: /more/ })).toBeNull();
+    expect(physics.getByText("1 skill")).toBeVisible();
   });
 
   it("leads from a module connected to its skill map", async () => {
@@ -486,8 +561,14 @@ describe("Subjects", () => {
       "ru",
     );
     // The mark comes once the graph has, after the card.
-    expect(await (await card("Olympiad maths")).findByText("По порядку")).toBeVisible();
-    expect((await card("Физика")).queryByText("По порядку")).toBeNull();
+    expect(
+      await (await card("Olympiad maths")).findByText(
+        "Математика · 1–6 класс · По порядку · Язык: английский",
+      ),
+    ).toBeVisible();
+    expect(
+      await (await card("Физика")).findByText("Математика · 1–6 класс · Адаптивный"),
+    ).toBeVisible();
   });
 
   it("tells a connection api refused, and offers to try again when it does not answer", async () => {
@@ -698,7 +779,7 @@ const ALL_STATES =
   "All the skills: Mastered: 1, Time to review: 1, In progress: 1, Ready to start: 1, Locked: 1, Feedback by criteria: 1";
 
 describe("the states of the skills", () => {
-  it("are on a card connected as its map has them, by the learner's action, and none on Subjects", async () => {
+  it("are on a card connected as its map has them, by the learner's action, on Home and on Subjects", async () => {
     const setup = {
       connected: [{ moduleId: MATH, packageDigest: D1 }],
       catalog: [{ moduleId: PHYSICS, packageDigest: D2 }],
@@ -726,10 +807,15 @@ describe("the states of the skills", () => {
     expect(math.getByText("1 skill to review")).toBeVisible();
     expect(asked).toContain(`map ${MATH} 1`);
     unmount();
+    // On Subjects the same squares, with the counts beside how many are mastered; none on a card
+    // of the catalog, whose module is not the learner's.
     const subjects = await renderSubjects({ ...setup, page: "subjects" });
-    expect((await card("Olympiad maths")).queryByRole("img")).toBeNull();
+    const mine = await card("Olympiad maths");
+    expect(await mine.findByRole("img", { name: ALL_STATES })).toBeVisible();
+    expect(mine.getByText("1 of 5 mastered · 1 to review · 1 in progress")).toBeVisible();
     expect((await card("Физика")).queryByRole("img")).toBeNull();
-    expect(subjects.asked.some((call) => call.startsWith("map "))).toBe(false);
+    expect(subjects.asked).toContain(`map ${MATH} 1`);
+    expect(subjects.asked.some((call) => call.startsWith(`map ${PHYSICS}`))).toBe(false);
   });
 
   it("are the ones the skill map draws on the same graph and answer", async () => {

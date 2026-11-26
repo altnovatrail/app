@@ -13,7 +13,6 @@ import type { LegalTextRef } from "@altnovatrail/contracts/novatrail/api/v1/lega
 import {
   type FormEvent,
   Fragment,
-  type ReactNode,
   type RefObject,
   useEffect,
   useId,
@@ -28,6 +27,7 @@ import { formatHash } from "../app/hash.ts";
 import { Icon } from "../app/Icon.tsx";
 import type { Route } from "../app/router.ts";
 import { Loading, Sk } from "../app/Skeleton.tsx";
+import { Tick } from "../app/Tick.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { Phrase } from "../i18n/Phrase.tsx";
 import { legalPage } from "../legal/LegalPages.tsx";
@@ -389,21 +389,6 @@ function BackLink({ onBack }: { readonly onBack: () => void }) {
       <Icon value="back" />
       {words.text("icon.back")}
     </button>
-  );
-}
-
-/**
- * A checkbox drawn as the mockup's round mark: the browser's own input, a target of 44, over a ring
- * that fills with the accent and its tick once ticked.
- */
-function Tick({ children }: { readonly children: ReactNode }) {
-  return (
-    <span className="nt-tick">
-      {children}
-      <span className="nt-tick-mark" aria-hidden="true">
-        <Icon value="ticked" />
-      </span>
-    </span>
   );
 }
 

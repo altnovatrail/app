@@ -1,25 +1,25 @@
 // The frame of Home, Subjects and the skill map, as the mockup's `home`: from 600
 // CSS px a row at the top — at its left a pill of the places, Home and Subjects, the cognitive map
-// shut with "Soon" until it comes, and after a rule For grown-ups and Help; at its right a pill of
-// the tutor, the notifications and the profile's menu —, on a phone the five places as a tab bar at
-// the bottom and the mark at the top left. A place is a link of the hash, the page shown marked as
-// current; For grown-ups and Help are pop-overs, hung below their places.
+// shut with "Soon" until it comes; at its right a pill of the tutor, shut until it comes too, the
+// notifications — the next versions of the legal texts — and the profile's menu, which holds Settings and Help —, on a phone the three places as a tab bar at the
+// bottom and the mark at the top left. A place is a link of the hash, the page shown marked as
+// current.
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { useLearner } from "../account/AccountGate.tsx";
-import { DEVICE_PAGE } from "../adults/AdultSection.tsx";
+import { useRequest } from "../api/ApiContext.tsx";
+import type { Api } from "../api/client.ts";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
-import { usePaper } from "../paper/PaperContext.tsx";
-import { useAttempt } from "../task/AttemptContext.tsx";
+import { nextPage } from "../legal/LegalPages.tsx";
+import { dayText, pageNext, readLegal, versionsOf } from "../legal/texts.ts";
 import { Spark } from "./Brand.tsx";
-import { AdultHelp } from "./Help.tsx";
-import { HintModeChoice } from "./HintModeChoice.tsx";
 import { BELOW_BAR } from "./hang.ts";
 import { formatHash } from "./hash.ts";
 import { Icon } from "./Icon.tsx";
 import type { IconValue } from "./icons.ts";
-import { LearnerMenu, MenuRow } from "./LearnerMenu.tsx";
+import { LearnerMenu } from "./LearnerMenu.tsx";
 import { captionHidden, NavCaption } from "./NavCaption.tsx";
 import { PopOver } from "./PopOver.tsx";
-import { ADULTS, HOME, navigate, PAPER, type Route, SUBJECTS, TASK } from "./router.ts";
+import { HOME, navigate, type Route, SUBJECTS } from "./router.ts";
 import { APP_NAME } from "./Screen.tsx";
 import { useTooltip } from "./Tooltip.tsx";
 
@@ -89,139 +89,151 @@ function ShutPlace() {
   );
 }
 
-/**
- * For grown-ups: whose settings it holds, the profile's hint mode, This device and the
- * section's other pages; Sign out is the profile's menu's alone. A child's profile, which
- * this build has not, would open it behind the PIN (epic E4).
- */
-export function GrownUps() {
-  const chosen = useLearner();
-  const { words } = useLanguage();
-  if (chosen === undefined) return null;
-  const title = words.text("adults.title");
-  return (
-    <PopOver
-      label={title}
-      className="nt-nav-item"
-      popClassName="nt-pop-menu nt-pop-grown"
-      caption={<NavCaption icon="nav-grown" text={words.text("nav.grown")} />}
-      tip={{ words: words.text("nav.grown"), needed: captionHidden }}
-    >
-      {(close) => (
-        <>
-          <h2 className="nt-pop-heading">{title}</h2>
-          <p className="nt-pop-line">{words.text("grown.who")}</p>
-          <HintModeChoice
-            learner={chosen.learner}
-            onSaved={chosen.onSaved}
-            onFailed={chosen.onFailed}
-          />
-          <hr />
-          {/* Each closes the pop-over first: what it opens takes the screen's place. */}
-          <MenuRow
-            icon="device"
-            text={words.text("device.title")}
-            onPress={() => {
-              close();
-              navigate(DEVICE_PAGE);
-            }}
-          />
-          <MenuRow
-            icon="settings"
-            text={words.text("grown.section")}
-            onPress={() => {
-              close();
-              navigate(ADULTS);
-            }}
-          />
-        </>
-      )}
-    </PopOver>
-  );
+/** Where this device keeps the notices the bell has shown: a text's ID and version each. */
+const SEEN = "novatrail.bell.seen";
+
+function seenHere(): readonly string[] {
+  try {
+    const kept: unknown = JSON.parse(window.localStorage.getItem(SEEN) ?? "[]");
+    return Array.isArray(kept) ? kept.filter((each) => typeof each === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+function keepSeen(seen: readonly string[]): void {
+  try {
+    window.localStorage.setItem(SEEN, JSON.stringify(seen));
+  } catch {
+    // A device that keeps nothing shows the dot again next time; nothing else depends on it.
+  }
+}
+
+/** Marks what the bell shows as seen once its pop-over is open. */
+function Seen({ onSeen }: { readonly onSeen: () => void }) {
+  const seen = useRef(onSeen);
+  useEffect(() => seen.current(), []);
+  return null;
 }
 
 /**
- * The notifications: the place for them, a bell of spec's closed list of icon buttons; nothing sends
- * one yet.
+ * The notifications, a bell of spec's closed list of icon buttons: the next version of each legal
+ * text that is a page, with the day it applies from, the version in force till then and the way to
+ * its page, and, while a profile of the account keeps its works on the server, that this can be
+ * turned off in Settings before then. A red dot, and the button's description, while a notice is
+ * one this device has not shown; opened, the dot goes. An api that gives no next version, or a
+ * read that failed, leaves "Nothing new yet".
  */
 export function Bell() {
-  const { words } = useLanguage();
+  const { language, words } = useLanguage();
+  const chosen = useLearner();
+  const id = useId();
+  const read = useCallback(
+    async (api: Api) => {
+      const legal = await readLegal(api, language);
+      return pageNext(legal.next).map((next) => ({
+        next,
+        current: versionsOf(legal, next.id).current,
+      }));
+    },
+    [language],
+  );
+  const answer = useRequest(read);
+  const news = answer.status === "done" ? answer.value : [];
+  const keys = news.map(({ next }) => `${next.id}@${next.version}`);
+  const [seen, setSeen] = useState(seenHere);
+  const fresh = keys.filter((key) => !seen.includes(key)).length;
+  const see = () => {
+    const all = [...new Set([...seenHere(), ...keys])];
+    keepSeen(all);
+    setSeen(all);
+  };
   return (
-    <PopOver
-      icon="notifications"
-      label={words.text("bell.title")}
-      className="nt-top-round"
-      popClassName="nt-pop-bell"
-      gap={BELOW_BAR}
-    >
-      <h2 className="nt-pop-heading">{words.text("bell.title")}</h2>
-      <div className="nt-bell-none">
-        <span className="nt-bell-sign">
-          <Icon value="notifications" />
+    <>
+      <PopOver
+        icon="notifications"
+        label={words.text("bell.title")}
+        className={fresh > 0 ? "nt-top-round nt-bell-new" : "nt-top-round"}
+        describedBy={fresh > 0 ? `${id}-new` : undefined}
+        popClassName="nt-pop-bell"
+        gap={BELOW_BAR}
+      >
+        <h2 className="nt-pop-heading">{words.text("bell.title")}</h2>
+        {news.length === 0 ? (
+          <div className="nt-bell-none">
+            <span className="nt-bell-sign">
+              <Icon value="notifications" />
+            </span>
+            <b>{words.text("bell.none")}</b>
+            <span>{words.text("bell.later")}</span>
+          </div>
+        ) : (
+          <>
+            <Seen onSeen={see} />
+            {news.map(({ next, current }) => {
+              const name = words.text(`legal.${next.id}`);
+              const version = String(next.version);
+              return (
+                <div key={next.id} className="nt-bell-item">
+                  <span className="nt-bell-tile">
+                    <Icon value="bell-text" />
+                  </span>
+                  <span className="nt-bell-text">
+                    <b>{words.text("bell.next-title", { text: name, version })}</b>
+                    <span>
+                      {words.text("bell.next-when", {
+                        date: dayText(language, next.inForceSince),
+                      })}
+                      {current === undefined
+                        ? null
+                        : ` ${words.text("bell.next-until", { version: String(current.version) })}`}
+                    </span>
+                    {chosen?.storing === true ? (
+                      <span>{words.text("bell.next-storage")}</span>
+                    ) : null}
+                    <button
+                      type="button"
+                      className="nt-bell-read"
+                      aria-label={words.text("legal.next-open", { text: name, version })}
+                      onClick={() => chosen?.openLegal(nextPage(next.id))}
+                    >
+                      {words.text("legal.next-read", { version })}
+                    </button>
+                  </span>
+                </div>
+              );
+            })}
+          </>
+        )}
+      </PopOver>
+      {fresh > 0 ? (
+        <span id={`${id}-new`} hidden>
+          {words.text("bell.new", { count: String(fresh) })}
         </span>
-        <b>{words.text("bell.none")}</b>
-        <span>{words.text("bell.later")}</span>
-      </div>
-    </PopOver>
+      ) : null}
+    </>
   );
 }
 
 /**
- * The tutor's button at the top right and its panel: where there is no work, the panel says
- * that the tutor is an AI and where it helps, and leads to the work — the attempt open, and a task
- * from paper. To an adult the tutor is neutral, its gradient sign; Pip is the children's (epic E4).
+ * The tutor at the top right, shut until it comes, as the cognitive map: in its place and in the
+ * keyboard's order, named, its tooltip saying it comes later; it opens nothing.
  */
-export function HomeTutor() {
+function ShutTutor() {
   const { words } = useLanguage();
-  const open = useAttempt()?.attemptId;
-  const paper = usePaper();
-  const title = words.text("icon.tutor");
-  return (
-    <PopOver
-      icon="tutor"
-      label={title}
-      className="nt-top-round"
-      popClassName="nt-pop-tutor"
-      gap={BELOW_BAR}
+  const tooltip = useTooltip<HTMLButtonElement>(words.text("tutor-home.later"));
+  return tooltip.wrap(
+    <button
+      ref={tooltip.host}
+      type="button"
+      className="nt-icon-only nt-top-round"
+      aria-disabled="true"
+      aria-label={words.text("icon.tutor")}
+      onFocus={tooltip.onFocus}
+      onBlur={tooltip.onBlur}
     >
-      {(close) => (
-        <>
-          <div className="nt-tutor-home-head">
-            <span className="nt-tutor-sign">
-              <Icon value="tutor" />
-            </span>
-            <h2 className="nt-pop-heading">{title}</h2>
-          </div>
-          <p className="nt-tutor-bubble">{words.text("tutor-home.ai")}</p>
-          <p className="nt-tutor-bubble">{words.text("tutor-home.where")}</p>
-          <div className="nt-tutor-home-acts">
-            {open === undefined ? null : (
-              <button
-                type="button"
-                onClick={() => {
-                  close();
-                  navigate(TASK);
-                }}
-              >
-                {words.text("task.continue")}
-              </button>
-            )}
-            <button
-              type="button"
-              className="nt-secondary nt-icon-text"
-              onClick={() => {
-                close();
-                paper?.clear();
-                navigate(PAPER);
-              }}
-            >
-              <Icon value="camera" />
-              {words.text("subjects.paper")}
-            </button>
-          </div>
-        </>
-      )}
-    </PopOver>
+      <Icon value="tutor" />
+    </button>,
   );
 }
 
@@ -244,16 +256,13 @@ export function ShellBar({ place }: { readonly place: Place }) {
           current={place === "subjects"}
         />
         <ShutPlace />
-        <span className="nt-nav-rule" />
-        <GrownUps />
-        <AdultHelp />
       </nav>
       <header className="nt-shell-top">
         <Mark className="nt-mark nt-top-mark" />
         <div className="nt-top-pills">
-          <HomeTutor />
+          <ShutTutor />
           <Bell />
-          <LearnerMenu short />
+          <LearnerMenu />
         </div>
       </header>
     </div>

@@ -101,9 +101,9 @@ describe("the theme", () => {
     ]);
   });
 
-  it("draws a group of the section for adults as a card, its heading 17 bold, its rows 52 high", () => {
+  it("draws a card of a page of Settings that keeps its cards, its heading 17 bold, its rows 52 high", () => {
     const { container } = render(
-      <main className="nt-adults">
+      <main className="nt-settings">
         <section className="nt-group">
           <h2>Profiles</h2>
           <p className="nt-hint">The profiles of the account</p>
@@ -115,11 +115,6 @@ describe("the theme", () => {
             </li>
           </ul>
         </section>
-        <form>
-          <button type="submit" className="nt-main">
-            Save
-          </button>
-        </form>
       </main>,
     );
     const group = styleOf(container.querySelector(".nt-group"));
@@ -137,9 +132,54 @@ describe("the theme", () => {
     // The rows reach the card's edges, as the owner's profile has them.
     const card = (container.querySelector(".nt-group") as HTMLElement).getBoundingClientRect();
     expect(row.getBoundingClientRect().width).toBeCloseTo(card.width - 2, 0);
-    const save = container.querySelector("form") as HTMLElement;
-    expect((save.firstElementChild as HTMLElement).getBoundingClientRect().width).toBe(
-      save.getBoundingClientRect().width,
+  });
+
+  it("draws a group of Settings as a device's: white, radius 12, its caption 13 in capitals, its rows 44 and 17, the switch on in green", () => {
+    const { container } = render(
+      <main className="nt-settings">
+        <section className="nt-set-sec">
+          <h2 className="nt-set-head">Voice</h2>
+          <div className="nt-set-group">
+            <label className="nt-set-row">
+              <span className="nt-set-text">
+                <span className="nt-set-label">Read aloud</span>
+              </span>
+              <input
+                type="checkbox"
+                role="switch"
+                aria-checked="true"
+                className="nt-set-input"
+                defaultChecked
+              />
+              <span className="nt-set-switch" />
+            </label>
+          </div>
+          <div className="nt-set-note">A line under the group</div>
+        </section>
+      </main>,
+    );
+    const group = styleOf(container.querySelector(".nt-set-group"));
+    expect([group.backgroundColor, group.borderTopLeftRadius]).toEqual([
+      "rgb(255, 255, 255)",
+      "12px",
+    ]);
+    const head = styleOf(container.querySelector(".nt-set-head"));
+    expect([head.fontSize, head.textTransform, head.color]).toEqual([
+      "13px",
+      "uppercase",
+      "rgb(110, 110, 115)",
+    ]);
+    const row = container.querySelector(".nt-set-row") as HTMLElement;
+    expect(row.getBoundingClientRect().height).toBeGreaterThanOrEqual(44);
+    expect(styleOf(row).fontSize).toBe("17px");
+    // The input is unseen over the whole row, the target; the switch drawn after it.
+    const input = (container.querySelector(".nt-set-input") as HTMLElement).getBoundingClientRect();
+    expect([input.width, input.height]).toEqual([
+      row.getBoundingClientRect().width,
+      row.getBoundingClientRect().height,
+    ]);
+    expect(styleOf(container.querySelector(".nt-set-switch")).backgroundColor).toBe(
+      "rgb(36, 138, 61)",
     );
   });
 

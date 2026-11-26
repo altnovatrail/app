@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { deviceLanguage, learnerLanguage, lookup } from "./language.ts";
+import { deviceLanguage, lookup } from "./language.ts";
 
 describe("lookup", () => {
   it("cuts a tag from the right until the build has it, a one-letter subtag with the next", () => {
@@ -19,15 +19,5 @@ describe("deviceLanguage", () => {
     expect(deviceLanguage(["kk-KZ", "ru-RU", "en"])).toBe("ru");
     expect(deviceLanguage(["de-DE"])).toBe("en");
     expect(deviceLanguage([])).toBe("en");
-  });
-});
-
-describe("learnerLanguage", () => {
-  it("is the profile's field as the build finds it, else the device's", () => {
-    expect(learnerLanguage("ru", "en")).toBe("ru");
-    expect(learnerLanguage("ru-RU", "en")).toBe("ru");
-    expect(learnerLanguage(undefined, "ru")).toBe("ru");
-    expect(learnerLanguage("", "ru")).toBe("ru");
-    expect(learnerLanguage("kk", "ru")).toBe("ru");
   });
 });

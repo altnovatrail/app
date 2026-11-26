@@ -55,10 +55,9 @@ export const TABLE: Readonly<Record<string, Value>> = {
   // Help, filled while its pop-over is open; the tutor's button, a bubble of words.
   help: { base: "help", filled: true, mirrored: false },
   tutor: { base: "sms", filled: false, mirrored: false },
-  // The way into the app: the group of "For grown-ups" in the profile's menu; "Signed in
-  // with Google" and the country chosen, a tick; the row that opens the countries, a chevron that
-  // points on; "Add a learner", a plus; the pill of the sign-in's language, a globe.
-  grown: { base: "group", filled: false, mirrored: false },
+  // The way into the app: "Signed in with Google" and the country chosen, a tick; a row that leads
+  // on — the countries, Settings and Help in the profile's menu —, a chevron that points on; "Add a
+  // learner", a plus; the pill of the sign-in's language, a globe.
   language: { base: "language", filled: false, mirrored: false },
   ticked: { base: "check", filled: false, mirrored: false },
   more: { base: "chevron-right", filled: false, mirrored: true },
@@ -124,18 +123,19 @@ export const TABLE: Readonly<Record<string, Value>> = {
   microphone: { base: "mic", filled: false, mirrored: false },
   stop: { base: "stop", filled: false, mirrored: false },
   // The row of places of Home, Subjects and the skill map, and the phone's tab bar: Home,
-  // four squares, filled while it is the place; Subjects, a book; the cognitive map, a hub, shut;
-  // For grown-ups, a padlock. Help is the bar's. At the top right the notifications, a bell; in
-  // For grown-ups This device and the section's other settings; on Subjects a module's skill map,
-  // a tree of nodes.
+  // four squares, filled while it is the place; Subjects, a book; the cognitive map, a hub, shut.
+  // At the top right the notifications, a bell; in the profile's menu Settings, the section for
+  // adults; on Subjects a module's skill map, a tree of nodes.
   "nav-home": { base: "grid-view", filled: true, mirrored: false },
   "nav-subjects": { base: "menu-book", filled: true, mirrored: false },
   "nav-cognitive": { base: "hub", filled: false, mirrored: false },
-  "nav-grown": { base: "lock", filled: true, mirrored: false },
   notifications: { base: "notifications", filled: true, mirrored: false },
-  device: { base: "tablet-android", filled: false, mirrored: false },
   settings: { base: "settings", filled: false, mirrored: false },
   "skill-map": { base: "account-tree", filled: false, mirrored: false },
+  // A card of Subjects: About the module, three dots, filled while its pop-over is open; and
+  // Disconnect in it, a circle struck through.
+  dots: { base: "more-horiz", filled: true, mirrored: false },
+  disconnect: { base: "do-not-disturb-on", filled: false, mirrored: false },
   // A module's card on Home: Continue, the engine that chooses, and the next skill.
   play: { base: "play-arrow", filled: false, mirrored: true },
   engine: { base: "autorenew", filled: false, mirrored: false },
@@ -147,6 +147,21 @@ export const TABLE: Readonly<Record<string, Value>> = {
   "grown-up": { base: "key", filled: true, mirrored: false },
   "pin-lock": { base: "lock", filled: false, mirrored: false },
   "pin-delete": { base: "backspace", filled: false, mirrored: true },
+  // The tiles of Settings, white on their colour, as a device's settings: this device, a tablet; the
+  // device's language, a globe; the own key, a key. What happens to the key: the server it goes
+  // to, a rack; the provider's bill, a card; no encryption on the device, a padlock; a spending
+  // limit, a gauge. Each shows its fill.
+  "set-device": { base: "tablet-android", filled: true, mirrored: false },
+  "set-language": { base: "language", filled: true, mirrored: false },
+  "set-key": { base: "key", filled: true, mirrored: false },
+  "set-server": { base: "dns", filled: true, mirrored: false },
+  "set-card": { base: "credit-card", filled: true, mirrored: false },
+  "set-lock": { base: "lock", filled: true, mirrored: false },
+  "set-limit": { base: "speed", filled: true, mirrored: false },
+  // A notice of the bell of a legal text's next version: a page of text, white on its tile.
+  "bell-text": { base: "description", filled: true, mirrored: false },
+  // The hour tutor time renews at, a clock.
+  "set-time": { base: "schedule", filled: true, mirrored: false },
 };
 
 /** An icon as the app draws it: its view box, and the paths it fills in the text's colour. */

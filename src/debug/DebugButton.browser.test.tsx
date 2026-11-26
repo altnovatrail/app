@@ -5,7 +5,8 @@
 // action with its calls, a call opened to its figures and what the model returned, the request of
 // a finding, the export of a Check with what the Check answered and why it makes no case, and the
 // log cleared —, with the app's own lines among the actions, filtered by level and source and
-// copied; and the tab Performance with its strip and the flash of what a frame paints.
+// copied, and info in a row folded into one row that opens; and the tab Performance with its
+// strip and the flash of what a frame paints.
 import { Cause } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import {
   type DebugAction,
@@ -429,6 +430,53 @@ describe("the debug button", () => {
     // Clear takes the lines too.
     await userEvent.click(window_.getByRole("button", { name: "Clear" }));
     expect(journal.snapshot()).toEqual([]);
+  });
+
+  it("folds info in a row into one row, which opens to its lines and stays open as one comes", async () => {
+    const { api } = renderDebug({ actions: [] });
+    await logged(api);
+    journal.clear();
+    journal.note("info", "app", "Started", "", new Date("2026-11-25T14:57:50Z"));
+    journal.note("debug", "app", "Profile opened", "", new Date("2026-11-25T14:57:51Z"));
+    // Each its own line: the same line again within ten seconds would be a repeat of the first.
+    for (const [line, at] of [
+      ["ModuleService/ListConnectedModules · ok · 0.5 s", "14:57:52"],
+      ["AccountService/GetQuota · ok · 0.9 s", "14:57:53"],
+      ["ModuleService/ListConnectedModules · ok · 0.4 s", "14:57:54"],
+    ] as const)
+      journal.note("info", "api", line, "code: ok", new Date(`2026-11-25T${at}Z`));
+    act(() => journal.flush());
+    const window_ = await opened();
+    await userEvent.click(window_.getByRole("tab", { name: /Log/ }));
+    const log = within(window_.getByRole("region", { name: "Log" }));
+    // Three info in a row are one row, closed; the info alone after the debug line stands as it is.
+    const run = log.getByRole("button", {
+      name: "3 info entries: ListConnectedModules ×2 · GetQuota",
+    });
+    expect(run).toHaveAttribute("aria-expanded", "false");
+    expect(log.queryByText("AccountService/GetQuota · ok · 0.9 s")).toBeNull();
+    expect(log.getByText("Started")).toBeVisible();
+    await userEvent.click(run);
+    expect(log.getByText("AccountService/GetQuota · ok · 0.9 s")).toBeVisible();
+    // A line of it opens to its details, as any line does.
+    await userEvent.click(log.getByRole("button", { name: /GetQuota · ok/ }));
+    expect(log.getByText("code: ok")).toBeVisible();
+    // One more coming keeps the run open, and counts it.
+    journal.note(
+      "info",
+      "api",
+      "DebugService/GetDebug · ok · 0.3 s",
+      "",
+      new Date("2026-11-25T14:57:55Z"),
+    );
+    act(() => journal.flush());
+    const grown = await log.findByRole("button", {
+      name: "4 info entries: GetDebug · ListConnectedModules ×2 · GetQuota",
+    });
+    expect(grown).toHaveAttribute("aria-expanded", "true");
+    expect(log.getByText("DebugService/GetDebug · ok · 0.3 s")).toBeVisible();
+    await userEvent.click(grown);
+    expect(log.queryByText("DebugService/GetDebug · ok · 0.3 s")).toBeNull();
   });
 
   it("shows Performance, its strip on the screen and the flash on the canvas", async () => {

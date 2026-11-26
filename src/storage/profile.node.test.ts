@@ -617,6 +617,32 @@ describe("the pages from paper", () => {
     expect(await profile.page("none")).toBeUndefined();
   });
 
+  it("moves a task whose attempt closed to the attempt begun anew, with its work and its place", async () => {
+    const { profile } = await setUp();
+    await profile.keepPage(page("g1", 1000, [1, 2]), photo, [task(1), task(2)]);
+    const work = { history: styledHistory(), sent: [], over: true, solved: true } as const;
+    await profile.keepPaperWork("pa1", work);
+    expect(await profile.renewPaperTask("pa1", "pa9")).toBe("saved");
+    // A task the page does not keep, or keeps no more under that attempt, is none.
+    expect(await profile.renewPaperTask("pa1", "pa10")).toBe("unsaved");
+    const kept = await profile.page("g1");
+    expect(
+      kept?.tasks.map(({ attemptId, taskId, n, over, solved }) => ({
+        attemptId,
+        taskId,
+        n,
+        over,
+        solved,
+      })),
+    ).toEqual([
+      { attemptId: "pa9", taskId: "found-1", n: 0, over: false, solved: true },
+      { attemptId: "pa2", taskId: "found-2", n: 1, over: false, solved: undefined },
+    ]);
+    expect(kept?.tasks[0]?.history).toEqual(styledHistory());
+    expect(await kept?.tasks[0]?.crop.text()).toBe("crop 1");
+    expect(await profile.keepPaperWork("pa1", work)).toBe("unsaved");
+  });
+
   it("puts the tasks Start begins again after those before, a task begun anew in its earlier one's place", async () => {
     const { profile } = await setUp();
     await profile.keepPage(page("g1", 1000, [1, 2]), photo, [task(1), task(2)]);

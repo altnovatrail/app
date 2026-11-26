@@ -2,7 +2,7 @@
 // card — on Home with the states of its skills —, and — on Subjects — the catalog of the server, read together
 // and each module's manifest once. Connecting and disconnecting are a press away; api's answer is
 // the list of connected modules, the catalog stays, and the focus goes with the card to its new
-// place, its button found by `data-module` and `data-action`.
+// place, its button found by `data-module` and `data-action`, or the button in what they mark.
 import type { ConnectedModule } from "@altnovatrail/contracts/novatrail/api/v1/module_pb.js";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useApi } from "../api/ApiContext.tsx";
@@ -45,7 +45,10 @@ export function useModules(profileId: string, withCatalog: boolean) {
       .then(async ([own, catalog]) => {
         // One card for a module in both lists: its manifest is read once.
         const all = new Map<string, ModuleRef>();
-        for (const module of [...own.modules, ...catalog.modules]) all.set(keyOf(module), module);
+        // The connected list's own, which says whether the module is solved on the sheet.
+        for (const module of [...own.modules, ...catalog.modules]) {
+          if (!all.has(keyOf(module))) all.set(keyOf(module), module);
+        }
         const cards = await cardsOf(views, [...all.values()]);
         const byKey = new Map([...all.keys()].map((key, i) => [key, cards[i] as ModuleCard]));
         const pick = (modules: readonly ModuleRef[]) =>
@@ -70,11 +73,11 @@ export function useModules(profileId: string, withCatalog: boolean) {
     const target = focus.current;
     if (target === undefined || read.status !== "done") return;
     focus.current = undefined;
-    document
-      .querySelector<HTMLButtonElement>(
-        `button[data-module="${CSS.escape(target.moduleId)}"][data-action="${target.action}"]`,
-      )
-      ?.focus();
+    // The button itself, or what holds it: a connected card's ⋯, which its pop-over's Disconnect left.
+    const at = document.querySelector<HTMLElement>(
+      `[data-module="${CSS.escape(target.moduleId)}"][data-action="${target.action}"]`,
+    );
+    (at instanceof HTMLButtonElement ? at : at?.querySelector("button"))?.focus();
   });
 
   const change = useCallback(
@@ -111,9 +114,8 @@ export function useModules(profileId: string, withCatalog: boolean) {
 
   const done = read.status === "done";
   const own = useSequential(views, done ? read.connected : undefined);
-  // The states of the skills are Home's: Subjects reads no map.
-  const counted = useSkillCounts(api, views, profileId, withCatalog ? undefined : own);
-  const connected = withCatalog ? own : counted;
+  // The states of the skills, on Home's cards and on the connected cards of Subjects.
+  const connected = useSkillCounts(api, views, profileId, own);
   const catalog = useSequential(views, done ? read.catalog : undefined);
   return {
     failed: read.status === "failed" ? read.failure : undefined,

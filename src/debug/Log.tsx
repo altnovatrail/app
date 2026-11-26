@@ -1,11 +1,13 @@
-// The debug window's Log, as the mockup's states `solve-debug-log`, `solve-debug-errors` and
-// `solve-debug-filter`: the app's log — what the app, api, the canvas and the camera said — with
-// the actions of AI among its lines, newest first, a filter by level and source behind a small
-// button, the errors alone by one press, and Copy of what is shown.
+// The debug window's Log, as the mockup's states `solve-debug-log`, `solve-debug-errors`,
+// `solve-debug-filter`, `solve-debug-runs` and `solve-debug-run-open`: the app's log — what the
+// app, api, the canvas and the camera said — with the actions of AI among its lines, newest first,
+// info in a row folded into one row, a filter by level and source behind a small button, the
+// errors alone by one press, and Copy of what is shown.
 import type { DebugAction } from "@altnovatrail/contracts/novatrail/api/v1/debug_pb.js";
 import { timestampDate } from "@bufbuild/protobuf/wkt";
 import { type ReactNode, useState } from "react";
-import type { Entry, Level, Source } from "./journal.ts";
+import type { Entry, Level } from "./journal.ts";
+import { folded, oldestOf, type Run, runSummary, SOURCE_NAMES } from "./runs.ts";
 
 export const LEVELS: readonly {
   readonly level: Level;
@@ -26,14 +28,8 @@ export const KINDS: readonly { readonly kind: Kind; readonly name: string }[] = 
   { kind: "canvas", name: "Canvas" },
   { kind: "app", name: "App" },
 ];
-const SOURCE_NAMES: Record<Source, string> = {
-  app: "App",
-  api: "Server · api",
-  canvas: "Canvas",
-  camera: "Camera",
-};
 
-export function kindOf(source: Source): Kind {
+export function kindOf(source: Entry["source"]): Kind {
   return source === "camera" ? "app" : source;
 }
 
@@ -98,7 +94,39 @@ export function textOf(items: readonly Item[], title: (action: DebugAction) => s
     .join("\n");
 }
 
-function Line({ entry }: { readonly entry: Entry }) {
+/** A run's row, and its lines under it while open, indented on a tint. */
+function RunRows({ run }: { readonly run: Run }) {
+  const [open, setOpen] = useState(false);
+  const { names, sub } = runSummary(run);
+  return (
+    <>
+      <button
+        type="button"
+        className="nt-debug-run"
+        aria-expanded={open}
+        aria-label={`${run.entries.length} info entries: ${names}`}
+        onClick={() => setOpen(!open)}
+      >
+        <span className="nt-debug-stack" aria-hidden="true">
+          <span className="nt-debug-mark">i</span>
+        </span>
+        <span className="nt-debug-two">
+          <span className="nt-debug-line-text">{names}</span>
+          <span className="nt-debug-sub">{sub}</span>
+        </span>
+        <span className="nt-debug-count" aria-hidden="true">
+          {run.entries.length}
+        </span>
+        <svg className="nt-debug-chevron" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M9 6l6 6-6 6" />
+        </svg>
+      </button>
+      {open ? run.entries.map((entry) => <Line key={entry.id} entry={entry} nested />) : null}
+    </>
+  );
+}
+
+function Line({ entry, nested = false }: { readonly entry: Entry; readonly nested?: boolean }) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const level = LEVELS.find((l) => l.level === entry.level) ?? LEVELS[2];
@@ -106,7 +134,7 @@ function Line({ entry }: { readonly entry: Entry }) {
     <>
       <button
         type="button"
-        className="nt-debug-line"
+        className={nested ? "nt-debug-line nt-debug-nested" : "nt-debug-line"}
         aria-expanded={entry.detail === "" ? undefined : open}
         data-level={entry.level}
         onClick={() => setOpen(!open)}
@@ -124,7 +152,7 @@ function Line({ entry }: { readonly entry: Entry }) {
         </span>
       </button>
       {open ? (
-        <div className="nt-debug-open">
+        <div className={nested ? "nt-debug-open nt-debug-nested" : "nt-debug-open"}>
           <div className="nt-debug-json-head">
             <span className="nt-debug-grow">Details</span>
             <button
@@ -207,7 +235,7 @@ function FilterMenu({
 
 /**
  * The Log's body: the filter's bar, then the items newest first — the lines that follow one
- * another on one card, each action of AI as `action` draws it.
+ * another on one card, info in a row folded, each action of AI as `action` draws it.
  */
 export function Log({
   items,
@@ -292,10 +320,16 @@ export function Log({
       ) : (
         blocks.map((block) =>
           "lines" in block ? (
-            <div key={`l${block.lines[0]?.id}`} className="nt-debug-card nt-debug-lines">
-              {block.lines.map((entry) => (
-                <Line key={entry.id} entry={entry} />
-              ))}
+            <div key={`l${block.lines.at(-1)?.id}`} className="nt-debug-card nt-debug-lines">
+              {/* A card and a run are known by their oldest line, so that a line coming keeps them
+                  as they are, a run open. */}
+              {folded(block.lines).map((each) =>
+                "entries" in each ? (
+                  <RunRows key={`run${oldestOf(each).id}`} run={each} />
+                ) : (
+                  <Line key={each.id} entry={each} />
+                ),
+              )}
             </div>
           ) : (
             action(block.action, block.key)

@@ -66,9 +66,13 @@ describe("forced colours", () => {
         </ApiProvider>,
       ),
     );
-    const radio = page.getByRole("radio", { name: "Step by step" }).element() as HTMLElement;
+    const radio = page.getByRole("radio", { name: "Show where" }).element() as HTMLElement;
     expect(getComputedStyle(radio).forcedColorAdjust).toBe("auto");
     expect(radio).toBeChecked();
+    // The switch is drawn, not native: it keeps its track's edge and its knob in the system's colours.
+    const track = getComputedStyle(document.querySelector(".nt-set-switch") as Element);
+    expect(track.forcedColorAdjust).toBe("none");
+    expect(track.boxShadow).not.toBe("none");
     expect(await axeViolations()).toEqual([]);
   });
 

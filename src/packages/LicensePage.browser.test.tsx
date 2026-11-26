@@ -1,9 +1,3 @@
-// The page of a module's license in the browser: LICENSE and NOTICE of a version as they
-// come, in English, with the module named by its manifest; a module with no NOTICE; a version api
-// no longer gives; a read that failed and its retry; a route that names no digest; and the
-// profile's modules in the section for adults, each with the way to its license. api is
-// connect-es's router, and the files come by the test's own fetch.
-import { ProfileSchema } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import { ModuleService } from "@altnovatrail/contracts/novatrail/api/v1/module_pb.js";
 import {
   GetManifestResponseSchema,
@@ -11,14 +5,13 @@ import {
 } from "@altnovatrail/contracts/novatrail/api/v1/package_pb.js";
 import { create } from "@bufbuild/protobuf";
 import { Code, ConnectError, type ConnectRouter, createRouterTransport } from "@connectrpc/connect";
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import type { ReactNode } from "react";
-import { afterEach, describe, expect, it, vi } from "vitest";
-import { userEvent } from "vitest/browser";
-import { AdultSection } from "../adults/AdultSection.tsx";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { page, userEvent } from "vitest/browser";
 import { ApiProvider } from "../api/ApiContext.tsx";
 import { createApi } from "../api/client.ts";
-import { type Route, routeOf, useRoute } from "../app/router.ts";
+import type { Route } from "../app/router.ts";
 import type { Language } from "../i18n/language.ts";
 import { memoryDevice } from "../test/device.ts";
 import { inLanguage } from "../test/language.tsx";
@@ -38,13 +31,6 @@ const UNNAMED = `sha256:${"9".repeat(64)}`;
 const LICENSE =
   "Apache License\n                           Version 2.0, January 2004\n\n   1. Definitions.\n";
 const NOTICE = "Olympiad maths\nCopyright 2026 The NovaTrail authors\n";
-
-const OWNER = create(ProfileSchema, {
-  profileId: "p1",
-  owner: true,
-  pseudonym: "Ёжик",
-  ageCategory: "adult",
-});
 
 function manifest(id: string, title: string, explanation: string) {
   const json = {
@@ -133,8 +119,11 @@ function renderWith(
 const text = (body: string) => () => new Response(body);
 const status = (code: number) => () => new Response(null, { status: code });
 
-afterEach(() => {
+// The tablet's width, where the section's list stands beside its page; the runner's own after.
+beforeEach(() => page.viewport(1194, 834));
+afterEach(async () => {
   window.location.hash = "";
+  await page.viewport(414, 896);
 });
 
 describe("the page of a module's license", () => {
@@ -252,150 +241,5 @@ describe("the page of a module's license", () => {
       expect(fetched).toEqual([]);
       expect(screen.queryByRole("heading", { level: 1 })).toBeNull();
     }
-  });
-});
-
-/** The section at the route of the hash, as AccountGate shows it. */
-function Section() {
-  return (
-    <AdultSection
-      route={useRoute()}
-      device={memoryDevice().device}
-      profiles={[OWNER]}
-      onSaved={() => {}}
-      onFailed={() => {}}
-      onEraseAll={async () => "erased"}
-      onLegal={() => {}}
-    />
-  );
-}
-
-describe("the modules of a profile in the section for adults", () => {
-  const connected = [
-    { moduleId: "novatrail/physics", packageDigest: D2 },
-    { moduleId: "novatrail/olympiad-math", packageDigest: D1 },
-    { moduleId: "novatrail/gone", packageDigest: "" },
-  ];
-
-  it("show the profile's modules, each with its license, and lead back to them", async () => {
-    window.location.hash = "#/adults";
-    const { asked } = renderWith(
-      <Section />,
-      { LICENSE: [text(LICENSE)], NOTICE: [status(404)] },
-      "en",
-      connected,
-    );
-    await userEvent.click(screen.getByRole("button", { name: "Profile: Ёжик" }));
-    const open = await screen.findByRole("button", { name: "See the modules and their licenses" });
-    expect(open).toHaveAccessibleDescription(
-      "The modules connected to the profile, and the license of each",
-    );
-    await userEvent.click(open);
-    expect(window.location.hash).toBe("#/adults/modules");
-    expect(await screen.findByRole("heading", { level: 1, name: "Modules: Ёжик" })).toBeTruthy();
-    // By title in the screen's language; a module with no current version has no license to show.
-    const cards = await screen.findAllByRole("article");
-    expect(cards.map((card) => within(card).getByRole("heading").textContent)).toEqual([
-      "novatrail/gone",
-      "Olympiad maths",
-      "Физика",
-    ]);
-    expect(asked).toEqual(["list p1"]);
-    const [gone, maths] = cards as [HTMLElement, HTMLElement];
-    expect(within(gone).getByText("Not available now")).toBeTruthy();
-    expect(within(gone).queryByRole("button")).toBeNull();
-    const license = within(maths).getByRole("button", { name: "License" });
-    expect(license).toHaveAccessibleDescription("Olympiad maths");
-    await userEvent.click(license);
-    expect(window.location.hash).toBe(`#/adults/license/sha256%3A${"1".repeat(64)}`);
-    expect(await screen.findByText("The module has no file NOTICE")).toBeTruthy();
-    expect(document.querySelector("pre")?.textContent).toBe(LICENSE);
-    // Below the section's bar, with the way back to the modules.
-    expect(screen.getByRole("button", { name: "Back to the section" })).toBeTruthy();
-    await userEvent.click(screen.getByRole("button", { name: "Back to the modules" }));
-    expect(await screen.findByRole("heading", { level: 1, name: "Modules: Ёжик" })).toBeTruthy();
-  });
-
-  it("show a license after a reload, with no profile chosen, below the bar alone", async () => {
-    window.location.hash = `#/adults/license/${encodeURIComponent(D1)}`;
-    renderWith(<Section />, { LICENSE: [text(LICENSE)], NOTICE: [text(NOTICE)] });
-    await vi.waitFor(() => expect(document.querySelectorAll("pre")).toHaveLength(2));
-    expect(screen.queryByRole("button", { name: "Back to the modules" })).toBeNull();
-    expect(screen.getByRole("button", { name: "Back to the section" })).toBeTruthy();
-  });
-
-  it("stand as the shapes of their cards while they are read, under the page's heading", async () => {
-    window.location.hash = "#/adults";
-    const { given, give } = held();
-    renderWith(<Section />, {}, "en", connected, given);
-    await userEvent.click(screen.getByRole("button", { name: "Profile: Ёжик" }));
-    await userEvent.click(
-      await screen.findByRole("button", { name: "See the modules and their licenses" }),
-    );
-    expect(await screen.findByRole("heading", { level: 1, name: "Modules: Ёжик" })).toBeTruthy();
-    expectLoading(document, 6);
-    give();
-    expect(await screen.findAllByRole("article")).toHaveLength(3);
-    expectLoaded(document);
-  });
-
-  it("go to the first page from the modules with no profile chosen, and from a license of no digest", async () => {
-    for (const hash of ["#/adults/modules", "#/adults/license/sha256%3Aab", "#/adults/license"]) {
-      window.location.hash = hash;
-      const { unmount } = renderSectionOnce();
-      await vi.waitFor(() => expect(window.location.hash).toBe("#/adults"));
-      unmount();
-    }
-  });
-
-  function renderSectionOnce() {
-    const { device } = memoryDevice();
-    const views = new OpenViews({ api: {} as never, device, stale: () => {} });
-    return render(
-      inLanguage(
-        <PackagesProvider
-          value={{
-            views,
-            checks: {} as PackageChecks,
-            files: new DeviceFiles({ api: "https://api.example.org", withdrawn: () => {} }),
-          }}
-        >
-          <AdultSection
-            route={routeOf(window.location.hash)}
-            device={device}
-            profiles={[OWNER]}
-            onSaved={() => {}}
-            onFailed={() => {}}
-            onEraseAll={async () => "erased"}
-            onLegal={() => {}}
-          />
-        </PackagesProvider>,
-      ),
-    );
-  }
-
-  it("say what a list that did not come came to, and name a module whose manifest did not come", async () => {
-    window.location.hash = "#/adults";
-    const { asked } = renderWith(<Section />, {}, "en", "fail");
-    await userEvent.click(screen.getByRole("button", { name: "Profile: Ёжик" }));
-    await userEvent.click(
-      await screen.findByRole("button", { name: "See the modules and their licenses" }),
-    );
-    expect((await screen.findByRole("alert")).textContent).toBe("No connection");
-    cleanup();
-    window.location.hash = "#/adults";
-    renderWith(<Section />, {}, "en", [{ moduleId: "novatrail/unknown", packageDigest: UNNAMED }]);
-    await userEvent.click(screen.getByRole("button", { name: "Profile: Ёжик" }));
-    await userEvent.click(
-      await screen.findByRole("button", { name: "See the modules and their licenses" }),
-    );
-    expect(
-      await screen.findByRole("heading", { level: 3, name: "novatrail/unknown" }),
-    ).toBeTruthy();
-    const status = screen.getByRole("status");
-    expect(within(status).getByText("The names of some modules didn't come")).toBeTruthy();
-    await userEvent.click(within(status).getByRole("button", { name: "Try again" }));
-    await screen.findByRole("heading", { level: 3, name: "novatrail/unknown" });
-    expect(asked.length).toBeGreaterThan(0);
   });
 });

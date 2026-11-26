@@ -1,25 +1,18 @@
 // The profile's menu: the pill shows the avatar and the pseudonym and is named by what it
-// opens; the menu names who is learning now, the hint mode — set by an adult learner by
-// SetHintMode, read only for a child —, and holds the buttons of the profile's header, each
-// closing it first; none with no learner. And the bar that holds it on each learner's screen.
+// opens; the menu names who is learning now, with no tick — there is nothing to choose there —, and
+// holds the switch, Settings — the section for adults —, Help for an adult, in the menu's own place
+// with a way back, and Sign out, each that leaves closing it first; none with no learner. And the
+// bar that holds it on each learner's screen.
 
-import {
-  AccountService,
-  HintMode,
-  type Profile,
-  ProfileSchema,
-  type SetHintModeRequest,
-} from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
+import { ProfileSchema } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import { create } from "@bufbuild/protobuf";
-import { Code, ConnectError } from "@connectrpc/connect";
-import { act, cleanup, render, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, render, screen, within } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 import { type Learner, LearnerProvider } from "../account/AccountGate.tsx";
 import { ApiProvider } from "../api/ApiContext.tsx";
 import type { Api } from "../api/client.ts";
-import { routedApi } from "../test/api.ts";
 import { inLanguage } from "../test/language.tsx";
 import "../theme/theme.css";
 import { LearnerBar } from "./App.tsx";
@@ -32,6 +25,7 @@ function chosen(ageCategory = "adult"): Learner {
       pseudonym: "Sam",
       avatar: "wave",
       ageCategory,
+      owner: ageCategory === "adult",
     }),
     switchLearner: vi.fn(),
     signOut: vi.fn(),
@@ -41,10 +35,10 @@ function chosen(ageCategory = "adult"): Learner {
   };
 }
 
-/** The menu of the learner given, under the client given: by default one that is never called. */
-function menuOf(learner: Learner, language?: "ru", api: Api = {} as Api): ReactNode {
+/** The menu of the learner given, under a client that is never called. */
+function menuOf(learner: Learner, language?: "ru"): ReactNode {
   return inLanguage(
-    <ApiProvider value={api}>
+    <ApiProvider value={{} as Api}>
       <LearnerProvider value={learner}>
         <LearnerMenu />
       </LearnerProvider>
@@ -65,16 +59,26 @@ afterEach(async () => {
 });
 
 describe("the profile's menu", () => {
-  it("names the learner chosen, and switches, opens the section or signs out", async () => {
+  it("names the learner chosen with no tick, and switches, opens Settings or signs out", async () => {
     const learner = chosen();
     render(menuOf(learner));
     const pill = screen.getByRole("button", { name: "Sam, profile menu" });
     expect(pill).toHaveTextContent("Sam");
     expect(pill.querySelector('[data-avatar="wave"]')).not.toBeNull();
     await userEvent.click(pill);
-    const menu = within(screen.getByRole("dialog", { name: "Profile menu" }));
+    const dialog = screen.getByRole("dialog", { name: "Profile menu" });
+    const menu = within(dialog);
     expect(menu.getByText("Learning now")).toBeVisible();
     expect(menu.getByText("Sam")).toBeVisible();
+    expect(menu.getByText("Your profile")).toBeVisible();
+    expect(dialog.querySelector(".nt-menu-tick")).toBeNull();
+    expect([...dialog.querySelectorAll(".nt-menu-row")].map((row) => row.textContent)).toEqual([
+      "Switch learner",
+      "Settings",
+      "Help",
+      "Sign out",
+    ]);
+    expect(menu.queryByRole("radio")).toBeNull();
 
     await userEvent.click(menu.getByRole("button", { name: "Switch learner" }));
     expect(learner.switchLearner).toHaveBeenCalledOnce();
@@ -85,29 +89,34 @@ describe("the profile's menu", () => {
     expect(learner.signOut).toHaveBeenCalledOnce();
 
     await userEvent.click(pill);
-    await userEvent.click(screen.getByRole("button", { name: "For grown-ups" }));
+    await userEvent.click(screen.getByRole("button", { name: "Settings" }));
     expect(window.location.hash).toBe("#/adults");
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 
-  it("beside the row of places holds the switch and Sign out, the section being Grown-ups'", async () => {
-    const learner = chosen();
-    render(
-      inLanguage(
-        <ApiProvider value={{} as Api}>
-          <LearnerProvider value={learner}>
-            <LearnerMenu short />
-          </LearnerProvider>
-        </ApiProvider>,
-      ),
-    );
+  it("opens Help in its rows' place, the focus on its heading, and comes back to its row", async () => {
+    render(menuOf(chosen()));
     await userEvent.click(screen.getByRole("button", { name: "Sam, profile menu" }));
     const menu = within(screen.getByRole("dialog", { name: "Profile menu" }));
+    await userEvent.click(menu.getByRole("button", { name: "Help" }));
+    expect(menu.getByRole("heading", { level: 2, name: "Help" })).toHaveFocus();
+    expect(menu.queryByRole("button", { name: "Switch learner" })).toBeNull();
+    await userEvent.click(menu.getByRole("button", { name: "Profile" }));
+    expect(menu.getByRole("button", { name: "Help" })).toHaveFocus();
     expect(menu.getByRole("button", { name: "Switch learner" })).toBeVisible();
-    expect(menu.queryByRole("button", { name: "For grown-ups" })).toBeNull();
-    await userEvent.click(menu.getByRole("button", { name: "Sign out" }));
-    expect(learner.signOut).toHaveBeenCalledOnce();
-    expect(screen.queryByRole("dialog")).toBeNull();
+    // Closed and opened again, the menu shows its rows.
+    await userEvent.click(menu.getByRole("button", { name: "Help" }));
+    await userEvent.keyboard("{Escape}");
+    await userEvent.click(screen.getByRole("button", { name: "Sam, profile menu" }));
+    expect(screen.getByRole("button", { name: "Switch learner" })).toBeVisible();
+  });
+
+  it("has no Help for a learner of another category, as Help is the adult's", async () => {
+    render(menuOf(chosen("under_13")));
+    await userEvent.click(screen.getByRole("button", { name: "Sam, profile menu" }));
+    const menu = within(screen.getByRole("dialog", { name: "Profile menu" }));
+    expect(menu.getByRole("button", { name: "Settings" })).toBeVisible();
+    expect(menu.queryByRole("button", { name: "Help" })).toBeNull();
   });
 
   it("is in Russian on a Russian screen, and not there with no learner", async () => {
@@ -116,78 +125,12 @@ describe("the profile's menu", () => {
     const menu = within(screen.getByRole("dialog", { name: "Меню профиля" }));
     expect(menu.getByText("Сейчас учится")).toBeVisible();
     expect(menu.getByRole("button", { name: "Сменить ученика" })).toBeVisible();
+    expect(menu.getByRole("button", { name: "Настройки" })).toBeVisible();
+    await userEvent.click(menu.getByRole("button", { name: "Помощь" }));
+    expect(menu.getByRole("button", { name: "Профиль" })).toBeVisible();
     cleanup();
     render(inLanguage(<LearnerMenu />));
     expect(screen.queryByRole("button", { name: /profile menu/ })).toBeNull();
-  });
-});
-
-describe("the hint mode in the profile's menu", () => {
-  /** The menu open under SetHintMode's route: what it was asked, and what it answers or throws. */
-  async function opened(
-    learner: Learner,
-    answer: (request: SetHintModeRequest) => Profile = (request) =>
-      create(ProfileSchema, { ...learner.learner, hintMode: request.hintMode }),
-  ) {
-    const asked: SetHintModeRequest[] = [];
-    const api = routedApi((router) => {
-      router.service(AccountService, {
-        setHintMode(request) {
-          asked.push(request);
-          return { profile: answer(request) };
-        },
-      });
-    });
-    render(menuOf(learner, undefined, api));
-    await userEvent.click(screen.getByRole("button", { name: "Sam, profile menu" }));
-    return { asked, menu: within(screen.getByRole("dialog", { name: "Profile menu" })) };
-  }
-
-  it("is Show where for a new profile, and an adult learner sets Questions only by SetHintMode", async () => {
-    const learner = chosen();
-    const { asked, menu } = await opened(learner);
-    expect(menu.getByRole("group", { name: "Hints" })).toBeVisible();
-    expect(menu.getByRole("radio", { name: /Show where/ })).toBeChecked();
-    await userEvent.click(menu.getByRole("radio", { name: /Show where/ }));
-    expect(asked).toHaveLength(0);
-    await userEvent.click(menu.getByRole("radio", { name: /Questions only/ }));
-    await waitFor(() => expect(learner.onSaved).toHaveBeenCalledOnce());
-    expect(asked.map(({ profileId, hintMode }) => [profileId, hintMode])).toEqual([
-      ["p1", HintMode.QUESTIONS_ONLY],
-    ]);
-    expect(vi.mocked(learner.onSaved).mock.calls[0]?.[0].hintMode).toBe(HintMode.QUESTIONS_ONLY);
-    expect(menu.queryByRole("alert")).toBeNull();
-  });
-
-  it("says what a refused change came to, and a profile missing from the answer", async () => {
-    const learner = chosen();
-    const { menu } = await opened(learner, () => {
-      throw new ConnectError("down", Code.Unavailable);
-    });
-    await userEvent.click(menu.getByRole("radio", { name: /Questions only/ }));
-    expect(await menu.findByRole("alert")).toBeVisible();
-    expect(learner.onFailed).toHaveBeenCalledOnce();
-    expect(learner.onSaved).not.toHaveBeenCalled();
-    cleanup();
-    const empty = chosen();
-    const second = await opened(empty, () => undefined as unknown as Profile);
-    await userEvent.click(second.menu.getByRole("radio", { name: /Questions only/ }));
-    expect(await second.menu.findByRole("alert")).toBeVisible();
-    expect(empty.onSaved).not.toHaveBeenCalled();
-  });
-
-  it("is read only for a child, set by a grown-up", async () => {
-    const learner = chosen("under_13");
-    const { asked, menu } = await opened(learner);
-    expect(menu.getByText("set by a grown-up")).toBeVisible();
-    expect(menu.getByRole("radio", { name: /Questions only/ })).toHaveAttribute(
-      "aria-disabled",
-      "true",
-    );
-    // Marked disabled, not disabled, so that it keeps the focus: Playwright would wait for it.
-    await userEvent.click(menu.getByRole("radio", { name: /Questions only/ }), { force: true });
-    expect(asked).toHaveLength(0);
-    expect(learner.onSaved).not.toHaveBeenCalled();
   });
 });
 

@@ -72,23 +72,50 @@ const RENEWS = {
   later: "quota.renews",
 } as const satisfies DayPhrases;
 
+/** A share as the adult sees it: whose, how much in words, and the percentage its bar fills. */
+export interface AdultShare {
+  readonly whose: "profile" | "account";
+  readonly label: string;
+  /** "40% used", in the screen's language. */
+  readonly used: string;
+  readonly percent: number;
+}
+
 /**
- * The adult's lines, each a whole phrase: the profile's share and the account's, that the profile
- * checks no work by platform AI once a cap is reached, and when the next family day begins. With
- * no share at all — the tariff has no caps — the one line that platform AI is closed to the account.
+ * What the adult sees of the quota: the profile's share and the account's, that the profile checks
+ * no work by platform AI once a cap is reached, and when the next family day begins. With no share
+ * at all — the tariff has no caps — the one line that platform AI is closed to the account.
  */
-export function adultQuotaTexts(share: QuotaShare, words: Words, now: Date = new Date()): string[] {
+export type AdultQuota =
+  | { readonly closed: string }
+  | {
+      readonly shares: readonly AdultShare[];
+      readonly reached: string | undefined;
+      readonly renews: string | undefined;
+    };
+
+export function adultQuota(share: QuotaShare, words: Words, now: Date = new Date()): AdultQuota {
   const { profilePercent, accountPercent } = share;
   if (profilePercent === undefined && accountPercent === undefined) {
-    return [words.text("quota.closed")];
+    return { closed: words.text("quota.closed") };
   }
-  const percent = (value: number) => ({ percent: percentText(words.language, value) });
-  return [
-    ...(profilePercent === undefined ? [] : [words.text("quota.profile", percent(profilePercent))]),
-    ...(accountPercent === undefined ? [] : [words.text("quota.account", percent(accountPercent))]),
-    ...(share.capReached ? [words.text("quota.reached")] : []),
-    ...(share.nextFamilyDay === undefined
+  const of = (whose: AdultShare["whose"], percent: number | undefined): AdultShare[] =>
+    percent === undefined
       ? []
-      : [dayText(RENEWS, timestampDate(share.nextFamilyDay), words, now)]),
-  ];
+      : [
+          {
+            whose,
+            label: words.text(whose === "profile" ? "quota.this-profile" : "quota.whole-account"),
+            used: words.text("quota.used", { percent: percentText(words.language, percent) }),
+            percent,
+          },
+        ];
+  return {
+    shares: [...of("profile", profilePercent), ...of("account", accountPercent)],
+    reached: share.capReached ? words.text("quota.reached") : undefined,
+    renews:
+      share.nextFamilyDay === undefined
+        ? undefined
+        : dayText(RENEWS, timestampDate(share.nextFamilyDay), words, now),
+  };
 }

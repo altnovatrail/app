@@ -1,11 +1,12 @@
 // A module's skill map on a screen of app: the element <novatrail-skill-map> of skill-map with the
 // map read, in the screen's language — the learner's on the learner's screen, the device's in
-// the section for adults —, its bands' headings at the level the screen gives. The view is the
+// the section for adults —, its tiers' headings at the level the screen gives. The view is the
 // screen's: the learner's, whose Practise sends the skill chosen, or the adult's, which shows more
 // and chooses nothing. The element loads nothing and keeps nothing beyond
 // its memory; a module with no skill graph has no map, and the screen says so. The heading of a
 // map's screen is the module's title, here too.
 import type { SkillMapView } from "@altnovatrail/skill-map";
+import type { CSSProperties } from "react";
 import { Loading, Sk } from "../app/Skeleton.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import type { Words } from "../i18n/words.ts";
@@ -59,27 +60,39 @@ export function ModuleSkillMap({
   );
 }
 
-/** The widths of the tiles of a map's bands while it is read, none alike in a band: their keys. */
+/** The widths of the tiles of a map's tiers while it is read as bands, none alike in a band: their keys. */
 const BANDS = [
   ["7.5rem", "9rem", "6.5rem"],
   ["8.5rem", "7rem"],
   ["6rem", "9.5rem", "8rem", "7rem"],
 ] as const;
 
-/** A map while it is read: its bands' headings and rows of tiles, as the element draws them. */
+/**
+ * A map while it is read, as the element draws it: its tiers' headings and tiles — as columns
+ * where the frame holds three, each tile the column's width, and otherwise as bands whose tiles
+ * wrap, each of its own width.
+ */
 export function MapLoading() {
   return (
-    <Loading>
-      {BANDS.map((tiles) => (
-        <div key={tiles.join()} className="nt-map-loading">
-          <Sk width="8rem" height="1.125rem" radius="0.3125rem" />
-          <div className="nt-map-loading-tiles">
-            {tiles.map((width) => (
-              <Sk key={width} width={width} height="2.75rem" radius="0.5rem" />
-            ))}
+    <Loading className="nt-map-loading-frame">
+      <div className="nt-map-loading-tiers">
+        {BANDS.map((tiles) => (
+          <div key={tiles.join()} className="nt-map-loading">
+            <Sk width="8rem" height="1.125rem" radius="0.3125rem" />
+            <div className="nt-map-loading-tiles">
+              {tiles.map((width) => (
+                <Sk
+                  key={width}
+                  className="nt-map-loading-tile"
+                  height="3.375rem"
+                  radius="1rem"
+                  style={{ "--nt-tile-width": width } as CSSProperties}
+                />
+              ))}
+            </div>
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
     </Loading>
   );
 }

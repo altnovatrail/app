@@ -33,7 +33,8 @@ export type ScreenLayout =
   | "lesson"
   | "task"
   | "end"
-  | "adults"
+  | "settings"
+  | "settings-list"
   | "sheet"
   | "failure";
 
@@ -48,7 +49,8 @@ const LAYOUT_CLASS: Readonly<Record<ScreenLayout, string | undefined>> = {
   lesson: "nt-lesson",
   task: "nt-task-screen",
   end: "nt-end",
-  adults: "nt-adults",
+  settings: "nt-settings",
+  "settings-list": "nt-settings nt-settings-list",
   sheet: "nt-sheet",
   failure: "nt-failure",
 };
@@ -90,10 +92,10 @@ export interface ScreenProps {
    * top bar; `lesson` the whole window, a lesson's segment between its top bar and its row,
    * and `end` a card in the window's middle,
    * the end of a lesson; `task` the whole window, the canvas between the top bar and the row
-   * of glass; `adults` a column of reading under the top bar, a page of the section for
-   * adults; `sheet` a card of 35rem, its top where the mockup's legal text has it, and the
-   * whole screen below 600, and `failure` a card of 28.75rem in the window's middle. Below
-   * 600 each is one column.
+   * of glass; `settings` a page of Settings, the section for adults, its list beside it from 600,
+   * and `settings-list` that list alone, its first page below 600; `sheet` a card of 35rem, its
+   * top where the mockup's legal text has it, and the whole screen below 600, and `failure` a
+   * card of 28.75rem in the window's middle. Below 600 each is one column.
    */
   readonly layout?: ScreenLayout;
   /** What stands in the frame before the heading's column: the sign-in's art, the app's name. */
