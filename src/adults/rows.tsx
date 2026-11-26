@@ -170,10 +170,13 @@ export function SwitchRow({
   readonly busy?: boolean;
   readonly onChange: (on: boolean) => void;
 }) {
+  const id = useId();
   return (
     <label className="nt-set-row">
       <span className="nt-set-text">
-        <span className="nt-set-label">{label}</span>
+        <span id={`${id}-label`} className="nt-set-label">
+          {label}
+        </span>
       </span>
       <input
         type="checkbox"
@@ -181,6 +184,7 @@ export function SwitchRow({
         className="nt-set-input"
         checked={checked}
         aria-checked={checked}
+        aria-labelledby={`${id}-label`}
         aria-describedby={describedBy}
         aria-disabled={busy || undefined}
         onChange={(event) => {
