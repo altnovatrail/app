@@ -75,11 +75,12 @@ import type { Key } from "../i18n/words.ts";
 import { useKeyHolder } from "../ownkey/OwnKeyContext.tsx";
 import { workOf } from "../task/attempt.ts";
 import { closedBy, useOwnVoicing } from "../task/shared.ts";
-import { HintButton, RowLine, VerdictCard } from "../task/TaskLayout.tsx";
+import { type CardTrack, HintButton, RowLine, VerdictCard } from "../task/TaskLayout.tsx";
 import { usePanelFocus, useQuotaLine } from "../task/TutorPanel.tsx";
 import type { Said } from "../tutor/report.ts";
 import { BarButton, fitRow, useBarFit } from "./BarFit.tsx";
 import { numbers, type PageTask } from "./page.ts";
+import { trackNames, watchProgress } from "./progress.ts";
 import { SolveTutor } from "./SolveTutor.tsx";
 import {
   type BegunTask,
@@ -187,6 +188,12 @@ export function Solve({
   const [asked, setAsked] = useState<string | undefined>(undefined);
   const [pending, setPending] = useState(false);
   const [checking, setChecking] = useState(false);
+  // The Check gone on to a later model, while it goes: the card's second step and its track.
+  const [closer, setCloser] = useState<CardTrack | undefined>(undefined);
+  // The attempt the Check under way was sent on, and what stops the questions of its progress.
+  const checkingOn = useRef<string | undefined>(undefined);
+  const stopProgress = useRef<(() => void) | undefined>(undefined);
+  useEffect(() => () => stopProgress.current?.(), []);
   // The sheet's grid the learner turned, kept from task to task of the page while the screen is
   // open: it is the interface's, not the work's, and no store holds it.
   const [grid, setGrid] = useState<PaperGrid | undefined>(undefined);
@@ -269,6 +276,8 @@ export function Solve({
   // biome-ignore lint/correctness/useExhaustiveDependencies: it runs on the task's change alone.
   useEffect(() => {
     hush();
+    stopProgress.current?.();
+    setCloser(undefined);
     epoch.current += 1;
     unasked.current = undefined;
     explainKey.current = undefined;
@@ -878,6 +887,7 @@ export function Solve({
     if (sheet === null) return;
     setPending(true);
     setChecking(true);
+    setCloser(undefined);
     setFailure(undefined);
     setSaid(undefined);
     setCheckSaid(undefined);
@@ -893,6 +903,24 @@ export function Solve({
     // as they are at the press, before the work is read.
     const length = sheet.history.length;
     const tracing = sheet.tracing;
+    stopProgress.current?.();
+    let live = true;
+    const stop = watchProgress(
+      (request, options) => api.attempt.getCheckProgress(request, options),
+      () =>
+        checkingOn.current === undefined ? undefined : { profileId, attemptId: checkingOn.current },
+      (step) =>
+        void trackNames(step.models, narrow).then((names) => {
+          if (!live) return;
+          setCloser({ ...step, names });
+          setTold(words.text("task.reading-closer"));
+        }),
+    );
+    const stopThis = () => {
+      live = false;
+      stop();
+    };
+    stopProgress.current = stopThis;
     void (async () => {
       try {
         const work = await sheet.exportWork();
@@ -908,6 +936,7 @@ export function Solve({
           const of = JSON.stringify([now, length, tracing]);
           if (sent.current?.of !== of) sent.current = { of, key: idempotencyKey() };
           const key = sent.current.key;
+          checkingOn.current = now;
           const answer = await watched(
             api,
             () =>
@@ -977,6 +1006,12 @@ export function Solve({
         setFailure(found);
         closed(found);
       } finally {
+        stopThis();
+        if (stopProgress.current === stopThis) {
+          stopProgress.current = undefined;
+          checkingOn.current = undefined;
+        }
+        setCloser(undefined);
         setPending(false);
         setChecking(false);
         setSpent((n) => n + 1);
@@ -1141,8 +1176,11 @@ export function Solve({
         {open ? null : checking ? (
           <VerdictCard
             kind="reading"
-            title={words.text("task.reading")}
-            line={words.text("task.reading-line")}
+            title={words.text(closer === undefined ? "task.reading" : "task.reading-closer")}
+            line={words.text(
+              closer === undefined ? "task.reading-line" : "task.reading-closer-line",
+            )}
+            track={closer}
           />
         ) : task.verdict === undefined || unwritten ? null : (
           <VerdictCard {...paperCard(task.verdict, words)}>
@@ -1231,6 +1269,7 @@ export function Solve({
         <SolveTutor
           quota={quota}
           checking={checking}
+          closer={closer !== undefined}
           verdict={unwritten ? undefined : task.verdict}
           acts={acts}
           profileId={profileId}

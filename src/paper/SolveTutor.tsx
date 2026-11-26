@@ -30,6 +30,7 @@ import { MAX_QUESTION, type PaperVerdict, paperCard, questionOf, type Turn } fro
 export function SolveTutor({
   quota,
   checking,
+  closer = false,
   verdict,
   acts,
   profileId,
@@ -62,6 +63,8 @@ export function SolveTutor({
   readonly quota: string | undefined;
   /** A Check is being read. */
   readonly checking: boolean;
+  /** The Check went on to a later model, which reads the work more closely. */
+  readonly closer?: boolean;
   /** What the last Check came to, while its verdict stands. */
   readonly verdict: PaperVerdict | undefined;
   /** The buttons at its foot, those of the screen: none on a task only to be looked at. */
@@ -161,8 +164,8 @@ export function SolveTutor({
           {checking ? (
             <VerdictLine
               kind="reading"
-              title={words.text("task.reading")}
-              line={words.text("task.reading-line")}
+              title={words.text(closer ? "task.reading-closer" : "task.reading")}
+              line={words.text(closer ? "task.reading-closer-line" : "task.reading-line")}
             />
           ) : verdict === undefined ? null : (
             <VerdictLine {...paperCard(verdict, words)} />

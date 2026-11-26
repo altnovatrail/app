@@ -22,7 +22,7 @@ import type {
   Media,
 } from "@altnovatrail/spec/canvas";
 import type * as open from "@altnovatrail/spec/formatv0/open";
-import { type ReactNode, type Ref, useMemo } from "react";
+import { Fragment, type ReactNode, type Ref, useMemo } from "react";
 import type { Failure } from "../api/failure.ts";
 import { failureText } from "../api/words.ts";
 import { Icon } from "../app/Icon.tsx";
@@ -326,31 +326,83 @@ const CARD_SIGNS: Readonly<Record<Exclude<CardKind, "reading">, IconValue>> = {
   grown: "grown-up",
 };
 
+/** A reading gone on to a later model: the place of the one that now reads, from 0, of models, and their names for an account with the debug mode. */
+export interface CardTrack {
+  readonly model: number;
+  readonly models: number;
+  readonly names?: readonly string[] | undefined;
+}
+
+/**
+ * The track of the models of a reading, the mockup's: one mark a model, a chevron between — a dot,
+ * or a pill with the model's name where the card has names —, those done grey, the one that reads
+ * the accent with its ring pulsing, those ahead an outline; each steps in after the one before.
+ */
+function ModelTrack({ model, models, names }: CardTrack) {
+  return (
+    <span className="nt-track" aria-hidden="true">
+      {Array.from({ length: models }, (_, place) => ({ place, name: names?.[place] })).map(
+        ({ place, name }) => {
+          const at = place < model ? "done" : place === model ? "now" : "ahead";
+          return (
+            <Fragment key={place}>
+              {place === 0 ? null : (
+                <span className="nt-track-sep" data-at={at}>
+                  <Icon value="more" />
+                </span>
+              )}
+              {name === undefined ? (
+                <span className="nt-track-dot" data-at={at} />
+              ) : (
+                <span className="nt-track-pill" data-at={at}>
+                  {at === "done" ? (
+                    <span className="nt-track-tick">
+                      <Icon value="ticked" />
+                    </span>
+                  ) : null}
+                  {name}
+                </span>
+              )}
+            </Fragment>
+          );
+        },
+      )}
+    </span>
+  );
+}
+
 /**
  * The verdict's card above the row, the mockup's: its sign in a circle of 36, its title and a line
- * under it, and its buttons at its end. It is drawn alone: what a screen reader is told of the
- * verdict is the screen's status line, so that nothing is told twice.
+ * under it, and its buttons at its end. A reading gone on to a later model has its turning ring on
+ * a tinted disc whose ring pulses, and the track of the models under its line. It is drawn alone:
+ * what a screen reader is told of the verdict is the screen's status line, so that nothing is told
+ * twice.
  */
 export function VerdictCard({
   kind,
   title,
   line,
+  track,
   children,
 }: {
   readonly kind: CardKind;
   readonly title: string;
   readonly line?: string | undefined;
+  /** A reading's track, once it went on to a later model. */
+  readonly track?: CardTrack | undefined;
   /** Its buttons. */
   readonly children?: ReactNode;
 }) {
+  const closer = kind === "reading" && track !== undefined;
   return (
-    <div className="nt-card-verdict nt-glass" data-kind={kind}>
+    <div className="nt-card-verdict nt-glass" data-kind={kind} data-closer={closer || undefined}>
       <span className="nt-card-sign" aria-hidden="true">
         {kind === "reading" ? <span className="nt-spin" /> : <Icon value={CARD_SIGNS[kind]} />}
       </span>
       <div className="nt-card-words">
         <span className="nt-card-title">{title}</span>
         {line === undefined || line === "" ? null : <span className="nt-card-line">{line}</span>}
+        {kind === "reading" && track !== undefined ? <ModelTrack {...track} /> : null}
       </div>
       {children}
     </div>
