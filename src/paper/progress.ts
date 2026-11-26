@@ -90,5 +90,11 @@ export async function trackNames(
       : [],
   );
   if (names.length !== models) return undefined;
-  return narrow ? names.map((name) => name.replace(/\s+[\d.]+$/, "")) : names;
+  return narrow ? names.map(withoutVersion) : names;
+}
+
+/** "Haiku" of "Haiku 5.5"; a name whose last word is not a version stays whole. */
+function withoutVersion(name: string): string {
+  const at = name.lastIndexOf(" ");
+  return at > 0 && /^[\d.]+$/.test(name.slice(at + 1)) ? name.slice(0, at).trimEnd() : name;
 }
