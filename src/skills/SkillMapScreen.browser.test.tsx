@@ -350,7 +350,7 @@ describe("a module's map", () => {
     expect(screen.getByRole("region", { name: "Карта навыков: Fair shares" })).toBeVisible();
     const module = screen.getByRole("button", { name: "Модуль: Fair shares" });
     expect(within(module).getByText("Fair shares")).toHaveAttribute("lang", "en");
-    expect(document.title).toBe("Карта навыков: Fair shares — NovaTrail");
+    await expect.poll(() => document.title).toBe("Карта навыков: Fair shares — NovaTrail");
     // The map's own words are Russian, and its bands' headings are below the screen's.
     expect(element.shadowRoot?.querySelector("h2")).not.toBeNull();
     expect(screen.queryByRole("heading", { name: "Модули, которые можно подключить" })).toBeNull();
@@ -645,8 +645,9 @@ describe("a module's map", () => {
           expect(title?.height).toBeLessThan(24);
           expect(title?.bottom).toBeLessThanOrEqual(row.getBoundingClientRect().bottom);
         }
+        // Apart to the subpixel: a row's box may run a hundredth of a pixel into the next's.
         expect(own.getBoundingClientRect().bottom).toBeLessThanOrEqual(
-          other.getBoundingClientRect().top,
+          other.getBoundingClientRect().top + 0.5,
         );
         expect(getComputedStyle(own).backgroundColor).not.toBe(
           getComputedStyle(other).backgroundColor,
