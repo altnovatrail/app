@@ -332,6 +332,32 @@ function Asking({ microphone = true, max = 500 }: { microphone?: boolean; max?: 
 
 const field = () => screen.getByRole("textbox", { name: "Your question about the task" });
 
+/**
+ * A press of the microphone whose sound never comes, the browser saying the microphone is
+ * `state`, read before the press; `then` runs on the page's own timers, faked.
+ */
+async function deafPress(state: PermissionState, then: () => void) {
+  withRecognition(true);
+  FakeRecognition.deaf = true;
+  const query = vi.spyOn(navigator.permissions, "query").mockResolvedValue({
+    state,
+    addEventListener() {},
+    removeEventListener() {},
+  } as never);
+  render(inLanguage(<Asking />));
+  await waitFor(() => expect(query).toHaveBeenCalled());
+  // The answer of the query lands before the press.
+  await Promise.resolve();
+  vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+  try {
+    await userEvent.click(panel().getByRole("button", { name: "Dictate" }));
+    then();
+  } finally {
+    vi.useRealTimers();
+    query.mockRestore();
+  }
+}
+
 describe("the field of the tutor's panel", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
@@ -433,29 +459,13 @@ describe("the field of the tutor's panel", () => {
   });
 
   it("puts away a listening whose sound never comes, the microphone granted, as one that heard nothing", async () => {
-    withRecognition(true);
     reset();
-    FakeRecognition.deaf = true;
-    const query = vi.spyOn(navigator.permissions, "query").mockResolvedValue({
-      state: "granted",
-      addEventListener() {},
-      removeEventListener() {},
-    } as never);
-    render(inLanguage(<Asking />));
-    await waitFor(() => expect(query).toHaveBeenCalled());
-    // The answer of the query lands before the press.
-    await Promise.resolve();
-    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
-    try {
-      await userEvent.click(panel().getByRole("button", { name: "Dictate" }));
+    await deafPress("granted", () => {
       expect(panel().getByRole("status")).toHaveTextContent("Listening…");
       vi.advanceTimersByTime(NO_AUDIO_MS - 1);
       expect(panel().getByRole("status")).toHaveTextContent("Listening…");
       vi.advanceTimersByTime(1);
-    } finally {
-      vi.useRealTimers();
-      query.mockRestore();
-    }
+    });
     expect(await panel().findByText("Nothing was heard. Try again, or type.")).toBeVisible();
     expect(panel().queryByText("Listening…")).toBeNull();
     expect(panel().getByRole("button", { name: "Dictate" })).toBeVisible();
@@ -466,26 +476,11 @@ describe("the field of the tutor's panel", () => {
   });
 
   it("lets a listening wait for its sound while the microphone is not granted yet", async () => {
-    withRecognition(true);
-    FakeRecognition.deaf = true;
-    const query = vi.spyOn(navigator.permissions, "query").mockResolvedValue({
-      state: "prompt",
-      addEventListener() {},
-      removeEventListener() {},
-    } as never);
-    render(inLanguage(<Asking />));
-    await waitFor(() => expect(query).toHaveBeenCalled());
-    await Promise.resolve();
-    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
-    try {
-      await userEvent.click(panel().getByRole("button", { name: "Dictate" }));
+    await deafPress("prompt", () => {
       // A prompt waits for the learner: no timer cuts it short.
       vi.advanceTimersByTime(NO_AUDIO_MS * 3);
       expect(panel().getByRole("status")).toHaveTextContent("Listening…");
-    } finally {
-      vi.useRealTimers();
-      query.mockRestore();
-    }
+    });
   });
 
   it("says why the browser refused, in the journal, and ends as one that heard nothing", async () => {
