@@ -85,7 +85,7 @@ function ModulePicker({
       label={title}
       buttonLabel={words.text("skillmap.module", { module: module.title })}
       className="nt-module-pill"
-      popClassName="nt-pop-menu"
+      popClassName="nt-pop-menu nt-pop-modules"
       gap={BELOW_BAR}
       caption={
         <>

@@ -462,7 +462,6 @@ export function CatalogScreen({
   const unnamed = [...(mine ?? []), ...(more ?? [])].some((card) => card.unnamed === true);
   return (
     <Screen title={words.text("catalog.title")} layout="reference">
-      <p className="nt-home-sub">{words.text("catalog.sub")}</p>
       {failure === undefined ? null : (
         <p role="alert" className="nt-error">
           {failureText(failure, words)}

@@ -1878,11 +1878,6 @@ button.nt-row > svg {
  * tile, its title, its kind, its counts and the squares of its skills, 22 round; the legend of the marks
  * below them from 600, and on a phone a button that opens it as a sheet.
  */
-.nt-home-sub {
-  margin-block: -0.75rem 1.25rem;
-  color: var(--nt-text-muted);
-  font-size: 0.9375rem;
-}
 /*
  * Home's top (the mockup's `home`): one card, white at 0.85, of two halves side by side where
  * each is 500 wide, a rule between them — what comes next, with a sheet in squares at its right,
@@ -2724,9 +2719,6 @@ dialog.nt-pop-legend .nt-legend-items {
     --nt-size-heading: 2rem;
   }
 }
-.nt-shell .nt-home-sub {
-  margin-block: 0.25rem 1.5rem;
-}
 .nt-icon-text {
   display: inline-flex;
   align-items: center;
@@ -3242,6 +3234,16 @@ button.nt-back-link {
   padding-inline: 0.25rem 0.625rem;
   font-size: 0.9375rem;
 }
+/*
+ * The heading and the module's pill centred on each other, and 16 below them to the frame; where the
+ * pill wraps under the heading, it and its pop-over do not sit on the frame's edge.
+ */
+main.nt-map .nt-screen-title {
+  margin-block-end: 1rem;
+}
+.nt-map .nt-screen-title > h1 {
+  margin-block: 0;
+}
 button.nt-module-pill {
   display: inline-flex;
   align-items: center;
@@ -3264,9 +3266,35 @@ button.nt-module-pill {
 .nt-module-tile.nt-tile-pill::before {
   font-size: 0.9375rem;
 }
+/*
+ * The modules connected, the mockup's: 300 wide at least and as wide as the longest title, each a
+ * row of 52 at least with its tile of 34, a title that wraps growing its row. The current one is
+ * told by its fill and its tick, so neither the underline of a pressed button nor the accent edge
+ * of one not pressed.
+ */
+@media (width >= 600px) {
+  dialog.nt-pop.nt-pop-menu.nt-pop-modules {
+    inline-size: max-content;
+    min-inline-size: 18.75rem;
+  }
+}
 button.nt-menu-row.nt-module-row {
+  gap: 0.75rem;
+  block-size: auto;
+  min-block-size: 3.25rem;
+  padding-block: 0.375rem;
+  border-color: transparent;
+  border-radius: 0.75rem;
   color: var(--nt-text);
   font-weight: var(--nt-weight-bold);
+  text-decoration: none;
+}
+button.nt-menu-row.nt-module-row[aria-pressed="true"] {
+  background: rgba(0, 113, 227, 0.08);
+}
+button.nt-module-row > .nt-module-tile.nt-tile-pill {
+  inline-size: 2.125rem;
+  block-size: 2.125rem;
 }
 button.nt-module-row > span[lang] {
   flex: 1 1 auto;
@@ -6738,6 +6766,31 @@ dialog.nt-legal-sheet .nt-legal-body .nt-legal-foot > button.nt-link {
   flex-wrap: wrap;
   gap: 0.5rem;
 }
+/*
+ * The skeleton of a map stands as skill-map does: its tiers as columns where the frame holds three
+ * of 11rem with gaps of 3.5rem, 40rem, and otherwise as bands.
+ */
+.nt-map-loading-frame {
+  container-type: inline-size;
+}
+.nt-map-loading-tile {
+  inline-size: var(--nt-tile-width);
+}
+@container (inline-size >= 40rem) {
+  .nt-map-loading-tiers {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    column-gap: 3.5rem;
+    align-items: start;
+  }
+  .nt-map-loading-tiles {
+    flex-direction: column;
+    flex-wrap: nowrap;
+  }
+  .nt-map-loading-tile {
+    inline-size: 100%;
+  }
+}
 /* A task: its statement under the bar, and its row of glass at the window's foot, in the middle. */
 .nt-task-loading {
   flex: 1 1 auto;
@@ -6916,9 +6969,6 @@ nav.nt-nav button.nt-nav-item[aria-disabled="true"] {
 .nt-shell > main > h1 {
   margin-block: 0 1.25rem;
   line-height: 1.1;
-}
-.nt-shell > main > h1:has(+ .nt-home-sub) {
-  margin-block-end: 0;
 }
 /*
  * The page's screen as the mockup's finding: the sky of Home behind it; the way back a grey

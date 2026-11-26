@@ -273,7 +273,6 @@ export const ru = {
   "nav.grown": "Взрослым",
   "home.screen": "Главная",
   "catalog.title": "Предметы",
-  "catalog.sub": "Модули этого сервера. Подключённый модуль — на главной, с картой навыков",
   "catalog.connected": "Подключены · {count}",
   "catalog.more": "Ещё на этом сервере",
   "catalog.is-connected": "Подключён",
@@ -376,7 +375,7 @@ export const ru = {
   "skillmap.title": "Карта навыков",
   "skillmap.open": "Открыть карту",
   "skillmap.module-title": "Карта навыков: {module}",
-  "skillmap.hint": "Чтобы заняться навыком, нужно открыть его на карте и нажать «Заниматься»",
+  "skillmap.hint": "Нажмите на навык, чтобы увидеть, на чём он строится и что открывает",
   "skillmap.none": "У этого предмета нет карты навыков",
   "skillmap.offered-title": "Модули, которые можно подключить",
   "skillmap.offered-text":

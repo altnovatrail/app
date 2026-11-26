@@ -415,11 +415,10 @@ export const en = {
   /** Home: its title and heading, no pseudonym — the profile's menu has it. */
   "home.screen": "Home",
   /**
-   * Subjects, the catalog of the server: its heading and line, the connected modules by their
+   * Subjects, the catalog of the server: its heading, the connected modules by their
    * count, the others, and a connected module's mark.
    */
   "catalog.title": "Subjects",
-  "catalog.sub": "The modules of this server. A connected one is on Home, with its skill map",
   "catalog.connected": "Connected · {count}",
   "catalog.more": "More on this server",
   "catalog.is-connected": "Connected",
@@ -565,7 +564,7 @@ export const en = {
   /** The heading of a module's map; {module} is the module's title, in its own language. */
   "skillmap.module-title": "Skill map: {module}",
   /** Above a module's map: the map's own button is Practise (skill-map's words). */
-  "skillmap.hint": "To practise a skill, open it on the map and press Practise",
+  "skillmap.hint": "Tap a skill to see what it builds on and what it opens",
   /** A module with no skill graph. */
   "skillmap.none": "This subject has no skill map",
   /** The modules of the catalog that teach the anchor skills whose holding is unknown. */

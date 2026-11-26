@@ -34,7 +34,7 @@ import { Code, ConnectError, type ConnectRouter, createRouterTransport } from "@
 import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import { createRef } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { userEvent } from "vitest/browser";
+import { page, userEvent } from "vitest/browser";
 import { ApiProvider } from "../api/ApiContext.tsx";
 import { createApi } from "../api/client.ts";
 import { SKILL_MAP, SUBJECTS } from "../app/router.ts";
@@ -50,6 +50,7 @@ import { AttemptProvider, useAttempt } from "../task/AttemptContext.tsx";
 import { memoryDevice } from "../test/device.ts";
 import { inLanguage } from "../test/language.tsx";
 import { expectLoaded, expectLoading, held } from "../test/loading.ts";
+import "../theme/theme.css";
 import { moduleMapRoute, SkillMapRoute } from "./SkillMapScreen.tsx";
 
 const SHARES = "example/fair-shares";
@@ -605,6 +606,57 @@ describe("a module's map", () => {
     expect(window.location.hash).toBe(`#/skill-map/${encodeURIComponent(TABLES)}`);
     window.location.hash = "";
   });
+
+  it.each([
+    [1194, 834],
+    [390, 844],
+  ])(
+    "lays the menu at %i wide as the mockup's: rows apart, the current told by its fill and tick, the frame below the pill",
+    async (width, height) => {
+      await page.viewport(width, height);
+      try {
+        await renderMap(moduleMapRoute(SHARES), {
+          connected: [
+            { moduleId: SHARES, packageDigest: D1 },
+            { moduleId: TABLES, packageDigest: D2 },
+          ],
+        });
+        const pill = await screen.findByRole("button", { name: "Module: Fair shares" });
+        const frame = screen.getByRole("region", { name: "Skill map: Fair shares" });
+        expect(
+          frame.getBoundingClientRect().top - pill.getBoundingClientRect().bottom,
+        ).toBeGreaterThanOrEqual(10);
+        const heading = screen.getByRole("heading", { level: 1 }).getBoundingClientRect();
+        const pillBox = pill.getBoundingClientRect();
+        if (pillBox.top < heading.bottom) {
+          expect(
+            Math.abs(pillBox.top + pillBox.height / 2 - (heading.top + heading.height / 2)),
+          ).toBeLessThan(1);
+        }
+        await userEvent.click(pill);
+        const menu = within(await screen.findByRole("dialog", { name: "Connected modules" }));
+        const own = await menu.findByRole("button", { name: /Fair shares/ });
+        const other = await menu.findByRole("button", { name: /Таблица умножения/ });
+        for (const row of [own, other]) {
+          const style = getComputedStyle(row);
+          expect(style.textDecorationLine).toBe("none");
+          expect(style.borderTopColor).toBe("rgba(0, 0, 0, 0)");
+          const title = row.querySelector("span[lang]")?.getBoundingClientRect();
+          expect(title?.height).toBeLessThan(24);
+          expect(title?.bottom).toBeLessThanOrEqual(row.getBoundingClientRect().bottom);
+        }
+        expect(own.getBoundingClientRect().bottom).toBeLessThanOrEqual(
+          other.getBoundingClientRect().top,
+        );
+        expect(getComputedStyle(own).backgroundColor).not.toBe(
+          getComputedStyle(other).backgroundColor,
+        );
+        expect(own.querySelector(".nt-menu-tick")).not.toBeNull();
+      } finally {
+        await page.viewport(414, 896);
+      }
+    },
+  );
 
   it("says a module has no map without a skill graph", async () => {
     await renderMap(moduleMapRoute("example/no-graph"), { maps: [() => ({ packageDigest: D3 })] });

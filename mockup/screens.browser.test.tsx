@@ -2251,6 +2251,9 @@ const SCREENS: readonly Compared[] = [
   ),
   { state: "map", draw: skillMap("Olympiad maths 1–6"), regions: MAP },
   { state: "map-essays", draw: skillMap("Short essays"), regions: MAP },
+  // A skill chosen: its card is skill-map's, at the foot of the window; the head and the frame stay.
+  { state: "map-skill", draw: skillMap("Olympiad maths 1–6"), regions: MAP },
+  { state: "map-skill-locked", draw: skillMap("Olympiad maths 1–6"), regions: MAP },
   {
     state: "task-pill",
     draw: aTask({ mode: "steps" }),
