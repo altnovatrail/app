@@ -1510,10 +1510,10 @@ const MODE_PILL: Region = {
   differs: { what: ["font-size"], by: NO_TEXT },
 };
 
-/** A screen in the frame of the row of places, as App lays it, for the learner Sam. */
+/** A screen in the frame of the row of places, as App lays it, for the learner Sam; its bell tells of the policy's next version. */
 function framed(place: Place, child: ReactNode) {
   return inLanguage(
-    <ApiProvider value={QUIET}>
+    <ApiProvider value={LEGAL_API}>
       <LearnerProvider value={SAM}>
         <div className="nt-shell">
           <ShellBar place={place} />
@@ -1744,7 +1744,7 @@ function subjects() {
   const connected = MODULES.map((card, i) => ({ ...card, ...about[i] }));
   const board: ModuleCard = {
     moduleId: "novatrail/check-board",
-    title: "Tasks on a sheet",
+    title: "Introductory block",
     digest: `sha256:${"4".repeat(64)}`,
     language: "en",
     about: { ...aboutOf("mathematics", []), ageCategories: ["adult"] },
@@ -2342,6 +2342,37 @@ const SETTINGS: readonly Compared[] = [
       await userEvent.click(await screen.findByRole("radio", { name: "Questions only" }));
     },
     regions: profilePage(true),
+  },
+  {
+    state: "settings-unsaved",
+    draw: settings(),
+    settle: async () => {
+      const row = screen.queryByRole("button", { name: "Sam Your profile", current: false });
+      if (document.querySelector(".nt-set-side") === null && row !== null)
+        await userEvent.click(row);
+      await userEvent.click(await screen.findByRole("radio", { name: "Questions only" }));
+      // The phone's page leaves by its way back, the iPad's by the close: the question is the same.
+      const back = document.querySelector<HTMLElement>(".nt-set-back");
+      await userEvent.click(back ?? screen.getByRole("button", { name: "Close the settings" }));
+    },
+    regions: [
+      {
+        name: "the question, Save changes?",
+        mockup: { role: "alertdialog", name: "Save changes?" },
+        app: { role: "alertdialog", name: "Save changes?" },
+        differs: { what: ["font-size"], by: NO_TEXT },
+      },
+      {
+        name: "its Save",
+        mockup: { css: "[role=alertdialog] button:nth-of-type(1)" },
+        app: { css: "[role=alertdialog] button.nt-unsaved-save" },
+      },
+      {
+        name: "its Don’t Save",
+        mockup: { css: "[role=alertdialog] button:nth-of-type(2)" },
+        app: { css: "[role=alertdialog] button.nt-unsaved-drop" },
+      },
+    ],
   },
   {
     state: "settings-device",

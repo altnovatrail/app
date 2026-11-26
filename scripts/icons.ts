@@ -158,6 +158,8 @@ export const TABLE: Readonly<Record<string, Value>> = {
   "set-card": { base: "credit-card", filled: true, mirrored: false },
   "set-lock": { base: "lock", filled: true, mirrored: false },
   "set-limit": { base: "speed", filled: true, mirrored: false },
+  // A notice of the bell of a legal text's next version: a page of text, white on its tile.
+  "bell-text": { base: "description", filled: true, mirrored: false },
   // The hour tutor time renews at, a clock.
   "set-time": { base: "schedule", filled: true, mirrored: false },
 };

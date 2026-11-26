@@ -478,6 +478,12 @@ export const ICONS = {
       "M10.45 15.5q.625.625 1.575.588T13.4 15.4l4.225-6.325q.225-.35-.062-.638t-.638-.062L10.6 12.6q-.65.45-.712 1.363t.562 1.537M5.1 20q-.55 0-1.012-.238t-.738-.712q-.65-1.175-1-2.437T2 14q0-2.075.788-3.9t2.137-3.175T8.1 4.788T12 4q2.05 0 3.85.775T19 6.888t2.15 3.125t.825 3.837q.025 1.375-.312 2.688t-1.038 2.512q-.275.475-.737.713T18.874 20z",
     ],
   },
+  "description-rounded": {
+    viewBox: "0 0 24 24",
+    paths: [
+      "M9 18h6q.425 0 .713-.288T16 17t-.288-.712T15 16H9q-.425 0-.712.288T8 17t.288.713T9 18m0-4h6q.425 0 .713-.288T16 13t-.288-.712T15 12H9q-.425 0-.712.288T8 13t.288.713T9 14m-3 8q-.825 0-1.412-.587T4 20V4q0-.825.588-1.412T6 2h7.175q.4 0 .763.15t.637.425l4.85 4.85q.275.275.425.638t.15.762V20q0 .825-.587 1.413T18 22zm7-14q0 .425.288.713T14 9h4l-5-5z",
+    ],
+  },
   "schedule-outline-rounded": {
     viewBox: "0 0 24 24",
     paths: [
@@ -776,6 +782,11 @@ export const VALUES = {
   },
   "set-lock": { outline: "lock-outline-rounded", filled: "lock-rounded", mirrored: false },
   "set-limit": { outline: "speed-outline-rounded", filled: "speed-rounded", mirrored: false },
+  "bell-text": {
+    outline: "description-outline-rounded",
+    filled: "description-rounded",
+    mirrored: false,
+  },
   "set-time": { outline: "schedule-outline-rounded", filled: "schedule-rounded", mirrored: false },
 } as const satisfies Record<string, { outline: IconName; filled: IconName; mirrored: boolean }>;
 

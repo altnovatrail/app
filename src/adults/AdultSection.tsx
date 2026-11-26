@@ -24,6 +24,7 @@ import { LANGUAGES } from "../i18n/language.ts";
 import { keyed } from "../ownkey/OwnKeyContext.tsx";
 import type { Device } from "../storage/device.ts";
 import { DevicePage } from "./DevicePage.tsx";
+import { LeaveProvider, useLeave } from "./leave.tsx";
 import { OWN_KEY_PAGE, OwnKeyPage } from "./OwnKeyPage.tsx";
 import { inOrder } from "./order.ts";
 import { ProfilePage } from "./ProfilePage.tsx";
@@ -56,6 +57,7 @@ export function SectionList({
   readonly onLegal: () => void;
 }) {
   const { language, words } = useLanguage();
+  const leave = useLeave();
   const sorted = useMemo(() => inOrder(profiles, language), [profiles, language]);
   return (
     <>
@@ -67,7 +69,9 @@ export function SectionList({
             sub={words.text(profile.owner ? "learner.yours" : "choose.learner")}
             lead={<Avatar code={profile.avatar} size="choice" />}
             current={shown === profile.profileId}
-            onPress={() => onProfile(profile)}
+            onPress={() =>
+              shown === profile.profileId ? onProfile(profile) : leave(() => onProfile(profile))
+            }
           />
         ))}
       </Group>
@@ -76,14 +80,14 @@ export function SectionList({
           label={words.text("device.title")}
           lead={<TileIcon icon="set-device" tile="grey" />}
           current={shown === "device"}
-          onPress={() => navigate(DEVICE_PAGE)}
+          onPress={() => leave(() => navigate(DEVICE_PAGE))}
         />
         <LinkRow
           label={words.text("language.title")}
           value={NAMES[language]}
           lead={<TileIcon icon="set-language" tile="blue" />}
           current={shown === "language"}
-          onPress={() => navigate(LANGUAGE_PAGE)}
+          onPress={() => leave(() => navigate(LANGUAGE_PAGE))}
         />
         {/* The own key is the owner's as an adult learner: an account with no such profile has none. */}
         {profiles.some(keyed) ? (
@@ -91,12 +95,12 @@ export function SectionList({
             label={words.text("ownkey.title")}
             lead={<TileIcon icon="set-key" tile="orange" />}
             current={shown === "own-key"}
-            onPress={() => navigate(OWN_KEY_PAGE)}
+            onPress={() => leave(() => navigate(OWN_KEY_PAGE))}
           />
         ) : null}
       </Group>
       <p className="nt-set-foot">
-        <button type="button" className="nt-link" onClick={onLegal}>
+        <button type="button" className="nt-link" onClick={() => leave(onLegal)}>
           {words.text("adults.privacy")}
         </button>
       </p>
@@ -220,8 +224,12 @@ export function AdultSection({
     />
   );
   return (
-    <SectionPlaceProvider value={{ first: page === "", list, ...(up === undefined ? {} : { up }) }}>
-      {shown}
-    </SectionPlaceProvider>
+    <LeaveProvider>
+      <SectionPlaceProvider
+        value={{ first: page === "", list, ...(up === undefined ? {} : { up }) }}
+      >
+        {shown}
+      </SectionPlaceProvider>
+    </LeaveProvider>
   );
 }

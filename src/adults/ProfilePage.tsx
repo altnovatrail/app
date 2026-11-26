@@ -7,7 +7,9 @@
 // was on its way among them. A failure that is the session's own goes to it as well
 // (`onFailed`). Below the form, the storage of the profile's works on the server, a consent of its
 // own, and the share of today's tutor time the profile and the account have used (the contract's
-// quota).
+// quota). While the form holds changes not saved, a press that would leave the page asks first:
+// Save sends them and goes on once they have gone, else stays with why; Don't Save drops them and
+// goes on; Cancel stays.
 import {
   HintMode,
   Mode,
@@ -24,9 +26,11 @@ import { failureText } from "../api/words.ts";
 import { described } from "../app/described.ts";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import type { Device } from "../storage/device.ts";
+import { useHold } from "./leave.tsx";
 import { QuotaSection } from "./QuotaSection.tsx";
 import { ChoiceRow, Group, SegmentsRow, SwitchRow, TickRow } from "./rows.tsx";
 import { SectionScreen } from "./SectionScreen.tsx";
+import { UnsavedDialog } from "./UnsavedDialog.tsx";
 import { WorkStorage } from "./WorkStorage.tsx";
 
 /** What the adult changed on the page and has not saved: the pseudonym as typed. */
@@ -62,6 +66,8 @@ export function ProfilePage({
   const [status, setStatus] = useState<"saved" | "unchanged" | undefined>(undefined);
   const [failure, setFailure] = useState<Failure | undefined>(undefined);
   const [pending, setPending] = useState(false);
+  /** Where a press would have gone, while the page asks whether to save first. */
+  const [leaving, setLeaving] = useState<(() => void) | undefined>(undefined);
   const saved = formOf(profile);
   const pseudonym = edits.pseudonym ?? profile.pseudonym;
   const form: Omit<ProfileForm, "pseudonym"> = {
@@ -77,16 +83,22 @@ export function ProfilePage({
     setStatus(undefined);
   }
 
-  async function submit(event: FormEvent) {
-    event.preventDefault();
+  /** Sends what changed: true once it has gone, or when nothing had changed. */
+  async function send(): Promise<boolean> {
     const name = pseudonymOf(pseudonym);
-    if (pending) return;
+    if (pending) return false;
     setPseudonymError(name === undefined);
     setFailure(undefined);
     setStatus(undefined);
-    if (name === undefined) return pseudonymField.current?.focus();
+    if (name === undefined) {
+      pseudonymField.current?.focus();
+      return false;
+    }
     const settings = changes(profile, { ...form, pseudonym: name });
-    if (settings === undefined) return setStatus("unchanged");
+    if (settings === undefined) {
+      setStatus("unchanged");
+      return true;
+    }
     const sent = edits;
     setPending(true);
     try {
@@ -96,13 +108,20 @@ export function ProfilePage({
       setEdits((now) => unsent(now, sent));
       onSaved(answer.profile);
       setStatus("saved");
+      return true;
     } catch (reason) {
       const failed = parseFailure(reason);
       setFailure(failed);
       onFailed(failed);
+      return false;
     } finally {
       setPending(false);
     }
+  }
+
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    await send();
   }
 
   // Save waits for a change, and says Saved once one has gone and none is new.
@@ -110,6 +129,7 @@ export function ProfilePage({
   const dirty = name === undefined || changes(profile, { ...form, pseudonym: name }) !== undefined;
   const off = pending || !dirty;
   const title = words.text("adults.profile", { pseudonym: profile.pseudonym });
+  useHold(dirty, (go) => setLeaving(() => go));
 
   return (
     <SectionScreen
@@ -232,6 +252,27 @@ export function ProfilePage({
       </form>
       <WorkStorage profile={profile} device={device} onSaved={onSaved} onFailed={onFailed} />
       <QuotaSection profile={profile} />
+      {leaving === undefined ? null : (
+        <UnsavedDialog
+          line={
+            profile.owner
+              ? words.text("adults.unsaved-own")
+              : words.text("adults.unsaved-line", { pseudonym: profile.pseudonym })
+          }
+          onSave={() => {
+            setLeaving(undefined);
+            void send().then((sent) => {
+              if (sent) leaving();
+            });
+          }}
+          onDrop={() => {
+            setLeaving(undefined);
+            setEdits({});
+            leaving();
+          }}
+          onCancel={() => setLeaving(undefined)}
+        />
+      )}
     </SectionScreen>
   );
 }

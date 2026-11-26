@@ -5,7 +5,7 @@
 // — at the end. Below 600 the list is the first page, under its heading and its close, and each
 // other page stands alone under its bar, whose way back leads to the list or to the page above.
 // A page drawn outside the section, as its tests draw one, has neither the list nor the bar's way
-// back.
+// back. A page with changes not saved is asked before the close or the way back leaves it.
 import { createContext, type ReactNode, useContext } from "react";
 import { Icon } from "../app/Icon.tsx";
 import { IconButton } from "../app/IconButton.tsx";
@@ -13,6 +13,7 @@ import { useNarrow } from "../app/narrow.ts";
 import { ADULTS, HOME, navigate, type Route } from "../app/router.ts";
 import { Screen } from "../app/Screen.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
+import { useLeave } from "./leave.tsx";
 
 /** Where a page stands in the section: the list, a page of it, or a page under one of those. */
 export interface SectionPlace {
@@ -38,9 +39,14 @@ export interface SectionScreenProps {
 
 /** The close of the section: home, as from any page of it. */
 function Close() {
+  const leave = useLeave();
   return (
     <div className="nt-top-close nt-glass">
-      <IconButton value="close" caption="adults.close" onClick={() => navigate(HOME)} />
+      <IconButton
+        value="close"
+        caption="adults.close"
+        onClick={() => leave(() => navigate(HOME))}
+      />
     </div>
   );
 }
@@ -49,6 +55,7 @@ export function SectionScreen({ title, action, children }: SectionScreenProps) {
   const { words } = useLanguage();
   const place = useContext(Place);
   const narrow = useNarrow();
+  const leave = useLeave();
   if (place === undefined) {
     return (
       <Screen title={title} layout="settings" head={{ close: action }}>
@@ -89,7 +96,7 @@ export function SectionScreen({ title, action, children }: SectionScreenProps) {
               type="button"
               className="nt-set-back"
               aria-label={words.text("adults.back-to", { name: up.name })}
-              onClick={() => navigate(up.route)}
+              onClick={() => leave(() => navigate(up.route))}
             >
               <span className="nt-set-back-icon">
                 <Icon value="back" />

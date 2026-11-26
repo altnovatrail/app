@@ -1,10 +1,16 @@
 // The frame of Home, Subjects and the skill map, as the mockup's `home`: from 600
 // CSS px a row at the top — at its left a pill of the places, Home and Subjects, the cognitive map
 // shut with "Soon" until it comes; at its right a pill of the tutor, shut until it comes too, the
-// notifications and the profile's menu, which holds Settings and Help —, on a phone the three places as a tab bar at the
+// notifications — the next versions of the legal texts — and the profile's menu, which holds Settings and Help —, on a phone the three places as a tab bar at the
 // bottom and the mark at the top left. A place is a link of the hash, the page shown marked as
 // current.
+import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useLearner } from "../account/AccountGate.tsx";
+import { useRequest } from "../api/ApiContext.tsx";
+import type { Api } from "../api/client.ts";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
+import { nextPage } from "../legal/LegalPages.tsx";
+import { dayText, pageNext, readLegal, versionsOf } from "../legal/texts.ts";
 import { Spark } from "./Brand.tsx";
 import { BELOW_BAR } from "./hang.ts";
 import { formatHash } from "./hash.ts";
@@ -83,29 +89,129 @@ function ShutPlace() {
   );
 }
 
+/** Where this device keeps the notices the bell has shown: a text's ID and version each. */
+const SEEN = "novatrail.bell.seen";
+
+function seenHere(): readonly string[] {
+  try {
+    const kept: unknown = JSON.parse(window.localStorage.getItem(SEEN) ?? "[]");
+    return Array.isArray(kept) ? kept.filter((each) => typeof each === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+function keepSeen(seen: readonly string[]): void {
+  try {
+    window.localStorage.setItem(SEEN, JSON.stringify(seen));
+  } catch {
+    // A device that keeps nothing shows the dot again next time; nothing else depends on it.
+  }
+}
+
+/** Marks what the bell shows as seen once its pop-over is open. */
+function Seen({ onSeen }: { readonly onSeen: () => void }) {
+  const seen = useRef(onSeen);
+  useEffect(() => seen.current(), []);
+  return null;
+}
+
 /**
- * The notifications: the place for them, a bell of spec's closed list of icon buttons; nothing sends
- * one yet.
+ * The notifications, a bell of spec's closed list of icon buttons: the next version of each legal
+ * text that is a page, with the day it applies from, the version in force till then and the way to
+ * its page, and, while a profile of the account keeps its works on the server, that this can be
+ * turned off in Settings before then. A red dot, and the button's description, while a notice is
+ * one this device has not shown; opened, the dot goes. An api that gives no next version, or a
+ * read that failed, leaves "Nothing new yet".
  */
 export function Bell() {
-  const { words } = useLanguage();
+  const { language, words } = useLanguage();
+  const chosen = useLearner();
+  const id = useId();
+  const read = useCallback(
+    async (api: Api) => {
+      const legal = await readLegal(api, language);
+      return pageNext(legal.next).map((next) => ({
+        next,
+        current: versionsOf(legal, next.id).current,
+      }));
+    },
+    [language],
+  );
+  const answer = useRequest(read);
+  const news = answer.status === "done" ? answer.value : [];
+  const keys = news.map(({ next }) => `${next.id}@${next.version}`);
+  const [seen, setSeen] = useState(seenHere);
+  const fresh = keys.filter((key) => !seen.includes(key)).length;
+  const see = () => {
+    const all = [...new Set([...seenHere(), ...keys])];
+    keepSeen(all);
+    setSeen(all);
+  };
   return (
-    <PopOver
-      icon="notifications"
-      label={words.text("bell.title")}
-      className="nt-top-round"
-      popClassName="nt-pop-bell"
-      gap={BELOW_BAR}
-    >
-      <h2 className="nt-pop-heading">{words.text("bell.title")}</h2>
-      <div className="nt-bell-none">
-        <span className="nt-bell-sign">
-          <Icon value="notifications" />
+    <>
+      <PopOver
+        icon="notifications"
+        label={words.text("bell.title")}
+        className={fresh > 0 ? "nt-top-round nt-bell-new" : "nt-top-round"}
+        describedBy={fresh > 0 ? `${id}-new` : undefined}
+        popClassName="nt-pop-bell"
+        gap={BELOW_BAR}
+      >
+        <h2 className="nt-pop-heading">{words.text("bell.title")}</h2>
+        {news.length === 0 ? (
+          <div className="nt-bell-none">
+            <span className="nt-bell-sign">
+              <Icon value="notifications" />
+            </span>
+            <b>{words.text("bell.none")}</b>
+            <span>{words.text("bell.later")}</span>
+          </div>
+        ) : (
+          <>
+            <Seen onSeen={see} />
+            {news.map(({ next, current }) => {
+              const name = words.text(`legal.${next.id}`);
+              const version = String(next.version);
+              return (
+                <div key={next.id} className="nt-bell-item">
+                  <span className="nt-bell-tile">
+                    <Icon value="bell-text" />
+                  </span>
+                  <span className="nt-bell-text">
+                    <b>{words.text("bell.next-title", { text: name, version })}</b>
+                    <span>
+                      {words.text("bell.next-when", {
+                        date: dayText(language, next.inForceSince),
+                      })}
+                      {current === undefined
+                        ? null
+                        : ` ${words.text("bell.next-until", { version: String(current.version) })}`}
+                    </span>
+                    {chosen?.storing === true ? (
+                      <span>{words.text("bell.next-storage")}</span>
+                    ) : null}
+                    <button
+                      type="button"
+                      className="nt-bell-read"
+                      aria-label={words.text("legal.next-open", { text: name, version })}
+                      onClick={() => chosen?.openLegal(nextPage(next.id))}
+                    >
+                      {words.text("legal.next-read", { version })}
+                    </button>
+                  </span>
+                </div>
+              );
+            })}
+          </>
+        )}
+      </PopOver>
+      {fresh > 0 ? (
+        <span id={`${id}-new`} hidden>
+          {words.text("bell.new", { count: String(fresh) })}
         </span>
-        <b>{words.text("bell.none")}</b>
-        <span>{words.text("bell.later")}</span>
-      </div>
-    </PopOver>
+      ) : null}
+    </>
   );
 }
 

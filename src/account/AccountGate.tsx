@@ -68,6 +68,8 @@ export interface Learner {
   readonly onSaved: (profile: Profile) => void;
   /** A request of a learner's screen about the profile did not go through. */
   readonly onFailed: (failure: Failure) => void;
+  /** A profile of the account keeps its works on the server: the bell says it can be turned off. */
+  readonly storing?: boolean;
 }
 
 const LearnerContext = createContext<Learner | undefined>(undefined);
@@ -256,6 +258,7 @@ export function AccountGate({ children }: { readonly children: ReactNode }) {
               openLegal: (page) => openLegal(HOME, page),
               onSaved,
               onFailed,
+              storing: state.account.profiles.some((each) => each.workStorage),
             }}
           >
             {children}

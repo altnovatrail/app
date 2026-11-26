@@ -4,7 +4,7 @@
 // and its form — the avatar changed by its pop-over, the mode and the language chosen in a pop-over,
 // only what changed goes to UpdateProfile, nothing when nothing did, the pseudonym checked first, a
 // failure said, the language the build does not have named —, what another tab saved meanwhile,
-// and the next versions of the legal texts under the list, with api on connect-es's router.
+// and the question when a press would leave changes not saved, with api on connect-es's router.
 import {
   AccountService,
   HintMode,
@@ -15,11 +15,6 @@ import {
   VoicingSpeed,
 } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import { Cause, RefusalSchema } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
-import {
-  LegalService,
-  type LegalText,
-  LegalTextSchema,
-} from "@altnovatrail/contracts/novatrail/api/v1/legal_pb.js";
 import { create, type MessageInitShape } from "@bufbuild/protobuf";
 import { Code, ConnectError, type ConnectRouter, createRouterTransport } from "@connectrpc/connect";
 import { render, screen, within } from "@testing-library/react";
@@ -29,7 +24,6 @@ import { ApiProvider } from "../api/ApiContext.tsx";
 import { createApi } from "../api/client.ts";
 import type { Failure } from "../api/failure.ts";
 import type { Route } from "../app/hash.ts";
-import { NextVersions } from "../legal/NextVersions.tsx";
 import { memoryDevice } from "../test/device.ts";
 import { inLanguage } from "../test/language.tsx";
 import { AdultSection } from "./AdultSection.tsx";
@@ -272,83 +266,6 @@ describe("the section's first page", () => {
     expect(await screen.findByRole("button", { name: "Privacy" })).toBeTruthy();
     expect(screen.queryByRole("heading", { name: "New versions of the texts" })).toBeNull();
   });
-
-  it("the notice of next versions tells of them, and that a profile's storage can be switched off first", async () => {
-    const next = create(LegalTextSchema, {
-      id: "privacy-policy",
-      version: 3,
-      inForceSince: "2026-11-27",
-      body: "# Privacy policy\n\nText.\n",
-      summary: "In short.",
-      summaryLanguage: "en",
-    });
-    const opened: (Route | undefined)[] = [];
-    let reads = 0;
-    const first = (profiles: Profile[], nextTexts: LegalText[] | Error) => {
-      const api = createApi({
-        baseUrl: "https://api.example.org",
-        tokens: { token: async () => "t", signOut: async () => {} },
-        on: { stale: () => {}, accountGone: async () => {}, noAccess: async () => {} },
-        sleep: async () => {},
-        transport: (interceptors) =>
-          createRouterTransport(
-            (router: ConnectRouter) =>
-              router.service(LegalService, {
-                getLegalTexts() {
-                  reads += 1;
-                  if (nextTexts instanceof Error) throw nextTexts;
-                  return { texts: [], nextTexts };
-                },
-              }),
-            { transport: { interceptors } },
-          ),
-      });
-      return render(
-        inLanguage(
-          <ApiProvider value={api}>
-            <NextVersions
-              storing={profiles.some((each) => each.workStorage)}
-              onRead={(page) => opened.push(page)}
-            />
-          </ApiProvider>,
-        ),
-      );
-    };
-    first([profile(), profile({ profileId: "p2", owner: false, workStorage: true })], [next]);
-    expect(
-      await screen.findByRole("heading", { level: 2, name: "New versions of the texts" }),
-    ).toBeTruthy();
-    const read = screen.getByRole("button", { name: "Read Privacy Policy, version 3" });
-    expect(read).toHaveAccessibleDescription(
-      "Privacy Policy: version 3 applies from November 27, 2026",
-    );
-    expect(screen.getByText(/Keeping works on the server is on for a profile/)).toBeTruthy();
-    await userEvent.click(read);
-    expect(opened).toEqual([{ screen: "legal", parts: ["privacy-policy", "next"] }]);
-    document.body.innerHTML = "";
-    // No profile keeps its works on the server: nothing to switch off. Two texts whose next
-    // versions have one number, each in the order of the pages, each button named by its text.
-    first([profile()], [{ ...next, id: "terms-of-use" }, next]);
-    expect(
-      await screen.findByRole("button", { name: "Read Privacy Policy, version 3" }),
-    ).toBeTruthy();
-    expect(
-      screen.getAllByRole("button", { name: /, version 3$/ }).map((each) => each.textContent),
-    ).toEqual(["Read Privacy Policy, version 3", "Read Terms of Use, version 3"]);
-    expect(screen.queryByText(/Keeping works on the server is on/)).toBeNull();
-    document.body.innerHTML = "";
-    // No next version, or a read that failed: no part at all, and no Try again.
-    for (const none of [[], new ConnectError("broken", Code.Internal)]) {
-      const before = reads;
-      first([profile({ workStorage: true })], none);
-      await vi.waitFor(() => expect(reads).toBeGreaterThan(before));
-      // The answer, or the failure, has come to the page.
-      await new Promise((settled) => setTimeout(settled, 50));
-      expect(screen.queryByRole("heading", { name: "New versions of the texts" })).toBeNull();
-      expect(screen.queryByRole("button", { name: "Try again" })).toBeNull();
-      document.body.innerHTML = "";
-    }
-  });
 });
 
 describe("a profile's page", () => {
@@ -500,5 +417,91 @@ describe("a profile's page", () => {
     ).toHaveAccessibleDescription(
       "Each task begins in it. The learner can switch it on the task screen",
     );
+  });
+});
+
+describe("leaving a profile's page with changes not saved", () => {
+  function section(answer: (request: UpdateProfileRequest) => Profile | Promise<Profile>) {
+    window.location.hash = "#/adults";
+    const { api, asked } = apiOf(answer);
+    const profiles = [profile(), profile({ profileId: "p2", owner: false, pseudonym: "Аня" })];
+    render(
+      inLanguage(
+        <ApiProvider value={api}>
+          <AdultSection
+            route={{ screen: "adults", parts: [] }}
+            device={memoryDevice().device}
+            profiles={profiles}
+            onSaved={() => {}}
+            onFailed={() => {}}
+            onEraseAll={async () => "erased"}
+            onLegal={() => {}}
+          />
+        </ApiProvider>,
+      ),
+    );
+    return { asked };
+  }
+  const question = () => screen.queryByRole("alertdialog", { name: "Save changes?" });
+  const voicing = () => screen.getByRole("switch", { name: "Read the tutor's words aloud" });
+
+  it("goes with nothing asked when nothing changed", async () => {
+    section(() => profile());
+    await userEvent.click(screen.getByRole("button", { name: "Close the settings" }));
+    expect(question()).toBeNull();
+    expect(window.location.hash).toBe("#/home");
+  });
+
+  it("asks at the close; Cancel stays, the change kept and the focus back on the close", async () => {
+    const { asked } = section(() => profile());
+    await userEvent.click(voicing());
+    const close = screen.getByRole("button", { name: "Close the settings" });
+    await userEvent.click(close);
+    const asking = question() as HTMLElement;
+    expect(asking).toHaveAccessibleDescription("The changes to your profile are not saved yet.");
+    expect(window.location.hash).toBe("#/adults");
+    await userEvent.click(within(asking).getByRole("button", { name: "Cancel" }));
+    expect(question()).toBeNull();
+    expect(window.location.hash).toBe("#/adults");
+    expect(voicing()).toBeChecked();
+    expect(document.activeElement).toBe(close);
+    expect(asked).toEqual([]);
+  });
+
+  it("Don't Save drops the change and goes on", async () => {
+    const { asked } = section(() => profile());
+    await userEvent.click(voicing());
+    await userEvent.click(screen.getByRole("button", { name: "Language English" }));
+    await userEvent.click(screen.getByRole("button", { name: "Don't Save" }));
+    expect(window.location.hash).toBe("#/adults/language");
+    expect(asked).toEqual([]);
+  });
+
+  it("Save from another profile's row sends the change, then goes there", async () => {
+    const { asked } = section((request) =>
+      profile({
+        presentationStyle: { voicing: { enabled: true, speed: VoicingSpeed.NORMAL } },
+        profileId: request.profileId,
+      }),
+    );
+    await userEvent.click(voicing());
+    await userEvent.click(screen.getByRole("button", { name: /^Аня / }));
+    await userEvent.click(within(question() as HTMLElement).getByRole("button", { name: "Save" }));
+    await vi.waitFor(() => expect(window.location.hash).toBe("#/adults/profile"));
+    expect(asked).toHaveLength(1);
+    expect(asked[0]?.settings?.voicing).toMatchObject({ enabled: true });
+  });
+
+  it("Save that does not go through stays, and says why", async () => {
+    const { asked } = section(() => {
+      throw new ConnectError("refused", Code.InvalidArgument);
+    });
+    await userEvent.click(voicing());
+    await userEvent.click(screen.getByRole("button", { name: "Close the settings" }));
+    await userEvent.click(within(question() as HTMLElement).getByRole("button", { name: "Save" }));
+    await vi.waitFor(() => expect(screen.getByRole("alert")).toBeTruthy());
+    expect(window.location.hash).toBe("#/adults");
+    expect(asked).toHaveLength(1);
+    expect(question()).toBeNull();
   });
 });

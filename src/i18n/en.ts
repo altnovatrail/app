@@ -202,14 +202,8 @@ export const en = {
   "legal.current-read": "Read the version in force",
   /** In the title of a next version shown in place, after the text's own title. */
   "legal.next-summary": "version {version}, applies from {date}",
-  /** After signing in, on the choice of the learner and in the section for adults. */
-  "legal.next-title": "New versions of the texts",
-  /** {text} is the text's name. */
-  "legal.next-line": "{text}: version {version} applies from {date}",
   /** Its button, which names the text too: two texts may have next versions of one number. */
   "legal.next-open": "Read {text}, version {version}",
-  "legal.next-storage":
-    "Keeping works on the server is on for a profile of this account. Before the new version applies, you can switch it off on the profile's page in the section for adults",
   /** On the page Who runs this copy: which version of the policy the section is from. */
   "legal.operator-from": "From the Privacy Policy, version {version}, in force since {date}",
   "legal.operator-none": "This copy's privacy policy has no section on who runs it",
@@ -425,6 +419,14 @@ export const en = {
   "bell.title": "Notifications",
   "bell.none": "Nothing new yet",
   "bell.later": "Notifications will appear here",
+  /** The bell's description while it holds notices this device has not shown. */
+  "bell.new": "{count} new",
+  /** A notice of a legal text's next version: its name, when it applies, what is in force till then. */
+  "bell.next-title": "{text}: version {version}",
+  "bell.next-when": "Applies from {date}.",
+  "bell.next-until": "Until then, version {version} is in force.",
+  "bell.next-storage":
+    "A profile keeps its works on the server: if you don't agree, turn that off in Settings before that day.",
   /** The tooltip of the tutor's button at the top right of Home, shut until the tutor comes there. */
   "tutor-home.later": "Tutor — comes later",
   /** The heading of the learner's home: the modules connected to the profile. */
@@ -824,6 +826,11 @@ export const en = {
   "adults.saved": "Saved",
   /** Save with nothing changed: nothing is asked. */
   "adults.unchanged": "Nothing has changed",
+  /** A press would leave a profile's page with changes not saved: the question, its line, Don't Save. */
+  "adults.unsaved-title": "Save changes?",
+  "adults.unsaved-own": "The changes to your profile are not saved yet.",
+  "adults.unsaved-line": "The changes to {pseudonym}'s profile are not saved yet.",
+  "adults.unsaved-drop": "Don't Save",
   /** The storage of a profile's works on the server, on the profile's page. */
   "storage.title": "Keeping works on the server",
   "storage.on": "Keeping this profile's works on the server is on",
