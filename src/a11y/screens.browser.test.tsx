@@ -107,8 +107,8 @@ const CHOSEN = {
   onFailed: () => {},
 };
 
-/** Home with nothing connected, in the frame of its bar, and a press on a button of the bar. */
-function homeWith(button: string): [() => ReactNode, () => Promise<void>] {
+/** Home with nothing connected, in the frame of its bar, and presses on buttons of the bar and its menu, in order. */
+function homeWith(...buttons: string[]): [() => ReactNode, () => Promise<void>] {
   return [
     () => (
       <ApiProvider value={{} as Api}>
@@ -121,7 +121,8 @@ function homeWith(button: string): [() => ReactNode, () => Promise<void>] {
       </ApiProvider>
     ),
     async () => {
-      await userEvent.click(document.querySelector(button) as HTMLElement);
+      for (const button of buttons)
+        await userEvent.click(document.querySelector(button) as HTMLElement);
       await expect.element(page.getByRole("dialog")).toBeVisible();
     },
   ];
@@ -813,7 +814,14 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
       </LearnerProvider>
     ),
   ],
-  ["Home with the adult's Help open", ...homeWith(".nt-nav > .nt-tip-host:last-of-type > button")],
+  [
+    "Home with the adult's Help open",
+    // Help is the second row that leads further, after Settings.
+    ...homeWith(
+      "button.nt-learner-pill",
+      ".nt-menu-row:has(.nt-menu-more) ~ .nt-menu-row:has(.nt-menu-more)",
+    ),
+  ],
   ["Home with the profile's menu open", ...homeWith("button.nt-learner-pill")],
   [
     "Home with a task in progress",

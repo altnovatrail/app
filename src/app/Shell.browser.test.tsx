@@ -1,5 +1,5 @@
-// The frame of Home: For grown-ups leads to This device, the tutor's panel to the attempt
-// open and to a task from paper, the bell says that nothing is new, and a place that shows its icon
+// The frame of Home: the places alone in its row, Settings in the profile's menu leading to the
+// section for adults, the tutor's panel to the attempt open and to a task from paper, the bell says that nothing is new, and a place that shows its icon
 // alone, from 600 CSS px to 72em, is named by a tooltip of its words.
 
 import { ProfileSchema } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
@@ -8,14 +8,13 @@ import { cleanup, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import { page, userEvent } from "vitest/browser";
 import { type Learner, LearnerProvider } from "../account/AccountGate.tsx";
-import { DEVICE_PAGE } from "../adults/AdultSection.tsx";
 import { ApiProvider } from "../api/ApiContext.tsx";
 import type { Api } from "../api/client.ts";
 import { AttemptProvider } from "../task/AttemptContext.tsx";
 import { inLanguage } from "../test/language.tsx";
 import "../theme/theme.css";
 import { formatHash } from "./hash.ts";
-import { PAPER, TASK } from "./router.ts";
+import { ADULTS, PAPER, TASK } from "./router.ts";
 import { ShellBar } from "./Shell.tsx";
 import { TIP_DELAY_MS } from "./Tooltip.tsx";
 
@@ -58,12 +57,18 @@ afterEach(async () => {
 });
 
 describe("the frame of Home", () => {
-  it("leads from For grown-ups to This device, the pop-over closed", async () => {
+  it("holds the places alone, Settings in the profile's menu leading to the section, the menu closed", async () => {
     renderBar();
-    await userEvent.click(screen.getByRole("button", { name: "Grown-ups" }));
-    const grown = within(screen.getByRole("dialog", { name: "For grown-ups" }));
-    await userEvent.click(grown.getByRole("button", { name: "This device" }));
-    expect(window.location.hash).toBe(formatHash(DEVICE_PAGE));
+    const nav = within(screen.getByRole("navigation", { name: "Main" }));
+    expect(
+      [...nav.queryAllByRole("link"), ...nav.queryAllByRole("button")].map(
+        (place) => place.getAttribute("aria-label") ?? place.textContent,
+      ),
+    ).toEqual(["Home", "Subjects", "Cognitive map Soon"]);
+    await userEvent.click(screen.getByRole("button", { name: "Sam, profile menu" }));
+    const menu = within(screen.getByRole("dialog", { name: "Profile menu" }));
+    await userEvent.click(menu.getByRole("button", { name: "Settings" }));
+    expect(window.location.hash).toBe(formatHash(ADULTS));
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 
@@ -118,7 +123,7 @@ describe("the frame of Home", () => {
     await userEvent.keyboard("{Escape}");
     await expect.poll(() => document.querySelector(".nt-tooltip")).toBeNull();
     await userEvent.unhover(shut);
-    await userEvent.hover(screen.getByRole("button", { name: "Grown-ups" }));
+    await userEvent.hover(screen.getByRole("link", { name: "Subjects" }));
     await new Promise((done) => setTimeout(done, TIP_DELAY_MS + 100));
     expect(document.querySelector(".nt-tooltip")).toBeNull();
   });

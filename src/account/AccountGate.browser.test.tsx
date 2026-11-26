@@ -97,30 +97,26 @@ async function inMenu(name: string): Promise<HTMLElement> {
   return within(await screen.findByRole("dialog")).findByRole("button", { name });
 }
 
-/** The words of For grown-ups in the top bar: its place, and the row that opens the section. */
+/** The words of the way to the section: the profile's pill, and Settings in its menu. */
 const GROWN_UPS = {
-  en: { place: "Grown-ups", section: "All settings" },
-  ru: { place: "Взрослым", section: "Все настройки" },
+  en: { pill: /, profile menu$/, section: "Settings" },
+  ru: { pill: /, меню профиля$/, section: "Настройки" },
 } as const;
 
 /**
- * The section for adults from the top bar of Home, Subjects and the skill map: the place
- * For grown-ups is pressed, and the section's row in the pop-over it opens, in the profile's
- * language.
+ * The section for adults from the top bar of Home, Subjects and the skill map: the profile's pill
+ * is pressed, and Settings in the menu it opens, in the profile's language.
  */
 async function grownUps(language: keyof typeof GROWN_UPS = "en"): Promise<void> {
-  const { place, section } = GROWN_UPS[language];
-  await userEvent.click(await screen.findByRole("button", { name: place }));
+  const { pill, section } = GROWN_UPS[language];
+  await userEvent.click(await screen.findByRole("button", { name: pill }));
   const pop = within(await screen.findByRole("dialog"));
-  const row = await pop.findByRole("button", { name: section });
-  // Sign out is the profile's menu's alone, not again here.
-  expect(pop.queryByRole("button", { name: /^(Sign out|Выйти)$/ })).toBeNull();
-  await userEvent.click(row);
+  await userEvent.click(await pop.findByRole("button", { name: section }));
 }
 
 /**
  * Opens the section for adults as the adult does since the choice of the learner has no way to it:
- * the first profile chosen, then the section from For grown-ups, in the profile's language.
+ * the first profile chosen, then the section from Settings in the profile's menu, in the profile's language.
  */
 async function toAdults(language: keyof typeof GROWN_UPS = "en"): Promise<void> {
   await vi.waitFor(() => expect(document.querySelector(".nt-learners button")).not.toBeNull());
@@ -832,7 +828,7 @@ describe("the section for adults", () => {
     window.location.hash = "";
   });
 
-  it("opens from For grown-ups in the top bar, saves what changed, and the learner's screens take it", async () => {
+  it("opens from Settings in the profile's menu, saves what changed, and the learner's screens take it", async () => {
     const service = fakeSignIn("uid-1");
     const account = { accountId: "account-1", profiles: [OWNER] };
     const updates: ReturnType<typeof fromBinary<typeof UpdateProfileRequestSchema>>[] = [];
@@ -852,7 +848,7 @@ describe("the section for adults", () => {
       service,
     );
 
-    // From For grown-ups, the section in the device's language.
+    // From Settings, the section in the device's language.
     await toAdults();
     expect(await screen.findByRole("heading", { level: 1, name: "For grown-ups" })).toBeTruthy();
     expect(window.location.hash).toBe("#/adults");
@@ -886,7 +882,7 @@ describe("the section for adults", () => {
     // The learner's screens in the profile's language, the page's language with them.
     expect(await screen.findByRole("heading", { level: 1, name: "Главная" })).toBeTruthy();
     expect(document.documentElement.lang).toBe("ru");
-    // From For grown-ups again, back to the device's language.
+    // From Settings again, back to the device's language.
     await grownUps("ru");
     expect(await screen.findByRole("heading", { level: 1, name: "For grown-ups" })).toBeTruthy();
     expect(document.documentElement.lang).toBe("en");
@@ -1025,6 +1021,7 @@ describe("the legal pages", () => {
     const account = { accountId: "account-1", profiles: [OWNER] };
     renderApp({ getAccount: () => message(GetAccountResponseSchema, { account }) }, service);
     await userEvent.click(await screen.findByRole("button", { name: "Ёжик" }));
+    await userEvent.click(await screen.findByRole("button", { name: /, profile menu$/ }));
     await userEvent.click(await screen.findByRole("button", { name: "Help" }));
     await userEvent.click(await screen.findByRole("button", { name: "Accessibility" }));
     expect(await screen.findByRole("heading", { level: 1, name: "Accessibility" })).toBeTruthy();
@@ -1110,7 +1107,7 @@ describe("the own key", () => {
       },
       service,
     );
-    // From For grown-ups, the owner profile chosen, which holds the key.
+    // From Settings, the owner profile chosen, which holds the key.
     await toAdults();
     await userEvent.click(await screen.findByRole("button", { name: "Set up an own AI key" }));
     // A synthetic key: no provider issued it.

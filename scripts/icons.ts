@@ -55,10 +55,9 @@ export const TABLE: Readonly<Record<string, Value>> = {
   // Help, filled while its pop-over is open; the tutor's button, a bubble of words.
   help: { base: "help", filled: true, mirrored: false },
   tutor: { base: "sms", filled: false, mirrored: false },
-  // The way into the app: the group of "For grown-ups" in the profile's menu; "Signed in
-  // with Google" and the country chosen, a tick; the row that opens the countries, a chevron that
-  // points on; "Add a learner", a plus; the pill of the sign-in's language, a globe.
-  grown: { base: "group", filled: false, mirrored: false },
+  // The way into the app: "Signed in with Google" and the country chosen, a tick; a row that leads
+  // on — the countries, Settings and Help in the profile's menu —, a chevron that points on; "Add a
+  // learner", a plus; the pill of the sign-in's language, a globe.
   language: { base: "language", filled: false, mirrored: false },
   ticked: { base: "check", filled: false, mirrored: false },
   more: { base: "chevron-right", filled: false, mirrored: true },
@@ -124,16 +123,13 @@ export const TABLE: Readonly<Record<string, Value>> = {
   microphone: { base: "mic", filled: false, mirrored: false },
   stop: { base: "stop", filled: false, mirrored: false },
   // The row of places of Home, Subjects and the skill map, and the phone's tab bar: Home,
-  // four squares, filled while it is the place; Subjects, a book; the cognitive map, a hub, shut;
-  // For grown-ups, a padlock. Help is the bar's. At the top right the notifications, a bell; in
-  // For grown-ups This device and the section's other settings; on Subjects a module's skill map,
-  // a tree of nodes.
+  // four squares, filled while it is the place; Subjects, a book; the cognitive map, a hub, shut.
+  // At the top right the notifications, a bell; in the profile's menu Settings, the section for
+  // adults; on Subjects a module's skill map, a tree of nodes.
   "nav-home": { base: "grid-view", filled: true, mirrored: false },
   "nav-subjects": { base: "menu-book", filled: true, mirrored: false },
   "nav-cognitive": { base: "hub", filled: false, mirrored: false },
-  "nav-grown": { base: "lock", filled: true, mirrored: false },
   notifications: { base: "notifications", filled: true, mirrored: false },
-  device: { base: "tablet-android", filled: false, mirrored: false },
   settings: { base: "settings", filled: false, mirrored: false },
   "skill-map": { base: "account-tree", filled: false, mirrored: false },
   // A card of Subjects: About the module, three dots, filled while its pop-over is open; and

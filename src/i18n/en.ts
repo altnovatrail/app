@@ -356,18 +356,16 @@ export const en = {
   "learner.menu": "Profile menu",
   "learner.menu-button": "{pseudonym}, profile menu",
   "learner.now": "Learning now",
-  /**
-   * The hint mode in the profile's menu: its group, and for a child's that a
-   * grown-up sets it; each mode's title and line, as the mockup's.
-   */
+  /** The profile's menu: the way to the section for adults, and back to the menu from Help. */
+  "learner.settings": "Settings",
+  "learner.back": "Profile",
+  /** The hint mode on the profile's page: its group, and each mode's title, "Show where" with its line. */
   "hints.title": "Hints",
-  "hints.by-adult": "set by a grown-up",
   "hints.questions": "Questions only",
-  "hints.questions-line": "The tutor asks about a step of the work",
   "hints.where": "Show where",
   "hints.where-line":
     "After “Not yet” the tutor also underlines where the mistake is — and corrects nothing",
-  /** The adult's Help on the home screen: three things, and three pages. */
+  /** The adult's Help in the profile's menu: three things, and three pages. */
   "help.ai": "The tutor is an AI",
   "help.ai-text":
     "A computer program, not a person. The AI checks a task from paper, a program the rest. If the AI read your work wrongly, write it again, or tell the operator with Report a problem at the task",
@@ -411,7 +409,6 @@ export const en = {
   "nav.cognitive": "Cognitive map",
   "nav.soon": "Soon",
   "nav.cognitive-later": "Cognitive map — comes later",
-  "nav.grown": "Grown-ups",
   /** Home: its title and heading, no pseudonym — the profile's menu has it. */
   "home.screen": "Home",
   /**
@@ -427,9 +424,6 @@ export const en = {
   "skillmap.module": "Module: {module}",
   /** The profile's menu: whose profile it is. */
   "learner.yours": "Your profile",
-  /** For grown-ups, from the row of places: whose settings it holds, and the section's other pages. */
-  "grown.who": "Your profile and this device",
-  "grown.section": "All settings",
   /** The notifications at the top right: nothing sends one yet. */
   "bell.title": "Notifications",
   "bell.none": "Nothing new yet",

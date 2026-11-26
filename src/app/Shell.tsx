@@ -1,25 +1,21 @@
 // The frame of Home, Subjects and the skill map, as the mockup's `home`: from 600
 // CSS px a row at the top — at its left a pill of the places, Home and Subjects, the cognitive map
-// shut with "Soon" until it comes, and after a rule For grown-ups and Help; at its right a pill of
-// the tutor, the notifications and the profile's menu —, on a phone the five places as a tab bar at
-// the bottom and the mark at the top left. A place is a link of the hash, the page shown marked as
-// current; For grown-ups and Help are pop-overs, hung below their places.
-import { useLearner } from "../account/AccountGate.tsx";
-import { DEVICE_PAGE } from "../adults/AdultSection.tsx";
+// shut with "Soon" until it comes; at its right a pill of the tutor, the notifications and the
+// profile's menu, which holds Settings and Help —, on a phone the three places as a tab bar at the
+// bottom and the mark at the top left. A place is a link of the hash, the page shown marked as
+// current.
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { usePaper } from "../paper/PaperContext.tsx";
 import { useAttempt } from "../task/AttemptContext.tsx";
 import { Spark } from "./Brand.tsx";
-import { AdultHelp } from "./Help.tsx";
-import { HintModeChoice } from "./HintModeChoice.tsx";
 import { BELOW_BAR } from "./hang.ts";
 import { formatHash } from "./hash.ts";
 import { Icon } from "./Icon.tsx";
 import type { IconValue } from "./icons.ts";
-import { LearnerMenu, MenuRow } from "./LearnerMenu.tsx";
+import { LearnerMenu } from "./LearnerMenu.tsx";
 import { captionHidden, NavCaption } from "./NavCaption.tsx";
 import { PopOver } from "./PopOver.tsx";
-import { ADULTS, HOME, navigate, PAPER, type Route, SUBJECTS, TASK } from "./router.ts";
+import { HOME, navigate, PAPER, type Route, SUBJECTS, TASK } from "./router.ts";
 import { APP_NAME } from "./Screen.tsx";
 import { useTooltip } from "./Tooltip.tsx";
 
@@ -86,57 +82,6 @@ function ShutPlace() {
       <NavCaption icon="nav-cognitive" text={words.text("nav.cognitive")} />{" "}
       <span className="nt-soon">{words.text("nav.soon")}</span>
     </button>,
-  );
-}
-
-/**
- * For grown-ups: whose settings it holds, the profile's hint mode, This device and the
- * section's other pages; Sign out is the profile's menu's alone. A child's profile, which
- * this build has not, would open it behind the PIN (epic E4).
- */
-export function GrownUps() {
-  const chosen = useLearner();
-  const { words } = useLanguage();
-  if (chosen === undefined) return null;
-  const title = words.text("adults.title");
-  return (
-    <PopOver
-      label={title}
-      className="nt-nav-item"
-      popClassName="nt-pop-menu nt-pop-grown"
-      caption={<NavCaption icon="nav-grown" text={words.text("nav.grown")} />}
-      tip={{ words: words.text("nav.grown"), needed: captionHidden }}
-    >
-      {(close) => (
-        <>
-          <h2 className="nt-pop-heading">{title}</h2>
-          <p className="nt-pop-line">{words.text("grown.who")}</p>
-          <HintModeChoice
-            learner={chosen.learner}
-            onSaved={chosen.onSaved}
-            onFailed={chosen.onFailed}
-          />
-          <hr />
-          {/* Each closes the pop-over first: what it opens takes the screen's place. */}
-          <MenuRow
-            icon="device"
-            text={words.text("device.title")}
-            onPress={() => {
-              close();
-              navigate(DEVICE_PAGE);
-            }}
-          />
-          <MenuRow
-            icon="settings"
-            text={words.text("grown.section")}
-            onPress={() => {
-              close();
-              navigate(ADULTS);
-            }}
-          />
-        </>
-      )}
-    </PopOver>
   );
 }
 
@@ -244,16 +189,13 @@ export function ShellBar({ place }: { readonly place: Place }) {
           current={place === "subjects"}
         />
         <ShutPlace />
-        <span className="nt-nav-rule" />
-        <GrownUps />
-        <AdultHelp />
       </nav>
       <header className="nt-shell-top">
         <Mark className="nt-mark nt-top-mark" />
         <div className="nt-top-pills">
           <HomeTutor />
           <Bell />
-          <LearnerMenu short />
+          <LearnerMenu />
         </div>
       </header>
     </div>

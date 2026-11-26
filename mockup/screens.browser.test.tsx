@@ -1639,19 +1639,22 @@ function popOver(name: string, mockup: string, app = mockup): Region {
  */
 const AI_CHECKS = "the line that the AI checks a task from paper, which the mockup has not";
 
-/** The adult's Help, open from the row of places. */
+/** The adult's Help in the profile's menu, in its rows' place, with the way back to them. */
 const HELP: readonly Region[] = [
+  PILL,
   {
-    name: "Help",
-    mockup: { css: 'nav button:has-text("Help")' },
-    app: { css: 'nav button:has-text("Help")' },
-  },
-  {
-    ...popOver("the pop-over of Help", "Help"),
+    ...popOver("the profile's menu on Help", "Help", "Profile menu"),
     differs: {
-      what: ["background", "border", "font-size", "y", "height"],
+      what: ["background", "border", "font-size", "height"],
       by: `${OVER_INERT}; ${NO_TEXT}; ${AI_CHECKS}`,
     },
+  },
+  {
+    name: "back to the menu",
+    mockup: { role: "button", name: "Profile" },
+    app: { role: "button", name: "Profile" },
+    followsText: "start",
+    differs: { what: ["background"], by: OVER_INERT },
   },
   {
     name: "The tutor is an AI",
@@ -1669,31 +1672,17 @@ const HELP: readonly Region[] = [
   },
 ];
 
-/** The profile's menu, open: who is learning, and Switch learner. */
+/** The profile's menu, open: who is learning, Switch learner, Settings, Help and Sign out. */
 const MENU: readonly Region[] = [
   PILL,
   popOver("the profile's menu", "Profile", "Profile menu"),
-  {
-    name: "Switch learner",
-    mockup: { role: "button", name: "Switch learner" },
-    app: { role: "button", name: "Switch learner" },
-  },
-];
-
-/** For grown-ups, open from the row of places: the hint mode, This device and All settings. */
-const GROWN: readonly Region[] = [
-  {
-    name: "For grown-ups",
-    mockup: { css: 'nav button:has-text("Grown-ups")' },
-    app: { css: 'nav button:has-text("Grown-ups")' },
-  },
-  popOver("the pop-over For grown-ups", "For grown-ups"),
-  {
-    name: "Questions only",
-    mockup: { css: 'div.nt-pop span:text-is("Questions only")' },
-    app: { css: ".nt-pop-grown .nt-hint-mode-title >> nth=0" },
-    followsText: "start",
-  },
+  ...["Switch learner", "Settings", "Help", "Sign out"].map(
+    (name): Region => ({
+      name,
+      mockup: { role: "button", name },
+      app: { role: "button", name },
+    }),
+  ),
 ];
 
 /** The notifications, open: nothing new yet. */
@@ -2197,7 +2186,21 @@ const SCREENS: readonly Compared[] = [
       state: "home",
       devices: [device],
       draw: home,
-      regions: [...frameOf(device), ...HOME, ...(device === "ipad" ? [LEGEND] : [])],
+      regions: [
+        // The phone's tab bar is glass: what shows through its middle is the card that Home's
+        // other heights move under it.
+        ...frameOf(device).map(
+          (region): Region =>
+            region.name === "the tab bar"
+              ? {
+                  ...region,
+                  differs: { what: ["font-size", "background"], by: `${HOME_PLACED}; ${NO_TEXT}` },
+                }
+              : region,
+        ),
+        ...HOME,
+        ...(device === "ipad" ? [LEGEND] : []),
+      ],
     }),
   ),
   { state: "home-legend", devices: ["ipad"], draw: home, regions: [LEGEND] },
@@ -2209,22 +2212,19 @@ const SCREENS: readonly Compared[] = [
     regions: [popOver("the sheet of the legend", "What the marks mean")],
   },
   {
-    state: "home-help",
-    draw: home,
-    settle: () => userEvent.click(screen.getByRole("button", { name: "Help" })),
-    regions: HELP,
-  },
-  {
     state: "home-switch",
     draw: home,
     settle: () => userEvent.click(screen.getByRole("button", { name: "Sam, profile menu" })),
     regions: MENU,
   },
   {
-    state: "home-grownups",
+    state: "home-help",
     draw: home,
-    settle: () => userEvent.click(screen.getByRole("button", { name: "Grown-ups" })),
-    regions: GROWN,
+    settle: async () => {
+      await userEvent.click(screen.getByRole("button", { name: "Sam, profile menu" }));
+      await userEvent.click(screen.getByRole("button", { name: "Help" }));
+    },
+    regions: HELP,
   },
   {
     state: "home-bell",

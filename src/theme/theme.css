@@ -2490,8 +2490,8 @@ dialog.nt-pop-legend .nt-legend-items {
  * column of 1120 at most in the window's middle, 32 from its edges, on the page's colour with a
  * blue glow at its top. From 600 CSS px a row above the screen: at its start a pill of the places,
  * white at 0.75 — each 44 high with its icon and its word, the one shown dark, the cognitive map
- * grey with its "Soon" chip, For grown-ups and Help after a rule —, at its end a pill of the tutor,
- * the notifications and the profile's menu. Below 600 the places are a tab bar of 84 at the bottom,
+ * grey with its "Soon" chip —, at its end a pill of the tutor, the notifications and the profile's
+ * menu. Below 600 the places are a tab bar of 84 at the bottom,
  * white at 0.96, the one shown in the accent's text, and the row holds the mark and the pill.
  */
 .nt-shell {
@@ -2606,12 +2606,6 @@ dialog.nt-pop-legend .nt-legend-items {
   .nt-nav-icon {
     font-size: 1rem;
   }
-  .nt-nav-rule {
-    inline-size: 1px;
-    block-size: 1.125rem;
-    margin-inline: 0.25rem;
-    background: rgba(0, 0, 0, 0.1);
-  }
   .nt-top-mark {
     display: none;
   }
@@ -2622,13 +2616,10 @@ dialog.nt-pop-legend .nt-legend-items {
     inset-inline: 0;
     inset-block-end: 0;
     display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     padding: 0.375rem 0.25rem max(1.375rem, env(safe-area-inset-bottom));
     background: rgba(255, 255, 255, 0.96);
     box-shadow: 0 -0.5px 0 rgba(0, 0, 0, 0.14);
-  }
-  .nt-nav-rule {
-    display: none;
   }
   /* "Soon" stays in the place's name, hidden to the eye only: the tab has no room for its chip. */
   .nt-nav-item > .nt-soon {
@@ -3300,21 +3291,14 @@ button.nt-module-row > span[lang] {
   flex: 1 1 auto;
 }
 /*
- * The pop-overs of the frame: For grown-ups and Help under the row of places, 340 wide; the
- * notifications and the tutor's panel below the top right. Their heading at 17 bold, a line under
- * it, and the empty notifications in the middle.
+ * The pop-overs of the frame's top right: the notifications, the tutor's panel and the profile's
+ * menu. Their heading at 17 bold, and the empty notifications in the middle.
  */
 .nt-pop-heading {
   margin: 0;
   padding: 0.375rem 0.625rem 0;
   font-size: var(--nt-size-emphasis);
   line-height: normal;
-}
-.nt-pop-line {
-  margin: 0;
-  padding: 0 0.625rem 0.5rem;
-  color: var(--nt-text-muted);
-  font-size: 0.78125rem;
 }
 .nt-bell-none {
   display: flex;
@@ -3960,16 +3944,41 @@ button.nt-menu-row {
     background: rgba(0, 0, 0, 0.04);
   }
 }
-/* The adult's Help: its heading at 17, each thing in two lines, and the three pages as links. */
-.nt-pop-help .nt-pop-content {
+/*
+ * The profile's menu, 320 wide as the mockup's: a row that leads on, its words and a grey chevron at
+ * its end; and Help in the rows' place — "Profile" back above it, its heading at 17, which takes the
+ * focus to be read and draws no ring, each thing in two lines, and the three pages as links 10
+ * further out than the words.
+ */
+.nt-menu-label {
+  flex: 1 1 auto;
+}
+.nt-menu-more {
+  display: inline-flex;
+  flex: none;
+  color: var(--nt-text-muted);
+  font-size: 0.875rem;
+}
+button.nt-menu-back {
+  gap: 0.125rem;
+  padding: 0 0.625rem 0 0.25rem;
+  background: transparent;
+  color: var(--nt-accent-text);
+  font-size: 0.9375rem;
+}
+.nt-help {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+  padding: 0 0.625rem 0.375rem;
 }
-.nt-pop-help h2 {
+.nt-help h2 {
   margin: 0;
   line-height: normal;
   font-size: var(--nt-size-emphasis);
+}
+.nt-help h2:focus {
+  outline: none;
 }
 .nt-help-item {
   display: flex;
@@ -3986,24 +3995,14 @@ button.nt-menu-row {
   font-size: var(--nt-size-caption);
   line-height: 1.4;
 }
-/*
- * The links stand 10 further out than the words, as the mockup's: the body is 6 from the edge and
- * the words 10 inside it, so that nothing reaches beyond the body and scrolls.
- */
-.nt-pop-help .nt-pop-body {
-  padding-inline: 0.375rem;
-}
-.nt-pop-help .nt-pop-content > :not(.nt-help-pages) {
-  padding-inline: 0.625rem;
-}
 .nt-help-pages {
   display: flex;
   flex-wrap: wrap;
   gap: 0 0.25rem;
-  margin-block: -0.25rem -0.5rem;
+  margin: -0.25rem -0.625rem -0.5rem;
 }
 /* 10 on each side with the border of 1 in it, as the mockup's links have no border. */
-.nt-pop-help .nt-help-pages > button.nt-link {
+.nt-help .nt-help-pages > button.nt-link {
   padding: 0 calc(0.625rem - 0.0625rem);
   font-size: var(--nt-size-body);
 }
@@ -4012,14 +4011,11 @@ button.nt-menu-row {
     min-inline-size: 0;
     inline-size: 16.875rem;
   }
-  dialog.nt-pop.nt-pop-help {
+  dialog.nt-pop.nt-pop-menu.nt-pop-profile {
     inline-size: 20rem;
   }
   .nt-pop-menu .nt-pop-body {
     padding: 0.5rem;
-  }
-  .nt-pop-help .nt-pop-body {
-    padding-block: 1rem;
   }
 }
 /*
@@ -6896,9 +6892,6 @@ nav.nt-nav button.nt-nav-item[aria-disabled="true"] {
   color: #aeaeb2;
 }
 @media (width >= 600px) {
-  dialog.nt-pop.nt-pop-menu.nt-pop-grown {
-    inline-size: 21.25rem;
-  }
   dialog.nt-pop.nt-pop-bell {
     inline-size: 18.75rem;
   }
