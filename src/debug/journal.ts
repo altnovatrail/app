@@ -146,6 +146,10 @@ function spoken(args: readonly unknown[]): { readonly text: string; readonly det
 
 let installed = false;
 
+/** What Chromium and WebKit say of a ResizeObserver whose notifications went on to the next frame. */
+const RESIZE_LOOP =
+  /^ResizeObserver loop (completed with undelivered notifications|limit exceeded)/;
+
 /** What the window says of an error nobody caught: an ErrorEvent, as far as the log reads it. */
 interface Uncaught extends Event {
   readonly error?: unknown;
@@ -174,12 +178,23 @@ export function install(target: EventTarget, console: Console = globalThis.conso
         ? described(event.error)
         : { text: event.message ?? "an error", detail: "" };
     const where = event.filename ? `at ${event.filename}:${event.lineno}:${event.colno}` : "";
-    note("error", "app", text, ["uncaught", detail || where].filter(Boolean).join("\n"));
+    // The browser's word that a layout changed the sizes it was observing again in one frame: the
+    // rest comes in the next, and nothing failed.
+    const level = RESIZE_LOOP.test(text) ? "debug" : "error";
+    note(level, "app", text, ["uncaught", detail || where].filter(Boolean).join("\n"));
   });
   target.addEventListener("unhandledrejection", (e) => {
     const { text, detail } = described((e as Unhandled).reason);
     note("error", "app", text, ["uncaught, in a promise", detail].filter(Boolean).join("\n"));
   });
+  // The system may cut the requests of a tab it put away or of a network gone: the log says when.
+  target.addEventListener("visibilitychange", () => {
+    const page = (globalThis as { document?: { readonly visibilityState?: string } }).document;
+    const state = page?.visibilityState;
+    if (state !== undefined) note("info", "app", state === "hidden" ? "page hidden" : "page shown");
+  });
+  target.addEventListener("offline", () => note("info", "app", "network offline"));
+  target.addEventListener("online", () => note("info", "app", "network online"));
   for (const level of ["error", "warn"] as const) {
     const said = console[level].bind(console);
     console[level] = (...args: unknown[]) => {

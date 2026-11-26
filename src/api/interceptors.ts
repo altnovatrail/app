@@ -5,10 +5,19 @@
 //   texts, and on `unauthenticated` with no refusal one refresh and one repeat — the cause read
 //   first, so that the refusal of an account gone is never met by a refresh;
 // - the repeat of what may come back: `unavailable`, no network among it, after a growing pause, for
-//   a short while, the same message and so the same idempotency key.
+//   a short while, and a first request still going, known by its cause whatever its code, for as
+//   long as api lets it go; the same message and so the same idempotency key.
 // No header of app's own: whatever else a request says is a field of its message.
 import { Cause } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
-import { Code, ConnectError, type Interceptor } from "@connectrpc/connect";
+import {
+  Code,
+  ConnectError,
+  type ContextValues,
+  createContextKey,
+  createContextValues,
+  type Interceptor,
+} from "@connectrpc/connect";
+import { described } from "../debug/journal.ts";
 import { refusalOf } from "./failure.ts";
 import type { Tokens } from "./tokens.ts";
 
@@ -136,25 +145,68 @@ export function signIn(tokens: Tokens): Interceptor {
   };
 }
 
+/** The causes of a refusal the screen that calls waits for as an answer: none by default. */
+const EXPECTED = createContextKey<ReadonlySet<number>>(new Set(), {
+  description: "the refusals the screen expects",
+});
+
+/** The options of a call whose refusals for these causes the screen takes as an answer. */
+export function expecting(causes: Iterable<Cause>): { readonly contextValues: ContextValues } {
+  return { contextValues: createContextValues().set(EXPECTED, new Set(causes)) };
+}
+
+/** A line of the app's log, as the client writes it. */
+export type ApiNote = (
+  level: "error" | "warn" | "info" | "debug",
+  source: "api",
+  text: string,
+  detail: string,
+) => void;
+
 /**
  * The repeat of a request api may answer in a moment, after a growing pause; of one still going,
- * for as long as api lets the first go.
+ * for as long as api lets the first go. Each attempt it repeats is a line of the log, since the
+ * call's own line says only how the last ended: a network that failed names what the browser said
+ * and how long the attempt had gone.
  */
-export function repeat(sleep: (ms: number) => Promise<void>): Interceptor {
+export function repeat(
+  sleep: (ms: number) => Promise<void>,
+  note: ApiNote = () => {},
+  now: () => number = () => performance.now(),
+): Interceptor {
   return (next) => async (request) => {
+    const method = `${request.service.typeName.split(".").pop()}/${request.method.name}`;
     let waited = 0;
     for (let tried = 0; ; tried++) {
+      const began = now();
       try {
         return await next(request);
       } catch (reason) {
         const error = ConnectError.from(reason);
         // A call its deadline or its caller aborted is over: no repeat brings it back.
-        if (error.code !== Code.Unavailable || request.signal.aborted) throw error;
         const going = refusalOf(error)?.cause === Cause.STILL_GOING;
+        if ((error.code !== Code.Unavailable && !going) || request.signal.aborted) throw error;
         const last = PAUSES[PAUSES.length - 1] as number;
         const pause = going ? (retryAfter(error.metadata) ?? PAUSES[tried] ?? last) : PAUSES[tried];
         const limit = stillGoingMs(request.service.typeName, request.method.name);
         if (pause === undefined || (going && waited + pause > limit)) throw error;
+        const code = codeName(error.code);
+        // The same line for each attempt, so that the log counts the repeats on one entry.
+        note(
+          going ? "info" : "warn",
+          "api",
+          `${method} · ${going ? "still going" : code}${going || !error.rawMessage ? "" : ` · ${error.rawMessage}`} · repeated`,
+          [
+            `attempt: ${tried + 1}`,
+            `code: ${code}`,
+            going ? "cause: STILL_GOING" : "",
+            error.cause === undefined ? "" : `browser: ${described(error.cause).text}`,
+            `took: ${((now() - began) / 1000).toFixed(1)} s`,
+            `next in: ${(pause / 1000).toFixed(1)} s`,
+          ]
+            .filter(Boolean)
+            .join("\n"),
+        );
         waited += pause;
         await sleep(pause);
       }
@@ -220,8 +272,14 @@ export function journaled(
       const error = ConnectError.from(reason);
       const code = codeName(error.code);
       const cause = refusalOf(error)?.cause;
-      // A call the app called off is no failure of api's.
-      const level = error.code === Code.Canceled ? "debug" : "error";
+      // A call the app called off is no failure of api's, and a refusal its screen waits for is an
+      // answer.
+      const level =
+        error.code === Code.Canceled
+          ? "debug"
+          : cause !== undefined && request.contextValues.get(EXPECTED).has(cause)
+            ? "info"
+            : "error";
       note(
         level,
         "api",

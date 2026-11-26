@@ -323,13 +323,13 @@ describe("the way to what the engine chose", () => {
   });
 
   it("asks again with the same key after no answer, and with a new one after a refusal", async () => {
-    let state: "offline" | "still going" | "answers" = "offline";
+    let state: "offline" | "refused" | "answers" = "offline";
     const { chosen } = await renderStep({
       choose: () => {
         if (state === "offline") throw new ConnectError("down", Code.Unavailable);
-        if (state === "still going") {
+        if (state === "refused") {
           state = "answers";
-          throw refused(Code.FailedPrecondition, Cause.STILL_GOING);
+          throw refused(Code.FailedPrecondition, Cause.NOT_ADMITTED);
         }
         return LESSON;
       },
@@ -337,7 +337,7 @@ describe("the way to what the engine chose", () => {
     await userEvent.click(screen.getByRole("button", { name: "What's next" }));
     expect(await screen.findByText("No connection")).toBeVisible();
     const offline = chosen.length;
-    state = "still going";
+    state = "refused";
     await userEvent.click(screen.getByRole("button", { name: "What's next" }));
     await waitFor(() => expect(screen.queryByText("No connection")).toBeNull());
     await screen.findByRole("alert");

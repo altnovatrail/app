@@ -235,7 +235,7 @@ describe("the repeat", () => {
     const { api, sleeps } = harness(({ service }) =>
       service(AttemptService, {
         submitWork() {
-          const error = refused(Code.Unavailable, { cause: Cause.STILL_GOING });
+          const error = refused(Code.Aborted, { cause: Cause.STILL_GOING });
           error.metadata.set("Retry-After", "3");
           throw error;
         },
@@ -249,7 +249,7 @@ describe("the repeat", () => {
     const opening = harness(({ service }) =>
       service(AttemptService, {
         getOpeningWords() {
-          const error = refused(Code.Unavailable, { cause: Cause.STILL_GOING });
+          const error = refused(Code.Aborted, { cause: Cause.STILL_GOING });
           error.metadata.set("Retry-After", "3");
           throw error;
         },
@@ -261,7 +261,7 @@ describe("the repeat", () => {
     const question = harness(({ service }) =>
       service(AttemptService, {
         askTutor() {
-          const error = refused(Code.Unavailable, { cause: Cause.STILL_GOING });
+          const error = refused(Code.Aborted, { cause: Cause.STILL_GOING });
           error.metadata.set("Retry-After", "3");
           throw error;
         },
@@ -273,7 +273,7 @@ describe("the repeat", () => {
     const grown = harness(({ service }) =>
       service(AttemptService, {
         askGrownUp() {
-          const error = refused(Code.Unavailable, { cause: Cause.STILL_GOING });
+          const error = refused(Code.Aborted, { cause: Cause.STILL_GOING });
           error.metadata.set("Retry-After", "3");
           throw error;
         },
@@ -285,7 +285,7 @@ describe("the repeat", () => {
     const other = harness(({ service }) =>
       service(AttemptService, {
         submitEssay() {
-          const error = refused(Code.Unavailable, { cause: Cause.STILL_GOING });
+          const error = refused(Code.Aborted, { cause: Cause.STILL_GOING });
           error.metadata.set("Retry-After", "3");
           throw error;
         },
@@ -296,13 +296,41 @@ describe("the repeat", () => {
     const plain = harness(({ service }) =>
       service(AttemptService, {
         submitWork() {
-          throw refused(Code.Unavailable, { cause: Cause.STILL_GOING });
+          throw refused(Code.Aborted, { cause: Cause.STILL_GOING });
         },
       }),
     );
     await failureOf(plain.api.attempt.submitWork({ idempotencyKey: "k" }));
     expect(plain.sleeps.reduce((a, b) => a + b, 0)).toBeLessThanOrEqual(PAPER_TIMEOUT_MS);
     expect(plain.sleeps.slice(0, 5)).toEqual([500, 1000, 2000, 4000, 4000]);
+  });
+
+  it("knows a first request still going by its cause, whatever its code", async () => {
+    // An api before gave the refusal the code unavailable; either waits the same, then no connection.
+    for (const code of [Code.Aborted, Code.Unavailable]) {
+      let calls = 0;
+      const { api, sleeps } = harness(({ service }) =>
+        service(AttemptService, {
+          submitWork() {
+            calls += 1;
+            if (calls < 3) throw refused(code, { cause: Cause.STILL_GOING });
+            return {};
+          },
+        }),
+      );
+      await api.attempt.submitWork({ idempotencyKey: "k" });
+      expect(sleeps).toEqual([500, 1000]);
+      const waiting = harness(({ service }) =>
+        service(AttemptService, {
+          submitWork() {
+            throw refused(code, { cause: Cause.STILL_GOING });
+          },
+        }),
+      );
+      expect(await failureOf(waiting.api.attempt.submitWork({ idempotencyKey: "k" }))).toEqual({
+        kind: "offline",
+      });
+    }
   });
 
   it("does not repeat a call that was aborted", async () => {

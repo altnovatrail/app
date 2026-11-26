@@ -109,7 +109,7 @@ export function createApi(options: ApiOptions): Api {
   const sleep = options.sleep ?? wait;
   const fetcher = networked(options.fetch ?? globalThis.fetch.bind(globalThis));
   const logged = journaled(note);
-  const interceptors = [logged, effects(options.on), signIn(options.tokens), repeat(sleep)];
+  const interceptors = [logged, effects(options.on), signIn(options.tokens), repeat(sleep, note)];
   const transport =
     options.transport?.(interceptors, "POST") ??
     createConnectTransport({
@@ -120,7 +120,7 @@ export function createApi(options: ApiOptions): Api {
       interceptors,
     });
   // No sign-in and no deadline: Connect-Timeout-Ms would make the request one with a preflight.
-  const open = [logged, effects(options.on), repeat(sleep)];
+  const open = [logged, effects(options.on), repeat(sleep, note)];
   const viewsTransport =
     options.transport?.(open, "GET") ??
     createConnectTransport({

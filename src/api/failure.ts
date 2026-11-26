@@ -67,6 +67,8 @@ export function parseFailure(error: unknown): Failure {
   if (error instanceof ApiError) return error.failure;
   if (!(error instanceof ConnectError)) return { kind: "unknown", code: Code.Unknown };
   const refusal = refusalOf(error);
+  // A first request still going past the repeat's wait is no answer, as a network that failed.
+  if (refusal?.cause === Cause.STILL_GOING) return { kind: "offline" };
   switch (error.code) {
     case Code.Unauthenticated:
       if (refusal?.cause === Cause.FRESH_SIGN_IN_NEEDED) {

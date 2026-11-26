@@ -26,6 +26,7 @@ import {
   type AskTutorResponseSchema,
   AttemptService,
   type ExplainDifferentlyResponseSchema,
+  type GetCheckProgressResponseSchema,
   type GetHintRequest,
   type GetHintResponseSchema,
   type GetOpeningWordsRequest,
@@ -40,7 +41,11 @@ import {
   TutorReply,
 } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
 import { Cause, RefusalSchema } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
-import { DebugService } from "@altnovatrail/contracts/novatrail/api/v1/debug_pb.js";
+import {
+  DebugCallKind,
+  DebugService,
+  type GetDebugResponseSchema,
+} from "@altnovatrail/contracts/novatrail/api/v1/debug_pb.js";
 import {
   type BeginPaperAttemptsRequest,
   type BeginPaperAttemptsResponseSchema,
@@ -78,7 +83,13 @@ interface Setup {
     | MessageInitShape<typeof FindTasksResponseSchema>
     | Promise<MessageInitShape<typeof FindTasksResponseSchema>>;
   /** The answer to each Check, by how many came before it; none refuses it. */
-  readonly checked?: (n: number) => MessageInitShape<typeof SubmitWorkResponseSchema>;
+  readonly checked?: (
+    n: number,
+  ) =>
+    | MessageInitShape<typeof SubmitWorkResponseSchema>
+    | Promise<MessageInitShape<typeof SubmitWorkResponseSchema>>;
+  /** The progress of the Check going, by how many questions came before; none, and api has no GetCheckProgress. */
+  readonly progress?: (n: number) => MessageInitShape<typeof GetCheckProgressResponseSchema>;
   /** The opening question of a Hint before the first wrong answer, by GetOpeningWords. */
   readonly hinted?: string;
   /** The answer to Hint; none, and a task from paper has no techniques yet. */
@@ -99,6 +110,8 @@ interface Setup {
   readonly camera?: MediaStream | Promise<MediaStream>;
   /** The account has the debug right; none, and api has no DebugService. */
   readonly debug?: boolean;
+  /** What GetDebug answers with the debug right; none, nothing. */
+  readonly debugAnswer?: MessageInitShape<typeof GetDebugResponseSchema>;
   /** The screen's language; none, English. */
   readonly language?: Language;
   /** The learner is of the category adult; none, an adult. */
@@ -160,6 +173,7 @@ async function renderCamera(setup: Setup = {}) {
   const grownAsks: AskGrownUpRequest[] = [];
   let explains = 0;
   let attempts = 0;
+  let progressed = 0;
   const api = routedApi((router) => {
     router.service(AttemptService, {
       submitWork(request) {
@@ -168,6 +182,14 @@ async function renderCamera(setup: Setup = {}) {
         if (answer === undefined) throw new ConnectError("a refusal", Code.InvalidArgument);
         return answer;
       },
+      ...(setup.progress === undefined
+        ? {}
+        : {
+            getCheckProgress() {
+              progressed += 1;
+              return setup.progress?.(progressed - 1) ?? {};
+            },
+          }),
       // Before the first wrong answer a task from paper has no techniques: the opening question.
       getHint(request) {
         return setup.hint?.(request) ?? { hint: { case: "techniques", value: {} } };
@@ -224,7 +246,10 @@ async function renderCamera(setup: Setup = {}) {
       });
     }
     if (setup.debug === true) {
-      router.service(DebugService, { getDebug: () => ({}), takeDebugCalls: () => ({}) });
+      router.service(DebugService, {
+        getDebug: () => setup.debugAnswer ?? {},
+        takeDebugCalls: () => ({}),
+      });
     }
     router.service(PaperService, {
       findTasks(request) {
@@ -618,6 +643,88 @@ it("asks for a solution before Check, then sends the task's crop, the instructio
   const second = submits[1]?.work?.surface;
   if (second?.case !== "paper") throw new Error("no work of a task from paper");
   expect(second.value.instruction).toHaveLength(0);
+});
+
+/** The card of a Check gone on to a later model, which the first question of the progress brings 2 s after the press. */
+async function closerCard(): Promise<HTMLElement> {
+  return waitFor(
+    () => {
+      const card = document.querySelector<HTMLElement>(".nt-card-verdict[data-closer]");
+      if (card === null) throw new Error("no card of a closer look");
+      return card;
+    },
+    { timeout: 8000 },
+  );
+}
+
+it("says the Check went on to a later model, its track dots, and the verdict once it came", async () => {
+  let answer: (a: MessageInitShape<typeof SubmitWorkResponseSchema>) => void = () => {};
+  await solving({
+    checked: () =>
+      new Promise((resolve) => {
+        answer = resolve;
+      }),
+    progress: (n) => (n === 0 ? { going: true } : { going: true, model: 1, models: 3 }),
+  });
+  writeOn(sheet());
+  await userEvent.click(screen.getByRole("button", { name: "Check" }));
+  expect(await screen.findByText("Reading your work…")).toBeVisible();
+  const card = await closerCard();
+  expect(within(card).getByText("Looking more closely…")).toBeVisible();
+  expect(within(card).getByText("The first look wasn’t sure — now a closer one.")).toBeVisible();
+  // The track: three dots, the first done, the second reading, the third to come; no name.
+  expect(
+    [...card.querySelectorAll<HTMLElement>(".nt-track-dot")].map((dot) => dot.dataset.at),
+  ).toEqual(["done", "now", "ahead"]);
+  expect(card.querySelector(".nt-track-pill")).toBeNull();
+  expect(card.querySelector(".nt-track")).toHaveAttribute("aria-hidden", "true");
+  expect(
+    screen.getAllByRole("status").some((each) => each.textContent === "Looking more closely…"),
+  ).toBe(true);
+  answer({
+    items: [
+      {
+        verdict: "correct",
+        answerSlots: [{ answerSlot: { item: 1, slot: 1 }, verdict: "correct", value: "85" }],
+      },
+    ],
+    solved: {},
+  });
+  expect(await screen.findByText("Read: 85")).toBeVisible();
+  expect(screen.queryByText("Looking more closely…")).toBeNull();
+  expect(document.querySelector(".nt-track")).toBeNull();
+});
+
+it("names the models of the track for an account with the debug mode, as admitted", async () => {
+  const check = (model: string) => ({ kind: DebugCallKind.TASK_CHECKING, model: { model } });
+  let answer: (a: MessageInitShape<typeof SubmitWorkResponseSchema>) => void = () => {};
+  await solving({
+    debug: true,
+    debugAnswer: {
+      models: [
+        { id: "claude-haiku-5-5", name: "Haiku 5.5" },
+        { id: "claude-sonnet-5-5", name: "Sonnet 5.5" },
+        { id: "claude-opus-5-5", name: "Opus 5.5" },
+      ],
+      admitted: [check("claude-haiku-5-5"), check("claude-sonnet-5-5"), check("claude-opus-5-5")],
+    },
+    checked: () =>
+      new Promise((resolve) => {
+        answer = resolve;
+      }),
+    progress: () => ({ going: true, model: 1, models: 3 }),
+  });
+  writeOn(sheet());
+  await userEvent.click(screen.getByRole("button", { name: "Check" }));
+  await closerCard();
+  const pills = [...document.querySelectorAll<HTMLElement>(".nt-track-pill")];
+  expect(pills.map((pill) => [pill.textContent, pill.dataset.at])).toEqual([
+    ["Haiku 5.5", "done"],
+    ["Sonnet 5.5", "now"],
+    ["Opus 5.5", "ahead"],
+  ]);
+  answer({ items: [] });
+  await waitFor(() => expect(document.querySelector(".nt-track")).toBeNull());
 });
 
 it("shows the Check's verdict: Not yet, then Correct, and checks a task solved again in a new attempt", async () => {
@@ -1180,6 +1287,16 @@ it("hides the canvas's bar of tools on a phone while the panel is open, its Hint
   await waitFor(() => expect(sheet().hasAttribute("tools-hidden")).toBe(false));
 });
 
+it("puts the card of the Check on a phone in the middle, 16 from either edge, nothing beside it", async () => {
+  await page.viewport(390, 844);
+  await solving({ checked: () => new Promise(() => {}) });
+  writeOn(sheet());
+  await userEvent.click(screen.getByRole("button", { name: "Check" }));
+  await screen.findByText("Reading your work…");
+  const card = found(".nt-card-verdict").getBoundingClientRect();
+  expect([Math.round(card.left), Math.round(390 - card.right)]).toEqual([16, 16]);
+});
+
 it("frames a task the AI missed by two taps, and removes it by its cross", async () => {
   await renderPaper({ found: () => ({ frames: [] }) });
   const none = await noneCard();
@@ -1238,6 +1355,8 @@ const middle = (element: Element) => {
 it("puts debug's button and the tutor's at the start of the page's bar, before a line, as the solving's bar has them", async () => {
   await renderPaper({ debug: true });
   const debug = await screen.findByRole("button", { name: DEBUG });
+  // The frames found: the debug window may come before them, once its code is loaded.
+  await screen.findByRole("button", { name: "Select none" });
   const tutor = screen.getByRole("button", { name: "Tutor" });
   const bar = found(".nt-page-bar");
   expect(buttonNames(bar)).toEqual([

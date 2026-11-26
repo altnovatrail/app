@@ -1754,6 +1754,21 @@ describe("the tutor's words only while its panel is open", () => {
     expect(rungs).toHaveLength(1);
   });
 
+  it("keeps the card on a phone 16 from the left and clear of the tutor's button at the right", async () => {
+    await page.viewport(390, 844);
+    await renderTask({
+      task: SHEET_TASK,
+      history: WRITTEN,
+      mode: Mode.SELF,
+      answer: () => sheetAnswer("not_yet", { value: "5", wrong: 1 }),
+    });
+    await checkSheet("Read: 5");
+    const card = document.querySelector(".nt-card-verdict")?.getBoundingClientRect();
+    const button = tutorButton().getBoundingClientRect();
+    expect(Math.round(card?.left ?? -1)).toBe(16);
+    expect(card?.right ?? 999).toBeLessThanOrEqual(button.left);
+  });
+
   it("keeps words that come once the panel closed unsaid and out of sight, with their marks, until it opens", async () => {
     const speech = fakeSpeech([voice("Samantha", "en-US", { isDefault: true })]);
     let answer: () => void = () => {};
@@ -2358,7 +2373,7 @@ describe("Report a problem with the tutor's words", () => {
       tutor: true,
       adult: true,
       report: (_, n) => {
-        if (going) throw refused(Code.Unavailable, Cause.STILL_GOING);
+        if (going) throw refused(Code.Aborted, Cause.STILL_GOING);
         if (n === reportRequests.length - 1 && reportRequests.length <= 20) {
           throw refused(Code.InvalidArgument, Cause.KEY_ALREADY_USED);
         }
