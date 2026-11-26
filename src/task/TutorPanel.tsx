@@ -418,6 +418,7 @@ function AskField({ ask }: { readonly ask: AskKit }) {
                   before.current = draft;
                   setUnheard(false);
                   setDictated(undefined);
+                  setStopped(false);
                   dictation.start();
                 }}
               />

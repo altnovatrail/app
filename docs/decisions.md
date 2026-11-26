@@ -4,7 +4,7 @@
 >
 > **Rule:** do not propose again what was rejected without new facts. If a decision has to change, ask the author and rewrite its entry in its place, and every entry the change touches: an entry is its text in force — what was decided, why, what was rejected and what a change of it edits —, git keeps the old text, and the commit says why. An entry's number stands in its heading alone: an entry cites no other entry and no section, says in words what it rests on, and carries no date of who decided it and no amendment; a fact that no run of ours checks cites its one record of [sources.md](sources.md). An entry that still has dated amendments, or one marked "Superseded", stays as it is until a task touches it, and that task rewrites it whole, its amendments folded in.
 >
-> The repository was set up on 2026-10-19 from the template of `spec` v0.1.0; a move to a tag of `spec` is its commit, not an entry. The tag in force is the submodule's, which CLAUDE.md and RUN.md name: what the entries of the earlier moves say of the tag they stood on and of the versions of `spec`'s packages is history. How it comes to differ from the template — tools in the devcontainer, rules in RUN.md — is recorded here as a decision. Next number — R85.
+> The repository was set up on 2026-10-19 from the template of `spec` v0.1.0; a move to a tag of `spec` is its commit, not an entry. The tag in force is the submodule's, which CLAUDE.md and RUN.md name: what the entries of the earlier moves say of the tag they stood on and of the versions of `spec`'s packages is history. How it comes to differ from the template — tools in the devcontainer, rules in RUN.md — is recorded here as a decision. Next number — R86.
 >
 > Open questions that concern several repositories — О-, П-, Т- — are in the registers of `spec`, in `spec/docs/product.md`, `spec/docs/privacy.md` and `spec/docs/repositories.md`. What is still to decide in the component itself is in [architecture.md](architecture.md).
 
@@ -2127,3 +2127,17 @@
 — *Rejected:* a stream of `SubmitWork`, which would change its transport and its repeat; a step guessed by the time gone, which would say "more closely" of a slow first model; the names for every account, which the debug mode alone shows.
 
 — *Consequence:* `src/paper/progress.ts`, `Solve.tsx`, `SolveTutor.tsx`, `progress.node.test.ts`, `PaperScreen.browser.test.tsx`; `src/task/TaskLayout.tsx`; `src/theme/theme.css`; `src/i18n/en.ts`, `ru.ts`; [architecture.md](architecture.md).
+
+## The microphone of the tutor's field
+
+**R85. A press of the microphone stops what the app is saying first, and where the browser has nothing to ask first — no `available`, as WebKit — starts the recognition within the press itself; a listening with no sound and no speech `NO_AUDIO_MS` after it began ends as one that heard nothing, but only while the browser has the microphone granted; each event of a listening is a line of the Debug window.**
+- **The voice:** `useSpeech().stop()` before the recognition is made, whether the voicing is on or not; the line of the start says whether the voice was speaking.
+- **The start:** a browser with `available` — Chrome — is asked first whether it recognises the language on the device, as before, and starts once it has answered; a browser without it starts in the press, with no promise between.
+- **The timer:** armed before `start()`, cleared by `audiostart`, `speechstart` and a result; `navigator.permissions` tells whether the microphone is granted, read when the field comes and on each change; a browser that does not say counts as not granted, and its listening waits.
+- **The journal:** start, sound, speech, end with its count of results, a refusal with its code, and the timer, as lines of `app`.
+
+— *Why:* on an iPad the synthesis and the recognition share one audio session: with the tutor's voice holding it, the system shows its microphone and "Listening…" stays with nothing written — what the author saw, and closing and opening the panel helped only by chance, as closing stops the voice. A promise before `start()` is a step out of the press, which WebKit may hold against a start. The timer turns a deaf listening into the line the field already has, "Nothing was heard. Try again, or type.", so no new words and no state of the mockup; a prompt for the microphone waits for the learner, however long, so the timer stays off until the grant is known. The journal is the only way to see on the device what the browser did.
+
+— *Rejected:* asking `available` when the field comes, so that every browser starts in the press — in headless Chromium the call crashes the page, and the field would ask on every screen; a timer whatever the grant — it would cut a learner reading the prompt; a new message for a deaf microphone — a state of the mockup for a case the existing line covers.
+
+— *Consequence:* `src/voice/dictation.ts`; `src/task/TutorPanel.tsx`, `TutorPanel.browser.test.tsx`; `src/test/recognition.ts`; [architecture.md](architecture.md).

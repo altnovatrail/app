@@ -13,12 +13,20 @@ export class FakeRecognition implements Recognition {
   onresult: ((event: RecognitionEvent) => void) | null = null;
   onerror: ((event: Event) => void) | null = null;
   onend: (() => void) | null = null;
+  onaudiostart: (() => void) | null = null;
+  onspeechstart: (() => void) | null = null;
   started = false;
+  /** Set before the press: the recognition starts and no sound ever comes, as on an iPad whose voice holds the audio. */
+  static deaf = false;
+  /** Set before the press: the browser refuses the start at once, as one started elsewhere. */
+  static refuses = false;
   constructor() {
     FakeRecognition.made.push(this);
   }
   start() {
+    if (FakeRecognition.refuses) throw new DOMException("already started", "InvalidStateError");
     this.started = true;
+    if (!FakeRecognition.deaf) queueMicrotask(() => this.onaudiostart?.());
   }
   /** Stop: the browser ends the listening, and says so. */
   stop() {
@@ -40,14 +48,34 @@ export class LocalRecognition extends FakeRecognition {
   }
 }
 
+/** A fake of a browser that takes its time to say whether it recognises on the device. */
+export class SlowRecognition extends FakeRecognition {
+  static answer: ((state: string) => void) | undefined;
+  static available(): Promise<string> {
+    return new Promise((resolve) => {
+      SlowRecognition.answer = resolve;
+    });
+  }
+}
+
 /**
  * The fake in the place of the browser's recognition, "local" the one that recognises on the
  * device; false to take the browser's away.
  */
-export function withRecognition(fake: boolean | "local"): void {
+export function withRecognition(fake: boolean | "local" | "slow"): void {
   FakeRecognition.made = [];
+  FakeRecognition.deaf = false;
+  FakeRecognition.refuses = false;
   LocalRecognition.asked = [];
-  const Class = fake === "local" ? LocalRecognition : fake ? FakeRecognition : undefined;
+  SlowRecognition.answer = undefined;
+  const Class =
+    fake === "local"
+      ? LocalRecognition
+      : fake === "slow"
+        ? SlowRecognition
+        : fake
+          ? FakeRecognition
+          : undefined;
   vi.stubGlobal("SpeechRecognition", Class);
   vi.stubGlobal("webkitSpeechRecognition", Class);
 }
