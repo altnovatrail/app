@@ -13,6 +13,7 @@ import type { ReactNode, Ref } from "react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { readQuota, shareText } from "../account/quota.ts";
 import { useApi } from "../api/ApiContext.tsx";
+import { useGrabber } from "../app/grabber.ts";
 import { Icon } from "../app/Icon.tsx";
 import { IconButton } from "../app/IconButton.tsx";
 import { useNarrow } from "../app/narrow.ts";
@@ -202,9 +203,10 @@ export function TutorPanel({
 }) {
   const { words } = useLanguage();
   const narrow = useNarrow();
-  // The phone's sheet at half the height, or by its grabber over the whole screen; each opening
-  // begins at half.
+  // The phone's sheet at half the height, or by its grabber, tapped or dragged, over the whole
+  // screen; each opening begins at half.
   const [full, setFull] = useState(false);
+  const grab = useGrabber(".nt-tutor-panel", full, setFull);
   // The dialog of the grown-ups' PIN, which grown-up mode's key opens.
   const [pad, setPad] = useState(false);
   useEffect(() => {
@@ -230,7 +232,7 @@ export function TutorPanel({
           value={full ? "half-screen" : "full-screen"}
           className="nt-tutor-grab"
           aria-expanded={full}
-          onClick={() => setFull((was) => !was)}
+          {...grab}
         />
       ) : null}
       <div className="nt-tutor-head">

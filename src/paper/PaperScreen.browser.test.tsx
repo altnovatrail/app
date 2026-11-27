@@ -768,7 +768,11 @@ it("shows the Check's verdict: Not yet, then Correct, and checks a task solved a
   // Solved: "Next task" stands in the row beside Check, which stays open, and the card is put away.
   const row = document.querySelector<HTMLElement>(".nt-task-row");
   if (row === null) throw new Error("no row");
-  expect(within(row).getByRole("button", { name: "Next task" })).toBeVisible();
+  const next = within(row).getByRole("button", { name: "Next task" });
+  expect(next).toBeVisible();
+  // Its words, then the mockup's arrow in a circle.
+  expect(next.textContent).toBe("Next task");
+  expect(next.lastElementChild?.tagName.toLowerCase()).toBe("svg");
   const check = within(row).getByRole("button", { name: "Check" });
   expect(check).toHaveAttribute("aria-disabled", "false");
   // The card of the solved task puts itself away by OK: the row holds the way on.
@@ -1539,6 +1543,28 @@ it.each([
     await waitFor(() => expect(document.querySelector(".nt-tooltip")?.textContent).toBe("Ask"));
   },
 );
+
+it("keeps the row of a solved task in one line on a phone, Next task its arrow alone, its words still its name", async () => {
+  await page.viewport(320, 700);
+  await solving({ debug: true, checked: () => ({ items: [], solved: {} }) });
+  await screen.findByRole("button", { name: DEBUG });
+  writeOn(sheet());
+  await userEvent.click(screen.getByRole("button", { name: "Check" }));
+  const next = await within(row()).findByRole("button", { name: "Next task" });
+  await waitFor(() => expect(row().dataset.fit).toBe("icons"));
+  expect(buttonNames(row())).toEqual([DEBUG, "Ask", "Check", "Next task"]);
+  expect(row().scrollWidth).toBeLessThanOrEqual(row().clientWidth + 1);
+  expect(row().getBoundingClientRect().right).toBeLessThanOrEqual(320);
+  for (const button of row().querySelectorAll("button"))
+    expect(middle(button)).toBeCloseTo(middle(next), 0);
+  round(next);
+  expect(next.querySelector("svg")).not.toBeNull();
+  expect(next.querySelector(".nt-retake-words")?.getBoundingClientRect().width).toBeLessThanOrEqual(
+    1,
+  );
+  await userEvent.hover(next);
+  await waitFor(() => expect(document.querySelector(".nt-tooltip")?.textContent).toBe("Next task"));
+});
 
 it("frames a task by a rectangle dragged corner to corner, after a tap, and resizes it by its corner", async () => {
   await renderPaper({ found: () => ({ frames: [] }) });

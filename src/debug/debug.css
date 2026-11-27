@@ -57,7 +57,7 @@ button.nt-debug-button {
     box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.14);
   }
   .nt-debug-panel[data-size="full"] {
-    block-size: calc(100dvh - 4.375rem);
+    block-size: 100dvh;
   }
 }
 @media (prefers-reduced-motion: no-preference) {
@@ -70,9 +70,10 @@ button.nt-debug-button {
     animation-name: nt-sheet-in;
   }
 }
-/* The grabber, 88 × 44 at the sheet's top, on a phone alone. */
+/* The grabber, 88 × 44 at the sheet's top, on a phone alone; a drag on it is its own. */
 button.nt-debug-grab {
   display: none;
+  touch-action: none;
 }
 @media (width < 600px) {
   button.nt-debug-grab {

@@ -226,12 +226,12 @@ describe("the tutor's sheet on a phone", () => {
     expect(box.height).toBeCloseTo(844 * 0.51, 0);
     expect(canvas()).toHaveAttribute("tools-hidden");
     expect(row()).not.toBeVisible();
-    // The grabber takes it over the whole screen, 70 below the top, and back.
+    // The grabber takes it over the whole screen, to the window's top, and back.
     const grab = panel().getByRole("button", { name: "Full screen" });
     expect(grab).toHaveAttribute("aria-expanded", "false");
     await userEvent.click(grab);
     await settled();
-    expect(aside.getBoundingClientRect().top).toBeCloseTo(70, 0);
+    expect(aside.getBoundingClientRect().top).toBeCloseTo(0, 0);
     const half = panel().getByRole("button", { name: "Half screen" });
     expect(half).toHaveAttribute("aria-expanded", "true");
     await userEvent.click(half);
@@ -243,6 +243,42 @@ describe("the tutor's sheet on a phone", () => {
     const tutor = screen.getByRole("button", { name: "Tutor" }).getBoundingClientRect();
     expect(tutor.bottom).toBeLessThanOrEqual(844 - 172 + 0.5);
     expect(tutor.right).toBeCloseTo(390 - 16, 0);
+  });
+
+  it("follows a drag of its grabber, and stands at the nearer of half and the whole screen once let go", async () => {
+    await page.viewport(390, 844);
+    render(inLanguage(<Drawn />));
+    const aside = screen.getByRole("complementary", { name: "Tutor" });
+    await settled();
+    const half = aside.getBoundingClientRect().height;
+    const grab = panel().getByRole("button", { name: "Full screen" });
+    const press = (type: string, y: number) =>
+      grab.dispatchEvent(
+        new PointerEvent(type, { bubbles: true, pointerId: 7, isPrimary: true, clientY: y }),
+      );
+    // Up by 140: the sheet's top goes with the finger.
+    press("pointerdown", 440);
+    press("pointermove", 300);
+    expect(aside.getBoundingClientRect().height).toBeCloseTo(half + 140, 0);
+    // Up to near the top and let go: the whole screen.
+    press("pointermove", 60);
+    press("pointerup", 60);
+    await waitFor(() => expect(aside).toHaveAttribute("data-size", "full"));
+    expect(aside.getBoundingClientRect().top).toBeCloseTo(0, 0);
+    const down = panel().getByRole("button", { name: "Half screen" });
+    expect(down).toHaveAttribute("aria-expanded", "true");
+    // Down past the middle and let go: half again; no lower than a third while dragged.
+    const back = (type: string, y: number) =>
+      down.dispatchEvent(
+        new PointerEvent(type, { bubbles: true, pointerId: 8, isPrimary: true, clientY: y }),
+      );
+    back("pointerdown", 20);
+    back("pointermove", 800);
+    expect(aside.getBoundingClientRect().height).toBeCloseTo(844 * 0.3, 0);
+    back("pointermove", 400);
+    back("pointerup", 400);
+    await waitFor(() => expect(aside).toHaveAttribute("data-size", "half"));
+    expect(aside.getBoundingClientRect().height).toBeCloseTo(half, 0);
   });
 
   it("opens over the whole screen again at half the height", async () => {

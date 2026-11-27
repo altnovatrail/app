@@ -1,8 +1,8 @@
 // The top bar of the page to pick from keeps one row: where the captions of the buttons at its end
 // do not fit beside Back and what was found, each button shows its icon alone, its caption still
 // its name and now a tooltip too; only where even the icons do not fit do the buttons go below. The
-// row of the screen of solving keeps one row the same way: "Ask" goes to its icon first, and only
-// then does the row wrap. A row is measured, not set by a width, since the words of each language
+// row of the screen of solving keeps one row the same way: "Ask" and "Next task" go to their icons
+// first, and only then does the row wrap. A row is measured, not set by a width, since the words of each language
 // differ in length.
 import { type Ref, type RefObject, useLayoutEffect } from "react";
 import { Icon } from "../app/Icon.tsx";
@@ -129,8 +129,10 @@ function captionHidden(button: HTMLElement): boolean {
 }
 
 /**
- * A button of a fitted bar or row: its icon and its caption, which the fit may hide to the eye. A
- * button that opens a panel says so by `expanded`, and gives itself by `buttonRef`.
+ * A button of a fitted bar or row: its icon and its caption, which the fit may hide to the eye; the
+ * icon after the caption where `iconLast`, as "Next task"'s arrow. A button that opens a panel says
+ * so by `expanded`, and gives itself by `buttonRef`; one that waits says so by `disabled`, and
+ * keeps the focus.
  */
 export function BarButton({
   icon,
@@ -139,6 +141,8 @@ export function BarButton({
   className = "nt-glass nt-retake",
   expanded,
   buttonRef,
+  iconLast = false,
+  disabled,
 }: {
   readonly icon: IconValue;
   readonly caption: string;
@@ -146,6 +150,8 @@ export function BarButton({
   readonly className?: string;
   readonly expanded?: boolean;
   readonly buttonRef?: Ref<HTMLButtonElement>;
+  readonly iconLast?: boolean;
+  readonly disabled?: boolean;
 }) {
   const tooltip = useTooltip<HTMLButtonElement>(caption, { needed: captionHidden });
   const { host } = tooltip;
@@ -156,12 +162,14 @@ export function BarButton({
       type="button"
       className={className}
       {...(expanded === undefined ? {} : { "aria-expanded": expanded })}
+      {...(disabled === undefined ? {} : { "aria-disabled": disabled })}
       onClick={onClick}
       onFocus={tooltip.onFocus}
       onBlur={tooltip.onBlur}
     >
-      <Icon value={icon} />
+      {iconLast ? null : <Icon value={icon} />}
       <span className="nt-retake-words">{caption}</span>
+      {iconLast ? <Icon value={icon} /> : null}
     </button>,
   );
 }

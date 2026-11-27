@@ -4880,6 +4880,24 @@ main.nt-task-screen > .nt-task-foot {
   inline-size: var(--nt-target);
   padding-inline: 0;
 }
+/*
+ * Next task, once the task is over: Check's fill, its words and then the mockup's arrow in a
+ * circle; the arrow alone, 44 round, where the row does not fit one line with their words.
+ */
+.nt-task-row button.nt-check-button.nt-row-next {
+  flex: none;
+  gap: 0.5rem;
+  padding: 0 1.125rem 0 1.375rem;
+  white-space: nowrap;
+}
+.nt-task-row button.nt-row-next > svg {
+  font-size: 1.0625rem;
+}
+.nt-task-row:is([data-fit="icons"], [data-fit="below"]) button.nt-row-next {
+  justify-content: center;
+  inline-size: var(--nt-target);
+  padding-inline: 0;
+}
 .nt-row-line {
   flex: none;
   inline-size: 1px;
@@ -5260,7 +5278,7 @@ button.nt-confirm-yes {
  * the debug panel, from 74 below its top — under the top bar — to 16 above its foot, as it too,
  * radius 28; on a phone a sheet from
  * the bottom of the whole width, glass of 0.96, radius 28 at its top, at half the window's height,
- * or by its grabber to 70 below its top. A column: the head, the step's card, the conversation,
+ * or by its grabber, tapped or dragged, to the window's top. A column: the head, the step's card, the conversation,
  * which scrolls, and the buttons at its foot.
  */
 .nt-tutor-panel {
@@ -5285,7 +5303,7 @@ button.nt-confirm-yes {
     box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.14);
   }
   .nt-tutor-panel[data-size="full"] {
-    block-size: calc(100dvh - 4.375rem);
+    block-size: 100dvh;
   }
 }
 @media (prefers-reduced-motion: no-preference) {
@@ -5310,9 +5328,13 @@ button.nt-confirm-yes {
     transform: translateY(2.5rem);
   }
 }
-/* The grabber, 88 × 44 at the sheet's top in its middle, with no fill of its own. */
+/*
+ * The grabber, 88 × 44 at the sheet's top in its middle, with no fill of its own; a drag on it is
+ * its own, not the page's scroll.
+ */
 .nt-tutor-panel > .nt-tip-host > button.nt-tutor-grab,
 .nt-tutor-panel > .nt-tip-host > button.nt-tutor-grab:hover {
+  touch-action: none;
   position: absolute;
   inset-block-start: 0;
   inset-inline-start: calc(50% - 2.75rem);
