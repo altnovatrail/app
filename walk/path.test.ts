@@ -470,14 +470,14 @@ describe.each(NAMED)("the path in %s", (name) => {
     await page.getByRole("button", { name: "Sign in with Google" }).click();
     await chooseDev(page);
     await home(page);
-    // The platform AI quota share of the profile today.
-    const share = page.getByText(/Tutor time today: \d+\s?% used|Today's tutor time is used up/);
+    // The platform AI quota share of the profile today, the name of the ring at the top right.
+    const share = page.getByRole("button", { name: /^Tutor time: / });
     await share.waitFor({ timeout: 30_000 });
-    const used = (await share.textContent()) ?? "";
+    const used = (await share.getAttribute("aria-label")) ?? "";
     quotaLine = used;
     note(used);
     // With the day's quota spent, api gives no lesson and begins no task in handwriting.
-    expect(used, QUOTA_SPENT).toMatch(/Tutor time today: \d+\s?% used/);
+    expect(used, QUOTA_SPENT).not.toBe("Tutor time: used up today");
     const connected = page.getByRole("region", { name: "Connected" });
     if ((await connected.getByRole("article").count()) === 0) {
       await page

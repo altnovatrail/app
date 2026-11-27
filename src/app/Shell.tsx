@@ -1,7 +1,7 @@
 // The frame of Home, Subjects and the skill map, as the mockup's `home`: from 600
 // CSS px a row at the top — at its left a pill of the places, Home and Subjects, the cognitive map
-// shut with "Soon" until it comes; at its right a pill of the tutor, shut until it comes too, the
-// notifications — the next versions of the legal texts — and the profile's menu, which holds Settings and Help —, on a phone the three places as a tab bar at the
+// shut with "Soon" until it comes; at its right a pill of the ring of tutor time (TutorTime.tsx), the
+// tutor, shut until it comes too, the notifications — the next versions of the legal texts — and the profile's menu, which holds Settings and Help —, on a phone the three places as a tab bar at the
 // bottom and the mark at the top left. A place is a link of the hash, the page shown marked as
 // current.
 import { useCallback, useEffect, useId, useRef, useState } from "react";
@@ -22,6 +22,7 @@ import { PopOver } from "./PopOver.tsx";
 import { HOME, navigate, type Route, SUBJECTS } from "./router.ts";
 import { APP_NAME } from "./Screen.tsx";
 import { useTooltip } from "./Tooltip.tsx";
+import { TutorTime } from "./TutorTime.tsx";
 
 /** The places of the menu a route belongs to: a module's map is Subjects'. */
 export type Place = "home" | "subjects";
@@ -260,6 +261,7 @@ export function ShellBar({ place }: { readonly place: Place }) {
       <header className="nt-shell-top">
         <Mark className="nt-mark nt-top-mark" />
         <div className="nt-top-pills">
+          <TutorTime />
           <ShutTutor />
           <Bell />
           <LearnerMenu />

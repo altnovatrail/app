@@ -26,7 +26,7 @@ describe("forced colours", () => {
       render(
         inLanguage(
           <div data-screen="home">
-            <HomeScreen connected={[]} next={null} quota={{ profilePercent: 91 } as never} />
+            <HomeScreen connected={[]} next={null} />
           </div>,
         ),
       );

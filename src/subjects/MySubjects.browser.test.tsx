@@ -1,7 +1,6 @@
 // Home and Subjects in the browser: on Home what comes next, the lessons open, a card
-// for each module connected with the states of its skills, the legend, the task from paper and the
-// line of the tutor time — the profile's share, the cap reached, and none with no share or no
-// GetQuota or a share that did not come —; on Subjects the cards by role and name, connecting and
+// for each module connected with the states of its skills, the legend, the task from paper, and no
+// line of the tutor time, which is the frame's ring; on Subjects the cards by role and name, connecting and
 // disconnecting, a module with no current version, an empty catalog and the refusals; with api on
 // connect-es's router and the open views on the device's memory.
 import {
@@ -29,14 +28,12 @@ import {
   ProgressService,
 } from "@altnovatrail/contracts/novatrail/api/v1/progress_pb.js";
 import { create, type MessageInitShape } from "@bufbuild/protobuf";
-import { timestampFromDate } from "@bufbuild/protobuf/wkt";
 import { Code, ConnectError, type ConnectRouter, createRouterTransport } from "@connectrpc/connect";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { page, userEvent } from "vitest/browser";
 import { ApiProvider } from "../api/ApiContext.tsx";
 import { createApi } from "../api/client.ts";
-import { dateTimeFormat } from "../i18n/intl.ts";
 import { LessonProvider } from "../lesson/LessonContext.tsx";
 import { PackageChecks } from "../packages/checks.ts";
 import { DeviceFiles } from "../packages/files.ts";
@@ -639,117 +636,18 @@ describe("the lessons open", () => {
 });
 
 describe("the tutor time", () => {
-  /** The line of the tutor time, if the screen shows one. */
-  const line = () => screen.queryByText(/^(Tutor time today|Today's tutor time|Время наставника)/);
-
-  it("says, at the foot of the card of what comes next, how much of today's the profile has used, and never the account's", async () => {
-    const { asked } = await renderSubjects({
-      quota: () => ({ profilePercent: 40, accountPercent: 90 }),
-    });
-    const card = within(await screen.findByRole("region", { name: "Next up" }));
-    const said = await card.findByText("Tutor time today: 40% used");
-    const next = card.getByRole("button", { name: "What's next" });
-    // The way to what the engine chooses at its right.
-    expect(said.compareDocumentPosition(next) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    // Its bar beside the words, as long as the share, which the words alone name.
-    const bar = said.querySelector<HTMLElement>(".nt-quota-bar");
-    expect(bar).toHaveAttribute("aria-hidden", "true");
-    expect((bar?.firstElementChild as HTMLElement | null)?.style.inlineSize).toBe("40%");
-    expect(screen.queryByText(/90/)).toBeNull();
-    // By the learner's action, ACTION_LEARNING.
-    expect(asked).toContain("quota p1 1");
-  });
-
-  it("says, once a cap is reached, that the tutor's time is over and when it comes back", async () => {
-    const now = new Date();
-    const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
-    await renderSubjects(
-      {
-        quota: () => ({
-          profilePercent: 100,
-          capReached: true,
-          nextFamilyDay: timestampFromDate(midnight),
-        }),
-      },
-      "ru",
-    );
-    const time = dateTimeFormat("ru", { timeStyle: "short" }).format(midnight);
-    expect(
-      await screen.findByText(
-        `Время наставника на сегодня кончилось. Оно вернётся завтра в ${time}`,
-      ),
-    ).toBeVisible();
-    // The bar beside it full, whatever share the profile's own was.
-    const fill = document.querySelector<HTMLElement>(".nt-quota-bar > span");
-    expect(fill?.style.inlineSize).toBe("100%");
-  });
-
-  it("fills the bar once the account's cap is reached, with the profile's own share below it", async () => {
-    await renderSubjects({ quota: () => ({ profilePercent: 20, capReached: true }) });
-    const card = within(await screen.findByRole("region", { name: "Next up" }));
-    await waitFor(() =>
-      expect(
-        card
-          .getByRole("button", { name: "What's next" })
-          .closest("section")
-          ?.querySelector(".nt-quota"),
-      ).toBeTruthy(),
-    );
-    expect(screen.queryByText("Tutor time today: 20% used")).toBeNull();
-    expect(document.querySelector<HTMLElement>(".nt-quota-bar > span")?.style.inlineSize).toBe(
-      "100%",
-    );
-  });
-
-  it("is no line while platform AI is closed to the account, nor from an api with no GetQuota", async () => {
-    const { asked, unmount } = await renderSubjects({ quota: () => ({}) });
-    await screen.findByText("Nothing to begin yet: no subject is connected");
-    await vi.waitFor(() => expect(asked).toContain("quota p1 1"));
-    expect(line()).toBeNull();
-    unmount();
-    // No GetQuota at all: no line, and no offer to reload.
-    const { stale } = await renderSubjects({ connected: [{ moduleId: MATH, packageDigest: D1 }] });
-    expect(await screen.findByRole("article", { name: "Olympiad maths" })).toBeTruthy();
-    expect(line()).toBeNull();
-    expect(stale).not.toHaveBeenCalled();
-  });
-
-  it("holds nothing back when the share did not come: the lists stand, with no line and no alert", async () => {
+  it("is not Home's: its card of what comes next has no line or bar of it, and Home asks no share", async () => {
     const { asked } = await renderSubjects({
       connected: [{ moduleId: MATH, packageDigest: D1 }],
-      quota: () => {
-        throw new ConnectError("down", Code.Unavailable);
-      },
+      quota: () => ({ profilePercent: 40 }),
     });
     expect(await screen.findByRole("article", { name: "Olympiad maths" })).toBeTruthy();
-    // The client's own repeats asked again, and then gave up.
-    await vi.waitFor(() =>
-      expect(asked.filter((each) => each.startsWith("quota"))).toHaveLength(5),
-    );
-    expect(line()).toBeNull();
-    expect(screen.queryByRole("alert")).toBeNull();
-    expect(screen.getByRole("heading", { level: 1, name: "Home" })).toBeTruthy();
+    const card = await screen.findByRole("region", { name: "Next up" });
+    expect(card.textContent).not.toMatch(/Tutor time|40/);
+    expect(document.querySelector(".nt-quota-bar")).toBeNull();
+    // The ring of the frame's top right asks it, not Home.
+    expect(asked.filter((each) => each.startsWith("quota"))).toEqual([]);
   });
-
-  it("is asked again with the lists, when a retry brings them after both failed", async () => {
-    let down = true;
-    await renderSubjects({
-      catalog: [{ moduleId: MATH, packageDigest: D1 }],
-      list: () => {
-        if (down) throw new ConnectError("down", Code.Unavailable);
-      },
-      quota: () => {
-        if (down) throw new ConnectError("down", Code.Unavailable);
-        return { profilePercent: 40 };
-      },
-    });
-    expect(
-      await screen.findByRole("heading", { level: 1, name: "No connection" }, { timeout: 15_000 }),
-    ).toBeTruthy();
-    down = false;
-    await userEvent.click(screen.getByRole("button", { name: "Try again" }));
-    expect(await screen.findByText("Tutor time today: 40% used")).toBeTruthy();
-  }, 30_000);
 });
 
 /** Six skills of one graph, one in each state and one with a rubric. */

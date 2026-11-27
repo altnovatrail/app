@@ -45,7 +45,7 @@ function show(props: Partial<HomeScreenProps>, language: Language) {
   return render(
     inLanguage(
       <div data-screen="home">
-        <HomeScreen connected={[]} next={next} quota={{ profilePercent: 91 } as never} {...props} />
+        <HomeScreen connected={[]} next={next} {...props} />
       </div>,
       language,
     ),
@@ -89,10 +89,10 @@ describe("Home's way to what comes next beside the sheet", () => {
     },
   );
 
-  it("stands beside the tutor time on a card of the whole width, at its end beside the other half", async () => {
+  it("stands at the start of a card of the whole width, under the words, and at its end beside the other half", async () => {
     await page.viewport(820, 1180);
     const { unmount } = show({}, "en");
-    expect(box(".nt-next-step").left - box(".nt-quota").right).toBeCloseTo(24, 0);
+    expect(box(".nt-next-step").left).toBeCloseTo(box(".nt-next-foot").left, 0);
     unmount();
     await page.viewport(1180, 820);
     show({}, "en");

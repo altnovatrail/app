@@ -1,5 +1,5 @@
 // The share of the quota of platform AI, in Node (the contract): GetQuota by whose action, an api
-// with no GetQuota as no share and no reload, and the words of the learner's line and of the
+// with no GetQuota as no share and no reload, and the learner's ring — its level, its words and its sign — and the words of the
 // adult's section — the shares in percent, the cap reached, when the next family day begins by the
 // device's calendar, and no share at all.
 import {
@@ -17,7 +17,7 @@ import { createApi } from "../api/client.ts";
 import { ApiError } from "../api/failure.ts";
 import { dateTimeFormat, percentText } from "../i18n/intl.ts";
 import { WORDS } from "../i18n/words.ts";
-import { type AdultQuota, adultQuota, learnerQuotaText, readQuota, shareText } from "./quota.ts";
+import { type AdultQuota, adultQuota, readQuota, ringOf, shareText } from "./quota.ts";
 
 function harness(routes: (router: ConnectRouter) => void) {
   const on = { stale: vi.fn(), accountGone: async () => {}, noAccess: async () => {} };
@@ -81,39 +81,79 @@ describe("readQuota", () => {
   });
 });
 
-describe("the learner's line", () => {
-  it("says the profile's share in percent, as the language writes it, and never the account's", () => {
-    const spent = share({ profilePercent: 40, accountPercent: 90 });
-    expect(learnerQuotaText(spent, WORDS.en)).toBe("Tutor time today: 40% used");
-    expect(learnerQuotaText(spent, WORDS.ru)).toBe(
-      `Время наставника на сегодня: потрачено ${percentText("ru", 40)}`,
-    );
-    expect(learnerQuotaText(share({ profilePercent: 0 }), WORDS.en)).toBe(
-      "Tutor time today: 0% used",
+describe("the learner's ring", () => {
+  /** The ring of a share, there. */
+  const ring = (init: Parameters<typeof share>[0], words = WORDS.en, now?: Date) => {
+    const made = ringOf(share(init), words, now);
+    if (made === undefined) throw new Error("no ring");
+    return made;
+  };
+
+  it("is green below 50%, yellow from 50 to 80, red from 80, by the profile's share alone", () => {
+    expect([0, 1, 49, 50, 79, 80, 99].map((p) => ring({ profilePercent: p }).level)).toEqual([
+      "fresh",
+      "low",
+      "low",
+      "half",
+      "half",
+      "high",
+      "high",
+    ]);
+    const spent = ring({ profilePercent: 40, accountPercent: 90 });
+    expect(spent).toMatchObject({
+      fill: 40,
+      number: "40",
+      percent: "40%",
+      name: "Tutor time: 40% used today",
+      title: "Plenty left today",
+      line: "Enough for many more questions and checks.",
+    });
+    // The number is the ring's alone: the words under the heading hold none.
+    expect(spent.title + spent.line).not.toMatch(/\d/);
+    // The account's share, which a learning action never gets, nowhere.
+    expect(JSON.stringify(spent)).not.toMatch(/90/);
+    expect(ring({ profilePercent: 40 }, WORDS.ru)).toMatchObject({
+      name: `Время наставника: сегодня потрачено ${percentText("ru", 40)}`,
+      percent: percentText("ru", 40),
+    });
+  });
+
+  it("names its sign, not a number, while none is used, and says what each share means", () => {
+    expect(ring({ profilePercent: 0 })).toMatchObject({
+      fill: 0,
+      name: "Tutor time: none used today",
+      title: "None used yet today",
+    });
+    expect(ring({ profilePercent: 65 }).title).toBe("More than half used");
+    expect(ring({ profilePercent: 85 }).line).toBe(
+      "When it ends, the tutor and the AI's check of works wait until it renews.",
     );
   });
 
-  it("says, once a cap is reached, what a refusal of the quota says: when the tutor comes back", () => {
-    const reached = share({
+  it("is full and red once a cap is reached — the account's too —, and says when it renews", () => {
+    const reached = {
       profilePercent: 70,
       capReached: true,
       nextFamilyDay: timestampFromDate(MIDNIGHT),
+    };
+    expect(ring(reached, WORDS.en, EVENING)).toMatchObject({
+      level: "out",
+      fill: 100,
+      name: "Tutor time: used up today",
+      title: "Used up for today",
+      line: "Until it renews, the tutor and the AI's check of works wait.",
+      renews: `Renews tomorrow at ${time("en", MIDNIGHT)}`,
     });
-    expect(learnerQuotaText(reached, WORDS.en, EVENING)).toBe(
-      `Today's tutor time is used up. It comes back tomorrow at ${time("en", MIDNIGHT)}`,
+    expect(ring(reached, WORDS.ru, EVENING).renews).toBe(
+      `Обновится завтра в ${time("ru", MIDNIGHT)}`,
     );
-    expect(learnerQuotaText(reached, WORDS.ru, EVENING)).toBe(
-      `Время наставника на сегодня кончилось. Оно вернётся завтра в ${time("ru", MIDNIGHT)}`,
-    );
-    // With no day beside it, the neutral phrase, as the refusal has.
-    expect(learnerQuotaText(share({ profilePercent: 100, capReached: true }), WORDS.en)).toBe(
-      "The tutor can't answer right now",
-    );
+    // With no day beside it, no day it renews.
+    expect(ring({ profilePercent: 100, capReached: true }).renews).toBeUndefined();
   });
 
-  it("is no line while the tariff has no caps", () => {
-    expect(learnerQuotaText(share({}), WORDS.en)).toBeUndefined();
-    expect(learnerQuotaText(share({ capReached: true }), WORDS.ru)).toBeUndefined();
+  it("is none while the tariff has no caps", () => {
+    expect(ringOf(share({}), WORDS.en)).toBeUndefined();
+    expect(ringOf(share({ capReached: true }), WORDS.ru)).toBeUndefined();
   });
 });
 

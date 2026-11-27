@@ -7,13 +7,11 @@
 // `unimplemented`, which is no share, with no reload offered, as the legal texts' is. No DOM.
 import type { QuotaShare } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import type { Action } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
-import { Cause } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import { timestampDate } from "@bufbuild/protobuf/wkt";
 import type { Api } from "../api/client.ts";
 import { parseFailure } from "../api/failure.ts";
-import type { ReadOutcome } from "../api/outcome.ts";
-import { type DayPhrases, dayText, outcomeText } from "../api/words.ts";
-import { percentText } from "../i18n/intl.ts";
+import { type DayPhrases, dayText } from "../api/words.ts";
+import { numberFormat, percentText } from "../i18n/intl.ts";
 import type { Words } from "../i18n/words.ts";
 
 /** The share of a profile, by whose action: none from an api with no `GetQuota` yet. */
@@ -30,27 +28,77 @@ export async function readQuota(
   }
 }
 
+/** When the next family day brings the quota back, beside the shares of the section for adults. */
+const RENEWS = {
+  today: "quota.renews-today",
+  tomorrow: "quota.renews-tomorrow",
+  later: "quota.renews",
+} as const satisfies DayPhrases;
+
 /**
- * The learner's line: their profile's share, or, once a cap is reached, what a refusal of the quota
- * says — that the tutor's time is over, and when it comes back. None while the account's tariff has
- * no caps: platform AI is closed to it, and the screens say so where a call meets it. A share of
- * the account, which a learning action never gets, the line never shows.
+ * How the ring of tutor time at the top right looks: none of today's used yet, a sparkle in place of
+ * the number; below 50% green; to 80% yellow; from 80% red; once a cap is reached — the profile's or
+ * the account's, which the learner never sees — the full red ring, an hourglass in place of the
+ * number.
  */
-export function learnerQuotaText(
-  share: QuotaShare,
-  words: Words,
-  now: Date = new Date(),
-): string | undefined {
+export type RingLevel = "fresh" | "low" | "half" | "high" | "out";
+
+/** The ring of the frame's top right and its pop-over, in the screen's language. */
+export interface Ring {
+  readonly level: RingLevel;
+  /** How full the ring and the bar are, 0 to 100: full once a cap is reached. */
+  readonly fill: number;
+  /** The number in the ring, "20", with no sign of percent: it is 32 px wide. */
+  readonly number: string;
+  /** The share as the language writes it, "20%", in the pop-over's ring. */
+  readonly percent: string;
+  /** The button's name, which the number alone does not tell. */
+  readonly name: string;
+  /** What the share means, under the pop-over's heading, and its line: no number, the ring's. */
+  readonly title: string;
+  readonly line: string;
+  /** When the next family day brings it back, by the device's calendar; none with no day. */
+  readonly renews: string | undefined;
+}
+
+/** When the next family day brings the quota back, in the ring's pop-over under its heading. */
+const RING_RENEWS = {
+  today: "quota.ring-renews-today",
+  tomorrow: "quota.ring-renews-tomorrow",
+  later: "quota.ring-renews",
+} as const satisfies DayPhrases;
+
+/**
+ * The learner's ring: their profile's share, its number in the ring alone, and once a cap is
+ * reached that the tutor waits till the quota renews, when the pop-over says. None while the account's tariff has
+ * no caps: platform AI is closed to it, and the screens say so where a call meets it. A share of
+ * the account, which a learning action never gets, the ring never shows.
+ */
+export function ringOf(share: QuotaShare, words: Words, now: Date = new Date()): Ring | undefined {
   if (share.profilePercent === undefined) return undefined;
-  if (share.capReached) {
-    // The words a refusal of the quota has on every screen: with no day beside it, the neutral one.
-    const closed: ReadOutcome =
-      share.nextFamilyDay === undefined
-        ? { cause: Cause.QUOTA }
-        : { cause: Cause.QUOTA, nextFamilyDay: timestampDate(share.nextFamilyDay) };
-    return outcomeText(closed, words, now);
-  }
-  return shareText(share, words);
+  const fill = share.capReached ? 100 : Math.min(100, Math.max(0, share.profilePercent));
+  const level: RingLevel =
+    fill >= 100 ? "out" : fill === 0 ? "fresh" : fill >= 80 ? "high" : fill >= 50 ? "half" : "low";
+  const percent = percentText(words.language, fill);
+  const renews =
+    share.nextFamilyDay === undefined
+      ? undefined
+      : dayText(RING_RENEWS, timestampDate(share.nextFamilyDay), words, now);
+  return {
+    level,
+    fill,
+    number: numberFormat(words.language).format(fill),
+    percent,
+    name:
+      level === "fresh"
+        ? words.text("quota.ring-fresh")
+        : level === "out"
+          ? words.text("quota.ring-out")
+          : words.text("quota.ring", { percent }),
+    title: words.text(`quota.${level}-title`),
+    line: words.text(`quota.${level}-line`),
+    renews,
+  };
 }
 
 /**
@@ -64,13 +112,6 @@ export function shareText(share: QuotaShare | undefined, words: Words): string |
     percent: percentText(words.language, share.profilePercent),
   });
 }
-
-/** When the next family day brings the quota back, beside the shares of the section for adults. */
-const RENEWS = {
-  today: "quota.renews-today",
-  tomorrow: "quota.renews-tomorrow",
-  later: "quota.renews",
-} as const satisfies DayPhrases;
 
 /** A share as the adult sees it: whose, how much in words, and the percentage its bar fills. */
 export interface AdultShare {

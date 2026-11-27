@@ -162,6 +162,10 @@ export const TABLE: Readonly<Record<string, Value>> = {
   "bell-text": { base: "description", filled: true, mirrored: false },
   // The hour tutor time renews at, a clock.
   "set-time": { base: "schedule", filled: true, mirrored: false },
+  // Tutor time at the top right of the frame, in its ring in place of the share: a sparkle while
+  // none of today's is used, an hourglass once it is used up, each filled.
+  "quota-fresh": { base: "auto-awesome", filled: true, mirrored: false },
+  "quota-out": { base: "hourglass", filled: true, mirrored: false },
 };
 
 /** An icon as the app draws it: its view box, and the paths it fills in the text's colour. */

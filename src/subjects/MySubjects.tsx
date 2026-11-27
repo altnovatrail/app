@@ -1,10 +1,9 @@
 // Home: the learner's home, in the frame of the row of places. Under
 // its heading, "Home" — the pseudonym is the profile's menu's —, the learner begins their work:
-// what comes next and the tutor time on a card at the top — an attempt open outside a lesson a
+// what comes next on a card at the top — an attempt open outside a lesson a
 // press away, else the engine's way, "What's next": no "Something else" beside the
-// attempt, which it would close; a module's Continue or its map goes elsewhere —,
-// with how much of today's tutor time the profile has used, or, once it is used up, when it comes
-// back (the contract's quota); "A task from my paper" beside it, which opens the camera of a
+// attempt, which it would close; a module's Continue or its map goes elsewhere —; the tutor time
+// is the frame's, its ring at the top right (TutorTime.tsx); "A task from my paper" beside it, which opens the camera of a
 // new page, and its pages; each lesson run open, by the lesson's title as this device
 // keeps it, or else its module's name; and the modules connected, each a card with its title
 // in its own explanation language, the states of its skills counted by the rule of skill-map's map,
@@ -12,13 +11,8 @@
 // the licenses are Subjects' (SubjectsPage.tsx), which "All subjects" opens. The legend of the
 // marks stands below the cards, on a phone behind a button; that the tutor is an AI is Help's and
 // the tutor's panel's of the top right (Shell.tsx). It is drawn as the mockup's `home`.
-import type { QuotaShare } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
-// Whose action a request is; the cards have actions of their own.
-import { Action as Actor } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
 import { type ReactNode, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
-import { learnerQuotaText, readQuota } from "../account/quota.ts";
-import { useApi, useRequest } from "../api/ApiContext.tsx";
-import type { Api } from "../api/client.ts";
+import { useApi } from "../api/ApiContext.tsx";
 import type { Failure } from "../api/failure.ts";
 import { failureText } from "../api/words.ts";
 import { Icon } from "../app/Icon.tsx";
@@ -76,15 +70,6 @@ function RunName({ run }: { readonly run: OpenRun }) {
   );
 }
 
-/**
- * How full the bar of the tutor time is, in percent: the profile's share, and full once a cap is
- * reached — the account's too, which the line then names as the time used up.
- */
-function quotaFill(quota: QuotaShare | undefined): number {
-  if (quota?.capReached === true) return 100;
-  return Math.min(100, Math.max(0, quota?.profilePercent ?? 0));
-}
-
 export interface HomeScreenProps {
   /** The modules connected, as cards; none while they come. */
   readonly connected: readonly ModuleCard[] | undefined;
@@ -99,15 +84,11 @@ export interface HomeScreenProps {
   /** The learner's lesson runs open, each a press away. */
   readonly runs?: readonly OpenRun[];
   readonly onLesson?: (lessonRunId: string) => void;
-  /** The share of today's quota of platform AI the profile has used; none while it is not known. */
-  readonly quota?: QuotaShare;
   /**
    * Works on a module's skill, the full ID its card names, when the module has no lesson begun and
    * the task open is not its own: the engine's task of that skill on the task screen.
    */
   readonly onPractise?: (skill: string, moduleId: string) => void;
-  /** The share is on its way: its line is a shape meanwhile. */
-  readonly quotaLoading?: boolean;
   /** "Your pages", the history of pages from paper, beside "Open camera". */
   readonly pages?: ReactNode;
   /** What the attempt open is, once read; none while it comes, or when it could not be had. */
@@ -123,19 +104,12 @@ export function HomeScreen({
   runs = [],
   onLesson,
   next,
-  quota,
-  quotaLoading = false,
   onPractise,
   pages,
   openTask,
 }: HomeScreenProps) {
   const { language, words } = useLanguage();
   const paper = usePaper();
-  // Once for each share that comes, not for each render: its formats of Intl are made anew.
-  const spent = useMemo(
-    () => (quota === undefined ? undefined : learnerQuotaText(quota, words)),
-    [quota, words],
-  );
   const nextId = useId();
   const paperId = useId();
   const connectedId = useId();
@@ -215,24 +189,9 @@ export function HomeScreen({
               ))}
             </p>
           )}
-          {/* At the card's foot: how much of today's tutor time is used, and at its right the way
-              to what the engine chooses, when no attempt is open. */}
+          {/* At the card's foot, at its right, the way to what the engine chooses, when no attempt
+              is open. */}
           <div className="nt-next-foot">
-            {spent === undefined ? (
-              quotaLoading ? (
-                <Loading className="nt-quota">
-                  <Sk width="100%" height="0.375rem" radius="0.1875rem" />
-                  <Sk width="68%" height="0.75rem" radius="0.25rem" />
-                </Loading>
-              ) : null
-            ) : (
-              <p className="nt-quota">
-                <span className="nt-quota-bar" aria-hidden="true">
-                  <span style={{ inlineSize: `${quotaFill(quota)}%` }} />
-                </span>
-                {spent}
-              </p>
-            )}
             <div className="nt-next-step">{next}</div>
           </div>
         </section>
@@ -315,7 +274,7 @@ export function HomeScreen({
   );
 }
 
-/** "Next up" while the subjects are read: the name's two lines, a line, the button, the quota. */
+/** "Next up" while the subjects are read: the name's two lines, a line, the button. */
 function NextUpLoading() {
   return (
     <Loading className="nt-next-loading">
@@ -333,12 +292,6 @@ function NextUpLoading() {
         radius="999px"
         style={{ marginBlockStart: "0.375rem" }}
       />
-      <div className="nt-next-foot">
-        <div className="nt-loading">
-          <Sk width="100%" height="0.375rem" radius="0.1875rem" />
-          <Sk width="68%" height="0.75rem" radius="0.25rem" />
-        </div>
-      </div>
     </Loading>
   );
 }
@@ -525,18 +478,7 @@ export function MySubjects({
     };
   }, [api, views, profileId, open]);
 
-  // The share of the quota, by the learner's action: the profile's alone. It holds nothing back:
-  // a share that did not come is no line, nor is one from an api that has none yet, and the
-  // lists stand as they are. A child's profile gets the same: never the account's.
-  const readShare = useCallback((of: Api) => readQuota(of, profileId, Actor.LEARNING), [profileId]);
-  const share = useRequest(readShare);
-  const retryShare = share.retry;
-  const retryModules = modules.retry;
-  // A retry reads the lists again, and the share with them: it may have failed with them.
-  const retry = useCallback(() => {
-    retryModules();
-    retryShare();
-  }, [retryModules, retryShare]);
+  const retry = modules.retry;
 
   // A card's skill: the engine's task of it on the task screen. Choosing closes the attempt open,
   // which the map asks of first, so with one open — of another module or of paper — the map is the
@@ -568,8 +510,6 @@ export function MySubjects({
   return (
     <HomeScreen
       connected={modules.connected}
-      {...(share.status === "done" && share.value !== undefined ? { quota: share.value } : {})}
-      quotaLoading={share.status === "loading"}
       onPractise={onPractise}
       onRetry={retry}
       {...(open === undefined ? {} : { onContinue: () => navigate(TASK) })}
