@@ -1,6 +1,6 @@
-// "Your pages" in the browser: each row a thumbnail of its page's photo beside when it was
-// taken and how many tasks it began, named by both; a skeleton of the thumbnail's size while the
-// photo is read and made small, a blank sheet where it cannot be shown, and the
+// The solving history, "History", in the browser: each row a thumbnail of its page's photo beside
+// when it was taken and how many tasks it began, named by both; a skeleton of the thumbnail's size
+// while the photo is read and made small, a blank sheet where it cannot be shown, and the
 // thumbnails' URLs revoked when the list goes.
 import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
@@ -65,7 +65,7 @@ async function openPages() {
       </PaperProvider>,
     ),
   );
-  await userEvent.click(await screen.findByRole("button", { name: "Your pages" }));
+  await userEvent.click(await screen.findByRole("button", { name: "History" }));
   return {
     one: await screen.findByRole("button", { name: /· 1 task$/ }),
     two: screen.getByRole("button", { name: /· 2 tasks$/ }),
@@ -80,7 +80,7 @@ afterEach(() => {
 it("shows each page's thumbnail beside when it was taken and how many tasks it began", async () => {
   const revoked = vi.spyOn(URL, "revokeObjectURL");
   const { one, two } = await openPages();
-  expect(screen.getByRole("heading", { name: "Your pages" })).toBeVisible();
+  expect(screen.getByRole("heading", { name: "Solving history" })).toBeVisible();
   expect(screen.getByText("on this device")).toBeVisible();
   // The newest first.
   expect(screen.getAllByRole("listitem").map((item) => item.textContent)).toEqual([
@@ -107,7 +107,7 @@ it("shows each page's thumbnail beside when it was taken and how many tasks it b
   ).toBeVisible();
   // Closed and opened again: made once, then revoked with the list.
   await userEvent.keyboard("{Escape}");
-  await userEvent.click(screen.getByRole("button", { name: "Your pages" }));
+  await userEvent.click(screen.getByRole("button", { name: "History" }));
   const again = await screen.findByRole("button", { name: /· 1 task$/ });
   expect(again.querySelector("img")?.src).toBe(thumbnails[0]?.src);
   cleanup();

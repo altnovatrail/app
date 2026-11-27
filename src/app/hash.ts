@@ -58,6 +58,12 @@ export const SUBJECTS: Route = { screen: "subjects", parts: [] };
 export const SKILL_MAP: Route = { screen: "skill-map", parts: [] };
 
 /**
+ * The lessons of a module, a place of Home: `#/lessons/<module>`, by the module's ID — an ID of
+ * content —, opened from the row of its lesson on Home; `#/lessons` alone goes Home.
+ */
+export const LESSONS: Route = { screen: "lessons", parts: [] };
+
+/**
  * A task from the learner's paper: `#/paper`, the camera, the tasks found on the page
  * photographed, and the tasks begun, from memory, as the hash names no page and no attempt.
  */
@@ -74,6 +80,7 @@ export const SCREENS: ReadonlySet<string> = new Set([
   TUTOR.screen,
   SUBJECTS.screen,
   SKILL_MAP.screen,
+  LESSONS.screen,
   PAPER.screen,
 ]);
 

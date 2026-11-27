@@ -434,33 +434,60 @@ export const en = {
   /** A module's kind on Home: the engine leads, or its skills go in a chain. */
   "home.adaptive": "Adaptive",
   "home.sequential": "Sequential",
-  /** A module's card on Home: goes on with it. */
+  /** The tile of a module's lesson on its card: its eyebrow, and the button that goes on with it. */
+  "home.lesson": "Lesson",
   "home.continue": "Continue",
-  /** Under an adaptive module: who chooses what comes next, from any module connected. */
-  "home.engine-chooses": "The tutor chooses",
-  "home.engine-what": "The next skill, as the work goes",
-  "home.engine-any": "Any module",
-  /** Under a module whose skills go in a chain: the skill to work on, how much is mastered, the next. */
-  "home.chain-current": "Current skill",
-  "home.chain-done": "Every skill mastered",
-  "home.chain-percent": "{percent}%",
-  "home.chain-next": "Next",
-  /** A module's skills due for review, a chip. */
-  "home.review": plural({
-    one: "{count} skill to review",
-    other: "{count} skills to review",
-  }),
+  /** Under the lesson's title: the step to go on with of how many, in the author's order. */
+  "home.lesson-step": "Step {step} of {count} · in the author's order",
+  /** What the row of the lesson leads to, said beside its name: the page of the module's lessons. */
+  "home.lessons-all": "Every lesson of {module}",
+  /** The tile of a module's tasks: its eyebrow, while the tutor chooses their skill and once the learner has. */
+  "home.tasks": "Tasks",
+  "home.tasks-own": "Tasks · your skill",
+  /** The tile's title while the tutor chooses the skill of the tasks. */
+  "home.tasks-tutor": "The tutor picks the skill",
+  /** Under it: how the skill is chosen, by the tutor or the learner. */
+  "home.tasks-sub-tutor": "As the work goes, by your progress",
+  "home.tasks-sub-own": "Tasks on this skill alone",
+  /** Gives the choice of the skill back to the tutor. */
+  "home.tasks-reset": "Return the choice to the tutor",
+  /** What the tile's row leads to, said beside its name: the choice of the skill. */
+  "home.tasks-pick": "Choose which tasks to solve",
+  /** The tile's button: a task of the module alone. */
+  "home.solve": "Solve",
+  /** The choice of the skill of a module's tasks: its heading, the tutor's choice, then the learner's own. */
+  "home.pick": "Which tasks to solve?",
+  "home.pick-tutor": "The tutor chooses",
+  "home.pick-tutor-line": "The skill, as the work goes, by your progress",
+  "home.pick-own": "Or a skill of your own: the tasks will be on it alone",
+  "home.pick-suggested": "Suggested",
+  /** A skill that cannot be chosen yet. */
+  "home.pick-locked": "{skill}, locked until the skills it builds on",
   /** Above "Tasks from my paper": what the half of the card opens. */
   "home.camera": "Camera",
-  /** In "Next up", the task open: of its module, not declined, or from paper. */
-  "task.of-module": "A task: {module}",
-  "task.of-paper": "A task from paper",
-  /** In "Next up" with nothing open: the engine names what it gives only once asked. */
-  "home.engine-picks": "The tutor picks the next lesson or task",
-  /** In "Next up" with no module connected. */
-  "home.nothing": "Nothing to begin yet: no subject is connected",
-  /** Before the other lessons begun, each a link. */
-  "home.more-runs": "Also begun:",
+  /** The button of "Tasks from my paper" that takes a photo or a scan of the device. */
+  "home.file": "From a file",
+  /** The heading of a module's lessons, from the row of its lesson on Home. */
+  "lessons.screen": "Lessons of the module",
+  /** Under the module's title: how they go, and how many are passed. */
+  "lessons.line": "In the author's order, top to bottom · {passed} of {count} passed",
+  /** Above lessons the order puts side by side, and the group's name; a group of one. */
+  "lessons.any-order": "In any order",
+  "lessons.any-order-aria": "Lessons in any order",
+  "lessons.one": "Lesson",
+  /** A lesson's state on its row: passed, begun at its step, new; {count} is its steps. */
+  "lessons.passed": plural({
+    one: "Passed · {count} step",
+    other: "Passed · {count} steps",
+  }),
+  "lessons.step": "Step {step} of {count}",
+  "lessons.steps": plural({
+    one: "{count} step",
+    other: "{count} steps",
+  }),
+  /** The mark of the lesson Home's tile names. */
+  "lessons.next": "Next",
+  "lessons.none": "This module has no lessons for you",
   /** The heading of the modules connected to the profile. */
   "subjects.connected": "Connected",
   "subjects.none": "No subjects are connected yet",
@@ -477,8 +504,6 @@ export const en = {
   "subjects.disconnect": "Disconnect",
   /** On a module's card: its skill graph is a chain, so its lessons go one after another. */
   "subjects.sequential": "In order",
-  /** The heading of the card of what comes next: the task in progress, the engine's way, the tutor time. */
-  "subjects.next-up": "Next up",
   /** The second card at the top: "Tasks from my paper", the tasks of a page of the learner's book. */
   "subjects.paper": "Tasks from my paper",
   /** Under its heading: what the card does, the mockup's line. */
@@ -605,9 +630,6 @@ export const en = {
   /** Begins the same task again: a template may give another instance. */
   "task.again": "Try it again",
   "task.home": "Back to Home",
-  /** On Home while the learner has an attempt open. */
-  "task.continue-title": "There is a task in progress",
-  "task.continue": "Continue the task",
   /** Why the task is over, below "This task is already over". */
   "task.closed-correct": "It was answered correctly",
   "task.closed-solution-shown": "Its solution was shown",
@@ -777,10 +799,6 @@ export const en = {
   "lesson.ended-abandoned": "The lesson wasn't opened for 30 days",
   /** A lesson ended for a reason this build has no words for. */
   "lesson.ended": "This lesson is over",
-  /** In "Next up" while the learner has a lesson open. */
-  "lesson.open-continue": "Continue the lesson",
-  /** A lesson open whose title is not on this device: its module's name, not declined. */
-  "lesson.of-module": "A lesson: {module}",
   /** Goes to what the engine chooses; it asks api first when no answer said it yet. */
   "next.what": "What's next",
   /** Goes to the lesson the engine chose. */
@@ -789,8 +807,7 @@ export const en = {
   "next.task": "Next task",
   /** The engine chose nothing: no module connected has more to give now. */
   "next.nothing": "There is nothing more to offer for now",
-  /** Asks the engine for something other than the task in progress, which it closes. */
-  "next.else": "Something else",
+  /** Before a task begins that closes the task in progress. */
   "next.else-confirm": "The task in progress closes, and it can't be gone back to",
   "next.else-go": "Go on",
   /** The section for adults: its heading, and the buttons that open it. */
@@ -1149,6 +1166,8 @@ export const en = {
   }),
   /** The top bar's button that throws the page away and opens the camera again. */
   "paper.retake": "Retake",
+  /** In its place on a page from a file: chooses another file. */
+  "paper.another-file": "Another file",
   "paper.remove-all": "Remove all frames",
   /** While FindTasks is under way. */
   "paper.finding": "Finding the tasks on the page…",
@@ -1228,9 +1247,10 @@ export const en = {
   "paper.tasks-open": "Tasks, {n} / {total}",
   /** At the list's head: back to the page, to pick more of its tasks. */
   "paper.add": "Add",
-  /** The button on the card "Tasks from my paper" that opens the profile's pages from paper kept on the device. */
-  "paper.pages": "Your pages",
-  /** Beside the heading of its pop-over, which is its button's words. */
+  /** The button on the card "Tasks from my paper" that opens the profile's pages from paper kept on the device, and its pop-over's heading. */
+  "paper.history": "History",
+  "paper.pages": "Solving history",
+  /** Beside the heading of its pop-over. */
   "paper.pages-here": "on this device",
   /** A page in it: when it was photographed, and how many tasks were begun on it. */
   "paper.page": "{when} · {tasks}",

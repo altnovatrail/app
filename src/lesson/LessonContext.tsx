@@ -17,11 +17,13 @@ export interface RunRef {
 }
 
 /**
- * What the player opens: an open run again, or a new one by an engine's choice of a lesson.
+ * What the player opens: an open run again, a new one by an engine's choice of a lesson, or the
+ * lesson the learner chose by its full ID — its open run, or else a new one.
  */
 export type LessonOpen =
   | { readonly kind: "run"; readonly run: RunRef }
-  | { readonly kind: "choice"; readonly choiceId: string };
+  | { readonly kind: "choice"; readonly choiceId: string }
+  | { readonly kind: "lesson"; readonly lesson: string };
 
 export interface Lessons {
   /** The learner's open lesson runs. */

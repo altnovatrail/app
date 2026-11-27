@@ -1,8 +1,10 @@
-// Home and Subjects in the browser: on Home what comes next, the lessons open, a card
-// for each module connected with the states of its skills, the legend, the task from paper, and no
-// line of the tutor time, which is the frame's ring; on Subjects the cards by role and name, connecting and
-// disconnecting, a module with no current version, an empty catalog and the refusals; with api on
-// connect-es's router and the open views on the device's memory.
+// Home and Subjects in the browser: on Home a card for each module connected with the states of
+// its skills, the tile of its lesson and the tile of its tasks — Solve, the task in progress and the
+// question before another closes, the choice of the task skill and its way back —, the legend, the
+// task from paper and from a file, and no line of the tutor time, which is the frame's ring; on
+// Subjects the cards by role and name, connecting and disconnecting, a module with no current
+// version, an empty catalog and the refusals; with api on connect-es's router and the open views on
+// the device's memory.
 import {
   AccountService,
   ProfileSchema,
@@ -13,7 +15,11 @@ import {
   ChoiceKind,
   RefusalSchema,
 } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
-import { LearningService } from "@altnovatrail/contracts/novatrail/api/v1/learning_pb.js";
+import {
+  LearningService,
+  LessonState,
+  type ListLessonsResponseSchema,
+} from "@altnovatrail/contracts/novatrail/api/v1/learning_pb.js";
 import {
   type ConnectedModuleSchema,
   ModuleService,
@@ -40,7 +46,6 @@ import { DeviceFiles } from "../packages/files.ts";
 import { PackagesProvider } from "../packages/PackagesContext.tsx";
 import { OpenViews } from "../packages/views.ts";
 import { openCache } from "../storage/cache.ts";
-import { addProfile } from "../storage/profile.ts";
 import { setAccount } from "../storage/registry.ts";
 import { AttemptProvider } from "../task/AttemptContext.tsx";
 import { memoryDevice } from "../test/device.ts";
@@ -108,8 +113,14 @@ interface Setup {
   maps?: Record<string, MessageInitShape<typeof GetSkillMapResponseSchema>>;
   /** The share GetQuota gives; throwing makes it fail. Without it, api has no GetQuota. */
   quota?: () => MessageInitShape<typeof QuotaShareSchema>;
-  /** Called on ChooseNext, by the skill asked for; throwing makes it fail. It gives nothing. */
-  choose?: (skill: string) => void;
+  /** Called on ChooseNext, by the module asked for; throwing makes it fail. It gives nothing. */
+  choose?: (moduleId: string) => void;
+  /** The version of the module of the attempt open, by its digest. */
+  openIn?: string;
+  /** What ListLessons gives for a module, by its ID; without it, the module has no lessons. */
+  lessons?: Record<string, MessageInitShape<typeof ListLessonsResponseSchema>>;
+  /** Called on SetTaskSkill; throwing makes it fail. */
+  setSkill?: (skill: string) => void;
 }
 
 async function renderSubjects(setup: Setup, language: "en" | "ru" = "en") {
@@ -142,6 +153,14 @@ async function renderSubjects(setup: Setup, language: "en" | "ru" = "en") {
         connected = connected.filter((m) => m.moduleId !== request.moduleId);
         return { modules: connected };
       },
+      setTaskSkill(request) {
+        asked.push(`skill ${request.moduleId} ${request.skill}`);
+        setup.setSkill?.(request.skill);
+        connected = connected.map((m) =>
+          m.moduleId === request.moduleId ? { ...m, taskSkill: request.skill } : m,
+        );
+        return { modules: connected };
+      },
     });
     const quota = setup.quota;
     if (quota !== undefined) {
@@ -155,8 +174,29 @@ async function renderSubjects(setup: Setup, language: "en" | "ru" = "en") {
     router.service(LearningService, {
       chooseNext(request) {
         asked.push("choose");
-        setup.choose?.(request.skill);
+        setup.choose?.(request.moduleId);
         return { choice: { kind: ChoiceKind.NOTHING } };
+      },
+      listLessons(request) {
+        asked.push(`lessons ${request.moduleId}`);
+        return setup.lessons?.[request.moduleId] ?? {};
+      },
+      getOpenAttempt(request) {
+        asked.push(`attempt ${request.attemptId}`);
+        if (setup.openIn === undefined) throw new ConnectError("none", Code.NotFound);
+        const task = { id: "t", statement: [{ text: "A task." }], items: [] };
+        return {
+          attempt: {
+            start: {
+              attemptId: request.attemptId,
+              task: {
+                json: new TextEncoder().encode(JSON.stringify(task)),
+                moduleFormatVersion: "0.4",
+              },
+              packageDigest: setup.openIn,
+            },
+          },
+        };
       },
     });
     router.service(ProgressService, {
@@ -252,24 +292,48 @@ async function card(title: string) {
 }
 
 describe("Home", () => {
-  it("goes on with the task in progress, and offers none when there is none", async () => {
-    const { unmount } = await renderSubjects({});
-    await screen.findByText("Nothing to begin yet: no subject is connected");
-    expect(screen.queryByRole("button", { name: "Continue the task" })).toBeNull();
-    unmount();
-    await renderSubjects({ attempt: "a1" });
-    const next = within(await screen.findByRole("region", { name: "Next up" }));
-    expect(
-      await next.findByRole("heading", { level: 3, name: "There is a task in progress" }),
-    ).toBeVisible();
-    const button = next.getByRole("button", { name: "Continue the task" });
-    expect(button).toHaveAccessibleDescription("There is a task in progress");
-    // Beside the attempt, no way to what the engine chooses, which would close it.
-    expect(next.queryByRole("button", { name: "What's next" })).toBeNull();
-    expect(next.queryByRole("button", { name: "Something else" })).toBeNull();
-    await userEvent.click(button);
-    expect(window.location.hash).toBe("#/task");
+  it("says no module is connected, and offers no way in", async () => {
+    await renderSubjects({});
+    expect(await screen.findByText("No subjects are connected yet")).toBeVisible();
+    expect(screen.queryByRole("button", { name: /^Solve/ })).toBeNull();
+  });
+
+  it("goes on with the task in progress by its module's Solve, and asks before another closes it", async () => {
+    const choose = vi.fn();
+    const { asked } = await renderSubjects({
+      connected: [
+        { moduleId: MATH, packageDigest: D1 },
+        { moduleId: PHYSICS, packageDigest: D2 },
+      ],
+      attempt: "a1",
+      openIn: D1,
+      choose,
+    });
+    const math = await card("Olympiad maths");
+    await waitFor(() => expect(asked).toContain("attempt a1"));
+    // The module of the attempt is read from its manifest: a frame or two after its answer.
+    for (let frame = 0; frame < 3; frame++) await new Promise(requestAnimationFrame);
+    await userEvent.click(
+      math.getByRole("button", { name: "Solve", description: "Olympiad maths" }),
+    );
+    await waitFor(() => expect(window.location.hash).toBe("#/task"));
     window.location.hash = "";
+    expect(choose).not.toHaveBeenCalled();
+
+    const physics = await card("Физика");
+    const solve = physics.getByRole("button", { name: "Solve", description: "Физика" });
+    await userEvent.click(solve);
+    const question = physics.getByRole("group", {
+      name: "The task in progress closes, and it can't be gone back to",
+    });
+    expect(document.activeElement).toBe(within(question).getByRole("button", { name: "Go on" }));
+    await userEvent.click(within(question).getByRole("button", { name: "Cancel" }));
+    expect(physics.queryByRole("group")).toBeNull();
+    expect(choose).not.toHaveBeenCalled();
+    await userEvent.click(solve);
+    await userEvent.click(physics.getByRole("button", { name: "Go on" }));
+    await waitFor(() => expect(choose).toHaveBeenCalledWith(PHYSICS));
+    expect(await physics.findByText("There is nothing more to offer for now")).toBeVisible();
   });
 
   it("drops the list of a screen gone before it came, and reads no catalog", async () => {
@@ -299,7 +363,7 @@ describe("Home", () => {
 
   it("leaves the tutor being an AI to the tutor's panel, with no part of its own below the lists", async () => {
     await renderSubjects({ connected: [], catalog: [] }, "ru");
-    await screen.findByText("Пока нечего начинать: ни один предмет не подключён");
+    await screen.findByText("Подключённых предметов пока нет");
     expect(screen.queryByRole("region", { name: "Наставник — это ИИ" })).toBeNull();
     expect(
       screen.queryByRole("button", { name: "Как безопасно пользоваться наставником" }),
@@ -592,57 +656,82 @@ describe("Subjects", () => {
   }, 30_000);
 });
 
-describe("the lessons open", () => {
-  it("names each by its title on this device, or by its module, and goes on with it", async () => {
-    const kept = { lessonRunId: "r1", lesson: `${MATH}/lesson/gaps-and-posts`, packageDigest: D1 };
-    const bare = { lessonRunId: "r2", lesson: `${PHYSICS}/lesson/levers`, packageDigest: D2 };
-    await renderSubjects({
-      runs: [kept, bare],
-      seed: async (device) => {
-        const profile = await addProfile(device, "p1");
-        await profile?.saveLesson({
-          lessonId: kept.lesson,
-          digest: D1,
-          passageId: "r1",
-          view: { id: "gaps-and-posts", title: "Gaps and posts", segments: [{ task: "t" }] },
-          place: 1,
-          demo: {},
-        });
+describe("the tile of a module's lesson", () => {
+  const GAPS = `${MATH}/lesson/gaps-and-posts`;
+  const LEVERS = `${PHYSICS}/lesson/levers`;
+
+  it("names the lesson begun and its step, goes on with its run, and leads to every lesson", async () => {
+    const { asked } = await renderSubjects({
+      connected: [
+        { moduleId: MATH, packageDigest: D1 },
+        { moduleId: PHYSICS, packageDigest: D2 },
+      ],
+      runs: [{ lessonRunId: "r1", lesson: GAPS, packageDigest: D1 }],
+      lessons: {
+        [MATH]: {
+          lessons: [
+            {
+              lesson: GAPS,
+              title: "Gaps and posts",
+              segments: 4,
+              state: LessonState.OPEN,
+              endedSegments: [1],
+            },
+          ],
+          tileLesson: GAPS,
+        },
+        [PHYSICS]: {
+          lessons: [{ lesson: LEVERS, title: "Рычаги", segments: 3, state: LessonState.NEW }],
+          tileLesson: LEVERS,
+        },
       },
     });
-    // The first in Next up, with its Continue; the others a press away each, below it.
-    const next = within(await screen.findByRole("region", { name: "Next up" }));
-    const title = await next.findByRole("heading", { level: 3, name: "Gaps and posts" });
-    expect(title.querySelector("[lang]")).toHaveAttribute("lang", "en");
-    const go = next.getByRole("button", { name: "Continue the lesson" });
-    expect(go).toHaveAccessibleDescription("Gaps and posts");
-    expect(next.getByText("Also begun:")).toBeVisible();
-    const other = next.getByRole("button", { name: "A lesson: Физика" });
-    expect(other.querySelector("[lang]")).toHaveAttribute("lang", "ru");
-    await userEvent.click(go);
+    const math = within(
+      await (await card("Olympiad maths")).findByRole("region", { name: "Lesson" }),
+    );
+    expect(await math.findByText(/^Gaps and posts/)).toHaveAttribute("lang", "en");
+    expect(math.getByText("Step 2 of 4 · in the author's order")).toBeVisible();
+    expect(asked).toContain(`lessons ${MATH}`);
+    await userEvent.click(
+      math.getByRole("button", { name: "Continue", description: "Gaps and posts" }),
+    );
     expect(window.location.hash).toBe("#/lesson");
     window.location.hash = "";
-    await userEvent.click(other);
+    // A lesson not begun opens by its ID, a new run.
+    const physics = within(await (await card("Физика")).findByRole("region", { name: "Lesson" }));
+    expect(await physics.findByText("Step 1 of 3 · in the author's order")).toBeVisible();
+    await userEvent.click(physics.getByRole("button", { name: "Continue", description: "Рычаги" }));
     expect(window.location.hash).toBe("#/lesson");
+    window.location.hash = "";
+    await userEvent.click(
+      math.getByRole("button", {
+        name: "Lesson Gaps and posts",
+        description: "Every lesson of Olympiad maths",
+      }),
+    );
+    expect(window.location.hash).toBe(`#/lessons/${encodeURIComponent(MATH)}`);
     window.location.hash = "";
   });
 
-  it("shows no lesson when the learner has none open", async () => {
-    await renderSubjects({ runs: [] });
-    await screen.findByText("Nothing to begin yet: no subject is connected");
-    expect(screen.queryByRole("button", { name: "Continue the lesson" })).toBeNull();
-    expect(screen.queryByText("Also begun:")).toBeNull();
+  it("is not there for a module with no lessons, whose tasks stand alone", async () => {
+    const { asked } = await renderSubjects({ connected: [{ moduleId: MATH, packageDigest: D1 }] });
+    const math = await card("Olympiad maths");
+    expect(
+      await math.findByRole("button", { name: "Solve", description: "Olympiad maths" }),
+    ).toBeVisible();
+    expect(math.queryByRole("region", { name: "Lesson" })).toBeNull();
+    expect(asked).toContain(`lessons ${MATH}`);
   });
 });
 
 describe("the tutor time", () => {
-  it("is not Home's: its card of what comes next has no line or bar of it, and Home asks no share", async () => {
+  it("is not Home's: a module's card has no line or bar of it, and Home asks no share", async () => {
     const { asked } = await renderSubjects({
       connected: [{ moduleId: MATH, packageDigest: D1 }],
       quota: () => ({ profilePercent: 40 }),
     });
     expect(await screen.findByRole("article", { name: "Olympiad maths" })).toBeTruthy();
-    const card = await screen.findByRole("region", { name: "Next up" });
+    const card = await screen.findByRole("article", { name: "Olympiad maths" });
     expect(card.textContent).not.toMatch(/Tutor time|40/);
     expect(document.querySelector(".nt-quota-bar")).toBeNull();
     // The ring of the frame's top right asks it, not Home.
@@ -702,7 +791,6 @@ describe("the states of the skills", () => {
     expect(getComputedStyle(dots).columnGap).toBe("2px");
     expect(math.getByText("Adaptive")).toBeVisible();
     expect(math.getByText("1 of 5 mastered")).toBeVisible();
-    expect(math.getByText("1 skill to review")).toBeVisible();
     expect(asked).toContain(`map ${MATH} 1`);
     unmount();
     // On Subjects the same squares, with the counts beside how many are mastered; none on a card
@@ -808,48 +896,90 @@ describe("the states of the skills", () => {
   });
 });
 
-describe("a card's Continue on a skill to work on", () => {
+describe("the tile of a module's tasks", () => {
   const setup = {
     connected: [{ moduleId: MATH, packageDigest: D1 }],
     tiers: { [D1]: SKILL_TIERS },
     graphs: { [D1]: SKILLS },
     maps: { [MATH]: STATED },
   };
-  const toMap = `#/skill-map/${encodeURIComponent(MATH)}`;
 
-  async function pressContinue() {
+  /** The card of olympiad maths once its squares are drawn, and the tile of its tasks. */
+  async function tasksOf() {
     const math = await card("Olympiad maths");
     await math.findByRole("img", { name: ALL_STATES });
-    await userEvent.click(math.getByRole("button", { name: "Continue" }));
+    return { math, tasks: within(math.getByRole("region", { name: "Tasks" })) };
   }
 
-  it("asks the engine for the skill, and opens the map when it gives nothing", async () => {
-    const choose = vi.fn();
-    await renderSubjects({ ...setup, choose });
-    await pressContinue();
-    await waitFor(() => expect(window.location.hash).toBe(toMap));
-    expect(choose).toHaveBeenCalledWith(`${MATH}/skill/patterns`);
-    window.location.hash = "";
+  it("makes a skill chosen the module's task skill, and gives the choice back to the tutor", async () => {
+    const { asked } = await renderSubjects(setup);
+    const { tasks } = await tasksOf();
+    expect(tasks.getByText(/^The tutor picks the skill/)).toBeVisible();
+    await userEvent.click(
+      tasks.getByRole("button", { description: "Choose which tasks to solve" }),
+    );
+    const pick = within(screen.getByRole("dialog", { name: "Which tasks to solve?" }));
+    // Patterns, practised, among the skills suggested; Sums of rows locked.
+    expect(
+      pick.getByRole("button", { name: "Sums of rows, locked until the skills it builds on" }),
+    ).toBeDisabled();
+    await userEvent.click(pick.getAllByRole("button", { name: "Patterns" })[0] as HTMLElement);
+    await waitFor(() => expect(asked).toContain(`skill ${MATH} ${MATH}/skill/patterns`));
+    expect(await tasks.findByText("Tasks · your skill")).toBeVisible();
+    expect(tasks.getByText(/^Patterns/)).toBeVisible();
+    await userEvent.click(tasks.getByRole("button", { name: "Return the choice to the tutor" }));
+    await waitFor(() => expect(asked).toContain(`skill ${MATH} `));
+    expect(await tasks.findByText(/^The tutor picks the skill/)).toBeVisible();
   });
 
-  it("opens the map when the engine's choice fails", async () => {
+  it("says on its card a choice of the skill refused", async () => {
+    await renderSubjects({
+      ...setup,
+      setSkill: () => {
+        throw new ConnectError("down", Code.Unavailable);
+      },
+    });
+    const { math, tasks } = await tasksOf();
+    await userEvent.click(
+      tasks.getByRole("button", { description: "Choose which tasks to solve" }),
+    );
+    const pick = within(screen.getByRole("dialog", { name: "Which tasks to solve?" }));
+    await userEvent.click(pick.getAllByRole("button", { name: "Patterns" })[0] as HTMLElement);
+    expect(await math.findByRole("alert")).toHaveTextContent("No connection");
+  });
+
+  it("asks the engine among the module's tasks on Solve, and says when it gives nothing", async () => {
+    const choose = vi.fn();
+    await renderSubjects({ ...setup, choose });
+    const { math, tasks } = await tasksOf();
+    await userEvent.click(
+      tasks.getByRole("button", { name: "Solve", description: "Olympiad maths" }),
+    );
+    await waitFor(() => expect(choose).toHaveBeenCalledWith(MATH));
+    expect(await math.findByText("There is nothing more to offer for now")).toBeVisible();
+  });
+
+  it("says on its card a choice that failed", async () => {
     await renderSubjects({
       ...setup,
       choose: () => {
         throw new ConnectError("down", Code.Unavailable);
       },
     });
-    await pressContinue();
-    await waitFor(() => expect(window.location.hash).toBe(toMap));
-    window.location.hash = "";
+    const { math, tasks } = await tasksOf();
+    await userEvent.click(
+      tasks.getByRole("button", { name: "Solve", description: "Olympiad maths" }),
+    );
+    expect(await math.findByRole("alert")).toHaveTextContent("No connection");
   });
 
-  it("opens the map, asking the engine nothing, with another attempt open", async () => {
-    const choose = vi.fn();
-    await renderSubjects({ ...setup, attempt: "a1", choose });
-    await pressContinue();
-    expect(window.location.hash).toBe(toMap);
-    expect(choose).not.toHaveBeenCalled();
+  it("goes to the module's page of the sheet for a module solved on it", async () => {
+    await renderSubjects({ connected: [{ moduleId: MATH, packageDigest: D1, onSheet: true }] });
+    const math = await card("Olympiad maths");
+    await userEvent.click(
+      await math.findByRole("button", { name: "Solve", description: "Olympiad maths" }),
+    );
+    expect(window.location.hash).toContain("paper");
     window.location.hash = "";
   });
 });
@@ -902,6 +1032,24 @@ describe("the legend and the task from paper", () => {
     expect(button).toBeEnabled();
     await userEvent.click(button);
     expect(window.location.hash).toBe("#/paper");
+    window.location.hash = "";
+  });
+
+  it("takes a picture of the device's from a file to the page to pick from, and says one it can't read", async () => {
+    await renderSubjects({});
+    const paper = within(await screen.findByRole("region", { name: "Tasks from my paper" }));
+    expect(paper.getByRole("button", { name: "From a file" })).toBeEnabled();
+    const input = document.querySelector<HTMLInputElement>(
+      'input[type="file"]',
+    ) as HTMLInputElement;
+    await userEvent.upload(input, new File(["not a picture"], "page.png", { type: "image/png" }));
+    expect((await paper.findByRole("alert")).textContent).toMatch(/^This picture can.t be read/);
+    const canvas = new OffscreenCanvas(8, 8);
+    canvas.getContext("2d")?.fillRect(0, 0, 8, 8);
+    const png = await canvas.convertToBlob({ type: "image/png" });
+    await userEvent.upload(input, new File([png], "page.png", { type: "image/png" }));
+    await waitFor(() => expect(window.location.hash).toBe("#/paper"));
+    expect(paper.queryByRole("alert")).toBeNull();
     window.location.hash = "";
   });
 });

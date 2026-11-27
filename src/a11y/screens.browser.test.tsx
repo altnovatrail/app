@@ -22,6 +22,10 @@ import {
   EngineChoiceSchema,
   RunEndReason,
 } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
+import {
+  LessonState,
+  ListLessonsResponseSchema,
+} from "@altnovatrail/contracts/novatrail/api/v1/learning_pb.js";
 import { LegalTextSchema } from "@altnovatrail/contracts/novatrail/api/v1/legal_pb.js";
 import {
   AnchorSkillHolding,
@@ -71,6 +75,7 @@ import { moduleMapRoute, SkillMapRoute } from "../skills/SkillMapScreen.tsx";
 import { addProfile } from "../storage/profile.ts";
 import { addDatabase, setAccount } from "../storage/registry.ts";
 import { PROFILE_SCHEMA, profileDatabase } from "../storage/schema.ts";
+import { LessonsRoute, lessonsRoute } from "../subjects/LessonsScreen.tsx";
 import { HomeScreen } from "../subjects/MySubjects.tsx";
 import type { ModuleAbout, SkillList } from "../subjects/modules.ts";
 import { CatalogScreen } from "../subjects/SubjectsPage.tsx";
@@ -584,6 +589,73 @@ const LICENSED = {
 } as unknown as Packages;
 
 /** The open views of a module with a skill graph of two skills, and of a module that teaches. */
+/** The skills a module's card offers for its task skill. */
+const PICKS = {
+  suggested: [
+    {
+      skill: "novatrail/olympiad-math/skill/gaps",
+      title: "Gaps",
+      status: "time-to-review" as const,
+    },
+  ],
+  tiers: [
+    {
+      name: "Warm-up",
+      skills: [
+        {
+          skill: "novatrail/olympiad-math/skill/gaps",
+          title: "Gaps",
+          status: "time-to-review" as const,
+        },
+        {
+          skill: "novatrail/olympiad-math/skill/towers",
+          title: "Towers",
+          status: "locked" as const,
+        },
+      ],
+    },
+  ],
+};
+
+/** api with a module's lessons: one passed, one begun, two in any order. */
+const LESSONS_API = {
+  learning: {
+    listLessons: async () =>
+      create(ListLessonsResponseSchema, {
+        lessons: [
+          {
+            lesson: "example/fair-shares/lesson/counting",
+            title: "Counting",
+            segments: 4,
+            group: 0,
+            state: LessonState.PASSED,
+          },
+          {
+            lesson: "example/fair-shares/lesson/halves",
+            title: "Halves",
+            segments: 6,
+            group: 1,
+            state: LessonState.OPEN,
+            endedSegments: [2],
+          },
+          {
+            lesson: "example/fair-shares/lesson/thirds",
+            title: "Thirds",
+            segments: 5,
+            group: 1,
+            state: LessonState.NEW,
+          },
+        ],
+        tileLesson: "example/fair-shares/lesson/halves",
+      }),
+  },
+  module: {
+    listConnectedModules: async () => ({
+      modules: [{ moduleId: "example/fair-shares", packageDigest: D1 }],
+    }),
+  },
+} as unknown as Api;
+
 const MAPPED = {
   views: {
     get: async (digest: string, kind: string) =>
@@ -794,6 +866,14 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
                     "feedback-by-criteria": 2,
                     "not-assessed": 1,
                   },
+                  picks: PICKS,
+                  lesson: {
+                    lesson: "novatrail/olympiad-math/lesson/gaps",
+                    title: "Gaps and posts",
+                    step: 2,
+                    segments: 6,
+                    open: true,
+                  },
                 },
                 {
                   moduleId: "novatrail/fractions",
@@ -810,13 +890,9 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
                     "feedback-by-criteria": 0,
                     "not-assessed": 0,
                   },
-                  chain: {
-                    step: 5,
-                    total: 10,
-                    mastered: 3,
-                    current: "Comparing fractions with different denominators",
-                    next: "Adding fractions",
-                  },
+                  picks: PICKS,
+                  taskSkill: "novatrail/olympiad-math/skill/gaps",
+                  lesson: null,
                 },
                 {
                   moduleId: "novatrail/short-essays",
@@ -832,6 +908,7 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
                     "feedback-by-criteria": 18,
                     "not-assessed": 0,
                   },
+                  lesson: null,
                 },
                 { moduleId: "novatrail/gone", title: "novatrail/gone" },
               ]}
@@ -852,20 +929,25 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
   ],
   ["Home with the profile's menu open", ...homeWith("button.nt-learner-pill")],
   [
-    "Home with a task in progress",
+    "Home with the choice of a module's task skill open",
     () => (
       <HomeScreen
-        connected={[]}
-        onContinue={() => {}}
-        openTask={{
-          kind: "module",
-          moduleId: "novatrail/olympiad-math",
-          module: "Olympiad maths",
-          language: "en",
-          statement: "Two apples and three pears are in a bowl. How many fruits are there?",
-        }}
+        connected={[
+          {
+            moduleId: "novatrail/olympiad-math",
+            digest: "sha256:1",
+            title: "Olympiad maths",
+            language: "en",
+            picks: PICKS,
+            lesson: null,
+          },
+        ]}
       />
     ),
+    async () => {
+      await userEvent.click(document.querySelector("button.nt-way-row") as HTMLElement);
+      await expect.element(page.getByRole("dialog")).toBeVisible();
+    },
   ],
   ["the camera of a task from paper", () => <Camera onPhoto={() => {}} onClose={() => {}} />],
   [
@@ -1237,7 +1319,6 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
         next: nextStep({ choice: choice(ChoiceKind.TASK) }),
       }),
   ],
-  ["Home with What's next", () => <HomeScreen connected={[]} next={nextStep()} />],
   ["lesson ended by api", () => <LessonEnd reason={RunEndReason.ABANDONED} />],
   ["the legal pages, below their bar", () => <LegalPages route={LEGAL} back={HOME} />],
   [
@@ -1424,17 +1505,17 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
     nextFamilyDay: { seconds: 1_794_009_600n },
   }),
   [
-    "Home with lessons in progress",
+    "the lessons of a module, passed, begun, new and in any order",
     () => (
-      <HomeScreen
-        connected={[]}
-        runs={[
-          { lessonRunId: "r1", title: "Gaps and posts", module: "Olympiad maths", language: "en" },
-          { lessonRunId: "r2", module: "Физика", language: "ru" },
-        ]}
-        onLesson={() => {}}
-      />
+      <ApiProvider value={LESSONS_API}>
+        <PackagesProvider value={MAPPED}>
+          <LessonsRoute route={lessonsRoute("example/fair-shares")} profileId="p1" />
+        </PackagesProvider>
+      </ApiProvider>
     ),
+    async () => {
+      await expect.element(page.getByRole("button", { name: /Halves/ })).toBeVisible();
+    },
   ],
   [
     "Subjects with cards that say what their modules are",
@@ -1524,6 +1605,13 @@ afterEach(async () => {
   await page.viewport(1024, 768);
 });
 
+/** A pattern of the words of a text, any space or none between its letters. */
+function spaced(text: string): string {
+  return [...text.replace(/\s+/g, "")]
+    .map((letter) => letter.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+    .join("\\s*");
+}
+
 describe.each(LANGUAGES)("the screens in %s", (_, language, words) => {
   // A screen whose words are not ready yet shows nothing for a moment: none of these is so.
   it.each(SCREENS)(
@@ -1547,7 +1635,11 @@ describe.each(LANGUAGES)("the screens in %s", (_, language, words) => {
         // named beside its words, as the profile's pill, has its words in its name (2.5.3).
         const label = button.getAttribute("aria-label");
         const text = button.textContent ?? "";
-        await expect.element(button).toHaveAccessibleName(label ?? text);
+        // A name from the words runs them on with a space between the button's blocks, where
+        // its text has none: the words, whatever space there is between them.
+        await expect
+          .element(button)
+          .toHaveAccessibleName(label ?? new RegExp(`^\\s*${spaced(text)}\\s*$`));
         if (label !== null) expect(label).toContain(text);
       }
     },

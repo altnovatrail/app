@@ -8,19 +8,22 @@ import {
   ProfileSchema,
 } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import { TutorReply } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
+import { RunEndReason } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import {
-  ChoiceKind,
-  EngineChoiceSchema,
-  RunEndReason,
-} from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
+  LearningService,
+  LessonState,
+  ListLessonsResponseSchema,
+} from "@altnovatrail/contracts/novatrail/api/v1/learning_pb.js";
 import {
   LegalService,
   LegalTextSchema,
 } from "@altnovatrail/contracts/novatrail/api/v1/legal_pb.js";
+import { ModuleService } from "@altnovatrail/contracts/novatrail/api/v1/module_pb.js";
 import type * as open from "@altnovatrail/spec/formatv0/open";
 import { create } from "@bufbuild/protobuf";
 import { timestampFromDate } from "@bufbuild/protobuf/wkt";
-import { render, screen, waitFor } from "@testing-library/react";
+import type { ConnectRouter } from "@connectrpc/connect";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import { type ReactNode, useState } from "react";
 import { describe, expect, it } from "vitest";
 import { commands, page, userEvent } from "vitest/browser";
@@ -32,6 +35,8 @@ import { InviteScreen, type TextsRead } from "../src/account/InviteScreen.tsx";
 import { OwnerProfileScreen } from "../src/account/OwnerProfileScreen.tsx";
 import { AdultSection } from "../src/adults/AdultSection.tsx";
 import { ApiProvider } from "../src/api/ApiContext.tsx";
+import type { Api } from "../src/api/client.ts";
+import { Icon } from "../src/app/Icon.tsx";
 import { HOME as HOME_ROUTE, type Route, useRoute } from "../src/app/router.ts";
 import { type Place, ShellBar } from "../src/app/Shell.tsx";
 import { Waiting } from "../src/app/Waiting.tsx";
@@ -39,17 +44,25 @@ import { LegalPages } from "../src/legal/LegalPages.tsx";
 import { Example } from "../src/lesson/Example.tsx";
 import { Explanation } from "../src/lesson/Explanation.tsx";
 import { LessonEnd } from "../src/lesson/Lesson.tsx";
+import { LessonNext } from "../src/lesson/LessonNext.tsx";
 import { ContinueButton, LessonScreen } from "../src/lesson/LessonScreen.tsx";
-import { NextStep } from "../src/next/NextStep.tsx";
 import { KeyHolder } from "../src/ownkey/holder.ts";
 import { KeyHolderProvider } from "../src/ownkey/OwnKeyContext.tsx";
+import { type Packages, PackagesProvider } from "../src/packages/PackagesContext.tsx";
 import { SignInScreen } from "../src/signin/SignInScreen.tsx";
 import { MapScreen } from "../src/skills/SkillMapScreen.tsx";
 import type { KeptKey } from "../src/storage/profile.ts";
+import { LessonsRoute, lessonsRoute } from "../src/subjects/LessonsScreen.tsx";
 import { HomeScreen } from "../src/subjects/MySubjects.tsx";
-import type { ModuleAbout, ModuleCard, SkillList } from "../src/subjects/modules.ts";
+import type {
+  ModuleAbout,
+  ModuleCard,
+  SkillList,
+  SkillPick,
+  SkillPicks,
+} from "../src/subjects/modules.ts";
 import { CatalogScreen } from "../src/subjects/SubjectsPage.tsx";
-import type { SkillCounts } from "../src/subjects/states.ts";
+import type { SkillCounts, SkillStatus } from "../src/subjects/states.ts";
 import { NO_VERDICTS, type Verdicts, verdictsOf } from "../src/task/attempt.ts";
 import { EssayScreen, type EssayScreenProps } from "../src/task/EssayScreen.tsx";
 import type { HintGiven } from "../src/task/Hint.tsx";
@@ -478,19 +491,20 @@ function workedExample(opened = 0) {
     );
 }
 
-/** The end of the lesson, done: the module's tile, its title, and the way to the next lesson. */
+/** The end of the lesson, done: the module's tile, its title, its next lesson and Solve. */
 function lessonEnd() {
   return inLanguage(
-    <ApiProvider value={QUIET}>
+    <ApiProvider value={LESSONS_API}>
       <LessonEnd
         reason={RunEndReason.PASSED}
         title="Number patterns"
         language="en"
         module={{ id: "olympiad-math", title: "Olympiad maths 1–6" }}
         next={
-          <NextStep
+          <LessonNext
             profileId="p1"
-            choice={create(EngineChoiceSchema, { choiceId: "c1", kind: ChoiceKind.LESSON })}
+            moduleId={OLYMPIAD}
+            lesson={`${OLYMPIAD}/lesson/number-patterns`}
           />
         }
       />
@@ -843,7 +857,7 @@ const AVATARS_HUNG = "the pop-over 12 below its button, the phone's sheet with i
  * The policy and the terms in force, synthetic, and the policy's next version, as api gives them;
  * and a fifth of today's tutor time used, renewing tomorrow at 08:00, as the mockup's ring has it.
  */
-const LEGAL_API = routedApi((router) => {
+function legalRoutes(router: ConnectRouter) {
   router.service(AccountService, {
     getQuota: () => {
       const renews = new Date();
@@ -884,7 +898,9 @@ const LEGAL_API = routedApi((router) => {
       ],
     }),
   });
-});
+}
+
+const LEGAL_API = routedApi(legalRoutes);
 
 /** A legal page, opened from home, its text read. */
 function legalShown(page: string) {
@@ -1276,20 +1292,158 @@ function counts(states: readonly number[], rubric = 0): SkillCounts {
   };
 }
 
-/** The mockup's three modules of the first slice, with the states of their skills. */
+const OLYMPIAD = "novatrail/olympiad-math";
+
+/** The states of the mockup's skills by their letters: mastered, review, in progress, start, locked. */
+const STATUS: Record<string, SkillStatus> = {
+  m: "mastered",
+  r: "time-to-review",
+  p: "in-progress",
+  s: "ready-to-start",
+  l: "locked",
+};
+
+/** The mockup's skills of olympiad maths, tier by tier, each `title:state`. */
+const OLYMPIAD_TIERS: readonly (readonly [string, string])[] = [
+  [
+    "Tier 1 · Basics",
+    "Counting on:m|Even and odd:m|Perimeter:m|Comparing numbers:m|Shapes and sides:m|Measuring length:m|Clocks:m|Coins and change:r|Left and right:m|Simple sequences:m|Counting figures:m|Adding in your head:m",
+  ],
+  [
+    "Tier 2 · Patterns",
+    "Number patterns:r|Days and cycles:p|Areas of shapes:r|Arithmetic tricks:m|Parity:m|Ordering:m|Enumeration:p|Gaps and boundaries:s|Cubes and paper:s|Symmetry:p|Matchstick puzzles:s|Calendar and age:p",
+  ],
+  [
+    "Tier 3 · Reasoning",
+    "Sums of rows:p|Unknowns by balance:s|Pigeonhole principle:l|Knights and liars:l|Grid figures:l|Parts and shares:s|Logic puzzles:p|Overlapping groups:s|Working backwards:s|Motion problems:s|Divisibility:s",
+  ],
+  [
+    "Tier 4 · Olympiad",
+    "Staircases:l|Weighing and pouring:l|Winning strategies:l|Percentages:l|Ratios and sharing:l|Remainders and cycles:l|Invariants:l|Colouring arguments:l|Handshakes:l|Extreme principle:l",
+  ],
+];
+
+/** A module's choice of a task skill, from its tiers: the first three to suggest, as app picks them. */
+function picksOf(moduleId: string, tiers: readonly (readonly [string, string])[]): SkillPicks {
+  const grouped = tiers.map(([name, list]) => ({
+    name,
+    skills: list.split("|").map((each): SkillPick => {
+      const [title = "", state = "s"] = each.split(":");
+      const id = title.toLowerCase().replaceAll(" ", "-");
+      return { skill: `${moduleId}/skill/${id}`, title, status: STATUS[state] ?? "ready-to-start" };
+    }),
+  }));
+  const all = grouped.flatMap((tier) => tier.skills);
+  const order: readonly SkillStatus[] = ["time-to-review", "in-progress", "ready-to-start"];
+  return {
+    suggested: order.flatMap((state) => all.filter((each) => each.status === state)).slice(0, 3),
+    tiers: grouped,
+  };
+}
+
+/** The mockup's three modules of the first slice: the states of their skills, the lesson each tile names. */
 const MODULES: readonly ModuleCard[] = [
   {
-    moduleId: "novatrail/olympiad-math",
+    moduleId: OLYMPIAD,
     title: "Olympiad maths 1–6",
     skills: counts([14, 3, 6, 9, 13]),
+    picks: picksOf(OLYMPIAD, OLYMPIAD_TIERS),
+    lesson: {
+      lesson: `${OLYMPIAD}/lesson/number-patterns`,
+      title: "Number patterns",
+      step: 2,
+      segments: 4,
+      open: true,
+    },
   },
   {
     moduleId: "novatrail/school-math-3",
     title: "School maths · grade 3",
     skills: counts([20, 2, 4, 6, 4]),
+    picks: picksOf("novatrail/school-math-3", [
+      ["Tier 1", "Numbers to 1000:r|Multiplying by 6–9:p|Hours and minutes:s"],
+    ]),
+    lesson: {
+      lesson: "novatrail/school-math-3/lesson/division",
+      title: "Division with a remainder",
+      step: 1,
+      segments: 3,
+      open: true,
+    },
   },
-  { moduleId: "novatrail/short-essays", title: "Short essays", skills: counts([], 18) },
+  {
+    moduleId: "novatrail/short-essays",
+    title: "Short essays",
+    skills: counts([], 18),
+    picks: picksOf("novatrail/short-essays", [
+      ["Tier 1", "Topic sentence:s|Order of ideas:s|Linking words:s"],
+    ]),
+    lesson: {
+      lesson: "novatrail/short-essays/lesson/first-sentences",
+      title: "First sentences",
+      step: 1,
+      segments: 3,
+      open: true,
+    },
+  },
 ].map((card, i) => ({ ...card, digest: `sha256:${String(i + 1).repeat(64)}`, language: "en" }));
+
+/** A lesson of the mockup's list: its title, its state, its steps and its group. */
+function listed(title: string, state: LessonState, segments: number, group: number) {
+  return {
+    lesson: `${OLYMPIAD}/lesson/${title.toLowerCase().replaceAll(" ", "-")}`,
+    title,
+    segments,
+    group,
+    state,
+    // The lesson begun goes on at its second step, as the tile on Home has it.
+    endedSegments: state === LessonState.OPEN ? [1] : [],
+  };
+}
+
+/** The mockup's lessons of olympiad maths, in the author's order, and the one Home's tile names. */
+const OLYMPIAD_LESSONS = create(ListLessonsResponseSchema, {
+  lessons: [
+    listed("Counting on", LessonState.PASSED, 3, 0),
+    listed("Even and odd", LessonState.PASSED, 3, 0),
+    listed("Clocks", LessonState.PASSED, 4, 0),
+    listed("Number patterns", LessonState.OPEN, 4, 1),
+    listed("Days and cycles", LessonState.NEW, 4, 2),
+    listed("Areas of shapes", LessonState.NEW, 3, 2),
+    listed("Sums of rows", LessonState.NEW, 5, 3),
+    listed("Pigeonhole principle", LessonState.NEW, 4, 4),
+  ],
+  tileLesson: `${OLYMPIAD}/lesson/number-patterns`,
+});
+
+/** api of the lessons' page and the lesson's end: the frame's, olympiad maths connected, its lessons. */
+const LESSONS_API = routedApi((router) => {
+  legalRoutes(router);
+  router.service(LearningService, { listLessons: () => OLYMPIAD_LESSONS });
+  router.service(ModuleService, {
+    listConnectedModules: () => ({
+      modules: [{ moduleId: OLYMPIAD, packageDigest: `sha256:${"1".repeat(64)}` }],
+    }),
+  });
+});
+
+/** The package of olympiad maths on the device: its manifest alone. */
+const OLYMPIAD_PACKAGE = {
+  views: {
+    get: async (_digest: string, kind: string) =>
+      kind === "manifest"
+        ? {
+            view: {
+              module_format_version: "0.4",
+              id: OLYMPIAD,
+              version: "1.0.0",
+              title: "Olympiad maths 1–6",
+              languages: { explanation: "en" },
+            },
+          }
+        : undefined,
+  },
+} as unknown as Packages;
 
 /** api by the routing transport: nothing is asked of it until a press. */
 const QUIET = routedApi(() => {});
@@ -1530,9 +1684,9 @@ const MODE_PILL: Region = {
 };
 
 /** A screen in the frame of the row of places, as App lays it, for the learner Sam; its bell tells of the policy's next version. */
-function framed(place: Place, child: ReactNode) {
+function framed(place: Place, child: ReactNode, api: Api = LEGAL_API) {
   return inLanguage(
-    <ApiProvider value={LEGAL_API}>
+    <ApiProvider value={api}>
       <LearnerProvider value={SAM}>
         <div className="nt-shell">
           <ShellBar place={place} />
@@ -1543,17 +1697,48 @@ function framed(place: Place, child: ReactNode) {
   );
 }
 
-/** Home with the mockup's three modules, a fifth of today's tutor time used in the ring of its frame. */
+/**
+ * Home with the mockup's three modules, a fifth of today's tutor time used in the ring of its frame;
+ * "History" stands for the solving history's pop-over, which reads the device's pages.
+ */
 function home() {
-  return framed("home", <HomeScreen connected={MODULES} next={<NextStep profileId="p1" />} />);
+  return framed("home", <OwnHome />);
 }
 
-/**
- * Why Home's cards are of other heights than the mockup's: the card of what comes next holds the
- * engine's way, "What's next", which names no lesson before it is pressed, not the mockup's
- * lesson begun with its line.
- */
-const HOME_PLACED = '"What\'s next" names no lesson before it is pressed';
+/** Home whose modules keep the task skill chosen on them, as MySubjects has api keep it. */
+function OwnHome() {
+  const [cards, setCards] = useState(MODULES);
+  return (
+    <HomeScreen
+      connected={cards}
+      onTaskSkill={(card, skill) =>
+        setCards((all) =>
+          all.map((each) =>
+            each.moduleId === card.moduleId ? { ...each, taskSkill: skill } : each,
+          ),
+        )
+      }
+      onFile={() => {}}
+      pages={
+        <button type="button" className="nt-paper-pages nt-icon-text">
+          <Icon value="history" />
+          History
+        </button>
+      }
+    />
+  );
+}
+
+/** The lessons of olympiad maths, from the row of its lesson on Home. */
+function lessonsPage() {
+  return framed(
+    "home",
+    <PackagesProvider value={OLYMPIAD_PACKAGE}>
+      <LessonsRoute route={lessonsRoute(OLYMPIAD)} profileId="p1" />
+    </PackagesProvider>,
+    LESSONS_API,
+  );
+}
 
 /** The row of places from 600, the tab bar on a phone, and the pills at the right: Home's frame. */
 function frameOf(device: Device): readonly Region[] {
@@ -1591,6 +1776,44 @@ function frameOf(device: Device): readonly Region[] {
   ];
 }
 
+/** The first module's two tiles: its lesson, with its row and Continue, and its tasks, with Solve. */
+const TILES: readonly Region[] = [
+  {
+    name: "the tile of its lesson",
+    mockup: { css: '.nt-subject:first-child .nt-mode[data-mode="lesson"]' },
+    app: { css: '.nt-subject:first-child .nt-way[data-mode="lesson"]' },
+    differs: { what: ["font-size"], by: NO_TEXT },
+  },
+  {
+    name: "the lesson's title",
+    mockup: { css: '.nt-subject:first-child [data-mode="lesson"] .nt-mode-title' },
+    app: { css: '.nt-subject:first-child [data-mode="lesson"] .nt-way-title' },
+    followsText: "start",
+  },
+  {
+    name: "Continue",
+    mockup: { css: '.nt-subject:first-child [data-mode="lesson"] .nt-mode-go' },
+    app: { css: '.nt-subject:first-child [data-mode="lesson"] .nt-way-go' },
+  },
+  {
+    name: "the tile of its tasks",
+    mockup: { css: '.nt-subject:first-child .nt-mode[data-mode="tasks"]' },
+    app: { css: '.nt-subject:first-child .nt-way[data-mode="tasks"]' },
+    differs: { what: ["font-size"], by: NO_TEXT },
+  },
+  {
+    name: "the row of the task skill",
+    mockup: { css: '.nt-subject:first-child [data-mode="tasks"] button.nt-mode-row' },
+    app: { css: '.nt-subject:first-child [data-mode="tasks"] button.nt-way-row' },
+    differs: { what: ["font-size"], by: NO_TEXT },
+  },
+  {
+    name: "Solve",
+    mockup: { css: '.nt-subject:first-child [data-mode="tasks"] .nt-mode-go' },
+    app: { css: '.nt-subject:first-child [data-mode="tasks"] .nt-way-go' },
+  },
+];
+
 const HOME: readonly Region[] = [
   {
     name: "the heading",
@@ -1599,29 +1822,29 @@ const HOME: readonly Region[] = [
     followsText: "start",
   },
   {
-    name: "the card of what comes next",
-    mockup: { css: ".nt-next-up" },
-    app: { css: ".nt-next-up" },
-    differs: { what: ["height", "font-size"], by: `${HOME_PLACED}; ${NO_TEXT}` },
-  },
-  {
     name: "A task from my paper",
     mockup: { css: ".nt-paper" },
     app: { css: ".nt-paper" },
-    differs: { what: ["y", "height", "font-size"], by: `${HOME_PLACED}; ${NO_TEXT}` },
+    differs: { what: ["font-size"], by: NO_TEXT },
+  },
+  {
+    name: "From a file",
+    mockup: { css: "button.nt-paper-file" },
+    app: { css: "button.nt-paper-file" },
   },
   {
     name: "the first module",
     mockup: { css: ".nt-subject:first-child" },
     app: { css: ".nt-subject:first-child" },
-    differs: { what: ["y", "font-size"], by: `${HOME_PLACED}; ${NO_TEXT}` },
+    differs: { what: ["font-size"], by: NO_TEXT },
   },
   {
     name: "its squares",
     mockup: { css: ".nt-subject:first-child .nt-dots" },
     app: { css: ".nt-subject:first-child .nt-dots" },
-    differs: { what: ["y", "font-size"], by: `${HOME_PLACED}; ${NO_TEXT}` },
+    differs: { what: ["font-size"], by: NO_TEXT },
   },
+  ...TILES,
 ];
 
 /** The legend standing below the modules, from 600 CSS px. */
@@ -1629,7 +1852,6 @@ const LEGEND: Region = {
   name: "the legend",
   mockup: { css: ".nt-legend" },
   app: { css: ".nt-legend" },
-  differs: { what: ["y"], by: HOME_PLACED },
 };
 
 /** The profile's pill, whose width follows the pseudonym; on a phone its avatar alone. */
@@ -1655,6 +1877,79 @@ function popOver(name: string, mockup: string, app = mockup): Region {
     differs: { what: ["background", "border", "font-size"], by: `${OVER_INERT}; ${NO_TEXT}` },
   };
 }
+
+/**
+ * Why which tasks to solve stands elsewhere on the iPad: with no room under its tile in the window,
+ * app's modal dialog stands from the window's top and hangs from the tile's start, as each of its
+ * pop-overs; the mockup's hangs under the tile, at its end, past the window's edge.
+ */
+const PICK_PLACED = "a modal dialog kept in the window, hung from its tile's start";
+
+/** Which tasks to solve, open from the first module's tile: the tutor's choice and the skills. */
+const PICK: readonly Region[] = [
+  {
+    name: "which tasks to solve",
+    mockup: { css: 'div.nt-pop.nt-pick[aria-label="Which tasks to solve?"]' },
+    app: { role: "dialog", name: "Which tasks to solve?" },
+    differs: { what: ["background", "border", "font-size"], by: `${OVER_INERT}; ${NO_TEXT}` },
+  },
+  {
+    name: "its title",
+    mockup: { css: ".nt-pick-title" },
+    app: { css: ".nt-pick-title" },
+    followsText: "start",
+  },
+  {
+    name: "the tutor chooses",
+    mockup: { css: "button.nt-pick-ai" },
+    app: { css: "button.nt-pick-ai" },
+    differs: { what: ["background"], by: OVER_INERT },
+  },
+  {
+    name: "a skill suggested",
+    mockup: { css: ".nt-pick-group:first-of-type button.nt-pick-chip:first-child" },
+    app: { css: ".nt-pick-group:first-of-type button.nt-pick-chip:first-child" },
+    differs: { what: ["background"], by: OVER_INERT },
+  },
+];
+
+/** The lessons of a module: Home back, the heading, the module, and the rows of its groups. */
+const LESSONS: readonly Region[] = [
+  {
+    name: "Home, back",
+    mockup: { css: 'main button:text-is("Home")' },
+    app: { css: "button.nt-back-link" },
+    followsText: "start",
+  },
+  {
+    name: "the heading",
+    mockup: { css: 'h1:text-is("Lessons of the module")' },
+    app: { role: "heading", name: "Lessons of the module" },
+    followsText: "start",
+  },
+  {
+    name: "the module",
+    mockup: { css: "main h1 + span" },
+    app: { css: "p.nt-lessons-module" },
+    followsText: "start",
+  },
+  {
+    name: "the first group",
+    mockup: { css: "main section:first-of-type" },
+    app: { css: "section.nt-lessons-group:first-of-type" },
+    differs: { what: ["font-size"], by: NO_TEXT },
+  },
+  {
+    name: "the lesson begun",
+    mockup: { css: 'button[aria-label^="Number patterns"]' },
+    app: { css: 'button.nt-lessons-row:has(.nt-lessons-sub[data-state="begun"])' },
+  },
+  {
+    name: "the last lesson",
+    mockup: { css: 'button[aria-label^="Pigeonhole principle"]' },
+    app: { css: "section.nt-lessons-group:last-of-type button.nt-lessons-row" },
+  },
+];
 
 /**
  * Why Help stands taller than the mockup: its first item says that the AI checks a task from
@@ -2043,6 +2338,11 @@ const LESSON_END: readonly Region[] = [
     name: "Next lesson",
     mockup: { role: "button", name: "Next lesson" },
     app: { role: "button", name: "Next lesson" },
+  },
+  {
+    name: "Solve",
+    mockup: { role: "button", name: "Solve" },
+    app: { role: "button", name: "Solve" },
   },
   {
     name: "Back to Home",
@@ -2501,23 +2801,49 @@ const SCREENS: readonly Compared[] = [
       state: "home",
       devices: [device],
       draw: home,
-      regions: [
-        // The phone's tab bar is glass: what shows through its middle is the card that Home's
-        // other heights move under it.
-        ...frameOf(device).map(
-          (region): Region =>
-            region.name === "the tab bar"
-              ? {
-                  ...region,
-                  differs: { what: ["font-size", "background"], by: `${HOME_PLACED}; ${NO_TEXT}` },
-                }
-              : region,
-        ),
-        ...HOME,
-        ...(device === "ipad" ? [LEGEND] : []),
-      ],
+      regions: [...frameOf(device), ...HOME, ...(device === "ipad" ? [LEGEND] : [])],
     }),
   ),
+  ...DEVICES.map(
+    (device): Compared => ({
+      state: "home-tasks",
+      devices: [device],
+      draw: home,
+      settle: () =>
+        userEvent.click(
+          screen.getAllByRole("button", {
+            description: "Choose which tasks to solve",
+          })[0] as HTMLElement,
+        ),
+      regions:
+        device === "ipad" ? PICK.map((region) => differing(region, ["x", "y"], PICK_PLACED)) : PICK,
+    }),
+  ),
+  {
+    state: "home-tasks-own",
+    draw: home,
+    settle: async () => {
+      await userEvent.click(
+        screen.getAllByRole("button", {
+          description: "Choose which tasks to solve",
+        })[0] as HTMLElement,
+      );
+      const pick = screen.getByRole("dialog", { name: "Which tasks to solve?" });
+      // The first is the chip of the skills suggested, as the mockup presses it.
+      await userEvent.click(
+        within(pick).getAllByRole("button", { name: "Number patterns" })[0] as HTMLElement,
+      );
+      // The focus back on the row scrolls the page on a phone; the mockup's stays at its top.
+      window.scrollTo(0, 0);
+    },
+    regions: TILES,
+  },
+  {
+    state: "lessons",
+    draw: lessonsPage,
+    settle: () => screen.findByRole("button", { name: /Pigeonhole principle/ }),
+    regions: LESSONS,
+  },
   { state: "home-legend", devices: ["ipad"], draw: home, regions: [LEGEND] },
   {
     state: "home-legend",

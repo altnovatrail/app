@@ -12,7 +12,7 @@
 // phone hides the canvas's bar of tools; a task api closed is only to be looked at; a repeat of
 // FindTasks finds again, and a Start that failed says why; a photo whose tasks were found on it
 // turned upright is turned so on the page, and the page goes on with it; a camera that answers too late is
-// stopped; with the device, the page and its work are the profile's history, which "Your pages"
+// stopped; with the device, the page and its work are the profile's history, which "History"
 // opens again; the tutor's button and debug's stand in the bottom bars of both screens, debug's only
 // for an account with the debug right; the top bar of each holds Back alone, the screen's name its
 // heading unseen, clear of the sheet's popovers; grown-up mode behind the grown-ups' PIN, its
@@ -71,7 +71,8 @@ import { memoryDevice } from "../test/device.ts";
 import { inLanguage } from "../test/language.tsx";
 import { changePens } from "../test/pens.ts";
 import { listening, withRecognition } from "../test/recognition.ts";
-import { PaperProvider } from "./PaperContext.tsx";
+import { photoOfFile } from "./capture.ts";
+import { PaperProvider, usePaper } from "./PaperContext.tsx";
 import { PaperScreen } from "./PaperScreen.tsx";
 import { MAX_TASKS } from "./page.ts";
 import { YourPages } from "./YourPages.tsx";
@@ -104,7 +105,7 @@ interface Setup {
   readonly began?: (tasks: number) => MessageInitShape<typeof BeginPaperAttemptsResponseSchema>;
   /** The learner's share of the quota, in percent; none, and api has no `GetQuota`. */
   readonly quota?: number;
-  /** The device that keeps the profile's history, and "Your pages" beside the screen; none keeps nothing. */
+  /** The device that keeps the profile's history, and "History" beside the screen; none keeps nothing. */
   readonly device?: Device;
   /** The camera's stream, or what it comes by; none, and there is no camera. */
   readonly camera?: MediaStream | Promise<MediaStream>;
@@ -116,6 +117,8 @@ interface Setup {
   readonly language?: Language;
   /** The learner is of the category adult; none, an adult. */
   readonly adult?: boolean;
+  /** Home's "From a file" stands beside the screen, a button that takes a page's photo as a file. */
+  readonly fromFile?: boolean;
   /**
    * The answer to each question, by how many came before; an error fails it; none refuses it; a
    * promise is an answer still awaited.
@@ -299,6 +302,7 @@ async function renderCamera(setup: Setup = {}) {
       <ApiProvider value={api}>
         {setup.device === undefined ? (
           <PaperProvider>
+            {setup.fromFile === true ? <FromFile /> : null}
             <PaperScreen profileId="p1" adult={setup.adult ?? true} />
           </PaperProvider>
         ) : (
@@ -314,6 +318,23 @@ async function renderCamera(setup: Setup = {}) {
   if (setup.camera === undefined)
     await screen.findByText(WORDS[setup.language ?? "en"].text("paper.no-camera"));
   return { finds, begins, submits, rungs, reads, opens, reports, asks, grownAsks };
+}
+
+/** Home's "From a file", as it hands the screen a page's photo. */
+function FromFile() {
+  const paper = usePaper();
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        void pagePhoto()
+          .then(photoOfFile)
+          .then((photo) => paper?.takePhoto(photo, true));
+      }}
+    >
+      A file from Home
+    </button>
+  );
 }
 
 /** A refusal of api for a cause. */
@@ -503,6 +524,30 @@ it("opens the device's photos by its button, and says a picture it cannot read c
     "This picture can't be read. Take another photo, or choose one",
   );
   expect(finds).toHaveLength(0);
+});
+
+it("finds the tasks of a file from Home once, and takes another file in place of Retake", async () => {
+  const { finds } = await renderCamera({ fromFile: true });
+  await userEvent.click(screen.getByRole("button", { name: "A file from Home" }));
+  await screen.findByRole("button", { name: "Deselect task 1" }, SLOW);
+  expect(finds).toHaveLength(1);
+  expect(screen.queryByRole("button", { name: "Retake" })).toBeNull();
+  const picked = vi.spyOn(HTMLInputElement.prototype, "click").mockImplementation(() => {});
+  await userEvent.click(screen.getByRole("button", { name: "Another file" }));
+  expect(picked).toHaveBeenCalledOnce();
+  picked.mockRestore();
+  const input = document.querySelector<HTMLInputElement>('input[type="file"]');
+  if (input === null) throw new Error("no picker");
+  // A change with no file picked is none; a file that is no picture says so.
+  input.dispatchEvent(new Event("change", { bubbles: true }));
+  await userEvent.upload(input, new File(["not a picture"], "page.png", { type: "image/png" }));
+  await vi.waitFor(() =>
+    expect(document.body.textContent).toContain(
+      "This picture can't be read. Take another photo, or choose one",
+    ),
+  );
+  await userEvent.upload(input, await pagePhoto());
+  await vi.waitFor(() => expect(finds).toHaveLength(2), SLOW);
 });
 
 /** The bar's count, its numbers in bold: "{count} of {total} selected" whole. */
@@ -1985,7 +2030,7 @@ it("shuts Start when the quota is spent", async () => {
   expect(screen.queryByRole("button", { name: "Find the tasks again" })).toBeNull();
 });
 
-it("keeps the page and its work in the profile's history, and opens it again from Your pages", async () => {
+it("keeps the page and its work in the profile's history, and opens it again from History", async () => {
   const { device } = memoryDevice();
   await addProfile(device, "p1");
   await solving({ device });
@@ -2010,7 +2055,7 @@ it("keeps the page and its work in the profile's history, and opens it again fro
   cleanup();
 
   await renderCamera({ device });
-  await userEvent.click(await screen.findByRole("button", { name: "Your pages" }));
+  await userEvent.click(await screen.findByRole("button", { name: "History" }));
   await userEvent.click(screen.getByRole("button", { name: /· 2 tasks$/ }));
   await screen.findByRole("heading", { name: "Task 1" }, SLOW);
   await waitFor(() => expect(sheet().history).toHaveLength(1));
@@ -2029,7 +2074,7 @@ it("keeps the first page of a profile that has begun nothing on this device", as
   });
   cleanup();
   await renderCamera({ device });
-  await userEvent.click(await screen.findByRole("button", { name: "Your pages" }));
+  await userEvent.click(await screen.findByRole("button", { name: "History" }));
   expect(await screen.findByRole("button", { name: /· 2 tasks$/ })).toBeVisible();
   history.replaceState(null, "", location.pathname);
 });
@@ -2070,7 +2115,7 @@ it("marks a task solved in the list of a page opened again, and solves it again 
     began: () => ({ attemptIds: ["b1"] }),
     checked: () => ({ items: [], solved: {} }),
   });
-  await userEvent.click(await screen.findByRole("button", { name: "Your pages" }));
+  await userEvent.click(await screen.findByRole("button", { name: "History" }));
   await userEvent.click(screen.getByRole("button", { name: /· 2 tasks$/ }));
   await screen.findByRole("heading", { name: "Task 1" }, SLOW);
   expect(screen.queryByText("Read: 85")).toBeNull();
@@ -2116,7 +2161,7 @@ it("says a page of the history is gone when the device keeps it no more, and lis
 
   vi.spyOn(Profile.prototype, "page").mockResolvedValue(undefined);
   await renderCamera({ device });
-  await userEvent.click(await screen.findByRole("button", { name: "Your pages" }));
+  await userEvent.click(await screen.findByRole("button", { name: "History" }));
   await userEvent.click(screen.getByRole("button", { name: /· 2 tasks$/ }));
   expect(await screen.findByRole("alert")).toBeVisible();
   expect(screen.getByText("This page isn't on this device any more")).toBeVisible();

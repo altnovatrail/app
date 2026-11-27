@@ -136,10 +136,9 @@ export const TABLE: Readonly<Record<string, Value>> = {
   // Disconnect in it, a circle struck through.
   dots: { base: "more-horiz", filled: true, mirrored: false },
   disconnect: { base: "do-not-disturb-on", filled: false, mirrored: false },
-  // A module's card on Home: Continue, the engine that chooses, and the next skill.
+  // A module's card on Home: the buttons of its tiles, and its kind, adaptive or in a chain.
   play: { base: "play-arrow", filled: false, mirrored: true },
   engine: { base: "autorenew", filled: false, mirrored: false },
-  "next-skill": { base: "arrow-forward", filled: false, mirrored: true },
   chain: { base: "keyboard-double-arrow-right", filled: false, mirrored: true },
   // Grown-up mode of the tutor on a task from paper: a key in the panel's head, filled while the
   // mode is on; the grown-ups' PIN it asks, a padlock over its keypad, whose delete key is a
@@ -166,6 +165,13 @@ export const TABLE: Readonly<Record<string, Value>> = {
   // none of today's is used, an hourglass once it is used up, each filled.
   "quota-fresh": { base: "auto-awesome", filled: true, mirrored: false },
   "quota-out": { base: "hourglass", filled: true, mirrored: false },
+  // A module's card on Home: the tile of its lesson, a book, and of its tasks, a sparkle, the
+  // tutor's choice of their skill; a lesson's state on the page of its lessons.
+  lesson: { base: "menu-book", filled: false, mirrored: false },
+  "task-skill": { base: "auto-awesome", filled: false, mirrored: false },
+  // Tasks from paper: a page from a file of the device, and the history of solving.
+  "from-file": { base: "upload-file", filled: false, mirrored: false },
+  history: { base: "history", filled: false, mirrored: false },
 };
 
 /** An icon as the app draws it: its view box, and the paths it fills in the text's colour. */

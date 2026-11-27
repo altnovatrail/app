@@ -5,7 +5,8 @@
 // the device; each try of finding is an action of its own, with a key of its own, as api keeps no
 // frames for a repeat. A refusal that shuts AI to the learner — the quota, the platform's limit,
 // no model admitted, or the own key's limit or refusal — shuts Start: without AI a task from paper
-// can't be checked. Retake throws the page away, and the tasks begun with it. The tutor's panel on
+// can't be checked. Retake throws the page away, and the tasks begun with it; on a page from a file,
+// a photo or a scan chosen on Home, "Another file" stands in its place and chooses the next. The tutor's panel on
 // the page takes the learner's request about it, which finds the tasks anew with the frames on the
 // page now: the frames it gave take the place of those found, the learner's own
 // staying, and Undo puts back the frames before until the learner changes any. Frames found on the
@@ -35,7 +36,7 @@ import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { useKeyHolder } from "../ownkey/OwnKeyContext.tsx";
 import { usePanelFocus } from "../task/TutorPanel.tsx";
 import { Camera } from "./Camera.tsx";
-import { cropsOf, type Photo, turnedPhoto } from "./capture.ts";
+import { cropsOf, type Photo, photoOfFile, turnedPhoto } from "./capture.ts";
 import { moduleOfRoute, modulePageOf } from "./module.ts";
 import { PageTutor } from "./PageTutor.tsx";
 import { type BegunTask, type Finding, type PaperPage, usePaper } from "./PaperContext.tsx";
@@ -266,6 +267,19 @@ export function PaperScreen({
     [api, change, turn, holder, profileId],
   );
 
+  // A file chosen on Home: its tasks are found once the page is shown, once for its photo.
+  const asking = useRef<Photo | undefined>(undefined);
+  const unasked = paper?.page?.unasked === true ? paper.page.photo : undefined;
+  useEffect(() => {
+    if (unasked === undefined || asking.current === unasked || change === undefined) return;
+    asking.current = unasked;
+    change(unasked, ({ unasked: _, ...page }) => page);
+    find(unasked);
+  }, [unasked, change, find]);
+  // Another file in place of Retake, on a page from a file; one that is no picture says so.
+  const files = useRef<HTMLInputElement>(null);
+  const [unreadable, setUnreadable] = useState(false);
+
   const page = paper?.page;
   if (paper === undefined) return null;
   const home = () => navigate(HOME);
@@ -441,6 +455,7 @@ export function PaperScreen({
       ? []
       : [{ kind: "fail" as const, title: failureText(startFailure, words) }]),
     ...(closed ? [{ kind: "warn" as const, title: words.text("paper.no-ai") }] : []),
+    ...(unreadable ? [{ kind: "fail" as const, title: words.text("paper.unreadable") }] : []),
   ];
 
   const ask = (request: string, voice: boolean) => {
@@ -477,7 +492,8 @@ export function PaperScreen({
         closed={closed}
         starting={starting}
         onStart={start}
-        onRetake={paper.clear}
+        {...(page.fromFile === true ? { another: true } : {})}
+        onRetake={page.fromFile === true ? () => files.current?.click() : paper.clear}
         onHome={() => {
           // Back from the page "Add" opened keeps the tasks begun, and their work, for the way back.
           if (paper.begun === undefined) paper.clear();
@@ -513,6 +529,26 @@ export function PaperScreen({
           onUndo={page.before === undefined ? undefined : undo}
           onClose={() => setTalking(false)}
           headingRef={heading}
+        />
+      ) : null}
+      {page.fromFile === true ? (
+        <input
+          ref={files}
+          type="file"
+          accept="image/jpeg,image/png,image/heic,image/webp,image/*"
+          hidden
+          tabIndex={-1}
+          onChange={(event) => {
+            const file = event.currentTarget.files?.[0];
+            // The same file picked again is a change too.
+            event.currentTarget.value = "";
+            if (file === undefined) return;
+            setUnreadable(false);
+            photoOfFile(file).then(
+              (photo) => paper.takePhoto(photo, true),
+              () => setUnreadable(true),
+            );
+          }}
         />
       ) : null}
     </>

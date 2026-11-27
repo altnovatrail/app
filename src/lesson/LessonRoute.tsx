@@ -23,7 +23,7 @@ export function LessonRoute({
   const { device } = useStorage();
   const lessons = useLessons();
   const setAttempt = useAttempt()?.setAttempt;
-  // The run the learner chose, until they choose another — the engine's next lesson, from the end
+  // The run the learner chose, until they choose another — the module's next lesson, from the end
   // of this one —, which is a new player.
   const shown = lessons?.chosen;
   // A task of the lesson closes the attempt the learner had open outside it.
@@ -35,7 +35,13 @@ export function LessonRoute({
   if (shown === undefined) return null;
   return (
     <Lesson
-      key={shown.kind === "run" ? `run ${shown.run.lessonRunId}` : `choice ${shown.choiceId}`}
+      key={
+        shown.kind === "run"
+          ? `run ${shown.run.lessonRunId}`
+          : shown.kind === "choice"
+            ? `choice ${shown.choiceId}`
+            : `lesson ${shown.lesson}`
+      }
       profileId={profileId}
       open={shown}
       device={device}

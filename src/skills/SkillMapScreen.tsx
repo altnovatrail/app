@@ -1,9 +1,10 @@
 // The skill map, the learner's second way in beside Home, in the language of the learner's
 // screens. `#/skill-map/<module>` is the map of a module's current version, the learner's view of
 // skill-map's element, by `GetSkillMap` and the open views of its graph and manifest. Practise on
-// the map asks `ChooseNext` with the skill chosen, and goes to what the engine gives; the skill
-// holds while the learner works, until they ask for something else — `ChooseNext` without a skill,
-// "What's next" on Home. Choosing closes the attempt open outside a lesson for good:
+// the map makes the skill chosen the module's task skill, `SetTaskSkill`, and solves: `ChooseNext`
+// among the module's tasks, as Solve on its card on Home, going to what the engine gives; the skill
+// holds until the learner gives the choice back to the tutor on the card. Choosing closes the
+// attempt open outside a lesson for good:
 // while one is open, a question says so first. Beside an anchor skill whose holding is unknown, the
 // modules of the catalog that teach it are offered with Connect, `ConnectModule`, above the map, as
 // the element shows no `teaching_modules`; once one is connected, the map's state is read again in
@@ -389,7 +390,8 @@ function MapOfModule({
       const leaving = open;
       void (async () => {
         try {
-          const given = await choose(skill, leaving);
+          await api.module.setTaskSkill({ profileId, moduleId, skill });
+          const given = await choose(moduleId, leaving);
           if (given === undefined) return;
           if (givenOf(given) === "nothing") setNothing(given);
           else await act(given, undefined);
@@ -398,7 +400,7 @@ function MapOfModule({
         }
       })().finally(() => setPending(false));
     },
-    [open, choose, act],
+    [open, choose, act, api, profileId, moduleId],
   );
 
   const chosen = useCallback(

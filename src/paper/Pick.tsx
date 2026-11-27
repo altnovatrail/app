@@ -5,8 +5,8 @@
 // frame it becomes, or by two taps, a corner and then the one opposite. Every frame, the AI's too,
 // moves when dragged by its middle and resizes by its corner; a press that moved it picks nothing.
 // The top bar's pill holds Back alone, the title the screen's heading unseen, and its end "Remove
-// all frames", which clears the photo for frames of the learner's own, and Retake, the bar kept to
-// one row by BarFit.tsx; while the tasks are found, its middle says so, by a turning ring, and a
+// all frames", which clears the photo for frames of the learner's own, and Retake — "Another file" on
+// a photo from a file —, the bar kept to one row by BarFit.tsx; while the tasks are found, its middle says so, by a turning ring, and a
 // line of light runs down the photo and back; once they are, how many were found and framed by
 // hand. At the foot, the note that the photo stays on the device, and the bar of "Select all", the
 // count and Start, with the most tasks at once at its head, in a ring, once the page holds as many
@@ -150,6 +150,8 @@ export interface PickProps {
   readonly starting: boolean;
   readonly onStart: () => void;
   readonly onRetake: () => void;
+  /** The photo is a file of the device: Retake is "Another file". */
+  readonly another?: boolean;
   readonly onHome: () => void;
   /** The tutor's panel is open. */
   readonly beside?: boolean;
@@ -169,6 +171,7 @@ export function Pick({
   starting,
   onStart,
   onRetake,
+  another = false,
   onHome,
   beside = false,
   calls,
@@ -319,7 +322,11 @@ export function Pick({
                 onClick={() => onTasks(() => [])}
               />
             ) : null}
-            <BarButton icon="camera" caption={words.text("paper.retake")} onClick={onRetake} />
+            <BarButton
+              icon={another ? "from-file" : "camera"}
+              caption={words.text(another ? "paper.another-file" : "paper.retake")}
+              onClick={onRetake}
+            />
           </div>
         ),
       }}

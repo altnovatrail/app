@@ -1176,6 +1176,7 @@ function OpenTask({
           key={choice?.choiceId ?? "ask"}
           profileId={profileId}
           {...(choice === undefined ? {} : { choice })}
+          {...(opened.manifest === undefined ? {} : { moduleId: opened.manifest.id })}
         />
       }
     />

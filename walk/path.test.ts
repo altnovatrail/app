@@ -436,8 +436,6 @@ describe.each(NAMED)("the path in %s", (name) => {
   let browser: Browser;
   let walk: Awaited<ReturnType<typeof open>>;
   let lessonTitle = "";
-  // The line of the tutor's time at the start, for the messages of the steps after it.
-  let quotaLine = "";
   // How the task outside a lesson was answered, on the own key.
   let practised: "tap" | "handwriting" | undefined;
   const note = (text: string) => console.log(`walk ${name}: ${text}`);
@@ -474,7 +472,6 @@ describe.each(NAMED)("the path in %s", (name) => {
     const share = page.getByRole("button", { name: /^Tutor time: / });
     await share.waitFor({ timeout: 30_000 });
     const used = (await share.getAttribute("aria-label")) ?? "";
-    quotaLine = used;
     note(used);
     // With the day's quota spent, api gives no lesson and begins no task in handwriting.
     expect(used, QUOTA_SPENT).not.toBe("Tutor time: used up today");
@@ -497,42 +494,20 @@ describe.each(NAMED)("the path in %s", (name) => {
     const dev = walk.account?.profiles.find((profile) => profile.pseudonym === "Dev");
     if (dev === undefined) throw new Error("walk: GetAccount named no profile Dev");
     const begun = dev.openLessonRuns.length;
-    // A lesson an earlier walk left open is continued: What's next would not give a new one.
-    if (begun > 0) {
-      note(`api names ${begun} lesson(s) of Dev begun before: the walk continues one`);
-      await page
-        .getByRole("region", { name: "A lesson in progress" })
-        .getByRole("button", { name: "Continue the lesson" })
-        .first()
-        .click();
-      await page.waitForURL(/#\/lesson$/, { timeout: 30_000 });
-    } else {
-      // What's next may give a task first: it is answered, and the engine asked again.
-      for (let tries = 0; ; tries++) {
-        if (tries === 4) {
-          throw new Error(
-            `What's next gave no lesson in 4 tries, and none was open (${quotaLine})`,
-          );
-        }
-        // While a task of an earlier walk is open, the button is Something else, which asks first.
-        await page.getByRole("button", { name: /^(What's next|Something else)$/ }).click();
-        const goOn = page.getByRole("button", { name: "Go on", exact: true });
-        await goOn.or(page.locator("h1")).first().waitFor();
-        if (await goOn.isVisible()) await goOn.click();
-        await page.waitForURL(/#\/(lesson|task)$/, { timeout: 30_000 });
-        if (page.url().endsWith("#/lesson")) break;
-        await showSolution(page);
-        note("What's next gave a task, ended by its solution");
-        await page.getByRole("button", { name: "Back to Home" }).click();
-        await home(page);
-      }
-    }
+    // The tile of a module's lesson: its run begun, else the next in the author's order.
+    if (begun > 0) note(`api names ${begun} lesson(s) of Dev begun before: the walk continues one`);
+    await page
+      .getByRole("region", { name: "Lesson" })
+      .first()
+      .getByRole("button", { name: "Continue", exact: true })
+      .click();
+    await page.waitForURL(/#\/lesson$/, { timeout: 30_000 });
     // The lesson's heading once its segment is shown: until then the heading may be Home's.
     await segment(page).waitFor();
     lessonTitle = (await page.getByRole("heading", { level: 1 }).textContent()) ?? "";
     expect(lessonTitle).not.toBe("");
     const first = await place(page);
-    const how = begun > 0 ? "begun before" : "given by What's next";
+    const how = begun > 0 ? "begun before" : "the tile's next";
     note(`the lesson "${lessonTitle}", ${how}, opens at "${first}"`);
     if (!/^Task · /.test(first)) {
       await page.getByRole("button", { name: "Continue", exact: true }).click();
@@ -552,18 +527,16 @@ describe.each(NAMED)("the path in %s", (name) => {
       await page.getByRole("button", { name: "Continue", exact: true }).click();
       await expect.poll(() => place(page)).not.toBe(first);
     }
-    // A reload in the lesson: the run is in memory, so the way back is Continue the lesson.
+    // A reload in the lesson: the run is in memory, so the way back is the tile's Continue.
     const kept = await place(page);
     await page.reload();
     await chooseDev(page);
     await home(page);
-    await page.getByRole("heading", { name: "A lesson in progress" }).first().waitFor();
-    // Earlier walks leave their lessons open too: this one is by its title.
     await page
-      .locator("section, article, li, div")
-      .filter({ has: page.getByRole("heading", { name: lessonTitle, exact: true }) })
-      .last()
-      .getByRole("button", { name: "Continue the lesson" })
+      .getByRole("region", { name: "Lesson" })
+      .filter({ hasText: lessonTitle })
+      .first()
+      .getByRole("button", { name: "Continue", exact: true })
       .click();
     await expect.poll(() => place(page)).toBe(kept);
     // On to the task, answer it, and on to the end.
@@ -619,7 +592,10 @@ describe.each(NAMED)("the path in %s", (name) => {
     const { page } = walk;
     await page.getByRole("button", { name: "Skill map", exact: true }).click();
     await page.getByRole("button", { name: "Open the map" }).first().click();
-    await page.getByRole("heading", { level: 1, name: /^Skill map: / }).waitFor();
+    const heading = page.getByRole("heading", { level: 1, name: /^Skill map: / });
+    await heading.waitFor();
+    // The module whose card on Home goes on with the task, by its title.
+    const practisedModule = ((await heading.textContent()) ?? "").replace(/^Skill map: /, "");
     const map = page.locator("novatrail-skill-map");
     await map.getByRole("button").first().waitFor();
     const skills = map.getByRole("button");
@@ -651,11 +627,13 @@ describe.each(NAMED)("the path in %s", (name) => {
     await chooseDev(page);
     await page.getByRole("heading", { level: 1, name: "Task" }).waitFor();
     await expect.poll(() => strokes(page)).toBe(8);
-    // From Home, the same task by Continue the task.
+    // From Home, the same task by Solve on its module's card, which goes on with it.
     await page.goto(`${ORIGIN}/#/home`);
     await home(page);
-    await page.getByRole("heading", { name: "There is a task in progress" }).waitFor();
-    await page.getByRole("button", { name: "Continue the task" }).click();
+    await page
+      .getByRole("article", { name: practisedModule, exact: true })
+      .getByRole("button", { name: "Solve", exact: true })
+      .click();
     await page.getByRole("heading", { level: 1, name: "Task" }).waitFor();
     await expect.poll(() => strokes(page)).toBe(8);
     // Left unfinished for the sign-out's list, with no check: each check spends the quota.

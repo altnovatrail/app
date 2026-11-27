@@ -2,10 +2,10 @@
 // player, a task begins on the task screen, and nothing is a line of the screen, with why when the
 // AI that checks the tasks is closed to the learner — useEngine goes there. The choice an answer
 // gave — the end of an attempt outside a lesson, or of a lesson run — is a press away; with none,
-// the press asks `ChooseNext` with no skill, which gives the lead back to the engine from a skill
-// chosen on the map. Both `ChooseNext` and the beginning of a task close the attempt
-// open outside a lesson for good: while one is open, a question says so first. With no choice in
-// hand and an attempt open the button is "Something else". The reason of the choice is never shown
+// the press asks `ChooseNext`, among the tasks of the module the screen is of, or else among all
+// the modules. The beginning of a task closes the attempt open outside a lesson for good: while
+// one is open, a question says so first. With no choice in hand and an attempt open there is no
+// button: what comes after the task comes with its end. The reason of the choice is never shown
 // here.
 import type { EngineChoice } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -26,9 +26,17 @@ export interface NextStepProps {
   readonly device?: Device;
   /** The button is a second action beside the screen's main one. */
   readonly secondary?: boolean;
+  /** The module whose tasks alone a press asks among; none for all the modules. */
+  readonly moduleId?: string;
 }
 
-export function NextStep({ profileId, choice, device, secondary = false }: NextStepProps) {
+export function NextStep({
+  profileId,
+  choice,
+  device,
+  secondary = false,
+  moduleId = "",
+}: NextStepProps) {
   const { words } = useLanguage();
   const open = useAttempt()?.attemptId;
   const { choose, act } = useEngine(profileId, device);
@@ -57,7 +65,7 @@ export function NextStep({ profileId, choice, device, secondary = false }: NextS
           await act(known, leaving);
           return;
         }
-        const given = await choose("", leaving);
+        const given = await choose(moduleId, leaving);
         if (given === undefined) return;
         setKnown(given);
         await act(given, undefined);
@@ -65,21 +73,18 @@ export function NextStep({ profileId, choice, device, secondary = false }: NextS
         setFailure(parseFailure(reason));
       }
     })().finally(() => setPending(false));
-  }, [known, open, choose, act]);
+  }, [known, open, choose, act, moduleId]);
 
   const nothing = known !== undefined && givenOf(known) === "nothing";
   const outcome = nothing ? outcomeOf(known.outcome) : undefined;
-  // A choice an answer gave that gives nothing has no button: there is nothing to go to.
-  const offer = !(nothing && choice !== undefined && known === choice);
-  // What closes the attempt open: asking the engine, or beginning the task it chose.
-  const closes =
-    open !== undefined && (known === undefined || nothing || givenOf(known) === "task");
-  const label =
-    known === undefined || nothing
-      ? open === undefined
-        ? "next.what"
-        : "next.else"
-      : NEXT_KEYS[givenOf(known) as "lesson" | "task"];
+  // A choice an answer gave that gives nothing has no button: there is nothing to go to; nor has
+  // a press to ask while an attempt is open, which the attempt's own end answers.
+  const asks = known === undefined || nothing;
+  const offer =
+    !(nothing && choice !== undefined && known === choice) && !(asks && open !== undefined);
+  // What closes the attempt open: beginning the task the engine chose.
+  const closes = open !== undefined && !asks && givenOf(known) === "task";
+  const label = asks ? "next.what" : NEXT_KEYS[givenOf(known) as "lesson" | "task"];
 
   return (
     <div className="nt-next">
@@ -100,7 +105,7 @@ export function NextStep({ profileId, choice, device, secondary = false }: NextS
           <button
             ref={button}
             type="button"
-            {...(secondary || label === "next.else" ? { className: "nt-secondary" } : {})}
+            {...(secondary ? { className: "nt-secondary" } : {})}
             aria-disabled={pending}
             onClick={() => {
               if (pending) return;

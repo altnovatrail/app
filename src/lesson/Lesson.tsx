@@ -1,12 +1,14 @@
 // The lesson player (LearningService in the contract): `GetLessonRun` gives an open run
-// again, `OpenLesson` a run by an engine's choice of a lesson, each with the lesson's open
+// again, `OpenLesson` a run by an engine's choice of a lesson or of the lesson the learner chose
+// by its full ID, each with the lesson's open
 // view, its package and the task segments that ended. The lesson opens at the later of the place
 // the device keeps and the one after the last task that ended, its examples' demos as they were —
 // the state of this run alone, by the lesson's full ID, the package and the run's ID. "Continue"
 // goes on; a task segment is an attempt of the run, the task screen under the lesson's header, and
 // "Continue" comes once api said the task ended, which moves the place at once. "Continue" on the
 // last segment is "lesson done", `CompleteLesson`, sent again until api answers; any end of the run
-// erases the state of the lesson. Leaving sends nothing.
+// erases the state of the lesson. Leaving sends nothing. At the end come the module's next lesson
+// and Solve, its tasks (LessonNext.tsx).
 import type { Mode as ProfileMode } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import type { Next } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
 import {
@@ -31,7 +33,6 @@ import { HOME, navigate, redirect } from "../app/router.ts";
 import { Screen } from "../app/Screen.tsx";
 import { ReadFailed } from "../boot/Screens.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
-import { NextStep } from "../next/NextStep.tsx";
 import { useKeyHolder } from "../ownkey/OwnKeyContext.tsx";
 import { usePackages } from "../packages/PackagesContext.tsx";
 import type { Device } from "../storage/device.ts";
@@ -41,6 +42,7 @@ import { Task, type TaskInLesson } from "../task/Task.tsx";
 import { Example } from "./Example.tsx";
 import { Explanation } from "./Explanation.tsx";
 import type { LessonOpen, RunRef } from "./LessonContext.tsx";
+import { LessonNext } from "./LessonNext.tsx";
 import { ContinueButton, LessonLoading, LessonScreen } from "./LessonScreen.tsx";
 import {
   type Course,
@@ -50,7 +52,7 @@ import {
   openingPlace,
   taskEnded,
 } from "./place.ts";
-import { demoOf, endChoiceOf, endedOf, endKey, fullId, kindOf, runEndOf } from "./run.ts";
+import { demoOf, endChoiceOf, endedOf, endKey, fullId, kindOf, moduleOf, runEndOf } from "./run.ts";
 
 /** What the player has read of the run. */
 interface Opened {
@@ -168,7 +170,7 @@ export function Lesson(props: LessonProps) {
             })
           : await api.learning.openLesson({
               profileId,
-              choiceId: what.choiceId,
+              ...(what.kind === "choice" ? { choiceId: what.choiceId } : { lesson: what.lesson }),
               ...holder.routeFields(profileId),
             })
       ).run;
@@ -183,7 +185,9 @@ export function Lesson(props: LessonProps) {
         manifest === undefined
           ? what.kind === "run"
             ? what.run.lesson
-            : undefined
+            : what.kind === "lesson"
+              ? what.lesson
+              : undefined
           : fullId(manifest.id, lesson.id);
       const profile =
         (await openProfile(device, profileId).catch(() => undefined)) ??
@@ -216,23 +220,30 @@ export function Lesson(props: LessonProps) {
     );
   }
   if (read.status === "ended") {
-    return <LessonEnd reason={read.reason} next={nextStep(profileId, device, read.choice)} />;
+    const ended =
+      what.kind === "run" ? what.run.lesson : what.kind === "lesson" ? what.lesson : undefined;
+    return (
+      <LessonEnd
+        reason={read.reason}
+        next={
+          <LessonNext
+            profileId={profileId}
+            device={device}
+            moduleId={ended === undefined ? undefined : moduleOf(ended)}
+            lesson={ended}
+            choice={read.choice}
+          />
+        }
+      />
+    );
   }
   return <OpenLesson key={read.opened.runId} {...props} opened={read.opened} />;
-}
-
-/** The way to what the engine chose at the end of a run: the choice the end gave, or a press. */
-function nextStep(profileId: string, device: Device, choice: EngineChoice | undefined) {
-  return (
-    <NextStep profileId={profileId} device={device} {...(choice === undefined ? {} : { choice })} />
-  );
 }
 
 /**
  * The end of a run, a card in the window's middle as the mockup's `lesson-end`: the module's
  * tile and title if known, the lesson's title if known, how it ended — "Lesson complete" after a
- * star —, the way to what the engine chose — the choice the end gave, or else a press that asks for
- * it —, and the way to Home. No score, grade or comparison. The profile's pill stands
+ * star —, what comes next — the module's next lesson and Solve —, and the way to Home. No score, grade or comparison. The profile's pill stands
  * at the top, as on every screen of the profile.
  */
 export function LessonEnd({
@@ -247,7 +258,7 @@ export function LessonEnd({
   readonly language?: string | undefined;
   /** The lesson's module, by its manifest: its tile and title above the lesson's. */
   readonly module?: { readonly id: string; readonly title: string } | undefined;
-  /** The way to what the engine chose. */
+  /** What comes next. */
   readonly next?: ReactNode;
 }) {
   const { words } = useLanguage();
@@ -594,7 +605,15 @@ function OpenLesson({
         title={lesson.title}
         language={language}
         module={manifest === undefined ? undefined : { id: manifest.id, title: manifest.title }}
-        next={nextStep(profileId, device, end.choice)}
+        next={
+          <LessonNext
+            profileId={profileId}
+            device={device}
+            moduleId={manifest?.id ?? (id === undefined ? undefined : moduleOf(id))}
+            lesson={id}
+            choice={end.choice}
+          />
+        }
       />
     );
   }

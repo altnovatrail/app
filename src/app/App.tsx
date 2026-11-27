@@ -1,11 +1,11 @@
 // The shell of the app: the home of the learner chosen is Home, `#/subjects` the catalog of
 // the server, `#/task` the task screen of the attempt they have open, `#/lesson` the player
-// of the lesson run they chose, `#/skill-map/<module>` a module's skill map, the second way
-// in, and `#/paper` the camera and the tasks of a page photographed. The attempt open
+// of the lesson run they chose, `#/lessons/<module>` a module's lessons, `#/skill-map/<module>` a
+// module's skill map, the second way in, and `#/paper` the camera and the tasks of a page photographed. The attempt open
 // and the lesson runs open are the learner's in memory, from what GetAccount named. The bar and the
 // screens are in the language of the learner's profile, else the device's; the buttons of the
-// device's language are on the sign-in screen and in the section for adults. Home, Subjects
-// and the skill map stand in the mockup's frame: the row of places, or the phone's tab bar,
+// device's language are on the sign-in screen and in the section for adults. Home, a module's
+// lessons, Subjects and the skill map stand in the mockup's frame: the row of places, or the phone's tab bar,
 // and at the top right the tutor, the notifications and the profile's menu; the lesson and the task
 // have the pill in their own top bar, as the page photographed has its own, and
 // any other screen of a learner the bar that names them and switches, opens the section for adults
@@ -21,6 +21,7 @@ import { LessonRoute } from "../lesson/LessonRoute.tsx";
 import { PaperProvider } from "../paper/PaperContext.tsx";
 import { PaperScreen } from "../paper/PaperScreen.tsx";
 import { SkillMapRoute } from "../skills/SkillMapScreen.tsx";
+import { LessonsRoute } from "../subjects/LessonsScreen.tsx";
 import { MySubjects } from "../subjects/MySubjects.tsx";
 import { SubjectsPage } from "../subjects/SubjectsPage.tsx";
 import { AttemptProvider } from "../task/AttemptContext.tsx";
@@ -31,6 +32,7 @@ import {
   ADULTS,
   HOME,
   LESSON,
+  LESSONS,
   navigate,
   PAPER,
   SKILL_MAP,
@@ -43,7 +45,7 @@ import { type Place, ShellBar } from "./Shell.tsx";
 
 /** The place of the row of places a screen stands in; none for a screen outside the frame. */
 function placeOf(screen: string): Place | undefined {
-  if (screen === HOME.screen) return "home";
+  if (screen === HOME.screen || screen === LESSONS.screen) return "home";
   if (screen === SUBJECTS.screen || screen === SKILL_MAP.screen) return "subjects";
   return undefined;
 }
@@ -141,6 +143,8 @@ function LearnerRoutes({
               <ShellBar place={place ?? "home"} />
               {route.screen === SKILL_MAP.screen ? (
                 <SkillMapRoute route={route} profileId={learner.profileId} device={device} />
+              ) : route.screen === LESSONS.screen ? (
+                <LessonsRoute route={route} profileId={learner.profileId} />
               ) : route.screen === SUBJECTS.screen ? (
                 <SubjectsPage profileId={learner.profileId} />
               ) : (

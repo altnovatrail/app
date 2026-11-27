@@ -1,8 +1,8 @@
 // The way to what the engine chose, in the browser: each kind of choice — a lesson, a task,
 // nothing with and without why, one this build does not know —, the choice an answer gave, a task
-// begun already by its choice, "Something else" with its question and the attempt it closes, and
-// one key for each action until a refusal ends it — with api on connect-es's router and the storage
-// on the device's memory.
+// begun already by its choice, the task in progress, which a task chosen closes after its question
+// and which no button of its own leaves, and one key for each action until a refusal ends it —
+// with api on connect-es's router and the storage on the device's memory.
 import {
   AccountService,
   ProfileSchema,
@@ -51,7 +51,7 @@ function refused(code: Code, cause: Cause): ConnectError {
 }
 
 interface Setup {
-  /** What "Something else" or "What's next" gives; throws in its place, once for each call given. */
+  /** What "What's next" gives; throws in its place, once for each call given. */
   readonly choose?: () => MessageInitShape<typeof EngineChoiceSchema> | undefined;
   /** Throws in place of the attempt of a task chosen. */
   readonly begin?: () => void;
@@ -61,7 +61,7 @@ interface Setup {
   readonly accountAttempt?: { attemptId: string; segment?: number };
   /** The choice an answer gave. */
   readonly choice?: EngineChoice;
-  /** The attempt open outside a lesson, which "Something else" and a task begun close. */
+  /** The attempt open outside a lesson, which a task begun closes. */
   readonly leaving?: string;
   readonly secondary?: boolean;
   /** The owner's own key is held for p1. */
@@ -299,27 +299,10 @@ describe("the way to what the engine chose", () => {
     expect(window.location.hash).toBe("");
   });
 
-  it("asks before Something else closes the task in progress, and erases its work", async () => {
-    const { device, chosen } = await renderStep({ leaving: "a1", choose: () => LESSON });
-    const button = screen.getByRole("button", { name: "Something else" });
-    await userEvent.click(button);
-    const go = screen.getByRole("button", { name: "Go on" });
-    expect(document.activeElement).toBe(go);
-    expect(
-      screen.getByRole("group", {
-        name: "The task in progress closes, and it can't be gone back to",
-      }),
-    ).toBeVisible();
-    await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
-    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Something else" }));
+  it("offers nothing of its own while a task is in progress and the end gave no choice", async () => {
+    const { chosen } = await renderStep({ leaving: "a1", choose: () => LESSON });
+    expect(screen.queryByRole("button")).toBeNull();
     expect(chosen).toHaveLength(0);
-
-    await userEvent.click(screen.getByRole("button", { name: "Something else" }));
-    await userEvent.click(screen.getByRole("button", { name: "Go on" }));
-    await waitFor(() => expect(window.location.hash).toBe("#/lesson"));
-    await waitFor(() => expect(probe()).toHaveTextContent("attempt none; lesson c1"));
-    const profile = await openProfile(device, "p1");
-    expect(await profile?.readAttempt("a1")).toBeUndefined();
   });
 
   it("asks again with the same key after no answer, and with a new one after a refusal", async () => {
@@ -377,14 +360,5 @@ describe("the way to what the engine chose", () => {
     await userEvent.click(screen.getByRole("button", { name: "Next lesson" }));
     await waitFor(() => expect(window.location.hash).toBe("#/lesson"));
     expect(probe()).toHaveTextContent("attempt a1; lesson c1");
-  });
-
-  it("says nothing was chosen after Something else, and then offers What's next", async () => {
-    await renderStep({ leaving: "a1", choose: () => ({ kind: ChoiceKind.NOTHING }) });
-    await userEvent.click(screen.getByRole("button", { name: "Something else" }));
-    await userEvent.click(screen.getByRole("button", { name: "Go on" }));
-    expect(await screen.findByText("There is nothing more to offer for now")).toBeVisible();
-    expect(await screen.findByRole("button", { name: "What's next" })).toBeVisible();
-    expect(probe()).toHaveTextContent("attempt none; lesson none");
   });
 });

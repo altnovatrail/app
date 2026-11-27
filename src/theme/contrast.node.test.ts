@@ -82,6 +82,11 @@ const GROUPS: readonly [number, string, string][] = [
   [EDGE, "own-edge own-more", "own-rows/sky-card"],
   // The sign in the ring of tutor time where none or all of it is used, on the frame and a card.
   [EDGE, "ring-sign", "card page"],
+  // A module's tasks on Home and their pick: Solve, white on the green, the words of the tile and
+  // of the lesson's end in the green on its tint, and the sign and a chosen chip's edge on both.
+  [TEXT, "on-fill", "tasks"],
+  [TEXT, "tasks-text", "card tasks-tint"],
+  [EDGE, "tasks", "card tasks-tint"],
   [TEXT, "google-text", "on-fill"],
   [EDGE, "google-edge", "on-fill"],
 ];

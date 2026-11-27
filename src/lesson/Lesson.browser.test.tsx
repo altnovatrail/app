@@ -25,6 +25,7 @@ import {
   type BeginAttemptRequest,
   type CompleteLessonRequest,
   LearningService,
+  LessonState,
 } from "@altnovatrail/contracts/novatrail/api/v1/learning_pb.js";
 import { PackageService } from "@altnovatrail/contracts/novatrail/api/v1/package_pb.js";
 import type { CanvasElement, DemoState } from "@altnovatrail/spec/canvas";
@@ -74,6 +75,7 @@ const MANIFEST: open.Manifest = {
 };
 
 const GAPS_ID = "example/with-lessons/lesson/gaps-and-posts";
+const NEXT_ID = "example/with-lessons/lesson/rows";
 
 /** The lesson of the format's example gaps-and-posts.yaml, shortened. */
 const GAPS: open.Lesson = {
@@ -184,6 +186,8 @@ interface Setup {
   readonly noEnd?: boolean;
   /** The engine's choice the end of the run gives. */
   readonly endChoice?: { choiceId: string; kind: ChoiceKind };
+  /** The module's lessons do not come. */
+  readonly noLessons?: boolean;
   /** The run comes without its lesson. */
   readonly noLesson?: boolean;
   /** What comes next once the task is right. */
@@ -272,6 +276,17 @@ async function renderLesson(setup: Setup = {}) {
         providers.push(`open ${request.ownKeyProvider}`);
         setup.run?.(reads++);
         return { run: runOf() };
+      },
+      // The module's lessons: this one, then one not begun, the next at its end.
+      listLessons: () => {
+        if (setup.noLessons === true) throw new ConnectError("down", Code.Internal);
+        return {
+          lessons: [
+            { lesson: GAPS_ID, title: "Gaps", segments: 5, state: LessonState.OPEN },
+            { lesson: NEXT_ID, title: "Rows", segments: 3, group: 1, state: LessonState.NEW },
+          ],
+          tileLesson: GAPS_ID,
+        };
       },
       completeLesson(request) {
         asked.push("lesson done");
@@ -1153,7 +1168,7 @@ describe("the lesson player", () => {
     expect(screen.getByText("Not open yet", { selector: "p" })).toBeVisible();
   });
 
-  it("offers what the engine chose at the end, and asks for it when the end gave none", async () => {
+  it("offers the module's next lesson and its tasks at the end, however the run ended", async () => {
     const chosen = await renderLesson({
       kept: { place: 4 },
       ended: [3],
@@ -1161,6 +1176,7 @@ describe("the lesson player", () => {
     });
     await userEvent.click(await continueButton());
     expect(await screen.findByRole("button", { name: "Next lesson" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Solve" })).toHaveClass("nt-secondary");
     expect(screen.getByRole("button", { name: "Back to Home" })).toHaveClass("nt-secondary");
     chosen.unmount();
 
@@ -1176,13 +1192,32 @@ describe("the lesson player", () => {
         });
       },
     });
-    expect(await screen.findByRole("button", { name: "Next task" })).toBeVisible();
+    expect(await screen.findByRole("button", { name: "Next lesson" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Solve" })).toBeVisible();
+  });
+
+  it("opens the next lesson, and with no lessons come gives Solve alone, which says a failure", async () => {
+    window.location.hash = "";
+    const ended = await renderLesson({ kept: { place: 4 }, ended: [3] });
+    await userEvent.click(await continueButton());
+    await userEvent.click(await screen.findByRole("button", { name: "Next lesson" }));
+    expect(window.location.hash).toBe("#/lesson");
+    ended.unmount();
+
+    await renderLesson({ kept: { place: 4 }, ended: [3], noLessons: true });
+    await userEvent.click(await continueButton());
+    const solve = await screen.findByRole("button", { name: "Solve" });
+    expect(screen.queryByRole("button", { name: "Next lesson" })).toBeNull();
+    expect(solve).not.toHaveClass("nt-secondary");
+    // api answers no choice here: the failure stands under the buttons.
+    await userEvent.click(solve);
+    expect(await screen.findByRole("alert")).toBeVisible();
   });
 
   it("takes lesson done with no end for a lesson passed", async () => {
     await renderLesson({ kept: { place: 4 }, ended: [3], noEnd: true });
     await userEvent.click(await continueButton());
     expect(await screen.findByText("Lesson complete")).toBeVisible();
-    expect(screen.getByRole("button", { name: "What's next" })).toBeVisible();
+    expect(await screen.findByRole("button", { name: "Solve" })).toBeVisible();
   });
 });
