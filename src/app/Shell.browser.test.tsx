@@ -20,6 +20,7 @@ import { AttemptProvider } from "../task/AttemptContext.tsx";
 import { inLanguage } from "../test/language.tsx";
 import "../theme/theme.css";
 import { formatHash } from "./hash.ts";
+import { captionHidden } from "./NavCaption.tsx";
 import { ADULTS, TASK } from "./router.ts";
 import { ShellBar } from "./Shell.tsx";
 import { TIP_DELAY_MS } from "./Tooltip.tsx";
@@ -170,6 +171,9 @@ describe("the frame of Home", () => {
 
     // The cognitive map, shut, at every width; Escape dismisses its tooltip, the pointer on it.
     await page.viewport(1300, 768);
+    // A loaded Firefox lays the page out at the new width a moment after the viewport changed: the
+    // pointer goes to the map once the places show their words, or it lands where the map stood.
+    await expect.poll(() => captionHidden(subjects)).toBe(false);
     const shut = screen.getByRole("button", { name: "Cognitive map Soon" });
     await userEvent.hover(shut);
     await expect
