@@ -257,6 +257,7 @@ function TasksMode({
           className="nt-way-row"
           popClassName="nt-pick"
           anchor=".nt-way"
+          fitAnchor
         >
           {(close) => (
             <Picker card={card} picks={picks} own={own} onTaskSkill={onTaskSkill} close={close} />

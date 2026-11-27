@@ -2970,13 +2970,13 @@ div.nt-way-row {
   }
 }
 /*
- * Which tasks to solve: 35rem wide under its tile from 600 CSS px, so that Solve stays in sight; a
+ * Which tasks to solve: as wide as the tile of its tasks from 600 CSS px, by `--nt-pop-width`; a
  * sheet from the bottom on a phone. The tutor's choice first, a card of its own, pressed while it
  * holds; then the skills suggested and every skill by its tier, as chips, a locked one shut.
  */
 @media (width >= 600px) {
   dialog.nt-pop.nt-pick {
-    inline-size: min(35rem, calc(100vw - 2rem));
+    inline-size: min(var(--nt-pop-width, 35rem), calc(100vw - 2rem));
     max-inline-size: none;
     max-block-size: min(36.25rem, calc(100dvh - 2rem));
   }

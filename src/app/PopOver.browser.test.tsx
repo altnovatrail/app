@@ -141,6 +141,32 @@ describe.each([600, 834, 1194])("a pop-over at %i px", (width) => {
     expect(Math.round(box.top)).toBe(Math.round(from.bottom + 6));
   });
 
+  it("is as wide as its anchor where it fits it, and opens at its top though it scrolls", async () => {
+    await page.viewport(width, 834);
+    render(
+      inLanguage(
+        <div className="nt-way" style={{ margin: "1rem", inlineSize: "24rem" }}>
+          <PopOver label="Which tasks" anchor=".nt-way" fitAnchor popClassName="nt-pick">
+            {Array.from({ length: 40 }, (_, n) => (
+              // biome-ignore lint/suspicious/noArrayIndexKey: the rows are only many.
+              <button key={n} type="button">
+                Skill {n + 1}
+              </button>
+            ))}
+          </PopOver>
+        </div>,
+      ),
+    );
+    await page.getByRole("button", { name: "Which tasks" }).click();
+    const dialog = page.getByRole("dialog", { name: "Which tasks" }).element() as HTMLDialogElement;
+    await Promise.all(dialog.getAnimations().map((animation) => animation.finished));
+    const from = (document.querySelector(".nt-way") as HTMLElement).getBoundingClientRect();
+    expect(Math.round(dialog.getBoundingClientRect().width)).toBe(Math.round(from.width));
+    expect(dialog.scrollHeight).toBeGreaterThan(dialog.clientHeight);
+    expect(document.activeElement).toHaveTextContent("Skill 1");
+    expect(dialog.scrollTop).toBe(0);
+  });
+
   it("hangs at its button's right edge near the window's right", async () => {
     await page.viewport(width, 834);
     render(inLanguage(<Choice place="end" />));
