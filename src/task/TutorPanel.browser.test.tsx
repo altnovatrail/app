@@ -618,9 +618,13 @@ describe("the field of the tutor's panel", () => {
     expect(field()).toHaveValue("why");
   });
 
-  it("gives speech that begins late its own time for words, and puts it away once that is gone", async () => {
+  /**
+   * A listening the test sends the sound's events to itself, so that each comes where the test puts
+   * it: `before` runs on fake timers, then the listening stays the whole of `NO_WORDS_MS` but the
+   * last moment and is put away at it. Gives the lines of the journal.
+   */
+  async function putAwayAfter(before: (recognition: FakeRecognition) => void) {
     withRecognition(true);
-    // The test sends the sound's event itself, so that it comes where the test puts it.
     FakeRecognition.deaf = true;
     reset();
     render(inLanguage(<Asking />));
@@ -629,9 +633,7 @@ describe("the field of the tutor's panel", () => {
     const recognition = listening();
     vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
     try {
-      recognition.onaudiostart?.();
-      vi.advanceTimersByTime(NO_WORDS_MS - 1);
-      recognition.onspeechstart?.();
+      before(recognition);
       vi.advanceTimersByTime(NO_WORDS_MS - 1);
       expect(panel().getByRole("status")).toHaveTextContent("Listening…");
       vi.advanceTimersByTime(1);
@@ -640,36 +642,25 @@ describe("the field of the tutor's panel", () => {
     }
     expect(await panel().findByText("Nothing was heard. Try again, or type.")).toBeVisible();
     flush();
-    expect(
-      snapshot().some(
-        (e) => e.text === `dictation: no words in ${NO_WORDS_MS} ms of speech — put away`,
-      ),
-    ).toBe(true);
+    return snapshot().map((e) => e.text);
+  }
+
+  it("gives speech that begins late its own time for words, and puts it away once that is gone", async () => {
+    const lines = await putAwayAfter((recognition) => {
+      recognition.onaudiostart?.();
+      vi.advanceTimersByTime(NO_WORDS_MS - 1);
+      recognition.onspeechstart?.();
+    });
+    expect(lines).toContain(`dictation: no words in ${NO_WORDS_MS} ms of speech — put away`);
   });
 
   it("keeps the watch on through results with no word, notes them and the sound's end, and puts it away", async () => {
-    withRecognition(true);
-    FakeRecognition.deaf = true;
-    reset();
-    render(inLanguage(<Asking />));
-    await userEvent.click(panel().getByRole("button", { name: "Dictate" }));
-    await expect.poll(() => FakeRecognition.made.at(-1)?.started).toBe(true);
-    const recognition = listening();
-    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
-    try {
+    const lines = await putAwayAfter((recognition) => {
       recognition.onaudiostart?.();
       recognition.hear("");
       recognition.hear(" ");
       recognition.onaudioend?.();
-      vi.advanceTimersByTime(NO_WORDS_MS - 1);
-      expect(panel().getByRole("status")).toHaveTextContent("Listening…");
-      vi.advanceTimersByTime(1);
-    } finally {
-      vi.useRealTimers();
-    }
-    expect(await panel().findByText("Nothing was heard. Try again, or type.")).toBeVisible();
-    flush();
-    const lines = snapshot().map((e) => e.text);
+    });
     expect(lines.filter((line) => line === "dictation: a result with no word")).toHaveLength(1);
     expect(lines).toContain("dictation: sound ended");
     expect(lines).toContain(`dictation: no words in ${NO_WORDS_MS} ms of sound — put away`);
