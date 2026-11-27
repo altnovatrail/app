@@ -20,6 +20,7 @@ import {
 } from "../test/recognition.ts";
 import { fakeSpeech, voice } from "../test/speech.ts";
 import { NO_AUDIO_MS, NO_WORDS_MS } from "../voice/dictation.ts";
+import { setListeningMode } from "../voice/listening.ts";
 import { SpeechProvider } from "../voice/VoicingContext.tsx";
 import { NO_VERDICTS, type Verdicts, verdictsOf } from "./attempt.ts";
 import { EssayScreen } from "./EssayScreen.tsx";
@@ -699,6 +700,21 @@ describe("the field of the tutor's panel", () => {
     expect(lines.filter((line) => line === "dictation: a result with no word")).toHaveLength(1);
     expect(lines).toContain("dictation: sound ended");
     expect(lines).toContain(`dictation: no words in ${NO_WORDS_MS} ms of sound — put away`);
+  });
+
+  it("listens till a pause where the Debug window chose it, and says so", async () => {
+    withRecognition(true);
+    reset();
+    setListeningMode("pause");
+    try {
+      render(inLanguage(<Asking />));
+      await userEvent.click(panel().getByRole("button", { name: "Dictate" }));
+      expect(listening().continuous).toBe(false);
+      flush();
+      expect(snapshot().some((e) => e.text.endsWith(", listening 1, till a pause"))).toBe(true);
+    } finally {
+      setListeningMode("stop");
+    }
   });
 
   it("counts the results with no word at the end, and says the voice was waiting to speak", async () => {

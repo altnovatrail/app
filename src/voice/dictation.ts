@@ -16,6 +16,7 @@
 // event of a listening goes to the journal of the Debug window.
 import { useEffect, useRef, useState } from "react";
 import { note } from "../debug/journal.ts";
+import { listeningMode } from "./listening.ts";
 import { useSpeech } from "./VoicingContext.tsx";
 
 /** How long a started recognition may go with no sound before it counts as one that heard nothing. */
@@ -217,8 +218,10 @@ export function useDictation({
     const recognition = new Class();
     recognition.lang = language;
     recognition.interimResults = true;
-    // It listens until Stop, through the learner's pauses.
-    recognition.continuous = true;
+    // It listens until Stop, through the learner's pauses; or, as the Debug window chose, till the
+    // browser hears a pause.
+    const mode = listeningMode();
+    recognition.continuous = mode === "stop";
     let heard = false;
     let results = 0;
     let empty = 0;
@@ -282,7 +285,7 @@ export function useDictation({
         "app",
         // Its number keeps each start a line of its own: the journal folds a line said again soon
         // into the first, and its detail with it.
-        `dictation: started in ${language}${local ? " on the device" : ""}, listening ${++page.listenings}`,
+        `dictation: started in ${language}${local ? " on the device" : ""}, listening ${++page.listenings}${mode === "pause" ? ", till a pause" : ""}`,
         [
           voiced === "" ? "" : `the voice was ${voiced}: stopped first`,
           `microphone: ${permission.current}${page.sounded ? ", gave sound before" : ""}`,
