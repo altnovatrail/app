@@ -39,6 +39,7 @@ export interface Recognition {
   onend: (() => void) | null;
   onaudiostart?: (() => void) | null;
   onspeechstart?: (() => void) | null;
+  onaudioend?: (() => void) | null;
   start(): void;
   stop(): void;
   abort(): void;
@@ -172,6 +173,7 @@ export function useDictation({
     was.onend = null;
     was.onaudiostart = null;
     was.onspeechstart = null;
+    was.onaudioend = null;
     was.abort();
     setListening(false);
   };
@@ -188,7 +190,7 @@ export function useDictation({
   };
   const start = () => {
     if (Class === undefined || live.current !== undefined) return;
-    const voiced = speechSpeaking();
+    const voiced = voiceNow();
     speech.stop();
     const recognition = new Class();
     recognition.lang = language;
@@ -197,6 +199,7 @@ export function useDictation({
     recognition.continuous = true;
     let heard = false;
     let results = 0;
+    let empty = 0;
     recognition.onaudiostart = () => {
       note("info", "app", "dictation: sound began");
       watch(
@@ -214,11 +217,19 @@ export function useDictation({
         `dictation: no words in ${NO_WORDS_MS} ms of speech — put away`,
       );
     };
+    recognition.onaudioend = () => {
+      note("info", "app", "dictation: sound ended");
+    };
+    // A result with no word leaves the watch on: WebKit gives one where it hears sound and no word.
     recognition.onresult = (event) => {
-      unwatch();
       results += 1;
       const text = heardOf(event);
-      if (text === "") return;
+      if (text === "") {
+        empty += 1;
+        if (empty === 1) note("info", "app", "dictation: a result with no word");
+        return;
+      }
+      unwatch();
       heard = true;
       callbacks.current.onText(text);
     };
@@ -230,7 +241,7 @@ export function useDictation({
       note(
         "info",
         "app",
-        `dictation: ended, ${results} results, ${heard ? "heard" : "nothing heard"}`,
+        `dictation: ended, ${results} results, ${empty} with no word, ${heard ? "heard" : "nothing heard"}`,
       );
       ended(recognition, heard);
     };
@@ -247,7 +258,7 @@ export function useDictation({
         "info",
         "app",
         `dictation: started in ${language}${local ? " on the device" : ""}`,
-        voiced ? "the voice was speaking: stopped first" : "",
+        voiced === "" ? "" : `the voice was ${voiced}: stopped first`,
       );
       // Set before the start, so that a sound the start reports at once clears it.
       if (granted.current)
@@ -279,11 +290,14 @@ export function useDictation({
   return { available: Class !== undefined, listening, start, stop };
 }
 
-/** Whether the browser's synthesis is saying something now. */
-function speechSpeaking(): boolean {
+/** What the browser's synthesis is about now: "speaking", "waiting to speak", or "" for nothing. */
+function voiceNow(): string {
   try {
-    return globalThis.speechSynthesis?.speaking === true;
+    const synth = globalThis.speechSynthesis;
+    if (synth?.speaking === true) return "speaking";
+    if (synth?.pending === true) return "waiting to speak";
+    return "";
   } catch {
-    return false;
+    return "";
   }
 }

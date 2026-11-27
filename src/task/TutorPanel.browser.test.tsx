@@ -647,6 +647,56 @@ describe("the field of the tutor's panel", () => {
     ).toBe(true);
   });
 
+  it("keeps the watch on through results with no word, notes them and the sound's end, and puts it away", async () => {
+    withRecognition(true);
+    FakeRecognition.deaf = true;
+    reset();
+    render(inLanguage(<Asking />));
+    await userEvent.click(panel().getByRole("button", { name: "Dictate" }));
+    await expect.poll(() => FakeRecognition.made.at(-1)?.started).toBe(true);
+    const recognition = listening();
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    try {
+      recognition.onaudiostart?.();
+      recognition.hear("");
+      recognition.hear(" ");
+      recognition.onaudioend?.();
+      vi.advanceTimersByTime(NO_WORDS_MS - 1);
+      expect(panel().getByRole("status")).toHaveTextContent("Listening…");
+      vi.advanceTimersByTime(1);
+    } finally {
+      vi.useRealTimers();
+    }
+    expect(await panel().findByText("Nothing was heard. Try again, or type.")).toBeVisible();
+    flush();
+    const lines = snapshot().map((e) => e.text);
+    expect(lines.filter((line) => line === "dictation: a result with no word")).toHaveLength(1);
+    expect(lines).toContain("dictation: sound ended");
+    expect(lines).toContain(`dictation: no words in ${NO_WORDS_MS} ms of sound — put away`);
+  });
+
+  it("counts the results with no word at the end, and says the voice was waiting to speak", async () => {
+    withRecognition(true);
+    reset();
+    const pending = vi.spyOn(speechSynthesis, "pending", "get").mockReturnValue(true);
+    render(inLanguage(<Asking />));
+    await userEvent.click(panel().getByRole("button", { name: "Dictate" }));
+    pending.mockRestore();
+    const recognition = listening();
+    recognition.hear("");
+    recognition.hear("why");
+    await userEvent.click(panel().getByRole("button", { name: "Stop" }));
+    expect(field()).toHaveValue("why");
+    flush();
+    const lines = snapshot();
+    expect(lines.find((e) => e.text === "dictation: started in en-GB")?.detail).toBe(
+      "the voice was waiting to speak: stopped first",
+    );
+    expect(lines.some((e) => e.text === "dictation: ended, 2 results, 1 with no word, heard")).toBe(
+      true,
+    );
+  });
+
   it("lets the voice speak at Stop, though the browser has not yet said the listening ended", async () => {
     withRecognition(true);
     reset();
