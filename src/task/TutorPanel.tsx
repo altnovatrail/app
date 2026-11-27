@@ -303,10 +303,11 @@ export function withHeard(before: string, heard: string, max: number): string {
 }
 
 /**
- * The field of the panel: a box that grows with its lines up to five and then scrolls, Enter
- * sends and Shift+Enter breaks the line — but while an input method composes —; the microphone,
- * where the kit and the browser allow it, which listens till Stop and puts what it hears into the
- * field as it hears it; and Send. What came by voice waits in the field to be read and corrected:
+ * The field of the panel: one line at first, the microphone and Send at its right, that grows
+ * with its lines up to five and then scrolls, Enter sends and Shift+Enter breaks the line — but
+ * while an input method composes —; the microphone, where the kit and the browser allow it, which
+ * listens till Stop and puts what it hears into the field as it hears it, in place of what it left
+ * there before and the field still holds as it came; and Send. What came by voice waits in the field to be read and corrected:
  * nothing goes by itself. While an answer is awaited that may be called off, Stop stands in place
  * of the microphone and Send.
  */
@@ -415,7 +416,12 @@ function AskField({ ask }: { readonly ask: AskKit }) {
                 className="nt-ask-voice"
                 disabled={ask.off}
                 onClick={() => {
-                  before.current = draft;
+                  // A new listening takes away what the last one left, unless the learner changed it.
+                  const kept =
+                    dictated !== undefined && draft === dictated ? before.current : draft;
+                  before.current = kept;
+                  latest.current = kept;
+                  setDraft(kept);
                   setUnheard(false);
                   setDictated(undefined);
                   setStopped(false);

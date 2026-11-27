@@ -372,10 +372,24 @@ describe("the field of the tutor's panel", () => {
     vi.unstubAllGlobals();
   });
 
-  it("sends by Enter, breaks the line by Shift+Enter, and grows with its lines up to five", async () => {
+  it("stands in one row with Send, and grows with its lines up to five, Send at its foot", async () => {
     withRecognition(false);
     render(inLanguage(<Asking />));
     expect(panel().getByText("Ask about this task by text or voice.")).toBeVisible();
+    const send = () => panel().getByRole("button", { name: "Send" }).getBoundingClientRect();
+    const box = () => field().getBoundingClientRect();
+    expect(send().left).toBeGreaterThanOrEqual(box().right);
+    expect(send().top).toBeLessThan(box().top);
+    expect(send().bottom).toBeGreaterThan(box().bottom);
+    const one = box().height;
+    await userEvent.type(field(), "1{Shift>}{Enter}{/Shift}2{Shift>}{Enter}{/Shift}3");
+    expect(box().height).toBeGreaterThan(one * 2.5);
+    expect(send().bottom).toBeGreaterThanOrEqual(box().bottom);
+  });
+
+  it("sends by Enter, breaks the line by Shift+Enter, and grows with its lines up to five", async () => {
+    withRecognition(false);
+    render(inLanguage(<Asking />));
     const one = field().getBoundingClientRect().height;
     await userEvent.type(field(), "Why ten?{Shift>}{Enter}{/Shift}And then?");
     expect(field()).toHaveValue("Why ten?\nAnd then?");
@@ -432,6 +446,33 @@ describe("the field of the tutor's panel", () => {
     await userEvent.type(field(), "{Enter}");
     expect(panel().getByText("and then?")).toBeVisible();
     expect(panel().getAllByText("By voice")).toHaveLength(1);
+  });
+
+  it("takes away at a new press what the last listening left, and keeps what the learner typed", async () => {
+    withRecognition(true);
+    render(inLanguage(<Asking />));
+    const dictate = async (words: string) => {
+      await userEvent.click(panel().getByRole("button", { name: "Dictate" }));
+      await waitFor(() => expect(listening().started).toBe(true));
+      listening().hear(words);
+      await userEvent.click(panel().getByRole("button", { name: "Stop" }));
+      await panel().findByRole("button", { name: "Send" });
+    };
+    await userEvent.type(field(), "Look:");
+    await dictate("why ten");
+    expect(field()).toHaveValue("Look: why ten");
+    await dictate("why nine");
+    expect(field()).toHaveValue("Look: why nine");
+    // A press that hears nothing has taken it away all the same.
+    await userEvent.click(panel().getByRole("button", { name: "Dictate" }));
+    await waitFor(() => expect(field()).toHaveValue("Look:"));
+    await userEvent.click(panel().getByRole("button", { name: "Stop" }));
+    expect(await panel().findByText("Nothing was heard. Try again, or type.")).toBeVisible();
+    // Changed by the learner, it is their own text, and a new listening goes after it.
+    await dictate("why eight");
+    await userEvent.type(field(), "?");
+    await dictate("and then");
+    expect(field()).toHaveValue("Look: why eight? and then");
   });
 
   it("asks the browser to recognise on the device where it offers that", async () => {
