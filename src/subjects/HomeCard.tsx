@@ -7,8 +7,8 @@
 // available, which has no way in. The tile of its lesson names the lesson `ListLessons` gives for
 // it, its step and Continue, and its row leads to the page of the module's lessons; a module with
 // no lessons has none. The tile of its tasks, green, names the skill they train — the tutor's
-// choice, or the learner's own, the module's task skill, with the way to give the choice back —,
-// its row opens the choice of it, and Solve gives a task of the module alone. A module solved on
+// choice, or the learner's own, the module's task skill —, its row opens the choice of it, where
+// the tutor's gives the choice back, and Solve gives a task of the module alone. A module solved on
 // the sheet has the tile of its tasks alone, with no choice: Solve opens its page of tasks. While
 // its map or its lessons are on their way, the card's kind, counts, squares and tiles are shapes.
 import { type ReactNode, useId } from "react";
@@ -271,11 +271,6 @@ function TasksMode({
       <div className="nt-way-foot">
         <div className="nt-way-note">
           {words.text(own === undefined ? "home.tasks-sub-tutor" : "home.tasks-sub-own")}
-          {own === undefined ? null : (
-            <button type="button" className="nt-way-reset" onClick={() => onTaskSkill("")}>
-              {words.text("home.tasks-reset")}
-            </button>
-          )}
         </div>
         <button type="button" className="nt-way-go" aria-describedby={titleId} onClick={onSolve}>
           <span className="nt-go-sign" aria-hidden="true">

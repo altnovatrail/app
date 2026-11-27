@@ -1,8 +1,8 @@
 // A module's card on Home: its kind, how many are mastered, its map described by its title, a
 // square for each skill, and its two ways in — the tile of its lesson, with its step, Continue and
 // the row to its lessons, and the tile of its tasks, with Solve and the choice of their skill: the
-// tutor's, the skills suggested and each tier's, a locked one shut, and the learner's own with the
-// way back. A module with no lessons has the tile of its tasks alone, one on the sheet no choice,
+// tutor's, the skills suggested and each tier's, a locked one shut, and the learner's own, given
+// back by the tutor's in the pick. A module with no lessons has the tile of its tasks alone, one on the sheet no choice,
 // the tiles are shapes while the map or the lessons come, and a module with no current version has
 // no way in.
 import { render, screen, within } from "@testing-library/react";
@@ -174,11 +174,9 @@ describe("a module's card on Home", () => {
     expect(chosen.textDecorationLine).toBe("none");
     expect(Number(chosen.fontWeight)).toBeGreaterThan(400);
     await userEvent.click(within(pick).getByRole("button", { name: /The tutor chooses/ }));
-    expect(onTaskSkill).toHaveBeenLastCalledWith("");
-    await userEvent.click(
-      within(tasks).getByRole("button", { name: "Return the choice to the tutor" }),
-    );
-    expect(onTaskSkill).toHaveBeenCalledTimes(2);
+    expect(onTaskSkill).toHaveBeenCalledExactlyOnceWith("");
+    // The tile has no button of its own to give the choice back: the pick holds it.
+    expect(within(tasks).getAllByRole("button")).toHaveLength(2);
   });
 
   it("names a task skill its graph has not by its ID, and with no graph offers no choice", () => {

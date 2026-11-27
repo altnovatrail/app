@@ -449,8 +449,6 @@ export const en = {
   /** Under it: how the skill is chosen, by the tutor or the learner. */
   "home.tasks-sub-tutor": "As the work goes, by your progress",
   "home.tasks-sub-own": "Tasks on this skill alone",
-  /** Gives the choice of the skill back to the tutor. */
-  "home.tasks-reset": "Return the choice to the tutor",
   /** What the tile's row leads to, said beside its name: the choice of the skill. */
   "home.tasks-pick": "Choose which tasks to solve",
   /** The tile's button: a task of the module alone. */

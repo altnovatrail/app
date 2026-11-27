@@ -927,7 +927,12 @@ describe("the tile of a module's tasks", () => {
     await waitFor(() => expect(asked).toContain(`skill ${MATH} ${MATH}/skill/patterns`));
     expect(await tasks.findByText("Tasks · your skill")).toBeVisible();
     expect(tasks.getByText(/^Patterns/)).toBeVisible();
-    await userEvent.click(tasks.getByRole("button", { name: "Return the choice to the tutor" }));
+    await userEvent.click(
+      tasks.getByRole("button", { description: "Choose which tasks to solve" }),
+    );
+    await userEvent.click(
+      within(screen.getByRole("dialog")).getByRole("button", { name: /The tutor chooses/ }),
+    );
     await waitFor(() => expect(asked).toContain(`skill ${MATH} `));
     expect(await tasks.findByText(/^The tutor picks the skill/)).toBeVisible();
   });

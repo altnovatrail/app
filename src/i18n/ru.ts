@@ -294,7 +294,6 @@ export const ru = {
   "home.tasks-tutor": "Навык выбирает наставник",
   "home.tasks-sub-tutor": "По ходу работы, по успехам",
   "home.tasks-sub-own": "Задачи только на этот навык",
-  "home.tasks-reset": "Вернуть выбор наставнику",
   "home.tasks-pick": "Выбрать, какие задачи решать",
   "home.solve": "Решать",
   "home.pick": "Какие задачи решать?",
