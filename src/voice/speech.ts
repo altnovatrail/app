@@ -8,7 +8,6 @@
 // `speak()` called within a user's press, and says nothing otherwise. The list of voices is read
 // when it starts and again on `voiceschanged`. A failure of the synthesis is silent: the text is on
 // the screen.
-import { note } from "../debug/journal.ts";
 import { sentencesOf, spokenText } from "./spoken.ts";
 import type { Phrase } from "./texts.ts";
 import {
@@ -65,10 +64,6 @@ export class Speech {
   /** The utterances of the current text not ended yet. */
   #left = 0;
   readonly #listeners = new Set<() => void>();
-  /** The holds on the voice under way: while one is, nothing is said. */
-  #held = 0;
-  /** What was asked to be said, or marked, while the voice was held. */
-  #kept = 0;
 
   constructor(options: SpeechOptions) {
     this.platform = options.platform;
@@ -138,10 +133,6 @@ export class Speech {
   say(phrases: readonly Phrase[], saying: Saying): object | undefined {
     const synth = this.#synth;
     if (synth === undefined) return undefined;
-    if (this.#held > 0) {
-      this.#kept += 1;
-      return undefined;
-    }
     const goingOn = saying.after !== undefined && saying.after === this.#current;
     const token = goingOn ? (saying.after as object) : {};
     const utterances: UtteranceLike[] = [];
@@ -165,11 +156,6 @@ export class Speech {
       return goingOn ? token : undefined;
     }
     this.#set(token, (goingOn ? this.#left : 0) + utterances.length);
-    note(
-      "info",
-      "app",
-      `voice: says ${utterances.length} ${utterances.length === 1 ? "sentence" : "sentences"}`,
-    );
     for (const utterance of utterances) {
       const ended = () => {
         if (this.#current !== token) return;
@@ -191,36 +177,13 @@ export class Speech {
   prime(): void {
     const synth = this.#synth;
     if (synth === undefined) return;
-    if (this.#held > 0) {
-      this.#kept += 1;
-      return;
-    }
     this.#cancel(synth);
     this.#set(undefined, 0);
     try {
-      note("info", "app", "voice: marks a press");
       synth.speak(this.#utterance(""));
     } catch {
       // Silent, as every failure of the synthesis.
     }
-  }
-
-  /**
-   * Holds the voice while the microphone listens: on an iPad a voice, even an empty one, takes the
-   * sound from the recognition, which then hears nothing and never ends. Gives what lets it go,
-   * which tells how many texts and marks were kept from being said since the hold began; a second
-   * call of it tells 0.
-   */
-  hold(): () => number {
-    this.#held += 1;
-    const kept = this.#kept;
-    let held = true;
-    return () => {
-      if (!held) return 0;
-      held = false;
-      this.#held -= 1;
-      return this.#kept - kept;
-    };
   }
 
   /** Stops what is being said: leaving the screen, another learner, a hidden tab, a second press. */

@@ -1002,13 +1002,3 @@ svg.nt-debug-chart {
     inset-inline-start: 1rem;
   }
 }
-.nt-debug-listening {
-  position: relative;
-}
-.nt-debug-listening-menu {
-  inset-block-start: 2.375rem;
-  inset-inline: auto 0;
-  inline-size: 11rem;
-  display: flex;
-  flex-direction: column;
-}

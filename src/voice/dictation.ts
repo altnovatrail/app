@@ -5,18 +5,12 @@
 // it offers that; where it runs is the browser's all the same, and the app gets text alone. A browser without it, as Firefox,
 // draws no microphone.
 //
-// WebKit on an iPad shares one audio session between the synthesis and the recognition: while the
-// tutor's voice holds it, a recognition starts, the system shows its microphone, and no sound comes;
-// a voice that begins while it listens takes the sound back, and the recognition neither hears nor
-// ends. So a press first stops the voice and holds it until the listening ends, and where the
-// browser has nothing to ask first — no `available`, as WebKit — starts the recognition within the
-// press itself. A recognition with no sound NO_AUDIO_MS after its start is put away as one that
-// heard nothing, but only once the browser has the microphone granted, or it gave sound on the page
-// before: a prompt for it waits for the learner, however long; one whose sound began and gave no words NO_WORDS_MS later, too. Each
-// event of a listening goes to the journal of the Debug window.
+// A press stops what the app is saying, and where the browser has nothing to ask first — no
+// `available`, as WebKit — starts the recognition within the press itself. A listening never hangs
+// on "Listening…": one with no sound NO_AUDIO_MS after its start ends as one that heard nothing,
+// but only once the browser has the microphone granted — a prompt for it waits for the learner,
+// however long —; one whose sound began and gave no word NO_WORDS_MS later, too.
 import { useEffect, useRef, useState } from "react";
-import { note } from "../debug/journal.ts";
-import { type Listening, listeningMode } from "./listening.ts";
 import { useSpeech } from "./VoicingContext.tsx";
 
 /** How long a started recognition may go with no sound before it counts as one that heard nothing. */
@@ -27,24 +21,6 @@ export const NO_AUDIO_MS = 3000;
  * nothing: long enough for a learner who thinks before speaking.
  */
 export const NO_WORDS_MS = 10_000;
-
-/**
- * What the page has learnt of the microphone, kept past a field that goes and comes: whether it
- * has given sound once — then it is granted, whatever the browser says of it —, and when the last
- * listening ended.
- */
-const page: { sounded: boolean; lastEnd: number | undefined; listenings: number } = {
-  sounded: false,
-  lastEnd: undefined,
-  listenings: 0,
-};
-
-/** Forgets what the page learnt of the microphone: for the tests, each on a page of its own. */
-export function forgetMicrophone(): void {
-  page.sounded = false;
-  page.lastEnd = undefined;
-  page.listenings = 0;
-}
 
 /** The part of the browser's recognition the microphone uses. */
 export interface Recognition {
@@ -58,7 +34,6 @@ export interface Recognition {
   onend: (() => void) | null;
   onaudiostart?: (() => void) | null;
   onspeechstart?: (() => void) | null;
-  onaudioend?: (() => void) | null;
   start(): void;
   stop(): void;
   abort(): void;
@@ -105,11 +80,10 @@ export function heardOf(event: RecognitionEvent): string {
 /**
  * The microphone: `start` listens in `language` and gives each reading to `onText`, the whole of
  * this listening so far; `stop` ends it, and `onEnd` comes once it has ended, by Stop, by the
- * browser at a pause, or by a failure, with whether anything was heard. An unmount, or `off`, puts
- * the listening away with nothing more said. `start` stops what the app is saying first and holds
- * the voice till the listening ends; a listening with no sound `NO_AUDIO_MS` after it began, the
- * microphone already granted, or with sound and no word `NO_WORDS_MS` after the sound began, ends
- * as one that heard nothing.
+ * browser, or by a failure, with whether anything was heard. An unmount, or `off`, puts the
+ * listening away with nothing more said. `start` stops what the app is saying first; a listening
+ * with no sound `NO_AUDIO_MS` after it began, the microphone granted, or with sound and no word
+ * `NO_WORDS_MS` after the sound began, ends as one that heard nothing.
  */
 export function useDictation({
   language,
@@ -127,24 +101,15 @@ export function useDictation({
   const [listening, setListening] = useState(false);
   const live = useRef<Recognition | undefined>(undefined);
   const deaf = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  // What lets the voice go once the listening ends.
-  const quiet = useRef<(() => number) | undefined>(undefined);
   // The recognitions started: one is asked whether it can recognise on the device first.
   const began = useRef(new WeakSet<Recognition>()).current;
-  // The recognitions that came after a word: never stopped nor aborted, only let go.
-  const gentle = useRef(new WeakSet<Recognition>()).current;
-  // The number of the listening under way, and whether it has given a word yet.
-  const number = useRef(0);
-  const heardNow = useRef(false);
   // Whether the browser has the microphone granted: unknown counts as not, so no prompt is cut short.
   const granted = useRef(false);
-  const permission = useRef("not said");
   useEffect(() => {
     let status: PermissionStatus | undefined;
     let gone = false;
     const read = () => {
       granted.current = status?.state === "granted";
-      permission.current = status?.state ?? "not said";
     };
     void (async () => {
       try {
@@ -168,29 +133,17 @@ export function useDictation({
     clearTimeout(deaf.current);
     deaf.current = undefined;
   };
-  const unhold = () => {
-    const kept = quiet.current?.() ?? 0;
-    quiet.current = undefined;
-    if (kept > 0)
-      note(
-        "info",
-        "app",
-        `dictation ${number.current}: the voice kept quiet ${kept} ${kept === 1 ? "time" : "times"} while it listened`,
-      );
-  };
   /** Puts `recognition` away as one that heard nothing `ms` from now, unless watched again. */
-  const watch = (recognition: Recognition, ms: number, line: string) => {
+  const watch = (recognition: Recognition, ms: number) => {
     unwatch();
     deaf.current = setTimeout(() => {
       if (live.current !== recognition) return;
-      note("warn", "app", line);
       put();
       callbacks.current.onEnd(false);
     }, ms);
   };
   const put = () => {
     unwatch();
-    unhold();
     const was = live.current;
     live.current = undefined;
     if (was === undefined) return;
@@ -199,10 +152,7 @@ export function useDictation({
     was.onend = null;
     was.onaudiostart = null;
     was.onspeechstart = null;
-    was.onaudioend = null;
-    // A listening that came after a word is never cut: WebKit then gives the next one no word.
-    if (!gentle.has(was)) was.abort();
-    page.lastEnd = performance.now();
+    was.abort();
     setListening(false);
   };
   // The field going off or on, and the unmount, put the listening away.
@@ -211,183 +161,60 @@ export function useDictation({
   const ended = (recognition: Recognition, heard: boolean) => {
     if (live.current !== recognition) return;
     unwatch();
-    unhold();
     live.current = undefined;
-    page.lastEnd = performance.now();
     setListening(false);
     callbacks.current.onEnd(heard);
   };
   const start = () => {
     if (Class === undefined || live.current !== undefined) return;
-    const voiced = voiceNow();
     speech.stop();
     const recognition = new Class();
     recognition.lang = language;
     recognition.interimResults = true;
-    // It listens until Stop, through the learner's pauses; or, as the Debug window chose, till the
-    // browser hears a pause, a word said first.
-    const mode = listeningMode();
-    recognition.continuous = mode === "stop";
-    if (mode === "voice") gentle.add(recognition);
-    // Each line of a listening carries its number: the journal folds a line said again soon into
-    // the first, and its detail with it.
-    const n = ++page.listenings;
-    number.current = n;
-    const tag = `dictation ${n}`;
-    heardNow.current = false;
+    // It listens until Stop, through the learner's pauses.
+    recognition.continuous = true;
     let heard = false;
-    let results = 0;
-    let empty = 0;
-    recognition.onaudiostart = () => {
-      page.sounded = true;
-      note("info", "app", `${tag}: sound began`);
-      watch(recognition, NO_WORDS_MS, `${tag}: no words in ${NO_WORDS_MS} ms of sound — put away`);
-    };
+    recognition.onaudiostart = () => watch(recognition, NO_WORDS_MS);
     // Speech, with or without the sound's event before it, gives the words their time again.
-    recognition.onspeechstart = () => {
-      note("info", "app", `${tag}: speech began`);
-      watch(recognition, NO_WORDS_MS, `${tag}: no words in ${NO_WORDS_MS} ms of speech — put away`);
-    };
-    recognition.onaudioend = () => {
-      note("info", "app", `${tag}: sound ended`);
-    };
+    recognition.onspeechstart = () => watch(recognition, NO_WORDS_MS);
     // A result with no word leaves the watch on: WebKit gives one where it hears sound and no word.
     recognition.onresult = (event) => {
-      results += 1;
       const text = heardOf(event);
-      if (text === "") {
-        empty += 1;
-        if (empty === 1) note("info", "app", `${tag}: a result with no word`);
-        return;
-      }
+      if (text === "") return;
       unwatch();
       heard = true;
-      heardNow.current = true;
       callbacks.current.onText(text);
     };
-    recognition.onerror = (event) => {
-      const { error = "", message = "" } = event as Event & { error?: string; message?: string };
-      note("warn", "app", `${tag}: the browser refused — ${error || "no code"}`, message);
-    };
-    recognition.onend = () => {
-      note(
-        "info",
-        "app",
-        `${tag}: ended, ${results} results, ${empty} with no word, ${heard ? "heard" : "nothing heard"}`,
-      );
-      ended(recognition, heard);
-    };
+    recognition.onerror = () => {};
+    recognition.onend = () => ended(recognition, heard);
     live.current = recognition;
-    unhold();
-    quiet.current = speech.hold();
     setListening(true);
     const begin = (local: boolean) => {
       // Stopped, or put away, before it began.
       if (live.current !== recognition) return;
       if (local) recognition.processLocally = true;
       began.add(recognition);
-      note(
-        "info",
-        "app",
-        `${tag}: started in ${language}${local ? " on the device" : ""}${WAY_LINES[mode]}`,
-        [
-          voiced === "" ? "" : `the voice was ${voiced}: stopped first`,
-          `microphone: ${permission.current}${page.sounded ? ", gave sound before" : ""}`,
-          page.lastEnd === undefined
-            ? "the first listening of the page"
-            : `${((performance.now() - page.lastEnd) / 1000).toFixed(1)} s after the last listening`,
-        ]
-          .filter((line) => line !== "")
-          .join("\n"),
-      );
-      // Set before the start, so that a sound the start reports at once clears it. A microphone that
-      // gave sound on this page is granted, whatever the browser says: Chrome on an iPad never says.
-      if (granted.current || page.sounded)
-        watch(recognition, NO_AUDIO_MS, `${tag}: no sound in ${NO_AUDIO_MS} ms — put away`);
+      // Set before the start, so that a sound the start reports at once clears it.
+      if (granted.current) watch(recognition, NO_AUDIO_MS);
       try {
         recognition.start();
-      } catch (reason) {
+      } catch {
         // Started already elsewhere, or refused at once: nothing was heard.
-        note("warn", "app", `${tag}: the browser refused to start`, String(reason));
         ended(recognition, false);
-        return;
       }
     };
-    const go = (local: boolean) =>
-      mode === "voice" ? afterWord(language, () => begin(local)) : begin(local);
-    if (Class.available === undefined) go(false);
-    else void onDevice(Class, language).then(go);
+    if (Class.available === undefined) begin(false);
+    else void onDevice(Class, language).then(begin);
   };
   const stop = () => {
     const now = live.current;
     if (now === undefined) return;
-    // Stop before it began: it ends with nothing heard, and the word before it is cut short.
+    // Stop before it began: it ends with nothing heard.
     if (!began.has(now)) {
-      if (gentle.has(now)) speech.stop();
       ended(now, false);
       return;
     }
-    // A listening that came after a word is let go, not stopped: it ends by itself at a pause.
-    if (gentle.has(now)) {
-      const heard = heardNow.current;
-      put();
-      callbacks.current.onEnd(heard);
-      return;
-    }
-    // The learner is done speaking: the voice may speak again while the last words come.
-    unhold();
     now.stop();
   };
   return { available: Class !== undefined, listening, start, stop };
-}
-
-/** What the start's line says of the way of listening. */
-const WAY_LINES: Readonly<Record<Listening, string>> = {
-  stop: "",
-  pause: ", till a pause",
-  voice: ", a word first",
-};
-
-/** The word said before a listening, by the language's primary tag; English where none is. */
-const WORDS: Readonly<Record<string, string>> = { ru: "Я слушаю", en: "I'm listening" };
-
-/** The longest the word before a listening may take before the listening starts all the same. */
-export const WORD_MOST_MS = 4000;
-
-/**
- * Says a short word, and calls `then` at its end: WebKit on an iPad of version 27 gives words to
- * a later listening of the page only when the synthesis spoke right before it, and the listening
- * is never cut by `stop()` or `abort()` — what users of the device found, WebKit having no fix.
- * `then` comes once, at the word's end, its failure, or `WORD_MOST_MS`, whichever is first.
- */
-export function afterWord(language: string, then: () => void): void {
-  let done = false;
-  const go = () => {
-    if (done) return;
-    done = true;
-    clearTimeout(late);
-    then();
-  };
-  const late = setTimeout(go, WORD_MOST_MS);
-  try {
-    const utterance = new SpeechSynthesisUtterance(WORDS[language.split("-")[0] ?? ""] ?? WORDS.en);
-    utterance.lang = language;
-    utterance.onend = go;
-    utterance.onerror = go;
-    globalThis.speechSynthesis.speak(utterance);
-  } catch {
-    go();
-  }
-}
-
-/** What the browser's synthesis is about now: "speaking", "waiting to speak", or "" for nothing. */
-function voiceNow(): string {
-  try {
-    const synth = globalThis.speechSynthesis;
-    if (synth?.speaking === true) return "speaking";
-    if (synth?.pending === true) return "waiting to speak";
-    return "";
-  } catch {
-    return "";
-  }
 }

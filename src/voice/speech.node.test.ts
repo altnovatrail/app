@@ -122,25 +122,6 @@ describe("the synthesis", () => {
     expect(asked.at(-1)).toEqual({ cancel: true });
   });
 
-  it("says and marks nothing while it is held, counts what it kept, and speaks again once let go", () => {
-    const { speech, asked, texts } = fakeSpeech([EN]);
-    const outer = speech.hold();
-    const inner = speech.hold();
-    expect(
-      speech.say([{ text: "One.", language: "en" }], { rate: 1, chosen: NONE }),
-    ).toBeUndefined();
-    speech.prime();
-    expect(asked).toEqual([]);
-    expect(inner()).toBe(2);
-    expect(inner()).toBe(0);
-    // Still held by the other hold.
-    speech.prime();
-    expect(asked).toEqual([]);
-    expect(outer()).toBe(3);
-    expect(speech.say([{ text: "Two.", language: "en" }], { rate: 1, chosen: NONE })).toBeDefined();
-    expect(texts()).toEqual(["Two."]);
-  });
-
   it("tells its listeners when the voices change and when it starts and stops speaking", () => {
     const fake = fakeSpeech([]);
     const heard = vi.fn();
