@@ -9,6 +9,7 @@ import { render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 import { inLanguage } from "../test/language.tsx";
+import "../theme/theme.css";
 import { HomeCard, type HomeCardProps } from "./HomeCard.tsx";
 import type { LessonTile, ModuleCard, SkillPicks } from "./modules.ts";
 import type { SkillCounts } from "./states.ts";
@@ -127,6 +128,10 @@ describe("a module's card on Home", () => {
       "aria-pressed",
       "true",
     );
+    // The tutor's choice is told by its tick, with no underline.
+    const tutor = within(pick).getByRole("button", { name: /The tutor chooses/ });
+    expect(getComputedStyle(tutor).textDecorationLine).toBe("none");
+    expect(tutor.querySelector("svg")).not.toBeNull();
     const suggested = within(pick).getByRole("group", { name: "Suggested" });
     expect(within(suggested).getByRole("button", { name: "Counting gaps" })).toBeEnabled();
     expect(within(pick).getByRole("group", { name: "Warm-up" })).toBeVisible();
@@ -164,6 +169,10 @@ describe("a module's card on Home", () => {
       "aria-pressed",
       "true",
     );
+    // The choice is told by its bold words, with no underline.
+    const chosen = getComputedStyle(within(pick).getByRole("button", { name: "Pairs" }));
+    expect(chosen.textDecorationLine).toBe("none");
+    expect(Number(chosen.fontWeight)).toBeGreaterThan(400);
     await userEvent.click(within(pick).getByRole("button", { name: /The tutor chooses/ }));
     expect(onTaskSkill).toHaveBeenLastCalledWith("");
     await userEvent.click(

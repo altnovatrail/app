@@ -3032,6 +3032,13 @@ button.nt-way-reset {
   line-height: normal;
   text-align: start;
 }
+/*
+ * The choice of the pick is told by more than colour without an underline: the tutor's by its tick,
+ * a chip by its bold words.
+ */
+.nt-pick button[aria-pressed="true"] {
+  text-decoration: none;
+}
 .nt-pick button.nt-pick-ai[aria-pressed="true"] {
   border-color: var(--nt-tasks);
   background: var(--nt-tasks-tint);
