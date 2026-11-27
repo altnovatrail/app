@@ -1993,6 +1993,21 @@ it("keeps the page and its work in the profile's history, and opens it again fro
   history.replaceState(null, "", location.pathname);
 });
 
+it("keeps the first page of a profile that has begun nothing on this device", async () => {
+  const { device } = memoryDevice();
+  expect(await openProfile(device, "p1")).toBeUndefined();
+  await solving({ device });
+  await waitFor(async () => {
+    const [kept] = (await (await openProfile(device, "p1"))?.pages()) ?? [];
+    expect(kept?.tasks).toBe(2);
+  });
+  cleanup();
+  await renderCamera({ device });
+  await userEvent.click(await screen.findByRole("button", { name: "Your pages" }));
+  expect(await screen.findByRole("button", { name: /· 2 tasks$/ })).toBeVisible();
+  history.replaceState(null, "", location.pathname);
+});
+
 it("marks a task solved in the list of a page opened again, and solves it again in a new attempt", async () => {
   const { device } = memoryDevice();
   await addProfile(device, "p1");
