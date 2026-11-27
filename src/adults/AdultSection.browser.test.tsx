@@ -1,10 +1,11 @@
 // Settings, the section for adults, in the browser: its list with the profiles, the owner's first,
 // each by its avatar, and the rows of the device, the language and the legal pages, the list beside
-// a page from 600 CSS px and a first page of its own below, the bar of each page, a profile's page
-// and its form — the avatar changed by its pop-over, the mode and the language chosen in a pop-over,
-// only what changed goes to UpdateProfile, nothing when nothing did, the pseudonym checked first, a
-// failure said, the language the build does not have named —, what another tab saved meanwhile,
-// and the question when a press would leave changes not saved, with api on connect-es's router.
+// a page from 600 CSS px, as wide as its rows need to break no word, and a first page of its own
+// below, the bar of each page, a profile's page and its form — the avatar changed by its pop-over,
+// the mode and the language chosen in a pop-over, only what changed goes to UpdateProfile, nothing
+// when nothing did, the pseudonym checked first, a failure said, the language the build does not
+// have named —, what another tab saved meanwhile, and the question when a press would leave changes
+// not saved, with api on connect-es's router.
 import {
   AccountService,
   HintMode,
@@ -24,6 +25,8 @@ import { ApiProvider } from "../api/ApiContext.tsx";
 import { createApi } from "../api/client.ts";
 import type { Failure } from "../api/failure.ts";
 import type { Route } from "../app/hash.ts";
+import { en } from "../i18n/en.ts";
+import { WORDS, wordsOf } from "../i18n/words.ts";
 import { memoryDevice } from "../test/device.ts";
 import { inLanguage } from "../test/language.tsx";
 import { AdultSection } from "./AdultSection.tsx";
@@ -187,6 +190,58 @@ describe("the section's first page", () => {
     await userEvent.click(screen.getByRole("button", { name: "Close the settings" }));
     expect(window.location.hash).toBe("#/home");
   });
+
+  it.each([
+    ["English", "en", WORDS.en],
+    ["Russian", "ru", WORDS.ru],
+    // A word as long as a compound of German, which the column at its narrowest does not hold.
+    [
+      "a word longer than the column",
+      "en",
+      wordsOf({ ...en, "language.title": "Spracheinstellungen" }, "en"),
+    ],
+  ] as const)(
+    "on an iPad upright, in %s, breaks no word of the list's rows: the list widens to fit them",
+    async (_, language, dictionary) => {
+      await page.viewport(834, 1194);
+      const { api } = apiOf((request) => profile({ profileId: request.profileId }));
+      render(
+        inLanguage(
+          <ApiProvider value={api}>
+            <AdultSection
+              route={{ screen: "adults", parts: ["device"] }}
+              device={memoryDevice().device}
+              profiles={[profile()]}
+              onSaved={() => {}}
+              onFailed={() => {}}
+              onEraseAll={async () => "erased"}
+              onLegal={() => {}}
+            />
+          </ApiProvider>,
+          language,
+          dictionary,
+        ),
+      );
+      const list = document.querySelector(".nt-set-side") as HTMLElement;
+      const words = [
+        ...list.querySelectorAll(
+          ".nt-set-sec:not(.nt-set-profiles) :is(.nt-set-label, .nt-set-value)",
+        ),
+      ].flatMap((part) => {
+        const text = part.firstChild as Text;
+        return [...text.data.matchAll(/\S+/g)].map((word) => {
+          const range = document.createRange();
+          range.setStart(text, word.index);
+          range.setEnd(text, word.index + word[0].length);
+          return `${word[0]}: ${range.getClientRects().length}`;
+        });
+      });
+      expect(words.length).toBeGreaterThan(3);
+      expect(words.filter((word) => !word.endsWith(": 1"))).toEqual([]);
+      // Never narrower than it was.
+      expect(list.getBoundingClientRect().width).toBeGreaterThanOrEqual(280);
+    },
+  );
 
   it("below 600 CSS px is a first page of its own, and each other page leads back to it", async () => {
     await page.viewport(390, 844);

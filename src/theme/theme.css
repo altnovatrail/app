@@ -6261,9 +6261,11 @@ main.nt-settings:has(> .nt-column) {
   padding: 0 1rem 2.5rem;
 }
 @media (width >= 600px) {
-  main.nt-settings:not(.nt-settings-list) {
+  /* The list and the page beside it; a page drawn without the list, as a test draws one,
+     stands alone. */
+  main.nt-settings:has(> .nt-set-side) {
     display: grid;
-    grid-template-columns: clamp(17.5rem, 32vw, 23.4375rem) minmax(0, 1fr);
+    grid-template-columns: auto minmax(0, 1fr);
     align-items: start;
   }
   .nt-settings > .nt-column {
@@ -6274,7 +6276,14 @@ main.nt-settings:has(> .nt-column) {
     margin-inline: auto;
   }
 }
+/*
+ * The list beside a page: a third of the window between 280 and 375 px, and never narrower than
+ * its longest word with what stands beside it in its row, so that no word of a row breaks — a
+ * profile's name aside, which may run long without a space and breaks where it must.
+ */
 .nt-set-side {
+  inline-size: clamp(17.5rem, 32vw, 23.4375rem);
+  min-inline-size: min-content;
   position: sticky;
   inset-block-start: 0;
   box-sizing: border-box;
@@ -6550,6 +6559,9 @@ div.nt-set-row {
 .nt-set-profiles .nt-set-label {
   font-size: 1.25rem;
   font-weight: var(--nt-weight-bold);
+}
+.nt-set-side .nt-set-sec:not(.nt-set-profiles) :is(.nt-set-label, .nt-set-value) {
+  overflow-wrap: break-word;
 }
 .nt-set-sub {
   color: var(--nt-text-muted);
