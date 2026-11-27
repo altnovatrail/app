@@ -855,7 +855,7 @@ describe("a card's Continue on a skill to work on", () => {
 });
 
 describe("the legend and the task from paper", () => {
-  it("stand below the modules from 600 CSS px, and on a phone open from a button as a sheet", async () => {
+  it("stand below the modules from 600 CSS px, and on a phone open from a button in the middle as a sheet", async () => {
     await page.viewport(1194, 834);
     const { unmount } = await renderSubjects({
       connected: [{ moduleId: MATH, packageDigest: D1 }],
@@ -877,7 +877,11 @@ describe("the legend and the task from paper", () => {
       await renderSubjects({ connected: [{ moduleId: MATH, packageDigest: D1 }] });
       await card("Olympiad maths");
       expect(screen.queryByRole("region", { name: "What the marks mean" })).toBeNull();
-      await userEvent.click(screen.getByRole("button", { name: "What the marks mean" }));
+      const open = screen.getByRole("button", { name: "What the marks mean" });
+      const middle = (box: DOMRect) => box.left + box.width / 2;
+      const row = (open.closest(".nt-legend-open") as HTMLElement).getBoundingClientRect();
+      expect(Math.abs(middle(open.getBoundingClientRect()) - middle(row))).toBeLessThan(1);
+      await userEvent.click(open);
       const sheet = within(await screen.findByRole("dialog", { name: "What the marks mean" }));
       expect(sheet.getAllByRole("listitem")).toHaveLength(7);
     } finally {

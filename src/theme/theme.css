@@ -2561,8 +2561,11 @@ dialog.nt-pop-legend {
 dialog.nt-pop-legend .nt-legend-items {
   line-height: normal;
 }
+/* On a phone the link stands in the middle, below the modules. */
 .nt-legend-open {
-  margin: -0.5rem 0 0.5rem -0.625rem;
+  display: flex;
+  justify-content: center;
+  margin: -0.5rem 0 0.5rem;
 }
 .nt-legend-open > button {
   display: inline-flex;
