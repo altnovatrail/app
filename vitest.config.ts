@@ -8,6 +8,7 @@
 import react from "@vitejs/plugin-react";
 import { playwright } from "@vitest/browser-playwright";
 import { defaultExclude, defineConfig } from "vitest/config";
+import { WAIT_LIMIT_MS } from "./src/test/wait.ts";
 
 /** The files of the two modes of the browser's context, each in a project of its own. */
 const FORCED_COLORS = "src/a11y/forced-colors.browser.test.tsx";
@@ -34,6 +35,7 @@ function screens(
       include,
       exclude: [...defaultExclude, ...exclude],
       setupFiles: ["src/test/browser.setup.ts"],
+      expect: { poll: { timeout: WAIT_LIMIT_MS } },
       browser: {
         enabled: true,
         provider: playwright({ contextOptions }),

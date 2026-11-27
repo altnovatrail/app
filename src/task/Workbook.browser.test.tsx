@@ -263,6 +263,7 @@ describe("the task screen of a workbook", () => {
     expect(check()).toHaveAccessibleDescription("Write an answer in each box");
     // A press the browser lets through, as a screen reader's would: nothing goes to api.
     check().click();
+    // That nothing happens is the check, so a pause, not a wait for a change: one would pass at once.
     await new Promise((resolve) => setTimeout(resolve, 100));
     expect(submitted).toEqual([]);
     expect(screen.queryByText(/Not right yet/)).toBeNull();

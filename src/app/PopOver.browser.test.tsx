@@ -7,7 +7,7 @@ import { createRef } from "react";
 import { afterEach, describe, expect, it } from "vitest";
 import { page, userEvent } from "vitest/browser";
 import "../theme/theme.css";
-import { axeViolations, overflows, smallTargets } from "../test/a11y.ts";
+import { overflows, settledViolations, smallTargets } from "../test/a11y.ts";
 import { inLanguage } from "../test/language.tsx";
 import { GAP } from "./hang.ts";
 import { PopOver } from "./PopOver.tsx";
@@ -193,7 +193,7 @@ describe.each([390, 599, 320])("a pop-over at %i px", (width) => {
     expect(document.activeElement).toBe(
       page.getByRole("button", { name: "Step by step" }).element(),
     );
-    expect(await axeViolations()).toEqual([]);
+    expect(await settledViolations()).toEqual([]);
     expect(smallTargets()).toEqual([]);
     expect(overflows()).toEqual([]);
     await page.getByRole("button", { name: "Close" }).click();

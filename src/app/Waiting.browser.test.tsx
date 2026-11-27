@@ -5,7 +5,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { inLanguage } from "../test/language.tsx";
 import "../theme/theme.css";
-import { WAIT_MS, Waiting } from "./Waiting.tsx";
+import { Waiting } from "./Waiting.tsx";
 
 describe("the wait", () => {
   it("shows the sky at once, and the spark and its status once the wait passes 0.3 s", async () => {
@@ -16,8 +16,7 @@ describe("the wait", () => {
     expect(document.querySelector(".nt-who-stars")).not.toBeNull();
     expect(document.querySelector(".nt-wait-spark")).toBeNull();
     expect(screen.getByRole("status")).toHaveTextContent("");
-    await new Promise((done) => setTimeout(done, WAIT_MS + 50));
-    // The timer has fired; a loaded browser may paint its render a little later.
+    // The words come after the delay of Waiting.tsx; a loaded browser may paint them later still.
     await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Загрузка"));
     expect(document.querySelector(".nt-wait-spark svg")).toHaveAttribute("aria-hidden", "true");
   });
@@ -27,7 +26,6 @@ describe("the wait", () => {
     const ground = document.querySelector("main.nt-wait-page");
     expect(getComputedStyle(ground as Element).backgroundColor).not.toBe("rgba(0, 0, 0, 0)");
     expect(document.querySelector(".nt-who-stars")).toBeNull();
-    await new Promise((done) => setTimeout(done, WAIT_MS + 50));
     await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Loading"));
   });
 });

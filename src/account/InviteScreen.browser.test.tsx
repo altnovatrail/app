@@ -277,7 +277,8 @@ describe("the invite code's screen", () => {
     await toAgree();
     await userEvent.click(screen.getByRole("link", { name: "Privacy Policy" }));
     const sheet = await screen.findByRole("dialog", { name: "Privacy Policy" });
-    // The close of the first mount comes as an event after the second: the sheet stays.
+    // The close of the first mount comes as an event after the second: the sheet stays. That it
+    // stays is the check, so a pause for that event, not a wait for a change.
     await new Promise((done) => setTimeout(done, 50));
     expect(sheet).toBeVisible();
     expect(sheet).toHaveAttribute("open");

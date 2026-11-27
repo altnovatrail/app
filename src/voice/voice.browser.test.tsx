@@ -322,6 +322,7 @@ describe("the voicing of a learner's screens", () => {
     );
     expect(readAloud()).toHaveAttribute("aria-disabled", "true");
     expect(readAloud()).not.toHaveAccessibleDescription();
+    // That nothing happens is the check, so a pause, not a wait for a change: one would pass at once.
     await new Promise((resolve) => setTimeout(resolve, 50));
     expect(readAloud()).not.toHaveAccessibleDescription();
     await userEvent.click(readAloud(), { force: true });

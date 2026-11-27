@@ -7,7 +7,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { page, userEvent } from "vitest/browser";
 import "../theme/theme.css";
 import { WORDS } from "../i18n/words.ts";
-import { axeViolations, captionlessOffList, smallTargets } from "../test/a11y.ts";
+import { captionlessOffList, settledViolations, smallTargets } from "../test/a11y.ts";
 import { inLanguage } from "../test/language.tsx";
 import { CAPTIONLESS, type Captionless, IconButton } from "./IconButton.tsx";
 import { ICONS, VALUES } from "./icons.ts";
@@ -63,7 +63,7 @@ describe("a button of the closed list", () => {
         ).toBe("true");
       }
       expect(smallTargets()).toEqual([]);
-      expect(await axeViolations()).toEqual([]);
+      expect(await settledViolations()).toEqual([]);
     },
   );
 
@@ -134,7 +134,9 @@ describe("its tooltip", () => {
     await userEvent.keyboard("{Escape}");
     await noTooltip();
     expect(document.activeElement).toBe(help);
-    // Dismissed, it stays away while the focus stays, and comes back with the next focus.
+    // Dismissed, it stays away while the focus stays, and comes back with the next focus. Its
+    // absence is the check: a timer that would show it again, set before this longer pause, has
+    // fired and its render has run by the end of it.
     await new Promise((done) => setTimeout(done, 400));
     expect(tooltip()).toBeNull();
     await userEvent.tab({ shift: true });
@@ -156,6 +158,8 @@ describe("its tooltip", () => {
     await userEvent.hover(page.getByRole("button", { name: "Back" }));
     const shown = await tooltipShown("Back");
     await userEvent.hover(shown);
+    // That it stays is the check: the leave of the button would hide it by that event at once,
+    // and a show timer it set again would fire within this pause, so neither is missed.
     await new Promise((done) => setTimeout(done, 400));
     expect(tooltip()?.textContent).toBe("Back");
     await userEvent.hover(page.getByText("Elsewhere"));

@@ -708,6 +708,7 @@ describe("the task screen", () => {
       },
     ];
     expect(sheet.undo()).toBe(true);
+    // That nothing happens is the check, so a pause, not a wait for a change: one would pass at once.
     await new Promise((resolve) => setTimeout(resolve, 50));
     expect(screen.queryByText("Your work isn't saved on this device")).toBeNull();
     expect(new Set(keys).size).toBe(2);
@@ -1680,6 +1681,7 @@ describe("the task screen with handwriting", () => {
     await userEvent.click(check());
     await screen.findByRole("region", { name: "Solution" });
     words();
+    // That nothing happens is the check, so a pause, not a wait for a change: one would pass at once.
     await new Promise((resolve) => setTimeout(resolve, 50));
     expect(screen.queryByText("A hint for the wrong answer.")).toBeNull();
   });
@@ -1800,6 +1802,7 @@ describe("the tutor's words only while its panel is open", () => {
     await closePanel();
     answer();
     const sheet = document.querySelector("novatrail-canvas") as CanvasElement;
+    // That nothing happens is the check, so a pause, not a wait for a change: one would pass at once.
     await new Promise((resolve) => setTimeout(resolve, 100));
     expect(speech.texts()).not.toContain("How many gaps are there?");
     expect(sheet.marks).toBeUndefined();
@@ -2147,6 +2150,7 @@ describe("the hint and the solution, against late answers and lost replies", () 
     await userEvent.click(check());
     expect(await screen.findByText("Rung 2.")).toBeVisible();
     late();
+    // That nothing happens is the check, so a pause, not a wait for a change: one would pass at once.
     await new Promise((resolve) => setTimeout(resolve, 50));
     expect(screen.queryByText("Rung 1 in other words.")).toBeNull();
     expect(screen.getByText("Rung 2.")).toBeVisible();
@@ -2676,6 +2680,7 @@ describe("the task screen's voicing, once the screen is gone", () => {
     unmount();
     expect(speech.asked.at(-1)).toEqual({ cancel: true });
     answer("Count the gaps between the rungs.");
+    // That nothing happens is the check, so a pause, not a wait for a change: one would pass at once.
     await new Promise((resolve) => setTimeout(resolve, 50));
     expect(speech.texts()).toEqual(["Not right yet: 2 items of 2"]);
   });

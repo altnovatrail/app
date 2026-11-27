@@ -20,6 +20,7 @@ import { AttemptProvider } from "../task/AttemptContext.tsx";
 import { inLanguage } from "../test/language.tsx";
 import "../theme/theme.css";
 import { formatHash } from "./hash.ts";
+import { captionHidden } from "./NavCaption.tsx";
 import { ADULTS, TASK } from "./router.ts";
 import { ShellBar } from "./Shell.tsx";
 import { TIP_DELAY_MS } from "./Tooltip.tsx";
@@ -104,8 +105,9 @@ describe("the frame of Home", () => {
     const tutor = screen.getByRole("button", { name: "Tutor" });
     expect(tutor).toHaveAttribute("aria-disabled", "true");
     await userEvent.hover(tutor);
-    await new Promise((done) => setTimeout(done, TIP_DELAY_MS + 100));
-    expect(document.querySelector(".nt-tooltip")?.textContent).toBe("Tutor — comes later");
+    await expect
+      .poll(() => document.querySelector(".nt-tooltip")?.textContent)
+      .toBe("Tutor — comes later");
     await userEvent.click(tutor, { force: true });
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(window.location.hash).not.toBe(formatHash(TASK));
@@ -163,22 +165,26 @@ describe("the frame of Home", () => {
     renderBar();
     const subjects = screen.getByRole("link", { name: "Subjects" });
     await userEvent.hover(subjects);
-    await new Promise((done) => setTimeout(done, TIP_DELAY_MS + 100));
-    const tip = document.querySelector(".nt-tooltip");
-    expect(tip?.textContent).toBe("Subjects");
+    await expect.poll(() => document.querySelector(".nt-tooltip")?.textContent).toBe("Subjects");
     await userEvent.unhover(subjects);
     await expect.poll(() => document.querySelector(".nt-tooltip")).toBeNull();
 
     // The cognitive map, shut, at every width; Escape dismisses its tooltip, the pointer on it.
     await page.viewport(1300, 768);
+    // A loaded Firefox lays the page out at the new width a moment after the viewport changed: the
+    // pointer goes to the map once the places show their words, or it lands where the map stood.
+    await expect.poll(() => captionHidden(subjects)).toBe(false);
     const shut = screen.getByRole("button", { name: "Cognitive map Soon" });
     await userEvent.hover(shut);
-    await new Promise((done) => setTimeout(done, TIP_DELAY_MS + 100));
-    expect(document.querySelector(".nt-tooltip")?.textContent).toBe("Cognitive map — comes later");
+    await expect
+      .poll(() => document.querySelector(".nt-tooltip")?.textContent)
+      .toBe("Cognitive map — comes later");
     await userEvent.keyboard("{Escape}");
     await expect.poll(() => document.querySelector(".nt-tooltip")).toBeNull();
     await userEvent.unhover(shut);
     await userEvent.hover(screen.getByRole("link", { name: "Subjects" }));
+    // No tooltip is the check, so nothing to wait for: the tooltip's own timer, set first and
+    // shorter than this pause, has fired and its render has run by the end of the pause.
     await new Promise((done) => setTimeout(done, TIP_DELAY_MS + 100));
     expect(document.querySelector(".nt-tooltip")).toBeNull();
   });

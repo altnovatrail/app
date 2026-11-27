@@ -155,6 +155,9 @@ async function pagePhoto(): Promise<File> {
  */
 const SLOW = { timeout: 15_000 };
 
+/** How many times GetDebug was asked by a screen without the debug right. */
+let debugRefused = 0;
+
 /** The screen on its camera; with none, the photos are the way in. */
 async function renderCamera(setup: Setup = {}) {
   const camera = setup.camera;
@@ -172,6 +175,7 @@ async function renderCamera(setup: Setup = {}) {
   const asks: AskTutorRequest[] = [];
   const grownAsks: AskGrownUpRequest[] = [];
   let explains = 0;
+  debugRefused = 0;
   let attempts = 0;
   let progressed = 0;
   const api = routedApi((router) => {
@@ -249,6 +253,13 @@ async function renderCamera(setup: Setup = {}) {
       router.service(DebugService, {
         getDebug: () => setup.debugAnswer ?? {},
         takeDebugCalls: () => ({}),
+      });
+    } else {
+      router.service(DebugService, {
+        getDebug: () => {
+          debugRefused += 1;
+          throw new ConnectError("no debug right", Code.PermissionDenied);
+        },
       });
     }
     router.service(PaperService, {
@@ -1413,6 +1424,8 @@ it("puts debug's button and the tutor's at the start of the page's bar, before a
 it("keeps the tutor's button and its line in the page's bar without debug, and no debug button", async () => {
   await renderPaper();
   await screen.findByRole("button", { name: "Deselect task 1" });
+  await vi.waitFor(() => expect(debugRefused).toBeGreaterThan(0));
+  // The refusal draws nothing, so a pause for it to land, not a wait for a change.
   await new Promise((done) => setTimeout(done, 50));
   const bar = found(".nt-page-bar");
   expect(buttonNames(bar)).toEqual(["Tutor", "Select none", expect.stringContaining("Start")]);
@@ -1488,6 +1501,8 @@ it("puts debug, a line, Ask, Hint, a line and Check in the row of solving", asyn
 
 it("starts the row of solving with Ask where the account has no debug, one line before Check", async () => {
   await solving();
+  await vi.waitFor(() => expect(debugRefused).toBeGreaterThan(0));
+  // The refusal draws nothing, so a pause for it to land, not a wait for a change.
   await new Promise((done) => setTimeout(done, 50));
   expect(buttonNames(row())).toEqual(["Ask", "Hint", "Check"]);
   expect(row().querySelectorAll(".nt-row-line")).toHaveLength(1);
