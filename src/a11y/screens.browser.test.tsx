@@ -11,7 +11,7 @@ import "../theme/theme.css";
 import {
   GetQuotaResponseSchema,
   ProfileSchema,
-  QuotaShareSchema,
+  type QuotaShareSchema,
 } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import {
   ItemVerdictSchema,
@@ -27,7 +27,7 @@ import {
   AnchorSkillHolding,
   GetSkillMapResponseSchema,
 } from "@altnovatrail/contracts/novatrail/api/v1/progress_pb.js";
-import { create } from "@bufbuild/protobuf";
+import { create, type MessageInitShape } from "@bufbuild/protobuf";
 import { userEvent } from "vitest/browser";
 import { LearnerProvider } from "../account/AccountGate.tsx";
 import { ChooseScreen } from "../account/ChooseScreen.tsx";
@@ -126,6 +126,34 @@ function homeWith(...buttons: string[]): [() => ReactNode, () => Promise<void>] 
     async () => {
       for (const button of buttons)
         await userEvent.click(document.querySelector(button) as HTMLElement);
+      await expect.element(page.getByRole("dialog")).toBeVisible();
+    },
+  ];
+}
+
+/** Home in the frame of its bar with the ring of tutor time at this share, its pop-over opened. */
+function ringOpen(
+  name: string,
+  share: MessageInitShape<typeof QuotaShareSchema>,
+): [string, () => ReactNode, () => Promise<void>] {
+  const api = {
+    account: { getQuota: async () => create(GetQuotaResponseSchema, { share }) },
+  } as unknown as Api;
+  return [
+    name,
+    () => (
+      <ApiProvider value={api}>
+        <LearnerProvider value={CHOSEN}>
+          <div className="nt-shell">
+            <ShellBar place="home" />
+            <HomeScreen connected={[]} />
+          </div>
+        </LearnerProvider>
+      </ApiProvider>
+    ),
+    async () => {
+      await vi.waitFor(() => expect(document.querySelector(".nt-ring-btn")).not.toBeNull());
+      await userEvent.click(document.querySelector(".nt-ring-btn") as HTMLElement);
       await expect.element(page.getByRole("dialog")).toBeVisible();
     },
   ];
@@ -807,7 +835,6 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
                 },
                 { moduleId: "novatrail/gone", title: "novatrail/gone" },
               ]}
-              quota={create(QuotaShareSchema, { profilePercent: 20 })}
               failure={{ kind: "offline" }}
             />
           </div>
@@ -1387,10 +1414,15 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
       await vi.waitFor(() => expect(document.querySelector(".nt-set-meter")).not.toBeNull());
     },
   ],
-  [
-    "Home with the tutor time used today",
-    () => <HomeScreen connected={[]} quota={create(QuotaShareSchema, { profilePercent: 40 })} />,
-  ],
+  ringOpen("Home with the ring of tutor time used today, its pop-over open", {
+    profilePercent: 40,
+  }),
+  ringOpen("Home with the ring of tutor time none used, its pop-over open", { profilePercent: 0 }),
+  ringOpen("Home with the ring of tutor time used up, its pop-over open", {
+    profilePercent: 100,
+    capReached: true,
+    nextFamilyDay: { seconds: 1_794_009_600n },
+  }),
   [
     "Home with lessons in progress",
     () => (

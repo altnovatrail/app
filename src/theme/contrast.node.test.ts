@@ -80,6 +80,8 @@ const GROUPS: readonly [number, string, string][] = [
   [TEXT, "on-fill own-value own-link sky-error", "own-rows/sky-card"],
   [TEXT, "own-link own-hint", "sky-card"],
   [EDGE, "own-edge own-more", "own-rows/sky-card"],
+  // The sign in the ring of tutor time where none or all of it is used, on the frame and a card.
+  [EDGE, "ring-sign", "card page"],
   [TEXT, "google-text", "on-fill"],
   [EDGE, "google-edge", "on-fill"],
 ];
@@ -97,9 +99,11 @@ const PAIRS: readonly [string, readonly string[], number][] = GROUPS.flatMap(
 /**
  * The tokens no pair has to hold, and why: grey on a grey fill is a disabled button, which 1.4.3
  * exempts as an inactive control, and so are the way in's on its card and "Add a learner" while
- * it is closed; the ring of the owner's rows is no field's edge, as the field has one of its own.
+ * it is closed; the ring of the owner's rows is no field's edge, as the field has one of its own;
+ * the ring of tutor time and its track only add their colour to the number in it, its button's
+ * name and the words of its pop-over, which tell the share.
  */
-const EXEMPT = ["disabled", "sky-off", "sky-off-fill", "who-off", "own-ring"];
+const EXEMPT = ["disabled", "sky-off", "sky-off-fill", "who-off", "own-ring", "ring", "ring-track"];
 
 /** The pair as its test names it: the foreground, translucent too, on its layers. */
 function ratio(foreground: string, layers: readonly string[]): number {

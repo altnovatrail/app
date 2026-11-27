@@ -20,7 +20,7 @@ import {
 import type { CanvasElement, HistoryEvent } from "@altnovatrail/spec/canvas";
 import { create } from "@bufbuild/protobuf";
 import { Code, ConnectError } from "@connectrpc/connect";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
 import { ApiProvider } from "../api/ApiContext.tsx";
@@ -192,7 +192,10 @@ it("sends the module's text drawn as the statement of Check, goes on, and marks 
   const picture = new Uint8Array(await statement.arrayBuffer());
   expect(work.value.statement).toEqual(picture);
   expect(submits[0]?.attemptId).toBe("a1");
-  await userEvent.click(await screen.findByText("Next task", { selector: "button" }, SLOW));
+  // The row's Next task, not the bar's › of the same name.
+  const row = document.querySelector<HTMLElement>(".nt-task-row");
+  if (row === null) throw new Error("no row");
+  await userEvent.click(await within(row).findByRole("button", { name: "Next task" }, SLOW));
   expect(await screen.findByRole("heading", { name: "Task 2" })).toBeVisible();
   writeOn(sheet());
   await userEvent.click(screen.getByRole("button", { name: "Check" }));

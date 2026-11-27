@@ -13,6 +13,7 @@ import type { ReactNode, Ref } from "react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { readQuota, shareText } from "../account/quota.ts";
 import { useApi } from "../api/ApiContext.tsx";
+import { useGrabber } from "../app/grabber.ts";
 import { Icon } from "../app/Icon.tsx";
 import { IconButton } from "../app/IconButton.tsx";
 import { useNarrow } from "../app/narrow.ts";
@@ -202,9 +203,10 @@ export function TutorPanel({
 }) {
   const { words } = useLanguage();
   const narrow = useNarrow();
-  // The phone's sheet at half the height, or by its grabber over the whole screen; each opening
-  // begins at half.
+  // The phone's sheet at half the height, or by its grabber, tapped or dragged, over the whole
+  // screen; each opening begins at half.
   const [full, setFull] = useState(false);
+  const grab = useGrabber(".nt-tutor-panel", full, setFull);
   // The dialog of the grown-ups' PIN, which grown-up mode's key opens.
   const [pad, setPad] = useState(false);
   useEffect(() => {
@@ -230,7 +232,7 @@ export function TutorPanel({
           value={full ? "half-screen" : "full-screen"}
           className="nt-tutor-grab"
           aria-expanded={full}
-          onClick={() => setFull((was) => !was)}
+          {...grab}
         />
       ) : null}
       <div className="nt-tutor-head">
@@ -303,10 +305,11 @@ export function withHeard(before: string, heard: string, max: number): string {
 }
 
 /**
- * The field of the panel: a box that grows with its lines up to five and then scrolls, Enter
- * sends and Shift+Enter breaks the line — but while an input method composes —; the microphone,
- * where the kit and the browser allow it, which listens till Stop and puts what it hears into the
- * field as it hears it; and Send. What came by voice waits in the field to be read and corrected:
+ * The field of the panel: one line at first, the microphone and Send at its right, that grows
+ * with its lines up to five and then scrolls, Enter sends and Shift+Enter breaks the line — but
+ * while an input method composes —; the microphone, where the kit and the browser allow it, which
+ * listens till Stop and puts what it hears into the field as it hears it, in place of what it left
+ * there before and the field still holds as it came; and Send. What came by voice waits in the field to be read and corrected:
  * nothing goes by itself. While an answer is awaited that may be called off, Stop stands in place
  * of the microphone and Send.
  */
@@ -415,7 +418,12 @@ function AskField({ ask }: { readonly ask: AskKit }) {
                 className="nt-ask-voice"
                 disabled={ask.off}
                 onClick={() => {
-                  before.current = draft;
+                  // A new listening takes away what the last one left, unless the learner changed it.
+                  const kept =
+                    dictated !== undefined && draft === dictated ? before.current : draft;
+                  before.current = kept;
+                  latest.current = kept;
+                  setDraft(kept);
                   setUnheard(false);
                   setDictated(undefined);
                   setStopped(false);

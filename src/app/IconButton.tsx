@@ -30,8 +30,11 @@ export const CAPTIONLESS = {
   "choose-photos": { icon: "photos", word: "icon.choose-photos" },
   "remove-frame": { icon: "close", word: "icon.remove-frame" },
   "resize-frame": { icon: "resize", word: "icon.resize-frame" },
-  // At the top right of Home, Subjects and the skill map: the notifications, a bell.
+  // At the top right of Home, Subjects and the skill map: the notifications, a bell; and the ring of
+  // tutor time where it shows its sign in place of the share — none of today's used, or all of it.
   notifications: { icon: "notifications", word: "bell.title" },
+  "tutor-time-fresh": { icon: "quota-fresh", word: "quota.ring-fresh" },
+  "tutor-time-out": { icon: "quota-out", word: "quota.ring-out" },
   // Under the field of a request on the page to pick from: the microphone, off until voice
   // comes, and Send; and in place of both while an answer is awaited, Stop.
   "ask-voice": { icon: "microphone", word: "paper.ask-voice" },

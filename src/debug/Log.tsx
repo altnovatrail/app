@@ -7,7 +7,6 @@ import type { DebugAction } from "@altnovatrail/contracts/novatrail/api/v1/debug
 import { timestampDate } from "@bufbuild/protobuf/wkt";
 import { type ReactNode, useState } from "react";
 import type { Entry, Level } from "./journal.ts";
-import { ListeningChip } from "./ListeningChip.tsx";
 import { folded, oldestOf, type Run, runSummary, SOURCE_NAMES } from "./runs.ts";
 
 export const LEVELS: readonly {
@@ -296,7 +295,6 @@ export function Log({
             {errors} {errors === 1 ? "error" : "errors"}
           </button>
         ) : null}
-        <ListeningChip />
         {menu ? (
           <FilterMenu
             filter={filter}

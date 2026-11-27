@@ -25,6 +25,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { useApi } from "../api/ApiContext.tsx";
+import { useGrabber } from "../app/grabber.ts";
 import { RowLine } from "../task/TaskLayout.tsx";
 import {
   actionKey,
@@ -415,6 +416,7 @@ export default function DebugButton({ line = false }: { readonly line?: boolean 
   const [copied, setCopied] = useState(false);
   const lines = useSyncExternalStore(journal.subscribe, journal.snapshot);
   const [full, setFull] = useState(false);
+  const grab = useGrabber(".nt-debug-panel", full, setFull);
   const [exporting, setExporting] = useState<string | undefined>(undefined);
   const button = useRef<HTMLButtonElement>(null);
   const close = useRef<HTMLButtonElement>(null);
@@ -481,7 +483,7 @@ export default function DebugButton({ line = false }: { readonly line?: boolean 
                 className="nt-debug-grab"
                 aria-label={full ? "Half screen" : "Full screen"}
                 aria-expanded={full}
-                onClick={() => setFull(!full)}
+                {...grab}
               />
               <div className="nt-debug-head">
                 <span className="nt-debug-disc">

@@ -1259,15 +1259,16 @@ export function Solve({
           >
             {words.text("task.check")}
           </button>
+          {/* Its arrow alone, as Ask's icon, where the row does not fit one line with their words. */}
           {ahead === undefined ? null : (
-            <button
-              type="button"
-              className="nt-check-button"
-              aria-disabled={pending}
+            <BarButton
+              icon="continue"
+              iconLast
+              caption={words.text("next.task")}
+              className="nt-check-button nt-row-next"
+              disabled={pending}
               onClick={() => go(ahead)}
-            >
-              {words.text("next.task")}
-            </button>
+            />
           )}
         </div>
       </div>

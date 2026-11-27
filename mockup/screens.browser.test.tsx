@@ -6,7 +6,6 @@
 import {
   AccountService,
   ProfileSchema,
-  QuotaShareSchema,
 } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import { TutorReply } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
 import {
@@ -20,6 +19,7 @@ import {
 } from "@altnovatrail/contracts/novatrail/api/v1/legal_pb.js";
 import type * as open from "@altnovatrail/spec/formatv0/open";
 import { create } from "@bufbuild/protobuf";
+import { timestampFromDate } from "@bufbuild/protobuf/wkt";
 import { render, screen, waitFor } from "@testing-library/react";
 import { type ReactNode, useState } from "react";
 import { describe, expect, it } from "vitest";
@@ -839,8 +839,19 @@ const OWNER: readonly Region[] = [
 /** Why the avatars stand lower: 12 below their button, and the phone's sheet with its ×. */
 const AVATARS_HUNG = "the pop-over 12 below its button, the phone's sheet with its ×";
 
-/** The policy and the terms in force, synthetic, and the policy's next version, as api gives them. */
-const LEGAL_API = routedApi((router) =>
+/**
+ * The policy and the terms in force, synthetic, and the policy's next version, as api gives them;
+ * and a fifth of today's tutor time used, renewing tomorrow at 08:00, as the mockup's ring has it.
+ */
+const LEGAL_API = routedApi((router) => {
+  router.service(AccountService, {
+    getQuota: () => {
+      const renews = new Date();
+      renews.setDate(renews.getDate() + 1);
+      renews.setHours(8, 0, 0, 0);
+      return { share: { profilePercent: 20, nextFamilyDay: timestampFromDate(renews) } };
+    },
+  });
   router.service(LegalService, {
     getLegalTexts: () => ({
       texts: [
@@ -872,8 +883,8 @@ const LEGAL_API = routedApi((router) =>
         }),
       ],
     }),
-  }),
-);
+  });
+});
 
 /** A legal page, opened from home, its text read. */
 function legalShown(page: string) {
@@ -1532,16 +1543,9 @@ function framed(place: Place, child: ReactNode) {
   );
 }
 
-/** Home with the mockup's three modules, a fifth of today's tutor time used. */
+/** Home with the mockup's three modules, a fifth of today's tutor time used in the ring of its frame. */
 function home() {
-  return framed(
-    "home",
-    <HomeScreen
-      connected={MODULES}
-      quota={create(QuotaShareSchema, { profilePercent: 20 })}
-      next={<NextStep profileId="p1" />}
-    />,
-  );
+  return framed("home", <HomeScreen connected={MODULES} next={<NextStep profileId="p1" />} />);
 }
 
 /**
@@ -1691,6 +1695,13 @@ const HELP: readonly Region[] = [
   },
 ];
 
+/**
+ * Why a row of the phone's sheet is of another white: the mockup's sheet is white at 0.98 and shows
+ * what lies under it, where app's card of what comes next stands taller, its way to what comes
+ * next at its foot.
+ */
+const SHEET_SEES_THROUGH = "the mockup's sheet at 0.98 shows Home under it, of other heights";
+
 /** The profile's menu, open: who is learning, Switch learner, Settings, Help and Sign out. */
 const MENU: readonly Region[] = [
   PILL,
@@ -1700,6 +1711,7 @@ const MENU: readonly Region[] = [
       name,
       mockup: { role: "button", name },
       app: { role: "button", name },
+      differs: { what: ["background"], by: SHEET_SEES_THROUGH },
     }),
   ),
 ];
@@ -1713,6 +1725,23 @@ const BELL: readonly Region[] = [
     differs: { what: ["font-size", "font-weight"], by: ICON_ALONE },
   },
   popOver("the notifications", "Notifications"),
+];
+
+/** The ring of tutor time at the top right, a fifth used, and its pop-over. */
+const QUOTA: readonly Region[] = [
+  {
+    name: "the ring of tutor time",
+    mockup: { role: "button", name: "Tutor time: 20% used today" },
+    app: { role: "button", name: "Tutor time: 20% used today" },
+    differs: { what: ["font-size", "font-weight"], by: ICON_ALONE },
+  },
+  {
+    ...popOver("the pop-over of tutor time", "Tutor time"),
+    differs: {
+      what: ["x", "y", "height", "background", "border", "font-size"],
+      by: `the mockup's DEMO row of shares at its foot, which app has not; ${OVER_INERT}; ${NO_TEXT}`,
+    },
+  },
 ];
 
 /** The facts of a module of the mockup's Subjects: its subject and grades, by the NovaTrail authors. */
@@ -2517,6 +2546,13 @@ const SCREENS: readonly Compared[] = [
     draw: home,
     settle: () => userEvent.click(screen.getByRole("button", { name: "Notifications" })),
     regions: BELL,
+  },
+  {
+    state: "home-quota",
+    draw: home,
+    settle: async () =>
+      userEvent.click(await screen.findByRole("button", { name: "Tutor time: 20% used today" })),
+    regions: QUOTA,
   },
   ...DEVICES.map(
     (device): Compared => ({

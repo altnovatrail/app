@@ -417,9 +417,10 @@ describe("the way in", () => {
     expect(await screen.findByRole("heading", { level: 1, name: "Who is learning?" })).toBeTruthy();
     // Shown again, it asks the browser no more.
     expect(persist).toHaveBeenCalledOnce();
-    // Each request of the way in, then the learner's home — the bell's texts, the modules connected
-    // and the share of the quota —, and no other: the catalog is Subjects', the choice of the learner
-    // reads no text, and CheckPackages has no package to ask about.
+    // Each request of the way in, then the learner's home — the bell's texts, the share of the
+    // quota for the ring of the frame's bar, then the modules connected —, and no other: the catalog
+    // is Subjects', the choice of the learner reads no text, and CheckPackages has no package to ask
+    // about.
     expect(asked).toEqual([
       "GetAccount",
       "GetLegalTexts",
@@ -429,8 +430,8 @@ describe("the way in", () => {
       "CreateOwnerProfile",
       "GetAccount",
       "GetLegalTexts",
-      "ListConnectedModules",
       "GetQuota",
+      "ListConnectedModules",
     ]);
     // Some twenty steps of the way in: under the load of the whole suite they outlast 15 s.
   }, 30_000);

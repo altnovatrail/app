@@ -26,7 +26,7 @@ import {
 import type { Failure } from "../api/failure.ts";
 import type { ReadOutcome } from "../api/outcome.ts";
 import type { Device } from "../storage/device.ts";
-import { openProfile, type PaperWork, type Profile } from "../storage/profile.ts";
+import { addProfile, openProfile, type PaperWork, type Profile } from "../storage/profile.ts";
 import { type Photo, release } from "./capture.ts";
 import { keptTasks, type PageTask, uprightPage } from "./page.ts";
 import { type BegunTask, changed, renewed, withBegun } from "./solve.ts";
@@ -187,7 +187,10 @@ export function PaperProvider({
   const profileOf = useCallback((): Promise<Profile | undefined> | undefined => {
     if (device === undefined || profileId === undefined) return undefined;
     if (database.current?.of !== profileId) {
-      const profile = openProfile(device, profileId).catch(() => undefined);
+      // The first page of a profile that has begun nothing on this device makes its database.
+      const profile = openProfile(device, profileId)
+        .then((found) => found ?? addProfile(device, profileId))
+        .catch(() => undefined);
       const opened = { of: profileId, profile };
       database.current = opened;
       // A database that did not open is asked for again by the next write.

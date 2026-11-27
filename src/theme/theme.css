@@ -1971,7 +1971,7 @@ button.nt-row > svg {
   color: var(--nt-text-muted);
   font-size: 0.8125rem;
 }
-/* The card's foot: the tutor time at its left, the way to what comes next at its right. */
+/* The card's foot: the way to what comes next at its right. */
 .nt-next-foot {
   display: flex;
   align-items: center;
@@ -1993,8 +1993,8 @@ button.nt-row > svg {
   margin: 0;
 }
 /* On a card of the whole width — an iPad in portrait, the halves one under the other — the way to
-   what comes next stands beside the tutor time, by the words, not at the far edge under the sheet.
-   On a phone, with no sheet, the foot wraps and the button keeps to the end. */
+   what comes next stands at the start, under the words, not at the far edge under the sheet. On a
+   phone, with no sheet, the button keeps to the end. */
 @media (width >= 600px) {
   @container nt-home-top (width < 62.5rem) {
     .nt-next-foot {
@@ -2005,28 +2005,133 @@ button.nt-row > svg {
     }
   }
 }
-/* No wider than its words: on a card of the whole width, in portrait, it does not stretch across. */
-.nt-quota {
+/*
+ * The ring of tutor time at the frame's top right, 32 in its target of 44, and 56 in its pop-over:
+ * green below 50%, yellow to 80%, red from 80%. The share is told by the number in it and by the
+ * button's name, so the colour adds to them; the sign that none is used is the darker green, 4.4:1.
+ */
+.nt-ring[data-level] {
+  --nt-ring: #34c759;
+  --nt-ring-track: rgba(120, 120, 128, 0.2);
+  --nt-ring-sign: #248a3d;
+}
+.nt-ring[data-level="fresh"] {
+  --nt-ring-track: rgba(52, 199, 89, 0.35);
+}
+.nt-ring[data-level="half"] {
+  --nt-ring: #f7b500;
+}
+.nt-ring[data-level="high"],
+.nt-ring[data-level="out"] {
+  --nt-ring: #ff3b30;
+  --nt-ring-sign: #ff3b30;
+}
+.nt-ring {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  inline-size: 2rem;
+  block-size: 2rem;
+  color: var(--nt-text);
+}
+.nt-ring-face {
+  position: absolute;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+}
+.nt-ring circle {
+  fill: none;
+  stroke-width: 3;
+}
+.nt-ring .nt-ring-track {
+  stroke: var(--nt-ring-track);
+}
+.nt-ring .nt-ring-arc {
+  stroke: var(--nt-ring);
+  stroke-linecap: round;
+}
+.nt-ring > b {
+  position: relative;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+.nt-ring-sign {
+  position: relative;
   display: flex;
-  flex: 1 1 auto;
-  min-inline-size: 0;
-  max-inline-size: 20rem;
+  color: var(--nt-ring-sign);
+  font-size: 0.875rem;
+}
+.nt-ring.nt-ring-big {
+  inline-size: 3.5rem;
+  block-size: 3.5rem;
+}
+.nt-ring-big > b {
+  font-size: 0.875rem;
+}
+.nt-ring-big > .nt-ring-sign {
+  font-size: 1.375rem;
+}
+.nt-top-pills .nt-ring-wait {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 2.75rem;
+  block-size: 2.75rem;
+}
+@media (forced-colors: active) {
+  .nt-ring .nt-ring-track {
+    stroke: GrayText;
+  }
+  .nt-ring .nt-ring-arc {
+    stroke: CanvasText;
+  }
+  .nt-ring-sign {
+    color: CanvasText;
+  }
+}
+/* The ring's pop-over: the big ring and what the share means, when it renews, the note. */
+.nt-q-head {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  padding: 0.75rem 0.625rem 0.875rem;
+}
+.nt-q-say {
+  display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.125rem;
+  min-inline-size: 0;
   margin: 0;
+}
+.nt-q-say > b {
+  font-size: 0.9375rem;
+  line-height: 1.3;
+}
+.nt-q-say > span,
+.nt-q-renew,
+.nt-q-note {
   color: var(--nt-text-muted);
-  font-size: 0.8125rem;
+  font-size: var(--nt-size-caption);
+  line-height: 1.4;
 }
-.nt-quota-bar {
+/* When it renews, on a grey card of its own. */
+.nt-q-renew {
   display: flex;
-  block-size: 0.375rem;
-  border-radius: 0.1875rem;
-  background: #e8e8ed;
-  overflow: hidden;
+  align-items: center;
+  gap: 0.375rem;
+  margin: 0 0.375rem;
+  padding: 0.75rem;
+  border-radius: 0.75rem;
+  background: var(--nt-grey-08);
 }
-.nt-quota-bar > span {
-  border-radius: 0.1875rem;
-  background: var(--nt-accent);
+.nt-q-note {
+  margin: 0;
+  padding: 0.625rem 0.625rem 0.25rem;
 }
 .nt-paper-eyebrow {
   color: var(--nt-accent-text);
@@ -2456,8 +2561,11 @@ dialog.nt-pop-legend {
 dialog.nt-pop-legend .nt-legend-items {
   line-height: normal;
 }
+/* On a phone the link stands in the middle, below the modules. */
 .nt-legend-open {
-  margin: -0.5rem 0 0.5rem -0.625rem;
+  display: flex;
+  justify-content: center;
+  margin: -0.5rem 0 0.5rem;
 }
 .nt-legend-open > button {
   display: inline-flex;
@@ -4772,6 +4880,24 @@ main.nt-task-screen > .nt-task-foot {
   inline-size: var(--nt-target);
   padding-inline: 0;
 }
+/*
+ * Next task, once the task is over: Check's fill, its words and then the mockup's arrow in a
+ * circle; the arrow alone, 44 round, where the row does not fit one line with their words.
+ */
+.nt-task-row button.nt-check-button.nt-row-next {
+  flex: none;
+  gap: 0.5rem;
+  padding: 0 1.125rem 0 1.375rem;
+  white-space: nowrap;
+}
+.nt-task-row button.nt-row-next > svg {
+  font-size: 1.0625rem;
+}
+.nt-task-row:is([data-fit="icons"], [data-fit="below"]) button.nt-row-next {
+  justify-content: center;
+  inline-size: var(--nt-target);
+  padding-inline: 0;
+}
 .nt-row-line {
   flex: none;
   inline-size: 1px;
@@ -5152,7 +5278,7 @@ button.nt-confirm-yes {
  * the debug panel, from 74 below its top — under the top bar — to 16 above its foot, as it too,
  * radius 28; on a phone a sheet from
  * the bottom of the whole width, glass of 0.96, radius 28 at its top, at half the window's height,
- * or by its grabber to 70 below its top. A column: the head, the step's card, the conversation,
+ * or by its grabber, tapped or dragged, to the window's top. A column: the head, the step's card, the conversation,
  * which scrolls, and the buttons at its foot.
  */
 .nt-tutor-panel {
@@ -5177,7 +5303,7 @@ button.nt-confirm-yes {
     box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.14);
   }
   .nt-tutor-panel[data-size="full"] {
-    block-size: calc(100dvh - 4.375rem);
+    block-size: 100dvh;
   }
 }
 @media (prefers-reduced-motion: no-preference) {
@@ -5202,9 +5328,13 @@ button.nt-confirm-yes {
     transform: translateY(2.5rem);
   }
 }
-/* The grabber, 88 × 44 at the sheet's top in its middle, with no fill of its own. */
+/*
+ * The grabber, 88 × 44 at the sheet's top in its middle, with no fill of its own; a drag on it is
+ * its own, not the page's scroll.
+ */
 .nt-tutor-panel > .nt-tip-host > button.nt-tutor-grab,
 .nt-tutor-panel > .nt-tip-host > button.nt-tutor-grab:hover {
+  touch-action: none;
   position: absolute;
   inset-block-start: 0;
   inset-inline-start: calc(50% - 2.75rem);
@@ -5789,19 +5919,21 @@ button.nt-act[aria-disabled="true"] {
   color: var(--nt-accent);
 }
 /*
- * The panel's field: one rounded box of grey in a blue edge of 2, the text at its top, growing
- * down with its lines up to five and then scrolling, and under it at the right the microphone and
- * Send, a blue circle with its arrow, each a target of 44; while the microphone listens, a red dot
+ * The panel's field: one rounded box of grey in a blue edge of 2, one line of text at first, in
+ * the middle of the row, and at its right the microphone and Send, a blue circle with its arrow,
+ * each a target of 44; the text grows with its lines up to five and then scrolls, the buttons at
+ * the foot; while the microphone listens, a red dot
  * and "Listening…" in the accent, and Stop on the accent, with its caption. Under the box the line
  * on what came by voice, at 12 in the muted grey.
  */
 form.nt-ask {
-  display: flex;
+  display: grid;
   flex: none;
-  flex-direction: column;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
   gap: 0.25rem;
   margin: 0 0.625rem 0.625rem;
-  padding: 0.75rem 0.375rem 0.375rem 1rem;
+  padding: 0.25rem 0.25rem 0.25rem 1rem;
   border: 0.125rem solid var(--nt-accent);
   border-radius: 1.625rem;
   background: var(--nt-grey-12);
@@ -5810,7 +5942,8 @@ form.nt-ask > textarea.nt-ask-input {
   box-sizing: border-box;
   inline-size: 100%;
   max-block-size: calc(0.9375rem * 1.4 * 5);
-  margin: 0;
+  align-self: center;
+  margin: 0.5rem 0;
   padding: 0 0.625rem 0 0;
   border: 0;
   background: transparent;
@@ -5877,6 +6010,7 @@ form.nt-ask > textarea.nt-ask-input:focus-visible {
   font-weight: 600;
 }
 form.nt-ask > p.nt-ask-said {
+  grid-column: 1 / -1;
   margin: 0;
   padding: 0 0.625rem 0.25rem 0;
   color: var(--nt-text-muted);
@@ -6127,9 +6261,11 @@ main.nt-settings:has(> .nt-column) {
   padding: 0 1rem 2.5rem;
 }
 @media (width >= 600px) {
-  main.nt-settings:not(.nt-settings-list) {
+  /* The list and the page beside it; a page drawn without the list, as a test draws one,
+     stands alone. */
+  main.nt-settings:has(> .nt-set-side) {
     display: grid;
-    grid-template-columns: clamp(17.5rem, 32vw, 23.4375rem) minmax(0, 1fr);
+    grid-template-columns: auto minmax(0, 1fr);
     align-items: start;
   }
   .nt-settings > .nt-column {
@@ -6140,7 +6276,14 @@ main.nt-settings:has(> .nt-column) {
     margin-inline: auto;
   }
 }
+/*
+ * The list beside a page: a third of the window between 280 and 375 px, and never narrower than
+ * its longest word with what stands beside it in its row, so that no word of a row breaks — a
+ * profile's name aside, which may run long without a space and breaks where it must.
+ */
 .nt-set-side {
+  inline-size: clamp(17.5rem, 32vw, 23.4375rem);
+  min-inline-size: min-content;
   position: sticky;
   inset-block-start: 0;
   box-sizing: border-box;
@@ -6416,6 +6559,9 @@ div.nt-set-row {
 .nt-set-profiles .nt-set-label {
   font-size: 1.25rem;
   font-weight: var(--nt-weight-bold);
+}
+.nt-set-side .nt-set-sec:not(.nt-set-profiles) :is(.nt-set-label, .nt-set-value) {
+  overflow-wrap: break-word;
 }
 .nt-set-sub {
   color: var(--nt-text-muted);
@@ -7339,10 +7485,6 @@ dialog.nt-legal-sheet .nt-legal-body .nt-legal-foot > button.nt-link {
   flex: 1 1 auto;
   max-inline-size: 55%;
 }
-.nt-next-loading > .nt-next-foot > .nt-loading {
-  flex: 1 1 auto;
-  max-inline-size: 20rem;
-}
 /* A module's page on the sheet while it begins: its statement near the top left, the row at the foot. */
 .nt-sheet-loading {
   block-size: 100%;
@@ -7525,6 +7667,9 @@ nav.nt-nav button.nt-nav-item[aria-disabled="true"] {
 @media (width >= 600px) {
   dialog.nt-pop.nt-pop-bell {
     inline-size: 18.75rem;
+  }
+  dialog.nt-pop.nt-pop-quota {
+    inline-size: 20rem;
   }
   .nt-shell section.nt-legend {
     margin: 0.375rem 0 0;

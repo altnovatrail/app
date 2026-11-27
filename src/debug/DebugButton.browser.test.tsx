@@ -200,6 +200,9 @@ describe("the debug button", () => {
     expect(document.activeElement).toBe(window_.getByRole("button", { name: "Close" }));
     await userEvent.click(window_.getByRole("button", { name: "Full screen" }));
     expect(screen.getByRole("dialog", { name: "Debug" })).toHaveAttribute("data-size", "full");
+    // The whole window is the sheet's, the button under it too: back to half, where it shows.
+    await userEvent.click(window_.getByRole("button", { name: "Half screen" }));
+    expect(screen.getByRole("dialog", { name: "Debug" })).toHaveAttribute("data-size", "half");
     await userEvent.keyboard("{Escape}");
     const button = screen.getByRole("button", { name: "Debug: the models and their answers" });
     expect(document.activeElement).toBe(button);

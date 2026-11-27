@@ -857,8 +857,8 @@ export const en = {
   /** The button of the consent: switches the storage on. */
   "storage.switch-on": "Switch it on",
   /**
-   * On Home: the share of today's quota of platform AI the learner's profile has used, as a
-   * percentage — never a sum of money. Once it is used up, the line is api.quota.
+   * In the head of the tutor's panel: the share of today's quota of platform AI the learner's
+   * profile has used, as a percentage — never a sum of money.
    */
   "quota.learner": "Tutor time today: {percent} used",
   /** The share of the quota of platform AI, on a profile's page in the section for adults. */
@@ -881,6 +881,32 @@ export const en = {
   "quota.renews": "Tutor time renews on {date} at {time}",
   /** The account's tariff has no caps: platform AI is closed to it, and there is no share. */
   "quota.closed": "The platform's AI has no tutor time on this account now: it is closed to it",
+  /**
+   * The ring of tutor time at the top right of Home, Subjects and the skill map: its name, which
+   * the number in it alone does not tell; {percent} is "40%". The ring's share is the profile's alone.
+   */
+  "quota.ring": "Tutor time: {percent} used today",
+  "quota.ring-fresh": "Tutor time: none used today",
+  "quota.ring-out": "Tutor time: used up today",
+  /** The ring's pop-over: what the share means, under its heading, by how much is used. */
+  "quota.fresh-title": "None used yet today",
+  "quota.fresh-line": "The tutor has all of today's time for you.",
+  "quota.low-title": "Plenty left today",
+  "quota.low-line": "Enough for many more questions and checks.",
+  "quota.half-title": "More than half used",
+  "quota.half-line": "Keep some for checking your work.",
+  "quota.high-title": "Almost used up",
+  "quota.high-line": "When it ends, the tutor and the AI's check of works wait until it renews.",
+  "quota.out-title": "Used up for today",
+  "quota.out-line": "Until it renews, the tutor and the AI's check of works wait.",
+  /** When it renews, under the pop-over's heading: today at {time}, tomorrow, or on {date}. */
+  "quota.ring-renews-today": "Renews today at {time}",
+  "quota.ring-renews-tomorrow": "Renews tomorrow at {time}",
+  "quota.ring-renews": "Renews on {date} at {time}",
+  "quota.spends":
+    "The tutor's replies and the AI's reading of works spend it. When it ends, the task's own hints still help.",
+  /** The way from the pop-over to the section for adults, where the account's share stands. */
+  "quota.account-settings": "The whole account in Settings",
   /** The page Own AI key: its heading, and its place on the first page. */
   "ownkey.title": "Own AI key",
   "ownkey.hint": "Your own key at an AI provider, for the tutor's requests of your profile",
