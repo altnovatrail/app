@@ -18,7 +18,9 @@ import {
   SlowRecognition,
   withRecognition,
 } from "../test/recognition.ts";
-import { NO_AUDIO_MS } from "../voice/dictation.ts";
+import { fakeSpeech, voice } from "../test/speech.ts";
+import { NO_AUDIO_MS, NO_WORDS_MS } from "../voice/dictation.ts";
+import { SpeechProvider } from "../voice/VoicingContext.tsx";
 import { NO_VERDICTS, type Verdicts, verdictsOf } from "./attempt.ts";
 import { EssayScreen } from "./EssayScreen.tsx";
 import { initialState, type Mode, type StepsState } from "./steps.ts";
@@ -545,6 +547,130 @@ describe("the field of the tutor's panel", () => {
     );
     expect(lines.some((e) => e.text === "dictation: speech began")).toBe(true);
     expect(lines.some((e) => e.text === "dictation: the browser refused — no code")).toBe(true);
+  });
+
+  it("holds the tutor's voice while it listens, and lets it speak once the listening ends", async () => {
+    withRecognition(true);
+    reset();
+    const { speech, texts } = fakeSpeech([voice("Daniel", "en-GB")]);
+    const hello = [{ text: "Hello.", language: "en-GB" }];
+    const saying = { rate: 1, chosen: new Map<string, string>() };
+    render(
+      inLanguage(
+        <SpeechProvider value={speech}>
+          <Asking />
+        </SpeechProvider>,
+      ),
+    );
+    await userEvent.click(panel().getByRole("button", { name: "Dictate" }));
+    // A reply that comes, or a speaker pressed, while it listens says nothing on the iPad's sound.
+    expect(speech.say(hello, saying)).toBeUndefined();
+    speech.prime();
+    expect(texts()).toEqual([]);
+    listening().hear("why ten");
+    await userEvent.click(panel().getByRole("button", { name: "Stop" }));
+    expect(speech.say(hello, saying)).toBeDefined();
+    expect(texts()).toEqual(["Hello."]);
+    flush();
+    expect(
+      snapshot().some(
+        (e) => e.text === "dictation: the voice kept quiet 2 times while it listened",
+      ),
+    ).toBe(true);
+  });
+
+  it("puts away a listening whose sound came and no word after it, as one that heard nothing", async () => {
+    withRecognition(true);
+    reset();
+    render(inLanguage(<Asking />));
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    try {
+      await userEvent.click(panel().getByRole("button", { name: "Dictate" }));
+      // The sound begins at once; a voice over it would take it and leave no word to come.
+      await Promise.resolve();
+      vi.advanceTimersByTime(NO_WORDS_MS - 1);
+      expect(panel().getByRole("status")).toHaveTextContent("Listening…");
+      vi.advanceTimersByTime(1);
+    } finally {
+      vi.useRealTimers();
+    }
+    expect(await panel().findByText("Nothing was heard. Try again, or type.")).toBeVisible();
+    flush();
+    expect(
+      snapshot().some((e) => e.level === "warn" && e.text.startsWith("dictation: no words in")),
+    ).toBe(true);
+  });
+
+  it("lets a listening that gives words go on past the watch on its sound", async () => {
+    withRecognition(true);
+    render(inLanguage(<Asking />));
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    try {
+      await userEvent.click(panel().getByRole("button", { name: "Dictate" }));
+      await Promise.resolve();
+      listening().hear("why");
+      vi.advanceTimersByTime(NO_WORDS_MS * 2);
+      expect(panel().getByRole("status")).toHaveTextContent("Listening…");
+    } finally {
+      vi.useRealTimers();
+    }
+    await userEvent.click(panel().getByRole("button", { name: "Stop" }));
+    expect(field()).toHaveValue("why");
+  });
+
+  it("gives speech that begins late its own time for words, and puts it away once that is gone", async () => {
+    withRecognition(true);
+    // The test sends the sound's event itself, so that it comes where the test puts it.
+    FakeRecognition.deaf = true;
+    reset();
+    render(inLanguage(<Asking />));
+    await userEvent.click(panel().getByRole("button", { name: "Dictate" }));
+    await expect.poll(() => FakeRecognition.made.at(-1)?.started).toBe(true);
+    const recognition = listening();
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    try {
+      recognition.onaudiostart?.();
+      vi.advanceTimersByTime(NO_WORDS_MS - 1);
+      recognition.onspeechstart?.();
+      vi.advanceTimersByTime(NO_WORDS_MS - 1);
+      expect(panel().getByRole("status")).toHaveTextContent("Listening…");
+      vi.advanceTimersByTime(1);
+    } finally {
+      vi.useRealTimers();
+    }
+    expect(await panel().findByText("Nothing was heard. Try again, or type.")).toBeVisible();
+    flush();
+    expect(
+      snapshot().some(
+        (e) => e.text === `dictation: no words in ${NO_WORDS_MS} ms of speech — put away`,
+      ),
+    ).toBe(true);
+  });
+
+  it("lets the voice speak at Stop, though the browser has not yet said the listening ended", async () => {
+    withRecognition(true);
+    reset();
+    const { speech, texts } = fakeSpeech([voice("Daniel", "en-GB")]);
+    const hello = [{ text: "Hello.", language: "en-GB" }];
+    render(
+      inLanguage(
+        <SpeechProvider value={speech}>
+          <Asking />
+        </SpeechProvider>,
+      ),
+    );
+    await userEvent.click(panel().getByRole("button", { name: "Dictate" }));
+    speech.prime();
+    const recognition = listening();
+    recognition.hear("why");
+    vi.spyOn(recognition, "stop").mockImplementation(() => {});
+    await userEvent.click(panel().getByRole("button", { name: "Stop" }));
+    speech.say(hello, { rate: 1, chosen: new Map() });
+    expect(texts()).toEqual(["Hello."]);
+    flush();
+    expect(
+      snapshot().some((e) => e.text === "dictation: the voice kept quiet 1 time while it listened"),
+    ).toBe(true);
   });
 
   it("starts where the browser will not say whether it speaks", async () => {
