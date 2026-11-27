@@ -6,17 +6,26 @@
 // draws no microphone.
 //
 // WebKit on an iPad shares one audio session between the synthesis and the recognition: while the
-// tutor's voice holds it, a recognition starts, the system shows its microphone, and no sound comes.
-// So a press first stops the voice, and where the browser has nothing to ask first — no
-// `available`, as WebKit — starts the recognition within the press itself; a recognition with no
-// sound and no speech NO_AUDIO_MS after its start is put away as one that heard nothing, but only
-// once the browser has the microphone granted: a prompt for it waits for the learner, however long. Each event of a listening goes to the journal of the Debug window.
+// tutor's voice holds it, a recognition starts, the system shows its microphone, and no sound comes;
+// a voice that begins while it listens takes the sound back, and the recognition neither hears nor
+// ends. So a press first stops the voice and holds it until the listening ends, and where the
+// browser has nothing to ask first — no `available`, as WebKit — starts the recognition within the
+// press itself. A recognition with no sound NO_AUDIO_MS after its start is put away as one that
+// heard nothing, but only once the browser has the microphone granted: a prompt for it waits for
+// the learner, however long; one whose sound began and gave no words NO_WORDS_MS later, too. Each
+// event of a listening goes to the journal of the Debug window.
 import { useEffect, useRef, useState } from "react";
 import { note } from "../debug/journal.ts";
 import { useSpeech } from "./VoicingContext.tsx";
 
 /** How long a started recognition may go with no sound before it counts as one that heard nothing. */
 export const NO_AUDIO_MS = 3000;
+
+/**
+ * How long a recognition may hear sound, or speech, with no word before it counts as one that heard
+ * nothing: long enough for a learner who thinks before speaking.
+ */
+export const NO_WORDS_MS = 10_000;
 
 /** The part of the browser's recognition the microphone uses. */
 export interface Recognition {
@@ -77,9 +86,10 @@ export function heardOf(event: RecognitionEvent): string {
  * The microphone: `start` listens in `language` and gives each reading to `onText`, the whole of
  * this listening so far; `stop` ends it, and `onEnd` comes once it has ended, by Stop, by the
  * browser at a pause, or by a failure, with whether anything was heard. An unmount, or `off`, puts
- * the listening away with nothing more said. `start` stops what the app is saying first, and a
- * listening with no sound `NO_AUDIO_MS` after it began, the microphone already granted, ends as one
- * that heard nothing.
+ * the listening away with nothing more said. `start` stops what the app is saying first and holds
+ * the voice till the listening ends; a listening with no sound `NO_AUDIO_MS` after it began, the
+ * microphone already granted, or with sound and no word `NO_WORDS_MS` after the sound began, ends
+ * as one that heard nothing.
  */
 export function useDictation({
   language,
@@ -97,6 +107,8 @@ export function useDictation({
   const [listening, setListening] = useState(false);
   const live = useRef<Recognition | undefined>(undefined);
   const deaf = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  // What lets the voice go once the listening ends.
+  const quiet = useRef<(() => number) | undefined>(undefined);
   // The recognitions started: one is asked whether it can recognise on the device first.
   const began = useRef(new WeakSet<Recognition>()).current;
   // Whether the browser has the microphone granted: unknown counts as not, so no prompt is cut short.
@@ -129,8 +141,29 @@ export function useDictation({
     clearTimeout(deaf.current);
     deaf.current = undefined;
   };
+  const unhold = () => {
+    const kept = quiet.current?.() ?? 0;
+    quiet.current = undefined;
+    if (kept > 0)
+      note(
+        "info",
+        "app",
+        `dictation: the voice kept quiet ${kept} ${kept === 1 ? "time" : "times"} while it listened`,
+      );
+  };
+  /** Puts `recognition` away as one that heard nothing `ms` from now, unless watched again. */
+  const watch = (recognition: Recognition, ms: number, line: string) => {
+    unwatch();
+    deaf.current = setTimeout(() => {
+      if (live.current !== recognition) return;
+      note("warn", "app", line);
+      put();
+      callbacks.current.onEnd(false);
+    }, ms);
+  };
   const put = () => {
     unwatch();
+    unhold();
     const was = live.current;
     live.current = undefined;
     if (was === undefined) return;
@@ -148,6 +181,7 @@ export function useDictation({
   const ended = (recognition: Recognition, heard: boolean) => {
     if (live.current !== recognition) return;
     unwatch();
+    unhold();
     live.current = undefined;
     setListening(false);
     callbacks.current.onEnd(heard);
@@ -164,12 +198,21 @@ export function useDictation({
     let heard = false;
     let results = 0;
     recognition.onaudiostart = () => {
-      unwatch();
       note("info", "app", "dictation: sound began");
+      watch(
+        recognition,
+        NO_WORDS_MS,
+        `dictation: no words in ${NO_WORDS_MS} ms of sound — put away`,
+      );
     };
+    // Speech, with or without the sound's event before it, gives the words their time again.
     recognition.onspeechstart = () => {
-      unwatch();
       note("info", "app", "dictation: speech began");
+      watch(
+        recognition,
+        NO_WORDS_MS,
+        `dictation: no words in ${NO_WORDS_MS} ms of speech — put away`,
+      );
     };
     recognition.onresult = (event) => {
       unwatch();
@@ -192,6 +235,8 @@ export function useDictation({
       ended(recognition, heard);
     };
     live.current = recognition;
+    unhold();
+    quiet.current = speech.hold();
     setListening(true);
     const begin = (local: boolean) => {
       // Stopped, or put away, before it began.
@@ -206,12 +251,7 @@ export function useDictation({
       );
       // Set before the start, so that a sound the start reports at once clears it.
       if (granted.current)
-        deaf.current = setTimeout(() => {
-          if (live.current !== recognition) return;
-          note("warn", "app", `dictation: no sound in ${NO_AUDIO_MS} ms — put away`);
-          put();
-          callbacks.current.onEnd(false);
-        }, NO_AUDIO_MS);
+        watch(recognition, NO_AUDIO_MS, `dictation: no sound in ${NO_AUDIO_MS} ms — put away`);
       try {
         recognition.start();
       } catch (reason) {
@@ -232,6 +272,8 @@ export function useDictation({
       ended(now, false);
       return;
     }
+    // The learner is done speaking: the voice may speak again while the last words come.
+    unhold();
     now.stop();
   };
   return { available: Class !== undefined, listening, start, stop };

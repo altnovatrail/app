@@ -78,6 +78,28 @@ function renderBar(learner: Learner = learnerWith(), api: Api = {} as Api) {
   );
 }
 
+/**
+ * Hovers the control `find` gives until its tooltip says `words`. A loaded Firefox may draw the
+ * row again under a pointer that has not moved, and then tells no element the pointer came in;
+ * each try finds the control afresh and moves the pointer to it again.
+ */
+async function hoverForTip(find: () => HTMLElement, words: string) {
+  for (let tries = 3; ; tries -= 1) {
+    await userEvent.hover(find());
+    try {
+      await expect
+        .poll(() => document.querySelector(".nt-tooltip")?.textContent, {
+          timeout: TIP_DELAY_MS * 5,
+        })
+        .toBe(words);
+      return;
+    } catch (failure) {
+      if (tries === 1) throw failure;
+      await userEvent.unhover(find());
+    }
+  }
+}
+
 afterEach(async () => {
   cleanup();
   window.location.hash = "";
@@ -174,14 +196,11 @@ describe("the frame of Home", () => {
     // A loaded Firefox lays the page out at the new width a moment after the viewport changed: the
     // pointer goes to the map once the places show their words, or it lands where the map stood.
     await expect.poll(() => captionHidden(subjects)).toBe(false);
-    const shut = screen.getByRole("button", { name: "Cognitive map Soon" });
-    await userEvent.hover(shut);
-    await expect
-      .poll(() => document.querySelector(".nt-tooltip")?.textContent)
-      .toBe("Cognitive map — comes later");
+    const shut = () => screen.getByRole("button", { name: "Cognitive map Soon" });
+    await hoverForTip(shut, "Cognitive map — comes later");
     await userEvent.keyboard("{Escape}");
     await expect.poll(() => document.querySelector(".nt-tooltip")).toBeNull();
-    await userEvent.unhover(shut);
+    await userEvent.unhover(shut());
     await userEvent.hover(screen.getByRole("link", { name: "Subjects" }));
     // No tooltip is the check, so nothing to wait for: the tooltip's own timer, set first and
     // shorter than this pause, has fired and its render has run by the end of the pause.
