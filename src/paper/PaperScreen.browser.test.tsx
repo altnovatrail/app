@@ -155,6 +155,10 @@ async function pagePhoto(): Promise<File> {
  */
 const SLOW = { timeout: 15_000 };
 
+// A test waits for the photo, then the crops, each up to SLOW, before what it checks: the default
+// 15 s for the whole test is no more than one of those waits, which a busy runner outlasted.
+vi.setConfig({ testTimeout: 3 * SLOW.timeout });
+
 /** How many times GetDebug was asked by a screen without the debug right. */
 let debugRefused = 0;
 

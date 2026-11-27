@@ -11,8 +11,8 @@
 // ends. So a press first stops the voice and holds it until the listening ends, and where the
 // browser has nothing to ask first — no `available`, as WebKit — starts the recognition within the
 // press itself. A recognition with no sound NO_AUDIO_MS after its start is put away as one that
-// heard nothing, but only once the browser has the microphone granted: a prompt for it waits for
-// the learner, however long; one whose sound began and gave no words NO_WORDS_MS later, too. Each
+// heard nothing, but only once the browser has the microphone granted, or it gave sound on the page
+// before: a prompt for it waits for the learner, however long; one whose sound began and gave no words NO_WORDS_MS later, too. Each
 // event of a listening goes to the journal of the Debug window.
 import { useEffect, useRef, useState } from "react";
 import { note } from "../debug/journal.ts";
@@ -26,6 +26,24 @@ export const NO_AUDIO_MS = 3000;
  * nothing: long enough for a learner who thinks before speaking.
  */
 export const NO_WORDS_MS = 10_000;
+
+/**
+ * What the page has learnt of the microphone, kept past a field that goes and comes: whether it
+ * has given sound once — then it is granted, whatever the browser says of it —, and when the last
+ * listening ended.
+ */
+const page: { sounded: boolean; lastEnd: number | undefined; listenings: number } = {
+  sounded: false,
+  lastEnd: undefined,
+  listenings: 0,
+};
+
+/** Forgets what the page learnt of the microphone: for the tests, each on a page of its own. */
+export function forgetMicrophone(): void {
+  page.sounded = false;
+  page.lastEnd = undefined;
+  page.listenings = 0;
+}
 
 /** The part of the browser's recognition the microphone uses. */
 export interface Recognition {
@@ -114,11 +132,13 @@ export function useDictation({
   const began = useRef(new WeakSet<Recognition>()).current;
   // Whether the browser has the microphone granted: unknown counts as not, so no prompt is cut short.
   const granted = useRef(false);
+  const permission = useRef("not said");
   useEffect(() => {
     let status: PermissionStatus | undefined;
     let gone = false;
     const read = () => {
       granted.current = status?.state === "granted";
+      permission.current = status?.state ?? "not said";
     };
     void (async () => {
       try {
@@ -175,6 +195,7 @@ export function useDictation({
     was.onspeechstart = null;
     was.onaudioend = null;
     was.abort();
+    page.lastEnd = performance.now();
     setListening(false);
   };
   // The field going off or on, and the unmount, put the listening away.
@@ -185,6 +206,7 @@ export function useDictation({
     unwatch();
     unhold();
     live.current = undefined;
+    page.lastEnd = performance.now();
     setListening(false);
     callbacks.current.onEnd(heard);
   };
@@ -201,6 +223,7 @@ export function useDictation({
     let results = 0;
     let empty = 0;
     recognition.onaudiostart = () => {
+      page.sounded = true;
       note("info", "app", "dictation: sound began");
       watch(
         recognition,
@@ -257,11 +280,22 @@ export function useDictation({
       note(
         "info",
         "app",
-        `dictation: started in ${language}${local ? " on the device" : ""}`,
-        voiced === "" ? "" : `the voice was ${voiced}: stopped first`,
+        // Its number keeps each start a line of its own: the journal folds a line said again soon
+        // into the first, and its detail with it.
+        `dictation: started in ${language}${local ? " on the device" : ""}, listening ${++page.listenings}`,
+        [
+          voiced === "" ? "" : `the voice was ${voiced}: stopped first`,
+          `microphone: ${permission.current}${page.sounded ? ", gave sound before" : ""}`,
+          page.lastEnd === undefined
+            ? "the first listening of the page"
+            : `${((performance.now() - page.lastEnd) / 1000).toFixed(1)} s after the last listening`,
+        ]
+          .filter((line) => line !== "")
+          .join("\n"),
       );
-      // Set before the start, so that a sound the start reports at once clears it.
-      if (granted.current)
+      // Set before the start, so that a sound the start reports at once clears it. A microphone that
+      // gave sound on this page is granted, whatever the browser says: Chrome on an iPad never says.
+      if (granted.current || page.sounded)
         watch(recognition, NO_AUDIO_MS, `dictation: no sound in ${NO_AUDIO_MS} ms — put away`);
       try {
         recognition.start();

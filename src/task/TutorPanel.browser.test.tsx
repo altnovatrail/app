@@ -5,7 +5,7 @@
 // and its microphone by a fake of the browser's recognition.
 import "@altnovatrail/canvas";
 import type * as open from "@altnovatrail/spec/formatv0/open";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import { useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { page, userEvent } from "vitest/browser";
@@ -336,10 +336,11 @@ const field = () => screen.getByRole("textbox", { name: "Your question about the
 
 /**
  * A press of the microphone whose sound never comes, the browser saying the microphone is
- * `state`, read before the press; `then` runs on the page's own timers, faked.
+ * `state`, read before the press; `then` runs on the page's own timers, faked. `page` keeps what the
+ * page learnt of the microphone before, a field gone and come again.
  */
-async function deafPress(state: PermissionState, then: () => void) {
-  withRecognition(true);
+async function deafPress(state: PermissionState, then: () => void, page: "new" | "kept" = "new") {
+  if (page === "new") withRecognition(true);
   FakeRecognition.deaf = true;
   const query = vi.spyOn(navigator.permissions, "query").mockResolvedValue({
     state,
@@ -457,7 +458,7 @@ describe("the field of the tutor's panel", () => {
     expect(cancel).toHaveBeenCalled();
     cancel.mockRestore();
     flush();
-    expect(snapshot().some((e) => e.text === "dictation: started in en-GB")).toBe(true);
+    expect(snapshot().some((e) => e.text.startsWith("dictation: started in en-GB,"))).toBe(true);
   });
 
   it("puts away a listening whose sound never comes, the microphone granted, as one that heard nothing", async () => {
@@ -475,6 +476,40 @@ describe("the field of the tutor's panel", () => {
     expect(
       snapshot().some((e) => e.level === "warn" && e.text.startsWith("dictation: no sound")),
     ).toBe(true);
+  });
+
+  it("puts away a listening with no sound once the page's microphone gave sound, the field gone and come again", async () => {
+    withRecognition(true);
+    reset();
+    render(inLanguage(<Asking />));
+    await userEvent.click(panel().getByRole("button", { name: "Dictate" }));
+    await expect
+      .poll(() => {
+        flush();
+        return snapshot().some((e) => e.text === "dictation: sound began");
+      })
+      .toBe(true);
+    listening().hear("why");
+    await userEvent.click(panel().getByRole("button", { name: "Stop" }));
+    cleanup();
+    // The browser of an iPad never says the microphone is granted.
+    await deafPress(
+      "prompt",
+      () => {
+        vi.advanceTimersByTime(NO_AUDIO_MS);
+      },
+      "kept",
+    );
+    expect(await panel().findByText("Nothing was heard. Try again, or type.")).toBeVisible();
+    flush();
+    const starts = snapshot().filter((e) => e.text.startsWith("dictation: started in en-GB,"));
+    expect(starts.map((e) => e.detail.split("\n").slice(-2))).toEqual([
+      [expect.stringMatching(/^microphone: [a-z ]+$/), "the first listening of the page"],
+      [
+        "microphone: prompt, gave sound before",
+        expect.stringMatching(/^\d+\.\d s after the last listening$/),
+      ],
+    ]);
   });
 
   it("lets a listening wait for its sound while the microphone is not granted yet", async () => {
@@ -542,7 +577,7 @@ describe("the field of the tutor's panel", () => {
     expect(await panel().findByText("Nothing was heard. Try again, or type.")).toBeVisible();
     flush();
     const lines = snapshot();
-    expect(lines.find((e) => e.text === "dictation: started in en-GB")?.detail).toBe(
+    expect(lines.find((e) => e.text.startsWith("dictation: started in en-GB,"))?.detail).toContain(
       "the voice was speaking: stopped first",
     );
     expect(lines.some((e) => e.text === "dictation: speech began")).toBe(true);
@@ -680,7 +715,7 @@ describe("the field of the tutor's panel", () => {
     expect(field()).toHaveValue("why");
     flush();
     const lines = snapshot();
-    expect(lines.find((e) => e.text === "dictation: started in en-GB")?.detail).toBe(
+    expect(lines.find((e) => e.text.startsWith("dictation: started in en-GB,"))?.detail).toContain(
       "the voice was waiting to speak: stopped first",
     );
     expect(lines.some((e) => e.text === "dictation: ended, 2 results, 1 with no word, heard")).toBe(
