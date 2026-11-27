@@ -1,7 +1,7 @@
 // The browser's recognition of speech in a test: a fake that hears what the test says it hears,
 // put in the place of the browser's own — Chromium and WebKit have one, Firefox none —, or none.
 import { vi } from "vitest";
-import type { Recognition, RecognitionEvent } from "../voice/dictation.ts";
+import { forgetMicrophone, type Recognition, type RecognitionEvent } from "../voice/dictation.ts";
 
 export class FakeRecognition implements Recognition {
   /** The recognitions made, the last one the one listening. */
@@ -64,6 +64,7 @@ export class SlowRecognition extends FakeRecognition {
  * device; false to take the browser's away.
  */
 export function withRecognition(fake: boolean | "local" | "slow"): void {
+  forgetMicrophone();
   FakeRecognition.made = [];
   FakeRecognition.deaf = false;
   FakeRecognition.refuses = false;

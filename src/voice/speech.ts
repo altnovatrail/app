@@ -8,6 +8,7 @@
 // `speak()` called within a user's press, and says nothing otherwise. The list of voices is read
 // when it starts and again on `voiceschanged`. A failure of the synthesis is silent: the text is on
 // the screen.
+import { note } from "../debug/journal.ts";
 import { sentencesOf, spokenText } from "./spoken.ts";
 import type { Phrase } from "./texts.ts";
 import {
@@ -164,6 +165,11 @@ export class Speech {
       return goingOn ? token : undefined;
     }
     this.#set(token, (goingOn ? this.#left : 0) + utterances.length);
+    note(
+      "info",
+      "app",
+      `voice: says ${utterances.length} ${utterances.length === 1 ? "sentence" : "sentences"}`,
+    );
     for (const utterance of utterances) {
       const ended = () => {
         if (this.#current !== token) return;
@@ -192,6 +198,7 @@ export class Speech {
     this.#cancel(synth);
     this.#set(undefined, 0);
     try {
+      note("info", "app", "voice: marks a press");
       synth.speak(this.#utterance(""));
     } catch {
       // Silent, as every failure of the synthesis.
