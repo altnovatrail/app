@@ -14,7 +14,7 @@ import type { Api } from "../api/client.ts";
 import { Offline } from "../boot/Screens.tsx";
 import { LanguageButtons } from "../i18n/LanguageButtons.tsx";
 import { HomeScreen } from "../subjects/MySubjects.tsx";
-import { axeViolations } from "../test/a11y.ts";
+import { settledViolations } from "../test/a11y.ts";
 import { memoryDevice } from "../test/device.ts";
 import { inLanguage } from "../test/language.tsx";
 import { ReportProblem } from "../tutor/ReportProblem.tsx";
@@ -49,7 +49,7 @@ describe("forced colours", () => {
     await userEvent.tab();
     expect(document.activeElement).toBe(button);
     expect(getComputedStyle(button).outlineStyle).toBe("solid");
-    expect(await axeViolations()).toEqual([]);
+    expect(await settledViolations()).toEqual([]);
   });
 
   it("keep the fields and choices of a profile's page in the system's colours", async () => {
@@ -73,7 +73,7 @@ describe("forced colours", () => {
     const track = getComputedStyle(document.querySelector(".nt-set-switch") as Element);
     expect(track.forcedColorAdjust).toBe("none");
     expect(track.boxShadow).not.toBe("none");
-    expect(await axeViolations()).toEqual([]);
+    expect(await settledViolations()).toEqual([]);
   });
 
   it("keep the text and the kinds of a report in the system's colours, its border too", async () => {
@@ -94,7 +94,7 @@ describe("forced colours", () => {
     expect(getComputedStyle(text).borderTopStyle).toBe("solid");
     const radio = page.getByRole("radio", { name: "Wrong" }).element() as HTMLElement;
     expect(getComputedStyle(radio).forcedColorAdjust).toBe("auto");
-    expect(await axeViolations()).toEqual([]);
+    expect(await settledViolations()).toEqual([]);
   });
 
   it("draw a button that is aria-disabled in GrayText, as one that is disabled", () => {

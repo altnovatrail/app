@@ -78,7 +78,13 @@ import type { SkillCounts } from "../subjects/states.ts";
 import { NO_VERDICTS, verdictsOf } from "../task/attempt.ts";
 import { initialState } from "../task/steps.ts";
 import { TaskScreen, type TaskScreenProps } from "../task/TaskScreen.tsx";
-import { axeViolations, captionlessOffList, overflows, smallTargets } from "../test/a11y.ts";
+import {
+  axeViolations,
+  captionlessOffList,
+  overflows,
+  settledViolations,
+  smallTargets,
+} from "../test/a11y.ts";
 import { memoryDevice } from "../test/device.ts";
 import { inLanguage } from "../test/language.tsx";
 import { PSEUDO } from "../test/pseudo.ts";
@@ -1498,7 +1504,7 @@ describe.each(LANGUAGES)("the screens in %s", (_, language, words) => {
         // Two frames for what measures itself on a resize: the canvas's row of a worked example
         // takes its width from the element by a ResizeObserver.
         for (let frame = 0; frame < 2; frame++) await new Promise(requestAnimationFrame);
-        expect(await axeViolations(), `axe at ${width} px`).toEqual([]);
+        expect(await settledViolations(), `axe at ${width} px`).toEqual([]);
         expect(smallTargets(), `targets at ${width} px`).toEqual([]);
         expect(overflows(), `layout at ${width} px`).toEqual([]);
       }

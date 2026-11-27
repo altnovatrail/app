@@ -26,6 +26,8 @@ it("lets a screen that speaks as it draws show the log, and stops", async () => 
       <Loud />
     </StrictMode>,
   );
+  // That a burst of notes draws the window again only once a round of news is the check: a count
+  // over a fixed span, which only a pause gives.
   await new Promise((later) => setTimeout(later, 10 * journal.NEWS_MS));
   expect(draws).toBeLessThan(10);
   journal.note("info", "app", "news");

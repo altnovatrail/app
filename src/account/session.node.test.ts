@@ -259,6 +259,7 @@ describe("the session", () => {
     service.set("uid-2");
     await settled(session, "choose");
     release();
+    // The stale answer changes nothing: a pause for it to land, not a wait for a change.
     await new Promise((resolve) => setTimeout(resolve, 10));
     expect((session.snapshot() as { account: { accountId: string } }).account.accountId).toBe(
       "account-2",
@@ -420,6 +421,7 @@ describe("the session", () => {
     await vi.waitFor(() => expect(first).toBe(false));
     session.stop();
     release();
+    // Stopped, the session moves no further: a pause for the answer to land, not a wait.
     await new Promise((resolve) => setTimeout(resolve, 10));
     expect(session.snapshot().step).toBe("loading");
     expect(checks.start).not.toHaveBeenCalled();

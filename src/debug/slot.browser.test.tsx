@@ -50,6 +50,8 @@ function renderSlot(getDebug: () => Promise<object>) {
   return { container, stale, asked: () => asked };
 }
 
+// What a slot must not do — load a window, ask again — shows only as nothing: a pause after the
+// question, not a wait for a change, which would pass at once.
 const settled = () => new Promise((later) => setTimeout(later, 50));
 
 // The slot unmounted first, so that the gate forgotten makes it ask nothing more.
@@ -67,6 +69,7 @@ describe("the debug slot", () => {
     const { container, stale, asked } = renderSlot(async () => {
       throw new ConnectError("refused", code);
     });
+    await vi.waitFor(() => expect(asked()).toBe(1));
     await settled();
     expect(asked()).toBe(1);
     expect(container).toBeEmptyDOMElement();
@@ -81,6 +84,7 @@ describe("the debug slot", () => {
       await answer;
       return {};
     });
+    await vi.waitFor(() => expect(asked()).toBe(1));
     await settled();
     expect(asked()).toBe(1);
     expect(chunk.loaded).toBe(0);

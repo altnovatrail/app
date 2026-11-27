@@ -170,9 +170,11 @@ afterEach(() => {
 
 describe("the debug button", () => {
   it("shows nothing without the mode, and opens and closes its window, the focus going back", async () => {
+    let asked = 0;
     const api = routedApi((router) => {
       router.service(DebugService, {
         getDebug: () => {
+          asked += 1;
           throw new ConnectError("no flag", Code.Unimplemented);
         },
       });
@@ -182,6 +184,8 @@ describe("the debug button", () => {
         <DebugButton />
       </ApiProvider>,
     );
+    await vi.waitFor(() => expect(asked).toBe(1));
+    // That the refusal draws nothing is the check, so a pause for it to land, not a wait.
     await new Promise((later) => setTimeout(later, 50));
     expect(container).toBeEmptyDOMElement();
     reset();

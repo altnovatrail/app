@@ -48,6 +48,23 @@ export async function axeViolations(root: Element = document.body): Promise<stri
   );
 }
 
+/**
+ * axe's word once a screen's colours have settled: asked again a frame apart, each run awaited
+ * whole, until two runs in a row say the same or `within` ms have gone, then the last word. A
+ * colour still settling in a loaded WebKit reads as a violation for a moment, and a clean first
+ * run may still be a colour on its way to a wrong one; a settled screen says the same twice.
+ */
+export async function settledViolations(within = 3000): Promise<string[]> {
+  const until = performance.now() + within;
+  let last = await axeViolations();
+  for (;;) {
+    await new Promise(requestAnimationFrame);
+    const found = await axeViolations();
+    if (found.join("\n") === last.join("\n") || performance.now() >= until) return found;
+    last = found;
+  }
+}
+
 const TARGETS = "button, a[href], input, select, textarea, [role='button'], [tabindex='0']";
 /** The least a target is across and down, CSS px (2.5.5 Target Size (Enhanced)). */
 export const TARGET_PX = 44;

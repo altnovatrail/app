@@ -65,6 +65,7 @@ describe("the solution", () => {
     shown.unmount();
     const revoke = vi.spyOn(URL, "revokeObjectURL");
     answer(new Blob([new Uint8Array([1])]));
+    // That nothing happens is the check, so a pause, not a wait for a change: one would pass at once.
     await new Promise((resolve) => setTimeout(resolve, 20));
     expect(revoke).not.toHaveBeenCalled();
   });

@@ -497,6 +497,7 @@ describe("Boot and the storage", () => {
     await screen.findByRole("heading", { name: "The data on this device can't be read" });
     const open = vi.spyOn(backend, "open");
     act(() => backend.closeAll(REGISTRY));
+    // That nothing happens is the check, so a pause, not a wait for a change: one would pass at once.
     await new Promise((resolve) => setTimeout(resolve, 50));
     expect(open).not.toHaveBeenCalled();
   });
@@ -637,6 +638,7 @@ describe("Boot and the device's language", () => {
     const [mine, theirs] = screen.getAllByRole("button", { name: "Русский" });
     await userEvent.click(mine as HTMLElement);
     expect(mine?.getAttribute("aria-pressed")).toBe("true");
+    // That the other tab's switch stays as it was is the check: a pause, not a wait for a change.
     await new Promise((resolve) => setTimeout(resolve, 100));
     expect(theirs?.getAttribute("aria-pressed")).toBe("false");
     other.remove();

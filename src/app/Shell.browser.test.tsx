@@ -104,8 +104,9 @@ describe("the frame of Home", () => {
     const tutor = screen.getByRole("button", { name: "Tutor" });
     expect(tutor).toHaveAttribute("aria-disabled", "true");
     await userEvent.hover(tutor);
-    await new Promise((done) => setTimeout(done, TIP_DELAY_MS + 100));
-    expect(document.querySelector(".nt-tooltip")?.textContent).toBe("Tutor — comes later");
+    await expect
+      .poll(() => document.querySelector(".nt-tooltip")?.textContent)
+      .toBe("Tutor — comes later");
     await userEvent.click(tutor, { force: true });
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(window.location.hash).not.toBe(formatHash(TASK));
@@ -163,9 +164,7 @@ describe("the frame of Home", () => {
     renderBar();
     const subjects = screen.getByRole("link", { name: "Subjects" });
     await userEvent.hover(subjects);
-    await new Promise((done) => setTimeout(done, TIP_DELAY_MS + 100));
-    const tip = document.querySelector(".nt-tooltip");
-    expect(tip?.textContent).toBe("Subjects");
+    await expect.poll(() => document.querySelector(".nt-tooltip")?.textContent).toBe("Subjects");
     await userEvent.unhover(subjects);
     await expect.poll(() => document.querySelector(".nt-tooltip")).toBeNull();
 
@@ -173,12 +172,15 @@ describe("the frame of Home", () => {
     await page.viewport(1300, 768);
     const shut = screen.getByRole("button", { name: "Cognitive map Soon" });
     await userEvent.hover(shut);
-    await new Promise((done) => setTimeout(done, TIP_DELAY_MS + 100));
-    expect(document.querySelector(".nt-tooltip")?.textContent).toBe("Cognitive map — comes later");
+    await expect
+      .poll(() => document.querySelector(".nt-tooltip")?.textContent)
+      .toBe("Cognitive map — comes later");
     await userEvent.keyboard("{Escape}");
     await expect.poll(() => document.querySelector(".nt-tooltip")).toBeNull();
     await userEvent.unhover(shut);
     await userEvent.hover(screen.getByRole("link", { name: "Subjects" }));
+    // No tooltip is the check, so nothing to wait for: the tooltip's own timer, set first and
+    // shorter than this pause, has fired and its render has run by the end of the pause.
     await new Promise((done) => setTimeout(done, TIP_DELAY_MS + 100));
     expect(document.querySelector(".nt-tooltip")).toBeNull();
   });

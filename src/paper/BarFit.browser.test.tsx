@@ -78,6 +78,8 @@ it("keeps its words on an iPad in landscape, the title unseen, and shows no tool
     width(screen.getByRole("heading", { level: 1, name: "Задачи на странице" })),
   ).toBeLessThanOrEqual(1);
   await userEvent.hover(retake);
+  // No tooltip is the check: its own timer, set first and shorter than this pause, has fired and
+  // its render has run by the end of it.
   await new Promise((done) => setTimeout(done, 600));
   expect(tooltip()).toBeUndefined();
 });
