@@ -16,7 +16,7 @@
 // event of a listening goes to the journal of the Debug window.
 import { useEffect, useRef, useState } from "react";
 import { note } from "../debug/journal.ts";
-import { listeningMode } from "./listening.ts";
+import { type Listening, listeningMode } from "./listening.ts";
 import { useSpeech } from "./VoicingContext.tsx";
 
 /** How long a started recognition may go with no sound before it counts as one that heard nothing. */
@@ -131,6 +131,11 @@ export function useDictation({
   const quiet = useRef<(() => number) | undefined>(undefined);
   // The recognitions started: one is asked whether it can recognise on the device first.
   const began = useRef(new WeakSet<Recognition>()).current;
+  // The recognitions that came after a word: never stopped nor aborted, only let go.
+  const gentle = useRef(new WeakSet<Recognition>()).current;
+  // The number of the listening under way, and whether it has given a word yet.
+  const number = useRef(0);
+  const heardNow = useRef(false);
   // Whether the browser has the microphone granted: unknown counts as not, so no prompt is cut short.
   const granted = useRef(false);
   const permission = useRef("not said");
@@ -170,7 +175,7 @@ export function useDictation({
       note(
         "info",
         "app",
-        `dictation: the voice kept quiet ${kept} ${kept === 1 ? "time" : "times"} while it listened`,
+        `dictation ${number.current}: the voice kept quiet ${kept} ${kept === 1 ? "time" : "times"} while it listened`,
       );
   };
   /** Puts `recognition` away as one that heard nothing `ms` from now, unless watched again. */
@@ -195,7 +200,8 @@ export function useDictation({
     was.onaudiostart = null;
     was.onspeechstart = null;
     was.onaudioend = null;
-    was.abort();
+    // A listening that came after a word is never cut: WebKit then gives the next one no word.
+    if (!gentle.has(was)) was.abort();
     page.lastEnd = performance.now();
     setListening(false);
   };
@@ -219,32 +225,31 @@ export function useDictation({
     recognition.lang = language;
     recognition.interimResults = true;
     // It listens until Stop, through the learner's pauses; or, as the Debug window chose, till the
-    // browser hears a pause.
+    // browser hears a pause, a word said first.
     const mode = listeningMode();
     recognition.continuous = mode === "stop";
+    if (mode === "voice") gentle.add(recognition);
+    // Each line of a listening carries its number: the journal folds a line said again soon into
+    // the first, and its detail with it.
+    const n = ++page.listenings;
+    number.current = n;
+    const tag = `dictation ${n}`;
+    heardNow.current = false;
     let heard = false;
     let results = 0;
     let empty = 0;
     recognition.onaudiostart = () => {
       page.sounded = true;
-      note("info", "app", "dictation: sound began");
-      watch(
-        recognition,
-        NO_WORDS_MS,
-        `dictation: no words in ${NO_WORDS_MS} ms of sound — put away`,
-      );
+      note("info", "app", `${tag}: sound began`);
+      watch(recognition, NO_WORDS_MS, `${tag}: no words in ${NO_WORDS_MS} ms of sound — put away`);
     };
     // Speech, with or without the sound's event before it, gives the words their time again.
     recognition.onspeechstart = () => {
-      note("info", "app", "dictation: speech began");
-      watch(
-        recognition,
-        NO_WORDS_MS,
-        `dictation: no words in ${NO_WORDS_MS} ms of speech — put away`,
-      );
+      note("info", "app", `${tag}: speech began`);
+      watch(recognition, NO_WORDS_MS, `${tag}: no words in ${NO_WORDS_MS} ms of speech — put away`);
     };
     recognition.onaudioend = () => {
-      note("info", "app", "dictation: sound ended");
+      note("info", "app", `${tag}: sound ended`);
     };
     // A result with no word leaves the watch on: WebKit gives one where it hears sound and no word.
     recognition.onresult = (event) => {
@@ -252,22 +257,23 @@ export function useDictation({
       const text = heardOf(event);
       if (text === "") {
         empty += 1;
-        if (empty === 1) note("info", "app", "dictation: a result with no word");
+        if (empty === 1) note("info", "app", `${tag}: a result with no word`);
         return;
       }
       unwatch();
       heard = true;
+      heardNow.current = true;
       callbacks.current.onText(text);
     };
     recognition.onerror = (event) => {
       const { error = "", message = "" } = event as Event & { error?: string; message?: string };
-      note("warn", "app", `dictation: the browser refused — ${error || "no code"}`, message);
+      note("warn", "app", `${tag}: the browser refused — ${error || "no code"}`, message);
     };
     recognition.onend = () => {
       note(
         "info",
         "app",
-        `dictation: ended, ${results} results, ${empty} with no word, ${heard ? "heard" : "nothing heard"}`,
+        `${tag}: ended, ${results} results, ${empty} with no word, ${heard ? "heard" : "nothing heard"}`,
       );
       ended(recognition, heard);
     };
@@ -283,9 +289,7 @@ export function useDictation({
       note(
         "info",
         "app",
-        // Its number keeps each start a line of its own: the journal folds a line said again soon
-        // into the first, and its detail with it.
-        `dictation: started in ${language}${local ? " on the device" : ""}, listening ${++page.listenings}${mode === "pause" ? ", till a pause" : ""}`,
+        `${tag}: started in ${language}${local ? " on the device" : ""}${WAY_LINES[mode]}`,
         [
           voiced === "" ? "" : `the voice was ${voiced}: stopped first`,
           `microphone: ${permission.current}${page.sounded ? ", gave sound before" : ""}`,
@@ -299,25 +303,35 @@ export function useDictation({
       // Set before the start, so that a sound the start reports at once clears it. A microphone that
       // gave sound on this page is granted, whatever the browser says: Chrome on an iPad never says.
       if (granted.current || page.sounded)
-        watch(recognition, NO_AUDIO_MS, `dictation: no sound in ${NO_AUDIO_MS} ms — put away`);
+        watch(recognition, NO_AUDIO_MS, `${tag}: no sound in ${NO_AUDIO_MS} ms — put away`);
       try {
         recognition.start();
       } catch (reason) {
         // Started already elsewhere, or refused at once: nothing was heard.
-        note("warn", "app", "dictation: the browser refused to start", String(reason));
+        note("warn", "app", `${tag}: the browser refused to start`, String(reason));
         ended(recognition, false);
         return;
       }
     };
-    if (Class.available === undefined) begin(false);
-    else void onDevice(Class, language).then(begin);
+    const go = (local: boolean) =>
+      mode === "voice" ? afterWord(language, () => begin(local)) : begin(local);
+    if (Class.available === undefined) go(false);
+    else void onDevice(Class, language).then(go);
   };
   const stop = () => {
     const now = live.current;
     if (now === undefined) return;
-    // Stop before it began: it ends with nothing heard.
+    // Stop before it began: it ends with nothing heard, and the word before it is cut short.
     if (!began.has(now)) {
+      if (gentle.has(now)) speech.stop();
       ended(now, false);
+      return;
+    }
+    // A listening that came after a word is let go, not stopped: it ends by itself at a pause.
+    if (gentle.has(now)) {
+      const heard = heardNow.current;
+      put();
+      callbacks.current.onEnd(heard);
       return;
     }
     // The learner is done speaking: the voice may speak again while the last words come.
@@ -325,6 +339,45 @@ export function useDictation({
     now.stop();
   };
   return { available: Class !== undefined, listening, start, stop };
+}
+
+/** What the start's line says of the way of listening. */
+const WAY_LINES: Readonly<Record<Listening, string>> = {
+  stop: "",
+  pause: ", till a pause",
+  voice: ", a word first",
+};
+
+/** The word said before a listening, by the language's primary tag; English where none is. */
+const WORDS: Readonly<Record<string, string>> = { ru: "Я слушаю", en: "I'm listening" };
+
+/** The longest the word before a listening may take before the listening starts all the same. */
+export const WORD_MOST_MS = 4000;
+
+/**
+ * Says a short word, and calls `then` at its end: WebKit on an iPad of version 27 gives words to
+ * a later listening of the page only when the synthesis spoke right before it, and the listening
+ * is never cut by `stop()` or `abort()` — what users of the device found, WebKit having no fix.
+ * `then` comes once, at the word's end, its failure, or `WORD_MOST_MS`, whichever is first.
+ */
+export function afterWord(language: string, then: () => void): void {
+  let done = false;
+  const go = () => {
+    if (done) return;
+    done = true;
+    clearTimeout(late);
+    then();
+  };
+  const late = setTimeout(go, WORD_MOST_MS);
+  try {
+    const utterance = new SpeechSynthesisUtterance(WORDS[language.split("-")[0] ?? ""] ?? WORDS.en);
+    utterance.lang = language;
+    utterance.onend = go;
+    utterance.onerror = go;
+    globalThis.speechSynthesis.speak(utterance);
+  } catch {
+    go();
+  }
 }
 
 /** What the browser's synthesis is about now: "speaking", "waiting to speak", or "" for nothing. */

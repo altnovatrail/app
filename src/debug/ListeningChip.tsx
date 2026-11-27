@@ -5,6 +5,7 @@ import { type Listening, listeningMode, setListeningMode } from "../voice/listen
 const WAYS: readonly { readonly mode: Listening; readonly name: string }[] = [
   { mode: "stop", name: "Till Stop" },
   { mode: "pause", name: "Till a pause" },
+  { mode: "voice", name: "A word first" },
 ];
 
 export function ListeningChip() {

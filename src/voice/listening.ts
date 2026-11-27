@@ -4,14 +4,15 @@
 // developers suspect; the choice lets the device try either without a release. It is the device's
 // own: a storage that refuses leaves the listening till Stop.
 
-/** Till Stop, through the pauses; or till the browser hears a pause. */
-export type Listening = "stop" | "pause";
+/** Till Stop, through the pauses; till the browser hears a pause; or so, a word said first. */
+export type Listening = "stop" | "pause" | "voice";
 
 const KEY = "novatrail.debug.listening";
 
 export function listeningMode(): Listening {
   try {
-    return globalThis.localStorage?.getItem(KEY) === "pause" ? "pause" : "stop";
+    const kept = globalThis.localStorage?.getItem(KEY);
+    return kept === "pause" || kept === "voice" ? kept : "stop";
   } catch {
     return "stop";
   }

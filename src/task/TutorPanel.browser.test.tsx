@@ -19,7 +19,7 @@ import {
   withRecognition,
 } from "../test/recognition.ts";
 import { fakeSpeech, voice } from "../test/speech.ts";
-import { NO_AUDIO_MS, NO_WORDS_MS } from "../voice/dictation.ts";
+import { NO_AUDIO_MS, NO_WORDS_MS, WORD_MOST_MS } from "../voice/dictation.ts";
 import { setListeningMode } from "../voice/listening.ts";
 import { SpeechProvider } from "../voice/VoicingContext.tsx";
 import { NO_VERDICTS, type Verdicts, verdictsOf } from "./attempt.ts";
@@ -335,6 +335,11 @@ function Asking({ microphone = true, max = 500 }: { microphone?: boolean; max?: 
 
 const field = () => screen.getByRole("textbox", { name: "Your question about the task" });
 
+/** The journal's lines, each line of a listening without its number. */
+function said() {
+  return snapshot().map((e) => ({ ...e, text: e.text.replace(/^dictation \d+: /, "dictation: ") }));
+}
+
 /**
  * A press of the microphone whose sound never comes, the browser saying the microphone is
  * `state`, read before the press; `then` runs on the page's own timers, faked. `page` keeps what the
@@ -459,7 +464,7 @@ describe("the field of the tutor's panel", () => {
     expect(cancel).toHaveBeenCalled();
     cancel.mockRestore();
     flush();
-    expect(snapshot().some((e) => e.text.startsWith("dictation: started in en-GB,"))).toBe(true);
+    expect(said().some((e) => e.text.startsWith("dictation: started in en-GB"))).toBe(true);
   });
 
   it("puts away a listening whose sound never comes, the microphone granted, as one that heard nothing", async () => {
@@ -474,9 +479,9 @@ describe("the field of the tutor's panel", () => {
     expect(panel().queryByText("Listening…")).toBeNull();
     expect(panel().getByRole("button", { name: "Dictate" })).toBeVisible();
     flush();
-    expect(
-      snapshot().some((e) => e.level === "warn" && e.text.startsWith("dictation: no sound")),
-    ).toBe(true);
+    expect(said().some((e) => e.level === "warn" && e.text.startsWith("dictation: no sound"))).toBe(
+      true,
+    );
   });
 
   it("puts away a listening with no sound once the page's microphone gave sound, the field gone and come again", async () => {
@@ -487,7 +492,7 @@ describe("the field of the tutor's panel", () => {
     await expect
       .poll(() => {
         flush();
-        return snapshot().some((e) => e.text === "dictation: sound began");
+        return said().some((e) => e.text === "dictation: sound began");
       })
       .toBe(true);
     listening().hear("why");
@@ -503,7 +508,7 @@ describe("the field of the tutor's panel", () => {
     );
     expect(await panel().findByText("Nothing was heard. Try again, or type.")).toBeVisible();
     flush();
-    const starts = snapshot().filter((e) => e.text.startsWith("dictation: started in en-GB,"));
+    const starts = said().filter((e) => e.text.startsWith("dictation: started in en-GB"));
     expect(starts.map((e) => e.detail.split("\n").slice(-2))).toEqual([
       [expect.stringMatching(/^microphone: [a-z ]+$/), "the first listening of the page"],
       [
@@ -531,9 +536,9 @@ describe("the field of the tutor's panel", () => {
     recognition.onend?.();
     expect(await panel().findByText("Nothing was heard. Try again, or type.")).toBeVisible();
     flush();
-    expect(
-      snapshot().some((e) => e.text === "dictation: the browser refused — audio-capture"),
-    ).toBe(true);
+    expect(said().some((e) => e.text === "dictation: the browser refused — audio-capture")).toBe(
+      true,
+    );
   });
 
   it("ends a start the browser refuses at once as one that heard nothing, and says so", async () => {
@@ -545,7 +550,7 @@ describe("the field of the tutor's panel", () => {
     expect(await panel().findByText("Nothing was heard. Try again, or type.")).toBeVisible();
     expect(panel().getByRole("button", { name: "Dictate" })).toBeVisible();
     flush();
-    expect(snapshot().some((e) => e.text === "dictation: the browser refused to start")).toBe(true);
+    expect(said().some((e) => e.text === "dictation: the browser refused to start")).toBe(true);
   });
 
   it("ends a Stop before the browser answered about the device, and starts nothing after", async () => {
@@ -577,8 +582,8 @@ describe("the field of the tutor's panel", () => {
     recognition.onend?.();
     expect(await panel().findByText("Nothing was heard. Try again, or type.")).toBeVisible();
     flush();
-    const lines = snapshot();
-    expect(lines.find((e) => e.text.startsWith("dictation: started in en-GB,"))?.detail).toContain(
+    const lines = said();
+    expect(lines.find((e) => e.text.startsWith("dictation: started in en-GB"))?.detail).toContain(
       "the voice was speaking: stopped first",
     );
     expect(lines.some((e) => e.text === "dictation: speech began")).toBe(true);
@@ -609,9 +614,7 @@ describe("the field of the tutor's panel", () => {
     expect(texts()).toEqual(["Hello."]);
     flush();
     expect(
-      snapshot().some(
-        (e) => e.text === "dictation: the voice kept quiet 2 times while it listened",
-      ),
+      said().some((e) => e.text === "dictation: the voice kept quiet 2 times while it listened"),
     ).toBe(true);
   });
 
@@ -633,7 +636,7 @@ describe("the field of the tutor's panel", () => {
     expect(await panel().findByText("Nothing was heard. Try again, or type.")).toBeVisible();
     flush();
     expect(
-      snapshot().some((e) => e.level === "warn" && e.text.startsWith("dictation: no words in")),
+      said().some((e) => e.level === "warn" && e.text.startsWith("dictation: no words in")),
     ).toBe(true);
   });
 
@@ -678,7 +681,7 @@ describe("the field of the tutor's panel", () => {
     }
     expect(await panel().findByText("Nothing was heard. Try again, or type.")).toBeVisible();
     flush();
-    return snapshot().map((e) => e.text);
+    return said().map((e) => e.text);
   }
 
   it("gives speech that begins late its own time for words, and puts it away once that is gone", async () => {
@@ -711,8 +714,76 @@ describe("the field of the tutor's panel", () => {
       await userEvent.click(panel().getByRole("button", { name: "Dictate" }));
       expect(listening().continuous).toBe(false);
       flush();
-      expect(snapshot().some((e) => e.text.endsWith(", listening 1, till a pause"))).toBe(true);
+      expect(snapshot().some((e) => e.text === "dictation 1: started in en-GB, till a pause")).toBe(
+        true,
+      );
     } finally {
+      setListeningMode("stop");
+    }
+  });
+
+  it("says a word first where the Debug window chose it, listens after its end, and lets it go at Stop", async () => {
+    withRecognition(true);
+    reset();
+    setListeningMode("voice");
+    const spoken: string[] = [];
+    let end: (() => void) | undefined;
+    vi.stubGlobal("speechSynthesis", {
+      speaking: false,
+      pending: false,
+      speak(utterance: SpeechSynthesisUtterance) {
+        spoken.push(utterance.text);
+        end = () => utterance.onend?.(new Event("end") as SpeechSynthesisEvent);
+      },
+      cancel() {},
+      getVoices: () => [],
+      addEventListener() {},
+    });
+    try {
+      render(inLanguage(<Asking />));
+      await userEvent.click(panel().getByRole("button", { name: "Dictate" }));
+      expect(spoken).toEqual(["I'm listening"]);
+      const recognition = listening();
+      expect(recognition.started).toBe(false);
+      end?.();
+      expect(recognition.started).toBe(true);
+      expect(recognition.continuous).toBe(false);
+      const stopped = vi.spyOn(recognition, "stop");
+      const aborted = vi.spyOn(recognition, "abort");
+      recognition.hear("why");
+      await userEvent.click(panel().getByRole("button", { name: "Stop" }));
+      expect(field()).toHaveValue("why");
+      expect(stopped).not.toHaveBeenCalled();
+      expect(aborted).not.toHaveBeenCalled();
+      flush();
+      expect(snapshot().some((e) => e.text === "dictation 1: started in en-GB, a word first")).toBe(
+        true,
+      );
+    } finally {
+      setListeningMode("stop");
+    }
+  });
+
+  it("starts a listening after the word all the same where the word never ends", async () => {
+    withRecognition(true);
+    setListeningMode("voice");
+    vi.stubGlobal("speechSynthesis", {
+      speaking: false,
+      pending: false,
+      speak() {},
+      cancel() {},
+      getVoices: () => [],
+      addEventListener() {},
+    });
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    try {
+      render(inLanguage(<Asking />));
+      await userEvent.click(panel().getByRole("button", { name: "Dictate" }));
+      expect(listening().started).toBe(false);
+      vi.advanceTimersByTime(WORD_MOST_MS);
+      expect(listening().started).toBe(true);
+    } finally {
+      vi.useRealTimers();
       setListeningMode("stop");
     }
   });
@@ -730,8 +801,8 @@ describe("the field of the tutor's panel", () => {
     await userEvent.click(panel().getByRole("button", { name: "Stop" }));
     expect(field()).toHaveValue("why");
     flush();
-    const lines = snapshot();
-    expect(lines.find((e) => e.text.startsWith("dictation: started in en-GB,"))?.detail).toContain(
+    const lines = said();
+    expect(lines.find((e) => e.text.startsWith("dictation: started in en-GB"))?.detail).toContain(
       "the voice was waiting to speak: stopped first",
     );
     expect(lines.some((e) => e.text === "dictation: ended, 2 results, 1 with no word, heard")).toBe(
@@ -761,7 +832,7 @@ describe("the field of the tutor's panel", () => {
     expect(texts()).toEqual(["Hello."]);
     flush();
     expect(
-      snapshot().some((e) => e.text === "dictation: the voice kept quiet 1 time while it listened"),
+      said().some((e) => e.text === "dictation: the voice kept quiet 1 time while it listened"),
     ).toBe(true);
   });
 
