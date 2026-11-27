@@ -15,6 +15,7 @@ export class FakeRecognition implements Recognition {
   onend: (() => void) | null = null;
   onaudiostart: (() => void) | null = null;
   onspeechstart: (() => void) | null = null;
+  onaudioend: (() => void) | null = null;
   started = false;
   /** Set before the press: the recognition starts and no sound ever comes, as on an iPad whose voice holds the audio. */
   static deaf = false;
