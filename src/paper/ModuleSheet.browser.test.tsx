@@ -9,6 +9,7 @@
 import "@altnovatrail/canvas";
 import {
   type AskGrownUpRequest,
+  type AskTutorRequest,
   AttemptService,
   type DoneRequest,
   type GetCorrectAnswerWordsRequest,
@@ -150,6 +151,7 @@ async function renderSheet(setup: Setup = {}) {
   const rungs: GetRungWordsRequest[] = [];
   const corrects: GetCorrectAnswerWordsRequest[] = [];
   const grown: AskGrownUpRequest[] = [];
+  const asked: AskTutorRequest[] = [];
   const essays: SubmitEssayRequest[] = [];
   const dones: DoneRequest[] = [];
   const skills: string[] = [];
@@ -247,6 +249,10 @@ async function renderSheet(setup: Setup = {}) {
         hint: { case: "techniques", value: { techniqueIds: ["count-on"] } },
         leadingQuestion: "Which month is the last one?",
       }),
+      askTutor(request) {
+        asked.push(request);
+        return { words: "Which month comes after November?" };
+      },
       async askGrownUp(request) {
         grown.push(request);
         return { words: "Done: the answer is circled.", strokes: [], erase: [] };
@@ -323,6 +329,7 @@ async function renderSheet(setup: Setup = {}) {
     rungs,
     corrects,
     grown,
+    asked,
     skills,
     fetched,
     attempts,
@@ -601,22 +608,33 @@ it("names the task skill in a pill that opens the choice of it", async () => {
   expect(pill.querySelector(".nt-skill-sign")).toHaveAttribute("data-own", "true");
 });
 
-it("gives the module's own hint, and no question field on its task", async () => {
+it("gives the module's own hint, and no Show the solution", async () => {
   await renderSheet();
   await userEvent.click(row().getByRole("button", { name: "Hint" }));
   expect(await panel().findByText("Which month is the last one?")).toBeVisible();
   expect(panel().getByText("Count on")).toBeVisible();
   expect(panel().getByText("The year begins in January")).toBeVisible();
-  expect(
-    panel().getByText(
-      "Take a hint: the tutor answers with a question, never with the answer. A program checks every answer.",
-    ),
-  ).toBeVisible();
-  expect(panel().queryByRole("textbox", { name: "Your question about the task" })).toBeNull();
   expect(panel().queryByRole("button", { name: /Show the solution/ })).toBeNull();
 });
 
-it("opens the field in grown-up mode, which asks on the module's attempt with the paper's work", async () => {
+it("has the panel of a task from paper, whose field asks on the module's attempt with no work", async () => {
+  const { asked } = await renderSheet();
+  await userEvent.click(row().getByRole("button", { name: "Ask" }));
+  expect(
+    panel().getByText(
+      "Ask about this task by text or voice, or take a hint: the tutor answers with a question, never with the answer. A program checks every answer.",
+    ),
+  ).toBeVisible();
+  const field = panel().getByRole("textbox", { name: "Your question about the task" });
+  await userEvent.type(field, "Where do I start?{Enter}");
+  expect(await panel().findByText("Which month comes after November?")).toBeVisible();
+  expect(asked).toHaveLength(1);
+  expect(asked[0]?.attemptId).toBe("a1");
+  expect(asked[0]?.question).toBe("Where do I start?");
+  expect(asked[0]?.work).toBeUndefined();
+});
+
+it("asks in grown-up mode on the module's attempt with the paper's work", async () => {
   const { grown } = await renderSheet({ adult: true });
   const element = sheet();
   Object.assign(element, {
@@ -625,7 +643,6 @@ it("opens the field in grown-up mode, which asks on the module's attempt with th
   });
   writeOn(element);
   await userEvent.click(row().getByRole("button", { name: "Ask" }));
-  expect(panel().queryByRole("textbox", { name: "Your question about the task" })).toBeNull();
   await userEvent.click(panel().getByRole("button", { name: "Grown-up mode" }));
   const pad = within(await screen.findByRole("dialog", { name: "Grown-up mode" }));
   for (const digit of "5555") await userEvent.click(pad.getByRole("button", { name: digit }));

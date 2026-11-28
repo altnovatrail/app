@@ -1170,10 +1170,8 @@ export const en = {
   /** An essay on the sheet: Check pressed with nothing written. */
   "paper.essay-first": "Write your essay first",
   "paper.essay-first-line": "Write it here with the pen, then Check.",
-  /** A task of a module on the sheet: its name, the tutor's first line, the pill of its task skill. */
+  /** A task of a module on the sheet: its name and the pill of its task skill. */
   "paper.module-task": "Task of the module",
-  "paper.module-hello":
-    "Take a hint: the tutor answers with a question, never with the answer. A program checks every answer.",
   /** The tutor's first line on an essay of a module. */
   "paper.essay-hello":
     "Take a hint, or Check: the tutor gives feedback by the essay's criteria, and never writes it for you.",

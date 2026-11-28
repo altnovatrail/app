@@ -792,8 +792,9 @@ export function Solve({
   };
 
   /**
-   * The learner's own question about the task, by AI with the conversation before it and the work
-   * as it stands, which the Check reads while the attempt keeps no Check of its own. The question
+   * The learner's own question about the task, by AI with the conversation before it, and on a task
+   * from paper the work as it stands, which the Check reads while the attempt keeps no Check of its
+   * own; a task of a module sends no work, which its question does not read. The question
    * stands in the conversation at once; one that brings no answer goes back to the field, and the
    * same question sent again goes with the same key, which gets what was done.
    */
@@ -813,7 +814,7 @@ export function Solve({
     const stopping = stoppableAsk(of);
     void (async () => {
       try {
-        const work = await workNow();
+        const work = module === undefined ? await workNow() : undefined;
         stopping.signal.throwIfAborted();
         const answer = await inAttempt((now) => {
           const same = JSON.stringify([now, question]);
@@ -827,7 +828,7 @@ export function Solve({
                 idempotencyKey: key,
                 question,
                 turns: [...turns],
-                work,
+                ...(work === undefined ? {} : { work }),
                 wordsLanguage: language,
                 ...ai,
               },
@@ -846,7 +847,7 @@ export function Solve({
         }
         remember(of, { learner: false, text: answer.words, line: true });
         if (asked !== epoch.current) return;
-        if (isOpen.current) auto([{ text: answer.words, language }]);
+        if (isOpen.current) auto([{ text: answer.words, language: wordsLanguage }]);
         else setTold(answer.words);
         if (closesAI(read)) setAskNote(outcomeText(read, words));
       } catch (reason) {
@@ -1695,7 +1696,7 @@ export function Solve({
             ? {}
             : {
                 module: {
-                  ask: grown === taskId,
+                  ask: essay === undefined || grown === taskId,
                   ...(hinted === undefined
                     ? {}
                     : {
