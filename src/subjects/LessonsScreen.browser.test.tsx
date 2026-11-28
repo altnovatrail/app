@@ -137,7 +137,9 @@ afterEach(() => {
 describe("the lessons of a module", () => {
   it("lists them in the author's order and groups, each with its state, the tile's marked", async () => {
     show([MATH]);
-    expect(await screen.findByText("In the author's order, top to bottom · 1 of 4 passed"));
+    expect(
+      await screen.findByText("In the author's order, top to bottom · 1 of 4 passed"),
+    ).toBeVisible();
     expect(screen.getByText("Olympiad maths", { selector: "span" })).toHaveAttribute("lang", "en");
     const any = screen.getByRole("region", { name: "Lessons in any order" });
     expect(within(any).getAllByRole("button")).toHaveLength(2);
