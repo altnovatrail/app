@@ -37,6 +37,7 @@ import type { CanvasElement, HistoryEvent } from "@altnovatrail/spec/canvas";
 import type * as open from "@altnovatrail/spec/formatv0/open";
 import type { MessageInitShape } from "@bufbuild/protobuf";
 import { timestampFromDate } from "@bufbuild/protobuf/wkt";
+import { Code, ConnectError } from "@connectrpc/connect";
 import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { page, userEvent } from "vitest/browser";
@@ -119,6 +120,10 @@ interface Setup {
   /** The answer to a submission of an essay. */
   readonly essay?: () => MessageInitShape<typeof SubmitEssayResponseSchema>;
   readonly adult?: boolean;
+  /** The calls api refuses, as unavailable. */
+  readonly refuse?: readonly ("essay" | "done" | "begin" | "skill")[];
+  /** ChooseNext gives a task of the module, not nothing. */
+  readonly chooses?: boolean;
   /** The answer to a Check. */
   readonly answer?: (
     request: SubmitWorkRequest,
@@ -151,6 +156,8 @@ async function renderSheet(setup: Setup = {}) {
   const fetched: string[] = [];
   let taskSkill = "";
   let wrong = 0;
+  const refused = (call: "essay" | "done" | "begin" | "skill") =>
+    setup.refuse?.includes(call) === true;
   const api = routedApi((router) => {
     router.service(WorkService, {
       putWork: (request) => ({ work: { attemptId: request.work?.attemptId ?? "" } }),
@@ -171,10 +178,12 @@ async function renderSheet(setup: Setup = {}) {
       }),
       beginAttempt(request) {
         begun.push(request);
+        if (refused("begin")) throw new ConnectError("a refusal", Code.InvalidArgument);
         return { attempt: { attemptId: `a${begun.length + 1}`, packageDigest: D1 } };
       },
       chooseNext(request) {
         chosen.push(request);
+        if (setup.chooses) return { choice: { kind: ChoiceKind.TASK, choiceId: "choice-3" } };
         return { choice: { kind: ChoiceKind.NOTHING } };
       },
     });
@@ -215,10 +224,12 @@ async function renderSheet(setup: Setup = {}) {
       },
       submitEssay(request) {
         essays.push(request);
+        if (refused("essay")) throw new ConnectError("a refusal", Code.InvalidArgument);
         return setup.essay?.() ?? { end: SubmissionEnd.FEEDBACK, feedback: FEEDBACK };
       },
       done(request) {
         dones.push(request);
+        if (refused("done")) throw new ConnectError("a refusal", Code.InvalidArgument);
         return {
           solved: { criteria: ["Three different first sentences", "One sentence is ringed"] },
           next: { next: { case: "choice", value: { kind: ChoiceKind.TASK, choiceId: "essay-2" } } },
@@ -247,6 +258,7 @@ async function renderSheet(setup: Setup = {}) {
       }),
       setTaskSkill(request) {
         skills.push(request.skill);
+        if (refused("skill")) throw new ConnectError("a refusal", Code.InvalidArgument);
         taskSkill = request.skill;
         return { modules: [{ moduleId: MODULE, packageDigest: D1, taskSkill }] };
       },
@@ -725,4 +737,69 @@ it("opens Done at once on an essay api has a submission of", async () => {
   expect(done).toHaveAttribute("aria-disabled", "false");
   await userEvent.click(done);
   await expect.poll(() => dones.length).toBe(1);
+});
+
+const REFUSED = "This version of the app doesn't know this yet";
+
+it("says why an essay's Check failed, and asks for strokes first on a sheet with none", async () => {
+  const { essays } = await renderSheet({ task: ESSAY, refuse: ["essay"] });
+  await userEvent.click(row().getByRole("button", { name: "Check" }));
+  const card = await screen.findByText("Write it here with the pen, then Check.");
+  expect(
+    within(card.parentElement as HTMLElement).getByText("Write your essay first"),
+  ).toBeVisible();
+  expect(essays).toHaveLength(0);
+  await userEvent.click(screen.getByRole("button", { name: "OK" }));
+  writeOn(sheet());
+  await userEvent.click(row().getByRole("button", { name: "Check" }));
+  await expect.poll(() => essays.length).toBe(1);
+  expect(await screen.findByText(REFUSED)).toBeVisible();
+  expect(row().getByRole("button", { name: "Done" })).toHaveAttribute("aria-disabled", "true");
+});
+
+it("says why Done failed, and keeps Done", async () => {
+  const { dones } = await renderSheet({ task: ESSAY, submissions: 1, refuse: ["done"] });
+  await userEvent.click(row().getByRole("button", { name: "Done" }));
+  await expect.poll(() => dones.length).toBe(1);
+  expect(await screen.findByText(REFUSED)).toBeVisible();
+  expect(row().getByRole("button", { name: "Done" })).toBeVisible();
+});
+
+it("says why Next task failed to begin the engine's task, and why the skill was not kept", async () => {
+  const { chosen, begun, skills } = await renderSheet({
+    chooses: true,
+    refuse: ["begin", "skill"],
+    answer: () => ({
+      solved: {},
+      items: [
+        {
+          verdict: "correct",
+          answerSlots: [
+            { answerSlot: { item: 1, slot: 1 }, verdict: "correct", value: "December" },
+          ],
+        },
+      ],
+    }),
+  });
+  tap(1);
+  await userEvent.click(row().getByRole("button", { name: "Check" }));
+  expect(await screen.findByText("Correct")).toBeVisible();
+  await userEvent.click(row().getByRole("button", { name: "Next task" }));
+  await expect.poll(() => begun.length).toBe(1);
+  expect(chosen).toHaveLength(1);
+  expect(begun[0]?.start).toEqual({ case: "choiceId", value: "choice-3" });
+  const note = await screen.findByText(REFUSED);
+  expect(note).toBeVisible();
+  const pill = await screen.findByRole(
+    "button",
+    { description: "Choose which tasks to solve" },
+    SLOW,
+  );
+  await userEvent.click(pill);
+  const pick = within(screen.getByRole("dialog", { name: "Which tasks to solve?" }));
+  await userEvent.click(pick.getAllByRole("button", { name: "Months" })[0] as HTMLElement);
+  await waitFor(() => expect(skills).toEqual([`${MODULE}/skill/months`]));
+  // The note goes as the choice is asked, and comes back with its refusal.
+  expect(await screen.findByText(REFUSED)).toBeVisible();
+  expect(pill).toHaveTextContent("The tutor picks");
 });
