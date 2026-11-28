@@ -1,8 +1,6 @@
 // What a speaker button reads: the open texts of a module that the learner reads anyway, each
-// a phrase in the module's explanation language — a task's statement with its items,
-// its workbook's lines and the options of its `choice` slots; what a hint gives; the step shown,
-// with its chips and the cards of its techniques; a lesson's explanation; and a worked example's
-// statement, lines and the parts of its demo that are open. Pictures are not read, nor their `alt`:
+// a phrase in the module's explanation language — what a hint gives; a lesson's explanation; and a
+// worked example's statement, lines and the parts of its demo that are open. Pictures are not read, nor their `alt`:
 // a screen reader reads that. No DOM.
 import type * as open from "@altnovatrail/spec/formatv0/open";
 import { BOX } from "./spoken.ts";
@@ -21,7 +19,7 @@ function phrases(texts: readonly (string | undefined)[], language: string | unde
   );
 }
 
-/** A line of a workbook with its boxes, as one text: "7 × □ = 56". */
+/** A line of a worked example with its boxes, as one text: "7 × □ = 56". */
 export function lineText(line: readonly { readonly text?: string }[]): string {
   return line
     .map((part) => part.text ?? ` ${BOX} `)
@@ -33,18 +31,6 @@ export function lineText(line: readonly { readonly text?: string }[]): string {
 /** The texts of a statement's paragraphs, its pictures left out. */
 function paragraphs(parts: readonly open.StatementPart[]): (string | undefined)[] {
   return parts.map((part) => (part.picture === undefined ? part.text : undefined));
-}
-
-/** A task as the learner reads it: its statement, then each item, line or option in order. */
-export function taskPhrases(task: open.Task, language: string | undefined): Phrase[] {
-  const items = task.items.flatMap((item) => {
-    if (item.line !== undefined) return [lineText(item.line)];
-    const options = (item.answer_slots ?? []).flatMap((slot) =>
-      slot.binding === "choice" ? (slot.options ?? []) : [],
-    );
-    return [item.text, ...options];
-  });
-  return phrases([...paragraphs(task.statement), ...items], language);
 }
 
 /** What a hint gives before the first wrong answer: the givens, the unknown, the cards, the question. */
@@ -70,20 +56,6 @@ function cardTexts(
     const technique = catalog?.techniques[id];
     return technique === undefined ? [] : [technique.title, technique.description];
   });
-}
-
-/** The step shown: its title and description, its chips if it gives them, its cards. */
-export function stepPhrases(
-  step: open.Step,
-  chips: readonly string[],
-  techniques: readonly string[],
-  catalog: open.Techniques | undefined,
-  language: string | undefined,
-): Phrase[] {
-  return phrases(
-    [step.title, step.description, ...chips, ...cardTexts(techniques, catalog)],
-    language,
-  );
 }
 
 /** An explanation of a lesson: its paragraphs and the items of its lists, its pictures left out. */

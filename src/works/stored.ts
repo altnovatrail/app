@@ -92,7 +92,7 @@ const epochs = new Map<string, number>();
 const digests = new Map<string, string>();
 
 /** The server keeps no copy of the profile's works that the tab put: as `Sender.forget`. */
-export function forgetPuts(profileId: string): void {
+function forgetPuts(profileId: string): void {
   epochs.set(profileId, (epochs.get(profileId) ?? 0) + 1);
   for (const key of digests.keys()) if (key.startsWith(`${profileId} `)) digests.delete(key);
 }

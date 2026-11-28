@@ -244,7 +244,7 @@ export const en = {
   "accessibility.handwriting-criteria":
     "2.1.1 Keyboard, level A; 2.5.1 Pointer Gestures, level A; 2.5.7 Dragging Movements, level AA",
   "accessibility.handwriting-why":
-    "An answer on the sheet, or in a box of the workbook, is written by hand: with a finger, a stylus or a mouse. It cannot be typed on a keyboard or given with a single tap",
+    "An answer on the sheet is written by hand: with a finger, a stylus or a mouse. It cannot be typed on a keyboard or given with a single tap",
   "accessibility.handwriting-instead":
     "Choosing among options, and everything else in the app, works with a tap and from the keyboard",
   "accessibility.handwriting-when":
@@ -259,15 +259,6 @@ export const en = {
     "A mouse wheel, a trackpad and the arrow keys move the sheet across and down once it has the focus, and the arrow keys move a task from paper by its grip",
   "accessibility.moving-when":
     "There is no date: buttons that move the sheet come back only if the platform decides so",
-  "accessibility.print": "Print in the lines of a workbook",
-  "accessibility.print-criteria": "1.4.12 Text Spacing, level AA",
-  /** Zoom in and Zoom out are the words of the sheet's bar. */
-  "accessibility.print-why":
-    "The printed numbers, words and values in the lines of a workbook lie on the task's page, each in a place fixed on it, so the spacing you set for text does not reach them",
-  "accessibility.print-instead":
-    "The task's statement above the workbook and the rest of the app take your spacing, and Zoom in on the sheet's bar makes the print up to twice as large",
-  "accessibility.print-when":
-    "There is no date: wider spacing comes only once the layout of the page leaves the lines room for it",
   /** Check and Not yet are the words of the task screen, Can't read this its reading's. */
   "accessibility.check": "Sending an answer with Check",
   "accessibility.check-criteria": "3.3.4 Error Prevention (Legal, Financial, Data), level AA",
@@ -434,11 +425,12 @@ export const en = {
   /** A module's kind on Home: the engine leads, or its skills go in a chain. */
   "home.adaptive": "Adaptive",
   "home.sequential": "Sequential",
-  /** The tile of a module's lesson on its card: its eyebrow, and the button that goes on with it. */
+  /** The tile of a module's lesson on its card, its name, and its button, shut while the lessons are remade. */
   "home.lesson": "Lesson",
   "home.continue": "Continue",
-  /** Under the lesson's title: the step to go on with of how many, in the author's order. */
-  "home.lesson-step": "Step {step} of {count} · in the author's order",
+  /** The tile's eyebrow while it is shut, and the line in place of its step. */
+  "home.lesson-soon": "Lesson · Soon",
+  "home.lessons-remade": "The lessons are being remade",
   /** What the row of the lesson leads to, said beside its name: the page of the module's lessons. */
   "home.lessons-all": "Every lesson of {module}",
   /** The tile of a module's tasks: its eyebrow, while the tutor chooses their skill and once the learner has. */
@@ -590,41 +582,15 @@ export const en = {
    * of the last correction.
    */
   "level.set-by-adult": "The level was set by an adult on {date}",
-  /** The heading of the task screen: a task has no title of its own. */
-  "task.title": "Task",
-  /** The name of the group of the two buttons of the mode. */
-  "task.mode": "Mode",
-  "task.by-steps": "Step by step",
-  /** The mode without the steps; in Russian not "сам", which tells the learner's gender. */
-  "task.on-my-own": "On my own",
   /** The name of the panel beside the canvas. */
   "task.tutor": "Tutor",
-  /** The name of an item that has no text of its own, by its place from 1. */
-  "task.item": "Item {n}",
-  /** The name of one of an item's answer slots, by its place from 1. */
-  "task.slot": "Answer {n}",
   /** Sends the work to be checked. */
   "task.check": "Check",
-  /** Beside Check while an answer slot bound choice has no option tapped. */
-  "task.check-locked": "Choose an answer in each item",
-  "task.check-locked-line": "Choose one of the answers, then Check.",
   "task.correct": "Correct",
   /** Not "wrong": the verdict that the learner can still get it. */
   "task.not-yet": "Not yet",
   "task.unreadable": "Can't read this",
   "task.unchecked": "Not checked",
-  /** After a check with items not right yet. */
-  "task.summary-not-yet": plural({
-    one: "Not right yet: {count} item of {total}",
-    other: "Not right yet: {count} items of {total}",
-  }),
-  /** After a check of a workbook with lines not right yet. */
-  "task.summary-lines": plural({
-    one: "Not right yet: {count} line of {total}",
-    other: "Not right yet: {count} lines of {total}",
-  }),
-  /** The heading of the solution, shown once the task is solved. */
-  "task.solution": "Solution",
   /** Begins the same task again: a template may give another instance. */
   "task.again": "Try it again",
   "task.home": "Back to Home",
@@ -645,26 +611,6 @@ export const en = {
   "task.reason-ambiguous": "It can be read two ways",
   "task.reason-no_final_answer": "There is no final answer",
   "task.reason-several_final_answers": "There is more than one final answer",
-  /** Beside Check while the sheet holds no answer. */
-  "task.check-write": "Write an answer on the sheet",
-  "task.check-write-line": "Write it with the pen, then Check.",
-  /** Beside Check while a box of the workbook holds no answer. */
-  "task.check-boxes": "Write an answer in each box",
-  "task.check-boxes-line": "Write it in each box with the pen, then Check.",
-  /** The name of the pill of the mode, which opens its pop-over: the mode shown follows. */
-  "task.mode-open": "Mode: {mode}",
-  /** Under "Step by step" in the pop-over of the mode. */
-  "task.by-steps-line": "The task's steps, one at a time, in the tutor's panel",
-  /** Under "On my own" in the pop-over of the mode: the tutor's panel stays closed until opened. */
-  "task.on-my-own-line": "The tutor waits until called",
-  /** At the foot of the pop-over of the mode: the choice holds for this attempt. */
-  "task.mode-note": "For this task. A grown-up sets which one a task starts with.",
-  /** The button of the row that opens the options of the task's answer slots bound choice. */
-  "task.choose": "Choose an answer",
-  /** The same button's name once the one option is chosen, which it shows. */
-  "task.chosen": "Your answer: {option}. Change it",
-  "task.chosen-judged": "Your answer: {option}, {verdict}. Change it",
-  "task.chosen-over": "Your answer: {option}, {verdict}",
   /** The verdict's card while the work is read and checked. */
   "task.reading": "Reading your work…",
   /** Under "Reading your work…": what goes, and what does not. */
@@ -675,18 +621,8 @@ export const en = {
   "task.reading-closer-line": "The first look wasn’t sure — now a closer one.",
   /** Puts the card of "Not yet" away, back to the work. */
   "task.try-again": "Try again",
-  /** Told to a screen reader when the tutor's words have come; the words themselves are not. */
-  "task.words-came": "The tutor's words came",
   /** In the block "Tutor" while the tutor's words are asked: they take some seconds to come. */
   "task.words-waiting": "The tutor is writing…",
-  /** The name of a tutor's mark on a handwriting sheet, by its number and the count. */
-  "task.mark": "Tutor's mark {n} of {total}",
-  /** The name of a tutor's mark on a workbook, with its line and its box. */
-  "task.mark-box": "Tutor's mark {n} of {total}: line {line}, box {box}",
-  /** A line of a workbook, by its place from 1, beside its verdict. */
-  "task.line": "Line {n}",
-  /** A box of a workbook's line, by its place in the line from 1, beside its verdict. */
-  "task.box": "Box {n}",
   /** Asks for a hint: what the task gives and asks, its technique and question, or the rung again. */
   "task.hint": "Hint",
   /** The task has no technique and no question to hint before a wrong answer. */
@@ -695,12 +631,6 @@ export const en = {
   "task.explain": "Explain differently",
   /** "Explain differently" gave the words the learner reads already. */
   "task.no-other-words": "The tutor has no other words for this",
-  /** Shows the solution, which ends the attempt. */
-  "task.show-solution": "Show the solution",
-  "task.show-confirm": "Once the solution is shown, the task is over",
-  "task.show-it": "Show it",
-  /** The result of an attempt ended by the solution shown. */
-  "task.solution-shown": "Solution shown",
   /** A task with a rubric has no solution to show: "Done" ends it. */
   "task.no-showing": "This task has no solution to show",
   /** A child asks for the solution before the hint ladder is passed. */
@@ -721,34 +651,11 @@ export const en = {
   "task.feedback-lost": "The feedback was lost on the way. Send the essay again to get it",
   /** The criteria of the rubric, once the essay is finished: what the feedback looked at. */
   "task.criteria": "What the feedback looked at",
-  /** The heading of the panel of the solving steps. */
-  "steps.title": "Steps",
-  /** Leads to the next step; it reads no work. */
-  "steps.done": "Step done",
-  /** Above the step's title in the tutor's panel and in the step's pill: where the step stands. */
-  "steps.of": "Step {place} of {count}",
-  /** The name of the step's card in the tutor's panel, which scrolls on its own. */
-  "steps.card": "The step",
-  /**
-   * The name of the step's pill above the row while the tutor's panel is closed: the step, then
-   * what a press does.
-   */
-  "steps.pill": "{of}: {title}. Open the tutor",
-  /** Beside a step passed, in the bar of steps. */
-  "steps.passed": "done",
-  /** Beside the step shown. */
-  "steps.now": "now",
-  /** Beside a step not open yet. */
-  "steps.later": "later",
   /** The chips of what the statement gives. */
   "steps.givens": "What we know",
   /** The chip of what the task asks to find. */
   "steps.unknown": "What to find",
   "steps.techniques": "Techniques",
-  /** What opens "Step done" at a step whose exit condition is givens_ticked. */
-  "steps.exit-givens": "Mark what we know and what to find",
-  /** What opens "Step done", or Check, at a step whose exit condition is answer_slots_filled. */
-  "steps.exit-slots": "Write an answer in each slot",
   /** The name of the list of a lesson's segments, and of its pop-over. */
   "lesson.segments": "Segments of the lesson",
   /** The name of the line under the lesson's title that opens its segments: the line's own words first. */
@@ -780,8 +687,8 @@ export const en = {
   "lesson.title": "Lesson",
   /** The end screen of a lesson done, below its title: no score, no comparison. */
   "lesson.complete": "Lesson complete",
-  /** A task of the lesson left or abandoned: it begins once more, a new attempt. */
-  "lesson.task-again": "Begin the task again",
+  /** A task segment while the lessons are remade: it begins no attempt. */
+  "lesson.task-remade": "This task is being remade with the lessons",
   /** "Lesson done" before every task of the lesson ended. */
   "lesson.task-left": "The lesson has a task to finish",
   /** A lesson api ended: the module or the lesson suits the profile no more. */
@@ -815,11 +722,6 @@ export const en = {
   "adults.profiles": "Profiles",
   /** A profile's page and the button that opens it: the pseudonym is not declined. */
   "adults.profile": "Profile: {pseudonym}",
-  /** The setting each task begins in: the learner switches it on the task screen. */
-  /** The group of the default mode and the language of the learner's screens. */
-  "adults.learning": "Learning",
-  "adults.mode": "Default mode",
-  "adults.mode-hint": "Each task begins in it. The learner can switch it on the task screen",
   /** The voicing of the tutor's words by the device. */
   "adults.voicing": "Voicing",
   "adults.voicing-on": "Read the tutor's words aloud",

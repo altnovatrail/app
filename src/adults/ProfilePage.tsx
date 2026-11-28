@@ -1,10 +1,11 @@
 // A profile's page in Settings, the section for adults: what an adult sets of the profile — its
-// avatar, its pseudonym, its default mode, its hint mode and its voicing — in one form of grouped lists, saved by Save in the page's bar with `UpdateProfile`
-// and only the fields that changed. A choice — a tick, a switch, a segment, a value in its
-// pop-over, the avatar in its own — changes nothing until Save (WCAG 3.2.2), which waits for a
-// change and says Saved once it has gone. What another tab changed meanwhile shows in the fields
-// not edited here; what is edited here stays until it is saved — an edit made while the request
-// was on its way among them. A failure that is the session's own goes to it as well
+// avatar, its pseudonym, its hint mode and its voicing — in one form of grouped lists, saved by
+// Save in the page's bar with `UpdateProfile` and only the fields that changed. A choice — a
+// tick, a switch, a segment, a value in its pop-over, the avatar in its own — changes nothing
+// until Save (WCAG 3.2.2), which waits for a change and says Saved once it has gone. What
+// another tab changed meanwhile shows in the fields not edited here; what is edited here stays
+// until it is saved — an edit made while the request was on its way among them. A failure that
+// is the session's own goes to it as well
 // (`onFailed`). Below the form, the storage of the profile's works on the server, a consent of its
 // own, and the share of today's tutor time the profile and the account have used (the contract's
 // quota). While the form holds changes not saved, a press that would leave the page asks first:
@@ -12,7 +13,6 @@
 // goes on; Cancel stays.
 import {
   HintMode,
-  Mode,
   type Profile,
   VoicingSpeed,
 } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
@@ -28,7 +28,7 @@ import { useLanguage } from "../i18n/LanguageContext.tsx";
 import type { Device } from "../storage/device.ts";
 import { useHold } from "./leave.tsx";
 import { QuotaSection } from "./QuotaSection.tsx";
-import { ChoiceRow, Group, SegmentsRow, SwitchRow, TickRow } from "./rows.tsx";
+import { Group, SegmentsRow, SwitchRow, TickRow } from "./rows.tsx";
 import { SectionScreen } from "./SectionScreen.tsx";
 import { UnsavedDialog } from "./UnsavedDialog.tsx";
 import { WorkStorage } from "./WorkStorage.tsx";
@@ -72,7 +72,6 @@ export function ProfilePage({
   const pseudonym = edits.pseudonym ?? profile.pseudonym;
   const form: Omit<ProfileForm, "pseudonym"> = {
     avatar: edits.avatar ?? saved.avatar,
-    defaultMode: edits.defaultMode ?? saved.defaultMode,
     voicing: edits.voicing ?? saved.voicing,
     speed: edits.speed ?? saved.speed,
     hintMode: edits.hintMode ?? saved.hintMode,
@@ -181,21 +180,6 @@ export function ProfilePage({
               onChange={(event) => edit({ pseudonym: event.target.value })}
             />
           </div>
-        </Group>
-        <Group
-          title={words.text("adults.learning")}
-          note={<p id={`${id}-mode-hint`}>{words.text("adults.mode-hint")}</p>}
-        >
-          <ChoiceRow
-            label={words.text("adults.mode")}
-            value={form.defaultMode}
-            describedBy={`${id}-mode-hint`}
-            options={[
-              [Mode.BY_STEPS, words.text("task.by-steps")],
-              [Mode.SELF, words.text("task.on-my-own")],
-            ]}
-            onChange={(defaultMode) => edit({ defaultMode })}
-          />
         </Group>
         <Group title={words.text("hints.title")}>
           <fieldset className="nt-set-choices">

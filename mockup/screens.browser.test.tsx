@@ -5,7 +5,6 @@
 // difference but those a region's `differs` names fails the test.
 import {
   AccountService,
-  Mode,
   ProfileSchema,
 } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import {
@@ -74,7 +73,7 @@ import type {
 } from "../src/subjects/modules.ts";
 import { CatalogScreen } from "../src/subjects/SubjectsPage.tsx";
 import type { SkillCounts, SkillStatus } from "../src/subjects/states.ts";
-import { Task } from "../src/task/Task.tsx";
+import { Task } from "../src/task/TaskRoute.tsx";
 import { routedApi } from "../src/test/api.ts";
 import { memoryDevice } from "../src/test/device.ts";
 import { inLanguage } from "../src/test/language.tsx";
@@ -1087,7 +1086,7 @@ function picksOf(moduleId: string, tiers: readonly (readonly [string, string])[]
   };
 }
 
-/** The mockup's three modules of the first slice: the states of their skills, the lesson each tile names. */
+/** The mockup's two modules of the first slice: the states of their skills, the lesson each tile names. */
 const MODULES: readonly ModuleCard[] = [
   {
     moduleId: OLYMPIAD,
@@ -1099,21 +1098,6 @@ const MODULES: readonly ModuleCard[] = [
       title: "Number patterns",
       step: 2,
       segments: 4,
-      open: true,
-    },
-  },
-  {
-    moduleId: "novatrail/school-math-3",
-    title: "School maths · grade 3",
-    skills: counts([20, 2, 4, 6, 4]),
-    picks: picksOf("novatrail/school-math-3", [
-      ["Tier 1", "Numbers to 1000:r|Multiplying by 6–9:p|Hours and minutes:s"],
-    ]),
-    lesson: {
-      lesson: "novatrail/school-math-3/lesson/division",
-      title: "Division with a remainder",
-      step: 1,
-      segments: 3,
       open: true,
     },
   },
@@ -1414,7 +1398,7 @@ function frameOf(device: Device): readonly Region[] {
   ];
 }
 
-/** The first module's two tiles: its lesson, with its row and Continue, and its tasks, with Solve. */
+/** The first module's two tiles: its lesson, shut while the lessons are remade, and its tasks, with Solve. */
 const TILES: readonly Region[] = [
   {
     name: "the tile of its lesson",
@@ -2154,8 +2138,8 @@ const profilePage = (lit: boolean): readonly Region[] => [
   },
   {
     name: "the group Hints",
-    mockup: { css: ".st-col > .st-sec:nth-child(4) > .st-group" },
-    app: { css: "form > section:nth-of-type(3) > .nt-set-group" },
+    mockup: { css: ".st-col > .st-sec:nth-child(3) > .st-group" },
+    app: { css: "form > section:nth-of-type(2) > .nt-set-group" },
     differs: { what: ["y"], by: APP_WORDS },
   },
 ];
@@ -2453,15 +2437,7 @@ function aModule(drawn: ModuleDrawn = {}) {
       <ApiProvider value={api}>
         <PackagesProvider value={packages}>
           <LearnerProvider value={SAM}>
-            <Task
-              profileId="p1"
-              attemptId="a1"
-              defaultMode={Mode.SELF}
-              device={device}
-              adult
-              onAttempt={() => {}}
-              sheet
-            />
+            <Task profileId="p1" attemptId="a1" device={device} adult onAttempt={() => {}} />
           </LearnerProvider>
         </PackagesProvider>
       </ApiProvider>,

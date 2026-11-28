@@ -9,7 +9,8 @@
 // rubric, is one too, on a lined sheet, its submissions' contexts kept as any Check's.
 import type { Next } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
 import type { EngineChoice } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
-import type { HistoryChangeEvent } from "@altnovatrail/spec/canvas";
+import type { HistoryChangeEvent, HistoryEvent } from "@altnovatrail/spec/canvas";
+import type * as open from "@altnovatrail/spec/formatv0/open";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useApi } from "../api/ApiContext.tsx";
 import { parseFailure } from "../api/failure.ts";
@@ -22,12 +23,11 @@ import { givenOf } from "../next/choice.ts";
 import { useEngine } from "../next/useEngine.ts";
 import { useKeyHolder } from "../ownkey/OwnKeyContext.tsx";
 import { usePackages } from "../packages/PackagesContext.tsx";
+import { slotKey } from "../solving/attempt.ts";
 import type { Device } from "../storage/device.ts";
-import { attemptOver } from "../storage/profile.ts";
+import { attemptOver, type Profile } from "../storage/profile.ts";
 import { SkillPill } from "../subjects/SkillPick.tsx";
 import { useModules } from "../subjects/useModules.ts";
-import { slotKey } from "../task/steps.ts";
-import type { Opened } from "../task/Task.tsx";
 import { useWorks } from "../works/useWorks.ts";
 import { rowFrame } from "./module.ts";
 import { choiceSlotOf, chosenOf, statementPiecesOf, writesOn } from "./moduleTask.ts";
@@ -36,6 +36,23 @@ import type { PageTask } from "./page.ts";
 import { Solve } from "./Solve.tsx";
 import type { BegunTask } from "./solve.ts";
 import { statementPictureOf } from "./statement.ts";
+
+/** What the screen read of the attempt the sheet opens. */
+export interface Opened {
+  readonly task: open.Task;
+  readonly digest: string;
+  readonly manifest: open.Manifest | undefined;
+  readonly catalog: open.Techniques | undefined;
+  readonly profile: Profile | undefined;
+  /** The history of writing this device keeps of the attempt. */
+  readonly history: readonly HistoryEvent[];
+  /** The options its last submission tapped, by slot key, as api keeps them. */
+  readonly choices: Readonly<Record<string, string>>;
+  /** Its wrong answers, as api counts them. */
+  readonly wrongAnswers: number;
+  /** Of an essay: how many submissions api counts. */
+  readonly essay?: { readonly submissions: number };
+}
 
 /** The one task of the sheet, by the key the screen of solving knows it by. */
 const TASK_ID = "module";
@@ -85,9 +102,7 @@ export function ModuleSheet({
       .then((crop) => {
         if (!live) return;
         const tapped =
-          choice === undefined
-            ? undefined
-            : opened.state.choices[slotKey(choice.item, choice.slot)];
+          choice === undefined ? undefined : opened.choices[slotKey(choice.item, choice.slot)];
         const chosen = chosenOf(choice, tapped);
         setBegun([
           {
@@ -97,9 +112,7 @@ export function ModuleSheet({
             drawn: false,
             crop,
             history: opened.history,
-            ...(opened.state.wrongAnswers === undefined
-              ? {}
-              : { wrongAnswers: opened.state.wrongAnswers }),
+            wrongAnswers: opened.wrongAnswers,
             ...(chosen === undefined ? {} : { chosen }),
           },
         ]);
@@ -119,7 +132,7 @@ export function ModuleSheet({
         const sent = now.sent ?? [];
         for (const each of sent.slice((was.sent ?? []).length)) {
           void profile
-            ?.addEssaySubmission(now.attemptId, each.context, each.historyLength)
+            ?.addSubmission(now.attemptId, each.context, each.historyLength)
             .then(() => works.put(profile, now.attemptId))
             .catch(() => {});
         }

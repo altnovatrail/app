@@ -156,42 +156,35 @@ describe("the work in a profile's database on IndexedDB", () => {
   const CONTEXT = { boxes: [{ item: 1, slot: 1, ids: [1] }], digest: "0123456789abcdef" };
 
   /** The record of a submission as IndexedDB itself gives it back. */
-  async function record(database: string): Promise<{ work: unknown }> {
+  async function record(database: string): Promise<unknown> {
     const db = await new Promise<IDBDatabase>((resolve) => {
       const request = indexedDB.open(database);
       request.onsuccess = () => resolve(request.result);
     });
-    const found = await new Promise<{ work: unknown }>((resolve) => {
+    const found = await new Promise<unknown>((resolve) => {
       const request = db.transaction("submissions").objectStore("submissions").get(["a1", 0]);
-      request.onsuccess = () => resolve(request.result as { work: unknown });
+      request.onsuccess = () => resolve(request.result);
     });
     db.close();
     return found;
   }
 
-  it("writes the work as bytes with its type, and reads it as a Blob", async () => {
+  it("writes a submission as its context and the history's length, and reads it so", async () => {
     const device = browserDevice();
     await setAccount(device, "account-1");
     const profile = await addProfile(device, "p1");
     await profile?.beginAttempt({ attemptId: "a1", digest: "d1" });
-    const cells = [{ item: 1, slot: 1, png: new Blob(["box"], { type: "image/png" }) }];
-    expect(await profile?.addSubmission("a1", { cells, submission: CONTEXT }, 0)).toBe(0);
-    const kept = (await record(profileDatabase("p1"))).work as {
-      cells: { png: { bytes: unknown; type: string } }[];
-    };
-    expect(kept.cells[0]?.png.bytes).toBeInstanceOf(ArrayBuffer);
-    expect(kept.cells[0]?.png.type).toBe("image/png");
-    const [read] = (await profile?.readAttempt("a1"))?.submissions ?? [];
-    const cell = read?.work !== undefined && "cells" in read.work ? read.work.cells[0] : undefined;
-    expect(cell?.png).toBeInstanceOf(Blob);
-    expect(cell?.png.type).toBe("image/png");
-    expect(await cell?.png.text()).toBe("box");
+    expect(await profile?.addSubmission("a1", CONTEXT, 2)).toBe("saved");
+    expect(await record(profileDatabase("p1"))).toEqual({ context: CONTEXT, historyLength: 2 });
+    expect((await profile?.readAttempt("a1"))?.submissions).toEqual([
+      { context: CONTEXT, historyLength: 2 },
+    ]);
   });
 
   // WebKit writes no Blob in an ephemeral session, and a context of Playwright is one: schema
   // version 1 could keep none there, so there is none to read.
   it.skipIf(server.browser === "webkit")(
-    "reads a Blob that schema version 1 kept before the bytes",
+    "reads a submission that schema version 1 kept with a Blob as its context and length alone",
     async () => {
       const device = browserDevice();
       await setAccount(device, "account-1");
@@ -205,11 +198,9 @@ describe("the work in a profile's database on IndexedDB", () => {
           work: { png: new Blob(["old crop"], { type: "image/png" }) },
         }),
       );
-      expect((await record(profileDatabase("p1"))).work).toEqual({ png: expect.any(Blob) });
-      const [read] = (await profile?.readAttempt("a1"))?.submissions ?? [];
-      const png = read?.work !== undefined && "png" in read.work ? read.work.png : undefined;
-      expect(await png?.text()).toBe("old crop");
-      expect(png?.type).toBe("image/png");
+      expect((await profile?.readAttempt("a1"))?.submissions).toEqual([
+        { context: CONTEXT, historyLength: 0 },
+      ]);
     },
   );
 });

@@ -3,7 +3,6 @@
 // profile with another's settings, and the message the tabs tell each other by.
 import {
   HintMode,
-  Mode,
   ProfileSchema,
   VoicingSpeed,
 } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
@@ -27,7 +26,6 @@ function profile(init: Init = {}) {
     owner: true,
     pseudonym: "Ёжик",
     ageCategory: "adult",
-    defaultMode: Mode.BY_STEPS,
     presentationStyle: { voicing: { enabled: false, speed: VoicingSpeed.NORMAL } },
   };
   return create(ProfileSchema, { ...defaults, ...init } as Init);
@@ -39,7 +37,6 @@ describe("formOf", () => {
       formOf(
         profile({
           avatar: "moon",
-          defaultMode: Mode.SELF,
           interfaceLanguage: "ru",
           presentationStyle: { voicing: { enabled: true, speed: VoicingSpeed.SLOW } },
           hintMode: HintMode.QUESTIONS_ONLY,
@@ -48,7 +45,6 @@ describe("formOf", () => {
     ).toEqual({
       pseudonym: "Ёжик",
       avatar: "moon",
-      defaultMode: Mode.SELF,
       voicing: true,
       speed: VoicingSpeed.SLOW,
       hintMode: HintMode.QUESTIONS_ONLY,
@@ -57,10 +53,12 @@ describe("formOf", () => {
 
   it("reads a value it does not know as the contract says", () => {
     const form = formOf(
-      profile({ defaultMode: 7 as Mode, interfaceLanguage: "ru-RU", presentationStyle: {} }),
+      profile({
+        interfaceLanguage: "ru-RU",
+        presentationStyle: { voicing: { speed: 7 as VoicingSpeed } },
+      }),
     );
     expect(form).toMatchObject({
-      defaultMode: Mode.BY_STEPS,
       voicing: false,
       speed: VoicingSpeed.NORMAL,
       hintMode: HintMode.SHOW_WHERE,
@@ -76,9 +74,6 @@ describe("changes", () => {
   });
 
   it("names only the fields that changed", () => {
-    expect(changes(profile(), { ...same(), defaultMode: Mode.SELF })).toEqual({
-      defaultMode: Mode.SELF,
-    });
     expect(
       changes(profile(), { ...same(), pseudonym: "Ёж", hintMode: HintMode.QUESTIONS_ONLY }),
     ).toEqual({
@@ -112,10 +107,13 @@ describe("changes", () => {
   });
 
   it("never writes back a value the build reads its own way, unless the adult changed it", () => {
-    const unknown = profile({ defaultMode: 7 as Mode, interfaceLanguage: "ru-RU" });
+    const unknown = profile({
+      interfaceLanguage: "ru-RU",
+      presentationStyle: { voicing: { speed: 7 as VoicingSpeed } },
+    });
     expect(changes(unknown, same(unknown))).toBeUndefined();
-    expect(changes(unknown, { ...same(unknown), defaultMode: Mode.SELF })).toEqual({
-      defaultMode: Mode.SELF,
+    expect(changes(unknown, { ...same(unknown), speed: VoicingSpeed.SLOW })).toEqual({
+      voicing: { speed: VoicingSpeed.SLOW },
     });
   });
 });
@@ -130,12 +128,16 @@ describe("withSettings", () => {
     } as Init);
     const from = profile({
       pseudonym: "Ёж",
-      defaultMode: Mode.SELF,
+      hintMode: HintMode.QUESTIONS_ONLY,
       workStorage: true,
       openAttempt: { attemptId: "a9" },
     } as Init);
     const after = withSettings(before, from);
-    expect(after).toMatchObject({ pseudonym: "Ёж", defaultMode: Mode.SELF, workStorage: true });
+    expect(after).toMatchObject({
+      pseudonym: "Ёж",
+      hintMode: HintMode.QUESTIONS_ONLY,
+      workStorage: true,
+    });
     expect(after.openAttempt?.attemptId).toBe("a1");
     expect(after.openLessonRuns.map((run) => run.lessonRunId)).toEqual(["r1"]);
     expect("openAttempt" in withSettings(profile(), from)).toBe(false);

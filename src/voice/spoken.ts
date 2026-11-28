@@ -1,12 +1,12 @@
 // A module's text as the synthesis reads it: the signs a module's plain text holds,
 // written in words by the table of its language, since every engine reads a sign its own way and
-// reads a box of a workbook's line not at all; and the text cut into sentences, each an utterance
+// reads a box of a worked example's line not at all; and the text cut into sentences, each an utterance
 // of its own, since Chrome cuts a long one short. The screen shows the text as it is: only what is
 // spoken changes. This is app's code, after api's checks, not the model's. A language
 // with no table of its own is spoken with its signs as they are. No DOM.
 import { tagOf } from "./voices.ts";
 
-/** The box of a workbook's line, as app writes a line for speech (texts.ts). */
+/** The box of a worked example's line, as app writes a line for speech (texts.ts). */
 export const BOX = "□";
 
 /** The words of one language: a sign between two operands, the sign alone, and a fraction. */

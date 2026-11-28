@@ -1,10 +1,4 @@
-import type {
-  DemoState,
-  ExportedSheet,
-  ExportedWorkbook,
-  HistoryEvent,
-  SheetSubmission,
-} from "@altnovatrail/spec/canvas";
+import type { DemoState, HistoryEvent, SheetSubmission } from "@altnovatrail/spec/canvas";
 import type * as open from "@altnovatrail/spec/formatv0/open";
 import { describe, expect, it } from "vitest";
 import { DAY, memoryDevice } from "../test/device.ts";
@@ -18,8 +12,6 @@ import {
   type Profile,
   profileUsage,
   sizeOf,
-  type Work,
-  workOf,
 } from "./profile.ts";
 import { addDatabase, eraseDatabases } from "./registry.ts";
 import { KEEP_MS, PROFILE_SCHEMA, profileDatabase } from "./schema.ts";
@@ -54,23 +46,12 @@ const CONTEXT: SheetSubmission = {
   digest: "0123456789abcdef",
 };
 
-const work = (text: string): ExportedSheet | ExportedWorkbook => ({
-  png: new Blob([text]),
-  submission: CONTEXT,
-});
-
 async function setUp() {
   const setup = memoryDevice();
   const found = await addProfile(setup.device, "p1");
   if (found === undefined) throw new Error("no profile");
   await found.beginAttempt({ attemptId: "a1", digest: "d1", task: TASK });
   return { ...setup, profile: found };
-}
-
-/** The crop of a sheet's work, which a test expects there. */
-function crop(work: Work | undefined): Blob {
-  if (work === undefined || !("png" in work)) throw new Error("no crop");
-  return work.png;
 }
 
 const historyOf = async (profile: Profile, attemptId = "a1") =>
@@ -134,8 +115,7 @@ describe("the profile's database", () => {
     const { profile, backend } = await setUp();
     expect(await profile.appendHistory("none", { from: 0, events: [write(1, 0)] })).toBe("unsaved");
     expect(await profile.replaceHistory("none", [write(1, 0)])).toBe("unsaved");
-    expect(await profile.addSubmission("none", work("x"), 1)).toBe("unsaved");
-    expect(await profile.saveSteps("none", {})).toBe("unsaved");
+    expect(await profile.addSubmission("none", CONTEXT, 1)).toBe("unsaved");
     backend.refuseWrites = true;
     expect(await profile.appendHistory("a1", { from: 0, events: [write(1, 0)] })).toBe("unsaved");
     expect(await profile.beginAttempt({ attemptId: "a2", digest: "d1", task: TASK })).toBe(
@@ -146,33 +126,37 @@ describe("the profile's database", () => {
     expect(await profile.readAttempt("a2")).toBeUndefined();
   });
 
-  it("keeps each submission's context unrounded, the history's length then, and its work", async () => {
+  it("keeps each submission's context unrounded and the history's length then", async () => {
     const { profile } = await setUp();
-    expect(await profile.addSubmission("a1", work("first"), 3)).toBe(0);
-    const cells: ExportedSheet | ExportedWorkbook = {
-      cells: [{ item: 1, slot: 1, png: new Blob(["box"]) }],
-      submission: { boxes: [{ item: 1, slot: 1, ids: [1] }], digest: "fedcba9876543210" },
-    };
-    expect(await profile.addSubmission("a1", cells, 5)).toBe(1);
-    const [sheet, workbook] = (await profile.readAttempt("a1"))?.submissions ?? [];
-    expect(sheet?.context).toEqual(CONTEXT);
-    expect(sheet?.historyLength).toBe(3);
-    expect(await crop(sheet?.work).text()).toBe("first");
-    expect(workbook?.context).toEqual(cells.submission);
-    expect(workbook?.historyLength).toBe(5);
-    expect("cells" in (workbook?.work ?? {})).toBe(true);
+    expect(await profile.addSubmission("a1", CONTEXT, 3)).toBe("saved");
+    const other: SheetSubmission = { ...CONTEXT, digest: "fedcba9876543210" };
+    expect(await profile.addSubmission("a1", other, 5)).toBe("saved");
+    expect((await profile.readAttempt("a1"))?.submissions).toEqual([
+      { context: CONTEXT, historyLength: 3 },
+      { context: other, historyLength: 5 },
+    ]);
   });
 
-  it("keeps the state of the steps with the attempt", async () => {
-    const { profile } = await setUp();
-    expect(await profile.saveSteps("a1", { mode: "steps", step: 2 })).toBe("saved");
-    expect((await profile.readAttempt("a1"))?.attempt.steps).toEqual({ mode: "steps", step: 2 });
+  it("reads a submission an earlier build kept with its work as its context and length alone", async () => {
+    const { device } = await setUp();
+    const connection = await device.connect(profileDatabase("p1"), PROFILE_SCHEMA, false);
+    await connection?.write(["submissions"], (tx) =>
+      tx.put("submissions", ["a1", 0], {
+        context: CONTEXT,
+        historyLength: 1,
+        work: { png: new Blob(["old"]) },
+      }),
+    );
+    const profile = await openProfile(device, "p1");
+    expect((await profile?.readAttempt("a1"))?.submissions).toEqual([
+      { context: CONTEXT, historyLength: 1 },
+    ]);
   });
 
   it("begins an attempt afresh, with no history or submission left under its ID", async () => {
     const { profile } = await setUp();
     await profile.appendHistory("a1", { from: 0, events: [write(1, 0)] });
-    await profile.addSubmission("a1", work("x"), 1);
+    await profile.addSubmission("a1", CONTEXT, 1);
     await profile.beginAttempt({ attemptId: "a1", digest: "d2", task: TASK });
     const stored = await profile.readAttempt("a1");
     expect(stored?.history).toEqual([]);
@@ -180,111 +164,35 @@ describe("the profile's database", () => {
     expect(stored?.attempt.digest).toBe("d2");
   });
 
-  it("erases an ended attempt whole, but the correct submission's work until the words after it", async () => {
+  it("erases an ended attempt whole, and leaves the others", async () => {
     const { profile, backend } = await setUp();
     await profile.beginAttempt({ attemptId: "a2", digest: "d1", task: TASK });
     await profile.appendHistory("a1", { from: 0, events: [write(1, 0)] });
-    await profile.addSubmission("a1", work("wrong"), 1);
-    await profile.addSubmission("a1", work("right"), 1);
+    await profile.addSubmission("a1", CONTEXT, 1);
     await profile.appendHistory("a2", { from: 0, events: [write(1, 0)] });
-    await profile.attemptEnded("a1", 1);
+    await profile.attemptEnded("a1");
     expect(await profile.readAttempt("a1")).toBeUndefined();
     const name = profileDatabase("p1");
     expect(backend.records(name, "history").map((entry) => entry.key)).toEqual([["a2", 0]]);
     expect(backend.records(name, "submissions")).toEqual([]);
-    const kept = await profile.correctWork("a1");
-    expect(await crop(kept).text()).toBe("right");
-    await profile.wordsCame("a1");
-    expect(await profile.correctWork("a1")).toBeUndefined();
-    await profile.attemptEnded("a2", 7);
-    expect(await profile.correctWork("a2")).toBeUndefined();
-    expect(backend.records(name, "attempts")).toEqual([]);
+    expect(backend.records(name, "attempts").map((entry) => entry.key)).toEqual(["a2"]);
   });
 
-  it("clears at the start the work of correct submissions whose words never came", async () => {
-    const { profile } = await setUp();
-    await profile.addSubmission("a1", work("right"), 0);
-    await profile.attemptEnded("a1", 0);
-    await profile.clearCorrectWork();
-    expect(await profile.correctWork("a1")).toBeUndefined();
-  });
-});
-
-describe("the work in bytes", () => {
-  const png = (text: string) => new Blob([text], { type: "image/png" });
-
-  it("keeps each picture as bytes with its type, and gives it back as a Blob", async () => {
-    const { profile, backend } = await setUp();
-    await profile.addSubmission("a1", { png: png("crop"), submission: CONTEXT }, 1);
-    const cells: ExportedSheet | ExportedWorkbook = {
-      cells: [{ item: 1, slot: 2, png: png("box") }],
-      submission: { boxes: [{ item: 1, slot: 2, ids: [1] }], digest: "fedcba9876543210" },
-    };
-    await profile.addSubmission("a1", cells, 2);
-    const [sheet, workbook] = backend
-      .records(profileDatabase("p1"), "submissions")
-      .map((entry) => entry.value);
-    const kept = (sheet as { work: { png: { bytes: unknown; type: string } } }).work.png;
-    expect(kept.bytes).toBeInstanceOf(ArrayBuffer);
-    expect(kept.type).toBe("image/png");
-    const box = (workbook as { work: { cells: { item: number; png: unknown }[] } }).work;
-    expect(box.cells[0]).toMatchObject({ item: 1, slot: 2, png: { type: "image/png" } });
-    const [first, second] = (await profile.readAttempt("a1"))?.submissions ?? [];
-    expect(first?.work).toEqual({ png: expect.any(Blob) });
-    expect(await crop(first?.work).text()).toBe("crop");
-    expect(crop(first?.work).type).toBe("image/png");
-    const cell =
-      second?.work !== undefined && "cells" in second.work ? second.work.cells[0] : undefined;
-    expect(cell).toMatchObject({ item: 1, slot: 2 });
-    expect(await cell?.png.text()).toBe("box");
-    await profile.attemptEnded("a1", 0);
-    expect(await crop(await profile.correctWork("a1")).text()).toBe("crop");
-  });
-
-  it("reads a Blob that schema version 1 kept, of a sheet and of a workbook", async () => {
-    const { device } = await setUp();
-    const connection = await device.connect(profileDatabase("p1"), PROFILE_SCHEMA, false);
-    await connection?.write(["submissions", "correctWork"], async (tx) => {
-      await tx.put("submissions", ["a1", 0], {
-        context: CONTEXT,
-        historyLength: 1,
-        work: { png: png("old") },
-      });
-      await tx.put("submissions", ["a1", 1], {
-        context: CONTEXT,
-        historyLength: 1,
-        work: { cells: [{ item: 1, slot: 1, png: png("old box") }] },
-      });
-      await tx.put("correctWork", "a0", { png: png("old right") });
-    });
-    const profile = await openProfile(device, "p1");
-    const [sheet, workbook] = (await profile?.readAttempt("a1"))?.submissions ?? [];
-    expect(await crop(sheet?.work).text()).toBe("old");
-    expect(workbook?.work !== undefined && "cells" in workbook.work).toBe(true);
-    expect(await crop(await profile?.correctWork("a0")).text()).toBe("old right");
-  });
-
-  it("gives none for a work it cannot read, and keeps its record", async () => {
+  it("clears at the start whatever the store correctWork holds", async () => {
     const { device, backend } = await setUp();
     const connection = await device.connect(profileDatabase("p1"), PROFILE_SCHEMA, false);
-    await connection?.write(["submissions"], (tx) =>
-      tx.put("submissions", ["a1", 0], { context: CONTEXT, historyLength: 1, work: { svg: "x" } }),
+    await connection?.write(["correctWork"], (tx) =>
+      tx.put("correctWork", "a0", { png: new Blob(["old right"]) }),
     );
     const profile = await openProfile(device, "p1");
-    const [kept] = (await profile?.readAttempt("a1"))?.submissions ?? [];
-    expect(kept?.context).toEqual(CONTEXT);
-    expect(kept?.work).toBeUndefined();
-    expect(backend.records(profileDatabase("p1"), "submissions")).toHaveLength(1);
-    for (const odd of [null, "png", { png: { bytes: "x", type: "image/png" } }, { cells: "x" }]) {
-      expect(workOf(odd)).toBeUndefined();
-    }
-    expect(workOf({ cells: [{ item: 1, slot: 1, png: {} }] })).toBeUndefined();
+    await profile?.clearCorrectWork();
+    expect(backend.records(profileDatabase("p1"), "correctWork")).toEqual([]);
   });
 
   it("gives the attempt and its history when its submissions cannot be read, and erases nothing", async () => {
     const { profile, backend } = await setUp();
     await profile.appendHistory("a1", { from: 0, events: [write(1, 0)] });
-    await profile.addSubmission("a1", work("x"), 1);
+    await profile.addSubmission("a1", CONTEXT, 1);
     backend.unreadable.add("submissions");
     const stored = await profile.readAttempt("a1");
     expect(stored?.history).toEqual([write(1, 0)]);
@@ -293,25 +201,15 @@ describe("the work in bytes", () => {
     expect((await profile.readAttempt("a1"))?.submissions).toHaveLength(1);
   });
 
-  it("ends an attempt whole when its correct submission cannot be read", async () => {
+  it("ends an attempt whole when its submissions cannot be read", async () => {
     const { profile, backend } = await setUp();
     await profile.appendHistory("a1", { from: 0, events: [write(1, 0)] });
-    await profile.addSubmission("a1", work("right"), 1);
+    await profile.addSubmission("a1", CONTEXT, 1);
     backend.unreadable.add("submissions");
-    await profile.attemptEnded("a1", 0);
+    await profile.attemptEnded("a1");
     backend.unreadable.clear();
     expect(await profile.readAttempt("a1")).toBeUndefined();
     expect(backend.records(profileDatabase("p1"), "history")).toEqual([]);
-    expect(await profile.correctWork("a1")).toBeUndefined();
-  });
-
-  it("says the work is not saved when its bytes cannot be read", async () => {
-    const { profile, backend } = await setUp();
-    const broken = new Blob(["x"]);
-    broken.arrayBuffer = () => Promise.reject(new DOMException("gone", "NotReadableError"));
-    expect(await profile.addSubmission("a1", { png: broken, submission: CONTEXT }, 1)).toBe(
-      "unsaved",
-    );
     expect(backend.records(profileDatabase("p1"), "submissions")).toEqual([]);
   });
 });
@@ -321,14 +219,10 @@ describe("what a profile keeps on this device", () => {
     const { device, profile, backend } = await setUp();
     const empty = await profileUsage(device, "p1");
     expect(empty).toMatchObject({ unfinished: 1 });
-    await profile.addSubmission(
-      "a1",
-      { png: new Blob([new Uint8Array(5000)]), submission: CONTEXT },
-      0,
-    );
+    await profile.addSubmission("a1", CONTEXT, 0);
     const before = typeof empty === "object" ? (empty.bytes ?? 0) : 0;
     const after = await profileUsage(device, "p1");
-    expect(typeof after === "object" ? after.bytes : 0).toBeGreaterThan(before + 5000);
+    expect(typeof after === "object" ? after.bytes : 0).toBeGreaterThan(before);
     // A record that cannot be read leaves the count, and the size is not known.
     backend.unreadable.add("submissions");
     expect(await profileUsage(device, "p1")).toEqual({
@@ -414,7 +308,7 @@ describe("withdrawal and the term", () => {
   it("erases attempts and lessons unchanged for 30 days, with their work, and keeps the newer", async () => {
     const { profile, state, backend } = await setUp();
     await profile.appendHistory("a1", { from: 0, events: [write(1, 0)] });
-    await profile.addSubmission("a1", work("x"), 1);
+    await profile.addSubmission("a1", CONTEXT, 1);
     await profile.saveLesson({
       lessonId: "old",
       digest: "d1",
@@ -459,11 +353,11 @@ describe("an essay", () => {
 
   it("keeps each submission's context and the history's length, without its crop, for the server", async () => {
     const { profile } = await withEssay();
-    expect(await profile.addEssaySubmission("e1", CONTEXT, 1)).toBe("saved");
-    expect(await profile.addEssaySubmission("e1", CONTEXT, 1)).toBe("saved");
+    expect(await profile.addSubmission("e1", CONTEXT, 1)).toBe("saved");
+    expect(await profile.addSubmission("e1", CONTEXT, 1)).toBe("saved");
     expect((await profile.readAttempt("e1"))?.submissions).toEqual([
-      { context: CONTEXT, historyLength: 1, work: undefined },
-      { context: CONTEXT, historyLength: 1, work: undefined },
+      { context: CONTEXT, historyLength: 1 },
+      { context: CONTEXT, historyLength: 1 },
     ]);
     expect(await profile.work("e1")).toEqual({
       attemptId: "e1",
@@ -477,28 +371,26 @@ describe("an essay", () => {
 
   it("takes no submission of an attempt not there, and says a refused one is not saved", async () => {
     const { profile, backend } = await withEssay();
-    expect(await profile.addEssaySubmission("none", CONTEXT, 0)).toBe("unsaved");
+    expect(await profile.addSubmission("none", CONTEXT, 0)).toBe("unsaved");
     backend.refuseWrites = true;
-    expect(await profile.addEssaySubmission("e1", CONTEXT, 1)).toBe("unsaved");
+    expect(await profile.addSubmission("e1", CONTEXT, 1)).toBe("unsaved");
     backend.refuseWrites = false;
     expect(backend.records(profileDatabase("p1"), "submissions")).toEqual([]);
   });
 
   it("goes whole at the end of its attempt, as the work of any task", async () => {
     const { profile, backend } = await withEssay();
-    await profile.addEssaySubmission("e1", CONTEXT, 1);
-    await profile.attemptEnded("e1", 0);
+    await profile.addSubmission("e1", CONTEXT, 1);
+    await profile.attemptEnded("e1");
     const name = profileDatabase("p1");
     expect(await profile.readAttempt("e1")).toBeUndefined();
     expect(backend.records(name, "history")).toEqual([]);
     expect(backend.records(name, "submissions")).toEqual([]);
-    // A submission of an essay keeps no work: none waits for the words after it.
-    expect(backend.records(name, "correctWork")).toEqual([]);
   });
 
   it("goes whole with the term, and loses its task with a withdrawn version", async () => {
     const { profile, state, backend } = await withEssay();
-    await profile.addEssaySubmission("e1", CONTEXT, 1);
+    await profile.addSubmission("e1", CONTEXT, 1);
     await profile.withdraw(["d1"]);
     expect((await profile.readAttempt("e1"))?.attempt.task).toBeUndefined();
     const old = state.time;

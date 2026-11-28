@@ -2,14 +2,13 @@
 // each by its avatar, and the rows of the device, the language and the legal pages, the list beside
 // a page from 600 CSS px, as wide as its rows need to break no word, and a first page of its own
 // below, the bar of each page, a profile's page and its form — the avatar changed by its pop-over,
-// the mode and the language chosen in a pop-over, only what changed goes to UpdateProfile, nothing
+// the language chosen in a pop-over, only what changed goes to UpdateProfile, nothing
 // when nothing did, the pseudonym checked first, a failure said, the language the build does not
 // have named —, what another tab saved meanwhile, and the question when a press would leave changes
 // not saved, with api on connect-es's router.
 import {
   AccountService,
   HintMode,
-  Mode,
   type Profile,
   ProfileSchema,
   type UpdateProfileRequest,
@@ -40,7 +39,6 @@ function profile(init: Init = {}): Profile {
     owner: true,
     pseudonym: "Ёжик",
     ageCategory: "adult",
-    defaultMode: Mode.BY_STEPS,
     presentationStyle: { voicing: { enabled: false, speed: VoicingSpeed.NORMAL } },
   };
   return create(ProfileSchema, { ...defaults, ...init } as Init);
@@ -92,13 +90,6 @@ function renderPage(
 }
 
 /** Chooses one of a row's choices in its pop-over, which the choice closes. */
-async function choose(row: string, option: string) {
-  await userEvent.click(screen.getByRole("button", { name: new RegExp(`^${row}`) }));
-  await userEvent.click(
-    within(screen.getByRole("dialog", { name: row })).getByRole("radio", { name: option }),
-  );
-  expect(screen.queryByRole("dialog")).toBeNull();
-}
 
 /** The status of the profile's form, not of the storage of works below it. */
 const saving = () => within(document.querySelector("form") as HTMLElement).getByRole("status");
@@ -348,8 +339,8 @@ describe("a profile's page", () => {
     await userEvent.click(screen.getByRole("switch", { name: "Read the tutor's words aloud" }));
     await userEvent.click(screen.getByRole("radio", { name: "Slow" }));
     // A choice taken back is no change.
-    await choose("Default mode", "On my own");
-    await choose("Default mode", "Step by step");
+    await userEvent.click(screen.getByRole("radio", { name: "Questions only" }));
+    await userEvent.click(screen.getByRole("radio", { name: "Show where" }));
     await userEvent.click(screen.getByRole("radio", { name: "Normal" }));
     await userEvent.click(screen.getByRole("radio", { name: "Slow" }));
     await userEvent.click(screen.getByRole("button", { name: "Save" }));
@@ -359,7 +350,7 @@ describe("a profile's page", () => {
       pseudonym: "Ёж",
       voicing: { enabled: true, speed: VoicingSpeed.SLOW },
     });
-    expect(asked[0]?.settings?.defaultMode).toBe(Mode.UNSPECIFIED);
+    expect(asked[0]?.settings?.hintMode).toBe(HintMode.UNSPECIFIED);
     expect(asked[0]?.settings?.interfaceLanguage).toBeUndefined();
     expect(asked[0]?.settings?.avatar).toBeUndefined();
     expect(saved.map((each) => each.pseudonym)).toEqual(["Ёж"]);
@@ -422,10 +413,10 @@ describe("a profile's page", () => {
         { desc: RefusalSchema, value: create(RefusalSchema, { cause: Cause.NO_PROFILE }) },
       ]);
     });
-    await choose("Default mode", "On my own");
+    await userEvent.click(screen.getByRole("radio", { name: "Slow" }));
     await userEvent.click(screen.getByRole("button", { name: "Save" }));
     expect((await screen.findByRole("alert")).textContent).toBe("This isn't there any more");
-    expect(screen.getByRole("button", { name: "Default mode On my own" })).toBeTruthy();
+    expect(screen.getByRole("radio", { name: "Slow" })).toBeChecked();
     expect(screen.getByRole("button", { name: "Save" })).toBeEnabled();
     // The session hears of it too.
     expect(failed).toMatchObject([{ kind: "refused", cause: Cause.NO_PROFILE }]);
@@ -437,27 +428,27 @@ describe("a profile's page", () => {
       await new Promise<void>((resolve) => {
         answered = resolve;
       });
-      return profile({ defaultMode: Mode.SELF });
+      return profile({ hintMode: HintMode.QUESTIONS_ONLY });
     });
-    await choose("Default mode", "On my own");
+    await userEvent.click(screen.getByRole("radio", { name: "Questions only" }));
     await userEvent.click(screen.getByRole("button", { name: "Save" }));
     await vi.waitFor(() => expect(answered).toBeDefined());
     await userEvent.click(screen.getByRole("radio", { name: "Slow" }));
     answered?.();
     await vi.waitFor(() => expect(saving().textContent).toBe("Saved"));
-    // The page shows the profile it is given: the mode sent is its own now, the speed still an edit.
-    rerender(profile({ defaultMode: Mode.BY_STEPS }));
-    expect(screen.getByRole("button", { name: "Default mode Step by step" })).toBeTruthy();
+    // The page shows the profile it is given: the hint mode sent is its own now, the speed still an edit.
+    rerender(profile({ hintMode: HintMode.SHOW_WHERE }));
+    expect(screen.getByRole("radio", { name: "Show where" })).toBeChecked();
     expect(screen.getByRole("radio", { name: "Slow" })).toBeChecked();
   });
 
   it("shows what another tab saved in the fields not edited here, and keeps those edited", async () => {
     const { rerender } = renderPage(profile(), () => profile());
-    await choose("Default mode", "On my own");
-    rerender(profile({ pseudonym: "Ёж", interfaceLanguage: "ru", defaultMode: Mode.BY_STEPS }));
+    await userEvent.click(screen.getByRole("radio", { name: "Questions only" }));
+    rerender(profile({ pseudonym: "Ёж", interfaceLanguage: "ru", hintMode: HintMode.SHOW_WHERE }));
     expect(screen.getByRole("heading", { level: 1, name: "Profile: Ёж" })).toBeTruthy();
     expect(screen.getByRole("textbox", { name: "Pseudonym" })).toHaveValue("Ёж");
-    expect(screen.getByRole("button", { name: "Default mode On my own" })).toBeTruthy();
+    expect(screen.getByRole("radio", { name: "Questions only" })).toBeChecked();
   });
 
   it("says that the voice is the device's, and to turn the voicing off beside a screen reader", () => {
@@ -466,11 +457,6 @@ describe("a profile's page", () => {
       screen.getByRole("switch", { name: "Read the tutor's words aloud" }),
     ).toHaveAccessibleDescription(
       "The tutor's words are read by a voice of the device. Each device's voice is chosen on its page This device If you listen to a screen reader, turn voicing off: the two would speak at once",
-    );
-    expect(
-      screen.getByRole("button", { name: "Default mode Step by step" }),
-    ).toHaveAccessibleDescription(
-      "Each task begins in it. The learner can switch it on the task screen",
     );
   });
 });

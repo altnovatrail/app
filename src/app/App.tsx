@@ -1,13 +1,13 @@
 // The shell of the app: the home of the learner chosen is Home, `#/subjects` the catalog of
-// the server, `#/task` the task screen of the attempt they have open, `#/lesson` the player
+// the server, `#/task` the sheet of the attempt they have open, `#/lesson` the player
 // of the lesson run they chose, `#/lessons/<module>` a module's lessons, `#/skill-map/<module>` a
 // module's skill map, the second way in, and `#/paper` the camera and the tasks of a page photographed. The attempt open
 // and the lesson runs open are the learner's in memory, from what GetAccount named. The bar and the
 // screens are in the language of the learner's profile, else the device's; the buttons of the
 // device's language are on the sign-in screen and in the section for adults. Home, a module's
 // lessons, Subjects and the skill map stand in the mockup's frame: the row of places, or the phone's tab bar,
-// and at the top right the tutor, the notifications and the profile's menu; the lesson and the task
-// have the pill in their own top bar, as the page photographed has its own, and
+// and at the top right the tutor, the notifications and the profile's menu; the lesson has the
+// pill in its own top bar, the sheets of a task the bar of their own, and
 // any other screen of a learner the bar that names them and switches, opens the section for adults
 // or signs out. The voicing of the screens is the learner's profile's and this device's, and
 // speech stops when the screen changes. With no learner — a screen's own test — the home
@@ -53,9 +53,9 @@ function placeOf(screen: string): Place | undefined {
 /**
  * Who is learning, and the buttons to switch the learner, to open the section for adults or to sign
  * out, by the route's screen: none in the frame of Home, Subjects and the skill map, whose top right
- * holds the profile's menu, none in a lesson and on the task screen, whose bars hold the pill
- * themselves, none on the screens of a task from paper, and the bar of buttons on
- * any other; none with no learner.
+ * holds the profile's menu, none in a lesson, whose bar holds the pill, none on the sheet of a
+ * task and on the screens of a task from paper, and the bar of buttons on any other; none with no
+ * learner.
  */
 export function LearnerBar() {
   const chosen = useLearner();
@@ -125,17 +125,9 @@ function LearnerRoutes({
       <LessonProvider learner={learner}>
         <PaperProvider profileId={learner.profileId} device={device}>
           {route.screen === "task" ? (
-            <TaskRoute
-              profileId={learner.profileId}
-              defaultMode={learner.defaultMode}
-              adult={adult}
-            />
+            <TaskRoute profileId={learner.profileId} adult={adult} />
           ) : route.screen === "lesson" ? (
-            <LessonRoute
-              profileId={learner.profileId}
-              defaultMode={learner.defaultMode}
-              adult={adult}
-            />
+            <LessonRoute profileId={learner.profileId} />
           ) : route.screen === PAPER.screen ? (
             <PaperScreen profileId={learner.profileId} adult={adult} />
           ) : (

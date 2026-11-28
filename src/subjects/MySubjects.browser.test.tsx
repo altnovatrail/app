@@ -660,7 +660,7 @@ describe("the tile of a module's lesson", () => {
   const GAPS = `${MATH}/lesson/gaps-and-posts`;
   const LEVERS = `${PHYSICS}/lesson/levers`;
 
-  it("names the lesson begun and its step, goes on with its run, and leads to every lesson", async () => {
+  it("names the lesson begun, shut while the lessons are remade, and leads nowhere", async () => {
     const { asked } = await renderSubjects({
       connected: [
         { moduleId: MATH, packageDigest: D1 },
@@ -690,27 +690,20 @@ describe("the tile of a module's lesson", () => {
       await (await card("Olympiad maths")).findByRole("region", { name: "Lesson" }),
     );
     expect(await math.findByText(/^Gaps and posts/)).toHaveAttribute("lang", "en");
-    expect(math.getByText("Step 2 of 4 · in the author's order")).toBeVisible();
+    expect(math.getByText("The lessons are being remade")).toBeVisible();
     expect(asked).toContain(`lessons ${MATH}`);
-    await userEvent.click(
-      math.getByRole("button", { name: "Continue", description: "Gaps and posts" }),
-    );
-    expect(window.location.hash).toBe("#/lesson");
-    window.location.hash = "";
-    // A lesson not begun opens by its ID, a new run.
-    const physics = within(await (await card("Физика")).findByRole("region", { name: "Lesson" }));
-    expect(await physics.findByText("Step 1 of 3 · in the author's order")).toBeVisible();
-    await userEvent.click(physics.getByRole("button", { name: "Continue", description: "Рычаги" }));
-    expect(window.location.hash).toBe("#/lesson");
-    window.location.hash = "";
-    await userEvent.click(
+    const go = math.getByRole("button", { name: "Continue", description: "Gaps and posts" });
+    expect(go).toBeDisabled();
+    expect(
       math.getByRole("button", {
-        name: "Lesson Gaps and posts",
+        name: "Lesson · Soon Gaps and posts",
         description: "Every lesson of Olympiad maths",
       }),
-    );
-    expect(window.location.hash).toBe(`#/lessons/${encodeURIComponent(MATH)}`);
-    window.location.hash = "";
+    ).toBeDisabled();
+    const physics = within(await (await card("Физика")).findByRole("region", { name: "Lesson" }));
+    expect(await physics.findByText("Рычаги")).toBeVisible();
+    expect(physics.getByRole("button", { name: "Continue", description: "Рычаги" })).toBeDisabled();
+    expect(window.location.hash).toBe("");
   });
 
   it("is not there for a module with no lessons, whose tasks stand alone", async () => {

@@ -74,7 +74,7 @@ describe("the history and the context through IndexedDB", () => {
     const work = await first.exportWork();
     if (work === null || !("png" in work) || work.statement !== undefined)
       throw new Error("no work of a sheet");
-    expect(await profile?.addSubmission("a1", work, first.history.length)).toBe(0);
+    expect(await profile?.addSubmission("a1", work.submission, first.history.length)).toBe("saved");
 
     const stored = await profile?.readAttempt("a1");
     expect(stored?.history).toEqual(first.history);
@@ -89,9 +89,6 @@ describe("the history and the context through IndexedDB", () => {
     const label = context.groups[0]?.label ?? "A";
     second.marks = { submission: context, marks: [{ kind: "frame", at: { group: label }, name }] };
     expect(second.marks?.marks).toHaveLength(1);
-    const kept = stored?.submissions?.[0]?.work;
-    if (kept === undefined || !("png" in kept)) throw new Error("no crop kept");
-    expect(await kept.png.arrayBuffer()).toEqual(await work.png.arrayBuffer());
     // A history written before strokes had a style opens as it was, and takes none.
     for (const event of second.history)
       if (event.kind === "write") expect(event.stroke).not.toHaveProperty("style");

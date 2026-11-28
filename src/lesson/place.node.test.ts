@@ -21,23 +21,21 @@ const course = (kinds: readonly Kind[], ended: readonly number[] = []): Course =
 
 describe("the place a lesson opens at", () => {
   it("is the first segment of a run nothing was kept of", () => {
-    expect(openingPlace(course(GAPS), undefined, undefined)).toBe(1);
+    expect(openingPlace(course(GAPS), undefined)).toBe(1);
   });
 
-  it("is the place kept, the one after the last task that ended, or the attempt's: the later", () => {
-    expect(openingPlace(course(GAPS), 2, undefined)).toBe(2);
+  it("is the place kept, the one after the last task that ended, the later", () => {
+    expect(openingPlace(course(GAPS), 2)).toBe(2);
     // Another device: the task ended there, and nothing is kept here.
-    expect(openingPlace(course(GAPS, [3]), undefined, undefined)).toBe(4);
-    expect(openingPlace(course(GAPS, [3]), 2, undefined)).toBe(4);
-    expect(openingPlace(course(GAPS), 1, 3)).toBe(3);
-    expect(openingPlace(course(GAPS), 4, 3)).toBe(4);
+    expect(openingPlace(course(GAPS, [3]), undefined)).toBe(4);
+    expect(openingPlace(course(GAPS, [3]), 2)).toBe(4);
   });
 
   it("is never a task that ended but the last segment, and never past the last", () => {
-    expect(openingPlace(course(GAPS, [3]), 3, undefined)).toBe(4);
-    expect(openingPlace(course(["example", "task"], [2]), undefined, undefined)).toBe(2);
-    expect(openingPlace(course(GAPS), 9, undefined)).toBe(4);
-    expect(openingPlace(course(GAPS), 0, undefined)).toBe(1);
+    expect(openingPlace(course(GAPS, [3]), 3)).toBe(4);
+    expect(openingPlace(course(["example", "task"], [2]), undefined)).toBe(2);
+    expect(openingPlace(course(GAPS), 9)).toBe(4);
+    expect(openingPlace(course(GAPS), 0)).toBe(1);
   });
 });
 

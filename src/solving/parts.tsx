@@ -1,4 +1,4 @@
-// The parts of a screen of solving that the sheet of a task from paper and the task screen share:
+// The parts of the screen of solving, the sheet of a task from paper, that stand apart from it:
 // the verdict's card above the row and its line in the open panel, a reading's track of models,
 // "Hint" and the line of the row.
 import { Fragment, type ReactNode } from "react";
@@ -52,7 +52,6 @@ export type CardKind =
   | "so-far"
   | "write"
   | "reading"
-  | "shown"
   | "feedback"
   | "nokey"
   | "grown";
@@ -63,7 +62,6 @@ const CARD_SIGNS: Readonly<Record<Exclude<CardKind, "reading">, IconValue>> = {
   // A task from paper with no answer yet and no mistake: the tick, quiet on its tint.
   "so-far": "ticked",
   write: "write",
-  shown: "shown",
   feedback: "feedback",
   // A task from paper with no key: a question of its own, as the mockup draws it.
   nokey: "help",

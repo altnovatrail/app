@@ -5,8 +5,8 @@
 // "Feedback by criteria" where no skill has a verdict, and "Adaptive" otherwise; the line
 // under the title names the explanation language when it is not the screen's, and a module not
 // available, which has no way in. The tile of its lesson names the lesson `ListLessons` gives for
-// it, its step and Continue, and its row leads to the page of the module's lessons; a module with
-// no lessons has none. The tile of its tasks, green, names the skill they train — the tutor's
+// it, shut while the lessons are remade — grey under "Lesson · Soon", its row and Continue
+// disabled —; a module with no lessons has none. The tile of its tasks, green, names the skill they train — the tutor's
 // choice, or the learner's own, the module's task skill —, its row opens the choice of it, where
 // the tutor's gives the choice back, and Solve gives a task of the module alone. A module solved on
 // the sheet has the tile of its tasks alone, with no choice: Solve opens its page of tasks. While
@@ -62,34 +62,32 @@ function langOf(language: string | undefined): { lang?: string } {
   return language === undefined ? {} : { lang: language };
 }
 
-/** The tile of a module's lesson: its row to the page of lessons, its step and Continue. */
-function LessonMode({
-  card,
-  lesson,
-  onLesson,
-  onLessons,
-}: {
-  readonly card: ModuleCard;
-  readonly lesson: LessonTile;
-  readonly onLesson: () => void;
-  readonly onLessons: () => void;
-}) {
+/**
+ * The tile of a module's lesson, shut while the lessons are remade: grey, "Lesson · Soon" over the
+ * lesson's title, its row and Continue disabled, and in place of its step that the lessons are
+ * being remade.
+ */
+function LessonMode({ card, lesson }: { readonly card: ModuleCard; readonly lesson: LessonTile }) {
   const { words } = useLanguage();
   const titleId = useId();
   const allId = useId();
-  const percent = Math.round((lesson.step / Math.max(1, lesson.segments)) * 100);
   return (
-    <section className="nt-way" data-mode="lesson" aria-label={words.text("home.lesson")}>
-      {/* Each button is named by its words and described by what it leads to. */}
+    <section
+      className="nt-way"
+      data-mode="lesson"
+      data-locked="true"
+      aria-label={words.text("home.lesson")}
+    >
+      {/* Each button is named by its words and described by what it would lead to. */}
       <span id={allId} hidden>
         {words.text("home.lessons-all", { module: card.title })}
       </span>
-      <button type="button" className="nt-way-row" aria-describedby={allId} onClick={onLessons}>
+      <button type="button" className="nt-way-row" aria-describedby={allId} disabled>
         <span className="nt-way-sign" aria-hidden="true">
           <Icon value="lesson" />
         </span>
         <span className="nt-way-words">
-          <span className="nt-way-eyebrow">{words.text("home.lesson")}</span>
+          <span className="nt-way-eyebrow">{words.text("home.lesson-soon")}</span>
           <span id={titleId} className="nt-way-title" {...langOf(card.language)}>
             {lesson.title}
           </span>
@@ -99,13 +97,8 @@ function LessonMode({
         </span>
       </button>
       <div className="nt-way-foot">
-        <div className="nt-way-note">
-          <span className="nt-way-bar" aria-hidden="true">
-            <i style={{ inlineSize: `${percent}%` }} />
-          </span>
-          {words.text("home.lesson-step", { step: lesson.step, count: lesson.segments })}
-        </div>
-        <button type="button" className="nt-way-go" aria-describedby={titleId} onClick={onLesson}>
+        <div className="nt-way-note">{words.text("home.lessons-remade")}</div>
+        <button type="button" className="nt-way-go" aria-describedby={titleId} disabled>
           <span className="nt-go-sign" aria-hidden="true">
             <Icon value="play" />
           </span>
@@ -224,10 +217,6 @@ export function ModeShapes() {
 
 export interface HomeCardProps {
   readonly card: ModuleCard;
-  /** Goes on with the lesson its tile names: its open run, or a new run of it. */
-  readonly onLesson: (lesson: LessonTile) => void;
-  /** Opens the page of the module's lessons. */
-  readonly onLessons: () => void;
   /** Solve: a task of the module alone, or its page of tasks on the sheet. */
   readonly onSolve: () => void;
   /** Sets the module's task skill, "" giving the choice back to the tutor. */
@@ -236,7 +225,7 @@ export interface HomeCardProps {
   readonly note?: ReactNode;
 }
 
-export function HomeCard({ card, onLesson, onLessons, onSolve, onTaskSkill, note }: HomeCardProps) {
+export function HomeCard({ card, onSolve, onTaskSkill, note }: HomeCardProps) {
   const { language, words } = useLanguage();
   const id = useId();
   const counts = card.skills;
@@ -322,14 +311,7 @@ export function HomeCard({ card, onLesson, onLessons, onSolve, onTaskSkill, note
           </Loading>
         ) : (
           <div className="nt-ways">
-            {lesson === null ? null : (
-              <LessonMode
-                card={card}
-                lesson={lesson}
-                onLesson={() => onLesson(lesson)}
-                onLessons={onLessons}
-              />
-            )}
+            {lesson === null ? null : <LessonMode card={card} lesson={lesson} />}
             <TasksMode card={card} titleId={id} onSolve={onSolve} onTaskSkill={onTaskSkill} />
           </div>
         )}

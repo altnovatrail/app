@@ -4,8 +4,8 @@
 // page to pick the tasks on, and "History", the pages of the solving history; then the modules
 // connected, each a card with its title in its own explanation language, the states of its skills
 // counted by the rule of skill-map's map, the mark "in order" of a chain, the way to its map, and
-// its two ways in (HomeCard.tsx): its lesson and its tasks. There is no card of what comes next:
-// each module starts on its own. Solve with an attempt of the module open goes on with it; with an
+// its two ways in (HomeCard.tsx): its lesson, shut while the lessons are remade, and its tasks.
+// There is no card of what comes next: each module starts on its own. Solve with an attempt of the module open goes on with it; with an
 // attempt of another open, which a choice closes, a question says so first. The tutor time is the
 // frame's, its ring at the top right (TutorTime.tsx). The catalog, connecting and the licenses
 // are Subjects' (SubjectsPage.tsx), which "All subjects" opens. The legend of the marks stands below
@@ -18,13 +18,12 @@ import { type Failure, parseFailure } from "../api/failure.ts";
 import { outcomeOf } from "../api/outcome.ts";
 import { failureText, outcomeText } from "../api/words.ts";
 import { Icon } from "../app/Icon.tsx";
-import { LESSON, navigate, PAPER, TASK } from "../app/router.ts";
+import { navigate, PAPER, TASK } from "../app/router.ts";
 import { Screen } from "../app/Screen.tsx";
 import { Loading, Sk } from "../app/Skeleton.tsx";
 import { ReadFailed } from "../boot/Screens.tsx";
 import { collator } from "../i18n/intl.ts";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
-import { type LessonOpen, useLessons } from "../lesson/LessonContext.tsx";
 import { givenOf } from "../next/choice.ts";
 import { useEngine } from "../next/useEngine.ts";
 import { usePackages } from "../packages/PackagesContext.tsx";
@@ -34,11 +33,10 @@ import { usePaper } from "../paper/PaperContext.tsx";
 import { YourPages } from "../paper/YourPages.tsx";
 import type { Device } from "../storage/device.ts";
 import { useAttempt } from "../task/AttemptContext.tsx";
-import { openTaskOf } from "../task/openTask.ts";
 import { HomeCard, ModeShapes } from "./HomeCard.tsx";
 import { Legend } from "./Legend.tsx";
-import { lessonsRoute } from "./LessonsScreen.tsx";
-import { byTitle, type LessonTile, type ModuleCard } from "./modules.ts";
+import { byTitle, type ModuleCard } from "./modules.ts";
+import { openModuleOf } from "./openModule.ts";
 import { useLessonTiles } from "./useLessonTiles.ts";
 import { useModules } from "./useModules.ts";
 
@@ -49,8 +47,6 @@ export interface HomeScreenProps {
   readonly failure?: Failure;
   /** Asks for the lists again: offered when the names of some modules did not come. */
   readonly onRetry?: () => void;
-  /** Goes on with the lesson a card's tile names. */
-  readonly onLesson?: (card: ModuleCard, lesson: LessonTile) => void;
   /** Solve on a card. */
   readonly onSolve?: (card: ModuleCard) => void;
   /** Sets a card's task skill, "" giving the choice back to the tutor. */
@@ -70,7 +66,6 @@ export function HomeScreen({
   connected,
   failure,
   onRetry,
-  onLesson,
   onSolve,
   onTaskSkill,
   noteOf,
@@ -176,8 +171,6 @@ export function HomeScreen({
               <HomeCard
                 key={card.moduleId}
                 card={card}
-                onLesson={(lesson) => onLesson?.(card, lesson)}
-                onLessons={() => navigate(lessonsRoute(card.moduleId))}
                 onSolve={() => onSolve?.(card)}
                 onTaskSkill={(skill) => onTaskSkill?.(card, skill)}
                 note={noteOf?.(card)}
@@ -281,7 +274,6 @@ export function MySubjects({
   const { views } = usePackages();
   const { words } = useLanguage();
   const open = useAttempt()?.attemptId;
-  const lessons = useLessons();
   const paper = usePaper();
   const modules = useModules(profileId, false);
   const connected = useLessonTiles(api, profileId, modules.connected);
@@ -291,9 +283,9 @@ export function MySubjects({
     setOpenModule(undefined);
     if (open === undefined) return;
     let current = true;
-    openTaskOf(api, views, profileId, open).then(
-      (task) => {
-        if (current && task.kind === "module") setOpenModule(task.moduleId);
+    openModuleOf(api, views, profileId, open).then(
+      (moduleId) => {
+        if (current) setOpenModule(moduleId);
       },
       () => {},
     );
@@ -336,17 +328,6 @@ export function MySubjects({
       else run(card.moduleId, undefined);
     },
     [open, openModule, run],
-  );
-
-  const onLesson = useCallback(
-    (_card: ModuleCard, lesson: LessonTile) => {
-      const held = lessons?.runs.find((each) => each.lesson === lesson.lesson);
-      const chosen: LessonOpen =
-        held === undefined ? { kind: "lesson", lesson: lesson.lesson } : { kind: "run", run: held };
-      lessons?.choose(chosen);
-      navigate(LESSON);
-    },
-    [lessons],
   );
 
   const setTaskSkill = modules.setTaskSkill;
@@ -404,7 +385,6 @@ export function MySubjects({
     <HomeScreen
       connected={connected}
       onRetry={modules.retry}
-      onLesson={onLesson}
       onSolve={onSolve}
       onTaskSkill={onTaskSkill}
       noteOf={noteOf}

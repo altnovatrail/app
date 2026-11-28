@@ -41,7 +41,7 @@ export function groupsOf(lessons: readonly ModuleLesson[]): ModuleLesson[][] {
 }
 
 /** The step of an open run to go on with, from 1: after the last task segment of it that ended. */
-export function stepOf(lesson: ModuleLesson): number {
+function stepOf(lesson: ModuleLesson): number {
   const last = Math.max(0, ...lesson.endedSegments);
   return Math.max(1, Math.min(last + 1, lesson.segments));
 }

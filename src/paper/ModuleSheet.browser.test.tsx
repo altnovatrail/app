@@ -1,13 +1,12 @@
 // A task of a module the engine gave, on the sheet of a task from paper in the browser, with the
 // canvas element itself: its text and picture drawn as the statement, its options on the tracing
-// paper and the one tapped chosen, Check with the strokes and the option, Check with none chosen,
-// "You chose" and Try again, Correct and Next task by the engine, the pill of the task skill, the
+// paper and the one tapped chosen, Check with the strokes and the option, the line of an own key's
+// limit on a Check not checked, Check with none chosen, "You chose" and Try again, Correct and Next task by the engine, the pill of the task skill, the
 // module's own hint, no question field but in grown-up mode, and grown-up mode on its attempt; an
 // essay on a lined sheet, its strokes by SubmitEssay, its feedback in the panel, Done with the
 // criteria of its rubric and Next task — with api on connect-es's router and the storage on the
 // device's memory.
 import "@altnovatrail/canvas";
-import { Mode } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import {
   type AskGrownUpRequest,
   AttemptService,
@@ -20,7 +19,11 @@ import {
   type SubmitWorkRequest,
   type SubmitWorkResponseSchema,
 } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
-import { ChoiceKind } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
+import {
+  Cause,
+  ChoiceKind,
+  LimitCause,
+} from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import {
   type BeginAttemptRequest,
   type ChooseNextRequest,
@@ -33,16 +36,18 @@ import { WorkService } from "@altnovatrail/contracts/novatrail/api/v1/work_pb.js
 import type { CanvasElement, HistoryEvent } from "@altnovatrail/spec/canvas";
 import type * as open from "@altnovatrail/spec/formatv0/open";
 import type { MessageInitShape } from "@bufbuild/protobuf";
+import { timestampFromDate } from "@bufbuild/protobuf/wkt";
 import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { page, userEvent } from "vitest/browser";
 import { ApiProvider } from "../api/ApiContext.tsx";
+import { dateTimeFormat } from "../i18n/intl.ts";
 import type { PackageChecks } from "../packages/checks.ts";
 import { DeviceFiles } from "../packages/files.ts";
 import { PackagesProvider } from "../packages/PackagesContext.tsx";
 import { OpenViews } from "../packages/views.ts";
 import { setAccount } from "../storage/registry.ts";
-import { Task } from "../task/Task.tsx";
+import { Task } from "../task/TaskRoute.tsx";
 import { routedApi } from "../test/api.ts";
 import { memoryDevice } from "../test/device.ts";
 import { inLanguage } from "../test/language.tsx";
@@ -290,11 +295,9 @@ async function renderSheet(setup: Setup = {}) {
           <Task
             profileId="p1"
             attemptId="a1"
-            defaultMode={Mode.BY_STEPS}
             device={device}
             adult={setup.adult ?? false}
             onAttempt={(id) => attempts.push(id)}
-            sheet
           />
         </PackagesProvider>
       </ApiProvider>,
@@ -405,6 +408,38 @@ it("chooses the option tapped, and Check sends it with the strokes", async () =>
   expect([...(crop ?? []).slice(1, 4)]).toEqual([0x50, 0x4e, 0x47]);
   expect(await screen.findByText("Correct")).toBeVisible();
   expect(screen.getByText("You chose December")).toBeVisible();
+});
+
+it("says when access comes back beside the tier's ceiling of an own key, and none beside the owner's limit", async () => {
+  // The ceiling of the tier, back at 00:00 UTC on the first of a month three months on.
+  const now = new Date();
+  const returns = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 3, 1));
+  const date = dateTimeFormat("en", { day: "numeric", month: "long" }).format(returns);
+  const time = dateTimeFormat("en", { timeStyle: "short" }).format(returns);
+  let limit: MessageInitShape<typeof SubmitWorkResponseSchema>["outcome"] = {
+    cause: Cause.LIMIT_REACHED,
+    ownKeyLimit: { cause: LimitCause.TIER, accessReturns: timestampFromDate(returns) },
+  };
+  await renderSheet({ answer: () => ({ items: [], wrongAnswers: 0, outcome: limit }) });
+  tap(2);
+  writeOn(sheet());
+  await userEvent.click(row().getByRole("button", { name: "Check" }));
+  expect(
+    await screen.findByText(
+      `Your AI key has reached the limit of its usage tier at the provider. Access comes back on ${date} at ${time}`,
+    ),
+  ).toBeVisible();
+  cleanup();
+
+  limit = { cause: Cause.LIMIT_REACHED, ownKeyLimit: { cause: LimitCause.LIMIT } };
+  await renderSheet({ answer: () => ({ items: [], wrongAnswers: 0, outcome: limit }) });
+  tap(2);
+  writeOn(sheet());
+  await userEvent.click(row().getByRole("button", { name: "Check" }));
+  expect(
+    await screen.findByText("The spending limit set for your AI key is reached"),
+  ).toBeVisible();
+  expect(screen.queryByText(/Access comes back/)).toBeNull();
 });
 
 it("says to choose an answer first on Check with no option chosen, and sends nothing", async () => {

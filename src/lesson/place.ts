@@ -18,18 +18,14 @@ export function taskEnded(course: Course, segment: number): boolean {
 }
 
 /**
- * The place a lesson opens at: the later of the place kept on the device, the one after the last
- * task segment that ended, and the segment of the attempt open; past the tasks that ended, but the
- * last segment, which "lesson done" follows.
+ * The place a lesson opens at: the later of the place kept on the device and the one after the last
+ * task segment that ended; past the tasks that ended, but the last segment, which "lesson done"
+ * follows.
  */
-export function openingPlace(
-  course: Course,
-  kept: number | undefined,
-  openAttempt: number | undefined,
-): number {
+export function openingPlace(course: Course, kept: number | undefined): number {
   const last = course.kinds.length;
   const after = course.ended.size === 0 ? 1 : Math.max(...course.ended) + 1;
-  let place = Math.min(Math.max(kept ?? 1, after, openAttempt ?? 1, 1), last);
+  let place = Math.min(Math.max(kept ?? 1, after, 1), last);
   while (place < last && taskEnded(course, place)) place += 1;
   return place;
 }

@@ -1,6 +1,6 @@
 // A module's card on Home: its kind, how many are mastered, its map described by its title, a
-// square for each skill, and its two ways in — the tile of its lesson, with its step, Continue and
-// the row to its lessons, and the tile of its tasks, with Solve and the choice of their skill: the
+// square for each skill, and its two ways in — the tile of its lesson, shut while the lessons are
+// remade, and the tile of its tasks, with Solve and the choice of their skill: the
 // tutor's, the skills suggested and each tier's, a locked one shut, and the learner's own, given
 // back by the tutor's in the pick. A module with no lessons has the tile of its tasks alone, one on the sheet no choice,
 // the tiles are shapes while the map or the lessons come, and a module with no current version has
@@ -59,14 +59,7 @@ function card(value: ModuleCard, props: Partial<Omit<HomeCardProps, "card">> = {
   render(
     inLanguage(
       <ul>
-        <HomeCard
-          card={value}
-          onLesson={() => {}}
-          onLessons={() => {}}
-          onSolve={() => {}}
-          onTaskSkill={() => {}}
-          {...props}
-        />
+        <HomeCard card={value} onSolve={() => {}} onTaskSkill={() => {}} {...props} />
       </ul>,
     ),
   );
@@ -78,28 +71,26 @@ afterEach(() => {
 });
 
 describe("a module's card on Home", () => {
-  it("names the module, its skills and its lesson, and goes on by each of its buttons", async () => {
-    const onLesson = vi.fn();
-    const onLessons = vi.fn();
+  it("names the module, its skills and its lesson, shut, and goes on by each of its other buttons", async () => {
     const onSolve = vi.fn();
-    const article = card(MATH, { onLesson, onLessons, onSolve });
+    const article = card(MATH, { onSolve });
     expect(within(article).getByText("Adaptive")).toBeVisible();
     expect(within(article).getByText("3 of 10 mastered")).toBeVisible();
     expect(within(article).getByRole("img").querySelectorAll("i")).toHaveLength(10);
     const lesson = within(article).getByRole("region", { name: "Lesson" });
     expect(within(lesson).getByText(/^Patterns that grow/)).toHaveAttribute("lang", "en");
-    expect(within(lesson).getByText("Step 2 of 5 · in the author's order")).toBeVisible();
-    await userEvent.click(
+    expect(lesson).toHaveAttribute("data-locked", "true");
+    expect(within(lesson).getByText("Lesson · Soon")).toBeVisible();
+    expect(within(lesson).getByText("The lessons are being remade")).toBeVisible();
+    expect(
       within(lesson).getByRole("button", { name: "Continue", description: "Patterns that grow" }),
-    );
-    expect(onLesson).toHaveBeenCalledWith(LESSON);
-    await userEvent.click(
+    ).toBeDisabled();
+    expect(
       within(lesson).getByRole("button", {
-        name: "Lesson Patterns that grow",
+        name: "Lesson · Soon Patterns that grow",
         description: "Every lesson of Olympiad maths",
       }),
-    );
-    expect(onLessons).toHaveBeenCalledOnce();
+    ).toBeDisabled();
     const tasks = within(article).getByRole("region", { name: "Tasks" });
     expect(within(tasks).getByText(/^The tutor picks the skill/)).toBeVisible();
     expect(within(tasks).getByText("As the work goes, by your progress")).toBeVisible();
