@@ -497,7 +497,7 @@ export const en = {
   /** The second card at the top: "Tasks from my paper", the tasks of a page of the learner's book. */
   "subjects.paper": "Tasks from my paper",
   /** Under its heading: what the card does, the mockup's line. */
-  "subjects.paper-sub": "Snap a page from your book, pick the tasks, and solve each one here",
+  "subjects.paper-sub": "Take a photo of a page, pick the tasks, and start solving",
   /** The button of "Tasks from my paper": it opens the camera. */
   "subjects.paper-open": "Open camera",
   /** On a module's card under its bar: of its skills with a verdict, how many are mastered. */

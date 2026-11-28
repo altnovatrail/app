@@ -328,7 +328,7 @@ export const ru = {
   "subjects.disconnect": "Отключить",
   "subjects.sequential": "По порядку",
   "subjects.paper": "Задачи с моей бумаги",
-  "subjects.paper-sub": "Снимок страницы из книги, выбор задач и решение каждой здесь",
+  "subjects.paper-sub": "Сфотографируйте страницу, выберите задачи и начните решать",
   "subjects.paper-open": "Открыть камеру",
   "subjects.mastered": "Освоено {mastered} из {count}",
   "subjects.rubric": plural({

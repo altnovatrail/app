@@ -1026,6 +1026,9 @@ describe("the legend and the task from paper", () => {
   it("opens the camera of a new page from Tasks from my paper", async () => {
     await renderSubjects({}, "ru");
     const paper = within(await screen.findByRole("region", { name: "Задачи с моей бумаги" }));
+    expect(
+      paper.getByText("Сфотографируйте страницу, выберите задачи и начните решать"),
+    ).toBeVisible();
     const button = paper.getByRole("button", { name: "Открыть камеру" });
     expect(button).toBeEnabled();
     await userEvent.click(button);
@@ -1036,6 +1039,9 @@ describe("the legend and the task from paper", () => {
   it("takes a picture of the device's from a file to the page to pick from, and says one it can't read", async () => {
     await renderSubjects({});
     const paper = within(await screen.findByRole("region", { name: "Tasks from my paper" }));
+    expect(
+      paper.getByText("Take a photo of a page, pick the tasks, and start solving"),
+    ).toBeVisible();
     expect(paper.getByRole("button", { name: "From a file" })).toBeEnabled();
     const input = document.querySelector<HTMLInputElement>(
       'input[type="file"]',
