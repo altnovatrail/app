@@ -4988,14 +4988,17 @@ main.nt-task-screen > .nt-task-foot {
   padding-inline: 0;
 }
 /*
- * Next task, once the task is over: Check's fill, its words and then the mockup's arrow in a
- * circle; the arrow alone, 44 round, where the row does not fit one line with their words.
+ * Next task, once the task is over: Check's fill and its words, with no arrow; the arrow alone, 44
+ * round, where the row does not fit one line with their words, since a button needs a sign to see.
  */
 .nt-task-row button.nt-check-button.nt-row-next {
   flex: none;
   gap: 0.5rem;
-  padding: 0 1.125rem 0 1.375rem;
+  padding: 0 1.375rem;
   white-space: nowrap;
+}
+[data-fit="words"] .nt-row-next > :not(.nt-retake-words) {
+  display: none;
 }
 .nt-task-row button.nt-row-next > svg {
   font-size: 1.0625rem;

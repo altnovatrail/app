@@ -524,7 +524,11 @@ it("goes on to the task the answer named on Next task, or asks the engine in the
   await userEvent.click(row().getByRole("button", { name: "Check" }));
   expect(await screen.findByText("Correct")).toBeVisible();
   await waitFor(() => expect(attempts).toEqual([undefined]));
-  await userEvent.click(row().getByRole("button", { name: "Next task" }));
+  // Its words alone, with no arrow beside them, where the row fits them on one line.
+  const next = row().getByRole("button", { name: "Next task" });
+  const arrow = next.querySelector("svg");
+  expect(arrow === null || getComputedStyle(arrow).display === "none").toBe(true);
+  await userEvent.click(next);
   await expect.poll(() => begun.length).toBe(1);
   expect(begun[0]?.start).toEqual({ case: "choiceId", value: "choice-2" });
   expect(chosen).toHaveLength(0);
