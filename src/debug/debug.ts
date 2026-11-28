@@ -1,5 +1,7 @@
-// The debug mode of the models of a task from paper: which models check it, what
-// each call returned and what it cost, for an account with api's debug right. app loads this module
+// The debug mode, for an account with api's debug right: which models serve the calls of a task
+// from paper, and what every call of a model made for the account returned and what it cost,
+// wherever it was made — a task from paper, a task of a module, an essay, the tutor's words,
+// grown-up mode —, so that the session's total is all it spent. app loads this module
 // only once api's `GetDebug` answered (gate.ts). The choice is api's; the calls taken from api and
 // the sum since the session began are the tab's memory alone, and go at a reload or with the
 // account.
@@ -62,7 +64,7 @@ export interface DebugState {
   readonly sent: ReadonlyMap<string, Sent>;
   /** The learner's request of each finding that had one, by the key of its action, from the tab. */
   readonly asked: ReadonlyMap<string, string>;
-  /** A call of a task from paper is under way. */
+  /** A request that may call AI is under way. */
   readonly busy: number;
   /** What the last change of the choice came to, when api refused it. */
   readonly refused: string | undefined;
@@ -232,14 +234,14 @@ export function choose(client: DebugClient | undefined, first: Pick | undefined)
   return sending;
 }
 
-/** A call of a task from paper begins: the button shows it under way. */
+/** A request that may call AI begins: the button shows it under way. */
 export function began(): void {
   if (state.status === "on" || state.status === "loading")
     set((now) => ({ ...now, busy: now.busy + 1 }));
 }
 
 /**
- * After a call of a task from paper: the actions since the last take join the session's, and a
+ * After a request that may call AI: the actions since the last take join the session's, and a
  * Check's action holds what it sent, and a finding's the learner's request.
  */
 export async function take(
@@ -307,6 +309,10 @@ export function callsOf(actions: readonly DebugAction[]): readonly DebugCall[] {
 /** The name of a call by its kind; one api no longer records is a call. */
 export function callName(kind: DebugCallKind): string {
   switch (kind) {
+    case DebugCallKind.WORK_READING:
+      return "Reading";
+    case DebugCallKind.ESSAY_ASSESSMENT:
+      return "Essay assessment";
     case DebugCallKind.TASK_FINDING:
       return "Find tasks";
     case DebugCallKind.STATEMENT_READING:
@@ -322,10 +328,11 @@ export function callName(kind: DebugCallKind): string {
   }
 }
 
-/** A call's title: what it did, and its attempt after the first. */
+/** A call's title: what it did, the reader of a pair, and its attempt after the first. */
 export function callTitle(call: DebugCall): string {
+  const reader = call.reader > 0 ? ` · reader ${call.reader}` : "";
   const attempt = call.attempt > 1 ? ` · attempt ${call.attempt}` : "";
-  return `${callName(call.kind)}${attempt}`;
+  return `${callName(call.kind)}${reader}${attempt}`;
 }
 
 /** The name of a model by the catalog, or its ID as the provider gave it back. */
