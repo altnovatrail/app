@@ -2,10 +2,11 @@
 // what the function ./states of skill-map gives — the very rule its map draws by —,
 // so that the card and the map never part, and the card counts them: the five states of a skill
 // with a verdict on its bar, in the order of the mockup's legend, and the two marks of the rest
-// beside it. No DOM.
+// beside it; and the skills the choice of a module's task skill offers. No DOM.
 import type { GetSkillMapResponse } from "@altnovatrail/contracts/novatrail/api/v1/progress_pb.js";
 import { type SkillStatus, skillStates } from "@altnovatrail/skill-map/states";
 import type * as open from "@altnovatrail/spec/formatv0/open";
+import type { SkillPick, SkillPicks } from "./modules.ts";
 
 export type { SkillStatus };
 
@@ -51,63 +52,51 @@ export function judged(counts: SkillCounts): number {
   return STATES.reduce((sum, state) => sum + counts[state], 0);
 }
 
-/**
- * Where the learner stands in a module whose skills go in a chain: the skill to work on —
- * the first not mastered in the order of the tiers — by its place from 1 and its title, the one
- * after it, and how many are mastered of all; past the last, no skill to work on.
- */
-export interface ChainPlace {
-  readonly step: number;
-  readonly total: number;
-  readonly mastered: number;
-  readonly current?: string;
-  readonly next?: string;
-}
-
-/** The states a card's Continue works on, the first that has a skill: begun, then due, then new. */
-const TO_WORK: readonly SkillStatus[] = ["in-progress", "time-to-review", "ready-to-start"];
+/** The states whose skills the tutor suggests for a module's tasks, in that order. */
+const SUGGESTED: readonly SkillStatus[] = [
+  "time-to-review",
+  "in-progress",
+  "ready-to-start",
+  "feedback-by-criteria",
+];
 
 /**
- * The ID in the module of the skill its card's Continue works on: a chain's skill to work on, the
- * first not mastered in the order of the tiers; else the first skill begun, else due, else ready
- * to start, in the graph's order; none when no skill is any of them, and the map is the way.
+ * The skills of a module for the choice of its task skill, by its skill graph, the skills'
+ * statuses and the tiers of the graph: three suggested, and every skill by its tier, a skill with
+ * no tier after them.
  */
-export function skillToWork(
-  statuses: ReadonlyMap<string, SkillStatus>,
-  tiers: Readonly<Record<string, number>> | undefined,
-): string | undefined {
-  if (tiers !== undefined) {
-    const order = [...statuses.keys()].sort(
-      (a, b) => (tiers[a] ?? Number.MAX_SAFE_INTEGER) - (tiers[b] ?? Number.MAX_SAFE_INTEGER),
-    );
-    return order.find((id) => statuses.get(id) !== "mastered");
-  }
-  for (const state of TO_WORK) {
-    for (const [id, status] of statuses) if (status === state) return id;
-  }
-  return undefined;
-}
-
-/** The place in a chain, by the graph's titles, the skills' statuses and the tiers of the graph. */
-export function chainPlace(
+export function picksOf(
+  moduleId: string,
   graph: open.SkillGraph,
   statuses: ReadonlyMap<string, SkillStatus>,
   tiers: Readonly<Record<string, number>>,
-): ChainPlace {
-  const order = [...statuses.keys()].sort(
-    (a, b) => (tiers[a] ?? Number.MAX_SAFE_INTEGER) - (tiers[b] ?? Number.MAX_SAFE_INTEGER),
-  );
-  const at = order.findIndex((id) => statuses.get(id) !== "mastered");
-  const mastered = order.filter((id) => statuses.get(id) === "mastered").length;
-  const title = (id: string | undefined) =>
-    id === undefined ? undefined : graph.skills[id]?.title;
-  const current = title(order[at]);
-  const next = at === -1 ? undefined : title(order[at + 1]);
+): SkillPicks {
+  const ids = [...statuses.keys()];
+  // The full ID, as skill-map's fullSkillId joins it.
+  const pick = (id: string): SkillPick => ({
+    skill: `${moduleId}/skill/${id}`,
+    title: graph.skills[id]?.title ?? id,
+    status: statuses.get(id) as SkillStatus,
+  });
+  const suggested = SUGGESTED.flatMap((state) => ids.filter((id) => statuses.get(id) === state))
+    .slice(0, 3)
+    .map(pick);
+  const by = new Map<number, string[]>();
+  for (const id of ids) {
+    const tier = tiers[id] ?? Number.MAX_SAFE_INTEGER;
+    by.set(tier, [...(by.get(tier) ?? []), id]);
+  }
   return {
-    step: at === -1 ? order.length : at + 1,
-    total: order.length,
-    mastered,
-    ...(current === undefined ? {} : { current }),
-    ...(next === undefined ? {} : { next }),
+    suggested,
+    tiers: [...by.keys()]
+      .sort((a, b) => a - b)
+      .map((tier) => {
+        // The format numbers the tiers from 1 and names them in that order.
+        const name = tier === Number.MAX_SAFE_INTEGER ? undefined : graph.tiers?.[tier - 1];
+        return {
+          ...(name === undefined ? {} : { name }),
+          skills: (by.get(tier) as string[]).map(pick),
+        };
+      }),
   };
 }

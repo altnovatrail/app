@@ -2,7 +2,7 @@ import { Code, ConnectError } from "@connectrpc/connect";
 import { describe, expect, it } from "vitest";
 import type { Api } from "../api/client.ts";
 import type { OpenViews } from "../packages/views.ts";
-import { openTaskOf } from "./openTask.ts";
+import { openModuleOf } from "./openModule.ts";
 
 const START = {
   packageDigest: "sha256:1",
@@ -13,9 +13,8 @@ function apiGiving(getOpenAttempt: () => unknown): Api {
   return { learning: { getOpenAttempt: async () => getOpenAttempt() } } as unknown as Api;
 }
 
-function viewsOf(statement: { text?: string }[], manifest?: unknown): OpenViews {
+function viewsOf(manifest?: unknown): OpenViews {
   return {
-    parseView: () => ({ statement }),
     get: async () => {
       if (manifest === undefined) throw new Error("no manifest");
       return { view: manifest };
@@ -23,48 +22,31 @@ function viewsOf(statement: { text?: string }[], manifest?: unknown): OpenViews 
   } as unknown as OpenViews;
 }
 
-const MANIFEST = {
-  id: "novatrail/olympiad-math",
-  title: "Olympiad maths",
-  languages: { explanation: "en" },
-};
-
-describe("openTaskOf", () => {
-  it("gives the module and the first paragraph of the statement", async () => {
-    const views = viewsOf([{}, { text: "How many?" }, { text: "Then?" }], MANIFEST);
+describe("openModuleOf", () => {
+  it("gives the module of the attempt's package", async () => {
     await expect(
-      openTaskOf(
+      openModuleOf(
         apiGiving(() => ({ attempt: { start: START } })),
-        views,
+        viewsOf({ id: "novatrail/olympiad-math" }),
         "p1",
         "a1",
       ),
-    ).resolves.toEqual({
-      kind: "module",
-      moduleId: "novatrail/olympiad-math",
-      module: "Olympiad maths",
-      language: "en",
-      statement: "How many?",
-    });
+    ).resolves.toBe("novatrail/olympiad-math");
   });
 
-  it("gives no module when its manifest does not come, and no statement of pictures alone", async () => {
-    const views = viewsOf([{}]);
+  it("gives none when the manifest does not come, nor of a task from paper", async () => {
     await expect(
-      openTaskOf(
+      openModuleOf(
         apiGiving(() => ({ attempt: { start: START } })),
-        views,
+        viewsOf(),
         "p1",
         "a1",
       ),
-    ).resolves.toEqual({ kind: "module" });
-  });
-
-  it("gives a task from paper where GetOpenAttempt refuses it as an invalid argument", async () => {
-    const api = apiGiving(() => {
+    ).resolves.toBeUndefined();
+    const paper = apiGiving(() => {
       throw new ConnectError("paper", Code.InvalidArgument);
     });
-    await expect(openTaskOf(api, viewsOf([]), "p1", "a1")).resolves.toEqual({ kind: "paper" });
+    await expect(openModuleOf(paper, viewsOf(), "p1", "a1")).resolves.toBeUndefined();
   });
 
   it("refuses as GetOpenAttempt does, and an attempt without its start", async () => {
@@ -72,19 +54,19 @@ describe("openTaskOf", () => {
     const api = apiGiving(() => {
       throw gone;
     });
-    await expect(openTaskOf(api, viewsOf([]), "p1", "a1")).rejects.toBe(gone);
+    await expect(openModuleOf(api, viewsOf(), "p1", "a1")).rejects.toBe(gone);
     await expect(
-      openTaskOf(
+      openModuleOf(
         apiGiving(() => ({ attempt: {} })),
-        viewsOf([]),
+        viewsOf(),
         "p1",
         "a1",
       ),
     ).rejects.toThrow("an open attempt without its start");
     await expect(
-      openTaskOf(
+      openModuleOf(
         apiGiving(() => ({ attempt: { start: { packageDigest: "d" } } })),
-        viewsOf([]),
+        viewsOf(),
         "p1",
         "a1",
       ),

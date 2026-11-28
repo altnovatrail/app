@@ -7,6 +7,7 @@ import {
   type Profile,
   ProfileSchema,
 } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
+import type { SheetSubmission } from "@altnovatrail/spec/canvas";
 import { create } from "@bufbuild/protobuf";
 import { cleanup, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
@@ -40,14 +41,9 @@ async function deviceWithWork() {
   await setAccount(setup.device, "account-1");
   const profile = await addProfile(setup.device, "p1");
   await profile?.beginAttempt({ attemptId: "a1", digest: "d1" });
-  await profile?.addSubmission(
-    "a1",
-    {
-      cells: [{ item: 1, slot: 1, png: new Blob([new Uint8Array(20_000)], { type: "image/png" }) }],
-      submission: { boxes: [{ item: 1, slot: 1, ids: [1] }], digest: "0123456789abcdef" },
-    },
-    0,
-  );
+  // A context of about 20 kB, which the page counts.
+  const context = { crop: { sheetBox: [1, 2, 3, 4] }, digest: "0".repeat(20_000) };
+  await profile?.addSubmission("a1", context as unknown as SheetSubmission, 0);
   return setup;
 }
 

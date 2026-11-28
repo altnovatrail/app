@@ -1,12 +1,12 @@
-// Without a wish for less motion, a button's colours change in a short transition, and Check on a
-// pause blinks once: three flashes of a second, shorter than 5 s.
+// Without a wish for less motion, a button's colours change in a short transition, and the card of
+// a Check gone on to a later model turns its spinner and pulses its ring.
 import { render } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { page } from "vitest/browser";
 import "./theme.css";
 import { Offline } from "../boot/Screens.tsx";
 import { inLanguage } from "../test/language.tsx";
-import { blinkingCheck } from "../test/task.tsx";
+import { readingCloser } from "../test/sheet.tsx";
 
 describe("motion", () => {
   it("is there when nobody asked for less", () => {
@@ -19,12 +19,13 @@ describe("motion", () => {
     );
   });
 
-  it("blinks Check once on a pause, three times a second at most", () => {
-    render(inLanguage(blinkingCheck()));
-    const check = page.getByRole("button", { name: "Check" }).element() as HTMLElement;
-    const style = getComputedStyle(check);
-    expect(style.animationName).toBe("nt-blink");
-    expect(style.animationDuration).toBe("1s");
-    expect(style.animationIterationCount).toBe("3");
+  it("turns the reading's spinner and pulses its ring on the sheet's card", () => {
+    const { container } = render(inLanguage(readingCloser()));
+    const spin = container.querySelector(".nt-spin") as HTMLElement;
+    expect(getComputedStyle(spin).animationName).toBe("nt-spin");
+    const sign = container.querySelector(".nt-card-sign") as HTMLElement;
+    expect(getComputedStyle(sign).animationName).toBe("nt-ring");
+    const now = container.querySelector('.nt-track-dot[data-at="now"]') as HTMLElement;
+    expect(getComputedStyle(now).animationName).toBe("nt-step-in, nt-ring");
   });
 });

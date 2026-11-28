@@ -28,8 +28,8 @@ import type {
 import type { ReadOutcome } from "../api/outcome.ts";
 import { outcomeText } from "../api/words.ts";
 import type { Words } from "../i18n/words.ts";
+import { reasonKey, verdictKey } from "../solving/attempt.ts";
 import type { PaperSent } from "../storage/profile.ts";
-import { reasonKey, verdictKey } from "../task/attempt.ts";
 import type { Said } from "../tutor/report.ts";
 import { type Frame, pageOrder, sameFrame } from "./frame.ts";
 import { type PageTask, picked } from "./page.ts";
@@ -71,6 +71,8 @@ export interface BegunTask {
   readonly over?: boolean;
   /** Its Check came to Correct, here or in a tab before: the list marks it, which the page keeps. */
   readonly solved?: true;
+  /** On a task of a module, the option of its tracing paper chosen, by its index: the tab's alone. */
+  readonly chosen?: number;
 }
 
 /**
@@ -173,18 +175,22 @@ export interface PaperPart {
  * What a Check of a task from paper came to, as its card shows it: correct when every task of the
  * frame is, or not yet, with what was read of a frame of one task and each task's part; so far
  * correct when no task is not yet and one has no answer yet but a solution with no mistake; not
- * read, with why, when no answer was; not checked, with the outcome of the call that left it so; or
- * no key, when the Check read nothing of a solution in any task.
+ * read, with why, when no answer was; not checked, with the outcome of the call that left it so;
+ * no key, when the Check read nothing of a solution in any task; or of an essay, which has no
+ * verdict, its feedback, with why it has no words when it has none.
  */
 export type PaperVerdict =
   | {
       readonly kind: "correct" | "not-yet" | "so-far";
       readonly read: string | undefined;
       readonly parts: readonly PaperPart[];
+      /** What was read is an option the learner chose on a task of a module, not a reading. */
+      readonly chose?: true;
     }
   | { readonly kind: "unreadable"; readonly reason: string }
   | { readonly kind: "unchecked"; readonly outcome: ReadOutcome | undefined }
-  | { readonly kind: "nokey" };
+  | { readonly kind: "nokey" }
+  | { readonly kind: "feedback"; readonly note?: "none" | "lost" };
 
 /**
  * The verdict of an answer to a Check of a task from paper, by each task's item, in the order of the
@@ -250,7 +256,8 @@ export function taskState(task: Pick<BegunTask, "verdict" | "over" | "solved">):
  * The buttons of the screen of solving and at the foot of the tutor's panel, by the task's last
  * Check: Hint while the task is not solved, one the Check read nothing of too, whose hints still
  * work, and while a solved task is solved again, after a Check that was not correct; and the way to
- * the next task once the task is solved, here or before, or after a Check that read nothing.
+ * the next task once the task is solved, here or before, or after a Check that read nothing. An
+ * essay's feedback is no verdict: Hint stands beside it till Done solves the essay.
  */
 export function tutorActs(task: Pick<BegunTask, "verdict" | "solved">): {
   readonly hint: boolean;
@@ -259,7 +266,7 @@ export function tutorActs(task: Pick<BegunTask, "verdict" | "solved">): {
   const kind = task.verdict?.kind;
   const solved = task.solved === true || kind === "correct";
   return {
-    hint: kind === undefined ? !solved : kind !== "correct",
+    hint: kind === undefined || kind === "feedback" ? !solved : kind !== "correct",
     next: solved || kind === "nokey",
   };
 }
@@ -338,13 +345,14 @@ const PAPER_REASONS: Readonly<Record<string, "paper.no-answer" | "paper.several"
  * correct of those checked, and under it the tasks whose answer was not read; of one task, "Read: …"
  * under a value read, and under "So far correct" that there is no mistake yet. Under a work not
  * read, why, in the words of paper for no final answer and more than one; under one not checked,
- * the outcome's words.
+ * the outcome's words. Under an essay's feedback, that its words are in the tutor's panel, or why
+ * none came.
  */
 export function paperCard(
   verdict: PaperVerdict,
   words: Words,
 ): {
-  kind: "correct" | "not-yet" | "so-far" | "write" | "nokey";
+  kind: "correct" | "not-yet" | "so-far" | "write" | "nokey" | "feedback";
   title: string;
   line: string | undefined;
 } {
@@ -364,7 +372,11 @@ export function paperCard(
         kind: verdict.kind,
         title: words.text(verdict.kind === "correct" ? "task.correct" : "task.not-yet"),
         line:
-          verdict.read === undefined ? undefined : words.text("task.read", { text: verdict.read }),
+          verdict.read === undefined
+            ? undefined
+            : words.text(verdict.chose === true ? "paper.chose" : "task.read", {
+                text: verdict.read,
+              }),
       };
     }
     case "unreadable": {
@@ -377,6 +389,12 @@ export function paperCard(
         line: words.text(reasonKey(verdict.reason)),
       };
     }
+    case "feedback":
+      return {
+        kind: "feedback",
+        title: words.text("task.feedback"),
+        line: words.text(FEEDBACK_LINES[verdict.note ?? "words"]),
+      };
     case "nokey":
       return {
         kind: "nokey",
@@ -390,6 +408,13 @@ export function paperCard(
     line: verdict.outcome === undefined ? undefined : outcomeText(verdict.outcome, words),
   };
 }
+
+/** The line under an essay's feedback: where its words are, or why there are none. */
+const FEEDBACK_LINES = {
+  words: "task.feedback-line",
+  none: "task.feedback-none",
+  lost: "task.feedback-lost",
+} as const;
 
 /** The titles of a frame of several tasks, by its verdict. */
 const PARTS_TITLES = {

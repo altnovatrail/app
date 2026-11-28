@@ -13,20 +13,22 @@ import {
   ProfileSchema,
   type QuotaShareSchema,
 } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
-import {
-  ItemVerdictSchema,
-  TutorReply,
-} from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
+import { TutorReply } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
 import {
   ChoiceKind,
   EngineChoiceSchema,
   RunEndReason,
 } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
+import {
+  LessonState,
+  ListLessonsResponseSchema,
+} from "@altnovatrail/contracts/novatrail/api/v1/learning_pb.js";
 import { LegalTextSchema } from "@altnovatrail/contracts/novatrail/api/v1/legal_pb.js";
 import {
   AnchorSkillHolding,
   GetSkillMapResponseSchema,
 } from "@altnovatrail/contracts/novatrail/api/v1/progress_pb.js";
+import type * as open from "@altnovatrail/spec/formatv0/open";
 import { create, type MessageInitShape } from "@bufbuild/protobuf";
 import { userEvent } from "vitest/browser";
 import { LearnerProvider } from "../account/AccountGate.tsx";
@@ -65,19 +67,18 @@ import { LicensePages, licenseRoute } from "../packages/LicensePage.tsx";
 import { type Packages, PackagesProvider } from "../packages/PackagesContext.tsx";
 import { Camera } from "../paper/Camera.tsx";
 import { Pick } from "../paper/Pick.tsx";
-import { Solve } from "../paper/Solve.tsx";
+import { type ModuleSide, Solve } from "../paper/Solve.tsx";
+import type { BegunTask } from "../paper/solve.ts";
 import { SignInScreen } from "../signin/SignInScreen.tsx";
 import { moduleMapRoute, SkillMapRoute } from "../skills/SkillMapScreen.tsx";
 import { addProfile } from "../storage/profile.ts";
 import { addDatabase, setAccount } from "../storage/registry.ts";
 import { PROFILE_SCHEMA, profileDatabase } from "../storage/schema.ts";
+import { LessonsRoute, lessonsRoute } from "../subjects/LessonsScreen.tsx";
 import { HomeScreen } from "../subjects/MySubjects.tsx";
 import type { ModuleAbout, SkillList } from "../subjects/modules.ts";
 import { CatalogScreen } from "../subjects/SubjectsPage.tsx";
 import type { SkillCounts } from "../subjects/states.ts";
-import { NO_VERDICTS, verdictsOf } from "../task/attempt.ts";
-import { initialState } from "../task/steps.ts";
-import { TaskScreen, type TaskScreenProps } from "../task/TaskScreen.tsx";
 import {
   axeViolations,
   captionlessOffList,
@@ -159,41 +160,6 @@ function ringOpen(
   ];
 }
 
-/** A task with options and chips, on the steps of the format's example of olympiad maths. */
-const TASK: TaskScreenProps["task"] = {
-  id: "fruit",
-  statement: [{ text: "Two apples and three pears are in a bowl." }],
-  canvas: { kind: "handwriting_sheet" },
-  givens: ["Two apples", "Three pears"],
-  unknown: "How many fruits",
-  items: [
-    { text: "How many fruits?", answer_slots: [{ binding: "choice", options: ["4", "5"] }] },
-    {
-      answer_slots: [
-        { binding: "choice", options: ["Yes", "No"] },
-        { binding: "choice", options: ["Apples", "Pears"] },
-      ],
-    },
-  ],
-};
-
-/** A task answered on the sheet, and a workbook's page of two lines. */
-const HANDWRITTEN: TaskScreenProps["task"] = {
-  id: "rungs",
-  statement: [{ text: "The rungs are 30 cm apart." }],
-  canvas: { kind: "handwriting_sheet" },
-  items: [{ text: "How many rungs?", answer_slots: [{ binding: "anywhere" }] }],
-};
-const WORKBOOK: TaskScreenProps["task"] = {
-  id: "page",
-  statement: [{ text: "Fill in the boxes." }],
-  canvas: { kind: "workbook" },
-  items: [
-    { line: [{ text: "7 × " }, { binding: "box" }, { text: " = 56" }] },
-    { line: [{ text: "9 + " }, { binding: "box" }, { text: " = 12" }] },
-  ],
-};
-
 /** "Report a problem" beside the words of a rung, with an api it never reaches. */
 function report() {
   return (
@@ -218,53 +184,66 @@ async function press(key: "report.button" | "report.send"): Promise<void> {
   await userEvent.click(button);
 }
 
-/** The task screen, by steps on the first step unless the test says otherwise. */
-function taskScreen(props: Partial<TaskScreenProps> = {}) {
+/** A task of a module with options, as the sheet lays them on its tracing paper. */
+const CHOICE_TASK: open.Task = {
+  id: "fruit",
+  statement: [{ text: "Two apples and three pears are in a bowl. How many fruits?" }],
+  canvas: { kind: "handwriting_sheet" },
+  givens: ["Two apples", "Three pears"],
+  unknown: "How many fruits",
+  items: [{ answer_slots: [{ binding: "choice", options: ["4", "5"] }] }],
+};
+
+/** A short essay, with a rubric, on the lined sheet. */
+const ESSAY_TASK: open.Task = {
+  id: "essay",
+  statement: [{ text: "Write about your favourite season." }],
+  canvas: { kind: "handwriting_sheet" },
+  items: [{ answer_slots: [{ binding: "sheet" }] }],
+};
+
+/** The sheet of a task of a module, its one task begun as given, with an api it never reaches. */
+function moduleSheet(
+  begun: Partial<BegunTask> = {},
+  side: Partial<ModuleSide> = {},
+  task: open.Task = CHOICE_TASK,
+) {
+  const frame = { ymin: 0, xmin: 0, ymax: 1000, xmax: 1000 };
   return (
-    <TaskScreen
-      task={TASK}
-      manifest={
-        {
-          module_format_version: "0.4",
-          id: "example/choices",
-          version: "1.0.0",
-          title: "Choices",
-          languages: { explanation: "en" },
-        } as TaskScreenProps["manifest"]
-      }
-      steps={[
-        {
-          title: "Understand the task",
-          description: "Tick what is known and what you are to find.",
-          gives: ["givens"],
-          exit_condition: "givens_ticked",
-        },
-        { title: "Make a plan", gives: ["techniques"], exit_condition: "none" },
-        { title: "Solve it", exit_condition: "answer_slots_filled" },
-      ]}
-      catalog={{ techniques: { draw: { title: "Draw the problem", description: "A picture." } } }}
-      state={{ ...initialState("steps"), ticked: { givens: [0], unknown: false } }}
-      mode="steps"
-      verdicts={NO_VERDICTS}
-      filled={null}
-      history={[]}
-      media={() => Promise.reject(new Error("no file in this test"))}
-      notSaved={false}
-      pending={false}
-      blink={false}
-      onHistoryChange={() => {}}
-      onMode={() => {}}
-      onGoTo={() => {}}
-      onTick={() => {}}
-      onDone={() => {}}
-      onChoose={() => {}}
-      onCheck={() => {}}
-      onHint={() => {}}
-      onAgain={() => {}}
-      onHome={() => {}}
-      panelOpen
-      {...props}
-    />
+    <ApiProvider value={{} as Api}>
+      <Solve
+        profileId="p1"
+        adult={false}
+        tasks={[{ id: "module", frame, drawn: false, picked: true }]}
+        begun={[
+          {
+            attemptId: "a1",
+            taskId: "module",
+            frame,
+            drawn: false,
+            crop: new Blob([], { type: "image/png" }),
+            history: [],
+            ...begun,
+          },
+        ]}
+        onKeep={() => {}}
+        onRenew={() => new Promise(() => {})}
+        onHome={() => {}}
+        module={{
+          task,
+          ...(task === CHOICE_TASK
+            ? { choice: { item: 1, slot: 1, options: ["4", "5"] }, writes: false }
+            : { writes: true }),
+          language: "en",
+          catalog: undefined,
+          pill: null,
+          onSolved: () => {},
+          onNext: () => {},
+          nexting: false,
+          ...side,
+        }}
+      />
+    </ApiProvider>
   );
 }
 
@@ -302,23 +281,6 @@ function nextStep(props: Partial<Parameters<typeof NextStep>[0]> = {}) {
 }
 
 const choice = (kind: ChoiceKind) => create(EngineChoiceSchema, { choiceId: "c1", kind });
-
-const JUDGED = verdictsOf(
-  [
-    create(ItemVerdictSchema, {
-      verdict: "not_yet",
-      answerSlots: [{ answerSlot: { item: 1, slot: 1 }, verdict: "not_yet", value: "4" }],
-    }),
-    create(ItemVerdictSchema, {
-      verdict: "correct",
-      answerSlots: [
-        { answerSlot: { item: 2, slot: 1 }, verdict: "correct", value: "Yes" },
-        { answerSlot: { item: 2, slot: 2 }, verdict: "correct", value: "Pears" },
-      ],
-    }),
-  ],
-  TASK,
-);
 
 /** The policy's next version, synthetic, which applies from a day still to come. */
 const NEXT_POLICY = create(LegalTextSchema, {
@@ -584,6 +546,73 @@ const LICENSED = {
 } as unknown as Packages;
 
 /** The open views of a module with a skill graph of two skills, and of a module that teaches. */
+/** The skills a module's card offers for its task skill. */
+const PICKS = {
+  suggested: [
+    {
+      skill: "novatrail/olympiad-math/skill/gaps",
+      title: "Gaps",
+      status: "time-to-review" as const,
+    },
+  ],
+  tiers: [
+    {
+      name: "Warm-up",
+      skills: [
+        {
+          skill: "novatrail/olympiad-math/skill/gaps",
+          title: "Gaps",
+          status: "time-to-review" as const,
+        },
+        {
+          skill: "novatrail/olympiad-math/skill/towers",
+          title: "Towers",
+          status: "locked" as const,
+        },
+      ],
+    },
+  ],
+};
+
+/** api with a module's lessons: one passed, one begun, two in any order. */
+const LESSONS_API = {
+  learning: {
+    listLessons: async () =>
+      create(ListLessonsResponseSchema, {
+        lessons: [
+          {
+            lesson: "example/fair-shares/lesson/counting",
+            title: "Counting",
+            segments: 4,
+            group: 0,
+            state: LessonState.PASSED,
+          },
+          {
+            lesson: "example/fair-shares/lesson/halves",
+            title: "Halves",
+            segments: 6,
+            group: 1,
+            state: LessonState.OPEN,
+            endedSegments: [2],
+          },
+          {
+            lesson: "example/fair-shares/lesson/thirds",
+            title: "Thirds",
+            segments: 5,
+            group: 1,
+            state: LessonState.NEW,
+          },
+        ],
+        tileLesson: "example/fair-shares/lesson/halves",
+      }),
+  },
+  module: {
+    listConnectedModules: async () => ({
+      modules: [{ moduleId: "example/fair-shares", packageDigest: D1 }],
+    }),
+  },
+} as unknown as Api;
+
 const MAPPED = {
   views: {
     get: async (digest: string, kind: string) =>
@@ -794,6 +823,14 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
                     "feedback-by-criteria": 2,
                     "not-assessed": 1,
                   },
+                  picks: PICKS,
+                  lesson: {
+                    lesson: "novatrail/olympiad-math/lesson/gaps",
+                    title: "Gaps and posts",
+                    step: 2,
+                    segments: 6,
+                    open: true,
+                  },
                 },
                 {
                   moduleId: "novatrail/fractions",
@@ -810,13 +847,9 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
                     "feedback-by-criteria": 0,
                     "not-assessed": 0,
                   },
-                  chain: {
-                    step: 5,
-                    total: 10,
-                    mastered: 3,
-                    current: "Comparing fractions with different denominators",
-                    next: "Adding fractions",
-                  },
+                  picks: PICKS,
+                  taskSkill: "novatrail/olympiad-math/skill/gaps",
+                  lesson: null,
                 },
                 {
                   moduleId: "novatrail/short-essays",
@@ -832,6 +865,7 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
                     "feedback-by-criteria": 18,
                     "not-assessed": 0,
                   },
+                  lesson: null,
                 },
                 { moduleId: "novatrail/gone", title: "novatrail/gone" },
               ]}
@@ -852,20 +886,25 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
   ],
   ["Home with the profile's menu open", ...homeWith("button.nt-learner-pill")],
   [
-    "Home with a task in progress",
+    "Home with the choice of a module's task skill open",
     () => (
       <HomeScreen
-        connected={[]}
-        onContinue={() => {}}
-        openTask={{
-          kind: "module",
-          moduleId: "novatrail/olympiad-math",
-          module: "Olympiad maths",
-          language: "en",
-          statement: "Two apples and three pears are in a bowl. How many fruits are there?",
-        }}
+        connected={[
+          {
+            moduleId: "novatrail/olympiad-math",
+            digest: "sha256:1",
+            title: "Olympiad maths",
+            language: "en",
+            picks: PICKS,
+            lesson: null,
+          },
+        ]}
       />
     ),
+    async () => {
+      await userEvent.click(document.querySelector("button.nt-way-row") as HTMLElement);
+      await expect.element(page.getByRole("dialog")).toBeVisible();
+    },
   ],
   ["the camera of a task from paper", () => <Camera onPhoto={() => {}} onClose={() => {}} />],
   [
@@ -952,192 +991,68 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
       </ApiProvider>
     ),
   ],
-  ["task screen by steps, with its chips", () => taskScreen()],
+  ["the sheet of a task of a module, its options on the tracing paper", () => moduleSheet()],
   [
-    "task screen with the voicing on, on a device with no voice for the module's language",
+    "the sheet of a task of a module with the voicing on, on a device with no voice for its language",
     () => (
-      <ApiProvider value={{} as Api}>
-        <SpeechProvider value={fakeSpeech([]).speech}>
-          <VoicingProvider
-            profile={create(ProfileSchema, {
-              profileId: "p1",
-              presentationStyle: { voicing: { enabled: true } },
-            })}
-            device={memoryDevice().device}
-            place="task"
-            onSaved={() => {}}
-            onFailed={() => {}}
-          >
-            {taskScreen({ tutorWords: "How many gaps are there?", wordsCame: true })}
-          </VoicingProvider>
-        </SpeechProvider>
-      </ApiProvider>
+      <SpeechProvider value={fakeSpeech([]).speech}>
+        <VoicingProvider
+          profile={create(ProfileSchema, {
+            profileId: "p1",
+            presentationStyle: { voicing: { enabled: true } },
+          })}
+          device={memoryDevice().device}
+          place="task"
+          onSaved={() => {}}
+          onFailed={() => {}}
+        >
+          {moduleSheet()}
+        </VoicingProvider>
+      </SpeechProvider>
     ),
   ],
   [
-    "task screen at the plan, with a technique, and the work not saved",
+    "the sheet of a task of a module after Not yet, an option chosen",
     () =>
-      taskScreen({
-        state: { ...initialState("steps"), place: 2, reached: 2, techniques: { 2: ["draw"] } },
-        notSaved: true,
+      moduleSheet({
+        chosen: 0,
+        wrongAnswers: 1,
+        verdict: { kind: "not-yet", read: "4", parts: [{ verdict: "not-yet" }], chose: true },
       }),
   ],
   [
-    "task screen on my own, after Not yet",
+    "the sheet of a task of a module solved, with Next task",
     () =>
-      taskScreen({
-        mode: "self",
-        state: { ...initialState("self"), choices: { "1.1": "4", "2.1": "Yes", "2.2": "Pears" } },
-        verdicts: JUDGED,
-        failure: { kind: "offline" },
-      }),
+      moduleSheet(
+        {
+          chosen: 1,
+          over: true,
+          solved: true,
+          verdict: { kind: "correct", read: "5", parts: [{ verdict: "correct" }], chose: true },
+        },
+        { nextNote: "The tutor has no task for this skill yet" },
+      ),
   ],
   [
-    "task screen solved, with its solution",
-    () =>
-      taskScreen({
-        state: { ...initialState("steps"), choices: { "1.1": "5", "2.1": "Yes", "2.2": "Pears" } },
-        solution: [
-          { text: "Two and three make five." },
-          { picture: "fruit.png", alt: "Five fruits" },
-        ],
-        againFailure: { kind: "offline" },
-      }),
+    "the sheet of a task of a module whose work could not be read",
+    () => moduleSheet({ verdict: { kind: "unreadable", reason: "several_final_answers" } }),
   ],
   [
-    "task screen with handwriting after Not yet, with what was read and the tutor's words",
-    () =>
-      taskScreen({
-        task: HANDWRITTEN,
-        state: { ...initialState("self"), wrongAnswers: 1 },
-        mode: "self",
-        verdicts: verdictsOf(
-          [
-            create(ItemVerdictSchema, {
-              verdict: "not_yet",
-              answerSlots: [{ answerSlot: { item: 1, slot: 1 }, verdict: "not_yet", value: "5" }],
-            }),
-          ],
-          HANDWRITTEN,
-        ),
-        tutorWords: "How many gaps are there between the rungs?",
-        wordsCame: true,
-        outcome: "The tutor can't answer right now",
-      }),
-  ],
-  [
-    "task screen with handwriting that could not be read, by steps",
-    () =>
-      taskScreen({
-        task: HANDWRITTEN,
-        verdicts: verdictsOf(
-          [
-            create(ItemVerdictSchema, {
-              verdict: "unreadable",
-              answerSlots: [
-                {
-                  answerSlot: { item: 1, slot: 1 },
-                  verdict: "unreadable",
-                  reason: "several_final_answers",
-                },
-              ],
-            }),
-          ],
-          HANDWRITTEN,
-        ),
-        wordsFailure: "A grown-up's consent is needed first",
-      }),
-  ],
-  [
-    "task screen of a workbook once checked, its lines with what was read",
-    () =>
-      taskScreen({
-        task: WORKBOOK,
-        mode: "self",
-        verdicts: verdictsOf(
-          [
-            create(ItemVerdictSchema, {
-              verdict: "correct",
-              answerSlots: [{ answerSlot: { item: 1, slot: 1 }, verdict: "correct", value: "8" }],
-            }),
-            create(ItemVerdictSchema, {
-              verdict: "unreadable",
-              answerSlots: [
-                { answerSlot: { item: 2, slot: 1 }, verdict: "unreadable", reason: "blank" },
-              ],
-            }),
-          ],
-          WORKBOOK,
-        ),
-      }),
-  ],
-  [
-    "task screen with the hint asked for, the words of a rung and Explain differently",
-    () =>
-      taskScreen({
-        mode: "self",
-        hint: { techniques: ["draw"], question: "What if there were only two pears?" },
-        tutorWords: "Count the gaps.",
-        onExplain: () => {},
-        explainNote: "The tutor has no other words for this",
-        onShow: () => {},
-        showNote: "A grown-up needs to help",
-      }),
-  ],
-  [
-    "task screen on my own, the tutor's panel closed",
-    () => taskScreen({ mode: "self", panelOpen: false, onPanel: () => {} }),
-  ],
-  [
-    "task screen on my own, the tutor's panel opened with nothing in it yet",
-    () => taskScreen({ mode: "self", onPanel: () => {} }),
-  ],
-  [
-    "task screen with the words of a rung and Report a problem",
-    () => taskScreen({ mode: "self", tutorWords: "Count the gaps.", report: report() }),
-  ],
-  [
-    "task screen with the form of a report, sent without a kind",
-    () => taskScreen({ mode: "self", tutorWords: "Count the gaps.", report: report() }),
+    "the form of a report of the tutor's words, sent without a kind",
+    () => (
+      <main>
+        <h1>Tutor</h1>
+        {report()}
+      </main>
+    ),
     async () => {
       await press("report.button");
       await press("report.send");
     },
   ],
   [
-    "task screen solved, with the words after it and the form of a report",
-    () =>
-      taskScreen({
-        solution: [{ text: "Two and three make five." }],
-        tutorWords: "Well done: five fruits.",
-        report: report(),
-      }),
-    async () => {
-      await press("report.button");
-    },
-  ],
-  [
-    "task screen asking whether to show the solution",
-    () => taskScreen({ onShow: () => {} }),
-    async () => {
-      // The button by its words in each language of the test: none found is a failure, not a skip.
-      const names = [WORDS.en, WORDS.ru, wordsOf(PSEUDO, "en")].map((each) =>
-        each.text("task.show-solution"),
-      );
-      const button = [...document.querySelectorAll<HTMLButtonElement>("button")].find((each) =>
-        names.includes(each.textContent ?? ""),
-      );
-      if (button === undefined) throw new Error("no button to show the solution");
-      await userEvent.click(button);
-    },
-  ],
-  [
-    "task screen with the solution shown",
-    () =>
-      taskScreen({
-        shown: true,
-        solution: [{ text: "Two and three make five." }],
-      }),
+    "the sheet of a short essay, lined, with Done",
+    () => moduleSheet({}, { essay: { submissions: 1 } }, ESSAY_TASK),
   ],
   [
     "lesson on an explanation, with its picture and numbered list",
@@ -1190,22 +1105,22 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
       ),
   ],
   [
-    "lesson on its task, solved, with Continue",
+    "lesson on a task that ended, with Continue",
     () =>
-      lessonScreen(taskScreen({ inLesson: true, solution: [{ text: "Four gaps." }] }), {
+      lessonScreen(<p>This task is over</p>, {
         course: { kinds: ["explanation", "example", "task", "explanation"], ended: new Set([3]) },
         place: 4,
         shown: 3,
       }),
   ],
   [
-    "lesson on a task that did not begin, with Begin the task again",
+    "lesson on a task being remade, after a request that failed",
     () =>
-      lessonScreen(null, {
+      lessonScreen(<p>This task is being remade with the lessons</p>, {
         place: 3,
         shown: 3,
         failure: { kind: "offline" },
-        onAgain: () => {},
+        onContinue: undefined,
       }),
   ],
   [
@@ -1229,15 +1144,6 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
       />
     ),
   ],
-  [
-    "task screen solved, with the next task",
-    () =>
-      taskScreen({
-        solution: [{ text: "Two and three make five." }],
-        next: nextStep({ choice: choice(ChoiceKind.TASK) }),
-      }),
-  ],
-  ["Home with What's next", () => <HomeScreen connected={[]} next={nextStep()} />],
   ["lesson ended by api", () => <LessonEnd reason={RunEndReason.ABANDONED} />],
   ["the legal pages, below their bar", () => <LegalPages route={LEGAL} back={HOME} />],
   [
@@ -1424,17 +1330,17 @@ const SCREENS: readonly [string, () => ReactNode, (() => Promise<void>)?][] = [
     nextFamilyDay: { seconds: 1_794_009_600n },
   }),
   [
-    "Home with lessons in progress",
+    "the lessons of a module, passed, begun, new and in any order",
     () => (
-      <HomeScreen
-        connected={[]}
-        runs={[
-          { lessonRunId: "r1", title: "Gaps and posts", module: "Olympiad maths", language: "en" },
-          { lessonRunId: "r2", module: "Физика", language: "ru" },
-        ]}
-        onLesson={() => {}}
-      />
+      <ApiProvider value={LESSONS_API}>
+        <PackagesProvider value={MAPPED}>
+          <LessonsRoute route={lessonsRoute("example/fair-shares")} profileId="p1" />
+        </PackagesProvider>
+      </ApiProvider>
     ),
+    async () => {
+      await expect.element(page.getByRole("button", { name: /Halves/ })).toBeVisible();
+    },
   ],
   [
     "Subjects with cards that say what their modules are",
@@ -1524,6 +1430,13 @@ afterEach(async () => {
   await page.viewport(1024, 768);
 });
 
+/** A pattern of the words of a text, any space or none between its letters. */
+function spaced(text: string): string {
+  return [...text.replace(/\s+/g, "")]
+    .map((letter) => letter.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+    .join("\\s*");
+}
+
 describe.each(LANGUAGES)("the screens in %s", (_, language, words) => {
   // A screen whose words are not ready yet shows nothing for a moment: none of these is so.
   it.each(SCREENS)(
@@ -1547,7 +1460,11 @@ describe.each(LANGUAGES)("the screens in %s", (_, language, words) => {
         // named beside its words, as the profile's pill, has its words in its name (2.5.3).
         const label = button.getAttribute("aria-label");
         const text = button.textContent ?? "";
-        await expect.element(button).toHaveAccessibleName(label ?? text);
+        // A name from the words runs them on with a space between the button's blocks, where
+        // its text has none: the words, whatever space there is between them.
+        await expect
+          .element(button)
+          .toHaveAccessibleName(label ?? new RegExp(`^\\s*${spaced(text)}\\s*$`));
         if (label !== null) expect(label).toContain(text);
       }
     },

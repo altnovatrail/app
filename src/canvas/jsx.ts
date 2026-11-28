@@ -14,6 +14,7 @@ import type {
   DemoChangeEvent,
   GridChangeEvent,
   HistoryChangeEvent,
+  OptionTapEvent,
   PenChangeEvent,
   ToolChangeEvent,
   TracingChangeEvent,
@@ -52,6 +53,7 @@ export interface CanvasProps
       | "history"
       | "marks"
       | "pens"
+      | "chosen"
     >
   > {
   readonly key?: Key;
@@ -68,6 +70,7 @@ export interface CanvasProps
   readonly ontracingread?: (event: TracingReadEvent) => void;
   readonly ongridchange?: (event: GridChangeEvent) => void;
   readonly onpenchange?: (event: PenChangeEvent) => void;
+  readonly onoptiontap?: (event: OptionTapEvent) => void;
 }
 
 declare module "react" {

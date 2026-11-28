@@ -1,4 +1,5 @@
-// "Your pages" on the card "A task from my paper", as the author's mockup `Vashi-stranicy-1a`:
+// "History" on the card "Tasks from my paper", the solving history, as the author's mockup
+// `Vashi-stranicy-1a`:
 // the profile's pages from paper this device keeps, the newest first, each a row with a thumbnail of
 // its photo, when it was taken and how many tasks it began, behind a small button that opens a
 // pop-over. A page opens on the screen of solving with its tasks and their work. The button
@@ -143,8 +144,8 @@ export function YourPages({
       popClassName="nt-pop-pages"
       caption={
         <>
-          <Icon value="photos" />
-          {label}
+          <Icon value="history" />
+          {words.text("paper.history")}
         </>
       }
       onClosed={() => setGone(false)}

@@ -1,5 +1,6 @@
-// Each call of AI the screens of a task from paper make, as the debug mode sees it: only for
-// an account whose `GetDebug` answered, which alone loads the module of the mode.
+// Each request that may call AI the screens of the sheet make — of a task from paper and of a task
+// of a module —, as the debug mode sees it: only for an account whose `GetDebug` answered, which
+// alone loads the module of the mode.
 import type { Api } from "../api/client.ts";
 import * as gate from "./gate.ts";
 
@@ -16,7 +17,7 @@ export interface Check<T> {
 }
 
 /**
- * A call of a task from paper: the debug mode shows it under way, and takes what its calls of AI
+ * A request that may call AI: the debug mode shows it under way, and takes what its calls of AI
  * returned once it ends, however it ends, for a Check what it sent, and for a finding the learner's
  * request, which api keeps nowhere. Without the mode, the call alone.
  */

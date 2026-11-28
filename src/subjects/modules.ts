@@ -7,10 +7,11 @@
 // the mark comes apart from the card, when the graph has come, so a graph slow to come holds no
 // card back, and one that cannot be had marks nothing. Subjects says more of a module: the facts of
 // its manifest — its subject, whom it is for, its version, authors and license — and its skills by
-// tier, from the same graph. No DOM.
+// tier, from the same graph. A card of Home also holds the module's task skill, the skills it
+// offers for it, and the tile of its lesson. No DOM.
 import type * as open from "@altnovatrail/spec/formatv0/open";
 import type { OpenViews } from "../packages/views.ts";
-import type { ChainPlace, SkillCounts } from "./states.ts";
+import type { SkillCounts, SkillStatus } from "./states.ts";
 
 export interface ModuleCard {
   readonly moduleId: string;
@@ -26,18 +27,54 @@ export interface ModuleCard {
   readonly sequential?: true;
   /** How many of its skills have each state and mark, once its map has come. */
   readonly skills?: SkillCounts;
-  /** The full ID of the skill its Continue works on, once its map has come. */
-  readonly skill?: string;
   /** Its map is on its way: the card shows the shapes of its counts meanwhile. */
   readonly counting?: true;
-  /** Where the learner stands in its chain of skills, once its map has come: a chain's alone. */
-  readonly chain?: ChainPlace;
-  /** It is solved on the sheet of a task from paper: Continue opens its page of tasks. */
+  /** The full ID of its task skill, the learner's own for its tasks; none while the tutor chooses. */
+  readonly taskSkill?: string;
+  /** Its skills as the choice of the task skill offers them, once its map has come. */
+  readonly picks?: SkillPicks;
+  /**
+   * The lesson its tile shows, once its lessons have come; null for a module with none, and for
+   * one whose lessons could not be had: its card has the tile of its tasks alone.
+   */
+  readonly lesson?: LessonTile | null;
+  /** It is solved on the sheet of a task from paper: Solve opens its page of tasks. */
   readonly sheet?: true;
   /** What the manifest of its current version says of it; none without a current version. */
   readonly about?: ModuleAbout;
   /** Its current version's skills by tier, once its graph has come; none for a module without one. */
   readonly skillList?: SkillList;
+}
+
+/** A skill as the choice of the task skill offers it. */
+export interface SkillPick {
+  /** Its full ID, as `SetTaskSkill` takes it. */
+  readonly skill: string;
+  readonly title: string;
+  /** Its state by the rule of skill-map's map: a locked one is not to be chosen. */
+  readonly status: SkillStatus;
+}
+
+/**
+ * The skills of a module for the choice of its task skill: those the tutor suggests, the first
+ * three due for review, then begun, then ready to start, then with a rubric; and every skill by the
+ * tiers of its graph, each tier named where the graph names it, in the graph's order.
+ */
+export interface SkillPicks {
+  readonly suggested: readonly SkillPick[];
+  readonly tiers: readonly { readonly name?: string; readonly skills: readonly SkillPick[] }[];
+}
+
+/** The lesson a module's tile shows, as `ListLessons` names it. */
+export interface LessonTile {
+  /** Its full ID, by which `OpenLesson` opens it. */
+  readonly lesson: string;
+  readonly title: string;
+  /** The step to go on with, from 1: after the last task segment of its open run that ended. */
+  readonly step: number;
+  readonly segments: number;
+  /** A run of it is open: Continue goes on with that run. */
+  readonly open: boolean;
 }
 
 /** The facts of a module's manifest that Subjects shows, as the manifest writes them. */
@@ -121,6 +158,8 @@ export interface ModuleRef {
   readonly packageDigest: string;
   /** The list of connected modules says it is solved on the sheet; the catalog says nothing. */
   readonly onSheet?: boolean;
+  /** The list of connected modules names its task skill, empty while the tutor chooses. */
+  readonly taskSkill?: string;
 }
 
 /**
@@ -198,6 +237,9 @@ export async function cardOf(
     ...(manifest === undefined ? {} : { language: manifest.languages.explanation }),
     ...(unnamed ? { unnamed: true as const } : {}),
     ...(module.onSheet === true ? { sheet: true as const } : {}),
+    ...(module.taskSkill === undefined || module.taskSkill === ""
+      ? {}
+      : { taskSkill: module.taskSkill }),
     ...aboutPart(packageDigest === "" ? undefined : manifest),
   };
 }

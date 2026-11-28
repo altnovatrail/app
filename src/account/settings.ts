@@ -6,7 +6,6 @@
 // by. No DOM.
 import {
   HintMode,
-  Mode,
   type Profile,
   ProfileSchema,
   type ProfileSettingsSchema,
@@ -20,7 +19,6 @@ export interface ProfileForm {
   readonly pseudonym: string;
   /** The code of the avatar as the profile gives it, empty for none: one the build does not know too. */
   readonly avatar: string;
-  readonly defaultMode: Mode.BY_STEPS | Mode.SELF;
   readonly voicing: boolean;
   readonly speed: VoicingSpeed.NORMAL | VoicingSpeed.SLOW;
   readonly hintMode: HintMode.QUESTIONS_ONLY | HintMode.SHOW_WHERE;
@@ -36,16 +34,14 @@ export function hintModeOf(
 }
 
 /**
- * The form as the profile gives it: a mode or a speed the build does not know is "by steps" or
- * normal, as the contract's enums say, a hint mode "Show where", a new profile's, and
- * voicing not said is off.
+ * The form as the profile gives it: a speed the build does not know is normal, as the contract's
+ * enum says, a hint mode "Show where", a new profile's, and voicing not said is off.
  */
 export function formOf(profile: Profile): ProfileForm {
   const voicing = profile.presentationStyle?.voicing;
   return {
     pseudonym: profile.pseudonym,
     avatar: profile.avatar,
-    defaultMode: profile.defaultMode === Mode.SELF ? Mode.SELF : Mode.BY_STEPS,
     voicing: voicing?.enabled === true,
     speed: voicing?.speed === VoicingSpeed.SLOW ? VoicingSpeed.SLOW : VoicingSpeed.NORMAL,
     hintMode: hintModeOf(profile),
@@ -56,7 +52,7 @@ export type Settings = MessageInitShape<typeof ProfileSettingsSchema>;
 
 /**
  * The settings that changed against the form as the profile gives it, for `UpdateProfile`: none
- * when nothing did. A field the form shows as the build reads it — an unknown mode — goes only
+ * when nothing did. A field the form shows as the build reads it — an unknown speed — goes only
  * once the adult changed it.
  */
 export function changes(profile: Profile, form: ProfileForm): Settings | undefined {
@@ -68,7 +64,6 @@ export function changes(profile: Profile, form: ProfileForm): Settings | undefin
   const settings: Settings = {
     ...(form.pseudonym === before.pseudonym ? {} : { pseudonym: form.pseudonym }),
     ...(form.avatar === before.avatar ? {} : { avatar: form.avatar }),
-    ...(form.defaultMode === before.defaultMode ? {} : { defaultMode: form.defaultMode }),
     ...(Object.keys(voicing).length === 0 ? {} : { voicing }),
     ...(form.hintMode === before.hintMode ? {} : { hintMode: form.hintMode }),
   };

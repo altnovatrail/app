@@ -3,6 +3,7 @@
 // and each module's manifest once. Connecting and disconnecting are a press away; api's answer is
 // the list of connected modules, the catalog stays, and the focus goes with the card to its new
 // place, its button found by `data-module` and `data-action`, or the button in what they mark.
+// The task skill of a module is set in place too, the cards keeping their counts.
 import type { ConnectedModule } from "@altnovatrail/contracts/novatrail/api/v1/module_pb.js";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useApi } from "../api/ApiContext.tsx";
@@ -111,6 +112,23 @@ export function useModules(profileId: string, withCatalog: boolean) {
     [api, profileId, change],
   );
   const retry = useCallback(() => setAttempt((n) => n + 1), []);
+  // The task skill of a module, "" giving the choice back to the tutor: api's answer names each
+  // module's, and the cards take them in place. A refusal is the caller's to say.
+  const setTaskSkill = useCallback(
+    async (moduleId: string, skill: string) => {
+      const answer = await api.module.setTaskSkill({ profileId, moduleId, skill });
+      const skills = new Map(answer.modules.map((module) => [module.moduleId, module.taskSkill]));
+      setRead((held) =>
+        held.status === "done"
+          ? {
+              ...held,
+              connected: held.connected.map((card) => withSkill(card, skills.get(card.moduleId))),
+            }
+          : held,
+      );
+    },
+    [api, profileId],
+  );
 
   const done = read.status === "done";
   const own = useSequential(views, done ? read.connected : undefined);
@@ -126,5 +144,12 @@ export function useModules(profileId: string, withCatalog: boolean) {
     connect,
     disconnect,
     retry,
+    setTaskSkill,
   };
+}
+
+/** The card with the task skill api named, none while the tutor chooses. */
+function withSkill(card: ModuleCard, skill: string | undefined): ModuleCard {
+  const { taskSkill: _, ...rest } = card;
+  return skill === undefined || skill === "" ? rest : { ...rest, taskSkill: skill };
 }

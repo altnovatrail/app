@@ -2,14 +2,7 @@
 // sees them, the pictures and the empty texts left out.
 import type * as open from "@altnovatrail/spec/formatv0/open";
 import { describe, expect, it } from "vitest";
-import {
-  examplePhrases,
-  explanationPhrases,
-  hintPhrases,
-  lineText,
-  stepPhrases,
-  taskPhrases,
-} from "./texts.ts";
+import { examplePhrases, explanationPhrases, hintPhrases, lineText } from "./texts.ts";
 
 const texts = (phrases: readonly { text: string }[]) => phrases.map(({ text }) => text);
 
@@ -19,52 +12,6 @@ const CATALOG: open.Techniques = {
     halve: { title: "Halve" },
   },
 };
-
-describe("a task", () => {
-  it("reads its statement, its pictures left out, then each item and the options of a choice", () => {
-    const task = {
-      id: "t",
-      statement: [
-        { text: "Pick the greater." },
-        { picture: "media/pie.png", alt: "A pie" },
-        { text: " " },
-      ],
-      canvas: { kind: "sheet" },
-      items: [
-        { text: "Which is more?", answer_slots: [{ binding: "choice", options: ["1/2", "1/3"] }] },
-        { text: "How many?", answer_slots: [{ binding: "number" }] },
-        { answer_slots: [{ binding: "choice" }] },
-      ],
-    } as unknown as open.Task;
-    const phrases = taskPhrases(task, "en");
-    expect(texts(phrases)).toEqual([
-      "Pick the greater.",
-      "Which is more?",
-      "1/2",
-      "1/3",
-      "How many?",
-    ]);
-    expect(phrases.every(({ language }) => language === "en")).toBe(true);
-  });
-
-  it("reads a workbook's lines with their boxes", () => {
-    const task = {
-      id: "t",
-      statement: [{ text: "Write the missing numbers." }],
-      canvas: { kind: "workbook" },
-      items: [{ line: [{ text: "6 ×" }, { binding: "box" }, { text: "= 42" }] }],
-    } as open.Task;
-    expect(texts(taskPhrases(task, undefined))).toEqual([
-      "Write the missing numbers.",
-      "6 × □ = 42",
-    ]);
-    expect(taskPhrases(task, undefined)[0]?.language).toBeUndefined();
-  });
-
-  it("writes a line as one text, with a box where it has one", () => {
-    expect(lineText([{ text: "  7 × 8 " }, {}, { text: "" }])).toBe("7 × 8 □");
-  });
-});
 
 describe("a hint", () => {
   it("reads the givens, the unknown, the cards of its techniques and its question", () => {
@@ -100,22 +47,6 @@ describe("a hint", () => {
   });
 });
 
-describe("a step", () => {
-  it("reads its title, its description, its chips and its cards", () => {
-    const step = {
-      title: "Find the givens",
-      description: "Tick what the task gives.",
-    } as open.Step;
-    expect(texts(stepPhrases(step, ["6 bags", "7 apples"], ["halve"], CATALOG, "en"))).toEqual([
-      "Find the givens",
-      "Tick what the task gives.",
-      "6 bags",
-      "7 apples",
-      "Halve",
-    ]);
-  });
-});
-
 describe("an explanation", () => {
   it("reads its paragraphs and the items of its lists, its pictures left out", () => {
     const parts: open.ExplanationPart[] = [
@@ -128,6 +59,12 @@ describe("an explanation", () => {
       "Cut the whole.",
       "Count the parts.",
     ]);
+  });
+});
+
+describe("a line", () => {
+  it("is written as one text, with a box where it has one", () => {
+    expect(lineText([{ text: "  7 × 8 " }, {}, { text: "" }])).toBe("7 × 8 □");
   });
 });
 

@@ -1,12 +1,12 @@
 // The way to what the engine chooses, for every screen that asks it (LearningService
-// in the contract): `choose` asks `ChooseNext` — with the full ID of a skill the learner chose on
-// the skill map, or with none, which gives the lead back to the engine — and `act` goes
+// in the contract): `choose` asks `ChooseNext` — with a module, among its tasks alone on its task
+// skill, Solve on its card, or with none, among all the modules — and `act` goes
 // to what a choice gives: a lesson opens in the player by `OpenLesson`, a task begins by
 // `BeginAttempt` on the task screen, and nothing stays with the screen. Both `ChooseNext` and the
 // beginning of a task close the attempt open outside a lesson for good, and once closed its work on
 // the device goes: the screen asks first. Each action has one idempotency key, the same with its
-// repeats, and only a refusal ends it; a skill other than the one asked for last is another action,
-// with a key of its own. On the owner's own key both name its provider, so that api chooses by the
+// repeats, and only a refusal ends it; a module other than the one asked for last is another
+// action, with a key of its own. On the owner's own key both name its provider, so that api chooses by the
 // key's route and not by platform AI's quota (the contract).
 import { Cause, type EngineChoice } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import { Code } from "@connectrpc/connect";
@@ -25,11 +25,12 @@ import { givenOf } from "./choice.ts";
 
 export interface Engine {
   /**
-   * Asks the engine's choice, for a skill chosen on the map or for none — "" —, closing the attempt
-   * `leaving`, which was open when the learner asked; the choice, or none when api gave none.
+   * Asks the engine's choice, among the tasks of a module or among all the modules — "" —, closing
+   * the attempt `leaving`, which was open when the learner asked; the choice, or none when api gave
+   * none.
    */
   readonly choose: (
-    skill: string,
+    moduleId: string,
     leaving: string | undefined,
   ) => Promise<EngineChoice | undefined>;
   /** Goes to what a choice gives, closing the attempt `leaving` once a task of it has begun. */
@@ -42,8 +43,10 @@ export function useEngine(profileId: string, device: Device | undefined): Engine
   const lessons = useLessons();
   const setAttempt = useAttempt()?.setAttempt;
   const works = useWorks(profileId);
-  // One key for the choice of a skill, or of none, and one for the beginning of a task chosen.
-  const chooseKey = useRef<{ readonly skill: string; readonly key: string } | undefined>(undefined);
+  // One key for the choice in a module, or in all, and one for the beginning of a task chosen.
+  const chooseKey = useRef<{ readonly moduleId: string; readonly key: string } | undefined>(
+    undefined,
+  );
   const beginKey = useRef<string | undefined>(undefined);
 
   /**
@@ -60,14 +63,16 @@ export function useEngine(profileId: string, device: Device | undefined): Engine
   );
 
   const choose = useCallback(
-    async (skill: string, leaving: string | undefined) => {
-      if (chooseKey.current?.skill !== skill) chooseKey.current = { skill, key: idempotencyKey() };
+    async (moduleId: string, leaving: string | undefined) => {
+      if (chooseKey.current?.moduleId !== moduleId) {
+        chooseKey.current = { moduleId, key: idempotencyKey() };
+      }
       let answer: Awaited<ReturnType<typeof api.learning.chooseNext>>;
       try {
         answer = await api.learning.chooseNext({
           profileId,
           idempotencyKey: chooseKey.current.key,
-          skill,
+          moduleId,
           ...holder.routeFields(profileId),
         });
       } catch (reason) {

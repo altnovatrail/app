@@ -4,7 +4,7 @@ import { openCache } from "./cache.ts";
 import { eraseAccount } from "./erase.ts";
 import { addProfile, openProfile } from "./profile.ts";
 import { readRegistry, setAccount, setSignIn } from "./registry.ts";
-import { FIREBASE_AUTH, KEEP_MS, profileDatabase, REGISTRY } from "./schema.ts";
+import { FIREBASE_AUTH, KEEP_MS, PROFILE_SCHEMA, profileDatabase, REGISTRY } from "./schema.ts";
 import { startStorage } from "./start.ts";
 
 const SIGN_IN = { projectId: "example-project", apiKey: "synthetic-web-api-key" };
@@ -14,7 +14,6 @@ const TASK = {
   canvas: { kind: "handwriting_sheet", grid: "squares" },
   items: [{ answer_slots: [{ binding: "anywhere" }] }],
 } as const;
-const work = { cells: [], submission: { boxes: [], digest: "0123456789abcdef" } };
 
 describe("startStorage", () => {
   it("with no registry makes nothing: nobody signed in on this device", async () => {
@@ -96,22 +95,21 @@ describe("startStorage", () => {
     expect(backend.databases.has(FIREBASE_AUTH)).toBe(false);
   });
 
-  it("clears the work of correct submissions whose words never came, and keeps the term of 30 days", async () => {
-    const { device, state } = memoryDevice();
+  it("clears what the store correctWork holds, and keeps the term of 30 days", async () => {
+    const { device, state, backend } = memoryDevice();
     await setAccount(device, "account-1");
     const profile = await addProfile(device, "p1");
     const cache = await openCache(device);
     await cache?.put("d-old", "manifest", { json: new Uint8Array([1]), version: "0.4" });
     await profile?.beginAttempt({ attemptId: "old", digest: "d1", task: TASK });
-    await profile?.beginAttempt({ attemptId: "done", digest: "d1", task: TASK });
-    await profile?.addSubmission("done", work, 0);
-    await profile?.attemptEnded("done", 0);
+    const connection = await device.connect(profileDatabase("p1"), PROFILE_SCHEMA, false);
+    await connection?.write(["correctWork"], (tx) => tx.put("correctWork", "done", { png: "old" }));
     state.time += KEEP_MS - DAY;
     await cache?.put("d-new", "manifest", { json: new Uint8Array([2]), version: "0.4" });
     await profile?.beginAttempt({ attemptId: "new", digest: "d1", task: TASK });
     state.time += DAY;
     await startStorage(device, SIGN_IN);
-    expect(await profile?.correctWork("done")).toBeUndefined();
+    expect(backend.records(profileDatabase("p1"), "correctWork")).toEqual([]);
     expect(await profile?.readAttempt("old")).toBeUndefined();
     expect(await profile?.readAttempt("new")).toBeDefined();
     expect(await cache?.get("d-old", "manifest")).toBeUndefined();

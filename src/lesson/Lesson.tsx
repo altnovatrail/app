@@ -1,28 +1,24 @@
 // The lesson player (LearningService in the contract): `GetLessonRun` gives an open run
-// again, `OpenLesson` a run by an engine's choice of a lesson, each with the lesson's open
+// again, `OpenLesson` a run by an engine's choice of a lesson or of the lesson the learner chose
+// by its full ID, each with the lesson's open
 // view, its package and the task segments that ended. The lesson opens at the later of the place
 // the device keeps and the one after the last task that ended, its examples' demos as they were —
 // the state of this run alone, by the lesson's full ID, the package and the run's ID. "Continue"
-// goes on; a task segment is an attempt of the run, the task screen under the lesson's header, and
-// "Continue" comes once api said the task ended, which moves the place at once. "Continue" on the
+// goes on; a task segment begins no attempt while the lessons are remade: it says so, and
+// "Continue" comes only once api said it ended, as of a run begun before. "Continue" on the
 // last segment is "lesson done", `CompleteLesson`, sent again until api answers; any end of the run
-// erases the state of the lesson. Leaving sends nothing.
-import type { Mode as ProfileMode } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
-import type { Next } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
+// erases the state of the lesson. Leaving sends nothing. At the end come the module's next lesson
+// and Solve, its tasks (LessonNext.tsx).
 import {
   Cause,
-  CloseReason,
   type EngineChoice,
   RunEndReason,
 } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
-import type { LessonRun } from "@altnovatrail/contracts/novatrail/api/v1/learning_pb.js";
 import type { DemoState } from "@altnovatrail/spec/canvas";
 import type * as open from "@altnovatrail/spec/formatv0/open";
-import { Code } from "@connectrpc/connect";
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useApi } from "../api/ApiContext.tsx";
 import { type Failure, parseFailure } from "../api/failure.ts";
-import { idempotencyKey } from "../api/keys.ts";
 import { failureText } from "../api/words.ts";
 import { HomeWay } from "../app/HomeButton.tsx";
 import { Icon } from "../app/Icon.tsx";
@@ -31,26 +27,18 @@ import { HOME, navigate, redirect } from "../app/router.ts";
 import { Screen } from "../app/Screen.tsx";
 import { ReadFailed } from "../boot/Screens.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
-import { NextStep } from "../next/NextStep.tsx";
 import { useKeyHolder } from "../ownkey/OwnKeyContext.tsx";
 import { usePackages } from "../packages/PackagesContext.tsx";
 import type { Device } from "../storage/device.ts";
 import { addProfile, type LessonState, openProfile, type Profile } from "../storage/profile.ts";
 import { ModuleTile } from "../subjects/ModuleTile.tsx";
-import { Task, type TaskInLesson } from "../task/Task.tsx";
 import { Example } from "./Example.tsx";
 import { Explanation } from "./Explanation.tsx";
 import type { LessonOpen, RunRef } from "./LessonContext.tsx";
+import { LessonNext } from "./LessonNext.tsx";
 import { ContinueButton, LessonLoading, LessonScreen } from "./LessonScreen.tsx";
-import {
-  type Course,
-  continueFrom,
-  firstOpenTask,
-  mayContinue,
-  openingPlace,
-  taskEnded,
-} from "./place.ts";
-import { demoOf, endChoiceOf, endedOf, endKey, fullId, kindOf, runEndOf } from "./run.ts";
+import { type Course, continueFrom, firstOpenTask, mayContinue, openingPlace } from "./place.ts";
+import { demoOf, endChoiceOf, endedOf, endKey, fullId, kindOf, moduleOf, runEndOf } from "./run.ts";
 
 /** What the player has read of the run. */
 interface Opened {
@@ -63,14 +51,6 @@ interface Opened {
   readonly profile: Profile | undefined;
   readonly kept: LessonState | undefined;
   readonly ended: readonly number[];
-  /** The open attempt of a task segment of the run. */
-  readonly attempt: SegmentAttempt | undefined;
-}
-
-/** An attempt of a task segment. */
-interface SegmentAttempt {
-  readonly segment: number;
-  readonly attemptId: string;
 }
 
 type Read =
@@ -79,36 +59,17 @@ type Read =
   | { readonly status: "ended"; readonly reason: RunEndReason; readonly choice?: EngineChoice }
   | { readonly status: "ready"; readonly opened: Opened };
 
-/**
- * Where what api says of the ended task segments takes the place: on from it, to the first task not
- * ended, or — after a segment's beginning was refused — on if that segment ended, else to the first.
- */
-type Toward = "on" | "first open" | number;
-
-/** The task screen's own word of its open attempt: the player keeps it, by the run. */
-const ignore = () => {};
-
-/** The open attempt a run names, if it is one of its task segments. */
-function attemptOf(run: LessonRun): SegmentAttempt | undefined {
-  const open = run.openAttempt;
-  if (open?.segment === undefined || open.attemptId === "") return undefined;
-  return { segment: open.segment.segment, attemptId: open.attemptId };
-}
+/** Where what api says of the ended task segments takes the place: on from it, or to the first task not ended. */
+type Toward = "on" | "first open";
 
 export interface LessonProps {
   readonly profileId: string;
   readonly open: LessonOpen;
   readonly device: Device;
-  /** The profile's default mode, which each task of the lesson starts in. */
-  readonly defaultMode: ProfileMode;
-  /** Whether the learner is of the category `adult`: the solution is theirs to ask from the start. */
-  readonly adult: boolean;
   /** api gave the run: it is open. */
   readonly onBegan: (run: RunRef) => void;
   /** The run ended, by whatever reason. */
   readonly onEnded: (lessonRunId: string) => void;
-  /** A task of the run began: the attempt the learner had open, if any, is left. */
-  readonly onAttempt: () => void;
 }
 
 export function Lesson(props: LessonProps) {
@@ -168,7 +129,7 @@ export function Lesson(props: LessonProps) {
             })
           : await api.learning.openLesson({
               profileId,
-              choiceId: what.choiceId,
+              ...(what.kind === "choice" ? { choiceId: what.choiceId } : { lesson: what.lesson }),
               ...holder.routeFields(profileId),
             })
       ).run;
@@ -183,7 +144,9 @@ export function Lesson(props: LessonProps) {
         manifest === undefined
           ? what.kind === "run"
             ? what.run.lesson
-            : undefined
+            : what.kind === "lesson"
+              ? what.lesson
+              : undefined
           : fullId(manifest.id, lesson.id);
       const profile =
         (await openProfile(device, profileId).catch(() => undefined)) ??
@@ -201,7 +164,6 @@ export function Lesson(props: LessonProps) {
         profile,
         kept,
         ended: run.endedSegments,
-        attempt: attemptOf(run),
       };
     }
   }, [api, holder, views, device, profileId, what, attempt]);
@@ -216,23 +178,30 @@ export function Lesson(props: LessonProps) {
     );
   }
   if (read.status === "ended") {
-    return <LessonEnd reason={read.reason} next={nextStep(profileId, device, read.choice)} />;
+    const ended =
+      what.kind === "run" ? what.run.lesson : what.kind === "lesson" ? what.lesson : undefined;
+    return (
+      <LessonEnd
+        reason={read.reason}
+        next={
+          <LessonNext
+            profileId={profileId}
+            device={device}
+            moduleId={ended === undefined ? undefined : moduleOf(ended)}
+            lesson={ended}
+            choice={read.choice}
+          />
+        }
+      />
+    );
   }
   return <OpenLesson key={read.opened.runId} {...props} opened={read.opened} />;
-}
-
-/** The way to what the engine chose at the end of a run: the choice the end gave, or a press. */
-function nextStep(profileId: string, device: Device, choice: EngineChoice | undefined) {
-  return (
-    <NextStep profileId={profileId} device={device} {...(choice === undefined ? {} : { choice })} />
-  );
 }
 
 /**
  * The end of a run, a card in the window's middle as the mockup's `lesson-end`: the module's
  * tile and title if known, the lesson's title if known, how it ended — "Lesson complete" after a
- * star —, the way to what the engine chose — the choice the end gave, or else a press that asks for
- * it —, and the way to Home. No score, grade or comparison. The profile's pill stands
+ * star —, what comes next — the module's next lesson and Solve —, and the way to Home. No score, grade or comparison. The profile's pill stands
  * at the top, as on every screen of the profile.
  */
 export function LessonEnd({
@@ -247,7 +216,7 @@ export function LessonEnd({
   readonly language?: string | undefined;
   /** The lesson's module, by its manifest: its tile and title above the lesson's. */
   readonly module?: { readonly id: string; readonly title: string } | undefined;
-  /** The way to what the engine chose. */
+  /** What comes next. */
   readonly next?: ReactNode;
 }) {
   const { words } = useLanguage();
@@ -289,10 +258,7 @@ export function LessonEnd({
 function OpenLesson({
   profileId,
   device,
-  defaultMode,
-  adult,
   onEnded,
-  onAttempt,
   opened,
 }: LessonProps & { readonly opened: Opened }) {
   const api = useApi();
@@ -305,11 +271,7 @@ function OpenLesson({
   const [ended, setEnded] = useState<ReadonlySet<number>>(() => new Set(opened.ended));
   const course: Course = useMemo(() => ({ kinds, ended }), [kinds, ended]);
   const [place, setPlace] = useState(() =>
-    openingPlace(
-      { kinds, ended: new Set(opened.ended) },
-      opened.kept?.place,
-      opened.attempt?.segment,
-    ),
+    openingPlace({ kinds, ended: new Set(opened.ended) }, opened.kept?.place),
   );
   const [shown, setShown] = useState(place);
   const [demo, setDemo] = useState<Readonly<Record<number, DemoState>>>(() => {
@@ -322,21 +284,13 @@ function OpenLesson({
     }
     return checked;
   });
-  const [task, setTask] = useState<SegmentAttempt | undefined>(() =>
-    opened.attempt?.segment === place ? opened.attempt : undefined,
-  );
   const [unsaved, setUnsaved] = useState(profile === undefined || id === undefined);
   const [note, setNote] = useState<string | undefined>(undefined);
-  const [again, setAgain] = useState(false);
-  const [beginFailure, setBeginFailure] = useState<Failure | undefined>(undefined);
   const [pending, setPending] = useState(false);
   const [completeFailure, setCompleteFailure] = useState<Failure | undefined>(undefined);
   const [end, setEnd] = useState<
     { readonly reason: RunEndReason; readonly choice?: EngineChoice } | undefined
   >(undefined);
-  // One key for the beginning of a segment's attempt, the same with its repeats.
-  const beginKey = useRef<string | undefined>(undefined);
-  const beginning = useRef(false);
   const latest = useRef({ place, demo, shown });
   latest.current = { place, demo, shown };
   const media = useMemo(() => files.media(digest), [files, digest]);
@@ -392,27 +346,16 @@ function OpenLesson({
 
   /**
    * The task segments that ended, as api says, and the place they give: on from the place, or the
-   * first task not ended when api refused what needs it ended — "lesson done", or the beginning of
-   * a segment that has not ended itself.
+   * first task not ended when api refused "lesson done", which needs them ended.
    */
   const learn = useCallback(
-    (places: readonly number[], open?: SegmentAttempt, toward: Toward = "on") => {
+    (places: readonly number[], toward: Toward = "on") => {
       const now = new Set(places);
       setEnded(now);
       const course = { kinds, ended: now };
-      const on = openingPlace(course, latest.current.place, open?.segment);
-      // A segment refused that has ended itself is passed: the place goes on from it.
-      const onward = toward === "on" || (typeof toward === "number" && now.has(toward));
-      const to = onward ? on : (firstOpenTask(course) ?? on);
+      const on = openingPlace(course, latest.current.place);
+      const to = toward === "on" ? on : (firstOpenTask(course) ?? on);
       if (to !== latest.current.place) move(to);
-      // The attempt open at the place is the one to show; a task that ended stays with its result.
-      setTask((held) =>
-        open?.segment === to
-          ? open
-          : held !== undefined && now.has(held.segment)
-            ? held
-            : undefined,
-      );
       return to;
     },
     [kinds, move],
@@ -429,7 +372,7 @@ function OpenLesson({
             ...holder.routeFields(profileId),
           })
         ).run;
-        return run === undefined ? undefined : learn(run.endedSegments, attemptOf(run), toward);
+        return run === undefined ? undefined : learn(run.endedSegments, toward);
       } catch (reason) {
         const failure = parseFailure(reason);
         const ended = runEndOf(failure);
@@ -447,102 +390,15 @@ function OpenLesson({
    */
   const settle = useCallback(
     (said: readonly number[] | "unsaid", toward: Toward): Promise<number | undefined> =>
-      said === "unsaid" ? refresh(toward) : Promise.resolve(learn(said, undefined, toward)),
+      said === "unsaid" ? refresh(toward) : Promise.resolve(learn(said, toward)),
     [refresh, learn],
   );
 
-  /** The attempt of the task segment at the place, with one key until it is done. */
-  const begin = useCallback(
-    (segment: number) => {
-      beginKey.current ??= idempotencyKey();
-      beginning.current = true;
-      setBeginFailure(undefined);
-      setAgain(false);
-      void api.learning
-        .beginAttempt({
-          profileId,
-          idempotencyKey: beginKey.current,
-          start: { case: "segment", value: { lessonRunId: runId, segment } },
-          ...holder.routeFields(profileId),
-        })
-        .then(
-          (answer) => {
-            beginKey.current = undefined;
-            const attemptId = answer.attempt?.attemptId;
-            // An answer with no attempt is no beginning: the learner may begin again.
-            if (attemptId === undefined || attemptId === "") {
-              setBeginFailure({ kind: "unknown", code: Code.Internal });
-              return;
-            }
-            onAttempt();
-            setTask({ segment, attemptId });
-          },
-          async (reason: unknown) => {
-            const failure = parseFailure(reason);
-            // A refusal ends the action; anything else may have begun it, and goes again with its key.
-            if (failure.kind === "refused") beginKey.current = undefined;
-            const runEnd = runEndOf(failure);
-            const said = endedOf(failure);
-            if (runEnd !== undefined) void finish(runEnd, endChoiceOf(failure));
-            else if (said === undefined) setBeginFailure(failure);
-            else {
-              // The segment api has open is the place; the same segment again is no way on.
-              const to = await settle(said, segment);
-              if (to === undefined || to === segment) setBeginFailure(failure);
-              else setShown(to);
-            }
-          },
-        )
-        .finally(() => {
-          beginning.current = false;
-        });
-    },
-    [api, holder, profileId, runId, onAttempt, finish, settle],
-  );
-
-  // A task segment reached begins its attempt: the learner went on to it.
-  const wantsTask =
-    shown === place &&
-    kinds[place - 1] === "task" &&
-    !ended.has(place) &&
-    task === undefined &&
-    !again &&
-    beginFailure === undefined &&
-    end === undefined;
-  useEffect(() => {
-    if (wantsTask && !beginning.current) begin(place);
-  }, [wantsTask, place, begin]);
-
-  const inLesson: TaskInLesson = useMemo(
-    () => ({
-      onNext: (next: Next | undefined) => {
-        // The task screen is the segment shown: its task ended.
-        const segment = latest.current.shown;
-        setEnded((held) => new Set(held).add(segment));
-        const after = next?.next;
-        if (after?.case === "segment") move(Math.max(after.value, latest.current.place));
-        else if (after?.case !== "segmentsEnded") void refresh();
-      },
-      onClosed: (reason: CloseReason) => {
-        // Left or abandoned, the segment did not end: the learner begins it again (README of the
-        // contracts, "Lessons"); any other close is api's word on the run.
-        if (reason === CloseReason.LEFT || reason === CloseReason.ABANDONED) setAgain(true);
-        else void refresh();
-      },
-    }),
-    [move, refresh],
-  );
-
-  const goTo = useCallback(
-    (segment: number) => {
-      setNote(undefined);
-      setCompleteFailure(undefined);
-      // The attempt of a task that ended is past once the learner leaves its screen.
-      if (task !== undefined && taskEnded(course, task.segment)) setTask(undefined);
-      setShown(segment);
-    },
-    [task, course],
-  );
+  const goTo = useCallback((segment: number) => {
+    setNote(undefined);
+    setCompleteFailure(undefined);
+    setShown(segment);
+  }, []);
 
   const complete = useCallback(() => {
     setPending(true);
@@ -559,8 +415,10 @@ function OpenLesson({
           else if (said === undefined) setCompleteFailure(failure);
           else {
             // A task of the lesson has not ended: the learner goes to the first such.
+            // Unless the run could not be read again, which its line says.
             const to = await settle(said, "first open");
-            if (to !== undefined) goTo(to);
+            if (to === undefined) return;
+            goTo(to);
             setNote(words.text("lesson.task-left"));
           }
         },
@@ -594,7 +452,15 @@ function OpenLesson({
         title={lesson.title}
         language={language}
         module={manifest === undefined ? undefined : { id: manifest.id, title: manifest.title }}
-        next={nextStep(profileId, device, end.choice)}
+        next={
+          <LessonNext
+            profileId={profileId}
+            device={device}
+            moduleId={manifest?.id ?? (id === undefined ? undefined : moduleOf(id))}
+            lesson={id}
+            choice={end.choice}
+          />
+        }
       />
     );
   }
@@ -623,29 +489,8 @@ function OpenLesson({
       />
     );
   } else if (kind === "task") {
-    if (task !== undefined && task.segment === shown) {
-      body = (
-        <Task
-          key={task.attemptId}
-          profileId={profileId}
-          attemptId={task.attemptId}
-          defaultMode={defaultMode}
-          device={device}
-          adult={adult}
-          onAttempt={ignore}
-          lesson={inLesson}
-        />
-      );
-    } else if (ended.has(shown)) {
-      body = <p>{words.text("lesson.task-over")}</p>;
-    }
+    body = <p>{words.text(ended.has(shown) ? "lesson.task-over" : "lesson.task-remade")}</p>;
   }
-  // Begin the task again: after it was left or abandoned, or after a beginning that failed.
-  const offerAgain =
-    kind === "task" &&
-    shown === place &&
-    !ended.has(shown) &&
-    (again || beginFailure !== undefined);
 
   return (
     <LessonScreen
@@ -657,9 +502,7 @@ function OpenLesson({
       shown={shown}
       unsaved={unsaved}
       {...(note === undefined ? {} : { note })}
-      {...(beginFailure === undefined || shown !== place ? {} : { failure: beginFailure })}
       {...(completeFailure === undefined ? {} : { failure: completeFailure })}
-      {...(offerAgain ? { onAgain: () => begin(place) } : {})}
       {...(continues === "screen" ? { onContinue } : {})}
       pending={pending}
       onGoTo={goTo}

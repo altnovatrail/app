@@ -1,5 +1,5 @@
 // The tutor's panel, the one panel of the tutor on every screen, as the mockup's: on the task
-// screen, beside an essay, on the page to pick from and on the screen of solving a task from paper.
+// screen, on the page to pick from and on the screen of solving a task from paper.
 // A screen gives it what it talks about and turns its parts on or off by its kit. Closed, it is the
 // button at the window's right edge, where a screen has it; open, glass of 400 at the right, from
 // under the top bar to 16 above the window's foot, and on a phone a sheet from the bottom, at half

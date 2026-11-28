@@ -16,7 +16,7 @@
 [![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=altnovatrail_app&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=altnovatrail_app)
 [![Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=altnovatrail_app&metric=vulnerabilities)](https://sonarcloud.io/summary/new_code?id=altnovatrail_app)
 
-The NovaTrail web app for learners and the adults beside them, on a phone, a tablet or a computer. It is the shell around the learner's work: signing in and choosing the learner on a shared device, the lesson player and the task screen with the canvas, the answer slots and the tutor's panel, progress and the skill map, and the adults' section behind a PIN. It gets a task's open view but never its key, solution or traps while the task is unsolved, it never decides a verdict or calls an AI provider, and the learner's strokes stay on the device.
+The NovaTrail web app for learners and the adults beside them, on a phone, a tablet or a computer. It is the shell around the learner's work: signing in and choosing the learner on a shared device, the lesson player and the sheet every task is solved on, with the canvas, the answer's options on its tracing paper and the tutor's panel, progress and the skill map, and the adults' section behind a PIN. It gets a task's open view but never its key, solution or traps while the task is unsolved, it never decides a verdict or calls an AI provider, and the learner's strokes stay on the device.
 
 A component of [NovaTrail](https://github.com/altnovatrail/spec), a universal open platform for adaptive learning, interactive lessons and AI tutoring.
 

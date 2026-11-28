@@ -65,7 +65,7 @@ export function nextPage(id: PageText): Route {
 const POLICY: PageText = "privacy-policy";
 
 /** The places the page Accessibility names, where the app does not meet its standard yet. */
-const GAPS = ["handwriting", "moving", "print", "check", "framing", "paper"] as const;
+const GAPS = ["handwriting", "moving", "check", "framing", "paper"] as const;
 
 /** Where a page stands among the legal pages: their list or another, and where they close to. */
 interface LegalPlace {

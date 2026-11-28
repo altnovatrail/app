@@ -1,18 +1,20 @@
 // A module's card on Home (the mockup's `home`): each module connected a card of
 // its own — its tile, its title in its own explanation language, its kind, how many of its skills
-// are mastered, the skills due for review, the way to its skill map — and under them a square for
-// each skill in the colour of its state. The kind is "Sequential" where its skills go in a chain,
+// are mastered, the way to its skill map —, under them a square for each skill in the colour of its
+// state, and the module's two ways in. The kind is "Sequential" where its skills go in a chain,
 // "Feedback by criteria" where no skill has a verdict, and "Adaptive" otherwise; the line
 // under the title names the explanation language when it is not the screen's, and a module not
-// available. Its Continue goes on with the module's lesson begun, else its task open,
-// else asks ChooseNext for the skill to work on, which its map names (ChooseNext takes no module),
-// and opens the task the engine gives; with no such skill, or another task open, it opens the map.
-// Under a chain, the skill to work on by its place and the next; under an adaptive module, that the
-// tutor chooses, from any module — what it gives is known only once it is asked, ChooseNext being
-// an action. While its map is on its way, the card's kind, counts, squares and foot are shapes.
+// available, which has no way in. The tile of its lesson names the lesson `ListLessons` gives for
+// it, shut while the lessons are remade — grey under "Lesson · Soon", its row and Continue
+// disabled —; a module with no lessons has none. The tile of its tasks, green, names the skill they train — the tutor's
+// choice, or the learner's own, the module's task skill —, its row opens the choice of it, where
+// the tutor's gives the choice back, and Solve gives a task of the module alone. A module solved on
+// the sheet has the tile of its tasks alone, with no choice: Solve opens its page of tasks. While
+// its map or its lessons are on their way, the card's kind, counts, squares and tiles are shapes.
 import { type ReactNode, useId } from "react";
 import { Icon } from "../app/Icon.tsx";
 import { IconButton } from "../app/IconButton.tsx";
+import { PopOver } from "../app/PopOver.tsx";
 import { navigate } from "../app/router.ts";
 import { Loading, Sk } from "../app/Skeleton.tsx";
 import { listFormat } from "../i18n/intl.ts";
@@ -20,8 +22,9 @@ import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { moduleMapRoute } from "../skills/SkillMapScreen.tsx";
 import { isScreenLanguage, nameOf } from "./CardHeading.tsx";
 import { ModuleTile } from "./ModuleTile.tsx";
-import type { ModuleCard } from "./modules.ts";
-import { type ChainPlace, judged, MARKS, type SkillCounts, STATES } from "./states.ts";
+import type { LessonTile, ModuleCard } from "./modules.ts";
+import { Picker, skillTitle } from "./SkillPick.tsx";
+import { judged, MARKS, type SkillCounts, STATES } from "./states.ts";
 
 /** The squares of a module's skills, in the order of the legend's states and marks. */
 function squaresOf(counts: SkillCounts): ReactNode[] {
@@ -54,86 +57,179 @@ export function SkillDots({ counts }: { readonly counts: SkillCounts }) {
   );
 }
 
-/** Under a chain's card: the skill to work on by its place, how much is mastered, and the next. */
-function ChainFoot({ chain, lang }: { readonly chain: ChainPlace; readonly lang?: string }) {
+/** The `lang` of a module's text, where its explanation language is known. */
+function langOf(language: string | undefined): { lang?: string } {
+  return language === undefined ? {} : { lang: language };
+}
+
+/**
+ * The tile of a module's lesson, shut while the lessons are remade: grey, "Lesson · Soon" over the
+ * lesson's title, its row and Continue disabled, and in place of its step that the lessons are
+ * being remade.
+ */
+function LessonMode({ card, lesson }: { readonly card: ModuleCard; readonly lesson: LessonTile }) {
   const { words } = useLanguage();
-  const percent = chain.total === 0 ? 0 : Math.round((chain.mastered / chain.total) * 100);
-  const own = lang === undefined ? {} : { lang };
+  const titleId = useId();
+  const allId = useId();
   return (
-    <div className="nt-card-foot nt-chain-foot">
-      <span className="nt-chain-step">
-        {chain.step}
-        <small>/{chain.total}</small>
+    <section
+      className="nt-way"
+      data-mode="lesson"
+      data-locked="true"
+      aria-label={words.text("home.lesson")}
+    >
+      {/* Each button is named by its words and described by what it would lead to. */}
+      <span id={allId} hidden>
+        {words.text("home.lessons-all", { module: card.title })}
       </span>
-      <div className="nt-foot-words">
-        <span className="nt-foot-eyebrow">{words.text("home.chain-current")}</span>
-        {chain.current === undefined ? (
-          <span className="nt-foot-main">{words.text("home.chain-done")}</span>
-        ) : (
-          <span className="nt-foot-main" {...own}>
-            {chain.current}
-          </span>
-        )}
-      </div>
-      <div className="nt-chain-share">
-        <span className="nt-chain-bar" aria-hidden="true">
-          <span style={{ inlineSize: `${percent}%` }} />
+      <button type="button" className="nt-way-row" aria-describedby={allId} disabled>
+        <span className="nt-way-sign" aria-hidden="true">
+          <Icon value="lesson" />
         </span>
-        {words.text("home.chain-percent", { percent })}
-      </div>
-      {chain.next === undefined ? null : (
-        <div className="nt-chain-next">
-          <div className="nt-foot-words">
-            <span className="nt-foot-eyebrow">{words.text("home.chain-next")}</span>
-            <span className="nt-foot-next" {...own}>
-              {chain.next}
-            </span>
-          </div>
-          <span className="nt-chain-arrow" aria-hidden="true">
-            <Icon value="next-skill" />
+        <span className="nt-way-words">
+          <span className="nt-way-eyebrow">{words.text("home.lesson-soon")}</span>
+          <span id={titleId} className="nt-way-title" {...langOf(card.language)}>
+            {lesson.title}
           </span>
-        </div>
-      )}
-    </div>
-  );
-}
-
-/** Under an adaptive module's card: the tutor chooses, the skills due for review, any module. */
-function EngineFoot({ review }: { readonly review: number }) {
-  const { words } = useLanguage();
-  return (
-    <div className="nt-card-foot nt-engine-foot">
-      <span className="nt-engine-sign" aria-hidden="true">
-        <Icon value="engine" />
-      </span>
-      <div className="nt-foot-words">
-        <span className="nt-foot-eyebrow">{words.text("home.engine-chooses")}</span>
-        <span className="nt-foot-main">{words.text("home.engine-what")}</span>
+        </span>
+        <span className="nt-way-chev" aria-hidden="true">
+          <Icon value="more" />
+        </span>
+      </button>
+      <div className="nt-way-foot">
+        <div className="nt-way-note">{words.text("home.lessons-remade")}</div>
+        <button type="button" className="nt-way-go" aria-describedby={titleId} disabled>
+          <span className="nt-go-sign" aria-hidden="true">
+            <Icon value="play" />
+          </span>
+          {words.text("home.continue")}
+        </button>
       </div>
-      {review > 0 ? (
-        <span className="nt-subject-review">{words.text("home.review", { count: review })}</span>
-      ) : null}
-      <span className="nt-engine-any">
-        {words.text("home.engine-any")}
-        <Icon value="engine" />
-      </span>
-    </div>
+    </section>
   );
 }
 
-export function HomeCard({
+/** The tile of a module's tasks: its row to the choice of their skill, the way back to the tutor's, Solve. */
+function TasksMode({
   card,
-  onContinue,
+  titleId,
+  onSolve,
+  onTaskSkill,
 }: {
   readonly card: ModuleCard;
-  /** Goes on with the module: its lesson begun, its task open, a task of its skill, or its map. */
-  readonly onContinue: () => void;
+  /** The ID of the card's title, which describes Solve. */
+  readonly titleId: string;
+  readonly onSolve: () => void;
+  readonly onTaskSkill: (skill: string) => void;
 }) {
+  const { words } = useLanguage();
+  const pickId = useId();
+  const own = card.sheet === true ? undefined : card.taskSkill;
+  // A module solved on the sheet begins its tasks all at once: there is no skill to choose.
+  const picks = card.sheet === true ? undefined : card.picks;
+  const title = skillTitle(card, own);
+  const row = (
+    <>
+      <span className="nt-way-sign" aria-hidden="true">
+        <Icon value="task-skill" />
+      </span>
+      <span className="nt-way-words">
+        <span className="nt-way-eyebrow">
+          {words.text(own === undefined ? "home.tasks" : "home.tasks-own")}
+        </span>
+        <span className="nt-way-title" {...(title === undefined ? {} : langOf(card.language))}>
+          {title ?? words.text("home.tasks-tutor")}
+        </span>
+      </span>
+    </>
+  );
+  return (
+    <section
+      className="nt-way"
+      data-mode="tasks"
+      data-own={own !== undefined}
+      aria-label={words.text("home.tasks")}
+    >
+      {picks === undefined ? (
+        <div className="nt-way-row">{row}</div>
+      ) : (
+        <PopOver
+          label={words.text("home.pick")}
+          describedBy={pickId}
+          caption={
+            <>
+              {row}
+              <span className="nt-way-chev" aria-hidden="true">
+                <Icon value="more" />
+              </span>
+            </>
+          }
+          className="nt-way-row"
+          popClassName="nt-pick"
+          anchor=".nt-way"
+          fitAnchor
+        >
+          {(close) => (
+            <Picker card={card} picks={picks} own={own} onTaskSkill={onTaskSkill} close={close} />
+          )}
+        </PopOver>
+      )}
+      {picks === undefined ? null : (
+        <span id={pickId} hidden>
+          {words.text("home.tasks-pick")}
+        </span>
+      )}
+      <div className="nt-way-foot">
+        <div className="nt-way-note">
+          {words.text(own === undefined ? "home.tasks-sub-tutor" : "home.tasks-sub-own")}
+        </div>
+        <button type="button" className="nt-way-go" aria-describedby={titleId} onClick={onSolve}>
+          <span className="nt-go-sign" aria-hidden="true">
+            <Icon value="play" />
+          </span>
+          {words.text("home.solve")}
+        </button>
+      </div>
+    </section>
+  );
+}
+
+/** The shapes of a card's two tiles, inside a part being read. */
+export function ModeShapes() {
+  return [0, 1].map((n) => (
+    <div key={n} className="nt-way nt-way-loading" aria-hidden="true">
+      <span className="nt-way-shape">
+        <Sk width="2.25rem" height="2.25rem" radius="50%" />
+        <span className="nt-way-words nt-loading">
+          <Sk width="4rem" height="0.625rem" radius="0.25rem" />
+          <Sk width="11rem" height="0.875rem" radius="0.3125rem" />
+        </span>
+      </span>
+      <span className="nt-way-foot">
+        <span className="nt-way-note nt-loading">
+          <Sk width="70%" height="0.625rem" radius="0.25rem" />
+        </span>
+        <Sk width="7.5rem" height="2.75rem" radius="999px" />
+      </span>
+    </div>
+  ));
+}
+
+export interface HomeCardProps {
+  readonly card: ModuleCard;
+  /** Solve: a task of the module alone, or its page of tasks on the sheet. */
+  readonly onSolve: () => void;
+  /** Sets the module's task skill, "" giving the choice back to the tutor. */
+  readonly onTaskSkill: (skill: string) => void;
+  /** What a way in came to, under the tiles: a question, nothing to offer, a failure. */
+  readonly note?: ReactNode;
+}
+
+export function HomeCard({ card, onSolve, onTaskSkill, note }: HomeCardProps) {
   const { language, words } = useLanguage();
   const id = useId();
   const counts = card.skills;
   const all = counts === undefined ? 0 : judged(counts);
-  const review = counts?.["time-to-review"] ?? 0;
   const kind =
     counts !== undefined && all === 0
       ? "rubric"
@@ -156,6 +252,8 @@ export function HomeCard({
         ]),
     ...(card.digest === undefined ? [words.text("subjects.unavailable")] : []),
   ];
+  const lesson = card.lesson;
+  const waiting = card.counting === true || lesson === undefined;
   return (
     <li className="nt-subject">
       <article aria-labelledby={id}>
@@ -163,7 +261,7 @@ export function HomeCard({
           <ModuleTile moduleId={card.moduleId} title={card.title} />
           <div className="nt-subject-words">
             <div className="nt-subject-name">
-              <h3 id={id} {...(explanation === undefined ? {} : { lang: explanation })}>
+              <h3 id={id} {...langOf(explanation)}>
                 {card.title}
               </h3>
               {card.counting === true ? (
@@ -187,13 +285,7 @@ export function HomeCard({
               <p className="nt-subject-stat">{stat.join(" · ")}</p>
             )}
           </div>
-          {/* The adaptive card names them in its foot. */}
-          {review > 0 && kind !== "adaptive" ? (
-            <span className="nt-subject-review">
-              {words.text("home.review", { count: review })}
-            </span>
-          ) : null}
-          {/* A module with a current version has its map, and goes on. */}
+          {/* A module with a current version has its map, and its ways in. */}
           {card.digest === undefined ? null : (
             <div className="nt-subject-acts">
               <IconButton
@@ -202,37 +294,28 @@ export function HomeCard({
                 aria-describedby={id}
                 onClick={() => navigate(moduleMapRoute(card.moduleId))}
               />
-              <button
-                type="button"
-                className="nt-subject-go nt-icon-text"
-                aria-describedby={id}
-                onClick={onContinue}
-              >
-                <span className="nt-go-sign" aria-hidden="true">
-                  <Icon value="play" />
-                </span>
-                {words.text("home.continue")}
-              </button>
             </div>
           )}
         </div>
         {card.counting === true ? (
           <Loading className="nt-counting">
             <Sk width="9.375rem" height="8px" radius="2px" />
-            <Sk width="100%" height="3.875rem" radius="1rem" />
           </Loading>
         ) : null}
         {counts === undefined || Object.values(counts).every((n) => n === 0) ? null : (
           <SkillDots counts={counts} />
         )}
-        {counts === undefined || kind === "rubric" ? null : card.chain !== undefined ? (
-          <ChainFoot
-            chain={card.chain}
-            {...(explanation === undefined ? {} : { lang: explanation })}
-          />
+        {card.digest === undefined ? null : waiting ? (
+          <Loading className="nt-ways">
+            <ModeShapes />
+          </Loading>
         ) : (
-          <EngineFoot review={review} />
+          <div className="nt-ways">
+            {lesson === null ? null : <LessonMode card={card} lesson={lesson} />}
+            <TasksMode card={card} titleId={id} onSolve={onSolve} onTaskSkill={onTaskSkill} />
+          </div>
         )}
+        {note}
       </article>
     </li>
   );

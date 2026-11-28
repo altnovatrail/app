@@ -66,6 +66,10 @@ export interface PaperPage {
   readonly talk: readonly Said[];
   /** The tasks before the last request gave frames: Undo puts them back, until the learner changes any. */
   readonly before?: readonly PageTask[] | undefined;
+  /** The photo is a file of the device, not the camera's: another file takes its place. */
+  readonly fromFile?: true;
+  /** Its tasks are to be found once the page is shown: a file chosen on Home. */
+  readonly unasked?: true;
 }
 
 /** The page of a module solved on the sheet: each of its tasks, begun, with no photo. */
@@ -86,8 +90,11 @@ export interface Paper {
   readonly begun: readonly BegunTask[] | undefined;
   /** The screen of solving is shown, not the page: Start shows it, "Add" the page again. */
   readonly solving: boolean;
-  /** A new photo, finding its tasks: the former page goes, and its tasks begun. */
-  readonly takePhoto: (photo: Photo) => void;
+  /**
+   * A new photo, finding its tasks: the former page goes, and its tasks begun. A file of the device
+   * is `fromFile`, and its page finds its tasks once it is shown.
+   */
+  readonly takePhoto: (photo: Photo, fromFile?: boolean) => void;
   /** A change to the page of this photo; none once another has taken its place. */
   readonly change: (photo: Photo, update: (page: PaperPage) => PaperPage) => void;
   /**
@@ -247,7 +254,7 @@ export function PaperProvider({
   }, [flush]);
 
   const takePhoto = useCallback(
-    (photo: Photo) => {
+    (photo: Photo, fromFile = false) => {
       flush();
       era.current += 1;
       setHeld((now) => {
@@ -260,6 +267,7 @@ export function PaperProvider({
             finding: { status: "finding" },
             tasks: [],
             talk: [],
+            ...(fromFile ? { fromFile: true as const, unasked: true as const } : {}),
           },
           begun: undefined,
           solving: false,

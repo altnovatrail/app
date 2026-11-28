@@ -63,6 +63,11 @@ export interface PopOverProps {
    * this selector finds — a lesson's segments hang from the bar's pill, as the mockup's.
    */
   readonly anchor?: string;
+  /**
+   * As wide as what it hangs from, in `--nt-pop-width`, which its own class takes from 600 CSS px:
+   * the choice of a module's task skill, as wide as the tile of its tasks.
+   */
+  readonly fitAnchor?: boolean;
   /** The pop-over's own class, beside `nt-pop`: a look of its own, as the avatars'. */
   readonly popClassName?: string;
   /**
@@ -88,6 +93,7 @@ export function PopOver({
   centred = false,
   gap,
   anchor,
+  fitAnchor = false,
   popClassName,
   holds = false,
   onClosed,
@@ -132,8 +138,10 @@ export function PopOver({
       const own = button.current;
       if (own === null || (event?.target instanceof Node && shown.contains(event.target))) return;
       const from = (anchor === undefined ? null : own.closest(anchor)) ?? own;
+      const box = from.getBoundingClientRect();
+      if (fitAnchor) shown.style.setProperty("--nt-pop-width", `${box.width}px`);
       const at = hang(
-        from.getBoundingClientRect(),
+        box,
         shown.offsetWidth,
         shown.offsetHeight,
         {
@@ -172,7 +180,10 @@ export function PopOver({
     shown.addEventListener("pointerdown", press);
     shown.addEventListener("click", outside);
     const inside = content.current;
-    (inside?.querySelector<HTMLElement>(FOCUSABLE) ?? inside)?.focus();
+    (inside?.querySelector<HTMLElement>(FOCUSABLE) ?? inside)?.focus({ preventScroll: true });
+    // Opened at its top: showModal focuses on its own, and that focus scrolls a pop-over that
+    // scrolls to the edge of its padding, its heading cut.
+    shown.scrollTop = 0;
     window.addEventListener("resize", place);
     window.addEventListener("scroll", place, true);
     return () => {
@@ -185,7 +196,7 @@ export function PopOver({
       // back: the button takes it, while it is still on the page.
       if (button.current?.isConnected === true) button.current.focus();
     };
-  }, [open, close, centred, gap, anchor, button]);
+  }, [open, close, centred, gap, anchor, fitAnchor, button]);
 
   const opens = {
     className,

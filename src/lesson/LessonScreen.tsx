@@ -1,14 +1,14 @@
 // The lesson's screen, as the mockup's `lesson`: the whole window, the top bar's
 // glass pill at the top — Back, which leaves the lesson, the lesson's title, the module's text with
 // its own `lang`, and under it the line of the segment shown, which opens the segments in a
-// pop-over —, the profile's pill at the bar's other end — a task's pill of its mode after it
-// —, the segment itself, and at the bottom the row of glass with "Continue" — a worked
-// example's in the canvas's own row. An explanation is a card that scrolls inside, its heading its
-// caption; a worked example and a task fill the rest of the window, their heading out of sight, the
-// bar's line showing the same. A segment that takes another's place takes the focus on its heading,
-// as a screen does (2.4.3); "Continue" that comes after a task is told by a status line (4.1.3).
+// pop-over —, the profile's pill at the bar's other end, the segment itself, and at the bottom the
+// row of glass with "Continue" — a worked example's in the canvas's own row. An explanation is a
+// card that scrolls inside, its heading its caption; a worked example fills the rest of the window,
+// its heading out of sight, the bar's line showing the same. A segment that takes another's place
+// takes the focus on its heading, as a screen does (2.4.3); "Continue" that comes is told by a
+// status line (4.1.3).
 // What it shows it takes from its container, Lesson.tsx.
-import { type ReactNode, useEffect, useId, useRef, useState } from "react";
+import { type ReactNode, useEffect, useId, useRef } from "react";
 import type { Failure } from "../api/failure.ts";
 import { failureText } from "../api/words.ts";
 import { Icon } from "../app/Icon.tsx";
@@ -16,7 +16,6 @@ import { IconButton } from "../app/IconButton.tsx";
 import { LearnerMenu } from "../app/LearnerMenu.tsx";
 import { Screen } from "../app/Screen.tsx";
 import { Loading, Sk } from "../app/Skeleton.tsx";
-import { TopEndProvider } from "../app/TopEnd.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import type { Course } from "./place.ts";
 import type { Kind } from "./run.ts";
@@ -37,8 +36,6 @@ export interface LessonScreenProps {
   readonly note?: string;
   /** What the last request of the lesson came to, when it did not answer. */
   readonly failure?: Failure;
-  /** "Begin the task again", when the task's attempt was left or did not begin. */
-  readonly onAgain?: () => void;
   /** "Continue", while it stands in the row under the segment shown. */
   readonly onContinue?: () => void;
   /** "Lesson done" is under way. */
@@ -67,9 +64,6 @@ export function LessonScreen(props: LessonScreenProps) {
     n: shown,
     total: course.kinds.length,
   });
-  const buttons = props.onAgain !== undefined || props.onContinue !== undefined;
-  // The end of the bar, where a task segment puts the pill of its mode.
-  const [end, setEnd] = useState<HTMLElement | null>(null);
   return (
     <Screen
       title={props.title}
@@ -98,7 +92,6 @@ export function LessonScreen(props: LessonScreenProps) {
         end: (
           <div className="nt-top-end">
             <LearnerMenu />
-            <div ref={setEnd} className="nt-top-slot" />
           </div>
         ),
       }}
@@ -115,7 +108,7 @@ export function LessonScreen(props: LessonScreenProps) {
         <h2 ref={heading} id={headingId} tabIndex={-1} className="nt-segment-heading">
           {where}
         </h2>
-        <TopEndProvider place={end}>{props.children}</TopEndProvider>
+        {props.children}
       </section>
       {props.failure === undefined ? null : (
         <p role="alert" className="nt-error nt-lesson-failure">
@@ -123,18 +116,11 @@ export function LessonScreen(props: LessonScreenProps) {
         </p>
       )}
       <div role="status" className="nt-lesson-foot">
-        {buttons ? (
+        {props.onContinue === undefined ? null : (
           <div className="nt-lesson-row nt-glass">
-            {props.onAgain === undefined ? null : (
-              <button type="button" className="nt-secondary" onClick={props.onAgain}>
-                {words.text("lesson.task-again")}
-              </button>
-            )}
-            {props.onContinue === undefined ? null : (
-              <ContinueButton pending={pending} onContinue={props.onContinue} />
-            )}
+            <ContinueButton pending={pending} onContinue={props.onContinue} />
           </div>
-        ) : null}
+        )}
       </div>
     </Screen>
   );

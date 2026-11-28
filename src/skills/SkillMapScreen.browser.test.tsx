@@ -1,9 +1,9 @@
 // The skill map in the browser: the element of skill-map in JSX, a route of no module going
 // to Subjects, a module's map with the learner's view in the learner's language, Practise to
-// ChooseNext with the skill and to what the engine gives, the question while an attempt is open,
-// nothing to give, the modules that teach an anchor skill whose holding is unknown with Connect, a
-// module with no skill graph and a refusal — with api on connect-es's router and the open views on
-// the device's memory.
+// SetTaskSkill with the skill, ChooseNext among the module's tasks and what the engine gives, the
+// question while an attempt is open, nothing to give, the modules that teach an anchor skill whose
+// holding is unknown with Connect, a module with no skill graph and a refusal — with api on
+// connect-es's router and the open views on the device's memory.
 import "@altnovatrail/skill-map";
 import { ProfileSchema } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import { Action } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
@@ -173,6 +173,10 @@ async function renderMap(
         asked.push("catalog");
         await setup.held?.catalog;
         return { modules: [{ moduleId: TABLES, packageDigest: D2 }] };
+      },
+      setTaskSkill(request) {
+        asked.push(`skill ${request.moduleId} ${request.skill}`);
+        return {};
       },
       connectModule(request) {
         asked.push(`connect ${request.moduleId}`);
@@ -358,15 +362,17 @@ describe("a module's map", () => {
     expect(window.location.hash).toBe(`#/${SUBJECTS.screen}`);
   });
 
-  it("asks the engine for the skill chosen, with its full ID, and begins the task it gives", async () => {
-    const { chosen } = await renderMap(moduleMapRoute(SHARES), {
+  it("makes the skill chosen, by its full ID, the module's task skill, and begins the task it gives", async () => {
+    const { chosen, asked } = await renderMap(moduleMapRoute(SHARES), {
       choice: () => ({ kind: ChoiceKind.TASK, choiceId: "c1" }),
     });
     await practise(await drawn(), "Counting");
     await waitFor(() => expect(window.location.hash).toBe("#/task"));
     expect(screen.getByTestId("probe")).toHaveTextContent("attempt a9");
+    // The skill becomes the module's task skill, and the engine chooses among the module's tasks.
+    expect(asked).toContain(`skill ${SHARES} ${SHARES}/skill/counting`);
     expect(chosen).toHaveLength(1);
-    expect(chosen[0]?.skill).toBe(`${SHARES}/skill/counting`);
+    expect(chosen[0]?.moduleId).toBe(SHARES);
     expect(chosen[0]?.idempotencyKey).not.toBe("");
   });
 
@@ -449,7 +455,7 @@ describe("a module's map", () => {
     button.click();
     await userEvent.click(await screen.findByRole("button", { name: "Go on" }));
     await waitFor(() => expect(window.location.hash).toBe("#/lesson"));
-    expect(chosen[0]?.skill).toBe(`${SHARES}/skill/counting`);
+    expect(chosen[0]?.moduleId).toBe(SHARES);
     expect(screen.getByTestId("probe")).toHaveTextContent("attempt none");
     // The attempt closed, its work on the device went with it.
     expect(await (await openProfile(device, "p1"))?.readAttempt("a1")).toBeUndefined();

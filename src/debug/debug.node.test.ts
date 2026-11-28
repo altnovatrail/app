@@ -1,6 +1,6 @@
 // The debug mode: what the window writes of the models and the calls, and the
-// tab's memory of them — the choice as api holds it, the calls taken after each request of a task
-// from paper, and the session's sum.
+// tab's memory of them — the choice as api holds it, the calls taken after each request that may
+// call AI, of a task from paper or of a module, and the session's sum.
 import { Cause } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import {
   DebugActionKind,
@@ -112,6 +112,11 @@ describe("the figures", () => {
     expect(callTitle(read)).toBe("Check");
     expect(callTitle({ ...read, attempt: 3 })).toBe("Check · attempt 3");
     expect(callTitle({ ...read, kind: DebugCallKind.TUTOR_WORDS })).toBe("Tutor's words");
+    // The two readers of a sheet of a module, each by its place.
+    const reading = { ...read, kind: DebugCallKind.WORK_READING };
+    expect(callTitle({ ...reading, reader: 1 })).toBe("Reading · reader 1");
+    expect(callTitle({ ...reading, reader: 2 })).toBe("Reading · reader 2");
+    expect(callTitle(reading)).toBe("Reading");
     expect(callLine(models, read)).toBe("Haiku 5.5 · low · no thinking");
     expect(answerOf(read)).toBe('{\n  "a": 1\n}');
     expect(statsOf(read)[0]).toEqual({ k: "Input", v: "1,200" });
@@ -130,9 +135,10 @@ describe("the figures", () => {
     expect(named(DebugCallKind.STATEMENT_READING)).toBe("Statement");
     expect(named(DebugCallKind.TASK_CHECKING)).toBe("Check");
     expect(named(DebugCallKind.DRAWING)).toBe("Drawing");
+    expect(named(DebugCallKind.WORK_READING)).toBe("Reading");
+    expect(named(DebugCallKind.ESSAY_ASSESSMENT)).toBe("Essay assessment");
     // A kind api no longer records is a call.
     expect(named(DebugCallKind.SOLVER)).toBe("Call");
-    expect(named(DebugCallKind.WORK_READING)).toBe("Call");
     expect(named(DebugCallKind.UNSPECIFIED)).toBe("Call");
     const call = create(DebugCallSchema, { kind: DebugCallKind.TUTOR_WORDS, model: "other-1" });
     expect(callLine(models, { ...call, thinking: true })).toMatch(/^other-1 · .* · thinking$/);
@@ -361,6 +367,40 @@ describe("the tab's memory", () => {
     expect(actionKey(action)).toBe(`${DebugActionKind.CHECK}-a-0-0`);
     clear();
     expect(snapshot().actions).toEqual([]);
+  });
+
+  it("counts the calls of a task of a module and of an essay in the session's total", async () => {
+    await load(client({ get: async () => create(GetDebugResponseSchema, { models }) }).client);
+    const reading = (reader: number) =>
+      create(DebugCallSchema, { kind: DebugCallKind.WORK_READING, reader, costMicroUsd: 1500n });
+    const sheet = create(DebugActionSchema, {
+      kind: DebugActionKind.CHECK,
+      attemptId: "m",
+      calls: [reading(1), reading(2)],
+    });
+    const words = create(DebugActionSchema, {
+      kind: DebugActionKind.WORDS,
+      attemptId: "m",
+      calls: [create(DebugCallSchema, { kind: DebugCallKind.TUTOR_WORDS, costMicroUsd: 700n })],
+    });
+    const essay = create(DebugActionSchema, {
+      kind: DebugActionKind.CHECK,
+      attemptId: "e",
+      calls: [
+        create(DebugCallSchema, { kind: DebugCallKind.WORK_READING, costMicroUsd: 900n }),
+        create(DebugCallSchema, { kind: DebugCallKind.ESSAY_ASSESSMENT, costMicroUsd: 400n }),
+      ],
+    });
+    began();
+    await take(
+      client({
+        take: async () => create(TakeDebugCallsResponseSchema, { actions: [sheet, words, essay] }),
+      }).client,
+    );
+    const now = snapshot();
+    expect(callsOf(now.actions)).toHaveLength(5);
+    expect(usd(costOf(callsOf(now.actions)))).toBe("$0.00500");
+    clear();
   });
 
   it("counts a call begun while api is asked, and takes after its answer", async () => {

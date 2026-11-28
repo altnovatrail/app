@@ -20,20 +20,18 @@ import { inLanguage } from "../test/language.tsx";
 import { ReportProblem } from "../tutor/ReportProblem.tsx";
 
 describe("forced colours", () => {
-  it('drop Home\'s sheet in squares, and with it the height "Next up" keeps to stand below it', async () => {
+  it("drop Home's page of a book", async () => {
     await page.viewport(1180, 820);
     try {
       render(
         inLanguage(
           <div data-screen="home">
-            <HomeScreen connected={[]} next={null} />
+            <HomeScreen connected={[]} />
           </div>,
         ),
       );
-      const sheet = document.querySelector(".nt-next-up .nt-deco");
+      const sheet = document.querySelector(".nt-paper .nt-deco");
       expect(sheet === null || getComputedStyle(sheet).display === "none").toBe(true);
-      const card = document.querySelector(".nt-next-up") as HTMLElement;
-      expect(getComputedStyle(card).minBlockSize).toBe("0px");
     } finally {
       await page.viewport(1024, 768);
     }

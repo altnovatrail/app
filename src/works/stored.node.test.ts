@@ -49,8 +49,7 @@ async function profileWithWork(): Promise<Profile> {
   if (profile === undefined) throw new Error("no profile database");
   await profile.beginAttempt({ attemptId: "a1", digest: "d1" });
   await profile.replaceHistory("a1", [stroke(1), stroke(2)]);
-  const png = await draw();
-  await profile.addSubmission("a1", { png, submission: CONTEXT }, 1);
+  await profile.addSubmission("a1", CONTEXT, 1);
   return profile;
 }
 
@@ -333,12 +332,12 @@ describe("switching the storage on", () => {
     const profile = await profileWithWork();
     await profile.beginAttempt({ attemptId: "e1", digest: "d1" });
     await profile.replaceHistory("e1", [stroke(1), stroke(2)]);
-    await profile.addEssaySubmission("e1", CONTEXT, 1);
-    await profile.addEssaySubmission("e1", CONTEXT, 2);
+    await profile.addSubmission("e1", CONTEXT, 1);
+    await profile.addSubmission("e1", CONTEXT, 2);
     // An essay ended is off the device, as any attempt is: nothing of it goes.
     await profile.beginAttempt({ attemptId: "e2", digest: "d1" });
     await profile.replaceHistory("e2", [stroke(1)]);
-    await profile.addEssaySubmission("e2", CONTEXT, 1);
+    await profile.addSubmission("e2", CONTEXT, 1);
     await profile.attemptEnded("e2");
     // An attempt just opened, with neither strokes nor submissions, needs no copy.
     await profile.beginAttempt({ attemptId: "x1", digest: "d1" });
@@ -367,7 +366,7 @@ describe("an attempt that closes", () => {
     await profile.replaceHistory("a1", [stroke(1), stroke(2), stroke(3)]);
     await profile.beginAttempt({ attemptId: "e1", digest: "d1" });
     await profile.replaceHistory("e1", [stroke(1)]);
-    await profile.addEssaySubmission("e1", CONTEXT, 1);
+    await profile.addSubmission("e1", CONTEXT, 1);
     const { works, asked } = sender(() => {});
     let sent: Promise<unknown> = Promise.resolve();
     const watched = {

@@ -1,20 +1,14 @@
-// The database of one learner's profile: attempts with their history of writing and
-// submissions, an essay's among them, the work of a correct submission until the words after
-// it, and the state of lessons. History and contexts are kept as the canvas gave them, unchanged;
+// The database of one learner's profile: attempts with their history of writing and the contexts
+// of their submissions, and the state of lessons. History and contexts are kept as the canvas gave them, unchanged;
 // the pictures of the work as bytes with their type, not Blobs, which WebKit does not write in an
 // ephemeral session, and a Blob that schema version 1 kept before is read as it is. Every
-// write says whether it was saved, so that the task screen can tell the learner the work is not
-// saved on this device. Each attempt holds the mark of its work on the server: how long a history
+// write says whether it was saved. Each attempt holds the mark of its work on the server: how long a history
 // and how many submissions the last `PutWork` that went through carried. The pages from
 // paper are the profile's history, apart from its attempts: neither an attempt's end nor the 30
 // days take them; a page kept beyond the MAX_PAGES newest takes the oldest, and the profile's
 // erasure takes them all.
 import type {
-  CellPlace,
   DemoState,
-  ExportedCell,
-  ExportedSheet,
-  ExportedWorkbook,
   HistoryChange,
   HistoryEvent,
   PaperSubmission,
@@ -40,22 +34,17 @@ export interface Stored {
   readonly submissions: number;
 }
 
-/** An attempt: its package, the open view of its task, the state of its steps. */
+/** An attempt: its package and the open view of its task. */
 export interface Attempt {
   readonly attemptId: string;
   /** The digest of the attempt's package. */
   readonly digest: string;
   /** The open view of the task or of the instance; gone once its version was withdrawn. */
   readonly task?: open.Task;
-  /** The state of the steps — mode, place, chips, techniques — as the task screen keeps it. */
-  readonly steps?: unknown;
   /** How much of its work the server keeps; none before the first `PutWork` that went through. */
   readonly stored?: Stored;
   readonly changedAt: number;
 }
-
-/** The work for checking without its context: the crop of a sheet, or a workbook's boxes. */
-export type Work = { readonly png: Blob } | { readonly cells: readonly ExportedCell[] };
 
 /** A picture as the database keeps it: its bytes, and its media type beside them. */
 export interface Bytes {
@@ -63,21 +52,10 @@ export interface Bytes {
   readonly type: string;
 }
 
-/** The work as the database keeps it: each picture in bytes. */
-export type KeptWork =
-  | { readonly png: Bytes }
-  | { readonly cells: readonly (CellPlace & { readonly png: Bytes })[] };
-
-/**
- * A submission: its context as the canvas gave it, the history's length then, and its work — none
- * of an essay's, and none when its record holds it in a form this build does not read. Such a
- * record stays where it is, and goes by the rules all work goes by: the end of its attempt, the
- * term, an erasure.
- */
+/** A submission: its context as the canvas gave it, and the history's length then. */
 export interface SubmissionRecord {
   readonly context: Submission;
   readonly historyLength: number;
-  readonly work: Work | undefined;
 }
 
 /**
@@ -249,39 +227,12 @@ async function bytesOf(picture: Blob): Promise<Bytes> {
   return { bytes: await picture.arrayBuffer(), type: picture.type };
 }
 
-/** The work as the database keeps it; its bytes are read before the transaction, not in it. */
-async function keptWork(work: ExportedSheet | ExportedWorkbook): Promise<KeptWork> {
-  if ("png" in work) return { png: await bytesOf(work.png) };
-  return {
-    cells: await Promise.all(
-      work.cells.map(async ({ png, ...place }) => ({ ...place, png: await bytesOf(png) })),
-    ),
-  };
-}
-
 /** A picture kept: bytes, or a Blob that schema version 1 kept before them; anything else is none. */
 function pictureOf(kept: unknown): Blob | undefined {
   if (kept instanceof Blob) return kept;
   const bytes = kept as Partial<Bytes> | null | undefined;
   if (!(bytes?.bytes instanceof ArrayBuffer) || typeof bytes.type !== "string") return undefined;
   return new Blob([bytes.bytes], { type: bytes.type });
-}
-
-/** The work a record keeps, in either form, with Blobs again; a form this build cannot read is none. */
-export function workOf(kept: unknown): Work | undefined {
-  if (typeof kept !== "object" || kept === null) return undefined;
-  if ("png" in kept) {
-    const png = pictureOf(kept.png);
-    return png === undefined ? undefined : { png };
-  }
-  if (!("cells" in kept) || !Array.isArray(kept.cells)) return undefined;
-  const cells: ExportedCell[] = [];
-  for (const cell of kept.cells as readonly (CellPlace & { readonly png?: unknown })[]) {
-    const png = pictureOf(cell?.png);
-    if (png === undefined) return undefined;
-    cells.push({ ...cell, png });
-  }
-  return { cells };
 }
 
 const encoder = new TextEncoder();
@@ -378,7 +329,7 @@ export class Profile {
   }
 
   /** A new attempt, with no history and no submission. */
-  beginAttempt(attempt: Omit<Attempt, "changedAt" | "steps">): Promise<Saved> {
+  beginAttempt(attempt: Omit<Attempt, "changedAt">): Promise<Saved> {
     return this.save(ATTEMPT_STORES, async (tx) => {
       await eraseAttempt(tx, attempt.attemptId);
       await tx.put("attempts", attempt.attemptId, { ...attempt, changedAt: this.now() });
@@ -401,8 +352,8 @@ export class Profile {
       .then(
         (entries) =>
           entries.map(({ value }): SubmissionRecord => {
-            const { work, ...rest } = value as Omit<SubmissionRecord, "work"> & { work: unknown };
-            return { ...rest, work: workOf(work) };
+            const { context, historyLength } = value as SubmissionRecord;
+            return { context, historyLength };
           }),
         () => undefined,
       );
@@ -415,12 +366,6 @@ export class Profile {
     if (attempt === undefined) return false;
     await tx.put("attempts", attemptId, { ...attempt, ...change, changedAt: this.now() });
     return true;
-  }
-
-  saveSteps(attemptId: string, steps: unknown): Promise<Saved> {
-    return this.save(["attempts"], async (tx) =>
-      (await this.touch(tx, attemptId, { steps })) ? "saved" : "unsaved",
-    );
   }
 
   /**
@@ -454,37 +399,10 @@ export class Profile {
   }
 
   /**
-   * A submission, with its context and work from `exportWork()` and the history's length: its
-   * number among the attempt's submissions, from 0, which `attemptEnded` takes for the correct one.
-   * A task from paper's work is none of an attempt's here: the device keeps it apart.
+   * A submission: its context and the history's length, for the work on the server, without its
+   * crop, which nothing on the device reads again.
    */
-  async addSubmission(
-    attemptId: string,
-    work: ExportedSheet | ExportedWorkbook,
-    historyLength: number,
-  ): Promise<number | "unsaved"> {
-    try {
-      const record = { context: work.submission, historyLength, work: await keptWork(work) };
-      return await this.connection.write(["attempts", "submissions"], async (tx) => {
-        if (!(await this.touch(tx, attemptId))) return "unsaved" as const;
-        const n = await tx.count("submissions", { range: within(attemptId) });
-        await tx.put("submissions", [attemptId, n], record);
-        return n;
-      });
-    } catch {
-      return "unsaved";
-    }
-  }
-
-  /**
-   * A submission of an essay: its context and the history's length, for the work on the server,
-   * without its crop, which nothing on the device reads again.
-   */
-  addEssaySubmission(
-    attemptId: string,
-    context: Submission,
-    historyLength: number,
-  ): Promise<Saved> {
+  addSubmission(attemptId: string, context: Submission, historyLength: number): Promise<Saved> {
     return this.save(["attempts", "submissions"], async (tx) => {
       if (!(await this.touch(tx, attemptId))) return "unsaved";
       const n = await tx.count("submissions", { range: within(attemptId) });
@@ -493,40 +411,12 @@ export class Profile {
     });
   }
 
-  /**
-   * The attempt ended: its history, submissions, steps and the open view of its task go. The
-   * work of a correct submission, by its number from 0, stays until the words after it.
-   */
-  async attemptEnded(attemptId: string, correct?: number): Promise<void> {
-    // Read first, on its own: a record the browser cannot give back would abort the erasure with it.
-    const work =
-      correct === undefined
-        ? undefined
-        : await this.connection
-            .read(["submissions"], (tx) => tx.get("submissions", [attemptId, correct]))
-            .then(
-              (record) => (record as { readonly work?: unknown } | undefined)?.work,
-              () => undefined,
-            );
-    await this.connection.write([...ATTEMPT_STORES, "correctWork"], async (tx) => {
-      if (work !== undefined) await tx.put("correctWork", attemptId, work);
-      await eraseAttempt(tx, attemptId);
-    });
+  /** The attempt ended: its history, its submissions and the open view of its task go. */
+  async attemptEnded(attemptId: string): Promise<void> {
+    await this.connection.write(ATTEMPT_STORES, (tx) => eraseAttempt(tx, attemptId));
   }
 
-  /** The work of an ended attempt's correct submission, for the words after it. */
-  async correctWork(attemptId: string): Promise<Work | undefined> {
-    return workOf(
-      await this.connection.read(["correctWork"], (tx) => tx.get("correctWork", attemptId)),
-    );
-  }
-
-  /** The words after the correct answer came, or their request ended: its work goes. */
-  async wordsCame(attemptId: string): Promise<void> {
-    await this.connection.write(["correctWork"], (tx) => tx.delete("correctWork", attemptId));
-  }
-
-  /** At the start: the work of every correct submission whose words app was closed before. */
+  /** At the start: whatever the store `correctWork` holds, which nothing writes or reads. */
   async clearCorrectWork(): Promise<void> {
     await this.connection.write(["correctWork"], (tx) => tx.delete("correctWork", {}));
   }
@@ -935,15 +825,11 @@ export async function attemptOver(
   device: Device,
   profileId: string,
   attemptId: string,
-  {
-    held,
-    correct,
-    works,
-  }: { readonly held?: Profile; readonly correct?: number; readonly works?: Closing } = {},
+  { held, works }: { readonly held?: Profile; readonly works?: Closing } = {},
 ): Promise<void> {
   const profile = held ?? (await openProfile(device, profileId).catch(() => undefined));
   if (profile === undefined) return;
   const work = await works?.read(profile, attemptId).catch(() => undefined);
-  await profile.attemptEnded(attemptId, correct).catch(() => {});
+  await profile.attemptEnded(attemptId).catch(() => {});
   if (work !== undefined) void works?.send(profile, work);
 }

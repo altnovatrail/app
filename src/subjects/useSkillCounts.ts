@@ -2,7 +2,8 @@
 // each of a module with a current version takes its counts when its map has come — GetSkillMap by
 // the learner's action, and the open view of the skill graph of the version that answer names, as
 // the skill map reads them —, counted by the function ./states of skill-map at the time of
-// the device. A map that does not come, or a module with no skill graph, leaves its card with no
+// the device; from the same map and graph, the skills its choice of tasks offers, by tier and
+// suggested. A map that does not come, or a module with no skill graph, leaves its card with no
 // bar; a map on its way gives its card the mark that it is being counted, for the card's skeleton.
 // The next lists read — a retry, a connection — ask again for a map that failed, and never
 // again for one that came.
@@ -12,18 +13,16 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { Api } from "../api/client.ts";
 import type { OpenViews } from "../packages/views.ts";
 import { readModuleMap } from "../skills/map.ts";
-import { isSequential, type ModuleCard } from "./modules.ts";
-import { type ChainPlace, chainPlace, countsOf, type SkillCounts, skillToWork } from "./states.ts";
+import type { ModuleCard, SkillPicks } from "./modules.ts";
+import { countsOf, picksOf, type SkillCounts } from "./states.ts";
 
-/** What a card shows of a module's skills: their counts, and the place in a chain's. */
+/** What a card shows of a module's skills: their counts, and the choice of its task skill. */
 export interface Counted {
   readonly counts: SkillCounts;
-  readonly chain?: ChainPlace;
-  /** The full ID of the skill its Continue works on, as ChooseNext takes it. */
-  readonly skill?: string;
+  readonly picks: SkillPicks;
 }
 
-/** The counts of a module's skills and its place in a chain, or none when it has no map to count. */
+/** The counts of a module's skills and the choice of its task skill, or none with no map to count. */
 export async function countsOfModule(
   api: Api,
   views: OpenViews,
@@ -34,14 +33,9 @@ export async function countsOfModule(
   const map = await readModuleMap(api, views, { profileId, moduleId, action: Action.LEARNING });
   if (map.graph === undefined) return undefined;
   const statuses = skillStates(map.graph.view, map.skillMap, now());
-  const tiers = map.graph.skillTiers;
-  const chain = isSequential(tiers);
-  const skill = skillToWork(statuses, chain ? tiers : undefined);
   return {
     counts: countsOf(statuses),
-    ...(chain ? { chain: chainPlace(map.graph.view, statuses, tiers) } : {}),
-    // The full ID, as skill-map's fullSkillId joins it.
-    ...(skill === undefined ? {} : { skill: `${moduleId}/skill/${skill}` }),
+    picks: picksOf(moduleId, map.graph.view, statuses, map.graph.skillTiers),
   };
 }
 
@@ -102,12 +96,7 @@ export function useSkillCounts(
         const got = counted.get(key);
         if (got === undefined) return failed.has(key) ? card : { ...card, counting: true as const };
         if (got === null) return card;
-        return {
-          ...card,
-          skills: got.counts,
-          ...(got.chain === undefined ? {} : { chain: got.chain }),
-          ...(got.skill === undefined ? {} : { skill: got.skill }),
-        };
+        return { ...card, skills: got.counts, picks: got.picks };
       }),
     [cards, counted, failed, profileId],
   );

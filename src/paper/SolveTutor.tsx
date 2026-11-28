@@ -14,15 +14,18 @@
 // field takes a request for anything, up to the full solution, the band under the head says so,
 // and the conversation has a line as the mode is turned on and off; the tutor's words on what it
 // did on the sheet are marked, and the head says "Writing on the sheet…" till they come. A task
-// from paper is in no module: its words are in the language of the interface.
+// from paper is in no module: its words are in the language of the interface. A task of a module
+// has its own greeting, its hint before the first wrong answer — the givens, the techniques, the
+// leading question —, its words in the module's language, and no field but in grown-up mode. An
+// essay has a greeting of its own, its feedback marked so, and, once Done ends it, what Done gave.
 import { TutorReply } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
-import type { Ref } from "react";
+import type { ReactNode, Ref } from "react";
 import type { Failure } from "../api/failure.ts";
 import { failureText } from "../api/words.ts";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
-import { HintButton, VerdictLine } from "../task/TaskLayout.tsx";
-import { LearnerLine, TutorPanel } from "../task/TutorPanel.tsx";
-import { ExplainButton, TutorWords } from "../task/TutorWords.tsx";
+import { HintButton, VerdictLine } from "../solving/parts.tsx";
+import { LearnerLine, TutorPanel } from "../solving/TutorPanel.tsx";
+import { ExplainButton, TutorWords } from "../solving/TutorWords.tsx";
 import { ReportProblem } from "../tutor/ReportProblem.tsx";
 import type { Said } from "../tutor/report.ts";
 import { MAX_QUESTION, type PaperVerdict, paperCard, questionOf, type Turn } from "./solve.ts";
@@ -58,6 +61,7 @@ export function SolveTutor({
   grown,
   onGrown,
   writing = false,
+  module,
 }: {
   /** The line of its head: the learner's share of the quota. */
   readonly quota: string | undefined;
@@ -114,8 +118,22 @@ export function SolveTutor({
   readonly onGrown?: ((on: boolean) => void) | undefined;
   /** A request in grown-up mode is on its way, its act to be drawn on the sheet. */
   readonly writing?: boolean;
+  /**
+   * On a task of a module: whether the field stands, its hint, the language of its words, and of an
+   * essay what Done gave.
+   */
+  readonly module?:
+    | {
+        readonly ask: boolean;
+        readonly hint?: ReactNode;
+        readonly language: string;
+        readonly essay?: boolean;
+        readonly finished?: ReactNode;
+      }
+    | undefined;
 }) {
-  const { language, words } = useLanguage();
+  const { language: screen, words } = useLanguage();
+  const language = module?.language ?? screen;
   // Other words are another report: the form begins anew with them.
   const report = (shown: Said | undefined) =>
     adult && shown !== undefined && shown.text !== ""
@@ -142,22 +160,32 @@ export function SolveTutor({
         ...(grown === undefined || onGrown === undefined
           ? {}
           : { grown: { on: grown, onChange: onGrown } }),
-        ask: {
-          label: words.text("paper.question-label"),
-          placeholder: words.text(
-            grown === true ? "grown.placeholder" : "paper.question-placeholder",
-          ),
-          max: MAX_QUESTION,
-          ready: questionOf,
-          off: askOff,
-          microphone: adult,
-          language,
-          onSend: onAsk,
-          ...(again === undefined ? {} : { again }),
-          ...(onStop === undefined ? {} : { onStop }),
-        },
+        ...(module !== undefined && !module.ask
+          ? {}
+          : {
+              ask: {
+                label: words.text("paper.question-label"),
+                placeholder: words.text(
+                  grown === true ? "grown.placeholder" : "paper.question-placeholder",
+                ),
+                max: MAX_QUESTION,
+                ready: questionOf,
+                off: askOff,
+                microphone: adult,
+                language: screen,
+                onSend: onAsk,
+                ...(again === undefined ? {} : { again }),
+                ...(onStop === undefined ? {} : { onStop }),
+              },
+            }),
       }}
-      greeting={words.text("paper.solve-hello")}
+      greeting={words.text(
+        module === undefined
+          ? "paper.solve-hello"
+          : module.essay === true
+            ? "paper.essay-hello"
+            : "paper.module-hello",
+      )}
       talk={
         <>
           {/* Drawn alone, as the card: the screen's status line tells the verdict. */}
@@ -168,14 +196,27 @@ export function SolveTutor({
               line={words.text(closer ? "task.reading-closer-line" : "task.reading-line")}
             />
           ) : verdict === undefined ? null : (
-            <VerdictLine {...paperCard(verdict, words)} />
+            <VerdictLine
+              {...paperCard(verdict, words)}
+              // Feedback that came is the bubble under it: the card's line says it is here.
+              {...(verdict.kind === "feedback" && verdict.note === undefined
+                ? { line: undefined }
+                : {})}
+            />
           )}
           {checkSaid === undefined ? null : (
-            <TutorWords words={checkSaid.text} language={language} {...report(checkSaid)} />
+            <TutorWords
+              words={checkSaid.text}
+              feedback={checkSaid.reply === TutorReply.ESSAY_FEEDBACK}
+              language={language}
+              {...report(checkSaid)}
+            />
           )}
+          {module?.hint}
+          {module?.finished}
           <TutorWords
             words={said?.text}
-            rung
+            rung={said?.reply !== TutorReply.CORRECT_ANSWER}
             language={language}
             waiting={wordsWaiting}
             explaining={explaining}
@@ -200,7 +241,7 @@ export function SolveTutor({
                 key={i}
                 words={turn.text}
                 grown={turn.grown === true}
-                language={language}
+                language={screen}
                 {...report({ text: turn.text, reply: TutorReply.ANSWER, rung: 0 })}
               />
             ),

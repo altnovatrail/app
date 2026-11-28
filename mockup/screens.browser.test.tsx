@@ -7,20 +7,30 @@ import {
   AccountService,
   ProfileSchema,
 } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
-import { TutorReply } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
 import {
-  ChoiceKind,
-  EngineChoiceSchema,
-  RunEndReason,
-} from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
+  AttemptService,
+  SubmissionEnd,
+} from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
+import { Cause, RunEndReason } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
+import { DebugService } from "@altnovatrail/contracts/novatrail/api/v1/debug_pb.js";
+import {
+  LearningService,
+  LessonState,
+  ListLessonsResponseSchema,
+} from "@altnovatrail/contracts/novatrail/api/v1/learning_pb.js";
 import {
   LegalService,
   LegalTextSchema,
 } from "@altnovatrail/contracts/novatrail/api/v1/legal_pb.js";
+import { ModuleService } from "@altnovatrail/contracts/novatrail/api/v1/module_pb.js";
+import { PackageService } from "@altnovatrail/contracts/novatrail/api/v1/package_pb.js";
+import { ProgressService } from "@altnovatrail/contracts/novatrail/api/v1/progress_pb.js";
+import type { CanvasElement, HistoryEvent } from "@altnovatrail/spec/canvas";
 import type * as open from "@altnovatrail/spec/formatv0/open";
 import { create } from "@bufbuild/protobuf";
 import { timestampFromDate } from "@bufbuild/protobuf/wkt";
-import { render, screen, waitFor } from "@testing-library/react";
+import type { ConnectRouter } from "@connectrpc/connect";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import { type ReactNode, useState } from "react";
 import { describe, expect, it } from "vitest";
 import { commands, page, userEvent } from "vitest/browser";
@@ -32,6 +42,8 @@ import { InviteScreen, type TextsRead } from "../src/account/InviteScreen.tsx";
 import { OwnerProfileScreen } from "../src/account/OwnerProfileScreen.tsx";
 import { AdultSection } from "../src/adults/AdultSection.tsx";
 import { ApiProvider } from "../src/api/ApiContext.tsx";
+import type { Api } from "../src/api/client.ts";
+import { Icon } from "../src/app/Icon.tsx";
 import { HOME as HOME_ROUTE, type Route, useRoute } from "../src/app/router.ts";
 import { type Place, ShellBar } from "../src/app/Shell.tsx";
 import { Waiting } from "../src/app/Waiting.tsx";
@@ -39,27 +51,33 @@ import { LegalPages } from "../src/legal/LegalPages.tsx";
 import { Example } from "../src/lesson/Example.tsx";
 import { Explanation } from "../src/lesson/Explanation.tsx";
 import { LessonEnd } from "../src/lesson/Lesson.tsx";
+import { LessonNext } from "../src/lesson/LessonNext.tsx";
 import { ContinueButton, LessonScreen } from "../src/lesson/LessonScreen.tsx";
-import { NextStep } from "../src/next/NextStep.tsx";
 import { KeyHolder } from "../src/ownkey/holder.ts";
 import { KeyHolderProvider } from "../src/ownkey/OwnKeyContext.tsx";
+import { DeviceFiles } from "../src/packages/files.ts";
+import { type Packages, PackagesProvider } from "../src/packages/PackagesContext.tsx";
+import { OpenViews } from "../src/packages/views.ts";
 import { SignInScreen } from "../src/signin/SignInScreen.tsx";
 import { MapScreen } from "../src/skills/SkillMapScreen.tsx";
+import type { HintGiven } from "../src/solving/Hint.tsx";
 import type { KeptKey } from "../src/storage/profile.ts";
+import { LessonsRoute, lessonsRoute } from "../src/subjects/LessonsScreen.tsx";
 import { HomeScreen } from "../src/subjects/MySubjects.tsx";
-import type { ModuleAbout, ModuleCard, SkillList } from "../src/subjects/modules.ts";
+import type {
+  ModuleAbout,
+  ModuleCard,
+  SkillList,
+  SkillPick,
+  SkillPicks,
+} from "../src/subjects/modules.ts";
 import { CatalogScreen } from "../src/subjects/SubjectsPage.tsx";
-import type { SkillCounts } from "../src/subjects/states.ts";
-import { NO_VERDICTS, type Verdicts, verdictsOf } from "../src/task/attempt.ts";
-import { EssayScreen, type EssayScreenProps } from "../src/task/EssayScreen.tsx";
-import type { HintGiven } from "../src/task/Hint.tsx";
-import { initialState, slotsOf } from "../src/task/steps.ts";
-import { TaskScreen } from "../src/task/TaskScreen.tsx";
+import type { SkillCounts, SkillStatus } from "../src/subjects/states.ts";
+import { Task } from "../src/task/TaskRoute.tsx";
 import { routedApi } from "../src/test/api.ts";
 import { memoryDevice } from "../src/test/device.ts";
 import { inLanguage } from "../src/test/language.tsx";
 import { fakeSpeech, voice } from "../src/test/speech.ts";
-import { ReportProblem } from "../src/tutor/ReportProblem.tsx";
 import { SpeechProvider, VoicingProvider } from "../src/voice/VoicingContext.tsx";
 import { DEVICES, type Device, type Difference, type Region, SIZES } from "./regions.ts";
 
@@ -110,198 +128,6 @@ const DOTS: open.Task = {
   unknown: "How many dots there are in row 10.",
 };
 
-/** The mockup's second task, a choice: which number comes next. */
-const NEXT: open.Task = {
-  id: "next",
-  statement: [{ text: "Which number comes next: 1, 4, 9, 16, …?" }],
-  canvas: { kind: "handwriting_sheet", grid: "squares" },
-  items: [{ answer_slots: [{ binding: "choice", options: ["20", "24", "25", "36"] }] }],
-};
-
-/** The solving steps of the mockup's module, which the pill of the mode stands for. */
-const STEPS: readonly open.Step[] = [
-  {
-    title: "Understand the task",
-    description: "Read the task again, and tick what is known and what you are to find.",
-    gives: ["givens"],
-    exit_condition: "givens_ticked",
-  },
-  { title: "Plan", exit_condition: "none" },
-  { title: "Solve", exit_condition: "none" },
-  { title: "Check the answer", exit_condition: "none" },
-];
-
-/** The mockup's workbook page of grade 3: six lines of a division with a remainder, two boxes each. */
-const REMAINDERS: open.Task = {
-  id: "remainders",
-  statement: [{ text: "Divide, and write the quotient and the remainder." }],
-  canvas: { kind: "workbook" },
-  items: ["47 ÷ 6 =", "38 ÷ 5 =", "29 ÷ 4 =", "52 ÷ 7 =", "44 ÷ 9 =", "33 ÷ 8 ="].map((sum) => ({
-    line: [{ text: sum }, { binding: "box" }, { text: "r" }, { binding: "box" }],
-  })),
-};
-
-/** The mockup's six lines read: the second and the fifth not right yet, as its demo has them. */
-const REMAINDERS_READ: Verdicts = verdictsOf(
-  [
-    ["7", "5", true],
-    ["6", "8", false],
-    ["7", "1", true],
-    ["7", "3", true],
-    ["4", "7", false],
-    ["4", "1", true],
-  ].map(([quotient, remainder, right], i) => {
-    const verdict = right === true ? "correct" : "not_yet";
-    return {
-      verdict,
-      answerSlots: [quotient, remainder].map((value, slot) => ({
-        answerSlot: { item: i + 1, slot: slot + 1 },
-        verdict,
-        value,
-      })),
-    };
-  }) as unknown as Parameters<typeof verdictsOf>[0],
-  REMAINDERS,
-);
-
-/** The mockup's essay, on a lined sheet, to a rubric. */
-const UMBRELLA: open.Task = {
-  id: "umbrella",
-  statement: [
-    {
-      text: "A shop sells an umbrella that can talk, but only when it rains. Write three different first sentences for an essay about it. Then put a ring round the one you would keep.",
-    },
-  ],
-  canvas: { kind: "handwriting_sheet", grid: "lines" },
-  items: [{ answer_slots: [{ binding: "sheet" }] }],
-};
-
-/** The steps of the mockup's essays, which its panel opens with. */
-const ESSAY_STEPS: readonly open.Step[] = [
-  { title: "Plan the essay", gives: ["techniques"], exit_condition: "none" },
-  { title: "Write it", exit_condition: "none" },
-  { title: "Read it again", exit_condition: "none" },
-];
-
-/** A verdict of the one item of a task: "Not yet" or "Correct", with what was read, or the option. */
-function judged(task: open.Task, verdict: string, value?: string): Verdicts {
-  return verdictsOf(
-    [
-      {
-        verdict,
-        answerSlots: [
-          { answerSlot: { item: 1, slot: 1 }, verdict, ...(value === undefined ? {} : { value }) },
-        ],
-      },
-    ] as unknown as Parameters<typeof verdictsOf>[0],
-    task,
-  );
-}
-
-/** What "Report a problem" is about: the words of the mockup's first rung. */
-function SAID(text: string) {
-  return {
-    profileId: "p1",
-    attemptId: "a1",
-    said: { text, reply: TutorReply.RUNG, rung: 1 },
-    language: "en",
-  } as const;
-}
-
-interface Drawn {
-  readonly task?: open.Task;
-  readonly mode?: "steps" | "self";
-  readonly verdicts?: Verdicts;
-  readonly choices?: Readonly<Record<string, string>>;
-  readonly filled?: boolean;
-  readonly solution?: readonly open.StatementPart[];
-  /** Check leaves the screen waiting: the work being read. */
-  readonly waits?: boolean;
-  /** The tutor's panel open as the screen begins, as the mockup opens it on a task. */
-  readonly open?: boolean;
-  /** The tutor's words in the panel: a rung's after a wrong answer, or the same in other words. */
-  readonly words?: string;
-  /** A hint before a wrong answer: the givens, a technique and the leading question. */
-  readonly hint?: HintGiven;
-  /** The panel's line of the quota. */
-  readonly quota?: string;
-  /** "Explain differently" at the panel's foot. */
-  readonly explain?: boolean;
-}
-
-/**
- * The task screen of an adult, who may ask for the solution: on my own by default, its panel closed,
- * or by steps, as the mockup's module has them; the sheet empty unless `filled`.
- */
-function TaskDrawn({
-  task = DOTS,
-  mode = "self",
-  verdicts = NO_VERDICTS,
-  choices = {},
-  filled = false,
-  solution,
-  waits = false,
-  open = false,
-  words,
-  hint,
-  quota,
-  explain = false,
-}: Drawn) {
-  const [pending, setPending] = useState(false);
-  const [shown, setShown] = useState(mode);
-  const [panel, setPanel] = useState(open);
-  const wrong = [...verdicts.slots.values()].includes("not_yet");
-  return (
-    <TaskScreen
-      task={task}
-      manifest={undefined}
-      steps={STEPS}
-      catalog={undefined}
-      state={{ ...initialState(shown), choices, wrongAnswers: wrong ? 1 : 0 }}
-      mode={shown}
-      verdicts={verdicts}
-      filled={task.items.map((item) => slotsOf(item).map(() => filled))}
-      history={[]}
-      media={noMedia}
-      notSaved={false}
-      pending={pending}
-      blink={false}
-      panelOpen={panel}
-      onPanel={() => setPanel(!panel)}
-      {...(solution === undefined ? {} : { solution })}
-      {...(words === undefined
-        ? {}
-        : { tutorWords: words, report: <ReportProblem {...SAID(words)} /> })}
-      {...(hint === undefined ? {} : { hint })}
-      {...(quota === undefined ? {} : { quota })}
-      {...(explain ? { onExplain: () => {} } : {})}
-      onHistoryChange={() => {}}
-      onMode={setShown}
-      onGoTo={() => {}}
-      onTick={() => {}}
-      onDone={() => {}}
-      onChoose={() => {}}
-      onCheck={() => {
-        if (waits) setPending(true);
-      }}
-      onHint={() => {}}
-      onShow={() => {}}
-      onAgain={() => {}}
-      onHome={() => {}}
-    />
-  );
-}
-
-/** The task screen as `TaskDrawn` draws it: api asked nothing, "Report a problem" sends none. */
-function aTask(drawn: Drawn = {}) {
-  return () =>
-    inLanguage(
-      <ApiProvider value={QUIET}>
-        <TaskDrawn {...drawn} />
-      </ApiProvider>,
-    );
-}
-
 /** The mockup's hint on its first task before a wrong answer: a technique and the leading question. */
 const DOTS_HINT: HintGiven = {
   techniques: [],
@@ -312,74 +138,6 @@ const DOTS_HINT: HintGiven = {
 const DOTS_RUNG = "Count the steps again: from row 1 to row 10, how many times are 3 dots added?";
 const DOTS_ALT =
   "Write rows 1 to 4 and their dots in a table. By row 4, how many 3s have been added?";
-
-/** The first task by steps after "32", its panel open with the rung. */
-const RUNG: Drawn = {
-  mode: "steps",
-  open: true,
-  filled: true,
-  verdicts: judged(DOTS, "not_yet", "32"),
-  words: DOTS_RUNG,
-  explain: true,
-};
-
-/** The task screen on a squared sheet, on my own, with nothing written: the canvas's bar of tools. */
-const sheetTask = aTask();
-
-/** What the screen of an essay is drawn with, beside what every drawing shares. */
-type EssayDrawn = Partial<
-  Pick<EssayScreenProps, "mode" | "feedback" | "mayFinish" | "finished">
-> & {
-  readonly filled?: boolean;
-};
-
-/**
- * The screen of an essay, by steps unless told otherwise, the sheet empty unless `filled`; Check
- * leaves it reading.
- */
-function EssayDrawnScreen({ mode = "steps", filled = false, ...drawn }: EssayDrawn) {
-  const [pending, setPending] = useState(false);
-  const [shown, setShown] = useState(mode);
-  return (
-    <EssayScreen
-      task={UMBRELLA}
-      manifest={undefined}
-      steps={ESSAY_STEPS}
-      catalog={undefined}
-      state={initialState(shown)}
-      mode={shown}
-      filled={[[filled]]}
-      history={[]}
-      media={noMedia}
-      notSaved={false}
-      pending={pending}
-      checking={pending}
-      blink={false}
-      came={false}
-      mayFinish={false}
-      {...drawn}
-      onHint={() => {}}
-      onHistoryChange={() => {}}
-      onMode={setShown}
-      onGoTo={() => {}}
-      onTick={() => {}}
-      onDone={() => {}}
-      onAgain={() => {}}
-      onHome={() => {}}
-      onCheck={() => setPending(true)}
-      onFinish={() => {}}
-    />
-  );
-}
-
-/** The screen of an essay as `EssayDrawnScreen` draws it. */
-function anEssay(drawn: EssayDrawn = {}) {
-  return () => inLanguage(<EssayDrawnScreen {...drawn} />);
-}
-
-/** Feedback on the mockup's essay, synthetic. */
-const FEEDBACK =
-  "The second sentence makes a reader want to know why. The other two tell what happens before it happens.";
 
 /**
  * What a screen says aloud by, as a learner's: a voice for English on this device, so that Read
@@ -478,19 +236,20 @@ function workedExample(opened = 0) {
     );
 }
 
-/** The end of the lesson, done: the module's tile, its title, and the way to the next lesson. */
+/** The end of the lesson, done: the module's tile, its title, its next lesson and Solve. */
 function lessonEnd() {
   return inLanguage(
-    <ApiProvider value={QUIET}>
+    <ApiProvider value={LESSONS_API}>
       <LessonEnd
         reason={RunEndReason.PASSED}
         title="Number patterns"
         language="en"
         module={{ id: "olympiad-math", title: "Olympiad maths 1–6" }}
         next={
-          <NextStep
+          <LessonNext
             profileId="p1"
-            choice={create(EngineChoiceSchema, { choiceId: "c1", kind: ChoiceKind.LESSON })}
+            moduleId={OLYMPIAD}
+            lesson={`${OLYMPIAD}/lesson/number-patterns`}
           />
         }
       />
@@ -527,30 +286,30 @@ async function barDrawn() {
  * of "Read aloud" and the voicing stands above the element, where the mockup has the statement's card
  * and its speaker (В74 in run/QUESTIONS.md).
  */
-const PLACED = 'the line of "Read aloud" above the canvas';
+const PLACED = "canvas places its bar 6 above the mockup's";
 
 /** A button the bar shows by its icon alone: the font of its caption, out of sight, is not drawn. */
 const ICON_ALONE = "the caption is out of sight";
 
-/** The canvas's bar of glass, its first tool and the hand. */
-const BAR: readonly Region[] = [
+/** The canvas's bar of glass on a task from paper, its first tool and the hand. */
+const SHEET_BAR: readonly Region[] = [
   {
     name: "the tool bar",
     mockup: { css: 'div.glass:has(> button[aria-label="Hand"])' },
-    app: { role: "toolbar", name: "Sheet buttons" },
-    differs: { what: ["x", "y", "height", "font-size"], by: `${PLACED}; ${ICON_ALONE}` },
+    app: { role: "toolbar", name: "Task from paper buttons" },
+    differs: { what: ["y", "font-size"], by: `${PLACED}; ${ICON_ALONE}` },
   },
   {
     name: "the pen, the tool in use",
     mockup: { role: "button", name: "Pen" },
     app: { role: "radio", name: "Pen" },
-    differs: { what: ["x", "y", "font-size", "font-weight"], by: `${PLACED}; ${ICON_ALONE}` },
+    differs: { what: ["y", "font-size", "font-weight"], by: `${PLACED}; ${ICON_ALONE}` },
   },
   {
     name: "the hand",
     mockup: { role: "button", name: "Hand" },
     app: { role: "radio", name: "Hand" },
-    differs: { what: ["x", "y", "font-size", "font-weight"], by: `${PLACED}; ${ICON_ALONE}` },
+    differs: { what: ["y", "font-size", "font-weight"], by: `${PLACED}; ${ICON_ALONE}` },
   },
 ];
 
@@ -843,7 +602,7 @@ const AVATARS_HUNG = "the pop-over 12 below its button, the phone's sheet with i
  * The policy and the terms in force, synthetic, and the policy's next version, as api gives them;
  * and a fifth of today's tutor time used, renewing tomorrow at 08:00, as the mockup's ring has it.
  */
-const LEGAL_API = routedApi((router) => {
+function legalRoutes(router: ConnectRouter) {
   router.service(AccountService, {
     getQuota: () => {
       const renews = new Date();
@@ -884,7 +643,9 @@ const LEGAL_API = routedApi((router) => {
       ],
     }),
   });
-});
+}
+
+const LEGAL_API = routedApi(legalRoutes);
 
 /** A legal page, opened from home, its text read. */
 function legalShown(page: string) {
@@ -1276,20 +1037,143 @@ function counts(states: readonly number[], rubric = 0): SkillCounts {
   };
 }
 
-/** The mockup's three modules of the first slice, with the states of their skills. */
+const OLYMPIAD = "novatrail/olympiad-math";
+
+/** The states of the mockup's skills by their letters: mastered, review, in progress, start, locked. */
+const STATUS: Record<string, SkillStatus> = {
+  m: "mastered",
+  r: "time-to-review",
+  p: "in-progress",
+  s: "ready-to-start",
+  l: "locked",
+};
+
+/** The mockup's skills of olympiad maths, tier by tier, each `title:state`. */
+const OLYMPIAD_TIERS: readonly (readonly [string, string])[] = [
+  [
+    "Tier 1 · Basics",
+    "Counting on:m|Even and odd:m|Perimeter:m|Comparing numbers:m|Shapes and sides:m|Measuring length:m|Clocks:m|Coins and change:r|Left and right:m|Simple sequences:m|Counting figures:m|Adding in your head:m",
+  ],
+  [
+    "Tier 2 · Patterns",
+    "Number patterns:r|Days and cycles:p|Areas of shapes:r|Arithmetic tricks:m|Parity:m|Ordering:m|Enumeration:p|Gaps and boundaries:s|Cubes and paper:s|Symmetry:p|Matchstick puzzles:s|Calendar and age:p",
+  ],
+  [
+    "Tier 3 · Reasoning",
+    "Sums of rows:p|Unknowns by balance:s|Pigeonhole principle:l|Knights and liars:l|Grid figures:l|Parts and shares:s|Logic puzzles:p|Overlapping groups:s|Working backwards:s|Motion problems:s|Divisibility:s",
+  ],
+  [
+    "Tier 4 · Olympiad",
+    "Staircases:l|Weighing and pouring:l|Winning strategies:l|Percentages:l|Ratios and sharing:l|Remainders and cycles:l|Invariants:l|Colouring arguments:l|Handshakes:l|Extreme principle:l",
+  ],
+];
+
+/** A module's choice of a task skill, from its tiers: the first three to suggest, as app picks them. */
+function picksOf(moduleId: string, tiers: readonly (readonly [string, string])[]): SkillPicks {
+  const grouped = tiers.map(([name, list]) => ({
+    name,
+    skills: list.split("|").map((each): SkillPick => {
+      const [title = "", state = "s"] = each.split(":");
+      const id = title.toLowerCase().replaceAll(" ", "-");
+      return { skill: `${moduleId}/skill/${id}`, title, status: STATUS[state] ?? "ready-to-start" };
+    }),
+  }));
+  const all = grouped.flatMap((tier) => tier.skills);
+  const order: readonly SkillStatus[] = ["time-to-review", "in-progress", "ready-to-start"];
+  return {
+    suggested: order.flatMap((state) => all.filter((each) => each.status === state)).slice(0, 3),
+    tiers: grouped,
+  };
+}
+
+/** The mockup's two modules of the first slice: the states of their skills, the lesson each tile names. */
 const MODULES: readonly ModuleCard[] = [
   {
-    moduleId: "novatrail/olympiad-math",
+    moduleId: OLYMPIAD,
     title: "Olympiad maths 1–6",
     skills: counts([14, 3, 6, 9, 13]),
+    picks: picksOf(OLYMPIAD, OLYMPIAD_TIERS),
+    lesson: {
+      lesson: `${OLYMPIAD}/lesson/number-patterns`,
+      title: "Number patterns",
+      step: 2,
+      segments: 4,
+      open: true,
+    },
   },
   {
-    moduleId: "novatrail/school-math-3",
-    title: "School maths · grade 3",
-    skills: counts([20, 2, 4, 6, 4]),
+    moduleId: "novatrail/short-essays",
+    title: "Short essays",
+    skills: counts([], 18),
+    picks: picksOf("novatrail/short-essays", [
+      ["Tier 1", "Topic sentence:s|Order of ideas:s|Linking words:s"],
+    ]),
+    lesson: {
+      lesson: "novatrail/short-essays/lesson/first-sentences",
+      title: "First sentences",
+      step: 1,
+      segments: 3,
+      open: true,
+    },
   },
-  { moduleId: "novatrail/short-essays", title: "Short essays", skills: counts([], 18) },
 ].map((card, i) => ({ ...card, digest: `sha256:${String(i + 1).repeat(64)}`, language: "en" }));
+
+/** A lesson of the mockup's list: its title, its state, its steps and its group. */
+function listed(title: string, state: LessonState, segments: number, group: number) {
+  return {
+    lesson: `${OLYMPIAD}/lesson/${title.toLowerCase().replaceAll(" ", "-")}`,
+    title,
+    segments,
+    group,
+    state,
+    // The lesson begun goes on at its second step, as the tile on Home has it.
+    endedSegments: state === LessonState.OPEN ? [1] : [],
+  };
+}
+
+/** The mockup's lessons of olympiad maths, in the author's order, and the one Home's tile names. */
+const OLYMPIAD_LESSONS = create(ListLessonsResponseSchema, {
+  lessons: [
+    listed("Counting on", LessonState.PASSED, 3, 0),
+    listed("Even and odd", LessonState.PASSED, 3, 0),
+    listed("Clocks", LessonState.PASSED, 4, 0),
+    listed("Number patterns", LessonState.OPEN, 4, 1),
+    listed("Days and cycles", LessonState.NEW, 4, 2),
+    listed("Areas of shapes", LessonState.NEW, 3, 2),
+    listed("Sums of rows", LessonState.NEW, 5, 3),
+    listed("Pigeonhole principle", LessonState.NEW, 4, 4),
+  ],
+  tileLesson: `${OLYMPIAD}/lesson/number-patterns`,
+});
+
+/** api of the lessons' page and the lesson's end: the frame's, olympiad maths connected, its lessons. */
+const LESSONS_API = routedApi((router) => {
+  legalRoutes(router);
+  router.service(LearningService, { listLessons: () => OLYMPIAD_LESSONS });
+  router.service(ModuleService, {
+    listConnectedModules: () => ({
+      modules: [{ moduleId: OLYMPIAD, packageDigest: `sha256:${"1".repeat(64)}` }],
+    }),
+  });
+});
+
+/** The package of olympiad maths on the device: its manifest alone. */
+const OLYMPIAD_PACKAGE = {
+  views: {
+    get: async (_digest: string, kind: string) =>
+      kind === "manifest"
+        ? {
+            view: {
+              module_format_version: "0.4",
+              id: OLYMPIAD,
+              version: "1.0.0",
+              title: "Olympiad maths 1–6",
+              languages: { explanation: "en" },
+            },
+          }
+        : undefined,
+  },
+} as unknown as Packages;
 
 /** api by the routing transport: nothing is asked of it until a press. */
 const QUIET = routedApi(() => {});
@@ -1313,70 +1197,6 @@ const SAM = {
 /** A card or a bar, whose words are its own regions': the size of its own text is not drawn. */
 const NO_TEXT = "no text of its own: the body's 14 px";
 
-/**
- * Why the row is in sight under the options on a phone: the mockup's tutor's sheet is open and hides
- * it, where app's sheet hides the row while it is open, so that its options open with the sheet
- * closed.
- */
-const UNDER_SHEET =
-  "the mockup's tutor's sheet open over the row of the phone; app's row, and its options, with the sheet closed";
-
-/** Why Check is grey while the work is read: it takes no press till the verdict comes. */
-const READING = "Check takes no press while the work is read, and looks so";
-
-/** Why the way on after "Correct" is not in the card: a lesson's Continue is its row's. */
-const WAY_ON = 'the way on after "Correct": the lesson\'s row, or the result in the panel';
-
-/** The row of glass and its buttons, on a task with no options. */
-const ROW: readonly Region[] = [
-  {
-    name: "the row",
-    mockup: { css: ".ph-row" },
-    app: { css: ".nt-task-row" },
-    followsText: "centre",
-    differs: { what: ["font-size"], by: NO_TEXT },
-  },
-  {
-    name: "Hint",
-    mockup: { css: '.ph-row button:text-is("Hint")' },
-    app: { css: '.nt-task-row button:text-is("Hint")' },
-    followsText: "start",
-  },
-  {
-    name: "Show the solution",
-    mockup: { css: '.ph-row button:text-is("Show the solution")' },
-    app: { role: "button", name: "Show the solution" },
-    followsText: "start",
-  },
-  {
-    name: "Check",
-    mockup: { css: '.ph-row button:text-is("Check")' },
-    app: { css: "button.nt-check-button" },
-    followsText: "end",
-  },
-];
-
-/**
- * Why the ends of the row of a choice stand up to 5 further out than the mockup's: its four buttons
- * are each a pixel or two wider in app, which the row's width adds up; its middle is the mockup's.
- */
-const CHOICE_WIDER =
-  "each of the row's four buttons a pixel or two wider: the row's ends 4–5 further out";
-
-/** The row with "Choose an answer" at its start. */
-const CHOICE_ROW: readonly Region[] = [
-  ...ROW.map((region) =>
-    region.name === "Check" ? differing(region, ["x"], CHOICE_WIDER) : region,
-  ),
-  {
-    name: "Choose an answer",
-    mockup: { css: "button.ph-rowfull" },
-    app: { css: "button.nt-choose" },
-    followsText: "start",
-    differs: { what: ["x"], by: CHOICE_WIDER },
-  },
-];
-
 /** The accent as the words of a link or a row on the pop-over's glass (the README's «Contrast»). */
 const ACCENT_TEXT = [{ property: "colour", mockup: "#0071e3", app: "#0066cc" }] as const;
 
@@ -1393,22 +1213,6 @@ const PANEL_HEAD: Region = {
   name: "the panel's head",
   mockup: { css: ".ph-tuthead" },
   app: { css: ".nt-tutor-head" },
-  differs: { what: ["font-size"], by: NO_TEXT },
-};
-
-/** The step's card at the top of the panel. */
-const STEP_CARD: Region = {
-  name: "the step's card",
-  mockup: { role: "region", name: "The step" },
-  app: { role: "region", name: "The step" },
-  differs: { what: ["font-size"], by: NO_TEXT },
-};
-
-/** The list of the steps, unfolded from the step's card. */
-const STEP_LIST: Region = {
-  name: "the list of the steps",
-  mockup: { role: "list", name: "Steps" },
-  app: { role: "list", name: "Steps" },
   differs: { what: ["font-size"], by: NO_TEXT },
 };
 
@@ -1456,25 +1260,6 @@ const GRABBER: Region = {
   },
 };
 
-/** The round button that calls the tutor, at the right edge. */
-const TUTOR_BUTTON: Region = {
-  name: "the tutor's button",
-  mockup: { css: ".ph-tutbtn" },
-  app: { css: ".nt-tutor-button" },
-  differs: {
-    what: ["border", "colour", "font-size", "font-weight"],
-    by: `the button is its sign, the tutor's gradient in an edge of glass, where the mockup's sign is a span in it; ${ICON_ALONE}`,
-  },
-};
-
-/** The step's pill above the row, the panel closed. */
-const STEP_PILL: Region = {
-  name: "the step's pill",
-  mockup: { css: ".ph-verdict" },
-  app: { css: ".nt-step-pill" },
-  differs: { what: ["font-size"], by: NO_TEXT },
-};
-
 /**
  * Why the panel's foot, and what scrolls above it, stand lower on a task of a module: the mockup's
  * question field is under the foot on every screen, where app has it on a task from paper alone.
@@ -1520,19 +1305,10 @@ const CARD_TITLE: Region = {
   followsText: "start",
 };
 
-/** The pill of the mode, at the top bar's right. */
-const MODE_PILL: Region = {
-  name: "the pill of the mode",
-  mockup: { css: ".ph-mode" },
-  app: { css: ".nt-mode" },
-  followsText: "end",
-  differs: { what: ["font-size"], by: NO_TEXT },
-};
-
 /** A screen in the frame of the row of places, as App lays it, for the learner Sam; its bell tells of the policy's next version. */
-function framed(place: Place, child: ReactNode) {
+function framed(place: Place, child: ReactNode, api: Api = LEGAL_API) {
   return inLanguage(
-    <ApiProvider value={LEGAL_API}>
+    <ApiProvider value={api}>
       <LearnerProvider value={SAM}>
         <div className="nt-shell">
           <ShellBar place={place} />
@@ -1543,17 +1319,48 @@ function framed(place: Place, child: ReactNode) {
   );
 }
 
-/** Home with the mockup's three modules, a fifth of today's tutor time used in the ring of its frame. */
+/**
+ * Home with the mockup's three modules, a fifth of today's tutor time used in the ring of its frame;
+ * "History" stands for the solving history's pop-over, which reads the device's pages.
+ */
 function home() {
-  return framed("home", <HomeScreen connected={MODULES} next={<NextStep profileId="p1" />} />);
+  return framed("home", <OwnHome />);
 }
 
-/**
- * Why Home's cards are of other heights than the mockup's: the card of what comes next holds the
- * engine's way, "What's next", which names no lesson before it is pressed, not the mockup's
- * lesson begun with its line.
- */
-const HOME_PLACED = '"What\'s next" names no lesson before it is pressed';
+/** Home whose modules keep the task skill chosen on them, as MySubjects has api keep it. */
+function OwnHome() {
+  const [cards, setCards] = useState(MODULES);
+  return (
+    <HomeScreen
+      connected={cards}
+      onTaskSkill={(card, skill) =>
+        setCards((all) =>
+          all.map((each) =>
+            each.moduleId === card.moduleId ? { ...each, taskSkill: skill } : each,
+          ),
+        )
+      }
+      onFile={() => {}}
+      pages={
+        <button type="button" className="nt-paper-pages nt-icon-text">
+          <Icon value="history" />
+          History
+        </button>
+      }
+    />
+  );
+}
+
+/** The lessons of olympiad maths, from the row of its lesson on Home. */
+function lessonsPage() {
+  return framed(
+    "home",
+    <PackagesProvider value={OLYMPIAD_PACKAGE}>
+      <LessonsRoute route={lessonsRoute(OLYMPIAD)} profileId="p1" />
+    </PackagesProvider>,
+    LESSONS_API,
+  );
+}
 
 /** The row of places from 600, the tab bar on a phone, and the pills at the right: Home's frame. */
 function frameOf(device: Device): readonly Region[] {
@@ -1591,6 +1398,44 @@ function frameOf(device: Device): readonly Region[] {
   ];
 }
 
+/** The first module's two tiles: its lesson, shut while the lessons are remade, and its tasks, with Solve. */
+const TILES: readonly Region[] = [
+  {
+    name: "the tile of its lesson",
+    mockup: { css: '.nt-subject:first-child .nt-mode[data-mode="lesson"]' },
+    app: { css: '.nt-subject:first-child .nt-way[data-mode="lesson"]' },
+    differs: { what: ["font-size"], by: NO_TEXT },
+  },
+  {
+    name: "the lesson's title",
+    mockup: { css: '.nt-subject:first-child [data-mode="lesson"] .nt-mode-title' },
+    app: { css: '.nt-subject:first-child [data-mode="lesson"] .nt-way-title' },
+    followsText: "start",
+  },
+  {
+    name: "Continue",
+    mockup: { css: '.nt-subject:first-child [data-mode="lesson"] .nt-mode-go' },
+    app: { css: '.nt-subject:first-child [data-mode="lesson"] .nt-way-go' },
+  },
+  {
+    name: "the tile of its tasks",
+    mockup: { css: '.nt-subject:first-child .nt-mode[data-mode="tasks"]' },
+    app: { css: '.nt-subject:first-child .nt-way[data-mode="tasks"]' },
+    differs: { what: ["font-size"], by: NO_TEXT },
+  },
+  {
+    name: "the row of the task skill",
+    mockup: { css: '.nt-subject:first-child [data-mode="tasks"] button.nt-mode-row' },
+    app: { css: '.nt-subject:first-child [data-mode="tasks"] button.nt-way-row' },
+    differs: { what: ["font-size"], by: NO_TEXT },
+  },
+  {
+    name: "Solve",
+    mockup: { css: '.nt-subject:first-child [data-mode="tasks"] .nt-mode-go' },
+    app: { css: '.nt-subject:first-child [data-mode="tasks"] .nt-way-go' },
+  },
+];
+
 const HOME: readonly Region[] = [
   {
     name: "the heading",
@@ -1599,29 +1444,29 @@ const HOME: readonly Region[] = [
     followsText: "start",
   },
   {
-    name: "the card of what comes next",
-    mockup: { css: ".nt-next-up" },
-    app: { css: ".nt-next-up" },
-    differs: { what: ["height", "font-size"], by: `${HOME_PLACED}; ${NO_TEXT}` },
-  },
-  {
     name: "A task from my paper",
     mockup: { css: ".nt-paper" },
     app: { css: ".nt-paper" },
-    differs: { what: ["y", "height", "font-size"], by: `${HOME_PLACED}; ${NO_TEXT}` },
+    differs: { what: ["font-size"], by: NO_TEXT },
+  },
+  {
+    name: "From a file",
+    mockup: { css: "button.nt-paper-file" },
+    app: { css: "button.nt-paper-file" },
   },
   {
     name: "the first module",
     mockup: { css: ".nt-subject:first-child" },
     app: { css: ".nt-subject:first-child" },
-    differs: { what: ["y", "font-size"], by: `${HOME_PLACED}; ${NO_TEXT}` },
+    differs: { what: ["font-size"], by: NO_TEXT },
   },
   {
     name: "its squares",
     mockup: { css: ".nt-subject:first-child .nt-dots" },
     app: { css: ".nt-subject:first-child .nt-dots" },
-    differs: { what: ["y", "font-size"], by: `${HOME_PLACED}; ${NO_TEXT}` },
+    differs: { what: ["font-size"], by: NO_TEXT },
   },
+  ...TILES,
 ];
 
 /** The legend standing below the modules, from 600 CSS px. */
@@ -1629,7 +1474,6 @@ const LEGEND: Region = {
   name: "the legend",
   mockup: { css: ".nt-legend" },
   app: { css: ".nt-legend" },
-  differs: { what: ["y"], by: HOME_PLACED },
 };
 
 /** The profile's pill, whose width follows the pseudonym; on a phone its avatar alone. */
@@ -1655,6 +1499,79 @@ function popOver(name: string, mockup: string, app = mockup): Region {
     differs: { what: ["background", "border", "font-size"], by: `${OVER_INERT}; ${NO_TEXT}` },
   };
 }
+
+/**
+ * Why which tasks to solve stands elsewhere on the iPad: with no room under its tile in the window,
+ * app's modal dialog stands from the window's top and hangs from the tile's start, as each of its
+ * pop-overs; the mockup's hangs under the tile, at its end, past the window's edge.
+ */
+const PICK_PLACED = "a modal dialog kept in the window, hung from its tile's start";
+
+/** Which tasks to solve, open from the first module's tile: the tutor's choice and the skills. */
+const PICK: readonly Region[] = [
+  {
+    name: "which tasks to solve",
+    mockup: { css: 'div.nt-pop.nt-pick[aria-label="Which tasks to solve?"]' },
+    app: { role: "dialog", name: "Which tasks to solve?" },
+    differs: { what: ["background", "border", "font-size"], by: `${OVER_INERT}; ${NO_TEXT}` },
+  },
+  {
+    name: "its title",
+    mockup: { css: ".nt-pick-title" },
+    app: { css: ".nt-pick-title" },
+    followsText: "start",
+  },
+  {
+    name: "the tutor chooses",
+    mockup: { css: "button.nt-pick-ai" },
+    app: { css: "button.nt-pick-ai" },
+    differs: { what: ["background"], by: OVER_INERT },
+  },
+  {
+    name: "a skill suggested",
+    mockup: { css: ".nt-pick-group:first-of-type button.nt-pick-chip:first-child" },
+    app: { css: ".nt-pick-group:first-of-type button.nt-pick-chip:first-child" },
+    differs: { what: ["background"], by: OVER_INERT },
+  },
+];
+
+/** The lessons of a module: Home back, the heading, the module, and the rows of its groups. */
+const LESSONS: readonly Region[] = [
+  {
+    name: "Home, back",
+    mockup: { css: 'main button:text-is("Home")' },
+    app: { css: "button.nt-back-link" },
+    followsText: "start",
+  },
+  {
+    name: "the heading",
+    mockup: { css: 'h1:text-is("Lessons of the module")' },
+    app: { role: "heading", name: "Lessons of the module" },
+    followsText: "start",
+  },
+  {
+    name: "the module",
+    mockup: { css: "main h1 + span" },
+    app: { css: "p.nt-lessons-module" },
+    followsText: "start",
+  },
+  {
+    name: "the first group",
+    mockup: { css: "main section:first-of-type" },
+    app: { css: "section.nt-lessons-group:first-of-type" },
+    differs: { what: ["font-size"], by: NO_TEXT },
+  },
+  {
+    name: "the lesson begun",
+    mockup: { css: 'button[aria-label^="Number patterns"]' },
+    app: { css: 'button.nt-lessons-row:has(.nt-lessons-sub[data-state="begun"])' },
+  },
+  {
+    name: "the last lesson",
+    mockup: { css: 'button[aria-label^="Pigeonhole principle"]' },
+    app: { css: "section.nt-lessons-group:last-of-type button.nt-lessons-row" },
+  },
+];
 
 /**
  * Why Help stands taller than the mockup: its first item says that the AI checks a task from
@@ -2045,25 +1962,16 @@ const LESSON_END: readonly Region[] = [
     app: { role: "button", name: "Next lesson" },
   },
   {
+    name: "Solve",
+    mockup: { role: "button", name: "Solve" },
+    app: { role: "button", name: "Solve" },
+  },
+  {
     name: "Back to Home",
     mockup: { role: "button", name: "Back to Home" },
     app: { role: "button", name: "Back to Home" },
     contrast: ACCENT_TEXT,
   },
-];
-
-/** Done in the row of an essay, open or not. */
-const DONE: Region = {
-  name: "Done",
-  mockup: { css: '.ph-row button:text-is("Done")' },
-  app: { css: '.nt-task-row button:text-is("Done")' },
-  followsText: "start",
-};
-
-/** The row of an essay: Hint, Done and Check. */
-const ESSAY_ROW: readonly Region[] = [
-  ...ROW.filter((region) => region.name !== "Show the solution"),
-  DONE,
 ];
 
 /** A region that differs as well by what `what` and `by` name. */
@@ -2081,37 +1989,6 @@ function differing(
   };
 }
 
-/** The regions by steps: the row beside the open panel on the iPad, the sheet over it on a phone. */
-function besidePanel(device: Device, regions: readonly Region[]): readonly Region[] {
-  return device === "ipad" ? [PANEL, ...regions] : panelOf(device);
-}
-
-/**
- * Why the row's glass is whiter on a workbook: canvas draws the page on its own white paper over
- * the whole window, where the mockup lays a white page on the page's `#F2F2F7`,
- * which its glass lets through.
- */
-const WORKBOOK_PAPER = "canvas draws the workbook on its white paper";
-
-/** The row on a workbook, its glass over canvas's paper. */
-const WORKBOOK_ROW: readonly Region[] = ROW.map((region) =>
-  differing(region, ["background", "border"], WORKBOOK_PAPER),
-);
-
-/** The criteria of the mockup's rubric, which the result names once the essay is finished. */
-const CRITERIA = [
-  "Three different first sentences",
-  "Each makes a reader want to go on",
-  "One sentence is ringed",
-];
-
-/**
- * Why no row stands under a finished essay: the way on is the lesson's row, or the result in the
- * panel, which names the criteria without the marks — those are the adult's, in the
- * progress —, where the mockup's panel shows them.
- */
-const DONE_ON = "the way on after Done: the lesson's row, or the result in the panel";
-
 /** "Try again" in the card of "Not yet". */
 const TRY_AGAIN: Region = {
   name: "Try again",
@@ -2120,100 +1997,6 @@ const TRY_AGAIN: Region = {
   followsText: "end",
   contrast: ACCENT_TEXT,
 };
-
-const WORKBOOK_AND_ESSAY: readonly Compared[] = [
-  ...DEVICES.map(
-    (device): Compared => ({
-      state: "workbook",
-      devices: [device],
-      draw: aTask({ task: REMAINDERS, mode: "steps", open: true }),
-      settle: barDrawn,
-      regions: besidePanel(device, WORKBOOK_ROW),
-    }),
-  ),
-  // The mockup closes its panel before this check, and app's row stands in the window's middle with
-  // the panel open or not: the row is compared as it is.
-  ...DEVICES.map(
-    (device): Compared => ({
-      state: "workbook-not-yet",
-      until: TUTOR_IN_ROW,
-      devices: [device],
-      draw: aTask({ task: REMAINDERS, mode: "steps", filled: true, verdicts: REMAINDERS_READ }),
-      settle: barDrawn,
-      regions: [...WORKBOOK_ROW, card(), CARD_TITLE, TRY_AGAIN],
-    }),
-  ),
-  ...DEVICES.map(
-    (device): Compared => ({
-      state: "workbook-shown",
-      devices: [device],
-      draw: aTask({
-        task: REMAINDERS,
-        mode: "steps",
-        filled: true,
-        verdicts: REMAINDERS_READ,
-        solution: [{ text: "47 ÷ 6 = 7 r 5." }],
-      }),
-      settle: barDrawn,
-      regions: [card(WAY_ON), { ...CARD_TITLE, differs: { what: ["x", "y"], by: WAY_ON } }],
-    }),
-  ),
-  ...DEVICES.map(
-    (device): Compared => ({
-      state: "essay",
-      devices: [device],
-      draw: anEssay(),
-      settle: barDrawn,
-      regions: besidePanel(device, ESSAY_ROW),
-    }),
-  ),
-  ...DEVICES.map(
-    (device): Compared => ({
-      state: "essay-feedback",
-      until: TUTOR_IN_ROW,
-      devices: [device],
-      draw: anEssay({ mode: "self", filled: true, feedback: FEEDBACK, mayFinish: true }),
-      settle: barDrawn,
-      regions: [
-        ...ESSAY_ROW.map((region) =>
-          region === DONE ? { ...region, contrast: ACCENT_TEXT } : region,
-        ),
-        card(),
-        CARD_TITLE,
-        {
-          name: "Done, in the card",
-          mockup: { css: '.ph-verdict button:text-is("Done")' },
-          app: { css: '.nt-card-verdict button:text-is("Done")' },
-          followsText: "end",
-          contrast: ACCENT_TEXT,
-        },
-      ],
-    }),
-  ),
-  ...DEVICES.map(
-    (device): Compared => ({
-      state: "essay-done",
-      devices: [device],
-      draw: anEssay({
-        mode: "self",
-        filled: true,
-        feedback: FEEDBACK,
-        mayFinish: true,
-        finished: { criteria: CRITERIA, solution: [] },
-      }),
-      settle: barDrawn,
-      regions: [
-        {
-          name: "the row of Continue",
-          mockup: { css: ".ph-row" },
-          app: { css: ".nt-task-row" },
-          followsText: "centre",
-          differs: { what: ["missing"], by: DONE_ON },
-        },
-      ],
-    }),
-  ),
-];
 
 /** Settings, the section for adults, at the hash: Sam's account, its owner alone. */
 function SettingsDrawn() {
@@ -2355,8 +2138,8 @@ const profilePage = (lit: boolean): readonly Region[] => [
   },
   {
     name: "the group Hints",
-    mockup: { css: ".st-col > .st-sec:nth-child(4) > .st-group" },
-    app: { css: "form > section:nth-of-type(3) > .nt-set-group" },
+    mockup: { css: ".st-col > .st-sec:nth-child(3) > .st-group" },
+    app: { css: "form > section:nth-of-type(2) > .nt-set-group" },
     differs: { what: ["y"], by: APP_WORDS },
   },
 ];
@@ -2491,6 +2274,643 @@ const OWN_KEY: readonly Compared[] = [
   },
 ];
 
+/** A task of the olympiad module with a choice: which month comes after November. */
+const MONTHS: open.Task = {
+  id: "months",
+  statement: [{ text: "The year begins in January. Which month comes after November?" }],
+  canvas: { kind: "handwriting_sheet", grid: "squares" },
+  items: [{ answer_slots: [{ binding: "choice", options: ["October", "December", "January"] }] }],
+};
+
+/** How api answers a module's task as the mockup's states draw it. */
+interface ModuleDrawn {
+  readonly task?: open.Task;
+  /** The learner's own task skill: none while the tutor picks. */
+  readonly own?: string;
+  /** The answer to a Check; none, and Check waits for ever. */
+  readonly answer?: "not-yet" | "correct" | "unchecked";
+  /** The Check goes on to a later model while it is read. */
+  readonly closer?: boolean;
+  /** An essay's feedback to its submission, and the criteria Done gives. */
+  readonly essay?: { readonly feedback: string; readonly criteria: readonly string[] };
+}
+
+/** The skills of the olympiad module as api gives them: its graph, its tiers and the learner's map. */
+function olympiadSkills() {
+  const skills: Record<string, { title: string; assessability: string; prerequisites?: string[] }> =
+    {};
+  const tiers: Record<string, number> = {};
+  const stated: {
+    skill: string;
+    evidenceCount?: number;
+    masteryBand?: string;
+    reviewDue?: boolean;
+  }[] = [];
+  let first = "";
+  OLYMPIAD_TIERS.forEach(([, list], tier) => {
+    for (const each of list.split("|")) {
+      const [title = "", state = "s"] = each.split(":");
+      const id = title.toLowerCase().replaceAll(" ", "-");
+      if (first === "" && state === "s") first = id;
+      skills[id] = {
+        title,
+        assessability: "verdict",
+        ...(state === "l" ? { prerequisites: [first] } : {}),
+      };
+      tiers[id] = tier + 1;
+      stated.push(
+        state === "m" || state === "r"
+          ? {
+              skill: id,
+              evidenceCount: 4,
+              masteryBand: "b1",
+              ...(state === "r" ? { reviewDue: true } : {}),
+            }
+          : state === "p"
+            ? { skill: id, evidenceCount: 2 }
+            : { skill: id },
+      );
+    }
+  });
+  return { skills, tiers, stated };
+}
+
+const MODULE_DIGEST = `sha256:${"1".repeat(64)}`;
+
+/** api of a module's task on the sheet, as the mockup's states have it. */
+function moduleApi({ task = DOTS, own, answer, closer = false, essay }: ModuleDrawn) {
+  const encode = (value: unknown) => new TextEncoder().encode(JSON.stringify(value));
+  const { skills, tiers, stated } = olympiadSkills();
+  const taskSkill =
+    own === undefined ? "" : `${OLYMPIAD}/skill/${own.toLowerCase().replaceAll(" ", "-")}`;
+  const verdict = answer === "correct" ? "correct" : "not_yet";
+  const value = task === MONTHS ? (answer === "correct" ? "December" : "October") : "32";
+  return routedApi((router) => {
+    // Sam has the debug right, as the mockup draws its button at the row's start.
+    router.service(DebugService, { getDebug: () => ({}) });
+    router.service(AccountService, { getQuota: () => ({ share: { profilePercent: 30 } }) });
+    router.service(LearningService, {
+      getOpenAttempt: (request) => ({
+        attempt: {
+          start: {
+            attemptId: request.attemptId,
+            task: { json: encode(task), moduleFormatVersion: "0.4" },
+            packageDigest: MODULE_DIGEST,
+          },
+        },
+      }),
+    });
+    router.service(AttemptService, {
+      async submitWork() {
+        if (answer === undefined) return new Promise<never>(() => {});
+        if (answer === "unchecked") {
+          const renews = new Date(Date.now() + 3 * 3_600_000);
+          return { outcome: { cause: Cause.QUOTA, nextFamilyDay: timestampFromDate(renews) } };
+        }
+        return {
+          items: [{ verdict, answerSlots: [{ answerSlot: { item: 1, slot: 1 }, verdict, value }] }],
+          wrongAnswers: answer === "correct" ? 0 : 1,
+          ...(answer === "correct" ? { solved: {} } : {}),
+        };
+      },
+      ...(closer ? { getCheckProgress: () => ({ going: true, model: 1, models: 3 }) } : {}),
+      submitEssay: () => ({ end: SubmissionEnd.FEEDBACK, feedback: essay?.feedback ?? "" }),
+      done: () => ({ solved: { criteria: [...(essay?.criteria ?? [])] } }),
+      getRungWords: () => ({ rung: 1, words: DOTS_RUNG }),
+      getCorrectAnswerWords: () => ({ words: "That's it — well done. What helped you most here?" }),
+      explainDifferently: () => ({ words: DOTS_ALT }),
+      getHint: () => ({
+        hint: { case: "techniques", value: { techniqueIds: [] } },
+        leadingQuestion: DOTS_HINT.question ?? "",
+      }),
+    });
+    router.service(ModuleService, {
+      listConnectedModules: () => ({
+        modules: [{ moduleId: OLYMPIAD, packageDigest: MODULE_DIGEST, taskSkill }],
+      }),
+    });
+    router.service(ProgressService, {
+      getSkillMap: () => ({ packageDigest: MODULE_DIGEST, skills: stated }),
+    });
+    router.service(PackageService, {
+      getManifest: () => ({
+        manifest: {
+          json: encode({
+            module_format_version: "0.4",
+            id: OLYMPIAD,
+            version: "1.0.0",
+            title: "Olympiad maths 1–6",
+            subject: "mathematics",
+            audience: { age_categories: ["under_13"], grades: [1, 2, 3, 4, 5, 6] },
+            languages: { explanation: "en" },
+            authors: [{ name: "The NovaTrail authors" }],
+            license: "Apache-2.0",
+          }),
+          moduleFormatVersion: "0.4",
+        },
+      }),
+      getSolvingSteps: () => ({}),
+      getTechniques: () => ({}),
+      getSkillGraph: () => ({
+        skillGraph: { json: encode({ skills }), moduleFormatVersion: "0.4" },
+        skillTiers: tiers,
+      }),
+    });
+  });
+}
+
+/** The task of a module on the sheet of a task from paper, for Sam, an adult, with api as drawn. */
+function aModule(drawn: ModuleDrawn = {}) {
+  return () => {
+    const api = moduleApi(drawn);
+    const { device } = memoryDevice();
+    const packages = {
+      views: new OpenViews({ api, device, stale: () => {} }),
+      checks: { check: async () => {} },
+      files: new DeviceFiles({
+        api: "https://api.example.org",
+        withdrawn: () => {},
+        fetch: async () => new Response(null, { status: 404 }),
+      }),
+    } as unknown as Packages;
+    return inLanguage(
+      <ApiProvider value={api}>
+        <PackagesProvider value={packages}>
+          <LearnerProvider value={SAM}>
+            <Task profileId="p1" attemptId="a1" device={device} adult onAttempt={() => {}} />
+          </LearnerProvider>
+        </PackagesProvider>
+      </ApiProvider>,
+    );
+  };
+}
+
+/** The sheet drawn, with its bar, and the pill named. */
+async function moduleDrawn() {
+  await barDrawn();
+  await waitFor(() => expect(document.querySelector(".nt-skill-name")).toBeTruthy(), {
+    timeout: 10_000,
+  });
+}
+
+/** A stroke on the sheet, given to it and told as the element tells one. */
+function strokeOn() {
+  const element = document.querySelector<CanvasElement>("novatrail-canvas");
+  if (element === null) throw new Error("no sheet");
+  const write: HistoryEvent = {
+    kind: "write",
+    t: 30,
+    stroke: {
+      id: 1,
+      kind: "pen",
+      points: [
+        { x: 300, y: 300, t: 10, p: 0.5 },
+        { x: 340, y: 360, t: 30, p: 0.5 },
+      ],
+    },
+  };
+  element.history = [write];
+  element.dispatchEvent(
+    new CustomEvent("historychange", { detail: { from: 0, events: [write] }, bubbles: true }),
+  );
+}
+
+/** An option of the tracing paper tapped, as the element tells a tap. */
+function optionTapped(option: number) {
+  document
+    .querySelector("novatrail-canvas")
+    ?.dispatchEvent(
+      new CustomEvent("optiontap", { detail: { option }, bubbles: true, composed: true }),
+    );
+}
+
+/** The work written, then Check pressed: the card that comes. */
+async function checked(choose?: number) {
+  await moduleDrawn();
+  if (choose === undefined) strokeOn();
+  else optionTapped(choose);
+  await waitFor(() =>
+    expect(document.querySelector("button.nt-check-button")).toHaveAttribute(
+      "aria-disabled",
+      "false",
+    ),
+  );
+  await userEvent.click(screen.getByRole("button", { name: "Check" }));
+  await waitFor(() => expect(document.querySelector(".nt-card-verdict")).toBeTruthy());
+}
+
+/** A region of the tutor's panel, not of the debug window, which the mockup draws beside it. */
+function inTutor(region: Region): Region {
+  return "css" in region.mockup
+    ? { ...region, mockup: { css: `.ph-tutor ${region.mockup.css}` } }
+    : region;
+}
+
+/** The panel's regions on a module's task on the sheet, as `panelOf` gives them. */
+function sheetPanelOf(device: Device, ...regions: readonly Region[]): readonly Region[] {
+  return panelOf(device, ...regions).map((region) =>
+    region === PANEL_HEAD || region === GRABBER ? inTutor(region) : region,
+  );
+}
+
+/** Why the row's buttons stand apart from the mockup's. */
+const ROW_APART =
+  "the row of a task from paper: a line after the debug button, Check's padding, and Ask's word wherever the row fits it, where the mockup's phone gives its sign alone";
+
+/** The row of a task from paper and of a module's: Ask, Hint and Check. */
+const SHEET_ROW: readonly Region[] = [
+  {
+    name: "the row",
+    mockup: { css: ".ph-row" },
+    app: { css: ".nt-task-row" },
+    followsText: "centre",
+    differs: { what: ["font-size"], by: NO_TEXT },
+  },
+  {
+    name: "Ask",
+    mockup: { css: ".ph-row button.ph-ask" },
+    app: { css: ".nt-task-row button.nt-ask" },
+    followsText: "start",
+    contrast: ACCENT_TEXT,
+    differs: { what: ["x"], by: ROW_APART },
+  },
+  {
+    name: "Hint",
+    mockup: { css: '.ph-row button:text-is("Hint")' },
+    app: { css: '.nt-task-row button:text-is("Hint")' },
+    followsText: "start",
+    differs: { what: ["x"], by: ROW_APART },
+  },
+  {
+    name: "Check",
+    mockup: { css: '.ph-row button:text-is("Check")' },
+    app: { css: ".nt-task-row button:text-is('Check')" },
+    followsText: "end",
+    differs: { what: ["x"], by: ROW_APART },
+  },
+];
+
+/** The pill of the task skill at the top right, in place of a page's counter. */
+const SKILL_PILL: Region = {
+  name: "the pill of the task skill",
+  mockup: { css: 'button[aria-label$="choose which tasks to solve"]' },
+  app: { css: "button.nt-skill-pill" },
+  followsText: "end",
+};
+
+/** Next task in the row, once the task is solved. */
+const ROW_NEXT: Region = {
+  name: "Next task",
+  mockup: { css: '.ph-row button:text-is("Next task")' },
+  app: { css: ".nt-task-row button.nt-row-next" },
+  followsText: "end",
+  differs: { what: ["x"], by: ROW_APART },
+};
+
+/** Why the card of a Check gone on to a later model is lower than the mockup's. */
+const TRACK_DOTS =
+  "the track's dots: the models' names stand on it only where the debug mode names the Check's models, which the state's does not, where the mockup draws them as pills";
+
+/** Why the card of a Check the quota left unread stands apart from the mockup's. */
+const QUOTA_CARD =
+  "the card of a task from paper: its line says when the tutor's time comes back, and Hint stands in it";
+
+/** The states of the mockup's task of a module, on the sheet of a task from paper. */
+const MODULE_TASKS: readonly Compared[] = [
+  {
+    state: "module-task",
+    draw: aModule(),
+    settle: moduleDrawn,
+    regions: [...SHEET_BAR, ...SHEET_ROW, SKILL_PILL],
+  },
+  {
+    state: "module-task-skill",
+    draw: aModule(),
+    settle: async () => {
+      await moduleDrawn();
+      await userEvent.click(document.querySelector("button.nt-skill-pill") as HTMLElement);
+    },
+    regions: [
+      SKILL_PILL,
+      ...PICK.map((region) =>
+        region.name === "a skill suggested"
+          ? differing(
+              region,
+              ["x", "y"],
+              "the choice of Home's tile, whose lines above the skills stand farther apart than the mockup draws them at the pill",
+            )
+          : region,
+      ),
+    ],
+  },
+  {
+    state: "module-task-own",
+    draw: aModule({ own: "Number patterns" }),
+    settle: async () => {
+      await moduleDrawn();
+      await waitFor(() =>
+        expect(document.querySelector(".nt-skill-name")).toHaveTextContent("Number patterns"),
+      );
+    },
+    regions: [SKILL_PILL],
+  },
+  ...DEVICES.map(
+    (device): Compared => ({
+      state: "module-task-hint",
+      devices: [device],
+      draw: aModule(),
+      settle: async () => {
+        await moduleDrawn();
+        await userEvent.click(
+          within(document.querySelector(".nt-task-row") as HTMLElement).getByRole("button", {
+            name: "Hint",
+          }),
+        );
+        await screen.findByText(DOTS_HINT.question ?? "");
+      },
+      regions: sheetPanelOf(device, PANEL_HEAD, HINT_ACT),
+    }),
+  ),
+  {
+    state: "module-task-not-yet",
+    draw: aModule({ answer: "not-yet" }),
+    settle: () => checked(),
+    regions: [...SHEET_ROW, card(), CARD_TITLE, TRY_AGAIN],
+  },
+  {
+    state: "module-task-correct",
+    draw: aModule({ answer: "correct" }),
+    settle: () => checked(),
+    regions: [card(), CARD_TITLE, ROW_NEXT],
+  },
+  {
+    state: "module-task-reading",
+    draw: aModule(),
+    settle: () => checked(),
+    regions: [card(), CARD_TITLE],
+  },
+  {
+    state: "module-task-reading-closer",
+    draw: aModule({ closer: true }),
+    settle: async () => {
+      await checked();
+      await waitFor(
+        () =>
+          expect(document.querySelector(".nt-card-title")).toHaveTextContent(
+            "Looking more closely…",
+          ),
+        { timeout: 10_000 },
+      );
+    },
+    regions: [card(TRACK_DOTS), differing(CARD_TITLE, ["y"], TRACK_DOTS)],
+  },
+  ...DEVICES.map(
+    (device): Compared => ({
+      state: "module-task-rung",
+      devices: [device],
+      draw: aModule({ answer: "not-yet" }),
+      settle: async () => {
+        await checked();
+        await userEvent.click(screen.getByRole("button", { name: "Ask" }));
+        await screen.findByText(DOTS_RUNG);
+      },
+      regions: sheetPanelOf(device, PANEL_HEAD, HINT_ACT, EXPLAIN_ACT, REPORT_OPEN),
+    }),
+  ),
+  ...DEVICES.map(
+    (device): Compared => ({
+      state: "module-task-alt",
+      devices: [device],
+      draw: aModule({ answer: "not-yet" }),
+      settle: async () => {
+        await checked();
+        await userEvent.click(screen.getByRole("button", { name: "Ask" }));
+        await screen.findByText(DOTS_RUNG);
+        await userEvent.click(screen.getByRole("button", { name: "Explain differently" }));
+        await screen.findByText(DOTS_ALT);
+      },
+      regions: sheetPanelOf(
+        device,
+        PANEL_HEAD,
+        HINT_ACT,
+        differing(EXPLAIN_ACT, ["missing"], EXPLAINED),
+        REPORT_OPEN,
+      ),
+    }),
+  ),
+  {
+    state: "module-task-report",
+    draw: aModule({ answer: "not-yet" }),
+    settle: async () => {
+      await checked();
+      await userEvent.click(screen.getByRole("button", { name: "Ask" }));
+      await screen.findByText(DOTS_RUNG);
+      await userEvent.click(screen.getByRole("button", { name: "Report a problem" }));
+    },
+    regions: [
+      {
+        name: "the form of the report",
+        mockup: { css: ".ph-report" },
+        app: { css: ".nt-pop-report" },
+        differs: {
+          what: ["y", "height", "font-size"],
+          by: `its options are app's radio buttons of 44, where the mockup's are rows of 44 with a circle of 20: the form is taller, and on a phone its sheet rises higher; ${NO_TEXT}`,
+        },
+      },
+    ],
+  },
+  {
+    state: "module-task-full",
+    devices: ["phone"],
+    draw: aModule({ answer: "not-yet" }),
+    settle: async () => {
+      await checked();
+      await userEvent.click(screen.getByRole("button", { name: "Ask" }));
+      await screen.findByText(DOTS_RUNG);
+      await userEvent.click(screen.getByRole("button", { name: "Full screen" }));
+    },
+    regions: sheetPanelOf("phone", PANEL_HEAD, HINT_ACT, EXPLAIN_ACT, REPORT_OPEN),
+  },
+  {
+    state: "module-task-quota",
+    draw: aModule({ answer: "unchecked" }),
+    settle: () => checked(),
+    regions: [card(QUOTA_CARD), differing(CARD_TITLE, ["y"], QUOTA_CARD)],
+  },
+  {
+    state: "module-choice",
+    draw: aModule({ task: MONTHS }),
+    settle: moduleDrawn,
+    regions: [...SHEET_BAR, ...SHEET_ROW, SKILL_PILL],
+  },
+  {
+    state: "module-choice-empty",
+    draw: aModule({ task: MONTHS }),
+    settle: async () => {
+      await moduleDrawn();
+      await userEvent.click(screen.getByRole("button", { name: "Check" }));
+      await waitFor(() => expect(document.querySelector(".nt-card-verdict")).toBeTruthy());
+    },
+    regions: [...SHEET_ROW, card(), CARD_TITLE],
+  },
+  {
+    state: "module-choice-wrong",
+    draw: aModule({ task: MONTHS, answer: "not-yet" }),
+    settle: () => checked(0),
+    regions: [card(), CARD_TITLE, TRY_AGAIN],
+  },
+  {
+    state: "module-choice-correct",
+    draw: aModule({ task: MONTHS, answer: "correct" }),
+    settle: () => checked(1),
+    regions: [card(), CARD_TITLE, ROW_NEXT],
+  },
+  {
+    state: "module-long",
+    draw: aModule(),
+    settle: moduleDrawn,
+    regions: [...SHEET_BAR, ...SHEET_ROW, SKILL_PILL],
+  },
+];
+
+/** The mockup's short essays, on the lined sheet: the talking umbrella, and the day remembered. */
+const UMBRELLA: open.Task = {
+  id: "umbrella",
+  statement: [
+    {
+      text: "A shop sells an umbrella that can talk, but only when it rains. Write three different first sentences for an essay about it. Then put a ring round the one you would keep.",
+    },
+  ],
+  canvas: { kind: "handwriting_sheet", grid: "lines" },
+  items: [{ answer_slots: [{ binding: "sheet" }] }],
+};
+const A_DAY: open.Task = {
+  id: "a-day",
+  statement: [{ text: "Write a short essay about a day of your life that you remember well." }],
+  canvas: { kind: "handwriting_sheet", grid: "lines" },
+  items: [{ answer_slots: [{ binding: "sheet" }] }],
+};
+
+/** The mockup's feedback on the umbrella, and the criteria of its rubric. */
+const UMBRELLA_ESSAY = {
+  feedback:
+    "“The umbrella cleared its throat” makes a reader want to know why. The other two tell what happens before it happens. Which one did you ring?",
+  criteria: [
+    "Three different first sentences",
+    "Each makes a reader want to go on",
+    "One sentence is ringed",
+  ],
+};
+
+/** Done in the row of an essay, between Hint and Check: grey till the essay is sent. */
+const ROW_DONE: Region = {
+  name: "Done",
+  mockup: { css: '.ph-row button:text-is("Done")' },
+  app: { css: ".nt-task-row button.nt-done" },
+  followsText: "start",
+  differs: { what: ["x"], by: ROW_APART },
+};
+
+/** Done in the row once the essay was sent: in the accent. */
+const ROW_DONE_OPEN: Region = { ...ROW_DONE, contrast: ACCENT_TEXT };
+
+/** Done on the card of an essay's feedback. */
+const CARD_DONE: Region = {
+  name: "Done on the card",
+  mockup: { css: '.ph-verdict button:text-is("Done")' },
+  app: { css: '.nt-card-verdict button:text-is("Done")' },
+  followsText: "end",
+  contrast: ACCENT_TEXT,
+};
+
+/** Next task at the panel's foot, once Done ended the essay. */
+const NEXT_ACT: Region = {
+  name: "Next task, at the panel's foot",
+  mockup: { css: '.ph-tutor button:text-is("Next task")' },
+  app: { css: '.nt-tutor-acts button:text-is("Next task")' },
+  followsText: "start",
+  contrast: ACCENT_TEXT,
+};
+
+/** The criteria of the rubric in the panel, once Done ended the essay. */
+const CRITERIA: Region = {
+  name: "the criteria of the rubric",
+  mockup: { css: '.ph-tutor div.nt-in:has-text("Marks by the author")' },
+  app: { css: ".nt-tutor-panel .nt-criteria" },
+  differs: {
+    what: ["y", "height", "font-size"],
+    by: `the contract gives the criteria without their marks: app lists them under a heading of its own, with no mark and no line under them, and its line of the end stands above them; ${NO_TEXT}`,
+  },
+};
+
+/** An essay's Check, its feedback come. */
+async function essayChecked() {
+  await checked();
+  await waitFor(() =>
+    expect(document.querySelector(".nt-card-verdict")).toHaveAttribute("data-kind", "feedback"),
+  );
+}
+
+/** The states of the mockup's short essay, on the sheet of a task from paper. */
+const ESSAY_TASKS: readonly Compared[] = [
+  {
+    state: "essay-sheet",
+    draw: aModule({ task: UMBRELLA }),
+    settle: moduleDrawn,
+    regions: [...SHEET_BAR, ...SHEET_ROW, ROW_DONE, SKILL_PILL],
+  },
+  {
+    state: "essay-sheet-feedback",
+    draw: aModule({ task: UMBRELLA, essay: UMBRELLA_ESSAY }),
+    settle: essayChecked,
+    regions: [...SHEET_ROW, ROW_DONE_OPEN, card(), CARD_TITLE, CARD_DONE],
+  },
+  ...DEVICES.map(
+    (device): Compared => ({
+      state: "essay-sheet-panel",
+      devices: [device],
+      draw: aModule({ task: UMBRELLA, essay: UMBRELLA_ESSAY }),
+      settle: async () => {
+        await essayChecked();
+        await userEvent.click(screen.getByRole("button", { name: "Ask" }));
+        await screen.findByText(UMBRELLA_ESSAY.feedback);
+      },
+      regions: sheetPanelOf(device, PANEL_HEAD, HINT_ACT, REPORT_OPEN),
+    }),
+  ),
+  ...DEVICES.map(
+    (device): Compared => ({
+      state: "essay-sheet-done",
+      devices: [device],
+      draw: aModule({ task: UMBRELLA, essay: UMBRELLA_ESSAY }),
+      settle: async () => {
+        await essayChecked();
+        const card = document.querySelector(".nt-card-verdict") as HTMLElement;
+        await userEvent.click(within(card).getByRole("button", { name: "Done" }));
+        await waitFor(() => expect(document.querySelector(".nt-criteria")).toBeTruthy());
+      },
+      regions: [
+        ...sheetPanelOf(device, PANEL_HEAD, CRITERIA, NEXT_ACT),
+        ...(device === "phone"
+          ? []
+          : [
+              differing(
+                ROW_NEXT,
+                ["x"],
+                "beside the open panel the row stands in the middle of the room the panel leaves, as on every task on the sheet, where the mockup centres it in the window",
+              ),
+            ]),
+      ],
+    }),
+  ),
+  {
+    state: "essay-sheet-next",
+    draw: aModule({ task: A_DAY }),
+    settle: moduleDrawn,
+    regions: [...SHEET_ROW, ROW_DONE],
+  },
+];
+
 const SCREENS: readonly Compared[] = [
   ...WAY_IN,
   ...LEGAL_TEXTS,
@@ -2501,23 +2921,49 @@ const SCREENS: readonly Compared[] = [
       state: "home",
       devices: [device],
       draw: home,
-      regions: [
-        // The phone's tab bar is glass: what shows through its middle is the card that Home's
-        // other heights move under it.
-        ...frameOf(device).map(
-          (region): Region =>
-            region.name === "the tab bar"
-              ? {
-                  ...region,
-                  differs: { what: ["font-size", "background"], by: `${HOME_PLACED}; ${NO_TEXT}` },
-                }
-              : region,
-        ),
-        ...HOME,
-        ...(device === "ipad" ? [LEGEND] : []),
-      ],
+      regions: [...frameOf(device), ...HOME, ...(device === "ipad" ? [LEGEND] : [])],
     }),
   ),
+  ...DEVICES.map(
+    (device): Compared => ({
+      state: "home-tasks",
+      devices: [device],
+      draw: home,
+      settle: () =>
+        userEvent.click(
+          screen.getAllByRole("button", {
+            description: "Choose which tasks to solve",
+          })[0] as HTMLElement,
+        ),
+      regions:
+        device === "ipad" ? PICK.map((region) => differing(region, ["x", "y"], PICK_PLACED)) : PICK,
+    }),
+  ),
+  {
+    state: "home-tasks-own",
+    draw: home,
+    settle: async () => {
+      await userEvent.click(
+        screen.getAllByRole("button", {
+          description: "Choose which tasks to solve",
+        })[0] as HTMLElement,
+      );
+      const pick = screen.getByRole("dialog", { name: "Which tasks to solve?" });
+      // The first is the chip of the skills suggested, as the mockup presses it.
+      await userEvent.click(
+        within(pick).getAllByRole("button", { name: "Number patterns" })[0] as HTMLElement,
+      );
+      // The focus back on the row scrolls the page on a phone; the mockup's stays at its top.
+      window.scrollTo(0, 0);
+    },
+    regions: TILES,
+  },
+  {
+    state: "lessons",
+    draw: lessonsPage,
+    settle: () => screen.findByRole("button", { name: /Pigeonhole principle/ }),
+    regions: LESSONS,
+  },
   { state: "home-legend", devices: ["ipad"], draw: home, regions: [LEGEND] },
   {
     state: "home-legend",
@@ -2570,269 +3016,8 @@ const SCREENS: readonly Compared[] = [
   // A skill chosen: its card is skill-map's, at the foot of the window; the head and the frame stay.
   { state: "map-skill", draw: skillMap("Olympiad maths 1–6"), regions: MAP },
   { state: "map-skill-locked", draw: skillMap("Olympiad maths 1–6"), regions: MAP },
-  {
-    state: "task-pill",
-    until: TUTOR_IN_ROW,
-    draw: aTask({ mode: "steps" }),
-    settle: barDrawn,
-    regions: [...BAR, ...ROW, STEP_PILL, TUTOR_BUTTON],
-  },
-  ...DEVICES.map(
-    (device): Compared => ({
-      state: "task",
-      devices: [device],
-      draw: aTask({ mode: "steps", open: true }),
-      settle: barDrawn,
-      // On a phone the sheet hides the row and the tool bar, on both sides.
-      regions: [
-        ...panelOf(device, PANEL_HEAD, STEP_CARD, HINT_ACT),
-        ...(device === "ipad" ? [...BAR, ...ROW] : []),
-      ],
-    }),
-  ),
-  {
-    state: "task-steps",
-    draw: aTask({ mode: "steps", open: true }),
-    settle: async () => {
-      await barDrawn();
-      await userEvent.click(screen.getByRole("button", { name: "Step 1 of 4" }));
-    },
-    regions: [STEP_CARD, STEP_LIST],
-  },
-  ...DEVICES.map(
-    (device): Compared => ({
-      state: "task-hint",
-      devices: [device],
-      draw: aTask({ mode: "steps", open: true, hint: DOTS_HINT }),
-      settle: barDrawn,
-      regions: panelOf(device, PANEL_HEAD, HINT_ACT),
-    }),
-  ),
-  ...DEVICES.map(
-    (device): Compared => ({
-      state: "task-rung",
-      devices: [device],
-      draw: aTask(RUNG),
-      settle: barDrawn,
-      regions: panelOf(device, PANEL_HEAD, HINT_ACT, EXPLAIN_ACT, REPORT_OPEN),
-    }),
-  ),
-  ...DEVICES.map(
-    (device): Compared => ({
-      state: "task-alt",
-      devices: [device],
-      draw: aTask({ ...RUNG, words: DOTS_ALT, explain: false }),
-      settle: barDrawn,
-      regions: panelOf(
-        device,
-        PANEL_HEAD,
-        HINT_ACT,
-        differing(EXPLAIN_ACT, ["missing"], EXPLAINED),
-        REPORT_OPEN,
-      ),
-    }),
-  ),
-  ...DEVICES.map(
-    (device): Compared => ({
-      state: "task-report",
-      devices: [device],
-      draw: aTask(RUNG),
-      settle: async () => {
-        await barDrawn();
-        await userEvent.click(screen.getByRole("button", { name: "Report a problem" }));
-      },
-      regions: [
-        {
-          name: "the form of the report",
-          mockup: { css: ".ph-report" },
-          app: { css: ".nt-pop-report" },
-          differs: {
-            what: ["y", "height", "font-size"],
-            by: `its options are app's radio buttons of 44, where the mockup's are rows of 44 with a circle of 20: the form is taller, and on a phone its sheet rises higher; ${NO_TEXT}`,
-          },
-        },
-      ],
-    }),
-  ),
-  {
-    state: "task-full",
-    devices: ["phone"],
-    draw: aTask(RUNG),
-    settle: async () => {
-      await barDrawn();
-      await userEvent.click(screen.getByRole("button", { name: "Full screen" }));
-    },
-    regions: panelOf("phone", PANEL_HEAD, HINT_ACT, EXPLAIN_ACT, REPORT_OPEN),
-  },
-  ...DEVICES.map(
-    (device): Compared => ({
-      state: "quota",
-      devices: [device],
-      draw: aTask({
-        task: NEXT,
-        mode: "steps",
-        open: true,
-        choices: { "1.1": "20" },
-        verdicts: judged(NEXT, "not_yet"),
-        quota: "Tutor time today: 100% used",
-      }),
-      settle: barDrawn,
-      regions: panelOf(device, PANEL_HEAD, HINT_ACT),
-    }),
-  ),
-  {
-    state: "task-mode",
-    draw: aTask({ mode: "steps" }),
-    settle: () => userEvent.click(screen.getByRole("button", { name: "Mode: Step by step" })),
-    regions: [
-      MODE_PILL,
-      {
-        name: "the pop-over of the mode",
-        mockup: { css: 'div.nt-pop:has(> button[aria-pressed="true"])' },
-        app: { role: "dialog", name: "Mode" },
-        differs: { what: ["font-size"], by: NO_TEXT },
-      },
-      {
-        name: "Step by step, chosen",
-        mockup: { css: 'div.nt-pop > button[aria-pressed="true"]' },
-        app: { css: 'button.nt-mode-choice[aria-pressed="true"]' },
-        differs: { what: ["font-size"], by: NO_TEXT },
-      },
-    ],
-  },
-  ...DEVICES.map(
-    (device): Compared => ({
-      state: "task-empty",
-      until: TUTOR_IN_ROW,
-      devices: [device],
-      draw: sheetTask,
-      settle: async () => {
-        await barDrawn();
-        // Forced: Playwright takes no click on a button that says it is disabled.
-        await userEvent.click(screen.getByRole("button", { name: "Check" }), { force: true });
-      },
-      regions: [...ROW, card(), CARD_TITLE],
-    }),
-  ),
-  ...DEVICES.map(
-    (device): Compared => ({
-      state: "task-reading",
-      until: TUTOR_IN_ROW,
-      devices: [device],
-      draw: aTask({ filled: true, waits: true }),
-      settle: async () => {
-        await barDrawn();
-        await userEvent.click(screen.getByRole("button", { name: "Check" }));
-      },
-      regions: [
-        ...ROW.map((region) =>
-          region.name === "Check"
-            ? {
-                ...region,
-                differs: { what: ["background" as const, "colour" as const], by: READING },
-              }
-            : region,
-        ),
-        card(),
-        CARD_TITLE,
-      ],
-    }),
-  ),
-  ...DEVICES.map(
-    (device): Compared => ({
-      state: "task-not-yet",
-      until: TUTOR_IN_ROW,
-      devices: [device],
-      draw: aTask({ filled: true, verdicts: judged(DOTS, "not_yet", "32") }),
-      settle: barDrawn,
-      regions: [...ROW, card(), CARD_TITLE, TRY_AGAIN],
-    }),
-  ),
-  ...DEVICES.map(
-    (device): Compared => ({
-      state: "task-correct",
-      devices: [device],
-      draw: aTask({
-        filled: true,
-        verdicts: judged(DOTS, "correct", "29"),
-        solution: [{ text: "Row 10 has 29 dots." }],
-      }),
-      settle: barDrawn,
-      regions: [card(WAY_ON), { ...CARD_TITLE, differs: { what: ["x", "y"], by: WAY_ON } }],
-    }),
-  ),
-  ...DEVICES.map(
-    (device): Compared => ({
-      state: "choice",
-      devices: [device],
-      draw: aTask({ task: NEXT, mode: "steps", open: device === "ipad" }),
-      settle: async () => {
-        await barDrawn();
-        await userEvent.click(screen.getByRole("button", { name: "Choose an answer" }));
-      },
-      regions: [
-        ...CHOICE_ROW.map((region) =>
-          device === "phone"
-            ? { ...region, differs: { what: ["missing" as const], by: UNDER_SHEET } }
-            : region,
-        ),
-        {
-          name: "the options",
-          mockup: { role: "radiogroup", name: "Choose an answer" },
-          app: { role: "dialog", name: "Choose an answer" },
-          differs: { what: ["font-size"], by: NO_TEXT },
-        },
-      ],
-    }),
-  ),
-  ...DEVICES.map(
-    (device): Compared => ({
-      state: "choice-wrong",
-      devices: [device],
-      draw: aTask({
-        task: NEXT,
-        mode: "steps",
-        open: true,
-        choices: { "1.1": "20" },
-        verdicts: judged(NEXT, "not_yet"),
-      }),
-      settle: barDrawn,
-      // The verdict is a line in the open panel, on both sides; a phone's sheet hides the row.
-      regions: [...panelOf(device, HINT_ACT), ...(device === "ipad" ? CHOICE_ROW : [])],
-    }),
-  ),
-  ...DEVICES.map(
-    (device): Compared => ({
-      state: "solution-ask",
-      devices: [device],
-      draw: aTask({
-        task: NEXT,
-        mode: "steps",
-        open: device === "ipad",
-        choices: { "1.1": "20" },
-        verdicts: judged(NEXT, "not_yet"),
-      }),
-      settle: async () => {
-        await barDrawn();
-        await userEvent.click(screen.getByRole("button", { name: "Show the solution" }));
-      },
-      regions: [
-        {
-          name: "the question",
-          mockup: { role: "dialog", name: "Show the solution" },
-          app: { role: "dialog", name: "Show the solution" },
-          differs: { what: ["font-size"], by: NO_TEXT },
-        },
-        {
-          name: "Show it",
-          mockup: { role: "button", name: "Show it" },
-          app: { role: "button", name: "Show it" },
-          followsText: "end",
-        },
-      ],
-    }),
-  ),
-  ...WORKBOOK_AND_ESSAY,
+  ...MODULE_TASKS,
+  ...ESSAY_TASKS,
   {
     state: "lesson",
     until: TUTOR_IN_ROW,

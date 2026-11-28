@@ -8,6 +8,7 @@ export {
   HOME,
   LEGAL,
   LESSON,
+  LESSONS,
   MODULE_LICENSE,
   PAPER,
   type Route,

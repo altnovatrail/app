@@ -26,7 +26,7 @@ import {
 import { createPortal } from "react-dom";
 import { useApi } from "../api/ApiContext.tsx";
 import { useGrabber } from "../app/grabber.ts";
-import { RowLine } from "../task/TaskLayout.tsx";
+import { RowLine } from "../solving/parts.tsx";
 import {
   actionKey,
   actionTime,
