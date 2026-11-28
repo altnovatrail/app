@@ -2,8 +2,8 @@
 // them: its statement in pieces for the picture of statement.ts — its paragraphs and its pictures
 // from the module's media, in their order —, the answer slot bound `choice` whose options canvas
 // draws on the tracing paper, the option tapped as `SubmitWork` takes it, and the handwriting as
-// `SheetWork`, the strokes without the tracing paper. A module's task gives one choice at most to
-// the tracing paper: the first slot bound `choice`, in the task's order. No DOM.
+// the crop of the strokes without the tracing paper, an essay's too. A module's task gives one
+// choice at most to the tracing paper: the first slot bound `choice`, in the task's order. No DOM.
 import type { WorkSchema } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
 import type { ExportedWork, Media } from "@altnovatrail/spec/canvas";
 import type * as open from "@altnovatrail/spec/formatv0/open";
@@ -76,15 +76,21 @@ export function choseOf(
 }
 
 /**
- * The handwriting of a task of a module for `SubmitWork`: the crop of the strokes alone, without the
- * tracing paper, as `SheetWork.crop`; none with no stroke.
+ * The crop of the strokes alone, without the tracing paper, a PNG: the handwriting of a task of a
+ * module, which `SubmitWork` takes as `SheetWork.crop` and `SubmitEssay` as its crop; none with no
+ * stroke.
  */
+export async function strokesCropOf(work: ExportedWork | null): Promise<Uint8Array | undefined> {
+  if (work === null || !("strokes" in work) || work.strokes === undefined) return undefined;
+  return new Uint8Array(await work.strokes.arrayBuffer());
+}
+
+/** The handwriting of a task of a module for `SubmitWork`: none with no stroke. */
 export async function sheetWorkOf(
   work: ExportedWork | null,
 ): Promise<MessageInitShape<typeof WorkSchema> | undefined> {
-  if (work === null || !("strokes" in work) || work.strokes === undefined) return undefined;
-  const crop = new Uint8Array(await work.strokes.arrayBuffer());
-  return { surface: { case: "sheet", value: { crop } } };
+  const crop = await strokesCropOf(work);
+  return crop === undefined ? undefined : { surface: { case: "sheet", value: { crop } } };
 }
 
 /** The words of a box to write in, in a line of a workbook's item drawn as text. */

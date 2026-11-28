@@ -1,4 +1,4 @@
-// What the task screen and the screen of an essay share, as the mockup's
+// The layout of the task screen, as the mockup's
 // `task-pill` and `task`: the whole window, the top bar's glass pill at the top — Back, which goes
 // to Home, and the heading — with the profile's pill and the pill of the mode at its other
 // end, or, in a lesson, the lesson's bar with the pill of the mode in it; the voicing switched on

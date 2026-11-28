@@ -29,6 +29,9 @@ const GROUPS: readonly [number, string, string][] = [
   [TEXT, "correct", "correct-tint/card"],
   // The rubric's purple: the sign of an essay's feedback, its glyph on the card.
   [EDGE, "rubric", "card"],
+  // The rubric's purple as text: the mark of an essay's feedback on its bubble, and the heading of
+  // the criteria on their card.
+  [TEXT, "rubric", "card grey-12/card grey-12/glass-panel/page"],
   // The accent as text, #0066cc, where #0071e3 misses on the page and on its own tint.
   [TEXT, "accent-text", "card page page-owner accent-tint/card glass/page"],
   [TEXT, "on-fill", "accent correct not-yet tooltip"],

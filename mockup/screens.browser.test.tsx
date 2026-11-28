@@ -8,7 +8,10 @@ import {
   Mode,
   ProfileSchema,
 } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
-import { AttemptService } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
+import {
+  AttemptService,
+  SubmissionEnd,
+} from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
 import { Cause, RunEndReason } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import { DebugService } from "@altnovatrail/contracts/novatrail/api/v1/debug_pb.js";
 import {
@@ -2304,6 +2307,8 @@ interface ModuleDrawn {
   readonly answer?: "not-yet" | "correct" | "unchecked";
   /** The Check goes on to a later model while it is read. */
   readonly closer?: boolean;
+  /** An essay's feedback to its submission, and the criteria Done gives. */
+  readonly essay?: { readonly feedback: string; readonly criteria: readonly string[] };
 }
 
 /** The skills of the olympiad module as api gives them: its graph, its tiers and the learner's map. */
@@ -2349,7 +2354,7 @@ function olympiadSkills() {
 const MODULE_DIGEST = `sha256:${"1".repeat(64)}`;
 
 /** api of a module's task on the sheet, as the mockup's states have it. */
-function moduleApi({ task = DOTS, own, answer, closer = false }: ModuleDrawn) {
+function moduleApi({ task = DOTS, own, answer, closer = false, essay }: ModuleDrawn) {
   const encode = (value: unknown) => new TextEncoder().encode(JSON.stringify(value));
   const { skills, tiers, stated } = olympiadSkills();
   const taskSkill =
@@ -2385,6 +2390,8 @@ function moduleApi({ task = DOTS, own, answer, closer = false }: ModuleDrawn) {
         };
       },
       ...(closer ? { getCheckProgress: () => ({ going: true, model: 1, models: 3 }) } : {}),
+      submitEssay: () => ({ end: SubmissionEnd.FEEDBACK, feedback: essay?.feedback ?? "" }),
+      done: () => ({ solved: { criteria: [...(essay?.criteria ?? [])] } }),
       getRungWords: () => ({ rung: 1, words: DOTS_RUNG }),
       getCorrectAnswerWords: () => ({ words: "That's it — well done. What helped you most here?" }),
       explainDifferently: () => ({ words: DOTS_ALT }),
@@ -2790,6 +2797,144 @@ const MODULE_TASKS: readonly Compared[] = [
   },
 ];
 
+/** The mockup's short essays, on the lined sheet: the talking umbrella, and the day remembered. */
+const UMBRELLA: open.Task = {
+  id: "umbrella",
+  statement: [
+    {
+      text: "A shop sells an umbrella that can talk, but only when it rains. Write three different first sentences for an essay about it. Then put a ring round the one you would keep.",
+    },
+  ],
+  canvas: { kind: "handwriting_sheet", grid: "lines" },
+  items: [{ answer_slots: [{ binding: "sheet" }] }],
+};
+const A_DAY: open.Task = {
+  id: "a-day",
+  statement: [{ text: "Write a short essay about a day of your life that you remember well." }],
+  canvas: { kind: "handwriting_sheet", grid: "lines" },
+  items: [{ answer_slots: [{ binding: "sheet" }] }],
+};
+
+/** The mockup's feedback on the umbrella, and the criteria of its rubric. */
+const UMBRELLA_ESSAY = {
+  feedback:
+    "“The umbrella cleared its throat” makes a reader want to know why. The other two tell what happens before it happens. Which one did you ring?",
+  criteria: [
+    "Three different first sentences",
+    "Each makes a reader want to go on",
+    "One sentence is ringed",
+  ],
+};
+
+/** Done in the row of an essay, between Hint and Check: grey till the essay is sent. */
+const ROW_DONE: Region = {
+  name: "Done",
+  mockup: { css: '.ph-row button:text-is("Done")' },
+  app: { css: ".nt-task-row button.nt-done" },
+  followsText: "start",
+  differs: { what: ["x"], by: ROW_APART },
+};
+
+/** Done in the row once the essay was sent: in the accent. */
+const ROW_DONE_OPEN: Region = { ...ROW_DONE, contrast: ACCENT_TEXT };
+
+/** Done on the card of an essay's feedback. */
+const CARD_DONE: Region = {
+  name: "Done on the card",
+  mockup: { css: '.ph-verdict button:text-is("Done")' },
+  app: { css: '.nt-card-verdict button:text-is("Done")' },
+  followsText: "end",
+  contrast: ACCENT_TEXT,
+};
+
+/** Next task at the panel's foot, once Done ended the essay. */
+const NEXT_ACT: Region = {
+  name: "Next task, at the panel's foot",
+  mockup: { css: '.ph-tutor button:text-is("Next task")' },
+  app: { css: '.nt-tutor-acts button:text-is("Next task")' },
+  followsText: "start",
+  contrast: ACCENT_TEXT,
+};
+
+/** The criteria of the rubric in the panel, once Done ended the essay. */
+const CRITERIA: Region = {
+  name: "the criteria of the rubric",
+  mockup: { css: '.ph-tutor div.nt-in:has-text("Marks by the author")' },
+  app: { css: ".nt-tutor-panel .nt-criteria" },
+  differs: {
+    what: ["y", "height", "font-size"],
+    by: `the contract gives the criteria without their marks: app lists them under a heading of its own, with no mark and no line under them, and its line of the end stands above them; ${NO_TEXT}`,
+  },
+};
+
+/** An essay's Check, its feedback come. */
+async function essayChecked() {
+  await checked();
+  await waitFor(() =>
+    expect(document.querySelector(".nt-card-verdict")).toHaveAttribute("data-kind", "feedback"),
+  );
+}
+
+/** The states of the mockup's short essay, on the sheet of a task from paper. */
+const ESSAY_TASKS: readonly Compared[] = [
+  {
+    state: "essay-sheet",
+    draw: aModule({ task: UMBRELLA }),
+    settle: moduleDrawn,
+    regions: [...SHEET_BAR, ...SHEET_ROW, ROW_DONE, SKILL_PILL],
+  },
+  {
+    state: "essay-sheet-feedback",
+    draw: aModule({ task: UMBRELLA, essay: UMBRELLA_ESSAY }),
+    settle: essayChecked,
+    regions: [...SHEET_ROW, ROW_DONE_OPEN, card(), CARD_TITLE, CARD_DONE],
+  },
+  ...DEVICES.map(
+    (device): Compared => ({
+      state: "essay-sheet-panel",
+      devices: [device],
+      draw: aModule({ task: UMBRELLA, essay: UMBRELLA_ESSAY }),
+      settle: async () => {
+        await essayChecked();
+        await userEvent.click(screen.getByRole("button", { name: "Ask" }));
+        await screen.findByText(UMBRELLA_ESSAY.feedback);
+      },
+      regions: sheetPanelOf(device, PANEL_HEAD, HINT_ACT, REPORT_OPEN),
+    }),
+  ),
+  ...DEVICES.map(
+    (device): Compared => ({
+      state: "essay-sheet-done",
+      devices: [device],
+      draw: aModule({ task: UMBRELLA, essay: UMBRELLA_ESSAY }),
+      settle: async () => {
+        await essayChecked();
+        const card = document.querySelector(".nt-card-verdict") as HTMLElement;
+        await userEvent.click(within(card).getByRole("button", { name: "Done" }));
+        await waitFor(() => expect(document.querySelector(".nt-criteria")).toBeTruthy());
+      },
+      regions: [
+        ...sheetPanelOf(device, PANEL_HEAD, CRITERIA, NEXT_ACT),
+        ...(device === "phone"
+          ? []
+          : [
+              differing(
+                ROW_NEXT,
+                ["x"],
+                "beside the open panel the row stands in the middle of the room the panel leaves, as on every task on the sheet, where the mockup centres it in the window",
+              ),
+            ]),
+      ],
+    }),
+  ),
+  {
+    state: "essay-sheet-next",
+    draw: aModule({ task: A_DAY }),
+    settle: moduleDrawn,
+    regions: [...SHEET_ROW, ROW_DONE],
+  },
+];
+
 const SCREENS: readonly Compared[] = [
   ...WAY_IN,
   ...LEGAL_TEXTS,
@@ -2896,6 +3041,7 @@ const SCREENS: readonly Compared[] = [
   { state: "map-skill", draw: skillMap("Olympiad maths 1–6"), regions: MAP },
   { state: "map-skill-locked", draw: skillMap("Olympiad maths 1–6"), regions: MAP },
   ...MODULE_TASKS,
+  ...ESSAY_TASKS,
   {
     state: "lesson",
     until: TUTOR_IN_ROW,

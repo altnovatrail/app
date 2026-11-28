@@ -1,4 +1,4 @@
-// The tutor's panel, the one of every screen: on the task screen and beside an essay, over the
+// The tutor's panel, the one of every screen: on the task screen, over the
 // canvas on a tablet, a sheet over the row and the canvas's bar of tools on a phone, its grabber,
 // its ×, the tutor's button and the step's pill that open it, its head with the share of the quota,
 // the verdict a line in it, and no field; alone with its field, Enter and Shift+Enter, its growing,
@@ -9,7 +9,6 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import { useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { page, userEvent } from "vitest/browser";
-import { EssayScreen } from "../task/EssayScreen.tsx";
 import { initialState, type Mode, type StepsState } from "../task/steps.ts";
 import { TaskScreen } from "../task/TaskScreen.tsx";
 import { inLanguage } from "../test/language.tsx";
@@ -38,13 +37,6 @@ const STEPS: readonly open.Step[] = [
   { title: "Understand the task", gives: ["givens"], exit_condition: "givens_ticked" },
   { title: "Solve it", exit_condition: "none" },
 ];
-
-const ESSAY: open.Task = {
-  id: "umbrella",
-  statement: [{ text: "Write three first sentences." }],
-  canvas: { kind: "handwriting_sheet", grid: "lines" },
-  items: [{ answer_slots: [{ binding: "sheet" }] }],
-};
 
 const noMedia = () => Promise.reject(new Error("no file in this test"));
 
@@ -288,59 +280,6 @@ describe("the tutor's sheet on a phone", () => {
     await userEvent.click(panel().getByRole("button", { name: "Close" }));
     await userEvent.click(screen.getByRole("button", { name: /Open the tutor/ }));
     expect(panel().getByRole("button", { name: "Full screen" })).toBeVisible();
-  });
-});
-
-/** The screen of an essay on my own, its feedback given by the test. */
-function EssayDrawn({ feedback }: { readonly feedback?: string }) {
-  return (
-    <EssayScreen
-      task={ESSAY}
-      manifest={undefined}
-      steps={[]}
-      catalog={undefined}
-      state={initialState("self")}
-      mode="self"
-      filled={[[true]]}
-      history={[]}
-      media={noMedia}
-      notSaved={false}
-      pending={false}
-      checking={false}
-      blink={false}
-      came={false}
-      mayFinish
-      {...(feedback === undefined ? {} : { feedback })}
-      onHint={() => {}}
-      onHistoryChange={() => {}}
-      onMode={() => {}}
-      onGoTo={() => {}}
-      onTick={() => {}}
-      onDone={() => {}}
-      onAgain={() => {}}
-      onHome={() => {}}
-      onCheck={() => {}}
-      onFinish={() => {}}
-    />
-  );
-}
-
-describe("the tutor's panel of an essay", () => {
-  it("opens by the tutor's button, closes by ×, and stays closed as feedback comes", async () => {
-    const { rerender } = render(inLanguage(<EssayDrawn />));
-    expect(screen.queryByRole("complementary", { name: "Tutor" })).toBeNull();
-    await userEvent.click(screen.getByRole("button", { name: "Tutor" }));
-    await userEvent.click(panel().getByRole("button", { name: "Close" }));
-    rerender(inLanguage(<EssayDrawn feedback="The second sentence works." />));
-    // The card says where the feedback is; the panel opens only when called.
-    expect(screen.queryByRole("complementary", { name: "Tutor" })).toBeNull();
-    expect(
-      screen.getByText("The feedback is in the tutor's panel. Write again, or press Done."),
-    ).toBeVisible();
-    await userEvent.click(screen.getByRole("button", { name: "Tutor" }));
-    expect(panel().getByText("The second sentence works.")).toBeVisible();
-    rerender(inLanguage(<EssayDrawn feedback="The first sentence works too." />));
-    expect(panel().getByText("The first sentence works too.")).toBeVisible();
   });
 });
 

@@ -1,4 +1,4 @@
-// What the screen of an attempt shares, a task with a verdict and an essay alike: why an
+// What the screens of an attempt share: why an
 // attempt is over, in words, by its close reason; the close reason a refusal `CAUSE_ATTEMPT_CLOSED`
 // tells; the techniques a solving step asks api for once, in the mode "by steps"; the voicing
 // of the screen; and the work the device keeps of the attempt.

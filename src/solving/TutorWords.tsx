@@ -1,6 +1,7 @@
 // The tutor's words on the task screen: bubbles of the conversation in the
 // tutor's panel — the words of the rung after "Not yet", marked a hint as the mockup's
-// `task-rung`, or of the correct answer, in the module's explanation language with its own `lang`.
+// `task-rung`, of an essay's feedback, marked so, or of the correct answer, in the module's
+// explanation language with its own `lang`.
 // Until a model's words are admitted, the words of the rung are its fallback text, which api gives
 // as words. While the words of a rung or "Explain differently" are asked, a bubble says
 // the tutor is writing: they take seconds to come. The words are no live region: the whole text
@@ -21,6 +22,8 @@ export interface TutorWordsProps {
   readonly rung?: boolean;
   /** The words are the tutor's on what it did in grown-up mode, marked so, as the mockup marks them. */
   readonly grown?: boolean;
+  /** The words are an essay's feedback by its rubric, marked so, as the mockup marks them. */
+  readonly feedback?: boolean;
   /** The module's explanation language. */
   readonly language: string | undefined;
   /**
@@ -42,6 +45,7 @@ export function TutorWords({
   words: text,
   rung = false,
   grown = false,
+  feedback = false,
   language,
   failure,
   waiting = false,
@@ -58,6 +62,11 @@ export function TutorWords({
             <span className="nt-bubble-label">
               <Icon value="grown-up" />
               {words.text("grown.mode")}
+            </span>
+          ) : feedback ? (
+            <span className="nt-bubble-label" data-feedback="true">
+              <Icon value="feedback" />
+              {words.text("task.feedback")}
             </span>
           ) : rung ? (
             <span className="nt-bubble-label">

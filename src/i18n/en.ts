@@ -712,21 +712,13 @@ export const en = {
   "task.done-locked-line": "Write the essay, then send it with Check.",
   /** The card of an essay whose feedback came: it says where the words are, the tutor's panel. */
   "task.feedback": "Feedback",
-  "task.feedback-line": "The feedback is in the tutor's panel. Write again, or press Done.",
-  /** The result of an essay finished by Done. */
-  "task.essay-done": "Essay finished",
-  /** The heading of what was read of the essay at its last submission. */
-  "task.essay-text": "What was read",
+  "task.feedback-line": "The feedback is in the tutor's panel. Write again, or tap Done.",
+  /** The line in the tutor's panel of an essay finished by Done. */
+  "task.essay-done": "It was finished with Done",
   /** The feedback whose words did not pass the checks of api. */
   "task.feedback-none": "No feedback this time",
   /** A repeat of a submission whose answer was lost: the words are nowhere on the server. */
   "task.feedback-lost": "The feedback was lost on the way. Send the essay again to get it",
-  /** An essay that cannot be read as a whole: the reason's words follow. */
-  "task.essay-unreadable": "The essay can't be read: {reason}. Write it again and send it",
-  /** No check: a call of AI gave nothing, or the assessment marked no criterion. */
-  "task.essay-unchecked": "The essay wasn't checked this time",
-  /** Told to a screen reader once the feedback of a submission came. */
-  "task.feedback-came": "The feedback came",
   /** The criteria of the rubric, once the essay is finished: what the feedback looked at. */
   "task.criteria": "What the feedback looked at",
   /** The heading of the panel of the solving steps. */
@@ -1273,10 +1265,16 @@ export const en = {
   "paper.choose-first": "Choose an answer first",
   "paper.choose-first-line": "Tap one of the answers on the task, then Check.",
   "paper.chose": "You chose {text}",
+  /** An essay on the sheet: Check pressed with nothing written. */
+  "paper.essay-first": "Write your essay first",
+  "paper.essay-first-line": "Write it here with the pen, then Check.",
   /** A task of a module on the sheet: its name, the tutor's first line, the pill of its task skill. */
   "paper.module-task": "Task of the module",
   "paper.module-hello":
     "Take a hint: the tutor answers with a question, never with the answer. A program checks every answer.",
+  /** The tutor's first line on an essay of a module. */
+  "paper.essay-hello":
+    "Take a hint, or Check: the tutor gives feedback by the essay's criteria, and never writes it for you.",
   "paper.skill-tutor": "The tutor picks",
   /** The card of a Check of a task from paper that read nothing of a solution in any task. */
   "paper.no-key": "Couldn't check this one",

@@ -41,7 +41,10 @@
 // module's tasks. A task the engine gave, `module`, is one task with no counter: the pill of its
 // task skill in the counter's place, its options on the tracing paper, a Check of its strokes alone
 // and the option chosen — "Choose an answer first" with none —, no ticks and no wavy line, the field
-// only in grown-up mode, and Next task, once it is solved, the engine's.
+// only in grown-up mode, and Next task, once it is solved, the engine's. An essay of a module is
+// written on a lined sheet: Check sends its strokes by `SubmitEssay`, its card says the feedback is
+// in the panel, where it stands marked, and Done, between Hint and Check, open once the attempt has
+// a submission, ends it by `Done`: the panel opens on the criteria of its rubric, and Next task.
 import {
   type Next,
   TutorReply,
@@ -90,13 +93,20 @@ import type { Key } from "../i18n/words.ts";
 import { useKeyHolder } from "../ownkey/OwnKeyContext.tsx";
 import { workOf } from "../solving/attempt.ts";
 import { Hint, type HintGiven } from "../solving/Hint.tsx";
-import { type CardTrack, HintButton, RowLine, VerdictCard } from "../solving/parts.tsx";
+import {
+  type CardTrack,
+  HintButton,
+  RowLine,
+  VerdictCard,
+  VerdictLine,
+} from "../solving/parts.tsx";
 import { closedBy, useOwnVoicing } from "../solving/shared.ts";
 import { usePanelFocus, useQuotaLine } from "../solving/TutorPanel.tsx";
 import type { Said } from "../tutor/report.ts";
 import { hintPhrases } from "../voice/texts.ts";
 import { BarButton, fitRow, useBarFit } from "./BarFit.tsx";
-import { type ChoiceSlot, choseOf, sheetWorkOf, tappedOf } from "./moduleTask.ts";
+import { essaySentOf } from "./essay.ts";
+import { type ChoiceSlot, choseOf, sheetWorkOf, strokesCropOf, tappedOf } from "./moduleTask.ts";
 import { numbers, type PageTask } from "./page.ts";
 import { trackNames, watchProgress } from "./progress.ts";
 import { SolveTutor } from "./SolveTutor.tsx";
@@ -196,7 +206,17 @@ export interface ModuleSide {
   readonly nexting: boolean;
   /** What Next task came to, when it gave no task. */
   readonly nextNote?: string | undefined;
+  /** An essay, with a rubric: how many submissions api counted of its attempt as it opened. */
+  readonly essay?: { readonly submissions: number } | undefined;
 }
+
+/** What Check or Done found missing, and the words of the card that says so. */
+const MISSING = {
+  write: { title: "paper.write-first", line: "paper.write-first-line" },
+  choose: { title: "paper.choose-first", line: "paper.choose-first-line" },
+  essay: { title: "paper.essay-first", line: "paper.essay-first-line" },
+  done: { title: "task.done-locked", line: "task.done-locked-line" },
+} as const satisfies Record<string, { readonly title: Key; readonly line: Key }>;
 
 /** Causes of a refusal of "Explain differently" that say its right on this rung is spent or none. */
 const SPENT: ReadonlySet<Cause> = new Set([Cause.ALREADY_ASKED, Cause.NOT_CURRENT, Cause.NO_RUNG]);
@@ -241,6 +261,7 @@ export function Solve({
   readonly onHistory?: (event: HistoryChangeEvent) => void;
 }) {
   const from: PaperSource = module === undefined ? source : "module";
+  const essay = module?.essay;
   // The words of a module's task are in its language, a task from paper's in the screen's.
   const api = useApi();
   const holder = useKeyHolder();
@@ -248,6 +269,8 @@ export function Solve({
   const wordsLanguage = module?.language ?? language;
   const narrow = useNarrow();
   const writeId = useId();
+  const doneId = useId();
+  const criteriaId = useId();
   const pens = usePens();
   const element = useRef<CanvasElement>(null);
   const [asked, setAsked] = useState<string | undefined>(undefined);
@@ -261,7 +284,10 @@ export function Solve({
   useEffect(() => () => stopProgress.current?.(), []);
   // The sheet's grid the learner turned, kept from task to task of the page while the screen is
   // open: it is the interface's, not the work's, and no store holds it.
-  const [grid, setGrid] = useState<PaperGrid | undefined>(undefined);
+  // An essay's sheet is lined at first.
+  const [grid, setGrid] = useState<PaperGrid | undefined>(
+    essay === undefined ? undefined : "lines",
+  );
   const [failure, setFailure] = useState<Failure | undefined>(undefined);
   // The tutor's words in its panel, with the reply that brought them: the hint's, and the Check's.
   const [said, setSaid] = useState<Said | undefined>(undefined);
@@ -300,8 +326,16 @@ export function Solve({
   const { auto, prime, hush } = useOwnVoicing();
   // The verdict told to a screen reader: the card shows it, so it is not shown twice.
   const [told, setTold] = useState("");
-  // What Check found missing: a stroke, or on a task of a module with options the option.
-  const [missing, setMissing] = useState<"write" | "choose" | undefined>(undefined);
+  // What Check found missing: a stroke, or on a task of a module with options the option; or the
+  // submission Done waits for.
+  const [missing, setMissing] = useState<keyof typeof MISSING | undefined>(undefined);
+  // The attempts of an essay with a submission, which Done may end; and the criteria of its rubric
+  // once Done ended it, while the attempt it ended is the task's.
+  const [submitted, setSubmitted] = useState<ReadonlySet<string>>(() => {
+    const first = begun[0]?.attemptId;
+    return new Set(first !== undefined && (essay?.submissions ?? 0) > 0 ? [first] : []);
+  });
+  const [finished, setFinished] = useState<readonly string[] | undefined>(undefined);
   // A module's hint before its first wrong answer: its techniques and its leading question.
   const [hinted, setHinted] = useState<HintGiven | undefined>(undefined);
   const [written, setWritten] = useState(false);
@@ -364,6 +398,7 @@ export function Solve({
     setAskNote(undefined);
     setAgain(undefined);
     setGrown(undefined);
+    setFinished(undefined);
     setWritten(element.current?.filled?.[0]?.[0] === true);
   }, [taskId]);
 
@@ -1013,14 +1048,16 @@ export function Solve({
 
   // What Check finds missing: a task from paper's stroke, a module's option, or with none its stroke.
   // A module's Check stays open all the same, as the mockup draws it, and says so on its press.
-  const lacking: "write" | "choose" | undefined =
+  const lacking: "write" | "choose" | "essay" | undefined =
     module?.choice !== undefined
       ? task.chosen === undefined
         ? "choose"
         : undefined
       : written
         ? undefined
-        : "write";
+        : essay === undefined
+          ? "write"
+          : "essay";
 
   const check = () => {
     if (pending) return;
@@ -1030,6 +1067,7 @@ export function Solve({
     }
     const sheet = element.current;
     if (sheet === null) return;
+    if (essay !== undefined) return checkEssay(sheet);
     setPending(true);
     setChecking(true);
     setCloser(undefined);
@@ -1212,6 +1250,120 @@ export function Solve({
     })();
   };
 
+  /**
+   * Check on an essay: the strokes alone by `SubmitEssay`, one request that reads and assesses
+   * them, with a key kept while the work is the same; each submission answered goes to the
+   * attempt's work, and its feedback to the panel, said while the panel is open. Another
+   * submission is another action: the work as it was goes again with a new key.
+   */
+  const checkEssay = (sheet: CanvasElement) => {
+    prime();
+    setPending(true);
+    setChecking(true);
+    setFailure(undefined);
+    setSaid(undefined);
+    setCheckSaid(undefined);
+    setWordsNote(undefined);
+    setTold("");
+    setFinished(undefined);
+    epoch.current += 1;
+    onKeep(taskId, withoutVerdict);
+    const length = sheet.history.length;
+    const tracing = sheet.tracing;
+    void (async () => {
+      try {
+        const work = await sheet.exportWork();
+        const crop = await strokesCropOf(work);
+        if (crop === undefined) {
+          setMissing("essay");
+          return;
+        }
+        const ai = holder.aiFields(profileId);
+        const { answer, key, now } = await inAttempt(async (now) => {
+          const of = JSON.stringify([now, length, tracing]);
+          if (sent.current?.of !== of) sent.current = { of, key: idempotencyKey() };
+          const key = sent.current.key;
+          const answer = await watched(api, () =>
+            api.attempt.submitEssay(
+              { profileId, attemptId: now, idempotencyKey: key, crop, ...ai },
+              { timeoutMs: PAPER_TIMEOUT_MS },
+            ),
+          );
+          return { answer, key, now };
+        });
+        sent.current = undefined;
+        holder.noteOutcome(profileId, outcomeOf(answer.outcome), ai);
+        const { verdict, feedback } = essaySentOf(answer);
+        const context =
+          work === null || "cells" in work || work.statement === undefined
+            ? undefined
+            : work.submission;
+        const first = !kept.current.has(key);
+        kept.current.add(key);
+        // api closed the attempt while it went: the next action begins another.
+        const over = answer.closed !== CloseReason.UNSPECIFIED;
+        onKeep(taskId, (was) => ({
+          ...was,
+          verdict,
+          ...(context === undefined || !first
+            ? {}
+            : { sent: [...(was.sent ?? []), { context, historyLength: length }] }),
+          ...(over ? { over: true } : {}),
+        }));
+        setSubmitted((before) => new Set(before).add(now));
+        const card = paperCard(verdict, words);
+        setTold(card.line === undefined ? card.title : `${card.title}. ${card.line}`);
+        if (feedback !== undefined) {
+          remember(taskId, { learner: false, text: feedback, line: false });
+          setCheckSaid({ text: feedback, reply: TutorReply.ESSAY_FEEDBACK, rung: 0 });
+          if (isOpen.current) auto([{ text: feedback, language: wordsLanguage }]);
+        }
+      } catch (reason) {
+        const found = parseFailure(reason);
+        setFailure(found);
+        closed(found);
+      } finally {
+        setPending(false);
+        setChecking(false);
+        setSpent((n) => n + 1);
+      }
+    })();
+  };
+
+  // Done on an essay: open once the attempt open has a submission.
+  const mayDone = essay !== undefined && task.over !== true && submitted.has(attemptId);
+  /**
+   * Done: the learner ends the essay's attempt, which solves it; the panel opens on the criteria of
+   * its rubric, and Next task is the engine's.
+   */
+  const finish = () => {
+    if (pending || module === undefined) return;
+    if (!mayDone) {
+      setMissing("done");
+      return;
+    }
+    setPending(true);
+    setFailure(undefined);
+    setMissing(undefined);
+    void api.attempt
+      .done({ profileId, attemptId, ...holder.routeFields(profileId) })
+      .then(
+        (answer) => {
+          onKeep(taskId, (was) => ({ ...was, over: true, solved: true }));
+          setFinished(answer.solved?.criteria ?? []);
+          setTold(words.text("task.essay-done"));
+          setOpen(true);
+          module.onSolved(answer.next);
+        },
+        (reason: unknown) => {
+          const found = parseFailure(reason);
+          setFailure(found);
+          closed(found);
+        },
+      )
+      .finally(() => setPending(false));
+  };
+
   const counter = (
     <PopOver
       label={words.text("paper.tasks")}
@@ -1301,10 +1453,7 @@ export function Solve({
       : taskState(task) === "solved"
         ? module.onNext
         : undefined;
-  const missingCard =
-    missing === "choose"
-      ? ({ title: "paper.choose-first", line: "paper.choose-first-line" } as const)
-      : ({ title: "paper.write-first", line: "paper.write-first-line" } as const);
+  const missingCard = MISSING[missing ?? "write"];
   const close = () => {
     hush();
     setOpen(false);
@@ -1400,16 +1549,29 @@ export function Solve({
             )}
             track={closer}
           />
-        ) : task.verdict === undefined || missing !== undefined ? null : (
+        ) : task.verdict === undefined || missing !== undefined || finished !== undefined ? null : (
           <VerdictCard {...paperCard(task.verdict, words)}>
+            {/* An essay's feedback has Done alone: its words are in the panel. */}
+            {task.verdict.kind === "feedback" ? (
+              <button
+                type="button"
+                className="nt-card-button"
+                aria-disabled={!mayDone || pending}
+                onClick={finish}
+              >
+                {words.text("task.done")}
+              </button>
+            ) : null}
             {/* The panel's buttons, and the card's own way to put it away. */}
-            {acts.hint ? (
+            {task.verdict.kind === "feedback" ? null : acts.hint ? (
               <button type="button" className="nt-card-link" aria-disabled={busy} onClick={hint}>
                 {words.text("task.hint")}
               </button>
             ) : null}
             {/* A task solved has "Next task" in the row. */}
-            {acts.next && onward === undefined && module === undefined ? (
+            {task.verdict.kind === "feedback" ? null : acts.next &&
+              onward === undefined &&
+              module === undefined ? (
               after === undefined ? null : (
                 <button type="button" className="nt-card-button" onClick={() => go(after)}>
                   {words.text("next.task")}
@@ -1460,6 +1622,25 @@ export function Solve({
             </>
           )}
           {acts.hint ? <HintButton parts={{ pending: busy, onHint: hint }} /> : null}
+          {essay === undefined || task.over === true ? null : (
+            <>
+              {mayDone ? null : (
+                <span id={doneId} className="nt-hidden-label">
+                  {words.text("task.done-locked")}
+                </span>
+              )}
+              {/* Not disabled while it is locked: a disabled button would drop the focus. */}
+              <button
+                type="button"
+                className="nt-row-button nt-done"
+                aria-disabled={!mayDone || pending}
+                {...(mayDone ? {} : { "aria-describedby": doneId })}
+                onClick={finish}
+              >
+                {words.text("task.done")}
+              </button>
+            </>
+          )}
           {acts.hint || !open ? <RowLine /> : null}
           {/* Not disabled while nothing is written: a disabled button would drop the focus. */}
           <button
@@ -1528,6 +1709,26 @@ export function Solve({
                         ),
                       }),
                   language: wordsLanguage,
+                  essay: essay !== undefined,
+                  ...(finished === undefined
+                    ? {}
+                    : {
+                        finished: (
+                          <>
+                            <VerdictLine kind="correct" title={words.text("task.essay-done")} />
+                            {finished.length === 0 ? null : (
+                              <section className="nt-criteria" aria-labelledby={criteriaId}>
+                                <h3 id={criteriaId}>{words.text("task.criteria")}</h3>
+                                <ul lang={wordsLanguage}>
+                                  {finished.map((criterion) => (
+                                    <li key={criterion}>{criterion}</li>
+                                  ))}
+                                </ul>
+                              </section>
+                            )}
+                          </>
+                        ),
+                      }),
                 },
               })}
           onClose={close}

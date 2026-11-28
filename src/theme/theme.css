@@ -8553,3 +8553,39 @@ dialog.nt-pin > p.nt-pin-note {
   font-size: 0.875rem;
   font-weight: 600;
 }
+
+/*
+ * An essay on the sheet, in the tutor's panel: the mark of its feedback in the rubric's purple, and
+ * once Done ends it the criteria of its rubric on a white card of their own, a hairline between
+ * them, as the mockup's `essay-sheet-done`.
+ */
+.nt-bubble-label[data-feedback="true"] {
+  color: var(--nt-rubric);
+}
+.nt-criteria {
+  align-self: stretch;
+  margin: 0.25rem 0;
+  padding: 0.75rem 0.875rem;
+  border-radius: 1rem;
+  background: var(--nt-card);
+  box-shadow:
+    0 0 0 0.5px rgba(0, 0, 0, 0.08),
+    0 1px 3px rgba(0, 0, 0, 0.05);
+}
+.nt-tutor-panel .nt-talk .nt-criteria > h3 {
+  margin: 0 0 0.375rem;
+  color: var(--nt-rubric);
+  font-size: 0.75rem;
+  font-weight: var(--nt-weight-bold);
+}
+.nt-criteria > ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.nt-tutor-panel .nt-criteria > ul > li {
+  padding: 0.375rem 0;
+  border-block-start: 0.5px solid rgba(0, 0, 0, 0.06);
+  font-size: 0.8125rem;
+  line-height: 1.35;
+}

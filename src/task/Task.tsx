@@ -69,6 +69,7 @@ import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { NextStep } from "../next/NextStep.tsx";
 import { useKeyHolder } from "../ownkey/OwnKeyContext.tsx";
 import { usePackages } from "../packages/PackagesContext.tsx";
+import { isEssay } from "../paper/essay.ts";
 import { ModuleSheet } from "../paper/ModuleSheet.tsx";
 import {
   markNames,
@@ -99,8 +100,6 @@ import { ReportProblem } from "../tutor/ReportProblem.tsx";
 import type { Said } from "../tutor/report.ts";
 import { hintPhrases } from "../voice/texts.ts";
 import { useWorks } from "../works/useWorks.ts";
-import { OpenEssay } from "./Essay.tsx";
-import { isEssay } from "./essay.ts";
 import { Pause } from "./pause.ts";
 import {
   choicesOnly,
@@ -163,7 +162,7 @@ export interface TaskProps {
   readonly onAttempt: (attemptId: string | undefined, inPlace?: true) => void;
   /** The attempt is a task segment of a lesson run: the player's, under its header. */
   readonly lesson?: TaskInLesson;
-  /** A task of a module outside a lesson, but an essay, is solved on the sheet of a task from paper. */
+  /** A task of a module outside a lesson, an essay too, is solved on the sheet of a task from paper. */
   readonly sheet?: boolean;
 }
 
@@ -383,7 +382,7 @@ export function Task({
       </>
     );
   }
-  if (sheet && lesson === undefined && read.opened.essay === undefined) {
+  if (sheet && lesson === undefined) {
     return (
       <ModuleSheet
         key={read.opened.digest}
@@ -396,9 +395,8 @@ export function Task({
       />
     );
   }
-  const Open = read.opened.essay === undefined ? OpenTask : OpenEssay;
   return (
-    <Open
+    <OpenTask
       key={read.opened.digest}
       profileId={profileId}
       attemptId={attemptId}

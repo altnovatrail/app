@@ -5,7 +5,8 @@
 // context go to the profile's database as the attempt's, and to the server by `PutWork` while the
 // storage of works is on; a Check after Correct begins the same task anew on the same sheet. Once
 // it is solved, Next task goes to what the answer said comes next, or asks the engine again in the
-// module's task skill; the pill at the top right chooses that skill.
+// module's task skill; the pill at the top right chooses that skill. An essay, a task with a
+// rubric, is one too, on a lined sheet, its submissions' contexts kept as any Check's.
 import type { Next } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
 import type { EngineChoice } from "@altnovatrail/contracts/novatrail/api/v1/cause_pb.js";
 import type { HistoryChangeEvent } from "@altnovatrail/spec/canvas";
@@ -244,6 +245,7 @@ export function ModuleSheet({
         language: manifest?.languages.explanation,
         catalog: opened.catalog,
         pill: <SkillPill card={card} onTaskSkill={onTaskSkill} />,
+        essay: opened.essay,
         onSolved: solved,
         onNext,
         nexting,

@@ -16,7 +16,8 @@
 // did on the sheet are marked, and the head says "Writing on the sheet…" till they come. A task
 // from paper is in no module: its words are in the language of the interface. A task of a module
 // has its own greeting, its hint before the first wrong answer — the givens, the techniques, the
-// leading question —, its words in the module's language, and no field but in grown-up mode.
+// leading question —, its words in the module's language, and no field but in grown-up mode. An
+// essay has a greeting of its own, its feedback marked so, and, once Done ends it, what Done gave.
 import { TutorReply } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
 import type { ReactNode, Ref } from "react";
 import type { Failure } from "../api/failure.ts";
@@ -117,12 +118,17 @@ export function SolveTutor({
   readonly onGrown?: ((on: boolean) => void) | undefined;
   /** A request in grown-up mode is on its way, its act to be drawn on the sheet. */
   readonly writing?: boolean;
-  /** On a task of a module: whether the field stands, its hint, and the language of its words. */
+  /**
+   * On a task of a module: whether the field stands, its hint, the language of its words, and of an
+   * essay what Done gave.
+   */
   readonly module?:
     | {
         readonly ask: boolean;
         readonly hint?: ReactNode;
         readonly language: string;
+        readonly essay?: boolean;
+        readonly finished?: ReactNode;
       }
     | undefined;
 }) {
@@ -173,7 +179,13 @@ export function SolveTutor({
               },
             }),
       }}
-      greeting={words.text(module === undefined ? "paper.solve-hello" : "paper.module-hello")}
+      greeting={words.text(
+        module === undefined
+          ? "paper.solve-hello"
+          : module.essay === true
+            ? "paper.essay-hello"
+            : "paper.module-hello",
+      )}
       talk={
         <>
           {/* Drawn alone, as the card: the screen's status line tells the verdict. */}
@@ -184,12 +196,24 @@ export function SolveTutor({
               line={words.text(closer ? "task.reading-closer-line" : "task.reading-line")}
             />
           ) : verdict === undefined ? null : (
-            <VerdictLine {...paperCard(verdict, words)} />
+            <VerdictLine
+              {...paperCard(verdict, words)}
+              // Feedback that came is the bubble under it: the card's line says it is here.
+              {...(verdict.kind === "feedback" && verdict.note === undefined
+                ? { line: undefined }
+                : {})}
+            />
           )}
           {checkSaid === undefined ? null : (
-            <TutorWords words={checkSaid.text} language={language} {...report(checkSaid)} />
+            <TutorWords
+              words={checkSaid.text}
+              feedback={checkSaid.reply === TutorReply.ESSAY_FEEDBACK}
+              language={language}
+              {...report(checkSaid)}
+            />
           )}
           {module?.hint}
+          {module?.finished}
           <TutorWords
             words={said?.text}
             rung={said?.reply !== TutorReply.CORRECT_ANSWER}

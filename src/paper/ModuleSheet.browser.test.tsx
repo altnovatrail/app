@@ -2,15 +2,21 @@
 // canvas element itself: its text and picture drawn as the statement, its options on the tracing
 // paper and the one tapped chosen, Check with the strokes and the option, Check with none chosen,
 // "You chose" and Try again, Correct and Next task by the engine, the pill of the task skill, the
-// module's own hint, no question field but in grown-up mode, and grown-up mode on its attempt —
-// with api on connect-es's router and the storage on the device's memory.
+// module's own hint, no question field but in grown-up mode, and grown-up mode on its attempt; an
+// essay on a lined sheet, its strokes by SubmitEssay, its feedback in the panel, Done with the
+// criteria of its rubric and Next task — with api on connect-es's router and the storage on the
+// device's memory.
 import "@altnovatrail/canvas";
 import { Mode } from "@altnovatrail/contracts/novatrail/api/v1/account_pb.js";
 import {
   type AskGrownUpRequest,
   AttemptService,
+  type DoneRequest,
   type GetCorrectAnswerWordsRequest,
   type GetRungWordsRequest,
+  SubmissionEnd,
+  type SubmitEssayRequest,
+  type SubmitEssayResponseSchema,
   type SubmitWorkRequest,
   type SubmitWorkResponseSchema,
 } from "@altnovatrail/contracts/novatrail/api/v1/attempt_pb.js";
@@ -91,8 +97,22 @@ const SKILLS = {
   },
 };
 
+/** A short essay with a rubric: its answer slot bound `sheet`. */
+const ESSAY: open.Task = {
+  id: "umbrella",
+  statement: [{ text: "A shop sells an umbrella that can talk. Write three first sentences." }],
+  canvas: { kind: "handwriting_sheet", grid: "lines" },
+  items: [{ answer_slots: [{ binding: "sheet" }] }],
+};
+
+const FEEDBACK = "The first sentence makes a reader want to go on.";
+
 interface Setup {
   readonly task?: open.Task;
+  /** How many submissions of the essay api counts as the attempt opens. */
+  readonly submissions?: number;
+  /** The answer to a submission of an essay. */
+  readonly essay?: () => MessageInitShape<typeof SubmitEssayResponseSchema>;
   readonly adult?: boolean;
   /** The answer to a Check. */
   readonly answer?: (
@@ -120,6 +140,8 @@ async function renderSheet(setup: Setup = {}) {
   const rungs: GetRungWordsRequest[] = [];
   const corrects: GetCorrectAnswerWordsRequest[] = [];
   const grown: AskGrownUpRequest[] = [];
+  const essays: SubmitEssayRequest[] = [];
+  const dones: DoneRequest[] = [];
   const skills: string[] = [];
   const fetched: string[] = [];
   let taskSkill = "";
@@ -137,6 +159,9 @@ async function renderSheet(setup: Setup = {}) {
             packageDigest: D1,
           },
           wrongAnswers: 0,
+          essaySubmissions: Array.from({ length: setup.submissions ?? 0 }, () => ({
+            end: SubmissionEnd.FEEDBACK,
+          })),
         },
       }),
       beginAttempt(request) {
@@ -181,6 +206,17 @@ async function renderSheet(setup: Setup = {}) {
                 },
               }
             : {}),
+        };
+      },
+      submitEssay(request) {
+        essays.push(request);
+        return setup.essay?.() ?? { end: SubmissionEnd.FEEDBACK, feedback: FEEDBACK };
+      },
+      done(request) {
+        dones.push(request);
+        return {
+          solved: { criteria: ["Three different first sentences", "One sentence is ringed"] },
+          next: { next: { case: "choice", value: { kind: ChoiceKind.TASK, choiceId: "essay-2" } } },
         };
       },
       getRungWords(request) {
@@ -265,7 +301,19 @@ async function renderSheet(setup: Setup = {}) {
     ),
   );
   await screen.findByRole("heading", { name: "Task of the module" }, SLOW);
-  return { submitted, begun, chosen, rungs, corrects, grown, skills, fetched, attempts };
+  return {
+    submitted,
+    begun,
+    chosen,
+    rungs,
+    corrects,
+    grown,
+    skills,
+    fetched,
+    attempts,
+    essays,
+    dones,
+  };
 }
 
 /** The sheet shown. */
@@ -540,4 +588,102 @@ it("opens the field in grown-up mode, which asks on the module's attempt with th
     new Uint8Array(await (sheet().paper as { statement: Blob }).statement.arrayBuffer()),
   );
   expect(work.value.crop.length).toBeGreaterThan(0);
+});
+
+it("opens an essay on a lined sheet, its topic on the tracing paper, Done locked between Hint and Check", async () => {
+  const { essays } = await renderSheet({ task: ESSAY });
+  expect(sheet().grid).toBe("lines");
+  expect(sheet().paper?.source).toBe("module");
+  expect(sheet().paper?.options).toBeUndefined();
+  const names = row()
+    .getAllByRole("button")
+    .map((button) => button.textContent);
+  expect(names.slice(-3)).toEqual(["Hint", "Done", "Check"]);
+  // Check first, which a press of Done right after the sheet opens could not come before.
+  await userEvent.click(row().getByRole("button", { name: "Check" }));
+  expect(await screen.findByText("Write your essay first")).toBeVisible();
+  expect(screen.getByText("Write it here with the pen, then Check.")).toBeVisible();
+  await userEvent.click(screen.getByRole("button", { name: "OK" }));
+  const done = row().getByRole("button", { name: "Done" });
+  expect(done).toHaveAttribute("aria-disabled", "true");
+  expect(done).toHaveAccessibleDescription("Done opens once the essay has been sent");
+  // Playwright takes aria-disabled for disabled: the press as the learner's, which the screen takes.
+  done.click();
+  expect(await screen.findByText("Write the essay, then send it with Check.")).toBeVisible();
+  expect(essays).toHaveLength(0);
+});
+
+it("sends an essay's strokes by SubmitEssay on Check, and its feedback stands in the panel", async () => {
+  const { essays, submitted } = await renderSheet({ task: ESSAY });
+  writeOn(sheet());
+  await userEvent.click(row().getByRole("button", { name: "Check" }));
+  expect(await screen.findByText("Feedback")).toBeVisible();
+  expect(
+    screen.getByText("The feedback is in the tutor's panel. Write again, or tap Done."),
+  ).toBeVisible();
+  expect(essays).toHaveLength(1);
+  expect(submitted).toHaveLength(0);
+  expect(essays[0]?.attemptId).toBe("a1");
+  expect([...(essays[0]?.crop ?? []).slice(1, 4)]).toEqual([0x50, 0x4e, 0x47]);
+  // The words are the panel's, marked feedback; the panel has no question field.
+  expect(screen.queryByText(FEEDBACK)).toBeNull();
+  expect(row().getByRole("button", { name: "Done" })).toHaveAttribute("aria-disabled", "false");
+  await userEvent.click(row().getByRole("button", { name: "Ask" }));
+  const words = await panel().findByText(FEEDBACK);
+  expect(within(words.parentElement as HTMLElement).getByText("Feedback")).toBeVisible();
+  expect(
+    panel().getByText(
+      "Take a hint, or Check: the tutor gives feedback by the essay's criteria, and never writes it for you.",
+    ),
+  ).toBeVisible();
+  expect(panel().queryByRole("textbox", { name: "Your question about the task" })).toBeNull();
+  // Check again is another submission, with a key of its own.
+  await userEvent.click(row().getByRole("button", { name: "Check" }));
+  await expect.poll(() => essays.length).toBe(2);
+  expect(essays[1]?.idempotencyKey).not.toBe(essays[0]?.idempotencyKey);
+});
+
+it("says why an essay gave no feedback, on its card", async () => {
+  await renderSheet({
+    task: ESSAY,
+    essay: () => ({ end: SubmissionEnd.UNREADABLE, reason: "illegible" }),
+  });
+  writeOn(sheet());
+  await userEvent.click(row().getByRole("button", { name: "Check" }));
+  expect(await screen.findByText("Can't read this")).toBeVisible();
+  expect(screen.getByText("It can't be made out")).toBeVisible();
+  expect(row().getByRole("button", { name: "Done" })).toHaveAttribute("aria-disabled", "false");
+});
+
+it("ends an essay by Done: the criteria of its rubric in the panel, then Next task by the engine", async () => {
+  const { dones, begun, attempts } = await renderSheet({ task: ESSAY });
+  writeOn(sheet());
+  await userEvent.click(row().getByRole("button", { name: "Check" }));
+  const card = (await screen.findByText("Feedback")).closest(".nt-card-verdict") as HTMLElement;
+  await userEvent.click(within(card).getByRole("button", { name: "Done" }));
+  await expect.poll(() => dones.length).toBe(1);
+  expect(dones[0]?.attemptId).toBe("a1");
+  expect(await panel().findByText("It was finished with Done")).toBeVisible();
+  const criteria = panel().getByRole("region", { name: "What the feedback looked at" });
+  expect(
+    within(criteria)
+      .getAllByRole("listitem")
+      .map((item) => item.textContent),
+  ).toEqual(["Three different first sentences", "One sentence is ringed"]);
+  // The feedback stays in the panel; the card and Done go, and Next task comes.
+  expect(panel().getByText(FEEDBACK)).toBeVisible();
+  expect(document.querySelector(".nt-card-verdict")).toBeNull();
+  expect(row().queryByRole("button", { name: "Done" })).toBeNull();
+  await waitFor(() => expect(attempts).toEqual([undefined]));
+  await userEvent.click(panel().getByRole("button", { name: "Next task" }));
+  await expect.poll(() => begun.length).toBe(1);
+  expect(begun[0]?.start).toEqual({ case: "choiceId", value: "essay-2" });
+});
+
+it("opens Done at once on an essay api has a submission of", async () => {
+  const { dones } = await renderSheet({ task: ESSAY, submissions: 1 });
+  const done = row().getByRole("button", { name: "Done" });
+  expect(done).toHaveAttribute("aria-disabled", "false");
+  await userEvent.click(done);
+  await expect.poll(() => dones.length).toBe(1);
 });

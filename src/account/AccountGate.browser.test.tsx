@@ -824,10 +824,7 @@ function moduleRoutes(state?: LessonState): Record<string, Route> {
   };
 }
 
-/**
- * An open attempt of an essay of a module with steps, and its views: the task screen shows the mode,
- * which a task of a module solved on the sheet has none of.
- */
+/** An open attempt of an essay of a module, and its views: `#/task` opens it on the sheet. */
 const ATTEMPT_ROUTES: Record<string, Route> = {
   getOpenAttempt: () =>
     message(GetOpenAttemptResponseSchema, {
@@ -961,10 +958,9 @@ describe("the section for adults", () => {
     probe.close();
     // The open attempt GetAccount named stays: other settings make no other profile of it.
     window.location.hash = "#/task";
-    expect(await screen.findByRole("heading", { level: 1, name: en["task.title"] })).toBeTruthy();
-    expect(await screen.findByRole("button", { name: /^Mode: / })).toHaveAccessibleName(
-      `Mode: ${en["task.on-my-own"]}`,
-    );
+    expect(
+      await screen.findByRole("heading", { level: 1, name: en["paper.module-task"] }),
+    ).toBeTruthy();
     other.close();
   });
 
