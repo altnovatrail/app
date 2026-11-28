@@ -34,7 +34,7 @@ import { DebugSlot } from "../debug/slot.tsx";
 import { watched } from "../debug/watched.ts";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { useKeyHolder } from "../ownkey/OwnKeyContext.tsx";
-import { usePanelFocus } from "../task/TutorPanel.tsx";
+import { usePanelFocus } from "../solving/TutorPanel.tsx";
 import { Camera } from "./Camera.tsx";
 import { cropsOf, type Photo, photoOfFile, turnedPhoto } from "./capture.ts";
 import { moduleOfRoute, modulePageOf } from "./module.ts";
@@ -556,7 +556,7 @@ export function PaperScreen({
 }
 
 /** A module's page being begun: the shapes of its statement on the sheet, and of the row below. */
-function SheetLoading() {
+export function SheetLoading() {
   return (
     <div className="nt-task nt-task-paper">
       <Loading className="nt-sheet-loading">

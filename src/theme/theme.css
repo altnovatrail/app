@@ -3934,6 +3934,65 @@ p.nt-page-note {
 .nt-solve-nav > button.nt-solve-count[aria-expanded="true"] {
   background: rgb(0 113 227 / 0.12);
 }
+/*
+ * The pill of a module's task skill, in the bar's pill in place of the counter: a green tint, a
+ * deeper one while its choice is open; its sign a circle of 28, white with the green sparkle while
+ * the tutor picks and green with a white one on the learner's own skill; the name cut with an
+ * ellipsis, at most 280 wide, 200 on a phone; a chevron at the end.
+ */
+.nt-solve-nav button.nt-skill-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  max-inline-size: 17.5rem;
+  block-size: 2.75rem;
+  color: var(--nt-text);
+  padding-inline: 0.5rem 0.75rem;
+  border-radius: 1.375rem;
+  background: rgb(30 126 52 / 0.08);
+  font-size: var(--nt-size-caption);
+  font-weight: 600;
+  transition: background-color 0.15s;
+}
+.nt-solve-nav button.nt-skill-pill[aria-expanded="true"] {
+  background: rgb(30 126 52 / 0.16);
+}
+.nt-skill-sign {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  inline-size: 1.75rem;
+  block-size: 1.75rem;
+  border-radius: 50%;
+  background: #ffffff;
+  color: var(--nt-tasks);
+  font-size: 0.9375rem;
+}
+.nt-skill-sign[data-own="true"] {
+  background: var(--nt-tasks);
+  color: #ffffff;
+}
+.nt-skill-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.nt-skill-pill > svg:last-child {
+  flex: none;
+  font-size: 0.75rem;
+  color: var(--nt-segmented);
+}
+@media (width < 600px) {
+  .nt-solve-nav button.nt-skill-pill {
+    max-inline-size: 12.5rem;
+  }
+}
+/* Its choice, 400 wide under it from 600 CSS px, in the text's size of Home's tile. */
+dialog.nt-pop.nt-pick-skill {
+  --nt-pop-width: 25rem;
+  font-size: 1rem;
+}
 .nt-tasks-head {
   display: flex;
   align-items: center;

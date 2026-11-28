@@ -20,6 +20,7 @@ import { createApi } from "../api/client.ts";
 import { ApiError } from "../api/failure.ts";
 import { WORDS } from "../i18n/words.ts";
 import { OpenViews } from "../packages/views.ts";
+import { choose, initialState, writingFilled } from "../task/steps.ts";
 import { memoryDevice } from "../test/device.ts";
 import {
   choicesOf,
@@ -36,7 +37,6 @@ import {
   withoutWriting,
   workOf,
 } from "./attempt.ts";
-import { choose, initialState, writingFilled } from "./steps.ts";
 
 const TASK: open.Task = {
   id: "pick",

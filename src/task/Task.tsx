@@ -69,12 +69,7 @@ import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { NextStep } from "../next/NextStep.tsx";
 import { useKeyHolder } from "../ownkey/OwnKeyContext.tsx";
 import { usePackages } from "../packages/PackagesContext.tsx";
-import type { Device } from "../storage/device.ts";
-import { addProfile, attemptOver, openProfile, type Profile } from "../storage/profile.ts";
-import { ReportProblem } from "../tutor/ReportProblem.tsx";
-import type { Said } from "../tutor/report.ts";
-import { hintPhrases } from "../voice/texts.ts";
-import { useWorks } from "../works/useWorks.ts";
+import { ModuleSheet } from "../paper/ModuleSheet.tsx";
 import {
   markNames,
   marksOf,
@@ -87,11 +82,8 @@ import {
   withoutSlot,
   withoutWriting,
   workOf,
-} from "./attempt.ts";
-import { OpenEssay } from "./Essay.tsx";
-import { isEssay } from "./essay.ts";
-import type { HintGiven } from "./Hint.tsx";
-import { Pause } from "./pause.ts";
+} from "../solving/attempt.ts";
+import type { HintGiven } from "../solving/Hint.tsx";
 import {
   CLOSED_KEYS,
   closedBy,
@@ -99,7 +91,17 @@ import {
   useKeptWork,
   useOwnVoicing,
   useStepTechniques,
-} from "./shared.ts";
+} from "../solving/shared.ts";
+import { useQuotaLine } from "../solving/TutorPanel.tsx";
+import type { Device } from "../storage/device.ts";
+import { addProfile, attemptOver, openProfile, type Profile } from "../storage/profile.ts";
+import { ReportProblem } from "../tutor/ReportProblem.tsx";
+import type { Said } from "../tutor/report.ts";
+import { hintPhrases } from "../voice/texts.ts";
+import { useWorks } from "../works/useWorks.ts";
+import { OpenEssay } from "./Essay.tsx";
+import { isEssay } from "./essay.ts";
+import { Pause } from "./pause.ts";
 import {
   choicesOnly,
   choose,
@@ -116,7 +118,6 @@ import {
 } from "./steps.ts";
 import { TaskLoading } from "./TaskLayout.tsx";
 import { TaskScreen } from "./TaskScreen.tsx";
-import { useQuotaLine } from "./TutorPanel.tsx";
 
 /** What the screen has read of the attempt. */
 export interface Opened {
@@ -155,10 +156,15 @@ export interface TaskProps {
   readonly device: Device;
   /** Whether the learner is of the category `adult`: the solution is theirs to ask from the start. */
   readonly adult: boolean;
-  /** The learner's open attempt changed: a new one began, or this one ended. */
-  readonly onAttempt: (attemptId: string | undefined) => void;
+  /**
+   * The learner's open attempt changed: a new one began, or this one ended; one begun anew on the
+   * sheet of a module's task, `inPlace`, stays on it.
+   */
+  readonly onAttempt: (attemptId: string | undefined, inPlace?: true) => void;
   /** The attempt is a task segment of a lesson run: the player's, under its header. */
   readonly lesson?: TaskInLesson;
+  /** A task of a module outside a lesson, but an essay, is solved on the sheet of a task from paper. */
+  readonly sheet?: boolean;
 }
 
 /** What the lesson player hears of a task of its run. */
@@ -177,6 +183,7 @@ export function Task({
   adult,
   onAttempt,
   lesson,
+  sheet = false,
 }: TaskProps) {
   const api = useApi();
   const { views, checks } = usePackages();
@@ -374,6 +381,19 @@ export function Task({
           <NextStep profileId={profileId} secondary />
         </Screen>
       </>
+    );
+  }
+  if (sheet && lesson === undefined && read.opened.essay === undefined) {
+    return (
+      <ModuleSheet
+        key={read.opened.digest}
+        profileId={profileId}
+        attemptId={attemptId}
+        adult={adult}
+        device={device}
+        opened={read.opened}
+        onAttempt={onAttempt}
+      />
     );
   }
   const Open = read.opened.essay === undefined ? OpenTask : OpenEssay;

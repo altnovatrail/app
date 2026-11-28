@@ -1269,6 +1269,15 @@ export const en = {
   /** Check pressed with nothing written, on the sheet or on the task. */
   "paper.write-first": "Write your solution first",
   "paper.write-first-line": "Write it with the pen on the sheet or on the task, then Check.",
+  /** A task of a module with options on its tracing paper: Check with none chosen, and the one chosen. */
+  "paper.choose-first": "Choose an answer first",
+  "paper.choose-first-line": "Tap one of the answers on the task, then Check.",
+  "paper.chose": "You chose {text}",
+  /** A task of a module on the sheet: its name, the tutor's first line, the pill of its task skill. */
+  "paper.module-task": "Task of the module",
+  "paper.module-hello":
+    "Take a hint: the tutor answers with a question, never with the answer. A program checks every answer.",
+  "paper.skill-tutor": "The tutor picks",
   /** The card of a Check of a task from paper that read nothing of a solution in any task. */
   "paper.no-key": "Couldn't check this one",
   "paper.no-key-line":

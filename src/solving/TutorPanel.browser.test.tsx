@@ -9,6 +9,9 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import { useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { page, userEvent } from "vitest/browser";
+import { EssayScreen } from "../task/EssayScreen.tsx";
+import { initialState, type Mode, type StepsState } from "../task/steps.ts";
+import { TaskScreen } from "../task/TaskScreen.tsx";
 import { inLanguage } from "../test/language.tsx";
 import {
   FakeRecognition,
@@ -21,9 +24,6 @@ import { fakeSpeech, voice } from "../test/speech.ts";
 import { NO_AUDIO_MS, NO_WORDS_MS } from "../voice/dictation.ts";
 import { SpeechProvider } from "../voice/VoicingContext.tsx";
 import { NO_VERDICTS, type Verdicts, verdictsOf } from "./attempt.ts";
-import { EssayScreen } from "./EssayScreen.tsx";
-import { initialState, type Mode, type StepsState } from "./steps.ts";
-import { TaskScreen } from "./TaskScreen.tsx";
 import { LearnerLine, TutorPanel } from "./TutorPanel.tsx";
 
 const TASK: open.Task = {

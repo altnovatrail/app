@@ -24,7 +24,9 @@ import { Icon } from "../app/Icon.tsx";
 import { PopOver } from "../app/PopOver.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import type { Words } from "../i18n/words.ts";
-import { summaryText, type Verdicts, verdictKey } from "./attempt.ts";
+import { summaryText, type Verdicts, verdictKey } from "../solving/attempt.ts";
+import { HintButton, RowLine, VerdictCard, VerdictLine } from "../solving/parts.tsx";
+import { ExplainButton, TutorWords } from "../solving/TutorWords.tsx";
 import {
   ChoiceGroups,
   hasChoices,
@@ -36,16 +38,7 @@ import {
 } from "./Items.tsx";
 import { Solution } from "./Solution.tsx";
 import { choicesOnly, onWorkbook, slotsFilled, slotsOf, writingFilled } from "./steps.ts";
-import {
-  HintButton,
-  ResultEnd,
-  RowLine,
-  TaskLayout,
-  type TaskParts,
-  VerdictCard,
-  VerdictLine,
-} from "./TaskLayout.tsx";
-import { ExplainButton, TutorWords } from "./TutorWords.tsx";
+import { ResultEnd, TaskLayout, type TaskParts } from "./TaskLayout.tsx";
 
 export interface TaskScreenProps extends TaskParts {
   readonly verdicts: Verdicts;

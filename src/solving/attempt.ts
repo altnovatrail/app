@@ -28,7 +28,7 @@ import {
   type StepsState,
   slotKey,
   slotsOf,
-} from "./steps.ts";
+} from "../task/steps.ts";
 
 /** An option tapped, by its answer slot, as `SubmitWork` takes it. */
 export interface Tapped {

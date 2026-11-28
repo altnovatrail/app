@@ -28,15 +28,15 @@ import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { NextStep } from "../next/NextStep.tsx";
 import { useKeyHolder } from "../ownkey/OwnKeyContext.tsx";
 import { usePackages } from "../packages/PackagesContext.tsx";
+import { solutionOf } from "../solving/attempt.ts";
+import type { HintGiven } from "../solving/Hint.tsx";
+import { unlessClosed, useKeptWork, useOwnVoicing, useStepTechniques } from "../solving/shared.ts";
 import { ReportProblem } from "../tutor/ReportProblem.tsx";
 import { hintPhrases } from "../voice/texts.ts";
 import { useWorks } from "../works/useWorks.ts";
-import { solutionOf } from "./attempt.ts";
 import { EssayScreen, type Finished } from "./EssayScreen.tsx";
 import { noteOf, type Shown, sentOf } from "./essay.ts";
-import type { HintGiven } from "./Hint.tsx";
 import { Pause } from "./pause.ts";
-import { unlessClosed, useKeptWork, useOwnVoicing, useStepTechniques } from "./shared.ts";
 import {
   givesTechniques,
   goTo,

@@ -13,16 +13,10 @@
 import type * as open from "@altnovatrail/spec/formatv0/open";
 import { useEffect, useId, useState } from "react";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
+import { HintButton, RowLine, VerdictCard } from "../solving/parts.tsx";
+import { TutorWords } from "../solving/TutorWords.tsx";
 import { Solution } from "./Solution.tsx";
-import {
-  HintButton,
-  ResultEnd,
-  RowLine,
-  TaskLayout,
-  type TaskParts,
-  VerdictCard,
-} from "./TaskLayout.tsx";
-import { TutorWords } from "./TutorWords.tsx";
+import { ResultEnd, TaskLayout, type TaskParts } from "./TaskLayout.tsx";
 
 /** The essay finished by Done: the rubric's criteria and the solution, as `SolvedTask` gives them. */
 export interface Finished {

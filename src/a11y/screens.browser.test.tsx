@@ -72,6 +72,7 @@ import { Pick } from "../paper/Pick.tsx";
 import { Solve } from "../paper/Solve.tsx";
 import { SignInScreen } from "../signin/SignInScreen.tsx";
 import { moduleMapRoute, SkillMapRoute } from "../skills/SkillMapScreen.tsx";
+import { NO_VERDICTS, verdictsOf } from "../solving/attempt.ts";
 import { addProfile } from "../storage/profile.ts";
 import { addDatabase, setAccount } from "../storage/registry.ts";
 import { PROFILE_SCHEMA, profileDatabase } from "../storage/schema.ts";
@@ -80,7 +81,6 @@ import { HomeScreen } from "../subjects/MySubjects.tsx";
 import type { ModuleAbout, SkillList } from "../subjects/modules.ts";
 import { CatalogScreen } from "../subjects/SubjectsPage.tsx";
 import type { SkillCounts } from "../subjects/states.ts";
-import { NO_VERDICTS, verdictsOf } from "../task/attempt.ts";
 import { initialState } from "../task/steps.ts";
 import { TaskScreen, type TaskScreenProps } from "../task/TaskScreen.tsx";
 import {

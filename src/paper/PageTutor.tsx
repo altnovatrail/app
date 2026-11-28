@@ -7,8 +7,8 @@
 // finding runs, Stop stands in place of Send, and a request it took back is in the field again.
 import type { Ref } from "react";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
-import { VerdictLine } from "../task/TaskLayout.tsx";
-import { LearnerLine, TutorPanel } from "../task/TutorPanel.tsx";
+import { VerdictLine } from "../solving/parts.tsx";
+import { LearnerLine, TutorPanel } from "../solving/TutorPanel.tsx";
 import type { Said } from "./PaperContext.tsx";
 import { MAX_REQUEST, requestOf } from "./page.ts";
 

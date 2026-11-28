@@ -824,7 +824,10 @@ function moduleRoutes(state?: LessonState): Record<string, Route> {
   };
 }
 
-/** An open attempt of a module with steps, and its views: the task screen shows the mode. */
+/**
+ * An open attempt of an essay of a module with steps, and its views: the task screen shows the mode,
+ * which a task of a module solved on the sheet has none of.
+ */
 const ATTEMPT_ROUTES: Record<string, Route> = {
   getOpenAttempt: () =>
     message(GetOpenAttemptResponseSchema, {
@@ -833,10 +836,10 @@ const ATTEMPT_ROUTES: Record<string, Route> = {
           attemptId: "a1",
           task: {
             json: encode({
-              id: "pick",
-              statement: [{ text: "Pick one." }],
+              id: "essay",
+              statement: [{ text: "Write about your day." }],
               canvas: { kind: "handwriting_sheet" },
-              items: [{ answer_slots: [{ binding: "choice", options: ["4", "5"] }] }],
+              items: [{ answer_slots: [{ binding: "sheet" }] }],
             }),
             moduleFormatVersion: "0.4",
           },

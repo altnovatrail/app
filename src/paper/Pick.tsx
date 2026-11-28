@@ -19,7 +19,7 @@ import { Icon } from "../app/Icon.tsx";
 import { IconButton } from "../app/IconButton.tsx";
 import { Screen } from "../app/Screen.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
-import { RowLine } from "../task/TaskLayout.tsx";
+import { RowLine } from "../solving/parts.tsx";
 import { BarButton, useBarFit } from "./BarFit.tsx";
 import type { Photo } from "./capture.ts";
 import {

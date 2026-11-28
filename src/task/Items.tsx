@@ -9,7 +9,7 @@ import type * as open from "@altnovatrail/spec/formatv0/open";
 import { type ReactNode, useId } from "react";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import type { Words } from "../i18n/words.ts";
-import { type Reading, reasonKey, type Verdicts, verdictKey } from "./attempt.ts";
+import { type Reading, reasonKey, type Verdicts, verdictKey } from "../solving/attempt.ts";
 import { slotKey, slotsOf } from "./steps.ts";
 
 /** A verdict in a word, with a sign that does not lean on colour. */

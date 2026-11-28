@@ -11,10 +11,10 @@ import { useEffect, useId, useRef, useState } from "react";
 import { Icon } from "../app/Icon.tsx";
 import { useLanguage } from "../i18n/LanguageContext.tsx";
 import type { Words } from "../i18n/words.ts";
+import { TechniqueCards } from "../solving/TechniqueCards.tsx";
 import { ReadAloud } from "../voice/ReadAloud.tsx";
 import { stepPhrases } from "../voice/texts.ts";
 import { exitMet, givesChips, givesTechniques, onWorkbook, type StepsState } from "./steps.ts";
-import { TechniqueCards } from "./TechniqueCards.tsx";
 
 /** The line of what opens "Step done", by the exit condition; none for `none`. */
 const EXIT_LINES = {

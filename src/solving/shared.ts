@@ -9,9 +9,9 @@ import { type RefObject, useCallback, useEffect, useRef, useState } from "react"
 import type { Api } from "../api/client.ts";
 import { type Failure, parseFailure } from "../api/failure.ts";
 import type { Profile } from "../storage/profile.ts";
+import type { StepsState } from "../task/steps.ts";
 import type { Phrase } from "../voice/texts.ts";
 import { useVoicing } from "../voice/VoicingContext.tsx";
-import type { StepsState } from "./steps.ts";
 
 /** Why an attempt is over, in words, by its close reason. */
 export const CLOSED_KEYS = {

@@ -1,7 +1,7 @@
 // The task screen for the tests of the theme: a task answered by options, all chosen, and Check on a
 // pause, as TaskScreen shows it.
 import "@altnovatrail/canvas";
-import { NO_VERDICTS } from "../task/attempt.ts";
+import { NO_VERDICTS } from "../solving/attempt.ts";
 import { initialState } from "../task/steps.ts";
 import { TaskScreen } from "../task/TaskScreen.tsx";
 

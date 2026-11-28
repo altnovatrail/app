@@ -10,7 +10,7 @@ import type * as open from "@altnovatrail/spec/formatv0/open";
 import type { ReadOutcome } from "../api/outcome.ts";
 import { outcomeText } from "../api/words.ts";
 import type { Words } from "../i18n/words.ts";
-import { reasonKey } from "./attempt.ts";
+import { reasonKey } from "../solving/attempt.ts";
 
 /** Whether the task is an essay: its one answer slot is bound `sheet`. */
 export function isEssay(task: open.Task): boolean {

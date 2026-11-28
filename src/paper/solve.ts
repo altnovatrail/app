@@ -28,8 +28,8 @@ import type {
 import type { ReadOutcome } from "../api/outcome.ts";
 import { outcomeText } from "../api/words.ts";
 import type { Words } from "../i18n/words.ts";
+import { reasonKey, verdictKey } from "../solving/attempt.ts";
 import type { PaperSent } from "../storage/profile.ts";
-import { reasonKey, verdictKey } from "../task/attempt.ts";
 import type { Said } from "../tutor/report.ts";
 import { type Frame, pageOrder, sameFrame } from "./frame.ts";
 import { type PageTask, picked } from "./page.ts";
@@ -71,6 +71,8 @@ export interface BegunTask {
   readonly over?: boolean;
   /** Its Check came to Correct, here or in a tab before: the list marks it, which the page keeps. */
   readonly solved?: true;
+  /** On a task of a module, the option of its tracing paper chosen, by its index: the tab's alone. */
+  readonly chosen?: number;
 }
 
 /**
@@ -181,6 +183,8 @@ export type PaperVerdict =
       readonly kind: "correct" | "not-yet" | "so-far";
       readonly read: string | undefined;
       readonly parts: readonly PaperPart[];
+      /** What was read is an option the learner chose on a task of a module, not a reading. */
+      readonly chose?: true;
     }
   | { readonly kind: "unreadable"; readonly reason: string }
   | { readonly kind: "unchecked"; readonly outcome: ReadOutcome | undefined }
@@ -364,7 +368,11 @@ export function paperCard(
         kind: verdict.kind,
         title: words.text(verdict.kind === "correct" ? "task.correct" : "task.not-yet"),
         line:
-          verdict.read === undefined ? undefined : words.text("task.read", { text: verdict.read }),
+          verdict.read === undefined
+            ? undefined
+            : words.text(verdict.chose === true ? "paper.chose" : "task.read", {
+                text: verdict.read,
+              }),
       };
     }
     case "unreadable": {

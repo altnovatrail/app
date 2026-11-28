@@ -22,7 +22,8 @@ import { useLanguage } from "../i18n/LanguageContext.tsx";
 import { moduleMapRoute } from "../skills/SkillMapScreen.tsx";
 import { isScreenLanguage, nameOf } from "./CardHeading.tsx";
 import { ModuleTile } from "./ModuleTile.tsx";
-import type { LessonTile, ModuleCard, SkillPick, SkillPicks } from "./modules.ts";
+import type { LessonTile, ModuleCard } from "./modules.ts";
+import { Picker, skillTitle } from "./SkillPick.tsx";
 import { judged, MARKS, type SkillCounts, STATES } from "./states.ts";
 
 /** The squares of a module's skills, in the order of the legend's states and marks. */
@@ -115,90 +116,6 @@ function LessonMode({
   );
 }
 
-/** The skill of a module's picks by its full ID; none when its graph no longer has it. */
-function pickOf(picks: SkillPicks | undefined, skill: string): SkillPick | undefined {
-  return picks?.tiers.flatMap((tier) => tier.skills).find((each) => each.skill === skill);
-}
-
-/** The local ID of a skill's full ID, which names it while its title is not known. */
-const localOf = (skill: string) => skill.slice(skill.lastIndexOf("/skill/") + "/skill/".length);
-
-/** The choice of the task skill: the tutor's first, then the skills suggested, then each tier's. */
-function Picker({
-  card,
-  picks,
-  own,
-  onTaskSkill,
-  close,
-}: {
-  readonly card: ModuleCard;
-  readonly picks: SkillPicks;
-  readonly own: string | undefined;
-  readonly onTaskSkill: (skill: string) => void;
-  readonly close: () => void;
-}) {
-  const { words } = useLanguage();
-  const choose = (skill: string) => {
-    close();
-    if (skill !== (own ?? "")) onTaskSkill(skill);
-  };
-  const chip = (pick: SkillPick) => {
-    const locked = pick.status === "locked";
-    return (
-      <button
-        key={pick.skill}
-        type="button"
-        className="nt-pick-chip"
-        aria-pressed={pick.skill === own}
-        disabled={locked}
-        {...(locked ? { "aria-label": words.text("home.pick-locked", { skill: pick.title }) } : {})}
-        onClick={() => choose(pick.skill)}
-      >
-        <span {...langOf(card.language)}>{pick.title}</span>
-        {locked ? <Icon value="state-locked" /> : null}
-      </button>
-    );
-  };
-  return (
-    <>
-      <h2 className="nt-pick-title">{words.text("home.pick")}</h2>
-      <button
-        type="button"
-        className="nt-pick-ai"
-        aria-pressed={own === undefined}
-        onClick={() => choose("")}
-      >
-        <span className="nt-way-sign" aria-hidden="true">
-          <Icon value="task-skill" />
-        </span>
-        <span className="nt-way-words">
-          <span className="nt-way-title">{words.text("home.pick-tutor")}</span>
-          <span className="nt-pick-or">{words.text("home.pick-tutor-line")}</span>
-        </span>
-        {own === undefined ? <Icon value="ticked" /> : null}
-      </button>
-      <span className="nt-pick-or">{words.text("home.pick-own")}</span>
-      {picks.suggested.length === 0 ? null : (
-        <>
-          <fieldset className="nt-pick-group">
-            <legend className="nt-pick-label">{words.text("home.pick-suggested")}</legend>
-            <div className="nt-pick-chips">{picks.suggested.map(chip)}</div>
-          </fieldset>
-          <div className="nt-pick-rule" aria-hidden="true" />
-        </>
-      )}
-      {picks.tiers.map((tier, n) => (
-        <fieldset key={tier.name ?? `tier ${n}`} className="nt-pick-group">
-          <legend className="nt-pick-label" {...langOf(card.language)}>
-            {tier.name ?? words.text("subjects.tier", { tier: n + 1 })}
-          </legend>
-          <div className="nt-pick-chips">{tier.skills.map(chip)}</div>
-        </fieldset>
-      ))}
-    </>
-  );
-}
-
 /** The tile of a module's tasks: its row to the choice of their skill, the way back to the tutor's, Solve. */
 function TasksMode({
   card,
@@ -217,7 +134,7 @@ function TasksMode({
   const own = card.sheet === true ? undefined : card.taskSkill;
   // A module solved on the sheet begins its tasks all at once: there is no skill to choose.
   const picks = card.sheet === true ? undefined : card.picks;
-  const title = own === undefined ? undefined : (pickOf(card.picks, own)?.title ?? localOf(own));
+  const title = skillTitle(card, own);
   const row = (
     <>
       <span className="nt-way-sign" aria-hidden="true">
